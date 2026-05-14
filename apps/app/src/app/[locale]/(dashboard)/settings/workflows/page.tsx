@@ -84,7 +84,7 @@ export default function WorkflowsSettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
@@ -241,7 +241,7 @@ export default function WorkflowsSettingsPage() {
               onClick={() => handleEditClick(type)}
               className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
             >
-              <Edit className="mr-2 h-4 w-4" />
+              <Edit className="mr-2 size-4" />
               {t("editWorkflow")}
             </Button>
           </PermissionGate>
@@ -352,7 +352,7 @@ export default function WorkflowsSettingsPage() {
                   size="sm"
                   className="h-8 border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
                 >
-                  <Plus className="mr-2 h-3.5 w-3.5" />
+                  <Plus className="mr-2 size-3.5" />
                   {t("addStep")}
                 </Button>
               </div>
@@ -422,30 +422,30 @@ export default function WorkflowsSettingsPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
+                          className="size-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
                           onClick={() => moveStep(index, "up")}
                           disabled={index === 0}
                         >
-                          <ArrowUp className="h-3.5 w-3.5" />
+                          <ArrowUp className="size-3.5" />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
+                          className="size-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
                           onClick={() => moveStep(index, "down")}
                           disabled={index === formData.steps.length - 1}
                         >
-                          <ArrowDown className="h-3.5 w-3.5" />
+                          <ArrowDown className="size-3.5" />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-red-400 hover:bg-red-950/30"
+                          className="size-6 text-muted-foreground hover:text-red-400 hover:bg-red-950/30"
                           onClick={() => removeStep(index)}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="size-3.5" />
                         </Button>
                       </div>
                     </div>

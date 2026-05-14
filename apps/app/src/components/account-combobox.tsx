@@ -227,7 +227,7 @@ export function AccountCombobox({
           >
             {selectedAccount ? (
               <div className="flex items-center gap-2 truncate">
-                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <Building2 className="size-4 shrink-0 text-muted-foreground" />
                 <span className="truncate">{selectedAccount.businessName}</span>
                 <span className="text-xs text-muted-foreground">
                   ({selectedAccount.accountNumber})
@@ -267,7 +267,7 @@ export function AccountCombobox({
                       }}
                       className="w-full"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-2 size-4" />
                       Create New Account
                     </Button>
                   )}
@@ -286,13 +286,13 @@ export function AccountCombobox({
                       <div className="flex w-full items-start gap-2">
                         <Check
                           className={cn(
-                            "h-4 w-4 shrink-0 mt-0.5",
+                            "size-4 shrink-0 mt-0.5",
                             value === account._id ? "opacity-100" : "opacity-0",
                           )}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <Building2 className="size-4 shrink-0 text-muted-foreground" />
                             <span className="font-medium truncate">
                               {account.businessName}
                             </span>
@@ -303,19 +303,19 @@ export function AccountCombobox({
                           <div className="flex flex-col gap-0.5 mt-1 text-xs text-muted-foreground">
                             {account.contactPerson && (
                               <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
+                                <User className="size-3" />
                                 {account.contactPerson}
                               </span>
                             )}
                             {account.email && (
                               <span className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
+                                <Mail className="size-3" />
                                 {account.email}
                               </span>
                             )}
                             {account.phone && (
                               <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
+                                <Phone className="size-3" />
                                 {account.phone}
                               </span>
                             )}
@@ -339,7 +339,7 @@ export function AccountCombobox({
                     }}
                     className="w-full justify-start"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="mr-2 size-4" />
                     Create New Account
                   </Button>
                 </div>

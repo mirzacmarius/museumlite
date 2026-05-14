@@ -130,7 +130,7 @@ export function ObjectFiltersDropdown({
           placeholder={common("search")}
         />
 
-        <div className="mt-2 h-full w-full overflow-y-auto">
+        <div className="mt-2 size-full overflow-y-auto">
           <div className="divide-y divide-border">
             <FilterSection
               title={t("filters.status")}

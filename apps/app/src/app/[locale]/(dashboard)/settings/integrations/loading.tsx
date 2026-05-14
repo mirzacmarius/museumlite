@@ -2,7 +2,7 @@
 
 export default function IntegrationsSettingsLoading() {
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-2 p-6">
           <div className="h-7 w-32 rounded bg-muted/60" />
@@ -39,7 +39,7 @@ export default function IntegrationsSettingsLoading() {
                     (_, j) => `integration-item-${j}`,
                   ).map((itemKey) => (
                     <div key={itemKey} className="flex items-center gap-2">
-                      <div className="h-4 w-4 rounded bg-muted/40" />
+                      <div className="size-4 rounded bg-muted/40" />
                       <div className="h-4 w-40 rounded bg-muted/40" />
                     </div>
                   ))}

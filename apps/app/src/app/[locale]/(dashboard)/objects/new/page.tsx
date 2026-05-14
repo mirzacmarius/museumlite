@@ -886,7 +886,7 @@ export function ObjectRequestFormPage({
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{organizationPrompt}</p>
       </div>
     );
@@ -900,10 +900,10 @@ export function ObjectRequestFormPage({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="size-7"
             onClick={() => handleNavigate(resolvedBackHref)}
           >
-            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            <ArrowLeft className="size-4 text-muted-foreground" />
           </Button>
           <span className="text-muted-foreground">
             {t("detail.collections")}
@@ -920,7 +920,7 @@ export function ObjectRequestFormPage({
             onClick={() => void handleSaveDraft({ redirectToDetail: true })}
             disabled={isSavingDraft || isSubmitting}
           >
-            <Archive className="mr-2 h-4 w-4" />
+            <Archive className="mr-2 size-4" />
             {isSavingDraft ? "Saving draft..." : "Save Draft"}
           </Button>
           <Button
@@ -937,7 +937,7 @@ export function ObjectRequestFormPage({
             form="object-create-form"
             disabled={isSubmitting}
           >
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 size-4" />
             {isSubmitting
               ? selectedFiles.length > 0 || selectedDocuments.length > 0
                 ? "Submitting and uploading"
@@ -962,11 +962,11 @@ export function ObjectRequestFormPage({
                     alt={heroImage.file.name}
                     width={192}
                     height={192}
-                    className="h-48 w-48 object-cover"
+                    className="size-48 object-cover"
                   />
                 ) : (
                   <div className="flex size-48 items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    <ImageIcon className="size-12 text-muted-foreground" />
                   </div>
                 )}
                 <div className="absolute inset-x-0 bottom-0 bg-black/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -1353,7 +1353,7 @@ export function ObjectRequestFormPage({
                             ]);
                           }}
                         >
-                          <Plus className="mr-2 h-4 w-4" />
+                          <Plus className="mr-2 size-4" />
                           Add Entry
                         </Button>
                       </div>
@@ -1386,7 +1386,7 @@ export function ObjectRequestFormPage({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    className="size-8 text-muted-foreground hover:text-destructive"
                                     onClick={() => {
                                       const updated = [
                                         ...(formData.ownershipHistory || []),
@@ -1395,7 +1395,7 @@ export function ObjectRequestFormPage({
                                       updateField("ownershipHistory", updated);
                                     }}
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="size-4" />
                                   </Button>
                                 </div>
 
@@ -1525,7 +1525,7 @@ export function ObjectRequestFormPage({
                                         htmlFor={`verified-${index}`}
                                         className="flex items-center gap-1 text-sm font-normal"
                                       >
-                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                        <CheckCircle className="size-3 text-green-500" />
                                         Verified
                                       </Label>
                                     </div>
@@ -1632,7 +1632,7 @@ export function ObjectRequestFormPage({
                                   updateField("links", nextLinks);
                                 }}
                               >
-                                <X className="h-4 w-4" />
+                                <X className="size-4" />
                               </Button>
                             </div>
                           ) : null}
@@ -1649,7 +1649,7 @@ export function ObjectRequestFormPage({
                           ]);
                         }}
                       >
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="mr-2 size-4" />
                         Add Link
                       </Button>
                     </div>
@@ -1880,7 +1880,7 @@ export function ObjectRequestFormPage({
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="mr-2 size-4" />
                         Upload Images
                       </Button>
                       <Button
@@ -1888,7 +1888,7 @@ export function ObjectRequestFormPage({
                         variant="outline"
                         onClick={() => cameraInputRef.current?.click()}
                       >
-                        <Camera className="mr-2 h-4 w-4" />
+                        <Camera className="mr-2 size-4" />
                         Take Photo
                       </Button>
                     </div>
@@ -1966,22 +1966,22 @@ export function ObjectRequestFormPage({
                                     type="button"
                                     size="icon"
                                     variant="secondary"
-                                    className="h-8 w-8"
+                                    className="size-8"
                                     onClick={() => handleSetPrimary(file.id)}
                                     title={common("setAsPrimary")}
                                   >
-                                    <Star className="h-3.5 w-3.5" />
+                                    <Star className="size-3.5" />
                                   </Button>
                                 ) : null}
                                 <Button
                                   type="button"
                                   size="icon"
                                   variant="destructive"
-                                  className="h-8 w-8"
+                                  className="size-8"
                                   onClick={() => handleDeleteImage(file.id)}
                                   title={common("delete")}
                                 >
-                                  <X className="h-3.5 w-3.5" />
+                                  <X className="size-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -2021,7 +2021,7 @@ export function ObjectRequestFormPage({
                         variant="outline"
                         onClick={() => documentInputRef.current?.click()}
                       >
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="mr-2 size-4" />
                         Upload Documents
                       </Button>
                     </div>
@@ -2077,7 +2077,7 @@ export function ObjectRequestFormPage({
                               onClick={() => handleDeleteDocument(document.id)}
                               title={common("delete")}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="size-4" />
                             </Button>
                           </div>
                         ))}
@@ -2246,7 +2246,7 @@ export function ObjectRequestFormPage({
               onClick={() => void handleSaveDraft({ redirectToDetail: true })}
               disabled={isSavingDraft || isSubmitting}
             >
-              <Archive className="mr-2 h-4 w-4" />
+              <Archive className="mr-2 size-4" />
               {isSavingDraft ? "Saving draft..." : "Save Draft"}
             </Button>
             <Button
@@ -2261,7 +2261,7 @@ export function ObjectRequestFormPage({
               form="object-create-form"
               disabled={isSubmitting}
             >
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 size-4" />
               {isSubmitting
                 ? selectedFiles.length > 0 || selectedDocuments.length > 0
                   ? "Submitting and uploading"

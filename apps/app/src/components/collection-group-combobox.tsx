@@ -139,7 +139,7 @@ export function CollectionGroupCombobox({
                 }
               }}
             >
-              <FolderOpen className="h-3 w-3 text-muted-foreground" />
+              <FolderOpen className="size-3 text-muted-foreground" />
               <span>{group.name}</span>
               <span
                 role="button"
@@ -158,7 +158,7 @@ export function CollectionGroupCombobox({
                 className="cursor-pointer hover:text-destructive"
                 aria-label={`Remove ${group.name}`}
               >
-                <X className="h-3 w-3" />
+                <X className="size-3" />
               </span>
             </div>
           ))}
@@ -188,7 +188,7 @@ export function CollectionGroupCombobox({
             disabled={disabled}
           />
 
-          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </div>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
@@ -229,14 +229,14 @@ export function CollectionGroupCombobox({
                 >
                   <Check
                     className={cn(
-                      "h-4 w-4 shrink-0",
+                      "size-4 shrink-0",
                       selectedValues.includes(group._id)
                         ? "opacity-100"
                         : "opacity-0",
                     )}
                   />
                   <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                    <FolderOpen className="size-4 text-muted-foreground" />
                     <div className="flex flex-col">
                       <span>{group.name}</span>
                       {group.description && (

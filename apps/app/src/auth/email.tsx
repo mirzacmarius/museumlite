@@ -71,13 +71,13 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
               tabIndex={-1}
               type="button"
             >
-              <XCircle className="h-4 w-4 text-white/40" />
+              <XCircle className="size-4 text-white/40" />
             </button>
           ) : null}
         </div>
         {hasEmailError && !isFocused ? (
           <p className="flex items-center gap-1 px-0.5 text-xs text-red-400">
-            <CircleAlert className="h-3 w-3" />
+            <CircleAlert className="size-3" />
             Enter a valid email address.
           </p>
         ) : null}

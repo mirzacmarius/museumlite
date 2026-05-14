@@ -205,7 +205,7 @@ export function TemplateCombobox({
                     <div className="flex w-full items-center gap-3">
                       <Check
                         className={cn(
-                          "h-4 w-4 shrink-0",
+                          "size-4 shrink-0",
                           value === preset.value ? "opacity-100" : "opacity-0",
                         )}
                       />
@@ -216,7 +216,7 @@ export function TemplateCombobox({
                               {preset.label}
                             </span>
                             <Sparkles
-                              className="h-3 w-3 text-blue-500 shrink-0"
+                              className="size-3 text-blue-500 shrink-0"
                               aria-label="System template - guaranteed valid"
                             />
                           </div>
@@ -254,7 +254,7 @@ export function TemplateCombobox({
                     <div className="flex w-full items-center gap-3">
                       <Check
                         className={cn(
-                          "h-4 w-4 shrink-0",
+                          "size-4 shrink-0",
                           value === template.value
                             ? "opacity-100"
                             : "opacity-0",
@@ -299,7 +299,7 @@ export function TemplateCombobox({
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0"
+                              className="size-6 p-0"
                               onPointerDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
@@ -310,7 +310,7 @@ export function TemplateCombobox({
                                 onEditTemplate(template.id!);
                               }}
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="size-3" />
                             </Button>
                           )}
                           {onDeleteTemplate && template.id && (
@@ -318,7 +318,7 @@ export function TemplateCombobox({
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              className="size-6 p-0 text-destructive hover:text-destructive"
                               onPointerDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
@@ -329,7 +329,7 @@ export function TemplateCombobox({
                                 onDeleteTemplate(template.id!);
                               }}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="size-3" />
                             </Button>
                           )}
                         </div>
@@ -356,7 +356,7 @@ export function TemplateCombobox({
                     className="h-6 px-2"
                     onClick={() => setShowQuickInsert(!showQuickInsert)}
                   >
-                    <Zap className="h-3 w-3 mr-1" />
+                    <Zap className="size-3 mr-1" />
                     <span className="text-xs">Quick Insert</span>
                   </Button>
                   {onSaveTemplate && validation?.isValid && (
@@ -367,7 +367,7 @@ export function TemplateCombobox({
                       className="h-6 px-2"
                       onClick={handleSave}
                     >
-                      <Save className="h-3 w-3 mr-1" />
+                      <Save className="size-3 mr-1" />
                       <span className="text-xs">Save</span>
                     </Button>
                   )}
@@ -392,7 +392,7 @@ export function TemplateCombobox({
                 <div className="flex items-center gap-2 text-xs">
                   {validation.isValid ? (
                     <>
-                      <CheckCircle className="h-3 w-3 text-green-600 shrink-0" />
+                      <CheckCircle className="size-3 text-green-600 shrink-0" />
                       <span className="text-green-700">Valid format</span>
                       {validation.preview && (
                         <code className="text-[10px] bg-background px-1.5 py-0.5 rounded border">
@@ -402,7 +402,7 @@ export function TemplateCombobox({
                     </>
                   ) : (
                     <>
-                      <AlertCircle className="h-3 w-3 text-red-600 shrink-0" />
+                      <AlertCircle className="size-3 text-red-600 shrink-0" />
                       <span className="text-red-700 text-[10px]">
                         {validation.error}
                       </span>
@@ -422,10 +422,10 @@ export function TemplateCombobox({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0"
+                      className="size-5 p-0"
                       onClick={() => setShowQuickInsert(false)}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="size-3" />
                     </Button>
                   </div>
 

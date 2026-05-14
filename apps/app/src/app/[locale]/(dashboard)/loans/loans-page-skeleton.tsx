@@ -7,7 +7,7 @@ const OVERVIEW_KEYS = ["overview", "chart"];
 
 export function LoansPageSkeleton() {
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+    <div className="flex size-full flex-col overflow-y-auto bg-background">
       <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="space-y-2">

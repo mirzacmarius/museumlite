@@ -84,15 +84,15 @@ export function LocationHeader({
             <img
               src={location.imageUrl}
               alt={location.name}
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
           </>
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-muted/40">
+          <div className="flex size-full items-center justify-center bg-muted/40">
             <div className="flex flex-col items-center gap-3 text-muted-foreground">
               <div className="rounded-full border border-border bg-background/80 p-3">
-                <ImageIcon className="h-6 w-6" />
+                <ImageIcon className="size-6" />
               </div>
               <span className="text-sm font-medium">No location photo</span>
             </div>
@@ -103,7 +103,7 @@ export function LocationHeader({
           <div className="absolute right-2 top-2 flex flex-wrap items-center gap-1.5">
             {displayTemperature !== undefined ? (
               <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-2 py-1 backdrop-blur-md">
-                <Thermometer className="h-3 w-3 text-blue-300" />
+                <Thermometer className="size-3 text-blue-300" />
                 <span className="text-xs font-semibold text-foreground">
                   {displayTemperature.toFixed(1)}°C
                 </span>
@@ -112,7 +112,7 @@ export function LocationHeader({
 
             {displayHumidity !== undefined ? (
               <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-2 py-1 backdrop-blur-md">
-                <Droplets className="h-3 w-3 text-cyan-300" />
+                <Droplets className="size-3 text-cyan-300" />
                 <span className="text-xs font-semibold text-foreground">
                   {displayHumidity.toFixed(0)}%
                 </span>

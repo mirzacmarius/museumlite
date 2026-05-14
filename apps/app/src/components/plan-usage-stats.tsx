@@ -57,7 +57,7 @@ export function PlanUsageStats({
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-zinc-800" />
+            <div className="size-1.5 animate-pulse rounded-full bg-zinc-800" />
             <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
           </div>
         </div>
@@ -87,7 +87,7 @@ export function PlanUsageStats({
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+          <div className="size-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
           <span className="text-sm font-semibold text-zinc-200">
             {getTierDisplayName(stats.tier)}
           </span>

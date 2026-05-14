@@ -58,18 +58,18 @@ function SelectedCollectionItem({
       )}
     >
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded bg-secondary ring-1 ring-border flex-shrink-0 overflow-hidden">
+        <div className="size-10 rounded bg-secondary ring-1 ring-border flex-shrink-0 overflow-hidden">
           {collection.primaryImageUrl ? (
             <Image
               src={collection.primaryImageUrl}
               alt={collection.title}
               width={40}
               height={40}
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Box className="h-5 w-5 text-muted-foreground" />
+            <div className="flex size-full items-center justify-center">
+              <Box className="size-5 text-muted-foreground" />
             </div>
           )}
         </div>
@@ -77,7 +77,7 @@ function SelectedCollectionItem({
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium truncate">{collection.title}</p>
             {hasIssue && (
-              <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+              <AlertTriangle className="size-4 text-destructive flex-shrink-0" />
             )}
           </div>
           <p className="text-xs text-muted-foreground font-mono">
@@ -92,7 +92,7 @@ function SelectedCollectionItem({
           onClick={onRemove}
           className="p-1 hover:bg-destructive/10 hover:text-destructive rounded transition-colors"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </button>
       </div>
       <div className="space-y-1.5">
@@ -205,7 +205,7 @@ export default function NewLoanPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">
           Please select an organization to create loans.
         </p>
@@ -310,9 +310,9 @@ export default function NewLoanPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
             <Link href="/loans">
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
           <span className="text-muted-foreground">Loans</span>
@@ -363,13 +363,13 @@ export default function NewLoanPage() {
                         <SelectContent>
                           <SelectItem value="incoming">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-purple-500" />
+                              <div className="size-2 rounded-full bg-purple-500" />
                               {tActions("incomingLoan")}
                             </div>
                           </SelectItem>
                           <SelectItem value="outgoing">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                              <div className="size-2 rounded-full bg-cyan-500" />
                               {tActions("outgoingLoan")}
                             </div>
                           </SelectItem>
@@ -677,7 +677,7 @@ export default function NewLoanPage() {
               {/* Error & Actions */}
               {error && (
                 <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
-                  <Info className="h-4 w-4" />
+                  <Info className="size-4" />
                   {error}
                 </div>
               )}
@@ -697,7 +697,7 @@ export default function NewLoanPage() {
                     disabled={isSubmitting}
                     className="min-w-[140px]"
                   >
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className="mr-2 size-4" />
                     {isSubmitting
                       ? tActions("saving")
                       : tActions("createNewLoan")}

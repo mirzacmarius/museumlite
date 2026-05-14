@@ -50,7 +50,7 @@ export function StickyFormFooter({
               onClick={onCancel}
               disabled={isSaving}
             >
-              <X className="mr-1 h-4 w-4" />
+              <X className="mr-1 size-4" />
               {cancelLabel}
             </Button>
           )}
@@ -67,7 +67,7 @@ export function StickyFormFooter({
               {isSaving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
               )}
               {saveAndNewLabel}
             </Button>
@@ -82,7 +82,7 @@ export function StickyFormFooter({
             {isSaving ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 size-4" />
             )}
             {isSaving ? "Saving..." : saveLabel}
           </Button>

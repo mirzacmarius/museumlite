@@ -91,7 +91,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <History className="w-4 h-4" />
+          <History className="size-4" />
           {t("analytics.auditTrail.title")}
         </CardTitle>
         <div className="flex items-center gap-4 mt-4">
@@ -116,7 +116,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
       <CardContent className="flex-1 overflow-auto pt-2 space-y-4">
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-            <Activity className="w-3 h-3" />
+            <Activity className="size-3" />
             {t("analytics.auditTrail.recentActivity")}
           </h4>
           <div className="rounded-md border border-border bg-background/50 overflow-hidden">
@@ -190,7 +190,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
         {data.eventsByType.length > 0 && (
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-              <FileText className="w-3 h-3" />
+              <FileText className="size-3" />
               {t("analytics.auditTrail.byType")}
             </h4>
             <div className="space-y-1.5">
@@ -222,7 +222,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
         {data.eventsByUser.length > 0 && (
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-              <User className="w-3 h-3" />
+              <User className="size-3" />
               {t("analytics.auditTrail.byUser")}
             </h4>
             <div className="flex flex-wrap gap-1.5">

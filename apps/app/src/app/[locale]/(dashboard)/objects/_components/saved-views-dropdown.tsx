@@ -178,9 +178,9 @@ export function SavedViewsDropdown({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
-            <Bookmark className="mr-2 h-4 w-4" />
+            <Bookmark className="mr-2 size-4" />
             Saved Views
-            <ChevronDown className="ml-2 h-4 w-4" />
+            <ChevronDown className="ml-2 size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
@@ -203,7 +203,7 @@ export function SavedViewsDropdown({
                 <div className="flex flex-col gap-1">
                   <span className="flex items-center gap-2">
                     {view.isDefault && (
-                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                      <Star className="size-3 fill-amber-500 text-amber-500" />
                     )}
                     {view.name}
                   </span>
@@ -227,7 +227,7 @@ export function SavedViewsDropdown({
                     setEditingView({ id: view._id, name: view.name });
                   }}
                 >
-                  <Pencil className="h-3 w-3" />
+                  <Pencil className="size-3" />
                 </button>
                 <button
                   type="button"
@@ -239,14 +239,14 @@ export function SavedViewsDropdown({
                     }
                   }}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="size-3" />
                 </button>
               </div>
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setSaveDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             Save Current View
           </DropdownMenuItem>
         </DropdownMenuContent>

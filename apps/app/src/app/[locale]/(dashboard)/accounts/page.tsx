@@ -69,9 +69,9 @@ export default function AccountsPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {t("noOrganizationTitle")}
@@ -82,7 +82,7 @@ export default function AccountsPage() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {t("createOrganization")}
             </Link>
           </Button>
@@ -93,9 +93,9 @@ export default function AccountsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Users className="h-12 w-12 text-muted-foreground" />
+          <Users className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {t("selectOrganizationTitle")}
@@ -116,9 +116,9 @@ export default function AccountsPage() {
 
   if (!isAccountsEnabled) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Users className="h-12 w-12 text-muted-foreground" />
+          <Users className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("description")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -127,7 +127,7 @@ export default function AccountsPage() {
           </div>
           <Button asChild>
             <Link href="/settings/modules">
-              <Settings className="mr-2 h-4 w-4" />
+              <Settings className="mr-2 size-4" />
               {t("enableModule")}
             </Link>
           </Button>
@@ -137,8 +137,8 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-4 sm:px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-4 sm:px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg p-4 sm:p-6">
             <div className="flex flex-col gap-2">
@@ -161,7 +161,7 @@ export default function AccountsPage() {
                   className="sm:size-auto"
                 >
                   <Link href="/accounts/import">
-                    <FileUp className="h-4 w-4 sm:mr-2" />
+                    <FileUp className="size-4 sm:mr-2" />
                     <span className="hidden sm:inline">{t("importCSV")}</span>
                   </Link>
                 </Button>
@@ -169,7 +169,7 @@ export default function AccountsPage() {
               <PermissionGate permission="accounts.write">
                 <Button asChild>
                   <Link href="/accounts/new">
-                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <Plus className="size-4 sm:mr-2" />
                     <span className="hidden sm:inline">{t("newAccount")}</span>
                   </Link>
                 </Button>
@@ -278,7 +278,7 @@ function AccountList({
         <PermissionGate permission="loans.create">
           <Button asChild className="mt-4">
             <Link href="/accounts/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {t("emptyState.createFirst")}
             </Link>
           </Button>
@@ -328,9 +328,9 @@ function AccountList({
             <div className="flex flex-1 items-center gap-4">
               <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
                 {account.accountType === "patron" ? (
-                  <User className="h-5 w-5 text-primary" />
+                  <User className="size-5 text-primary" />
                 ) : (
-                  <Users className="h-5 w-5 text-primary" />
+                  <Users className="size-5 text-primary" />
                 )}
               </div>
               <div className="flex-1">

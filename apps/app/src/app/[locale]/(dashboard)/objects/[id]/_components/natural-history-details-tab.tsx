@@ -63,7 +63,7 @@ export function NaturalHistoryDetailsTab({
             {common("noDetailsYet", { module: "natural history" })}
           </p>
           <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {common("addDetails", { module: "Natural History" })}
           </Button>
         </div>
@@ -76,7 +76,7 @@ export function NaturalHistoryDetailsTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <TreePine className="h-4 w-4 text-green-500" />
+            <TreePine className="size-4 text-green-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("species")}
             </span>
@@ -93,7 +93,7 @@ export function NaturalHistoryDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-blue-500" />
+            <MapPin className="size-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("location")}
             </span>
@@ -112,7 +112,7 @@ export function NaturalHistoryDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-purple-500" />
+            <Calendar className="size-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("collected")}
             </span>
@@ -135,7 +135,7 @@ export function NaturalHistoryDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <TreePine className="h-4 w-4 text-amber-500" />
+            <TreePine className="size-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("preservation")}
             </span>
@@ -153,7 +153,7 @@ export function NaturalHistoryDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <TreePine className="h-4 w-4 text-green-500" />
+          <TreePine className="size-4 text-green-500" />
           {t("taxonomicClassification")}
         </h3>
 
@@ -227,7 +227,7 @@ export function NaturalHistoryDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <MapPin className="h-4 w-4 text-blue-500" />
+          <MapPin className="size-4 text-blue-500" />
           {t("geolocationData")}
         </h3>
 
@@ -281,7 +281,7 @@ export function NaturalHistoryDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Calendar className="h-4 w-4 text-purple-500" />
+          <Calendar className="size-4 text-purple-500" />
           {t("collectionInformation")}
         </h3>
 
@@ -331,7 +331,7 @@ export function NaturalHistoryDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <TreePine className="h-4 w-4 text-amber-500" />
+          <TreePine className="size-4 text-amber-500" />
           {t("preservationStorage")}
         </h3>
 
@@ -386,7 +386,7 @@ export function NaturalHistoryDetailsTab({
       {(details.dnaAvailable || details.tissueAvailable) && (
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <TreePine className="h-4 w-4 text-cyan-500" />
+            <TreePine className="size-4 text-cyan-500" />
             {t("scientificDataAvailability")}
           </h3>
 
@@ -420,7 +420,7 @@ export function NaturalHistoryDetailsTab({
       {(details.geologicalPeriod || details.formation) && (
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <TreePine className="h-4 w-4 text-orange-500" />
+            <TreePine className="size-4 text-orange-500" />
             {t("geologicalInformation")}
           </h3>
 

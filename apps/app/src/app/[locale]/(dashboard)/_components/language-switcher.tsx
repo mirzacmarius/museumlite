@@ -34,7 +34,7 @@ export function LanguageSwitcher({ triggerClass }: { triggerClass?: string }) {
         )}
       >
         <div className="flex items-start gap-2">
-          <Languages className="h-[14px] w-[14px]" />
+          <Languages className="size-[14px]" />
           <span className="text-xs font-medium">{formatLanguage(locale)}</span>
         </div>
       </SelectTrigger>

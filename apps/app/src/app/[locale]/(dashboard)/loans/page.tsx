@@ -64,9 +64,9 @@ export default function LoansPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("noOrg.title")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -75,7 +75,7 @@ export default function LoansPage() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {t("noOrg.createButton")}
             </Link>
           </Button>
@@ -86,9 +86,9 @@ export default function LoansPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Handshake className="h-12 w-12 text-muted-foreground" />
+          <Handshake className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("selectOrg.title")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -106,7 +106,7 @@ export default function LoansPage() {
       isLocked={!hasFeature("loans")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+      <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -120,7 +120,7 @@ export default function LoansPage() {
               <PermissionGate permission="loans.create">
                 <Button asChild>
                   <Link href="/loans/new">
-                    <Plus className="h-3.5 w-3.5 sm:mr-1" />
+                    <Plus className="size-3.5 sm:mr-1" />
                     <span className="hidden sm:inline">{t("newLoan")}</span>
                   </Link>
                 </Button>
@@ -212,11 +212,11 @@ function LoanList({
   const getTypeIcon = (type: string) => {
     return type === "incoming" ? (
       <div className="flex size-6 items-center justify-center rounded bg-muted text-foreground/80">
-        <ArrowDownLeft className="h-3 w-3" strokeWidth={3} />
+        <ArrowDownLeft className="size-3" strokeWidth={3} />
       </div>
     ) : (
       <div className="flex size-6 items-center justify-center rounded bg-muted text-foreground/80">
-        <ArrowUpRight className="h-3 w-3" strokeWidth={3} />
+        <ArrowUpRight className="size-3" strokeWidth={3} />
       </div>
     );
   };
@@ -356,7 +356,7 @@ function LoanList({
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <ArrowRightLeft className="h-4 w-4" />
+              <ArrowRightLeft className="size-4" />
             </div>
             <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
               +{activeLoansCount} active
@@ -373,7 +373,7 @@ function LoanList({
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:ring-1 hover:ring-emerald-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Boxes className="h-4 w-4" />
+              <Boxes className="size-4" />
             </div>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -387,7 +387,7 @@ function LoanList({
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:ring-1 hover:ring-blue-500/30">
           <div className="mb-4 flex items-start justify-between">
             <div className="flex size-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              <ShieldCheck className="h-4 w-4" />
+              <ShieldCheck className="size-4" />
             </div>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -400,7 +400,7 @@ function LoanList({
           <div className="absolute right-0 top-0 size-16 rounded-full bg-rose-500/10 blur-2xl" />
           <div className="mb-4 flex items-start justify-between">
             <div className="flex size-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="size-4" />
             </div>
             <span className="rounded border border-rose-500/30 bg-rose-500/20 px-1.5 py-0.5 text-xs font-medium text-rose-400">
               {t("kpis.actionRequired")}
@@ -467,7 +467,7 @@ function LoanList({
           <div className="flex items-center">
             <div className="group relative w-full sm:w-auto">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-3.5 w-3.5 text-muted-foreground transition-colors group-focus-within:text-cyan-500" />
+                <Search className="size-3.5 text-muted-foreground transition-colors group-focus-within:text-cyan-500" />
               </div>
               <Input
                 type="text"
@@ -578,7 +578,7 @@ function LoanList({
           rowAriaLabel={(loan) => `View loan ${loan.loanNumber ?? loan._id}`}
           emptyState={
             <div className="flex flex-col items-center justify-center gap-4 py-8">
-              <Handshake className="h-12 w-12 text-muted-foreground/50" />
+              <Handshake className="size-12 text-muted-foreground/50" />
               <div className="text-center">
                 <p className="text-muted-foreground">
                   {t("emptyState.noLoansFound")}
@@ -595,7 +595,7 @@ function LoanList({
                 <PermissionGate permission="loans.create">
                   <Button asChild>
                     <Link href="/loans/new">
-                      <Plus className="h-4 w-4" />
+                      <Plus className="size-4" />
                       {t("createLoan")}
                     </Link>
                   </Button>

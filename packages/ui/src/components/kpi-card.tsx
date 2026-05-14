@@ -39,7 +39,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
           )}
           {...props}
         >
-          <div className="h-8 w-8 animate-pulse rounded-md bg-muted/70" />
+          <div className="size-8 animate-pulse rounded-md bg-muted/70" />
           <div className="space-y-1">
             <div className="h-2 w-16 animate-pulse rounded bg-muted/70" />
             <div className="h-5 w-24 animate-pulse rounded bg-muted/70" />
@@ -72,7 +72,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
           >
             <Icon
               className={cn(
-                "w-4 h-4",
+                "size-4",
                 accentColor === "indigo" && "text-indigo-400",
                 accentColor === "emerald" && "text-emerald-400",
                 accentColor === "amber" && "text-amber-400",

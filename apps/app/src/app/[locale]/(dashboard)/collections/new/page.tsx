@@ -50,7 +50,7 @@ export default function NewCollectionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganizationCreate")}</p>
       </div>
     );
@@ -86,14 +86,14 @@ export default function NewCollectionPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-md gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-md gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/collections">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="mr-2 size-4" />
                   {t("back")}
                 </Link>
               </Button>
@@ -197,7 +197,7 @@ export default function NewCollectionPage() {
                 <Link href="/collections">{common("cancel")}</Link>
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 {isSubmitting ? t("form.creating") : t("form.createButton")}
               </Button>
             </div>

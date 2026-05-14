@@ -409,11 +409,11 @@ export function AddChildLocationDialog({
                       <img
                         src={locationImagePreviewUrl}
                         alt={name || "Location photo"}
-                        className="h-full w-full object-cover"
+                        className="size-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                        <ImageIcon className="h-8 w-8" />
+                      <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <ImageIcon className="size-8" />
                         <span className="text-sm">
                           {t("locationPhotoEmpty")}
                         </span>
@@ -442,7 +442,7 @@ export function AddChildLocationDialog({
                         {isUploadingImage ? (
                           <Loader2 className="mr-2 size-4 animate-spin" />
                         ) : (
-                          <Upload className="mr-2 h-4 w-4" />
+                          <Upload className="mr-2 size-4" />
                         )}
                         {locationImageId
                           ? t("replaceLocationPhoto")
@@ -462,7 +462,7 @@ export function AddChildLocationDialog({
                             setLocationImageId(null);
                           }}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 size-4" />
                           {t("removeLocationPhoto")}
                         </Button>
                       ) : null}

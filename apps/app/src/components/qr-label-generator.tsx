@@ -114,7 +114,7 @@ export const QRLabelGenerator = forwardRef<
           <img
             src={qrCodeDataUrl}
             alt={`QR code for ${data.accessionNumber}`}
-            className="w-full h-full object-contain"
+            className="size-full object-contain"
             style={{
               imageRendering: "pixelated",
             }}

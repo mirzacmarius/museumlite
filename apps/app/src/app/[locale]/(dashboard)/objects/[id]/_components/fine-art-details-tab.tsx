@@ -72,7 +72,7 @@ export function FineArtDetailsTab({
             {common("noDetailsYet", { module: "fine art" })}
           </p>
           <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {common("addDetails", { module: "Fine Art" })}
           </Button>
         </div>
@@ -85,7 +85,7 @@ export function FineArtDetailsTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
+            <DollarSign className="size-4 text-emerald-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("appraisedValue")}
             </span>
@@ -99,7 +99,7 @@ export function FineArtDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-blue-500" />
+            <DollarSign className="size-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("replacementValue")}
             </span>
@@ -113,7 +113,7 @@ export function FineArtDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Shield className="h-4 w-4 text-purple-500" />
+            <Shield className="size-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("insurancePolicy")}
             </span>
@@ -130,7 +130,7 @@ export function FineArtDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <FileCheck className="h-4 w-4 text-amber-500" />
+            <FileCheck className="size-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("displayStatus")}
             </span>
@@ -155,7 +155,7 @@ export function FineArtDetailsTab({
       {details.reappraisalDate && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
           <div className="flex items-center gap-2">
-            <FileCheck className="h-4 w-4 text-amber-500" />
+            <FileCheck className="size-4 text-amber-500" />
             <span className="text-sm font-medium text-amber-500">
               {t("reappraisalDue")}:{" "}
               {formatDateFns(
@@ -170,7 +170,7 @@ export function FineArtDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <History className="h-4 w-4 text-purple-500" />
+          <History className="size-4 text-purple-500" />
           {t("provenanceChain")}
         </h3>
 
@@ -187,7 +187,7 @@ export function FineArtDetailsTab({
                   )}
                 >
                   {index === 0 && (
-                    <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    <div className="size-1.5 rounded-full bg-accent" />
                   )}
                 </div>
                 <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
@@ -247,7 +247,7 @@ export function FineArtDetailsTab({
                   )}
                   {entry.verified && (
                     <div className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500">
-                      <FileCheck className="h-3 w-3" />
+                      <FileCheck className="size-3" />
                       {t("verified")}
                     </div>
                   )}
@@ -266,7 +266,7 @@ export function FineArtDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Truck className="h-4 w-4 text-cyan-500" />
+          <Truck className="size-4 text-cyan-500" />
           {t("shippingMovementLog")}
         </h3>
 

@@ -43,7 +43,7 @@ export function ConservationTab({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-          <Stethoscope className="h-4 w-4 text-rose-500" />
+          <Stethoscope className="size-4 text-rose-500" />
           Treatment History
         </h3>
       </div>

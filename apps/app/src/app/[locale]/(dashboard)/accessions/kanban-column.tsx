@@ -54,11 +54,11 @@ function getStepDotStyle(stepNumber: number): string {
 }
 
 function getStepIcon(stepNumber: number) {
-  if (stepNumber === 0) return <FileEdit className="h-4 w-4" />;
-  if (stepNumber === -1) return <CheckCircle className="h-4 w-4" />;
-  if (stepNumber === 1) return <Clock className="h-4 w-4" />;
-  if (stepNumber === 2) return <Search className="h-4 w-4" />;
-  return <ShieldCheck className="h-4 w-4" />;
+  if (stepNumber === 0) return <FileEdit className="size-4" />;
+  if (stepNumber === -1) return <CheckCircle className="size-4" />;
+  if (stepNumber === 1) return <Clock className="size-4" />;
+  if (stepNumber === 2) return <Search className="size-4" />;
+  return <ShieldCheck className="size-4" />;
 }
 
 function getInitials(name: string): string {
@@ -136,7 +136,7 @@ export function KanbanColumn({
                     <span className="font-mono text-[10px] text-muted-foreground">
                       {accession.accessionNumber}
                     </span>
-                    <div className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} />
+                    <div className={`size-1.5 rounded-full ${dotStyle}`} />
                   </div>
                   <p className="mb-1 line-clamp-2 text-sm font-medium text-foreground transition-colors group-hover:text-primary">
                     {accession.draftTitle ||

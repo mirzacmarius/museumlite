@@ -64,7 +64,7 @@ function FAQItem({
         <CollapsibleTrigger className="flex w-full items-center justify-between py-5 border-b border-border hover:text-foreground transition-colors text-left">
           <span className="font-medium text-lg pr-4">{question}</span>
           <ChevronDown
-            className={`h-5 w-5 flex-shrink-0 transition-transform duration-300 ${
+            className={`size-5 flex-shrink-0 transition-transform duration-300 ${
               isOpen ? "rotate-180" : ""
             }`}
           />

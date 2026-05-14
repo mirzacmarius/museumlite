@@ -60,7 +60,7 @@ function DrawerItem({ drawer }: DrawerItemProps) {
     >
       <div className="flex items-center gap-2">
         <div
-          className={`w-1.5 h-1.5 rounded-full ${statusColors[drawer.status]}`}
+          className={`size-1.5 rounded-full ${statusColors[drawer.status]}`}
         />
         <span
           className={`text-xs font-mono ${isEmpty ? "text-zinc-500" : "text-zinc-300"}`}

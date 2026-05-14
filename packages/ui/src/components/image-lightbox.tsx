@@ -252,7 +252,7 @@ export function ImageLightbox({
                     setCurrentIndex(idx);
                   }}
                   className={cn(
-                    "h-12 w-12 overflow-hidden rounded border-2 transition-all",
+                    "size-12 overflow-hidden rounded border-2 transition-all",
                     idx === currentIndex
                       ? "border-white"
                       : "border-transparent opacity-60 hover:opacity-100",
@@ -261,7 +261,7 @@ export function ImageLightbox({
                   <img
                     src={img.thumbnailUrl || img.url}
                     alt={img.title || `Thumbnail ${idx + 1}`}
-                    className="h-full w-full object-cover"
+                    className="size-full object-cover"
                   />
                 </button>
               ))}

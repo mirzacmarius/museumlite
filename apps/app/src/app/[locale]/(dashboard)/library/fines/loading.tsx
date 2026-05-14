@@ -4,8 +4,8 @@ import { SkeletonList, SkeletonStats } from "@v1/ui/skeleton-variants";
 
 export default function LibraryFinesLoading() {
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         <SkeletonStats count={4} />
 
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">

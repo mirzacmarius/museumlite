@@ -41,18 +41,18 @@ function getStepDotStyle(stepNumber: number): string {
 
 function getStepIcon(stepNumber: number) {
   if (stepNumber === -1) {
-    return <CheckCircle className="h-4 w-4" />;
+    return <CheckCircle className="size-4" />;
   }
 
   if (stepNumber === 1) {
-    return <Clock className="h-4 w-4" />;
+    return <Clock className="size-4" />;
   }
 
   if (stepNumber === 2) {
-    return <Archive className="h-4 w-4" />;
+    return <Archive className="size-4" />;
   }
 
-  return <ShieldCheck className="h-4 w-4" />;
+  return <ShieldCheck className="size-4" />;
 }
 
 function formatTargetStatus(
@@ -142,7 +142,7 @@ export function DeaccessionKanbanColumn({
                         </p>
                       ) : null}
                     </div>
-                    <div className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} />
+                    <div className={`size-1.5 rounded-full ${dotStyle}`} />
                   </div>
 
                   <p className="mb-1 line-clamp-2 text-sm font-medium text-foreground transition-colors group-hover:text-primary">

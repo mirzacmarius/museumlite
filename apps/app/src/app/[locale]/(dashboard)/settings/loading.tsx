@@ -2,14 +2,14 @@
 
 export default function SettingsLoading() {
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full items-start justify-between rounded-lg p-6">
           <div className="flex flex-col gap-2">
             <div className="h-6 w-24 rounded bg-muted/60" />
             <div className="h-4 w-48 rounded bg-muted/40" />
           </div>
-          <div className="h-20 w-20 rounded-full bg-muted/60" />
+          <div className="size-20 rounded-full bg-muted/60" />
         </div>
         <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 dark:bg-card">
           <div className="h-4 w-40 rounded bg-muted/40" />

@@ -49,7 +49,7 @@ export function ActivityTab({ workflowHistory }: ActivityTabProps) {
       {sortedHistory.map((entry, index) => (
         <div key={`${entry.step}-${entry.approvedAt}`} className="relative">
           <div
-            className={`absolute -left-[29px] top-0 w-3 h-3 rounded-full border-2 border-background ${
+            className={`absolute -left-[29px] top-0 size-3 rounded-full border-2 border-background ${
               index === 0 ? "bg-cyan-500" : "bg-secondary"
             }`}
           />

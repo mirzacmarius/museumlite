@@ -70,7 +70,7 @@ export default function EditLoanPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {tActions("pleaseSelectOrgToEdit")}
         </p>
@@ -80,7 +80,7 @@ export default function EditLoanPage() {
 
   if (loan === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -88,7 +88,7 @@ export default function EditLoanPage() {
 
   if (loan === null) {
     return (
-      <div className="flex h-full w-full bg-background">
+      <div className="flex size-full bg-background">
         <p className="text-muted-foreground">
           {tLoans("emptyState.loanNotFound")}
         </p>
@@ -98,10 +98,10 @@ export default function EditLoanPage() {
 
   if (loan.status !== "pending") {
     return (
-      <div className="flex h-full w-full bg-background px-6">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-md flex-col items-center justify-center gap-6">
+      <div className="flex size-full bg-background px-6">
+        <div className="z-10 mx-auto flex size-full max-w-screen-md flex-col items-center justify-center gap-6">
           <div className="rounded-full bg-amber-100 p-3 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500">
-            <Lock className="h-6 w-6" />
+            <Lock className="size-6" />
           </div>
           <div className="text-center">
             <h1 className="text-lg font-semibold text-foreground">
@@ -158,9 +158,9 @@ export default function EditLoanPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
             <Link href={`/loans/${loanId}`}>
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
           <span className="text-muted-foreground">Loans</span>
@@ -188,7 +188,7 @@ export default function EditLoanPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
-                <Info className="h-4 w-4" />
+                <Info className="size-4" />
                 {error}
               </div>
             )}
@@ -196,7 +196,7 @@ export default function EditLoanPage() {
             {/* Core Info Card */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
+                <Building2 className="size-4" />
                 Core Information
               </h2>
 
@@ -228,7 +228,7 @@ export default function EditLoanPage() {
                           ? tActions("incomingLoan")
                           : tActions("outgoingLoan")}
                       </span>
-                      <Lock className="h-3 w-3 text-muted-foreground/50" />
+                      <Lock className="size-3 text-muted-foreground/50" />
                     </div>
                   </div>
                 </div>
@@ -280,7 +280,7 @@ export default function EditLoanPage() {
             {/* Schedule & Financials Card */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="size-4" />
                 Schedule & Value
               </h2>
 
@@ -340,7 +340,7 @@ export default function EditLoanPage() {
             {/* Terms & Notes Card */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
+                <FileText className="size-4" />
                 Details
               </h2>
 
@@ -391,7 +391,7 @@ export default function EditLoanPage() {
                   disabled={isSubmitting}
                   className="min-w-[140px]"
                 >
-                  <Save className="mr-2 h-4 w-4" />
+                  <Save className="mr-2 size-4" />
                   {isSubmitting ? tActions("saving") : tActions("saveChanges")}
                 </Button>
               </PermissionGate>

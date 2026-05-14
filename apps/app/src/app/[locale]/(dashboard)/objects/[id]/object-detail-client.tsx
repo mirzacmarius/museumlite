@@ -300,7 +300,7 @@ function ObjectDetailView({
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">
           {t("detail.selectOrganization")}
         </p>
@@ -310,7 +310,7 @@ function ObjectDetailView({
 
   if (!collection) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("objectNotFound")}</p>
       </div>
     );
@@ -331,9 +331,9 @@ function ObjectDetailView({
         {/* Navbar */}
         <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
           <div className="flex items-center gap-2 text-xs">
-            <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+            <Button variant="ghost" size="icon" className="size-7" asChild>
               <Link href="/objects">
-                <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                <ArrowLeft className="size-4 text-muted-foreground" />
               </Link>
             </Button>
             <span className="text-muted-foreground">
@@ -359,10 +359,10 @@ function ObjectDetailView({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  className="size-8 text-muted-foreground hover:text-foreground"
                   title={common("share")}
                 >
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -370,19 +370,19 @@ function ObjectDetailView({
                   {linkCopied ? (
                     <Check className="mr-2 size-4 text-green-500" />
                   ) : (
-                    <Link2 className="mr-2 h-4 w-4" />
+                    <Link2 className="mr-2 size-4" />
                   )}
                   {linkCopied
                     ? t("detail.linkCopied")
                     : t("detail.copyObjectLink")}
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <FileDown className="mr-2 h-4 w-4" />
+                  <FileDown className="mr-2 size-4" />
                   {t("detail.exportToPdf")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 size-4" />
                   {t("detail.requestLoan")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -390,26 +390,26 @@ function ObjectDetailView({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="size-8 text-muted-foreground hover:text-foreground"
               title={common("printRecord")}
               onClick={() => setIsPrintModalOpen(true)}
             >
-              <Printer className="h-4 w-4" />
+              <Printer className="size-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="size-8 text-muted-foreground hover:text-foreground"
               title={t("detail.printLabel")}
               onClick={() => setIsQrLabelModalOpen(true)}
             >
-              <QrCode className="h-4 w-4" />
+              <QrCode className="size-4" />
             </Button>
             <div className="h-4 w-px bg-border" />
             <PermissionGate permission="collections.update">
               <Button asChild>
                 <Link href={`/objects/${collectionId}/edit`}>
-                  <Pencil className="mr-2 h-3.5 w-3.5" />
+                  <Pencil className="mr-2 size-3.5" />
                   {t("detail.editObject")}
                 </Link>
               </Button>
@@ -433,15 +433,15 @@ function ObjectDetailView({
                   <img
                     src={heroImage.thumbnailUrl || heroImage.url}
                     alt={collection.title}
-                    className="h-48 w-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+                    className="size-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
                   />
                 ) : (
                   <div className="flex size-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    <ImageIcon className="size-12 text-muted-foreground" />
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                  <Maximize2 className="h-6 w-6 text-white" />
+                  <Maximize2 className="size-6 text-white" />
                 </div>
               </button>
 
@@ -460,7 +460,7 @@ function ObjectDetailView({
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
-                          <ArrowRightLeft className="h-4 w-4" />
+                          <ArrowRightLeft className="size-4" />
                           {pendingMoveRequest.status === "awaiting_acceptance"
                             ? "Awaiting transfer acceptance"
                             : "Pending transfer approval"}
@@ -532,7 +532,7 @@ function ObjectDetailView({
 
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
+                    <Calendar className="size-4" />
                     <span>{collection.dateCreated || common("unknown")}</span>
                   </div>
                   {locationString && (
@@ -544,13 +544,13 @@ function ObjectDetailView({
                           : "text-muted-foreground",
                       )}
                     >
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="size-4" />
                       <span>{locationString}</span>
                     </div>
                   )}
                   {collection.creator && (
                     <div className="flex items-center gap-2">
-                      <Info className="h-4 w-4" />
+                      <Info className="size-4" />
                       <span>{collection.creator}</span>
                     </div>
                   )}

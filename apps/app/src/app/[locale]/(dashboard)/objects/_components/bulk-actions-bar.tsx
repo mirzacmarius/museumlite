@@ -42,38 +42,38 @@ export function BulkActionsBar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="size-6"
             onClick={onClearSelection}
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
           <PermissionGate permission="collections.update">
             <Button variant="outline" size="sm" onClick={onAddToGroup}>
-              <FolderPlus className="mr-2 h-4 w-4" />
+              <FolderPlus className="mr-2 size-4" />
               Add to Group
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="locations.update">
             <Button variant="outline" size="sm" onClick={onMoveLocation}>
-              <MapPin className="mr-2 h-4 w-4" />
+              <MapPin className="mr-2 size-4" />
               Move Location
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="collections.read">
             <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="mr-2 size-4" />
               Export
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="collections.read">
             <Button variant="outline" size="sm" onClick={onPrintLabels}>
-              <Printer className="mr-2 h-4 w-4" />
+              <Printer className="mr-2 size-4" />
               Print Labels
             </Button>
           </PermissionGate>
@@ -85,7 +85,7 @@ export function BulkActionsBar({
               className="text-red-600 hover:bg-red-50 hover:text-red-700"
               onClick={onDeaccession}
             >
-              <Archive className="mr-2 h-4 w-4" />
+              <Archive className="mr-2 size-4" />
               Deaccession
             </Button>
           </PermissionGate>

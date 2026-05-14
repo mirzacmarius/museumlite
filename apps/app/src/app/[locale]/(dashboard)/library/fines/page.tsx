@@ -131,7 +131,7 @@ function AccessState({
   action,
 }: AccessStateProps) {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+    <div className="flex size-full items-center justify-center bg-background px-6 py-8">
       <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
         <Icon className="size-12 text-muted-foreground" />
         <div className="text-center">
@@ -710,8 +710,8 @@ export default function LibraryFinesPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {statistics && (
           <FinesStatisticsGrid
             statistics={statistics}

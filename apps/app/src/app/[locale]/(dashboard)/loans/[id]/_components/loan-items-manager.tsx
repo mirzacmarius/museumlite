@@ -203,7 +203,7 @@ export function LoanItemsManager({
             >
               <DialogTrigger asChild>
                 <Button size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                   Add Items
                 </Button>
               </DialogTrigger>
@@ -275,7 +275,7 @@ export function LoanItemsManager({
                                     {collection.title}
                                   </span>
                                 </div>
-                                {isSelected && <X className="h-4 w-4" />}
+                                {isSelected && <X className="size-4" />}
                               </div>
                             </button>
                           );
@@ -312,7 +312,7 @@ export function LoanItemsManager({
                                   }
                                   className="ml-1 hover:text-destructive"
                                 >
-                                  <X className="h-3 w-3" />
+                                  <X className="size-3" />
                                 </button>
                               </div>
                             );
@@ -393,14 +393,14 @@ export function LoanItemsManager({
                       size="sm"
                       onClick={() => handleReturnItemClick(item)}
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" />
+                      <RotateCcw className="mr-2 size-4" />
                       Return
                     </Button>
                   </PermissionGate>
                 )}
                 <Button variant="ghost" size="sm" asChild>
                   <Link href={`/objects/${item.collectionId}`}>
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="size-4" />
                   </Link>
                 </Button>
                 {canRemoveItems && (
@@ -408,7 +408,7 @@ export function LoanItemsManager({
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="size-4 text-destructive" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>

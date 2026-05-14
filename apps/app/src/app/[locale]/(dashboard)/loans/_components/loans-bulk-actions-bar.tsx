@@ -34,24 +34,24 @@ export function LoansBulkActionsBar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="size-6"
             onClick={onClearSelection}
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
           <PermissionGate permission="loans.approve">
             <Button variant="outline" size="sm" onClick={onBulkApprove}>
-              <CheckCircle className="mr-2 h-4 w-4" />
+              <CheckCircle className="mr-2 size-4" />
               {t("approveSelected")}
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="loans.read">
             <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="mr-2 size-4" />
               {t("export")}
             </Button>
           </PermissionGate>
@@ -63,7 +63,7 @@ export function LoansBulkActionsBar({
               className="text-red-600 hover:bg-red-50 hover:text-red-700"
               onClick={onBulkCancel}
             >
-              <XCircle className="mr-2 h-4 w-4" />
+              <XCircle className="mr-2 size-4" />
               {t("cancelSelected")}
             </Button>
           </PermissionGate>

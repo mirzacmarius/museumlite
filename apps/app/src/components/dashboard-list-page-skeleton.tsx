@@ -20,8 +20,8 @@ export function DashboardListPageSkeleton({
   showStats = false,
 }: DashboardListPageSkeletonProps) {
   return (
-    <div className="flex h-full w-full bg-background px-4 sm:px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-4 sm:px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-muted/20">
           <div className="flex w-full flex-col justify-between gap-4 rounded-lg p-4 sm:flex-row sm:items-center sm:p-6">
             <div className="flex flex-col gap-2">
@@ -113,7 +113,7 @@ export function GridCardsSkeleton({
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-muted/70" />
+              <div className="size-10 rounded-lg bg-muted/70" />
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="h-4 w-3/4 rounded bg-muted/70" />
                 <div className="h-3 w-1/2 rounded bg-muted/50" />
@@ -140,7 +140,7 @@ export function ListRowsSkeleton({ count = 8 }: { count?: number }) {
           className="flex items-center justify-between rounded-lg border border-border bg-card p-4"
         >
           <div className="flex min-w-0 flex-1 items-center gap-4">
-            <div className="h-10 w-10 rounded-lg bg-muted/70" />
+            <div className="size-10 rounded-lg bg-muted/70" />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="h-4 w-1/3 rounded bg-muted/70" />
               <div className="h-3 w-2/3 rounded bg-muted/50" />

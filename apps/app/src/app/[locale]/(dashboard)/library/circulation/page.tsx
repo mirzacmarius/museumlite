@@ -217,7 +217,7 @@ export default function LibraryCirculationPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
@@ -236,7 +236,7 @@ export default function LibraryCirculationPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
@@ -254,7 +254,7 @@ export default function LibraryCirculationPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
           <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
@@ -278,8 +278,8 @@ export default function LibraryCirculationPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Statistics */}
         {statistics && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
@@ -392,7 +392,7 @@ export default function LibraryCirculationPage() {
             <TabsContent value="overdue" className="mt-4">
               {overdueItems === undefined ? (
                 <div className="flex h-32 items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
               ) : overdueItems.page.length === 0 ? (
                 <div className="flex h-32 flex-col items-center justify-center gap-2">
@@ -447,7 +447,7 @@ export default function LibraryCirculationPage() {
             <TabsContent value="active" className="mt-4">
               {activeCheckouts === undefined ? (
                 <div className="flex h-32 items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
               ) : activeCheckouts.page.length === 0 ? (
                 <div className="flex h-32 flex-col items-center justify-center gap-2">

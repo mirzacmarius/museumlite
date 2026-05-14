@@ -20,7 +20,7 @@ export function GeneralTab({
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <Tag className="h-4 w-4 text-accent" />
+            <Tag className="size-4 text-accent" />
             Classification & Metadata
           </h3>
         </div>
@@ -93,7 +93,7 @@ export function GeneralTab({
             {collection.isHighResDownloadable && (
               <div className="flex items-center gap-2.5">
                 <div className="flex size-2.5 items-center justify-center rounded-full bg-accent">
-                  <CheckCircle className="h-1.5 w-1.5 text-white" />
+                  <CheckCircle className="size-1.5 text-white" />
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">
                   High-Res Downloadable

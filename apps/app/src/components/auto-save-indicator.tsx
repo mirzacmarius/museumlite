@@ -26,32 +26,32 @@ export function AutoSaveIndicator({
     switch (status) {
       case "saving":
         return {
-          icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
+          icon: <Loader2 className="size-3.5 animate-spin" />,
           text: "Saving...",
           color: "text-white/60",
         };
       case "saved":
         return {
-          icon: <Check className="h-3.5 w-3.5" />,
+          icon: <Check className="size-3.5" />,
           text: "Saved",
           color: "text-emerald-400",
         };
       case "error":
         return {
-          icon: <AlertCircle className="h-3.5 w-3.5" />,
+          icon: <AlertCircle className="size-3.5" />,
           text: error || "Save failed",
           color: "text-red-400",
         };
       default:
         if (isDirty) {
           return {
-            icon: <Cloud className="h-3.5 w-3.5" />,
+            icon: <Cloud className="size-3.5" />,
             text: "Unsaved changes",
             color: "text-amber-400",
           };
         }
         return {
-          icon: <Cloud className="h-3.5 w-3.5" />,
+          icon: <Cloud className="size-3.5" />,
           text:
             lastSaved && showLastSaved
               ? `Saved ${formatDistanceToNow(lastSaved, { addSuffix: true })}`

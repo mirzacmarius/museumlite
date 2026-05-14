@@ -153,7 +153,7 @@ ${organizationName}`,
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <FileText className="mr-2 h-4 w-4" />
+          <FileText className="mr-2 size-4" />
           {tActions("loanAgreement")}
         </Button>
       </DialogTrigger>
@@ -405,11 +405,11 @@ ${organizationName}`,
             Close
           </Button>
           <Button variant="outline" onClick={handleEmail}>
-            <Mail className="mr-2 h-4 w-4" />
+            <Mail className="mr-2 size-4" />
             Send via Email
           </Button>
           <Button onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 size-4" />
             Print Agreement
           </Button>
         </DialogFooter>

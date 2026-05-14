@@ -35,8 +35,8 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
             <div className="relative z-10 grid grid-cols-5 gap-4">
               {/* Step 1 */}
               <div className="flex flex-col gap-2">
-                <div className="w-8 h-8 rounded-full bg-cyan-600 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
-                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                <div className="size-8 rounded-full bg-cyan-600 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
+                  <Check className="size-3.5" strokeWidth={3} />
                 </div>
                 <div className="pr-4">
                   <p className="text-xs font-semibold text-foreground">
@@ -53,8 +53,8 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </div>
               {/* Step 2 */}
               <div className="flex flex-col gap-2">
-                <div className="w-8 h-8 rounded-full bg-cyan-600 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
-                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                <div className="size-8 rounded-full bg-cyan-600 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-cyan-900/20">
+                  <Check className="size-3.5" strokeWidth={3} />
                 </div>
                 <div className="pr-4">
                   <p className="text-xs font-semibold text-foreground">
@@ -71,7 +71,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </div>
               {/* Step 3 */}
               <div className="flex flex-col gap-2">
-                <div className="w-8 h-8 rounded-full bg-amber-500 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-amber-900/20 animate-pulse">
+                <div className="size-8 rounded-full bg-amber-500 border-4 border-background flex items-center justify-center text-white z-10 shadow-lg shadow-amber-900/20 animate-pulse">
                   <span className="text-[10px] font-bold">3</span>
                 </div>
                 <div className="pr-4">
@@ -83,7 +83,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </div>
               {/* Step 4 */}
               <div className="flex flex-col gap-2">
-                <div className="w-8 h-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center text-muted-foreground z-10">
+                <div className="size-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center text-muted-foreground z-10">
                   <span className="text-[10px] font-bold">4</span>
                 </div>
                 <div className="pr-4">
@@ -95,7 +95,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </div>
               {/* Step 5 */}
               <div className="flex flex-col gap-2">
-                <div className="w-8 h-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center text-muted-foreground z-10">
+                <div className="size-8 rounded-full bg-secondary border-4 border-background flex items-center justify-center text-muted-foreground z-10">
                   <span className="text-[10px] font-bold">5</span>
                 </div>
                 <div className="pr-4">
@@ -147,7 +147,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-900">
-                  <Check className="w-3 h-3" />
+                  <Check className="size-3" />
                   Countersigned
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -195,9 +195,9 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                   className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group"
                 >
                   <div
-                    className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${iconClass}`}
+                    className={`size-8 rounded flex items-center justify-center shrink-0 ${iconClass}`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="size-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">
@@ -224,8 +224,8 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
               type="button"
               className="flex w-full items-center gap-3 rounded p-2 text-left hover:bg-secondary transition-colors group opacity-60"
             >
-              <div className="w-8 h-8 rounded bg-secondary text-muted-foreground flex items-center justify-center shrink-0 border border-dashed border-border">
-                <Upload className="w-4 h-4" />
+              <div className="size-8 rounded bg-secondary text-muted-foreground flex items-center justify-center shrink-0 border border-dashed border-border">
+                <Upload className="size-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground italic">

@@ -20,7 +20,7 @@ export function KanbanColumnSkeleton() {
                 <div className="mb-3 h-4 w-full rounded bg-muted" />
                 <div className="mb-3 h-3 w-2/3 rounded bg-muted" />
                 <div className="flex items-center gap-2">
-                  <div className="h-5 w-5 rounded-full bg-muted" />
+                  <div className="size-5 rounded-full bg-muted" />
                   <div className="h-3 w-20 rounded bg-muted" />
                 </div>
               </div>

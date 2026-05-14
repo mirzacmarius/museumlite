@@ -41,7 +41,7 @@ export function FiltersPanel({
           onClick={() => setIsOpen(!isOpen)}
           className="gap-2"
         >
-          <Filter className="h-4 w-4" />
+          <Filter className="size-4" />
           {title}
           {hasActiveFilters &&
             activeFilterCount !== undefined &&
@@ -51,9 +51,9 @@ export function FiltersPanel({
               </span>
             )}
           {isOpen ? (
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="size-4" />
           ) : (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="size-4" />
           )}
         </Button>
 
@@ -65,7 +65,7 @@ export function FiltersPanel({
             onClick={onClear}
             className="gap-1 text-muted-foreground hover:text-foreground"
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
             Clear all
           </Button>
         )}
@@ -131,7 +131,7 @@ export function ActiveFilterChip({
         className="ml-1 rounded-full p-0.5 hover:bg-primary/20"
         aria-label={`Remove ${label} filter`}
       >
-        <X className="h-3 w-3" />
+        <X className="size-3" />
       </button>
     </span>
   );

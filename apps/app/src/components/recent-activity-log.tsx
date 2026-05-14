@@ -154,7 +154,7 @@ export function RecentActivityLog({
                         className="flex items-center gap-2 px-4 py-3 text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                         aria-label={`View ${activity.type}: ${activity.title}`}
                       >
-                        <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">
+                        <div className="size-6 rounded bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">
                           {getInitials(activity.type)}
                         </div>
                         {activity.title}

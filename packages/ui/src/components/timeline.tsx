@@ -25,7 +25,7 @@ const Timeline = React.forwardRef<HTMLDivElement, TimelineProps>(
             <div key={`${item.title}-${item.date}`} className="relative pl-4">
               <div
                 className={cn(
-                  "absolute -left-4 top-1 w-3 h-3 rounded-full border-2 border-zinc-950",
+                  "absolute -left-4 top-1 size-3 rounded-full border-2 border-zinc-950",
                   {
                     "bg-amber-500 border-amber-400": item.status === "pending",
                     "bg-emerald-500 border-emerald-400":

@@ -4,8 +4,8 @@ import { SkeletonList } from "@v1/ui/skeleton-variants";
 
 export default function LibraryCirculationLoading() {
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {Array.from({ length: 6 }, (_, i) => `circulation-stat-${i}`).map(
             (key) => (
@@ -14,7 +14,7 @@ export default function LibraryCirculationLoading() {
                 className="rounded-lg border border-border bg-card p-4"
               >
                 <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded bg-muted/50" />
+                  <div className="size-4 rounded bg-muted/50" />
                   <div className="h-4 w-16 rounded bg-muted/50" />
                 </div>
                 <div className="mt-2 h-8 w-12 rounded bg-muted/60" />

@@ -59,7 +59,7 @@ export function LoanContextSidebar({ loan }: LoanContextSidebarProps) {
             Registrar Contact
           </span>
           <div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border shadow-sm">
-            <div className="w-8 h-8 rounded-full bg-secondary text-muted-foreground flex items-center justify-center text-xs font-bold">
+            <div className="size-8 rounded-full bg-secondary text-muted-foreground flex items-center justify-center text-xs font-bold">
               JD
             </div>
             <div>

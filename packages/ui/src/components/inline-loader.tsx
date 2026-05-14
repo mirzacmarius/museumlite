@@ -9,9 +9,9 @@ interface InlineLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const sizeClasses = {
-  sm: "h-4 w-4",
-  md: "h-6 w-6",
-  lg: "h-8 w-8",
+  sm: "size-4",
+  md: "size-6",
+  lg: "size-8",
 };
 
 const InlineLoader = React.forwardRef<HTMLDivElement, InlineLoaderProps>(
@@ -44,14 +44,11 @@ const PageLoader = React.forwardRef<HTMLDivElement, PageLoaderProps>(
     return (
       <div
         ref={ref}
-        className={cn(
-          "flex h-full w-full items-center justify-center",
-          className,
-        )}
+        className={cn("flex size-full items-center justify-center", className)}
         {...props}
       >
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
           {text && (
             <span className="text-sm text-muted-foreground">{text}</span>
           )}

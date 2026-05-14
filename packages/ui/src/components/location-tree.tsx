@@ -70,7 +70,7 @@ function TreeNode({ node, level, selectedId, onSelect }: TreeNodeProps) {
         {hasChildren && (
           <ChevronRight
             className={cn(
-              "h-3 w-3 shrink-0 transition-transform duration-200",
+              "size-3 shrink-0 transition-transform duration-200",
               isExpanded && "rotate-90",
             )}
           />

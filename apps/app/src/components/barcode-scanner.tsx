@@ -206,7 +206,7 @@ export function BarcodeScanner({
               Click start to activate your camera and scan barcodes or QR codes
             </p>
             <Button onClick={handleStart} disabled={disabled}>
-              <Camera className="h-4 w-4" />
+              <Camera className="size-4" />
               Start Scanner
             </Button>
           </div>
@@ -242,7 +242,7 @@ export function BarcodeScanner({
             </p>
             <p className="mb-4 text-xs text-muted-foreground">{errorMessage}</p>
             <Button onClick={handleStart} variant="outline">
-              <Camera className="h-4 w-4" />
+              <Camera className="size-4" />
               Try Again
             </Button>
           </div>
@@ -262,7 +262,7 @@ export function BarcodeScanner({
 
       {errorMessage && status !== "error" && status !== "permission-denied" && (
         <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          <AlertCircle className="size-3.5 flex-shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -277,9 +277,9 @@ export function BarcodeScanner({
             title={flashEnabled ? "Turn off flash" : "Turn on flash"}
           >
             {flashEnabled ? (
-              <FlashlightOff className="h-4 w-4" />
+              <FlashlightOff className="size-4" />
             ) : (
-              <Flashlight className="h-4 w-4" />
+              <Flashlight className="size-4" />
             )}
           </Button>
 
@@ -288,7 +288,7 @@ export function BarcodeScanner({
             variant="destructive"
             disabled={status === "initializing"}
           >
-            <CameraOff className="h-4 w-4" />
+            <CameraOff className="size-4" />
             Stop Scanner
           </Button>
         </div>

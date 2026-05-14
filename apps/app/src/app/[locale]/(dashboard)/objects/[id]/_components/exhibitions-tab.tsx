@@ -52,7 +52,7 @@ export function ExhibitionsTab({
   return (
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <Presentation className="h-4 w-4 text-amber-500" />
+        <Presentation className="size-4 text-amber-500" />
         {tObjects("tabs.exhibitions")}
       </h3>
 

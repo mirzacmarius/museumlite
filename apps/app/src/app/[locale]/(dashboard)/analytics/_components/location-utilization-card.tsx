@@ -91,13 +91,13 @@ export function LocationUtilizationCard({
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <MapPin className="w-4 h-4" />
+          <MapPin className="size-4" />
           {t("analytics.locations.title")}
         </CardTitle>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
           <div className="bg-muted/50 border border-border rounded-md p-2 text-center">
             <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+              <Building2 className="size-3.5 text-muted-foreground" />
               {data.summary.totalLocations}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -114,7 +114,7 @@ export function LocationUtilizationCard({
           </div>
           <div className="bg-muted/50 border border-border rounded-md p-2 text-center">
             <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
-              <Package className="w-3.5 h-3.5 text-muted-foreground" />
+              <Package className="size-3.5 text-muted-foreground" />
               {data.summary.totalOccupied}/{data.summary.totalCapacity}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -156,7 +156,7 @@ export function LocationUtilizationCard({
               {t("analytics.locations.overview")}
             </TabsTrigger>
             <TabsTrigger value="high" className="text-xs h-7 gap-1">
-              <ArrowUp className="w-3 h-3" />
+              <ArrowUp className="size-3" />
               High
               {data.atCapacity.length > 0 && (
                 <Badge
@@ -168,11 +168,11 @@ export function LocationUtilizationCard({
               )}
             </TabsTrigger>
             <TabsTrigger value="low" className="text-xs h-7 gap-1">
-              <ArrowDown className="w-3 h-3" />
+              <ArrowDown className="size-3" />
               Low
             </TabsTrigger>
             <TabsTrigger value="alerts" className="text-xs h-7 gap-1">
-              <AlertTriangle className="w-3 h-3" />
+              <AlertTriangle className="size-3" />
               At Cap
             </TabsTrigger>
           </TabsList>
@@ -343,7 +343,7 @@ export function LocationUtilizationCard({
             {data.atCapacity.length === 0 ? (
               <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">
                 <div className="text-center">
-                  <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-emerald-500/50" />
+                  <AlertTriangle className="size-6 mx-auto mb-2 text-emerald-500/50" />
                   No locations at capacity
                 </div>
               </div>

@@ -655,7 +655,7 @@ export function AppSidebar({
                     href="/settings"
                     className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                   >
-                    <Avatar className="h-8 w-8 rounded-lg">
+                    <Avatar className="size-8 rounded-lg">
                       <AvatarImage
                         src={userAvatarUrl}
                         alt={user?.name ?? undefined}

@@ -22,10 +22,10 @@ export function FieldStatusIndicator({
       aria-hidden="true"
     >
       {status === "validating" && (
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
       )}
-      {status === "valid" && <Check className="h-4 w-4 text-emerald-500" />}
-      {status === "invalid" && <AlertCircle className="h-4 w-4 text-red-500" />}
+      {status === "valid" && <Check className="size-4 text-emerald-500" />}
+      {status === "invalid" && <AlertCircle className="size-4 text-red-500" />}
     </span>
   );
 }

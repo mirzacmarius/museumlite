@@ -145,7 +145,7 @@ export default function EditCollectionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganizationEdit")}</p>
       </div>
     );
@@ -153,7 +153,7 @@ export default function EditCollectionPage() {
 
   if (group === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
@@ -161,7 +161,7 @@ export default function EditCollectionPage() {
 
   if (group === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("notFound")}</p>
       </div>
     );
@@ -179,13 +179,13 @@ export default function EditCollectionPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/collections/${groupId}`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("backToCollection")}
               </Link>
             </Button>
@@ -311,7 +311,7 @@ export default function EditCollectionPage() {
                     }}
                     disabled={status === "saving"}
                   >
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className="mr-2 size-4" />
                     {status === "saving"
                       ? t("form.updating")
                       : t("form.updateButton")}
@@ -335,7 +335,7 @@ export default function EditCollectionPage() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" disabled={isDeleting}>
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 className="mr-2 size-4" />
                             {common("delete")}
                           </Button>
                         </AlertDialogTrigger>

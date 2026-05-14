@@ -72,7 +72,7 @@ export function WineDetailsTab({
             {common("noDetailsYet", { module: "wine" })}
           </p>
           <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {common("addDetails", { module: "Wine" })}
           </Button>
         </div>
@@ -95,7 +95,7 @@ export function WineDetailsTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Grape className="h-4 w-4 text-purple-500" />
+            <Grape className="size-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("vintage")}
             </span>
@@ -107,7 +107,7 @@ export function WineDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Wine className="h-4 w-4 text-rose-500" />
+            <Wine className="size-4 text-rose-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("producer")}
             </span>
@@ -124,7 +124,7 @@ export function WineDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-amber-500" />
+            <MapPin className="size-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("cellarLocation")}
             </span>
@@ -155,7 +155,7 @@ export function WineDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <GlassWater className="h-4 w-4 text-cyan-500" />
+            <GlassWater className="size-4 text-cyan-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("quantity")}
             </span>
@@ -183,7 +183,7 @@ export function WineDetailsTab({
           <div className="flex items-center gap-2">
             <Calendar
               className={cn(
-                "h-4 w-4",
+                "size-4",
                 isInPeakWindow
                   ? "text-emerald-500"
                   : isPastPeak
@@ -221,7 +221,7 @@ export function WineDetailsTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <Droplets className="h-4 w-4 text-blue-500" />
+            <Droplets className="size-4 text-blue-500" />
             {t("bottleCondition")}
           </h3>
           <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
@@ -275,7 +275,7 @@ export function WineDetailsTab({
 
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
+            <DollarSign className="size-4 text-emerald-500" />
             {t("valuation")}
           </h3>
           <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
@@ -307,7 +307,7 @@ export function WineDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Wine className="h-4 w-4 text-rose-500" />
+          <Wine className="size-4 text-rose-500" />
           {t("wineDetails")}
         </h3>
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">

@@ -79,7 +79,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
       {groupedByYear.map(({ year, exhibitions }) => (
         <div key={year} className="relative">
           <div className="absolute -left-4 flex items-center">
-            <div className="h-3 w-3 rounded-full bg-primary border-2 border-background" />
+            <div className="size-3 rounded-full bg-primary border-2 border-background" />
           </div>
           <div className="mb-4 ml-4">
             <h3 className="text-lg font-semibold text-foreground">{year}</h3>
@@ -118,7 +118,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
 
                       {ex.location && (
                         <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
+                          <MapPin className="size-3" />
                           {ex.location}
                         </p>
                       )}
@@ -126,7 +126,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
 
                     <div className="flex-shrink-0 text-right">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Calendar className="h-3.5 w-3.5" />
+                        <Calendar className="size-3.5" />
                         <span>
                           {formatDate(new Date(ex.startDate), locale, {
                             month: "short",
@@ -148,7 +148,7 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
 
                   {ex.collectionTitle && (
                     <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground">
-                      <Box className="h-3.5 w-3.5" />
+                      <Box className="size-3.5" />
                       <span className="truncate">{ex.collectionTitle}</span>
                     </div>
                   )}

@@ -40,7 +40,7 @@ export default function PublicObjectPage() {
         </p>
         <Button asChild variant="outline" className="border-white/20">
           <Link href={basePath}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 size-4" />
             Back to Collection
           </Link>
         </Button>
@@ -76,7 +76,7 @@ export default function PublicObjectPage() {
             href={basePath}
             className="inline-flex items-center text-white/60 hover:text-white transition-colors"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 size-4" />
             Back to Collection
           </Link>
         </div>
@@ -137,7 +137,7 @@ export default function PublicObjectPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 size-4" />
                   Download High Resolution
                 </a>
               </Button>
@@ -336,7 +336,7 @@ export default function PublicObjectPage() {
                     key={tag}
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/10 text-white/80 text-sm"
                   >
-                    <Tag className="h-3 w-3" />
+                    <Tag className="size-3" />
                     {tag}
                   </span>
                 ))}

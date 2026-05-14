@@ -36,7 +36,7 @@ export function CTASection() {
             <Link href="https://app.museumlite.com/register">
               <Button className="h-14 px-10 rounded-full bg-white text-black hover:bg-gray-200 text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]">
                 Get Started Now
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowRight className="ml-2 size-5" />
               </Button>
             </Link>
 

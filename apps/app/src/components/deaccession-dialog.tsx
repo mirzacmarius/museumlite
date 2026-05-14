@@ -268,7 +268,7 @@ export function DeaccessionDialog({
               className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-green-500/10 p-2">
-                <DollarSign className="h-5 w-5 text-green-500" />
+                <DollarSign className="size-5 text-green-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Object Sold</h3>
@@ -290,7 +290,7 @@ export function DeaccessionDialog({
               className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-blue-500/10 p-2">
-                <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+                <ArrowRightLeft className="size-5 text-blue-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Move to Another Organization</h3>
@@ -311,7 +311,7 @@ export function DeaccessionDialog({
               className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-amber-500/10 p-2">
-                <Archive className="h-5 w-5 text-amber-500" />
+                <Archive className="size-5 text-amber-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Archive Object</h3>
@@ -332,7 +332,7 @@ export function DeaccessionDialog({
               className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
             >
               <div className="rounded-full bg-red-500/10 p-2">
-                <Trash2 className="h-5 w-5 text-red-500" />
+                <Trash2 className="size-5 text-red-500" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">Delete Object</h3>
@@ -408,7 +408,7 @@ export function DeaccessionDialog({
                       !date && "text-muted-foreground",
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 size-4" />
                     {date ? format(date, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>

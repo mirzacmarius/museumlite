@@ -44,7 +44,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <DollarSign className="w-4 h-4" />
+          <DollarSign className="size-4" />
           {t("analytics.inventory.title")}
         </CardTitle>
         <div className="mt-2">
@@ -67,7 +67,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
           <div className="flex items-center justify-between group cursor-default">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
-                <Palette className="w-4 h-4" />
+                <Palette className="size-4" />
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">
@@ -96,7 +96,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
           <div className="flex items-center justify-between group cursor-default">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
-                <Wine className="w-4 h-4" />
+                <Wine className="size-4" />
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">Wine</div>
@@ -123,7 +123,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
           <div className="flex items-center justify-between group cursor-default">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
-                <Car className="w-4 h-4" />
+                <Car className="size-4" />
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">

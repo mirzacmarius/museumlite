@@ -154,14 +154,14 @@ export default function OnboardingPage() {
 
   if (!user) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex size-full items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center gap-8 px-4">
+    <div className="mx-auto flex size-full max-w-md flex-col items-center justify-center gap-8 px-4">
       <StepIndicator currentStep={currentStep} />
 
       {currentStep === "username" && (
@@ -234,7 +234,7 @@ export default function OnboardingPage() {
         <div className="flex w-full flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-2">
             <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-primary/10">
-              <Building2 className="h-8 w-8 text-primary" />
+              <Building2 className="size-8 text-primary" />
             </div>
             <h3 className="text-center text-2xl font-medium text-primary">
               {t("onboardingPage.orgTitle")}
@@ -337,7 +337,7 @@ export default function OnboardingPage() {
         <div className="flex w-full flex-col items-center gap-6">
           <div className="flex flex-col items-center gap-2">
             <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-primary/10">
-              <Database className="h-8 w-8 text-primary" />
+              <Database className="size-8 text-primary" />
             </div>
             <h3 className="text-center text-2xl font-medium text-primary">
               {t("onboardingPage.dataTitle")}
@@ -350,19 +350,19 @@ export default function OnboardingPage() {
           <div className="grid w-full gap-3">
             <Button asChild>
               <Link href="/objects/new">
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 size-4" />
                 {t("onboardingPage.addFirstObject")}
               </Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href="/collections/import">
-                <Upload className="mr-2 h-4 w-4" />
+                <Upload className="mr-2 size-4" />
                 {t("onboardingPage.importObjects")}
               </Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href="/collections/new">
-                <FolderPlus className="mr-2 h-4 w-4" />
+                <FolderPlus className="mr-2 size-4" />
                 {t("onboardingPage.createCollectionGroup")}
               </Link>
             </Button>
@@ -403,7 +403,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
                     : "bg-muted text-muted-foreground"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="size-5" />
             </div>
             {index < steps.length - 1 && (
               <div

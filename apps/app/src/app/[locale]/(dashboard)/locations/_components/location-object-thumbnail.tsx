@@ -58,12 +58,12 @@ export function LocationObjectThumbnail({
           <img
             src={object.thumbnailUrl}
             alt={object.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
+          <div className="flex size-full items-center justify-center">
             <div className="flex size-14 items-center justify-center rounded-2xl border border-border bg-background/70 shadow-sm">
-              <Package className="h-7 w-7 text-muted-foreground" />
+              <Package className="size-7 text-muted-foreground" />
             </div>
           </div>
         )}
@@ -86,7 +86,7 @@ export function LocationObjectThumbnail({
                 </div>
               </div>
               <div className="rounded-full border border-border bg-background/90 p-1 text-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="size-3.5" />
               </div>
             </div>
           </>
@@ -109,7 +109,7 @@ export function LocationObjectThumbnail({
             </div>
           </div>
           <div className="mt-0.5 shrink-0 rounded-full border border-border bg-background p-1 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="size-3.5" />
           </div>
         </div>
       ) : null}
@@ -118,7 +118,7 @@ export function LocationObjectThumbnail({
         <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
           <span className="truncate">{formatStatus(object.status)}</span>
           <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <Box className="h-3 w-3" />
+            <Box className="size-3" />
             Open record
           </span>
         </div>

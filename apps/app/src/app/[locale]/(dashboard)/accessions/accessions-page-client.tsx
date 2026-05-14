@@ -155,7 +155,7 @@ export function AccessionsPageClient({
               href="/accessions/import"
               className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <FileUp className="h-3.5 w-3.5" />
+              <FileUp className="size-3.5" />
               Import
             </Link>
           </PermissionGate>
@@ -169,7 +169,7 @@ export function AccessionsPageClient({
               href="/objects/new"
               className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="size-3.5" />
               {t("addObject")}
             </Link>
           </PermissionGate>
@@ -188,9 +188,9 @@ export function AccessionsPageClient({
               disabled={rejected === 0 || isEmptyingTrash}
             >
               {isEmptyingTrash ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="size-3.5 animate-spin" />
               ) : (
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="size-3.5" />
               )}
               {isEmptyingTrash
                 ? t("actions.emptyingTrash")

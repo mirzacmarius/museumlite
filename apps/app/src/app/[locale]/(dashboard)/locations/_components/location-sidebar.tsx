@@ -253,7 +253,7 @@ function LocationNavItem({
           aria-expanded={isExpanded}
         >
           <ChevronRight
-            className={`h-3 w-3 transition-transform ${
+            className={`size-3 transition-transform ${
               isExpanded ? "rotate-90" : ""
             }`}
           />
@@ -270,14 +270,14 @@ function LocationNavItem({
         <span className="truncate">{location.name}</span>
         {isColdStorage ? (
           <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
-            <Thermometer className="h-2.5 w-2.5" />
+            <Thermometer className="size-2.5" />
             4°C
           </span>
         ) : isSecure ? (
-          <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <Lock className="size-3 shrink-0 text-muted-foreground" />
         ) : (
           <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`}
+            className={`size-1.5 shrink-0 rounded-full ${statusColor}`}
           />
         )}
       </button>

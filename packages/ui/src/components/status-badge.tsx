@@ -84,7 +84,7 @@ const StatusBadge = React.forwardRef<HTMLSpanElement, StatusBadgeProps>(
         {...props}
       >
         {showDot && (
-          <span className={cn("w-1.5 h-1.5 rounded-full", config.dot)} />
+          <span className={cn("size-1.5 rounded-full", config.dot)} />
         )}
         {children}
       </span>

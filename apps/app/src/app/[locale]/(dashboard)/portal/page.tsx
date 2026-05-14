@@ -33,9 +33,9 @@ export default function PublicPortalPage() {
 
   if (!organizations || organizations.length === 0 || !currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="section-title">No Organization Selected</h3>
             <p className="caption mt-2 text-muted-foreground">
@@ -45,7 +45,7 @@ export default function PublicPortalPage() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {common("createOrganization")}
             </Link>
           </Button>
@@ -68,7 +68,7 @@ export default function PublicPortalPage() {
 
   return (
     <FeatureGuard featureName="Public Portal" isLocked={false} tierNeeded="pro">
-      <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+      <div className="flex size-full flex-col overflow-hidden bg-background">
         <div className="shrink-0 border-b border-border px-6 py-4">
           <h1 className="page-title">Public Portal</h1>
           <p className="page-description mt-1">

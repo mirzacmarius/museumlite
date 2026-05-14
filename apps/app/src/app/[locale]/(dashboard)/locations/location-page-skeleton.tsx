@@ -21,7 +21,7 @@ export function LocationsPageSkeleton() {
       <aside className="hidden h-full w-72 shrink-0 border-r border-border bg-background/95 p-4 md:flex md:flex-col">
         <div className="mb-5 flex items-center justify-between">
           <div className="h-5 w-24 rounded bg-muted/70" />
-          <div className="h-8 w-8 rounded-md bg-muted/60" />
+          <div className="size-8 rounded-md bg-muted/60" />
         </div>
         <div className="mb-4 h-9 rounded-md bg-muted/50" />
         <div className="space-y-5">
@@ -58,7 +58,7 @@ export function LocationContentSkeleton() {
       <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <div className="h-3 w-16 rounded bg-muted/50" />
-          <div className="h-3 w-3 rounded bg-muted/30" />
+          <div className="size-3 rounded bg-muted/30" />
           <div className="h-3 w-32 rounded bg-muted/60" />
         </div>
         <div className="flex items-center gap-3">

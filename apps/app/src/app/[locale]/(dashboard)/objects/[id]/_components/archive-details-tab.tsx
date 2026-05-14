@@ -72,7 +72,7 @@ export function ArchiveDetailsTab({
             {common("noDetailsYet", { module: "archive" })}
           </p>
           <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {common("addDetails", { module: "Archive" })}
           </Button>
         </div>
@@ -85,7 +85,7 @@ export function ArchiveDetailsTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <FileText className="h-4 w-4 text-blue-500" />
+            <FileText className="size-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("documentType")}
             </span>
@@ -102,7 +102,7 @@ export function ArchiveDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Shield className="h-4 w-4 text-purple-500" />
+            <Shield className="size-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("confidentiality")}
             </span>
@@ -130,7 +130,7 @@ export function ArchiveDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-cyan-500" />
+            <Clock className="size-4 text-cyan-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("retention")}
             </span>
@@ -154,7 +154,7 @@ export function ArchiveDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className="size-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("status")}
             </span>
@@ -182,7 +182,7 @@ export function ArchiveDetailsTab({
       {details.legalHold && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
           <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-red-500" />
+            <Lock className="size-4 text-red-500" />
             <span className="text-sm font-medium text-red-500">
               {t("legalHoldActive")}
             </span>
@@ -198,7 +198,7 @@ export function ArchiveDetailsTab({
       {details.flaggedForDestruction && (
         <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4">
           <div className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4 text-orange-500" />
+            <Trash2 className="size-4 text-orange-500" />
             <span className="text-sm font-medium text-orange-500">
               {t("flaggedForDestruction")}
             </span>
@@ -223,7 +223,7 @@ export function ArchiveDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <FileText className="h-4 w-4 text-blue-500" />
+          <FileText className="size-4 text-blue-500" />
           Document Information
         </h3>
 
@@ -267,7 +267,7 @@ export function ArchiveDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Clock className="h-4 w-4 text-cyan-500" />
+          <Clock className="size-4 text-cyan-500" />
           Retention Schedule
         </h3>
 
@@ -330,7 +330,7 @@ export function ArchiveDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Shield className="h-4 w-4 text-purple-500" />
+          <Shield className="size-4 text-purple-500" />
           Security & Access
         </h3>
 
@@ -386,7 +386,7 @@ export function ArchiveDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <FileText className="h-4 w-4 text-green-500" />
+          <FileText className="size-4 text-green-500" />
           Physical & Digital Location
         </h3>
 
@@ -475,7 +475,7 @@ export function ArchiveDetailsTab({
       {details.flaggedForDestruction && (
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <Trash2 className="h-4 w-4 text-red-500" />
+            <Trash2 className="size-4 text-red-500" />
             Destruction Information
           </h3>
 

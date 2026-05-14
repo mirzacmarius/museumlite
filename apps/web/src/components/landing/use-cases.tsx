@@ -57,8 +57,8 @@ export function UseCases() {
                 className="p-8 h-full hover:bg-white/10 transition-all hover:-translate-y-2 duration-300"
                 spotlightColor="rgba(188, 19, 254, 0.2)"
               >
-                <div className="w-14 h-14 rounded-2xl bg-neon-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <useCase.icon className="w-7 h-7 text-neon-purple" />
+                <div className="size-14 rounded-2xl bg-neon-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <useCase.icon className="size-7 text-neon-purple" />
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">
                   {useCase.title}

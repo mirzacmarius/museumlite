@@ -164,7 +164,7 @@ export default function AccessionDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Please select an organization to view accessions.
         </p>
@@ -174,7 +174,7 @@ export default function AccessionDetailPage() {
 
   if (accession === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -182,7 +182,7 @@ export default function AccessionDetailPage() {
 
   if (accession === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">Accession not found</p>
       </div>
     );
@@ -262,13 +262,13 @@ export default function AccessionDetailPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "draft":
-        return <Archive className="h-5 w-5 text-slate-400" />;
+        return <Archive className="size-5 text-slate-400" />;
       case "pending":
-        return <Clock className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="size-5 text-yellow-500" />;
       case "approved":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="size-5 text-green-500" />;
       case "rejected":
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="size-5 text-red-500" />;
       default:
         return null;
     }
@@ -327,9 +327,9 @@ export default function AccessionDetailPage() {
     <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
             <Link href="/accessions">
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
           <span className="text-muted-foreground">Accessions</span>
@@ -344,7 +344,7 @@ export default function AccessionDetailPage() {
             <PermissionGate permission="collections.update">
               <Button variant="outline" size="sm" asChild>
                 <Link href={draftEditHref}>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-2 size-4" />
                   Edit Draft
                 </Link>
               </Button>
@@ -354,7 +354,7 @@ export default function AccessionDetailPage() {
             <PermissionGate permission="collections.update">
               <Button variant="outline" size="sm" asChild>
                 <Link href={draftEditHref}>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-2 size-4" />
                   Edit
                 </Link>
               </Button>
@@ -363,7 +363,7 @@ export default function AccessionDetailPage() {
           {accession.collectionId ? (
             <Button variant="outline" size="sm" asChild>
               <Link href={`/collections/${accession.collectionId}`}>
-                <ExternalLink className="mr-2 h-4 w-4" />
+                <ExternalLink className="mr-2 size-4" />
                 View Collection
               </Link>
             </Button>
@@ -416,18 +416,18 @@ export default function AccessionDetailPage() {
 
               <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="size-4" />
                   <span>
                     Received{" "}
                     {formatDate(new Date(accession.dateReceived), locale)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
+                  <Info className="size-4" />
                   <span>{accession.source}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
+                  <Package className="size-4" />
                   <span className="capitalize">{accession.method}</span>
                 </div>
               </div>
@@ -516,7 +516,7 @@ export default function AccessionDetailPage() {
                               onClick={() => void handleVerifySource()}
                               className="shrink-0"
                             >
-                              <CheckCircle className="mr-2 h-4 w-4" />
+                              <CheckCircle className="mr-2 size-4" />
                               {isSourceVerified
                                 ? "Verified"
                                 : isVerifyingSource
@@ -659,7 +659,7 @@ export default function AccessionDetailPage() {
                 >
                   <Link href={`/collections/${accession.collectionId}`}>
                     Open created object
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="size-4" />
                   </Link>
                 </Button>
               </SectionCard>
@@ -713,7 +713,7 @@ export default function AccessionDetailPage() {
                       <PermissionGate permission="collections.update">
                         <Button variant="outline" size="sm" asChild>
                           <Link href={draftEditHref}>
-                            <Edit className="mr-2 h-4 w-4" />
+                            <Edit className="mr-2 size-4" />
                             {isDraft ? "Edit Draft" : "Edit"}
                           </Link>
                         </Button>
@@ -726,7 +726,7 @@ export default function AccessionDetailPage() {
                               onClick={() => void handleSubmitDraft()}
                               disabled={isSubmittingDraft}
                             >
-                              <CheckCircle className="mr-2 h-4 w-4" />
+                              <CheckCircle className="mr-2 size-4" />
                               {isSubmittingDraft
                                 ? "Submitting..."
                                 : "Submit for Approval"}
@@ -766,7 +766,7 @@ export default function AccessionDetailPage() {
                                 <p className="mt-1 text-sm">{entry.comment}</p>
                               ) : null}
                             </div>
-                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <CheckCircle className="size-5 text-green-500" />
                           </div>
                         </div>
                       ),

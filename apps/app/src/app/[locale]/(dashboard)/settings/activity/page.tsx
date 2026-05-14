@@ -91,7 +91,7 @@ export default function ActivityPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
@@ -99,7 +99,7 @@ export default function ActivityPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <div className="flex flex-col items-center gap-4 rounded-lg border p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("selectOrganization")}</h3>
@@ -126,7 +126,7 @@ export default function ActivityPage() {
 
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Filter className="size-4 text-muted-foreground" />
             <span className="text-sm font-medium">{t("filters")}</span>
             {hasFilters && (
               <Button
@@ -135,7 +135,7 @@ export default function ActivityPage() {
                 onClick={clearFilters}
                 className="ml-auto text-muted-foreground"
               >
-                <RotateCcw className="mr-2 h-3 w-3" />
+                <RotateCcw className="mr-2 size-3" />
                 {t("clearFilters")}
               </Button>
             )}
@@ -294,7 +294,7 @@ export default function ActivityPage() {
           ) : auditLogData.entries.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-dashed">
               <div className="rounded-full bg-muted p-3">
-                <Calendar className="h-6 w-6 text-muted-foreground" />
+                <Calendar className="size-6 text-muted-foreground" />
               </div>
               <div className="text-center">
                 <h3 className="font-medium">{t("noActivity")}</h3>
@@ -304,7 +304,7 @@ export default function ActivityPage() {
               </div>
               {hasFilters && (
                 <Button variant="outline" size="sm" onClick={clearFilters}>
-                  <X className="mr-2 h-3 w-3" />
+                  <X className="mr-2 size-3" />
                   {t("clearFilters")}
                 </Button>
               )}
@@ -317,7 +317,7 @@ export default function ActivityPage() {
                     key={entry._id}
                     className="flex items-start gap-4 rounded-lg border border-border bg-card p-4"
                   >
-                    <Avatar className="h-9 w-9">
+                    <Avatar className="size-9">
                       {entry.userImage && (
                         <AvatarImage
                           src={entry.userImage}

@@ -82,7 +82,7 @@ export function CoinsStampsDetailsTab({
             {common("noDetailsYet", { module: "coins and stamps" })}
           </p>
           <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {common("addDetails", { module: "Coins and Stamps" })}
           </Button>
         </div>
@@ -96,9 +96,9 @@ export function CoinsStampsDetailsTab({
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
             {details.itemCategory === "stamp" ? (
-              <Stamp className="h-4 w-4 text-sky-500" />
+              <Stamp className="size-4 text-sky-500" />
             ) : (
-              <Coins className="h-4 w-4 text-amber-500" />
+              <Coins className="size-4 text-amber-500" />
             )}
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("itemCategory")}
@@ -116,7 +116,7 @@ export function CoinsStampsDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Landmark className="h-4 w-4 text-emerald-500" />
+            <Landmark className="size-4 text-emerald-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("issuer")}
             </span>
@@ -126,7 +126,7 @@ export function CoinsStampsDetailsTab({
           </span>
           {details.countryOrRegion ? (
             <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <Globe2 className="h-3 w-3" />
+              <Globe2 className="size-3" />
               {details.countryOrRegion}
             </p>
           ) : null}
@@ -134,7 +134,7 @@ export function CoinsStampsDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Hash className="h-4 w-4 text-blue-500" />
+            <Hash className="size-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("catalogNumber")}
             </span>
@@ -151,7 +151,7 @@ export function CoinsStampsDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <BadgeCheck className="h-4 w-4 text-purple-500" />
+            <BadgeCheck className="size-4 text-purple-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("grade")}
             </span>
@@ -170,7 +170,7 @@ export function CoinsStampsDetailsTab({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-card p-6">
           <div className="mb-4 flex items-center gap-2">
-            <ScrollText className="h-5 w-5 text-muted-foreground" />
+            <ScrollText className="size-5 text-muted-foreground" />
             <h3 className="font-medium">{t("classification")}</h3>
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">
@@ -209,7 +209,7 @@ export function CoinsStampsDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-card p-6">
           <div className="mb-4 flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            <ShieldCheck className="size-5 text-muted-foreground" />
             <h3 className="font-medium">{t("conditionAndValue")}</h3>
           </div>
           <dl className="grid gap-4 sm:grid-cols-2">

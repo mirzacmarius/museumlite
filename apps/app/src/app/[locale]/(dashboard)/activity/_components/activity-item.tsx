@@ -16,9 +16,9 @@ interface ActivityItemProps {
 function getActionIcon(entityType: string) {
   switch (entityType) {
     case "organization":
-      return <GitBranch className="h-4 w-4 text-muted-foreground" />;
+      return <GitBranch className="size-4 text-muted-foreground" />;
     default:
-      return <User className="h-4 w-4 text-muted-foreground" />;
+      return <User className="size-4 text-muted-foreground" />;
   }
 }
 

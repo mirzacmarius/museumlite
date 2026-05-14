@@ -27,7 +27,7 @@ export function LocationStats({
     <>
       <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
         <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
-          <Thermometer className="w-4 h-4" />
+          <Thermometer className="size-4" />
         </div>
         <div>
           <div className="text-[10px] text-zinc-500 uppercase font-bold">
@@ -40,7 +40,7 @@ export function LocationStats({
       </div>
       <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
         <div className="p-1.5 rounded bg-cyan-500/10 text-cyan-400">
-          <Droplets className="w-4 h-4" />
+          <Droplets className="size-4" />
         </div>
         <div>
           <div className="text-[10px] text-zinc-500 uppercase font-bold">

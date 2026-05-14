@@ -38,7 +38,7 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
       <CardHeader>
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <CalendarClock className="w-4 h-4" />
+          <CalendarClock className="size-4" />
           {t("analytics.loanCalendar.title")}
         </CardTitle>
         <div className="grid grid-cols-4 gap-2 mt-4">
@@ -112,9 +112,9 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
                     <TableCell className="font-mono text-xs font-medium">
                       <div className="flex items-center gap-1.5">
                         {loan.type === "incoming" ? (
-                          <ArrowDownLeft className="w-3 h-3 text-emerald-500" />
+                          <ArrowDownLeft className="size-3 text-emerald-500" />
                         ) : (
-                          <ArrowUpRight className="w-3 h-3 text-blue-500" />
+                          <ArrowUpRight className="size-3 text-blue-500" />
                         )}
                         {loan.loanNumber}
                       </div>

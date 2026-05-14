@@ -70,7 +70,7 @@ export default function DeveloperPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
@@ -86,15 +86,15 @@ export default function DeveloperPage() {
       <Tabs defaultValue="api-keys" className="w-full">
         <TabsList>
           <TabsTrigger value="api-keys" className="gap-2">
-            <Key className="h-4 w-4" />
+            <Key className="size-4" />
             API Keys
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="gap-2">
-            <Webhook className="h-4 w-4" />
+            <Webhook className="size-4" />
             Webhooks
           </TabsTrigger>
           <TabsTrigger value="utilities" className="gap-2">
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className="size-4" />
             Utilities
           </TabsTrigger>
         </TabsList>
@@ -208,7 +208,7 @@ function ApiKeysTab({
             </p>
           </div>
           <Button onClick={() => setShowCreate(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {t("apiKeys.createButton")}
           </Button>
         </div>
@@ -216,7 +216,7 @@ function ApiKeysTab({
         <div className="rounded-lg border border-border">
           {!apiKeys ? (
             <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
           ) : apiKeys.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
@@ -288,7 +288,7 @@ function ApiKeysTab({
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          <Trash2 className="size-4 text-muted-foreground" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -344,9 +344,9 @@ function ApiKeysTab({
                     </code>
                     <Button variant="outline" size="icon" onClick={handleCopy}>
                       {copied ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="size-4 text-green-500" />
                       ) : (
-                        <Copy className="h-4 w-4" />
+                        <Copy className="size-4" />
                       )}
                     </Button>
                   </div>
@@ -543,7 +543,7 @@ function WebhooksTab({
             </p>
           </div>
           <Button onClick={() => setShowCreate(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {t("webhooks.addButton")}
           </Button>
         </div>
@@ -551,7 +551,7 @@ function WebhooksTab({
         <div className="rounded-lg border border-border">
           {!webhooks ? (
             <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
           ) : webhooks.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
@@ -564,7 +564,7 @@ function WebhooksTab({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-2 w-2 rounded-full ${webhook.isActive ? "bg-green-500" : "bg-muted-foreground"}`}
+                        className={`size-2 rounded-full ${webhook.isActive ? "bg-green-500" : "bg-muted-foreground"}`}
                       />
                       <span className="font-medium">{webhook.name}</span>
                     </div>
@@ -578,7 +578,7 @@ function WebhooksTab({
                         {testingId === webhook._id ? (
                           <Loader2 className="mr-2 size-4 animate-spin" />
                         ) : (
-                          <Send className="mr-2 h-4 w-4" />
+                          <Send className="mr-2 size-4" />
                         )}
                         {t("webhooks.test")}
                       </Button>
@@ -596,7 +596,7 @@ function WebhooksTab({
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            <Trash2 className="size-4 text-muted-foreground" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -648,9 +648,9 @@ function WebhooksTab({
                       className={`text-sm ${testResult.success ? "text-green-600" : "text-destructive"}`}
                     >
                       {testResult.success ? (
-                        <Check className="mr-1 inline h-4 w-4" />
+                        <Check className="mr-1 inline size-4" />
                       ) : (
-                        <X className="mr-1 inline h-4 w-4" />
+                        <X className="mr-1 inline size-4" />
                       )}
                       {testResult.message}
                     </div>
@@ -688,9 +688,9 @@ function WebhooksTab({
                     </code>
                     <Button variant="outline" size="icon" onClick={handleCopy}>
                       {copied ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="size-4 text-green-500" />
                       ) : (
-                        <Copy className="h-4 w-4" />
+                        <Copy className="size-4" />
                       )}
                     </Button>
                   </div>
@@ -827,7 +827,7 @@ function UtilitiesTab({
       <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
         <div className="flex items-start gap-4">
           <div className="rounded-full bg-destructive/10 p-2">
-            <Trash2 className="h-5 w-5 text-destructive" />
+            <Trash2 className="size-5 text-destructive" />
           </div>
           <div className="flex-1 space-y-2">
             <div>
@@ -867,14 +867,14 @@ function UtilitiesTab({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeletingLoans}>
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-2 size-4" />
                     {isDeletingLoans ? common("deleting") : t("deleteAllLoans")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <AlertTriangle className="size-5 text-destructive" />
                       {t("deleteLoansDialog")}
                     </AlertDialogTitle>
                     <AlertDialogDescription className="space-y-2">

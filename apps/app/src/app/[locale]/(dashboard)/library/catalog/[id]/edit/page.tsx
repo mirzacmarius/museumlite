@@ -297,7 +297,7 @@ export default function EditCatalogItemPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tEdit("selectOrganization")}</p>
       </div>
     );
@@ -305,7 +305,7 @@ export default function EditCatalogItemPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground">{tEdit("notEnabled")}</p>
           <Button asChild className="mt-4">
@@ -320,15 +320,15 @@ export default function EditCatalogItemPage() {
 
   if (isLibraryEnabled === undefined || item === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex size-full items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (item === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground">{tEdit("itemNotFound")}</p>
           <Button asChild className="mt-4">
@@ -340,14 +340,14 @@ export default function EditCatalogItemPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/library/catalog/${itemId}`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {tEdit("back")}
               </Link>
             </Button>
@@ -472,7 +472,7 @@ export default function EditCatalogItemPage() {
                         size="icon"
                         onClick={() => removeAuthor(index)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     )}
                   </div>
@@ -483,7 +483,7 @@ export default function EditCatalogItemPage() {
                   size="sm"
                   onClick={addAuthor}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                   {tNew("addAuthor")}
                 </Button>
               </div>
@@ -877,7 +877,7 @@ export default function EditCatalogItemPage() {
               {isSaving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
               )}
               {tEdit("saveChanges")}
             </Button>

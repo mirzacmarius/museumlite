@@ -143,7 +143,7 @@ export function CollectionMultiSelectCombobox({
           disabled={disabled}
         >
           <div className="flex items-center gap-2 truncate">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <Search className="size-4 shrink-0 text-muted-foreground" />
             <span className="text-muted-foreground truncate">
               {selectedIds.length > 0
                 ? `${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""} selected`
@@ -228,21 +228,21 @@ function CollectionItem({
       <div className="flex w-full items-center gap-3">
         <Check
           className={cn(
-            "h-4 w-4 shrink-0",
+            "size-4 shrink-0",
             isSelected ? "opacity-100" : "opacity-0",
           )}
         />
-        <div className="h-10 w-10 rounded bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="size-10 rounded bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt={collection.title}
               width={40}
               height={40}
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
             />
           ) : (
-            <Box className="h-5 w-5 text-muted-foreground" />
+            <Box className="size-5 text-muted-foreground" />
           )}
         </div>
         <div className="flex-1 min-w-0">

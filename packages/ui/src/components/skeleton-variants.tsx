@@ -57,9 +57,9 @@ export function SkeletonAvatar({
   size = "md",
 }: SkeletonAvatarProps) {
   const sizeClasses = {
-    sm: "h-8 w-8",
-    md: "h-10 w-10",
-    lg: "h-12 w-12",
+    sm: "size-8",
+    md: "size-10",
+    lg: "size-12",
   };
 
   return (
@@ -112,12 +112,12 @@ export function SkeletonList({
           key={i}
           className="flex items-center gap-4 rounded-lg border border-border/60 bg-card p-4"
         >
-          <div className="h-12 w-12 rounded bg-muted/50" />
+          <div className="size-12 rounded bg-muted/50" />
           <div className="flex-1 space-y-2">
             <div className="h-4 w-48 bg-muted/50 rounded" />
             <div className="h-3 w-32 bg-muted/30 rounded" />
           </div>
-          <div className="h-8 w-8 rounded bg-muted/40" />
+          <div className="size-8 rounded bg-muted/40" />
         </div>
       ))}
     </div>
@@ -165,7 +165,7 @@ export function SkeletonStats({ className, count = 4 }: SkeletonStatsProps) {
           className="rounded-xl border border-border/60 bg-card p-4"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-lg bg-muted/40" />
+            <div className="size-10 rounded-lg bg-muted/40" />
             <div className="h-4 w-20 bg-muted/50 rounded" />
           </div>
           <div className="h-8 w-16 bg-muted/60 rounded" />
@@ -192,7 +192,7 @@ export function SkeletonTimeline({
           className="flex gap-4"
         >
           <div className="flex flex-col items-center">
-            <div className="h-8 w-8 rounded-full bg-muted/50" />
+            <div className="size-8 rounded-full bg-muted/50" />
             {i < count - 1 && (
               <div className="w-0.5 flex-1 bg-border/60 my-2" />
             )}

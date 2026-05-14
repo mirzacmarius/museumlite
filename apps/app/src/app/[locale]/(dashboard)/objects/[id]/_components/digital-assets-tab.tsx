@@ -54,7 +54,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
   return (
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <LinkIcon className="h-4 w-4 text-sky-500" />
+        <LinkIcon className="size-4 text-sky-500" />
         {t("title")}
       </h3>
 
@@ -76,9 +76,9 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                 >
                   <div className="flex size-8 items-center justify-center rounded border border-border/50 bg-secondary text-muted-foreground group-hover:text-foreground">
                     {link.url.includes("sketchfab") ? (
-                      <Box className="h-4 w-4" />
+                      <Box className="size-4" />
                     ) : (
-                      <Globe className="h-4 w-4" />
+                      <Globe className="size-4" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -89,7 +89,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                       {link.url}
                     </p>
                   </div>
-                  <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-muted-foreground" />
+                  <ExternalLink className="size-3 text-muted-foreground group-hover:text-muted-foreground" />
                 </a>
               ))}
             </div>
@@ -108,9 +108,9 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                   <div className="flex size-8 items-center justify-center rounded border border-border/50 bg-secondary text-muted-foreground group-hover:text-foreground">
                     {doc.fileName?.toLowerCase().endsWith(".glb") ||
                     doc.fileName?.toLowerCase().endsWith(".gltf") ? (
-                      <Box className="h-4 w-4" />
+                      <Box className="size-4" />
                     ) : (
-                      <FileText className="h-4 w-4" />
+                      <FileText className="size-4" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -122,7 +122,7 @@ export function DigitalAssetsTab({ collection }: DigitalAssetsTabProps) {
                       {formatFileSize(doc.fileSize)}
                     </p>
                   </div>
-                  <Download className="h-3 w-3 text-muted-foreground group-hover:text-muted-foreground" />
+                  <Download className="size-3 text-muted-foreground group-hover:text-muted-foreground" />
                 </a>
               ))}
             </div>

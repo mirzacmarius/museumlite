@@ -16,10 +16,10 @@ export default function AccessionsError({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-background px-6">
+    <div className="flex size-full items-center justify-center bg-background px-6">
       <div className="flex flex-col items-center gap-6 rounded-lg border border-border bg-card p-8 max-w-md text-center">
         <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
-          <AlertCircle className="h-8 w-8 text-destructive" />
+          <AlertCircle className="size-8 text-destructive" />
         </div>
 
         <div>
@@ -41,12 +41,12 @@ export default function AccessionsError({ error, reset }: ErrorProps) {
         <div className="flex items-center gap-3">
           <Button variant="outline" asChild>
             <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 size-4" />
               Dashboard
             </Link>
           </Button>
           <Button onClick={reset}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 size-4" />
             Try again
           </Button>
         </div>

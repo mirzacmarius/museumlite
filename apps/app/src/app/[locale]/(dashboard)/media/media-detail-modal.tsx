@@ -84,7 +84,7 @@ export function MediaDetailModal({
 
         {item === undefined && (
           <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+            <Loader2 className="size-6 animate-spin text-zinc-500" />
           </div>
         )}
 
@@ -92,7 +92,7 @@ export function MediaDetailModal({
           <div className="grid gap-6 md:grid-cols-2">
             <div className="aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
               {item.fileType === "image" && item.url ? (
-                <div className="relative h-full w-full">
+                <div className="relative size-full">
                   <NextImage
                     src={item.url}
                     alt={item.fileName}
@@ -102,8 +102,8 @@ export function MediaDetailModal({
                   />
                 </div>
               ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <File className="h-16 w-16 text-zinc-700" />
+                <div className="flex size-full items-center justify-center">
+                  <File className="size-16 text-zinc-700" />
                 </div>
               )}
             </div>
@@ -174,7 +174,7 @@ export function MediaDetailModal({
                     className="border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                   >
                     <a href={item.url} download>
-                      <Download className="mr-1 h-3 w-3" />
+                      <Download className="mr-1 size-3" />
                       Download
                     </a>
                   </Button>
@@ -187,7 +187,7 @@ export function MediaDetailModal({
                   <div className="space-y-2 p-3">
                     {versions === undefined && (
                       <div className="flex items-center justify-center py-6">
-                        <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+                        <Loader2 className="size-4 animate-spin text-zinc-500" />
                       </div>
                     )}
                     {versions?.map((version) => {

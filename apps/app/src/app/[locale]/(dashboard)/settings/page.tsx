@@ -72,7 +72,7 @@ export default function DashboardSettings() {
   const hasCustomAvatar = Boolean(user.imageId);
 
   return (
-    <div className="flex h-full w-full flex-col gap-4 sm:gap-6">
+    <div className="flex size-full flex-col gap-4 sm:gap-6">
       {/* Avatar */}
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col-reverse sm:flex-row items-start sm:justify-between gap-4 rounded-lg p-4 sm:p-6">
@@ -91,14 +91,14 @@ export default function DashboardSettings() {
             {avatarUrl ? (
               <img
                 src={avatarUrl}
-                className="h-20 w-20 rounded-full object-cover"
+                className="size-20 rounded-full object-cover"
                 alt={avatarAlt}
               />
             ) : (
-              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-lime-400 from-10% via-cyan-300 to-blue-500" />
+              <div className="size-20 rounded-full bg-gradient-to-br from-lime-400 from-10% via-cyan-300 to-blue-500" />
             )}
-            <div className="absolute z-10 hidden h-full w-full items-center justify-center bg-primary/40 group-hover:flex">
-              <Upload className="h-6 w-6 text-secondary" />
+            <div className="absolute z-10 hidden size-full items-center justify-center bg-primary/40 group-hover:flex">
+              <Upload className="size-6 text-secondary" />
             </div>
           </label>
           <UploadInput

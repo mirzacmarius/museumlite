@@ -208,7 +208,7 @@ export function AdvancedSearchDialog({
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+            <Filter className="size-5" />
             Advanced Search Filters
           </DialogTitle>
           <DialogDescription>
@@ -285,7 +285,7 @@ export function AdvancedSearchDialog({
                       size="sm"
                       onClick={() => removeFilterGroup(groupIndex)}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="size-4" />
                     </Button>
                   )}
                 </div>
@@ -364,7 +364,7 @@ export function AdvancedSearchDialog({
                         onClick={() => removeFilter(groupIndex, filterIndex)}
                         className="flex-shrink-0"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     </div>
                   ))}
@@ -378,7 +378,7 @@ export function AdvancedSearchDialog({
                   onClick={() => addFilter(groupIndex)}
                   className="w-full"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="size-4 mr-2" />
                   Add Filter
                 </Button>
               </div>
@@ -392,7 +392,7 @@ export function AdvancedSearchDialog({
             onClick={addFilterGroup}
             className="w-full"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="size-4 mr-2" />
             Add Filter Group
           </Button>
         </div>

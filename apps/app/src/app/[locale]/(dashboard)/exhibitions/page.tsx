@@ -83,9 +83,9 @@ export default function ExhibitionsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-muted/50 p-8">
-          <GalleryVerticalEnd className="h-12 w-12 text-muted-foreground" />
+          <GalleryVerticalEnd className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
               {t("noOrganizationTitle")}
@@ -112,7 +112,7 @@ export default function ExhibitionsPage() {
       isLocked={!hasFeature("exhibitions")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+      <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
@@ -122,7 +122,7 @@ export default function ExhibitionsPage() {
             <PermissionGate permission="collections.update">
               <Button asChild className="flex-shrink-0">
                 <Link href="/exhibitions/new">
-                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <Plus className="size-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t("newExhibition")}</span>
                 </Link>
               </Button>
@@ -152,7 +152,7 @@ export default function ExhibitionsPage() {
                       onClick={() => setShowFilters(!showFilters)}
                       className="flex-shrink-0"
                     >
-                      <Filter className="h-4 w-4 sm:mr-2" />
+                      <Filter className="size-4 sm:mr-2" />
                       <span className="hidden sm:inline">
                         {t("filters.title")}
                       </span>
@@ -163,7 +163,7 @@ export default function ExhibitionsPage() {
                         onClick={clearFilters}
                         className="flex-shrink-0"
                       >
-                        <X className="h-4 w-4 sm:mr-2" />
+                        <X className="size-4 sm:mr-2" />
                         <span className="hidden sm:inline">
                           {t("filters.clear")}
                         </span>
@@ -345,7 +345,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
           </h3>
           {exhibition.location && (
             <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
+              <MapPin className="size-3" />
               {exhibition.location}
             </p>
           )}
@@ -353,7 +353,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
 
         <div className="flex items-center gap-3 border-t border-border/50 pt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <Calendar className="size-3.5 text-muted-foreground" />
             <span>
               {formatDate(new Date(exhibition.startDate), locale)}
               {exhibition.endDate
@@ -366,7 +366,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
 
       {exhibition.collectionTitle && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground group-hover:text-muted-foreground transition-colors">
-          <Box className="h-3.5 w-3.5" />
+          <Box className="size-3.5" />
           <span className="truncate">{exhibition.collectionTitle}</span>
         </div>
       )}

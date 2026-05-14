@@ -38,7 +38,7 @@ export function ChartLegend({
           className="flex items-center gap-2"
         >
           <div
-            className="h-3 w-3 rounded-sm"
+            className="size-3 rounded-sm"
             style={{ backgroundColor: entry.color }}
           />
           <span className="text-muted-foreground">{entry.value}</span>

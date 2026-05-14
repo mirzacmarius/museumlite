@@ -32,7 +32,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const INTEGRATION_ICONS: Record<string, React.ReactNode> = {
-  library: <BookOpen className="h-6 w-6" />,
+  library: <BookOpen className="size-6" />,
 };
 
 export default function IntegrationsSettingsPage() {
@@ -181,7 +181,7 @@ export default function IntegrationsSettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">{t("selectOrganization")}</p>
         </div>
@@ -194,16 +194,16 @@ export default function IntegrationsSettingsPage() {
     enabledIntegrations === undefined
   ) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full items-center justify-center rounded-lg border border-border bg-card p-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">{t("description")}</p>
@@ -224,7 +224,7 @@ export default function IntegrationsSettingsPage() {
                 <div className="flex items-start gap-4">
                   <div className="flex size-12 items-center justify-center rounded-lg bg-primary/5 text-primary">
                     {INTEGRATION_ICONS[integration.id] || (
-                      <Settings className="h-6 w-6" />
+                      <Settings className="size-6" />
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
@@ -234,7 +234,7 @@ export default function IntegrationsSettingsPage() {
                       </h3>
                       {isEnabled && (
                         <Badge variant="secondary" className="text-xs">
-                          <Check className="mr-1 h-3 w-3" />
+                          <Check className="mr-1 size-3" />
                           {t("enabled")}
                         </Badge>
                       )}
@@ -251,7 +251,7 @@ export default function IntegrationsSettingsPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
                   ) : (
                     <Switch
                       checked={isEnabled}
@@ -274,7 +274,7 @@ export default function IntegrationsSettingsPage() {
                       key={feature}
                       className="flex items-center gap-2 text-sm text-primary-foreground"
                     >
-                      <Check className="h-4 w-4 text-green-500" />
+                      <Check className="size-4 text-green-500" />
                       {feature}
                     </div>
                   ))}
@@ -292,7 +292,7 @@ export default function IntegrationsSettingsPage() {
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={`/settings/integrations/${integration.id}`}>
                       {t("settings")}
-                      <ChevronRight className="ml-1 h-4 w-4" />
+                      <ChevronRight className="ml-1 size-4" />
                     </Link>
                   </Button>
                 </div>

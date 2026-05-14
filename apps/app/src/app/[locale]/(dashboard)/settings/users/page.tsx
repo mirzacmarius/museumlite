@@ -70,7 +70,7 @@ export default function UsersSettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
@@ -186,7 +186,7 @@ export default function UsersSettingsPage() {
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="mr-2 h-4 w-4" />
+                <UserPlus className="mr-2 size-4" />
                 {t("inviteUser")}
               </Button>
             </DialogTrigger>
@@ -310,7 +310,7 @@ export default function UsersSettingsPage() {
                     permission="users.manage_roles"
                     fallback={
                       <div className="flex items-center gap-2">
-                        <UserCog className="h-4 w-4 text-muted-foreground" />
+                        <UserCog className="size-4 text-muted-foreground" />
                         <span className="w-40 text-sm text-muted-foreground">
                           {user.role.name}
                         </span>
@@ -318,7 +318,7 @@ export default function UsersSettingsPage() {
                     }
                   >
                     <div className="flex items-center gap-2">
-                      <UserCog className="h-4 w-4 text-muted-foreground" />
+                      <UserCog className="size-4 text-muted-foreground" />
                       <Select
                         value={user.role._id}
                         onValueChange={(roleId) =>
@@ -345,7 +345,7 @@ export default function UsersSettingsPage() {
                       onClick={() => handleRemoveUser(user._id)}
                       className="text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="size-4" />
                     </Button>
                   </PermissionGate>
                 </div>
@@ -393,7 +393,7 @@ export default function UsersSettingsPage() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-                        <Mail className="h-5 w-5 text-muted-foreground" />
+                        <Mail className="size-5 text-muted-foreground" />
                       </div>
                       <div>
                         <p className="font-medium">{invitation.email}</p>
@@ -401,7 +401,7 @@ export default function UsersSettingsPage() {
                           {invitation.roleName}
                         </p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                          <Clock className="size-3" />
                           {invitation.isExpired ? (
                             <span className="text-destructive">
                               {t("expired")}

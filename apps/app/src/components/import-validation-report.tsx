@@ -30,7 +30,7 @@ export function ImportValidationReport({
       {errorsByType.error.length > 0 && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
           <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             <span className="font-medium">
               {errorsByType.error.length} validation{" "}
               {errorsByType.error.length === 1 ? "error" : "errors"}
@@ -62,7 +62,7 @@ export function ImportValidationReport({
       {errorsByType.warning.length > 0 && (
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
           <div className="flex items-center gap-2 text-amber-600">
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className="size-4" />
             <span className="font-medium">
               {errorsByType.warning.length}{" "}
               {errorsByType.warning.length === 1 ? "warning" : "warnings"}
@@ -94,7 +94,7 @@ export function ImportValidationReport({
       {errorsByType.info.length > 0 && (
         <div className="rounded-lg border border-blue-500/50 bg-blue-500/10 p-4">
           <div className="flex items-center gap-2 text-blue-600">
-            <Info className="h-4 w-4" />
+            <Info className="size-4" />
             <span className="font-medium">
               {errorsByType.info.length}{" "}
               {errorsByType.info.length === 1

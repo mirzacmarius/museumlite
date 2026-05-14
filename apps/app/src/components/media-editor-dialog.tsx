@@ -175,7 +175,7 @@ export function MediaEditorDialog({
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Loader2 className="size-5 animate-spin" />
           <span>Loading media...</span>
         </div>
       </div>

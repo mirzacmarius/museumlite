@@ -139,7 +139,7 @@ export function LogsTab({
   return (
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <ScrollText className="h-4 w-4 text-orange-500" />
+        <ScrollText className="size-4 text-orange-500" />
         Audit Log
       </h3>
 
@@ -186,7 +186,7 @@ export function LogsTab({
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-5 w-5 border border-border/60">
+                      <Avatar className="size-5 border border-border/60">
                         <AvatarImage
                           src={log.userImage ?? undefined}
                           alt={log.userName ?? "User"}

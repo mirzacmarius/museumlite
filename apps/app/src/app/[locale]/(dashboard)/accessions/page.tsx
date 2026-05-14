@@ -23,7 +23,7 @@ export default function AccessionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-background">
+    <div className="flex size-full flex-col bg-background">
       <AccessionsPageClient organizationId={currentOrganizationId} />
     </div>
   );
@@ -33,10 +33,10 @@ function NoOrganizationState() {
   const t = useScopedI18n("accessions");
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+    <div className="flex size-full items-center justify-center bg-background px-6 py-8">
       <div className="flex flex-col items-center gap-4 rounded-xl border border-border/60 bg-card p-8">
         <div className="flex size-12 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <Building2 className="h-6 w-6" />
+          <Building2 className="size-6" />
         </div>
         <div className="text-center">
           <h3 className="text-lg font-semibold text-foreground">
@@ -50,7 +50,7 @@ function NoOrganizationState() {
           href="/organizations/new"
           className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-all hover:bg-primary/90"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="size-4" />
           {t("createOrganization")}
         </Link>
       </div>

@@ -11,7 +11,7 @@ export function AccessionTab({ collection }: AccessionTabProps) {
   return (
     <div>
       <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-        <Building2 className="h-4 w-4 text-emerald-500" />
+        <Building2 className="size-4 text-emerald-500" />
         Acquisition information
       </h3>
       <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">

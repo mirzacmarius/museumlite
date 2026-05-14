@@ -102,9 +102,9 @@ function LocationNavItem({
       >
         <span>{location.name}</span>
         {location.isSecure ? (
-          <Lock className="w-3 h-3 text-zinc-600" />
+          <Lock className="size-3 text-zinc-600" />
         ) : (
-          <span className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
+          <span className={`size-1.5 rounded-full ${statusColor}`} />
         )}
       </button>
     </li>

@@ -3,7 +3,7 @@ const PREVIEW_KEYS = ["hero", "search", "card-one", "card-two", "card-three"];
 
 export function PortalPageSkeleton() {
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+    <div className="flex size-full flex-col overflow-hidden bg-background">
       <div className="shrink-0 border-b border-border px-6 py-4">
         <div className="h-7 w-40 rounded bg-muted/70" />
         <div className="mt-2 h-4 w-80 rounded bg-muted/50" />

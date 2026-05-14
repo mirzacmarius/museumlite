@@ -175,7 +175,7 @@ export function BulkPrintLabelsDialog({
             disabled={isLoading || labelData.length === 0}
             className="bg-gray-900 text-white hover:bg-gray-800"
           >
-            <Printer className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 size-4" />
             {tQrLabel("print")}
           </Button>
         </DialogFooter>

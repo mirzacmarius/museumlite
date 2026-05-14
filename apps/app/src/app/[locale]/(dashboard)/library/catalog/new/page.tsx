@@ -246,7 +246,7 @@ export default function NewCatalogItemPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tNew("selectOrganization")}</p>
       </div>
     );
@@ -254,7 +254,7 @@ export default function NewCatalogItemPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground">{tNew("notEnabled")}</p>
           <Button asChild className="mt-4">
@@ -268,14 +268,14 @@ export default function NewCatalogItemPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/library/catalog">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {tNew("back")}
               </Link>
             </Button>
@@ -400,7 +400,7 @@ export default function NewCatalogItemPage() {
                         size="icon"
                         onClick={() => removeAuthor(index)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     )}
                   </div>
@@ -411,7 +411,7 @@ export default function NewCatalogItemPage() {
                   size="sm"
                   onClick={addAuthor}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                   {tNew("addAuthor")}
                 </Button>
               </div>
@@ -805,7 +805,7 @@ export default function NewCatalogItemPage() {
               {isSaving ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
               )}
               {tNew("saveAsDraft")}
             </Button>

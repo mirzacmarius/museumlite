@@ -46,8 +46,8 @@ export default function RolesSettingsLoading() {
               </div>
               {role.showActions && (
                 <div className="flex gap-2">
-                  <div className="h-8 w-8 rounded bg-muted/30" />
-                  <div className="h-8 w-8 rounded bg-muted/30" />
+                  <div className="size-8 rounded bg-muted/30" />
+                  <div className="size-8 rounded bg-muted/30" />
                 </div>
               )}
             </div>

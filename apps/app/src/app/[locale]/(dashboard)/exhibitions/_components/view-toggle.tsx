@@ -34,7 +34,7 @@ export function ExhibitionViewToggle({
         onClick={() => onChange("gallery")}
         aria-label={t("viewMode.gallery")}
       >
-        <LayoutGrid className="h-4 w-4" />
+        <LayoutGrid className="size-4" />
       </Button>
       <Button
         variant="ghost"
@@ -46,7 +46,7 @@ export function ExhibitionViewToggle({
         onClick={() => onChange("timeline")}
         aria-label={t("viewMode.timeline")}
       >
-        <Calendar className="h-4 w-4" />
+        <Calendar className="size-4" />
       </Button>
     </div>
   );

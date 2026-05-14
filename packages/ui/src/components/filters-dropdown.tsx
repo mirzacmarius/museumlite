@@ -102,7 +102,7 @@ export function FiltersSearchInput({
   return (
     <div className={cn("p-2.5 pb-0", className)}>
       <div className="flex items-center gap-1.5 rounded-md border border-input bg-background/60 px-2 py-1.5 text-xs">
-        <Search className="h-3.5 w-3.5 text-muted-foreground" />
+        <Search className="size-3.5 text-muted-foreground" />
         <input
           ref={inputRef}
           type="text"
@@ -118,7 +118,7 @@ export function FiltersSearchInput({
             onClick={() => onValueChange("")}
             aria-label="Clear search"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="size-3.5" />
           </button>
         )}
       </div>
@@ -157,9 +157,9 @@ export function FilterSection({
           </div>
           <span className="grid size-6 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground">
             {open ? (
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="size-4" />
             ) : (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="size-4" />
             )}
           </span>
         </button>
@@ -215,7 +215,7 @@ export function FilterOptionRow({
           isChecked && "border-primary bg-primary text-primary-foreground",
         )}
       >
-        {isChecked && <Check className="h-3 w-3" strokeWidth={3} />}
+        {isChecked && <Check className="size-3" strokeWidth={3} />}
       </div>
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {icon && (
@@ -278,7 +278,7 @@ export function AppliedFilterChip({
         {value ? <span className="text-foreground">{value}</span> : null}
       </span>
       <span className="grid size-4 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-        <X className="h-3.5 w-3.5" />
+        <X className="size-3.5" />
       </span>
     </Comp>
   );

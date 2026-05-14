@@ -53,7 +53,7 @@ export default function NotificationSettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Please select an organization to manage notification settings.
         </p>
@@ -63,7 +63,7 @@ export default function NotificationSettingsPage() {
 
   if (preferences === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -71,7 +71,7 @@ export default function NotificationSettingsPage() {
 
   if (preferences === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Unable to load notification preferences.
         </p>

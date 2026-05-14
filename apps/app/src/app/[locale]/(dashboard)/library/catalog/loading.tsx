@@ -2,8 +2,8 @@
 
 export default function LibraryCatalogLoading() {
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">

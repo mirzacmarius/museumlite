@@ -127,7 +127,7 @@ export function PricingSection() {
                       <div
                         className={`mt-1 size-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}
                       >
-                        <Check className="w-3 h-3" />
+                        <Check className="size-3" />
                       </div>
                       <span className="text-sm">{feature}</span>
                     </li>

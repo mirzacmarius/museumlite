@@ -269,7 +269,7 @@ export function MediaGallery({
                           {file.fileType === "image" ? (
                             <button
                               type="button"
-                              className="h-full w-full cursor-pointer"
+                              className="size-full cursor-pointer"
                               onClick={() => {
                                 if (lightboxIdx >= 0) {
                                   if (onOpenLightbox) {
@@ -284,21 +284,21 @@ export function MediaGallery({
                               <img
                                 src={file.thumbnailUrl || file.url}
                                 alt={file.caption || file.fileName}
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                               />
                             </button>
                           ) : file.fileType === "video" ? (
                             <video
                               src={file.url}
-                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                               controls={false}
                               aria-label={file.caption || file.fileName}
                             >
                               <track kind="captions" />
                             </video>
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-muted">
-                              <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                            <div className="flex size-full items-center justify-center bg-muted">
+                              <ImageIcon className="size-12 text-muted-foreground" />
                             </div>
                           )}
 
@@ -314,13 +314,13 @@ export function MediaGallery({
                           </div>
 
                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Maximize2 className="h-6 w-6 text-white" />
+                            <Maximize2 className="size-6 text-white" />
                           </div>
 
                           {editable && !file.isPrimary && (
                             <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                               <div className="flex size-7 items-center justify-center rounded bg-black/50 cursor-grab active:cursor-grabbing">
-                                <GripVertical className="h-3.5 w-3.5 text-white" />
+                                <GripVertical className="size-3.5 text-white" />
                               </div>
                             </div>
                           )}
@@ -338,9 +338,9 @@ export function MediaGallery({
                                       handleSetPrimary(file._id);
                                     }}
                                     title={common("setAsPrimary")}
-                                    className="h-7 w-7 p-0"
+                                    className="size-7 p-0"
                                   >
-                                    <Star className="h-3.5 w-3.5" />
+                                    <Star className="size-3.5" />
                                   </Button>
                                 )}
                                 <Button
@@ -354,9 +354,9 @@ export function MediaGallery({
                                     );
                                   }}
                                   title={common("edit")}
-                                  className="h-7 w-7 p-0"
+                                  className="size-7 p-0"
                                 >
-                                  <Edit className="h-3.5 w-3.5" />
+                                  <Edit className="size-3.5" />
                                 </Button>
                                 <MediaEditDialog
                                   media={file}
@@ -394,9 +394,9 @@ export function MediaGallery({
                                       variant="destructive"
                                       onClick={(e) => e.stopPropagation()}
                                       title={common("delete")}
-                                      className="h-7 w-7 p-0"
+                                      className="size-7 p-0"
                                     >
-                                      <Trash2 className="h-3.5 w-3.5" />
+                                      <Trash2 className="size-3.5" />
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
@@ -504,7 +504,7 @@ export function MediaGallery({
                           onClick={() => setEditingMedia(doc._id)}
                           title={common("edit")}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="size-4" />
                         </Button>
                         <MediaEditDialog
                           media={doc}
@@ -542,7 +542,7 @@ export function MediaGallery({
                               variant="ghost"
                               title={common("delete")}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="size-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -641,7 +641,7 @@ function MediaEditDialog({
           variant="secondary"
           title={common("edit")}
         >
-          <Edit className="h-4 w-4" />
+          <Edit className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>

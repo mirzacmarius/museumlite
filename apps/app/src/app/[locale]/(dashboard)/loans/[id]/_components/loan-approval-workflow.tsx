@@ -146,7 +146,7 @@ export function LoanApprovalWorkflow({
               disabled={isSubmitting}
               className="bg-green-600 hover:bg-green-700"
             >
-              <CheckCircle className="mr-2 h-4 w-4" />
+              <CheckCircle className="mr-2 size-4" />
               {t("approveLoan")}
             </Button>
           </PermissionGate>
@@ -154,7 +154,7 @@ export function LoanApprovalWorkflow({
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button disabled={isSubmitting} variant="destructive">
-                  <XCircle className="mr-2 h-4 w-4" />
+                  <XCircle className="mr-2 size-4" />
                   {t("cancelLoan")}
                 </Button>
               </AlertDialogTrigger>
@@ -270,7 +270,7 @@ export function LoanApprovalWorkflow({
               disabled={isSubmitting}
               className="bg-cyan-600 hover:bg-cyan-700"
             >
-              <Truck className="mr-2 h-4 w-4" />
+              <Truck className="mr-2 size-4" />
               {t("dispatchLoan")}
             </Button>
           </PermissionGate>
@@ -282,7 +282,7 @@ export function LoanApprovalWorkflow({
                   disabled={isSubmitting}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  <CheckCircle className="mr-2 h-4 w-4" />
+                  <CheckCircle className="mr-2 size-4" />
                   {t("markAsReturned")}
                 </Button>
                 <Dialog
@@ -335,7 +335,7 @@ export function LoanApprovalWorkflow({
                             String(item.conditionIn).trim().length > 0,
                         ) && (
                           <div className="flex items-start gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
-                            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                            <Info className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1 text-blue-800 dark:text-blue-200">
                               <p className="font-medium mb-1">
                                 {t("someItemsReturned")}
@@ -548,7 +548,7 @@ export function LoanApprovalWorkflow({
                     disabled={isSubmitting}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <CheckCircle className="mr-2 h-4 w-4" />
+                    <CheckCircle className="mr-2 size-4" />
                     {t("markAsReturned")}
                   </Button>
                 </AlertDialogTrigger>
@@ -652,7 +652,7 @@ export function LoanApprovalWorkflow({
                 disabled={isSubmitting}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                <CheckCircle className="mr-2 h-4 w-4" />
+                <CheckCircle className="mr-2 size-4" />
                 {t("markAsReturned")}
               </Button>
               <Dialog
@@ -705,7 +705,7 @@ export function LoanApprovalWorkflow({
                           String(item.conditionIn).trim().length > 0,
                       ) && (
                         <div className="flex items-start gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
-                          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                          <Info className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 text-blue-800 dark:text-blue-200">
                             <p className="font-medium mb-1">
                               {t("someItemsReturned")}
@@ -915,7 +915,7 @@ export function LoanApprovalWorkflow({
                   disabled={isSubmitting}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  <CheckCircle className="mr-2 h-4 w-4" />
+                  <CheckCircle className="mr-2 size-4" />
                   {t("markAsReturned")}
                 </Button>
               </AlertDialogTrigger>

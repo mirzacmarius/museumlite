@@ -76,7 +76,7 @@ export function PrintPreviewModal({
                 <img
                   src={heroImage.thumbnailUrl || heroImage.url}
                   alt={collection.title}
-                  className="h-28 w-28 flex-shrink-0 rounded border border-gray-300 object-cover print:h-20 print:w-20"
+                  className="size-28 flex-shrink-0 rounded border border-gray-300 object-cover print:size-20"
                 />
               )}
               <div className="flex-1 min-w-0">
@@ -471,7 +471,7 @@ export function PrintPreviewModal({
             onClick={() => window.print()}
             className="bg-gray-900 text-white hover:bg-gray-800"
           >
-            <Printer className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 size-4" />
             {t("print")}
           </Button>
         </div>

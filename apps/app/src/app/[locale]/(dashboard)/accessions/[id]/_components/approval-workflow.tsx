@@ -222,7 +222,7 @@ export function ApprovalWorkflow({
             disabled={isSubmitting}
             className="bg-green-600 transition-transform duration-200 hover:bg-green-700 active:translate-y-px"
           >
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <CheckCircle className="mr-2 size-4" />
             {currentStep
               ? `Approve ${currentStep.name}`
               : accession.workflowStep
@@ -236,7 +236,7 @@ export function ApprovalWorkflow({
                 variant="destructive"
                 className="transition-transform duration-200 active:translate-y-px"
               >
-                <XCircle className="mr-2 h-4 w-4" />
+                <XCircle className="mr-2 size-4" />
                 {t("approval.reject")}
               </Button>
             </AlertDialogTrigger>

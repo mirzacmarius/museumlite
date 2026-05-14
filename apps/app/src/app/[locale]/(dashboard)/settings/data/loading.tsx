@@ -2,7 +2,7 @@
 
 export default function DataSettingsLoading() {
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <div className="h-7 w-40 rounded bg-muted/60" />
         <div className="h-4 w-80 rounded bg-muted/40" />
@@ -18,7 +18,7 @@ export default function DataSettingsLoading() {
           <div className="rounded-xl border border-border bg-card">
             <div className="p-6">
               <div className="flex items-center gap-2">
-                <div className="h-5 w-5 rounded bg-muted/50" />
+                <div className="size-5 rounded bg-muted/50" />
                 <div className="h-6 w-28 rounded bg-muted/60" />
               </div>
               <div className="mt-2 h-4 w-96 rounded bg-muted/40" />
@@ -52,7 +52,7 @@ export default function DataSettingsLoading() {
                     className="flex items-center justify-between rounded-lg border p-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-5 w-5 rounded-full bg-muted/50" />
+                      <div className="size-5 rounded-full bg-muted/50" />
                       <div>
                         <div className="h-4 w-24 rounded bg-muted/60" />
                         <div className="mt-1 h-3 w-32 rounded bg-muted/40" />

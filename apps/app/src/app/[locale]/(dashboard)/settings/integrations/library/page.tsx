@@ -92,7 +92,7 @@ export default function LibrarySettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">
             Please select an organization to manage library settings.
@@ -104,7 +104,7 @@ export default function LibrarySettingsPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">
             The Library integration is not enabled for this organization.
@@ -119,21 +119,21 @@ export default function LibrarySettingsPage() {
 
   if (librarySettings === undefined) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full items-center justify-center rounded-lg border border-border bg-card p-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-3">
           <Button variant="ghost" size="sm" className="w-fit" asChild>
             <Link href="/settings/integrations">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 size-4" />
               Back
             </Link>
           </Button>
@@ -150,7 +150,7 @@ export default function LibrarySettingsPage() {
           {isSaving ? (
             <Loader2 className="mr-2 size-4 animate-spin" />
           ) : (
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 size-4" />
           )}
           Save Changes
         </Button>

@@ -21,7 +21,7 @@ export default function EditAccessionObjectPage() {
 
   if (accession === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -29,7 +29,7 @@ export default function EditAccessionObjectPage() {
 
   if (accession === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">Accession not found.</p>
       </div>
     );
@@ -53,7 +53,7 @@ export default function EditAccessionObjectPage() {
 
   if (!canEditObjectDraft || !accession.draftObjectData) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Only pending accession object drafts can be edited from this screen.
         </p>

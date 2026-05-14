@@ -155,7 +155,7 @@ export function TransferKanbanColumn({
             {filteredRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className={`rounded-full p-2 ${style.badge}`}>
-                  <Icon className="h-4 w-4" />
+                  <Icon className="size-4" />
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
                   {style.empty}
@@ -171,7 +171,7 @@ export function TransferKanbanColumn({
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-400">
-                        <ArrowRightLeft className="h-3 w-3" />
+                        <ArrowRightLeft className="size-3" />
                         Transfer
                       </div>
                       <p className="mt-2 text-sm font-medium text-white transition-colors group-hover:text-sky-200">

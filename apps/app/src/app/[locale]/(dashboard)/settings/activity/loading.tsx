@@ -2,7 +2,7 @@
 
 export default function ActivitySettingsLoading() {
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <div className="h-7 w-32 rounded bg-muted/60" />
         <div className="h-4 w-64 rounded bg-muted/40" />
@@ -10,7 +10,7 @@ export default function ActivitySettingsLoading() {
 
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="mb-4 flex items-center gap-2">
-          <div className="h-4 w-4 rounded bg-muted/50" />
+          <div className="size-4 rounded bg-muted/50" />
           <div className="h-4 w-16 rounded bg-muted/60" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -35,7 +35,7 @@ export default function ActivitySettingsLoading() {
             key={key}
             className="flex items-start gap-4 rounded-lg border border-border bg-card p-4"
           >
-            <div className="h-9 w-9 rounded-full bg-muted/50" />
+            <div className="size-9 rounded-full bg-muted/50" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <div className="h-4 w-24 rounded bg-muted/60" />

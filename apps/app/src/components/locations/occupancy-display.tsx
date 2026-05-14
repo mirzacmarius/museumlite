@@ -38,7 +38,7 @@ export function OccupancyDisplay({
     <>
       <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
         <div className="p-1.5 rounded bg-violet-500/10 text-violet-400">
-          <Package className="w-4 h-4" />
+          <Package className="size-4" />
         </div>
         <div>
           <div className="text-[10px] text-zinc-500 uppercase font-bold">
@@ -53,7 +53,7 @@ export function OccupancyDisplay({
       {capacity && (
         <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
           <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400">
-            <Users className="w-4 h-4" />
+            <Users className="size-4" />
           </div>
           <div>
             <div className="text-[10px] text-zinc-500 uppercase font-bold">

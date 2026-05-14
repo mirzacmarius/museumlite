@@ -246,7 +246,7 @@ export function DeleteLocationDialog({
             {isSubmitting ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="mr-2 size-4" />
             )}
             {requiresDeaccession
               ? t("deleteDialog.submitWithDeaccessions")

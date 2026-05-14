@@ -133,7 +133,7 @@ export default function NewAccessionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("selectOrganizationDescription")}
         </p>
@@ -178,13 +178,13 @@ export default function NewAccessionPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accessions">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("backToAccessions")}
               </Link>
             </Button>
@@ -361,9 +361,9 @@ export default function NewAccessionPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveDocument(doc.storageId)}
-                          className="h-6 w-6 p-0"
+                          className="size-6 p-0"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="size-3" />
                         </Button>
                       </div>
                     ))}
@@ -381,7 +381,7 @@ export default function NewAccessionPage() {
                 </Button>
                 <PermissionGate permission="collections.create">
                   <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className="mr-2 size-4" />
                     {isSubmitting
                       ? t("form.creating")
                       : t("form.createAccession")}

@@ -53,9 +53,9 @@ function WallSlot({ slot }: WallSlotProps) {
     return (
       <div className="aspect-[3/4] bg-black/40 border border-white/10 rounded flex items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
         {slot.itemType === "sculpture" ? (
-          <Scissors className="w-6 h-6 text-amber-200/80 group-hover:scale-110 transition-transform" />
+          <Scissors className="size-6 text-amber-200/80 group-hover:scale-110 transition-transform" />
         ) : (
-          <Package className="w-6 h-6 text-zinc-400 group-hover:scale-110 transition-transform" />
+          <Package className="size-6 text-zinc-400 group-hover:scale-110 transition-transform" />
         )}
       </div>
     );

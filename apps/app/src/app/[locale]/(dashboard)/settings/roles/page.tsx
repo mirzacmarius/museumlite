@@ -58,7 +58,7 @@ export default function RolesSettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Please select an organization to manage roles.
         </p>
@@ -215,7 +215,7 @@ export default function RolesSettingsPage() {
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 size-4" />
                 {t("createButton")}
               </Button>
             </DialogTrigger>
@@ -397,7 +397,7 @@ export default function RolesSettingsPage() {
                         size="sm"
                         onClick={() => handleEditRole(role)}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="size-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -405,7 +405,7 @@ export default function RolesSettingsPage() {
                         onClick={() => handleDeleteRole(role._id)}
                         className="text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     </PermissionGate>
                   </div>

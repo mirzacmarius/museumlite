@@ -49,9 +49,9 @@ export default function DashboardPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-4">
+      <div className="flex size-full items-center justify-center bg-background px-4">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
               {t("noOrganizationTitle")}
@@ -67,9 +67,9 @@ export default function DashboardPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6">
+      <div className="flex size-full items-center justify-center bg-background px-6">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
               {t("selectOrganizationTitle")}
@@ -178,7 +178,7 @@ export default function DashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <div className="rounded-md border border-indigo-500/20 bg-indigo-500/10 p-2 text-indigo-400 transition-colors group-hover:border-indigo-500/30 group-hover:bg-indigo-500/15">
-                  <action.icon className="h-4 w-4" />
+                  <action.icon className="size-4" />
                 </div>
                 <p className="text-sm font-semibold tracking-tight text-foreground">
                   {action.title}

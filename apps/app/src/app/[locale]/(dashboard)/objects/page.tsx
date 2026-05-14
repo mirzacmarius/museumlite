@@ -66,9 +66,9 @@ export default function CollectionsPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("objectNotFound")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -77,7 +77,7 @@ export default function CollectionsPage() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {common("create")}
             </Link>
           </Button>
@@ -88,9 +88,9 @@ export default function CollectionsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {t("form.errors.selectOrganization")}
@@ -105,7 +105,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+    <div className="flex size-full flex-col overflow-hidden bg-background">
       <CollectionFiltersAndList organizationId={currentOrganizationId} />
     </div>
   );
@@ -431,7 +431,7 @@ function CollectionFiltersAndList({
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <List className="h-3.5 w-3.5" />
+                    <List className="size-3.5" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>List view</TooltipContent>
@@ -448,7 +448,7 @@ function CollectionFiltersAndList({
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <LayoutGrid className="h-3.5 w-3.5" />
+                    <LayoutGrid className="size-3.5" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Grid view</TooltipContent>
@@ -468,7 +468,7 @@ function CollectionFiltersAndList({
                 className="h-8 rounded-md border-none text-xs font-medium transition-all"
               >
                 <Link href="/objects/new" className="flex items-center gap-2">
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="size-3.5" />
                   {t("addObject")}
                 </Link>
               </Button>
@@ -649,7 +649,7 @@ function CollectionList({
         <PermissionGate permission="collections.create">
           <Button asChild className="mt-4">
             <Link href="/objects/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {t("emptyState.addFirstObject")}
             </Link>
           </Button>
@@ -849,8 +849,8 @@ function CollectionTableRow({
                 className="object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Building2 className="h-4 w-4 text-muted-foreground/60" />
+              <div className="flex size-full items-center justify-center">
+                <Building2 className="size-4 text-muted-foreground/60" />
               </div>
             )}
           </div>
@@ -896,8 +896,8 @@ function CollectionTableRow({
           <ObjectActionsMenu
             item={item}
             organizationId={organizationId}
-            triggerClassName="h-8 w-8 border-none bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
-            iconClassName="h-4 w-4"
+            triggerClassName="size-8 border-none bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+            iconClassName="size-4"
           />
         </td>
       </tr>

@@ -59,12 +59,12 @@ const CommandObjectItem = React.memo(
             <img
               src={imageUrl}
               alt={obj.title}
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
             />
           </div>
         ) : (
           <div className="flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
-            <Box className="h-3.5 w-3.5 text-muted-foreground" />
+            <Box className="size-3.5 text-muted-foreground" />
           </div>
         )}
         <div className="flex flex-col overflow-hidden gap-0.5">
@@ -158,7 +158,7 @@ export function CommandPalette() {
         className="relative h-9 w-full justify-start rounded-[0.5rem] bg-background text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
         onClick={() => setOpen(true)}
       >
-        <Search className="mr-2 h-4 w-4" />
+        <Search className="mr-2 size-4" />
         <span className="hidden lg:inline-flex">Search objects...</span>
         <span className="inline-flex lg:hidden">Search...</span>
         <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
@@ -210,7 +210,7 @@ export function CommandPalette() {
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
-                        <Archive className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Archive className="size-3.5 text-muted-foreground" />
                       </div>
                       <span>{group.name}</span>
                     </CommandItem>
@@ -229,7 +229,7 @@ export function CommandPalette() {
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
-                        <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                        <CreditCard className="size-3.5 text-muted-foreground" />
                       </div>
                       <div className="flex flex-col overflow-hidden gap-0.5">
                         <span className="truncate leading-none">
@@ -255,7 +255,7 @@ export function CommandPalette() {
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
-                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Building2 className="size-3.5 text-muted-foreground" />
                       </div>
                       <div className="flex flex-col overflow-hidden gap-0.5">
                         <span className="truncate leading-none">
@@ -281,7 +281,7 @@ export function CommandPalette() {
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                        <MapPin className="size-3.5 text-muted-foreground" />
                       </div>
                       <span>{loc.name}</span>
                     </CommandItem>
@@ -297,69 +297,69 @@ export function CommandPalette() {
             <CommandItem
               onSelect={() => runCommand(() => router.push("/objects/new"))}
             >
-              <FilePlus className="mr-2 h-4 w-4" />
+              <FilePlus className="mr-2 size-4" />
               <span>New Object</span>
               <CommandShortcut>⌘N</CommandShortcut>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/accessions/new"))}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               <span>New Accession</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/loans/new"))}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               <span>New Loan</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/collections/new"))}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               <span>New Collection Group</span>
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Navigation">
             <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <LayoutDashboard className="mr-2 size-4" />
               <span>Dashboard</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/objects"))}
             >
-              <Box className="mr-2 h-4 w-4" />
+              <Box className="mr-2 size-4" />
               <span>Objects</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/collections"))}
             >
-              <Archive className="mr-2 h-4 w-4" />
+              <Archive className="mr-2 size-4" />
               <span>Collection Groups</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/accessions"))}
             >
-              <Building2 className="mr-2 h-4 w-4" />
+              <Building2 className="mr-2 size-4" />
               <span>Accessions</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/loans"))}
             >
-              <CreditCard className="mr-2 h-4 w-4" />
+              <CreditCard className="mr-2 size-4" />
               <span>Loans</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/locations"))}
             >
-              <MapPin className="mr-2 h-4 w-4" />
+              <MapPin className="mr-2 size-4" />
               <span>Locations</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => router.push("/library"))}
             >
-              <Library className="mr-2 h-4 w-4" />
+              <Library className="mr-2 size-4" />
               <span>Library</span>
             </CommandItem>
             <CommandItem
@@ -367,7 +367,7 @@ export function CommandPalette() {
                 runCommand(() => router.push("/settings/organization"))
               }
             >
-              <Settings className="mr-2 h-4 w-4" />
+              <Settings className="mr-2 size-4" />
               <span>Settings</span>
             </CommandItem>
           </CommandGroup>

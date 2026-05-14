@@ -77,7 +77,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-background p-6">
+    <div className="flex size-full flex-col bg-background p-6">
       <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
         <div className="flex gap-4">
           <TransferStat label="Pending" value={stats.pending} />

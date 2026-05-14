@@ -2,7 +2,7 @@
 
 export default function BillingSettingsLoading() {
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2 p-6 py-2">
         <div className="h-7 w-40 rounded bg-muted/60" />
         <div className="h-4 w-96 rounded bg-muted/40" />

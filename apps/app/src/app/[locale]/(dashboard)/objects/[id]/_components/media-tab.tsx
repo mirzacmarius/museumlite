@@ -20,7 +20,7 @@ export function MediaTab({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-          <ImageIcon className="h-4 w-4 text-accent" />
+          <ImageIcon className="size-4 text-accent" />
           Media Gallery
         </h3>
       </div>

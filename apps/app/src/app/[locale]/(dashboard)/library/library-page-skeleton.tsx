@@ -10,11 +10,11 @@ const CONFIG_KEYS = ["period", "fine", "renewals", "classification"];
 
 export function LibraryPageSkeleton() {
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-lg bg-muted/60" />
+            <div className="size-12 rounded-lg bg-muted/60" />
             <div className="space-y-2">
               <div className="h-7 w-40 rounded bg-muted/70" />
               <div className="h-4 w-72 rounded bg-muted/50" />

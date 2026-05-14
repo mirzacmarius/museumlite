@@ -92,7 +92,7 @@ function TransportStatusSkeleton() {
       <div className="h-4 w-32 bg-white/10 rounded animate-pulse mb-4" />
       <div className="space-y-3">
         <div className="h-3 w-full bg-white/10 rounded animate-pulse" />
-        <div className="h-3 w-3/4 bg-white/10 rounded animate-pulse" />
+        <div className="size-3/4 bg-white/10 rounded animate-pulse" />
         <div className="h-3 w-5/6 bg-white/10 rounded animate-pulse" />
       </div>
     </div>

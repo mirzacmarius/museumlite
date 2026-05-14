@@ -154,7 +154,7 @@ function WizardSteps({ className }: WizardStepsProps) {
                   aria-current={isCurrent ? "step" : undefined}
                 >
                   {isCompleted ? (
-                    <Check className="h-4 w-4" />
+                    <Check className="size-4" />
                   ) : (
                     <span>{index + 1}</span>
                   )}
@@ -261,7 +261,7 @@ function WizardFooter({
             onClick={handlePrev}
             disabled={!canGoPrev}
           >
-            <ChevronLeft className="mr-1 h-4 w-4" />
+            <ChevronLeft className="mr-1 size-4" />
             {prevLabel}
           </Button>
         )}
@@ -271,7 +271,7 @@ function WizardFooter({
         {showNext && (
           <Button type="button" onClick={handleNext} disabled={!canGoNext}>
             {isLastStep ? completeLabel : nextLabel}
-            {!isLastStep && <ChevronRight className="ml-1 h-4 w-4" />}
+            {!isLastStep && <ChevronRight className="ml-1 size-4" />}
           </Button>
         )}
       </div>

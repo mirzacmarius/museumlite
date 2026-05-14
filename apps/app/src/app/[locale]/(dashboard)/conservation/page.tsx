@@ -39,7 +39,7 @@ export default function ConservationPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-muted/50 p-8">
           <GalleryVerticalEnd className="size-12 text-muted-foreground" />
           <div className="text-center">
@@ -61,7 +61,7 @@ export default function ConservationPage() {
       isLocked={!hasFeature("conservation")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+      <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">

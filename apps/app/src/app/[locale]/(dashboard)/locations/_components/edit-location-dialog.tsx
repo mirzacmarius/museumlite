@@ -297,7 +297,7 @@ export function EditLocationDialog({
 
         {!location ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -491,11 +491,11 @@ export function EditLocationDialog({
                           <img
                             src={locationImageUrl}
                             alt={name || "Location photo"}
-                            className="h-full w-full object-cover"
+                            className="size-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                            <ImageIcon className="h-8 w-8" />
+                          <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                            <ImageIcon className="size-8" />
                             <span className="text-sm">
                               {t("locationPhotoEmpty")}
                             </span>
@@ -524,7 +524,7 @@ export function EditLocationDialog({
                             {isUploadingImage ? (
                               <Loader2 className="mr-2 size-4 animate-spin" />
                             ) : (
-                              <Upload className="mr-2 h-4 w-4" />
+                              <Upload className="mr-2 size-4" />
                             )}
                             {locationImageId
                               ? t("replaceLocationPhoto")
@@ -546,7 +546,7 @@ export function EditLocationDialog({
                                 setLocationImageId(null);
                               }}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="mr-2 size-4" />
                               {t("removeLocationPhoto")}
                             </Button>
                           ) : null}

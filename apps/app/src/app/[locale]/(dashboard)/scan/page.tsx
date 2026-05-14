@@ -155,9 +155,9 @@ export default function ScanPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">No Organization</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -166,7 +166,7 @@ export default function ScanPage() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {common("create")}
             </Link>
           </Button>
@@ -177,9 +177,9 @@ export default function ScanPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">Select Organization</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -192,13 +192,13 @@ export default function ScanPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+    <div className="flex size-full flex-col overflow-y-auto bg-background">
       <div className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
         {/* Header */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-              <ScanLine className="h-5 w-5 text-primary" />
+              <ScanLine className="size-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
@@ -226,7 +226,7 @@ export default function ScanPage() {
           <div className="rounded-lg border border-border bg-card">
             <div className="border-b border-border px-4 py-3 sm:px-6">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Clock className="size-4 text-muted-foreground" />
                 <h2 className="text-sm font-medium">Recent Scans</h2>
               </div>
             </div>
@@ -268,16 +268,16 @@ export default function ScanPage() {
                         asChild
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0"
+                        className="size-7 p-0"
                       >
                         <Link href={`/objects/${item.objectId}`}>
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <ExternalLink className="size-3.5" />
                         </Link>
                       </Button>
                     )}
                     {!item.found && (
                       <div className="flex size-7 items-center justify-center">
-                        <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                        <AlertCircle className="size-3.5 text-destructive" />
                       </div>
                     )}
                   </div>
@@ -292,7 +292,7 @@ export default function ScanPage() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start gap-3">
               <div className="flex size-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Camera className="h-4 w-4 text-primary" />
+                <Camera className="size-4 text-primary" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-medium">How to Scan</h3>
@@ -308,7 +308,7 @@ export default function ScanPage() {
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start gap-3">
               <div className="flex size-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <ScanLine className="h-4 w-4 text-primary" />
+                <ScanLine className="size-4 text-primary" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-medium">Supported Formats</h3>

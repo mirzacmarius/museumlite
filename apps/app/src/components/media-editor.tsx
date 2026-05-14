@@ -521,7 +521,7 @@ export function MediaEditor({
                         checked={watermarkEnabled}
                         onChange={(e) => setWatermarkEnabled(e.target.checked)}
                         onClick={(e) => e.stopPropagation()}
-                        className="h-4 w-4 rounded border-border"
+                        className="size-4 rounded border-border"
                       />
                       <span className="text-xs text-foreground">
                         {watermarkSettings.text}

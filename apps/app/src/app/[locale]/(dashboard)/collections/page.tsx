@@ -62,9 +62,9 @@ export default function CollectionsPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {t("noOrganizationTitle")}
@@ -75,7 +75,7 @@ export default function CollectionsPage() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {t("createOrganization")}
             </Link>
           </Button>
@@ -86,9 +86,9 @@ export default function CollectionsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("selectOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -101,8 +101,8 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6 py-0">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6 py-0">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex flex-col gap-2">
@@ -121,7 +121,7 @@ export default function CollectionsPage() {
               <PermissionGate permission="collections.create">
                 <Button asChild variant="outline">
                   <Link href="/collections/import">
-                    <FileUp className="mr-2 h-4 w-4" />
+                    <FileUp className="mr-2 size-4" />
                     {t("importCSV")}
                   </Link>
                 </Button>
@@ -129,7 +129,7 @@ export default function CollectionsPage() {
               <PermissionGate permission="collections.create">
                 <Button asChild>
                   <Link href="/collections/new">
-                    <FolderPlus className="mr-2 h-4 w-4" />
+                    <FolderPlus className="mr-2 size-4" />
                     {t("newCollection")}
                   </Link>
                 </Button>
@@ -189,7 +189,7 @@ function CollectionGroupsList({
         <PermissionGate permission="collections.create">
           <Button asChild>
             <Link href="/collections/new">
-              <FolderPlus className="mr-2 h-4 w-4" />
+              <FolderPlus className="mr-2 size-4" />
               {t("createFirst")}
             </Link>
           </Button>
@@ -208,7 +208,7 @@ function CollectionGroupsList({
         >
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Folder className="h-5 w-5 text-primary/60 group-hover:text-primary" />
+              <Folder className="size-5 text-primary/60 group-hover:text-primary" />
               <h3 className="font-medium line-clamp-1">{group.name}</h3>
             </div>
             <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -226,7 +226,7 @@ function CollectionGroupsList({
             </span>
             {group.curatorName && (
               <span className="flex items-center gap-1">
-                <User className="h-3 w-3" />
+                <User className="size-3" />
                 {group.curatorName}
               </span>
             )}

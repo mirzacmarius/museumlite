@@ -128,7 +128,7 @@ export function MediaPageClient({
           <div className="flex items-center gap-3">
             {stats && usage && (
               <div className="flex items-center gap-2 text-xs text-zinc-500">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="size-2 rounded-full bg-emerald-500" />
                 <span>{formatFileSize(stats.totalSize)} Used</span>
                 <span className="text-zinc-700">/</span>
                 {usage.storage.limit === null ? (
@@ -216,14 +216,14 @@ export function MediaPageClient({
                       className="object-cover opacity-80 transition-all duration-500 group-hover:scale-105 group-hover:opacity-100"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <div className="h-12 w-12 rounded-lg bg-zinc-900/40" />
+                    <div className="flex size-full items-center justify-center">
+                      <div className="size-12 rounded-lg bg-zinc-900/40" />
                     </div>
                   )}
 
                   {item.isPrimary && (
                     <div className="absolute left-2 top-2 rounded bg-amber-500/90 p-1">
-                      <Star className="h-3 w-3 text-white" />
+                      <Star className="size-3 text-white" />
                     </div>
                   )}
                 </div>

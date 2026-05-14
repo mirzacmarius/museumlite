@@ -55,7 +55,7 @@ export function PageHeader({
           <nav className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={crumb.label}>
-                {index > 0 && <ChevronRight className="h-3 w-3" />}
+                {index > 0 && <ChevronRight className="size-3" />}
                 {crumb.href ? (
                   <Link
                     href={crumb.href}
@@ -110,7 +110,7 @@ export function PageHeaderSkeleton({
         {showBreadcrumbs && (
           <div className="mb-2 flex items-center gap-2">
             <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <ChevronRight className="size-3 text-muted-foreground" />
             <div className="h-4 w-24 animate-pulse rounded bg-muted" />
           </div>
         )}

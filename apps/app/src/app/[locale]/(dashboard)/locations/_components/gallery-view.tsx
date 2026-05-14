@@ -214,7 +214,7 @@ export function GalleryView({
                       src={backgroundImageUrl}
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover opacity-15"
+                      className="absolute inset-0 size-full object-cover opacity-15"
                     />
                     <div className="absolute inset-0 bg-background/80" />
                   </>
@@ -333,7 +333,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
               {vitrine.name ? `${vitrine.id} · ${vitrine.type}` : vitrine.type}
             </div>
           </div>
-          <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
+          <div className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
           <span className="text-[9px] text-muted-foreground">Empty Slot</span>
@@ -353,7 +353,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
             {vitrine.name ? `${vitrine.id} · ${vitrine.type}` : vitrine.type}
           </div>
         </div>
-        <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusColor}`} />
+        <div className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
       </div>
       <div className="p-4 pt-12 h-full flex flex-col gap-4">
         {vitrine.objects.map((obj, idx) => (
@@ -365,7 +365,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
               object={obj}
               metadataLabel="Placement"
               metadataValue={vitrine.name ?? `${vitrine.id} · ${vitrine.type}`}
-              className="h-16 w-16 rounded-xl border-border shadow-sm"
+              className="size-16 rounded-xl border-border shadow-sm"
               imageClassName="aspect-square"
               titleClassName="text-[10px]"
               textPlacement="overlay"

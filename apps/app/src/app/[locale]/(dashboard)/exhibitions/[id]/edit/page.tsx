@@ -74,7 +74,7 @@ export default function EditExhibitionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
@@ -82,7 +82,7 @@ export default function EditExhibitionPage() {
 
   if (exhibition === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
@@ -90,7 +90,7 @@ export default function EditExhibitionPage() {
 
   if (exhibition === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("exhibitionNotFound")}</p>
       </div>
     );
@@ -130,9 +130,9 @@ export default function EditExhibitionPage() {
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
             <Link href={`/exhibitions/${exhibitionId}`}>
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
           <span className="text-muted-foreground">{t("title")}</span>
@@ -162,7 +162,7 @@ export default function EditExhibitionPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
               <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center gap-2">
-                <Info className="h-4 w-4" />
+                <Info className="size-4" />
                 {error}
               </div>
             )}
@@ -170,7 +170,7 @@ export default function EditExhibitionPage() {
             {conflicts?.hasConflicts && (
               <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="size-5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-amber-400">
                       {t("form.scheduleConflict")}
@@ -362,7 +362,7 @@ export default function EditExhibitionPage() {
                   disabled={isSubmitting}
                   className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  <Save className="mr-2 h-4 w-4" />
+                  <Save className="mr-2 size-4" />
                   {isSubmitting ? t("actions.saving") : t("actions.save")}
                 </Button>
               </PermissionGate>

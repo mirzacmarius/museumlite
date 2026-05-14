@@ -53,7 +53,7 @@ export function HeroSection() {
         })}
       </div>
 
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+      <div className="absolute top-0 left-0 size-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[20%] size-[500px] bg-neon-blue/20 rounded-full blur-[120px] animate-pulse-slow" />
         <div className="absolute bottom-[-10%] right-[20%] size-[600px] bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
       </div>
@@ -67,7 +67,7 @@ export function HeroSection() {
           transition={{ duration: 0.5 }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-pointer group"
         >
-          <Sparkles className="w-4 h-4 text-neon-blue group-hover:animate-spin" />
+          <Sparkles className="size-4 text-neon-blue group-hover:animate-spin" />
           <span className="text-sm font-medium text-gray-300">
             The Future of Collection Management
           </span>
@@ -133,13 +133,13 @@ export function HeroSection() {
             variant="outline"
             className="h-14 px-8 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm transition-all hover:scale-105"
           >
-            <PlayCircle className="mr-2 w-5 h-5" />
+            <PlayCircle className="mr-2 size-5" />
             Watch Demo
           </Button>
         </motion.div>
 
         {/* Floating UI Elements (Decorative) */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-6xl pointer-events-none z-[-1]">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-full max-w-6xl pointer-events-none z-[-1]">
           {/* Left Card */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -148,8 +148,8 @@ export function HeroSection() {
             className="absolute top-[20%] left-[5%] hidden md:block p-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl rotate-[-6deg] w-64"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-neon-blue" />
+              <div className="size-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
+                <Sparkles className="size-5 text-neon-blue" />
               </div>
               <div>
                 <div className="h-2 w-20 bg-white/20 rounded mb-1" />
@@ -168,7 +168,7 @@ export function HeroSection() {
           >
             <div className="flex items-center justify-between mb-3">
               <div className="h-2 w-24 bg-white/20 rounded" />
-              <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+              <div className="size-2 rounded-full bg-neon-green animate-pulse" />
             </div>
             <div className="space-y-2">
               <div className="h-2 w-full bg-white/5 rounded" />

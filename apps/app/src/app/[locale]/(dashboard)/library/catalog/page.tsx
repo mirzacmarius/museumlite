@@ -110,9 +110,9 @@ export default function LibraryCatalogPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{tCat("noOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -129,9 +129,9 @@ export default function LibraryCatalogPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="h-12 w-12 text-muted-foreground" />
+          <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {tCat("selectOrganization")}
@@ -147,9 +147,9 @@ export default function LibraryCatalogPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="h-12 w-12 text-muted-foreground" />
+          <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{tCat("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -184,8 +184,8 @@ export default function LibraryCatalogPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           {/* Header */}
           <div className="flex w-full items-center justify-between rounded-lg p-6">
@@ -199,7 +199,7 @@ export default function LibraryCatalogPage() {
             </div>
             <Button asChild>
               <Link href="/library/catalog/new">
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 size-4" />
                 {tCat("addItem")}
               </Link>
             </Button>
@@ -221,7 +221,7 @@ export default function LibraryCatalogPage() {
             </div>
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Filter className="size-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
                   {tLib("filters")}:
                 </span>
@@ -258,7 +258,7 @@ export default function LibraryCatalogPage() {
           {/* Items List */}
           {items === undefined ? (
             <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
           ) : items.page.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center p-6">
@@ -300,10 +300,10 @@ export default function LibraryCatalogPage() {
                         <img
                           src={item.coverImageUrl}
                           alt={item.title}
-                          className="h-full w-full object-cover"
+                          className="size-full object-cover"
                         />
                       ) : (
-                        <BookOpen className="h-6 w-6 text-muted-foreground" />
+                        <BookOpen className="size-6 text-muted-foreground" />
                       )}
                     </div>
 

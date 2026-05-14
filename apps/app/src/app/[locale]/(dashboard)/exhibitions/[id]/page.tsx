@@ -131,7 +131,7 @@ export default function ExhibitionDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("selectOrganization")}</p>
       </div>
     );
@@ -139,7 +139,7 @@ export default function ExhibitionDetailPage() {
 
   if (exhibition === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
@@ -147,7 +147,7 @@ export default function ExhibitionDetailPage() {
 
   if (exhibition === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
+      <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("exhibitionNotFound")}</p>
       </div>
     );
@@ -256,9 +256,9 @@ export default function ExhibitionDetailPage() {
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
             <Link href="/exhibitions">
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
           <span className="text-muted-foreground">{t("title")}</span>
@@ -277,7 +277,7 @@ export default function ExhibitionDetailPage() {
               className="border-border text-foreground/80 hover:bg-muted hover:text-white"
             >
               <Link href={`/exhibitions/${exhibitionId}/edit`}>
-                <Pencil className="mr-2 h-3.5 w-3.5" />
+                <Pencil className="mr-2 size-3.5" />
                 {t("actions.edit")}
               </Link>
             </Button>
@@ -291,7 +291,7 @@ export default function ExhibitionDetailPage() {
                   size="sm"
                   className="border-red-900/30 text-red-400 hover:bg-red-950/50 hover:text-red-300 hover:border-red-900/50"
                 >
-                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  <Trash2 className="mr-2 size-3.5" />
                   {t("actions.delete")}
                 </Button>
               </DialogTrigger>
@@ -341,7 +341,7 @@ export default function ExhibitionDetailPage() {
                   <span
                     className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${workflowInfo.color}`}
                   >
-                    <WorkflowIcon className="h-3 w-3" />
+                    <WorkflowIcon className="size-3" />
                     {workflowInfo.text}
                   </span>
                 )}
@@ -360,7 +360,7 @@ export default function ExhibitionDetailPage() {
           <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
+                <Clock className="size-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">
                   {duration.label}
                 </span>
@@ -372,7 +372,7 @@ export default function ExhibitionDetailPage() {
 
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="size-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">
                   {t("detail.status")}
                 </span>
@@ -393,7 +393,7 @@ export default function ExhibitionDetailPage() {
             {exhibition.creatorName && (
               <div className="rounded-lg border border-border bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="h-4 w-4" />
+                  <User className="size-4" />
                   <span className="text-xs font-medium uppercase tracking-wider">
                     {t("detail.createdBy")}
                   </span>
@@ -410,7 +410,7 @@ export default function ExhibitionDetailPage() {
             {exhibition.approverName && exhibition.approvedAt && (
               <div className="rounded-lg border border-border bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className="size-4" />
                   <span className="text-xs font-medium uppercase tracking-wider">
                     {t("detail.approvedBy")}
                   </span>
@@ -429,7 +429,7 @@ export default function ExhibitionDetailPage() {
             <div className="md:col-span-2 space-y-6">
               <div className="rounded-xl border border-border bg-muted/20 p-6">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <GalleryVerticalEnd className="h-4 w-4" />
+                  <GalleryVerticalEnd className="size-4" />
                   {t("detail.overview")}
                 </h2>
 
@@ -439,7 +439,7 @@ export default function ExhibitionDetailPage() {
                       {t("detail.location")}
                     </label>
                     <p className="text-sm text-foreground mt-1 flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                      <MapPin className="size-3.5 text-muted-foreground" />
                       {exhibition.location || "—"}
                     </p>
                   </div>
@@ -448,7 +448,7 @@ export default function ExhibitionDetailPage() {
                       {t("detail.dateRange")}
                     </label>
                     <p className="text-sm text-foreground mt-1 flex items-center gap-2">
-                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Calendar className="size-3.5 text-muted-foreground" />
                       {formatDate(new Date(exhibition.startDate), locale)}
                       {exhibition.endDate
                         ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
@@ -471,7 +471,7 @@ export default function ExhibitionDetailPage() {
 
               <div className="rounded-xl border border-border bg-muted/20 p-6">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <Info className="h-4 w-4" />
+                  <Info className="size-4" />
                   {t("detail.notes")}
                 </h2>
                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
@@ -482,7 +482,7 @@ export default function ExhibitionDetailPage() {
               <div className="rounded-xl border border-border bg-muted/20 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
+                    <FileText className="size-4" />
                     {t("detail.documents")}
                   </h2>
                   <PermissionGate permission="collections.update">
@@ -492,7 +492,7 @@ export default function ExhibitionDetailPage() {
                     >
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
-                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          <Plus className="mr-1 size-3.5" />
                           {t("detail.add")}
                         </Button>
                       </DialogTrigger>
@@ -562,7 +562,7 @@ export default function ExhibitionDetailPage() {
                             disabled={!selectedFile || isUploading}
                             className="bg-primary text-primary-foreground hover:bg-primary/90"
                           >
-                            <Upload className="mr-2 h-4 w-4" />
+                            <Upload className="mr-2 size-4" />
                             {isUploading
                               ? t("actions.uploading")
                               : t("documentUpload.uploadButton")}
@@ -581,7 +581,7 @@ export default function ExhibitionDetailPage() {
                         className="flex items-center justify-between rounded-lg border border-border bg-background/50 p-3"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <FileText className="size-4 text-muted-foreground flex-shrink-0" />
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">
                               {doc.fileName}
@@ -597,7 +597,7 @@ export default function ExhibitionDetailPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="size-8"
                               asChild
                             >
                               <a
@@ -606,7 +606,7 @@ export default function ExhibitionDetailPage() {
                                 rel="noopener noreferrer"
                                 download={doc.fileName}
                               >
-                                <Download className="h-4 w-4" />
+                                <Download className="size-4" />
                               </a>
                             </Button>
                           )}
@@ -614,10 +614,10 @@ export default function ExhibitionDetailPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-950/50"
+                              className="size-8 text-red-400 hover:text-red-300 hover:bg-red-950/50"
                               onClick={() => handleDeleteDocument(doc._id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="size-4" />
                             </Button>
                           </PermissionGate>
                         </div>
@@ -635,7 +635,7 @@ export default function ExhibitionDetailPage() {
             <div className="space-y-6">
               <div className="rounded-xl border border-border bg-muted/20 p-6">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                  <Box className="h-4 w-4" />
+                  <Box className="size-4" />
                   {t("detail.relatedObject")}
                 </h2>
 
@@ -659,7 +659,7 @@ export default function ExhibitionDetailPage() {
               {workflowHistory && workflowHistory.length > 0 && (
                 <div className="rounded-xl border border-border bg-muted/20 p-6">
                   <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
+                    <Clock className="size-4" />
                     {t("detail.approvalHistory")}
                   </h2>
 

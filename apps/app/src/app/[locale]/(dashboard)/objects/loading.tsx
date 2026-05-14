@@ -2,7 +2,7 @@
 
 export function ObjectCatalogSkeleton() {
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+    <div className="flex size-full flex-col overflow-hidden bg-background">
       <div className="flex h-full flex-col">
         <div className="z-20 flex flex-col border-b border-border bg-card/60 backdrop-blur-sm">
           <div className="flex items-center justify-between px-6 py-4">
@@ -34,7 +34,7 @@ export function ObjectCatalogTableSkeleton() {
           <thead className="sticky top-0 z-10 bg-background/95 shadow-sm backdrop-blur-md">
             <tr>
               <th className="w-10 border-b border-border px-4 py-3">
-                <div className="h-4 w-4 rounded bg-muted/60" />
+                <div className="size-4 rounded bg-muted/60" />
               </th>
               <th className="w-16 border-b border-border px-4 py-3 font-medium text-muted-foreground">
                 Image
@@ -62,10 +62,10 @@ export function ObjectCatalogTableSkeleton() {
               (rowId) => (
                 <tr key={rowId}>
                   <td className="px-4 py-3">
-                    <div className="h-4 w-4 rounded bg-muted/60" />
+                    <div className="size-4 rounded bg-muted/60" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-10 w-10 rounded-lg bg-muted/60" />
+                    <div className="size-10 rounded-lg bg-muted/60" />
                   </td>
                   <td className="px-4 py-3">
                     <div className="space-y-2">
@@ -86,7 +86,7 @@ export function ObjectCatalogTableSkeleton() {
                     <div className="ml-auto h-6 w-16 rounded-full bg-muted/50" />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="h-8 w-8 rounded-md bg-muted/40" />
+                    <div className="size-8 rounded-md bg-muted/40" />
                   </td>
                 </tr>
               ),

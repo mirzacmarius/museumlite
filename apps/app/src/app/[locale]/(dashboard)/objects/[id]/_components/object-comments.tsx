@@ -171,7 +171,7 @@ export function ObjectComments({
   return (
     <div className="space-y-6 rounded-xl border border-border/60 bg-secondary/20 p-6">
       <div className="flex items-center gap-2">
-        <MessageSquare className="h-4 w-4 text-accent" />
+        <MessageSquare className="size-4 text-accent" />
         <h3 className="text-xs font-medium uppercase tracking-widest text-foreground">
           Comments
         </h3>
@@ -210,7 +210,7 @@ export function ObjectComments({
                 key={comment._id}
                 className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/60 p-4"
               >
-                <Avatar className="h-9 w-9">
+                <Avatar className="size-9">
                   <AvatarImage src={comment.userImage ?? undefined} />
                   <AvatarFallback className="text-[10px]">
                     {initials}
@@ -230,10 +230,10 @@ export function ObjectComments({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        className="size-7 text-muted-foreground hover:text-foreground"
                         onClick={() => handleDelete(comment._id)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="size-3.5" />
                       </Button>
                     )}
                   </div>
@@ -262,20 +262,20 @@ export function ObjectComments({
           />
           <Button
             size="icon"
-            className="absolute right-2 top-2 h-8 w-8"
+            className="absolute right-2 top-2 size-8"
             onClick={handleSubmit}
             disabled={isSubmitting || content.trim().length === 0}
           >
             {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="size-4" />
             )}
           </Button>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <AtSign className="h-3 w-3" />
+          <AtSign className="size-3" />
           Type @ to mention a teammate
         </div>
 
@@ -291,7 +291,7 @@ export function ObjectComments({
                     "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent",
                   )}
                 >
-                  <Avatar className="h-6 w-6">
+                  <Avatar className="size-6">
                     <AvatarImage src={user.image ?? undefined} />
                     <AvatarFallback className="text-[10px]">
                       {(user.name || user.email || "?").charAt(0)}

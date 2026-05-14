@@ -105,7 +105,7 @@ export default function AccountDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganizationTitle")}</p>
       </div>
     );
@@ -113,7 +113,7 @@ export default function AccountDetailPage() {
 
   if (account === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -121,7 +121,7 @@ export default function AccountDetailPage() {
 
   if (account === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("accountNotFound")}</p>
       </div>
     );
@@ -140,14 +140,14 @@ export default function AccountDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accounts">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("back")}
               </Link>
             </Button>
@@ -167,7 +167,7 @@ export default function AccountDetailPage() {
             <PermissionGate permission="accounts.write">
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/accounts/${accountId}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-2 size-4" />
                   {tCommon("edit")}
                 </Link>
               </Button>
@@ -181,7 +181,7 @@ export default function AccountDetailPage() {
                     className="text-destructive hover:text-destructive"
                     disabled={isDeleting}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-2 size-4" />
                     {tCommon("delete")}
                   </Button>
                 </AlertDialogTrigger>
@@ -479,7 +479,7 @@ function ContactsTab({
           <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 size-4" />
                 {t("detail.addContact")}
               </Button>
             </DialogTrigger>
@@ -511,7 +511,7 @@ function ContactsTab({
               className="flex items-center justify-between rounded-lg border border-border p-4"
             >
               <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-muted-foreground" />
+                <User className="size-5 text-muted-foreground" />
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
@@ -537,12 +537,12 @@ function ContactsTab({
                     size="sm"
                     onClick={() => setEditingContact(contact)}
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="size-4" />
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -742,7 +742,7 @@ function ContactForm({
           id="isPrimary"
           name="isPrimary"
           defaultChecked={contact?.isPrimary}
-          className="h-4 w-4"
+          className="size-4"
         />
         <Label htmlFor="isPrimary" className="text-sm font-normal">
           {t("setPrimaryContact")}
@@ -779,7 +779,7 @@ function DownloadDocumentButton({
       }}
       disabled={!documentWithUrl?.downloadUrl}
     >
-      <Download className="h-4 w-4" />
+      <Download className="size-4" />
     </Button>
   );
 }
@@ -876,7 +876,7 @@ function DocumentsTab({
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
-              <Upload className="mr-2 h-4 w-4" />
+              <Upload className="mr-2 size-4" />
               {t("uploadDocument")}
             </Button>
           </div>
@@ -895,7 +895,7 @@ function DocumentsTab({
               className="flex items-center justify-between rounded-lg border border-border p-4"
             >
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-muted-foreground" />
+                <FileText className="size-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">{doc.filename}</p>
                   <p className="text-sm text-muted-foreground">
@@ -910,7 +910,7 @@ function DocumentsTab({
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -1042,7 +1042,7 @@ function RelationshipsTab({
         <h2 className="text-lg font-medium">{t("relationships")}</h2>
         <PermissionGate permission="accounts.write">
           <Button size="sm">
-            <LinkIcon className="mr-2 h-4 w-4" />
+            <LinkIcon className="mr-2 size-4" />
             {t("linkEntity")}
           </Button>
         </PermissionGate>
@@ -1095,7 +1095,7 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
             <div key={`${event.timestamp}-${index}`} className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
-                  <History className="h-4 w-4 text-primary" />
+                  <History className="size-4 text-primary" />
                 </div>
                 {index < timeline.length - 1 && (
                   <div className="w-px flex-1 bg-border" />

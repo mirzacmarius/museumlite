@@ -166,12 +166,12 @@ export function ActivityFilters({
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="justify-between">
             <div className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
+              <CalendarIcon className="size-4" />
               <span className="text-sm">
                 {getDateRangeLabel(dateRange, t, locale)}
               </span>
             </div>
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -232,7 +232,7 @@ export function ActivityFilters({
         >
           <span>{t("filters.type")}</span>
           <ChevronRight
-            className={`h-4 w-4 transition-transform ${
+            className={`size-4 transition-transform ${
               selectedEntityType !== undefined ? "rotate-90" : ""
             }`}
           />

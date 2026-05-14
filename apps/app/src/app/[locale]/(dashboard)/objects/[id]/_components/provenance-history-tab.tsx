@@ -26,7 +26,7 @@ export function ProvenanceHistoryTab({
     <div className="space-y-8">
       <div>
         <h3 className="mb-6 flex items-center gap-2 text-xs font-medium text-foreground">
-          <History className="h-4 w-4 text-purple-500" />
+          <History className="size-4 text-purple-500" />
           Provenance and History
         </h3>
 
@@ -72,7 +72,7 @@ export function ProvenanceHistoryTab({
                       rel="noopener noreferrer"
                       className="flex w-max items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-accent hover:underline"
                     >
-                      <LinkIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <LinkIcon className="size-3.5 text-muted-foreground" />
                       <span>{link.label || link.url}</span>
                     </a>
                   ))}
@@ -84,7 +84,7 @@ export function ProvenanceHistoryTab({
             collection.ownershipHistory.length > 0 ? (
               <div>
                 <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-                  <History className="h-4 w-4 text-accent" />
+                  <History className="size-4 text-accent" />
                   Ownership History
                 </h3>
                 <div className="relative space-y-8 border-l border-border pl-8">
@@ -99,7 +99,7 @@ export function ProvenanceHistoryTab({
                         )}
                       >
                         {index === 0 && (
-                          <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                          <div className="size-1.5 rounded-full bg-accent" />
                         )}
                       </div>
                       <div className="max-w-2xl rounded-lg border border-border/60 bg-secondary/20 p-4">
@@ -124,7 +124,7 @@ export function ProvenanceHistoryTab({
                         )}
                         {entry.verified && entry.verificationSource && (
                           <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <FileCheck className="h-3 w-3" />
+                            <FileCheck className="size-3" />
                             Verified by {entry.verificationSource}
                           </div>
                         )}

@@ -137,13 +137,13 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
               disabled={isSubmitting}
               className="bg-green-600 hover:bg-green-700"
             >
-              <CheckCircle className="mr-2 h-4 w-4" />
+              <CheckCircle className="mr-2 size-4" />
               {`Approve ${actionLabel}`}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button disabled={isSubmitting} variant="destructive">
-                  <XCircle className="mr-2 h-4 w-4" />
+                  <XCircle className="mr-2 size-4" />
                   {t("actions.reject")}
                 </Button>
               </AlertDialogTrigger>

@@ -93,7 +93,7 @@ export default function NewTreatmentPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6 py-8">
+    <div className="flex size-full bg-background px-6 py-8">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-8 flex items-center gap-4">
           <Button
@@ -103,7 +103,7 @@ export default function NewTreatmentPage() {
             className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
             <Link href="/conservation">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </Link>
           </Button>
           <div>

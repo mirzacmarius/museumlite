@@ -21,7 +21,7 @@ export default function AccessionTransfersPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center px-6">
+      <div className="flex size-full items-center justify-center px-6">
         <p className="text-muted-foreground">
           Create or join an organization to view transfers.
         </p>
@@ -31,7 +31,7 @@ export default function AccessionTransfersPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center px-6">
+      <div className="flex size-full items-center justify-center px-6">
         <p className="text-muted-foreground">
           Select an organization to continue.
         </p>
@@ -41,7 +41,7 @@ export default function AccessionTransfersPage() {
 
   if (!hasPermission("organization.manage_settings")) {
     return (
-      <div className="flex h-full w-full items-center justify-center px-6">
+      <div className="flex size-full items-center justify-center px-6">
         <p className="text-muted-foreground">
           You do not have permission to review transfer approvals.
         </p>

@@ -2,7 +2,7 @@
 
 export default function ModulesSettingsLoading() {
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
         <div className="flex w-full flex-col gap-2 p-6">
           <div className="h-7 w-32 rounded bg-muted/60" />

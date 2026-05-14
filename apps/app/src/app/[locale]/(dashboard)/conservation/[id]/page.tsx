@@ -59,15 +59,15 @@ export default function TreatmentDetailPage({
 
   if (treatment === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex size-full items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (treatment === null) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background">
+      <div className="flex size-full flex-col items-center justify-center gap-4 bg-background">
         <p className="text-muted-foreground">{t("detail.notFound")}</p>
         <Button asChild variant="outline">
           <Link href="/conservation">{t("detail.backToList")}</Link>
@@ -92,7 +92,7 @@ export default function TreatmentDetailPage({
     TREATMENT_TYPE_STYLES.other;
 
   return (
-    <div className="flex h-full w-full bg-background px-6 py-8">
+    <div className="flex size-full bg-background px-6 py-8">
       <div className="mx-auto w-full max-w-4xl space-y-8">
         <div className="flex items-start justify-between">
           <div className="space-y-4">
@@ -103,7 +103,7 @@ export default function TreatmentDetailPage({
               className="-ml-3 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Link href="/conservation">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("detail.backToList")}
               </Link>
             </Button>
@@ -134,7 +134,7 @@ export default function TreatmentDetailPage({
                 className="border-border bg-muted/50 text-foreground/80 hover:bg-accent hover:text-foreground"
               >
                 <Link href={`/conservation/${id}/edit`}>
-                  <Pencil className="mr-2 h-4 w-4" />
+                  <Pencil className="mr-2 size-4" />
                   {t("detail.edit")}
                 </Link>
               </Button>
@@ -145,7 +145,7 @@ export default function TreatmentDetailPage({
                     variant="outline"
                     className="border-red-900/30 bg-red-950/10 text-red-400 hover:bg-red-950/30 hover:text-red-300 hover:border-red-900/50"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-2 size-4" />
                     {t("detail.delete")}
                   </Button>
                 </AlertDialogTrigger>

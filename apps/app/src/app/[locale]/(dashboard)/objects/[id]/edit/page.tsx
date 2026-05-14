@@ -1057,7 +1057,7 @@ export default function CollectionEditPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Please select an organization to edit objects.
         </p>
@@ -1067,7 +1067,7 @@ export default function CollectionEditPage() {
 
   if (collection === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
@@ -1075,7 +1075,7 @@ export default function CollectionEditPage() {
 
   if (collection === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">Collection not found</p>
       </div>
     );
@@ -1098,10 +1098,10 @@ export default function CollectionEditPage() {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="size-7"
             onClick={() => handleNavigate(`/objects/${collectionId}`)}
           >
-            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            <ArrowLeft className="size-4 text-muted-foreground" />
           </Button>
           <span className="text-muted-foreground">
             {t("detail.collections")}
@@ -1120,7 +1120,7 @@ export default function CollectionEditPage() {
                 className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => setDeaccessionDialogOpen(true)}
               >
-                <Archive className="mr-2 h-4 w-4" />
+                <Archive className="mr-2 size-4" />
                 Deaccession
               </Button>
             ) : null}
@@ -1129,7 +1129,7 @@ export default function CollectionEditPage() {
                 className="hidden items-center text-xs text-muted-foreground lg:flex"
                 title={common("cannotDeaccession")}
               >
-                <AlertOctagon className="mr-2 h-4 w-4" />
+                <AlertOctagon className="mr-2 size-4" />
                 Cannot remove while on loan
               </div>
             ) : null}
@@ -1149,7 +1149,7 @@ export default function CollectionEditPage() {
             form="object-edit-form"
             disabled={isSubmitting || !canUpdateObject}
           >
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 size-4" />
             {isSubmitting ? common("updating") : t("form.actions.updateObject")}
           </Button>
         </div>
@@ -1168,11 +1168,11 @@ export default function CollectionEditPage() {
                   <img
                     src={heroImage.thumbnailUrl || heroImage.url}
                     alt={collection.title}
-                    className="h-48 w-48 object-cover"
+                    className="size-48 object-cover"
                   />
                 ) : (
                   <div className="flex size-48 items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    <ImageIcon className="size-12 text-muted-foreground" />
                   </div>
                 )}
                 <div className="absolute inset-x-0 bottom-0 bg-black/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -1186,7 +1186,7 @@ export default function CollectionEditPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
-                          <ArrowRightLeft className="h-4 w-4" />
+                          <ArrowRightLeft className="size-4" />
                           {pendingMoveRequest.status === "awaiting_acceptance"
                             ? "Awaiting transfer acceptance"
                             : "Pending transfer approval"}
@@ -1251,7 +1251,7 @@ export default function CollectionEditPage() {
                     onClick={() => setActiveTab("general")}
                   >
                     <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <Info className="h-3.5 w-3.5" />
+                      <Info className="size-3.5" />
                       Creator
                     </div>
                     <div className="truncate text-sm text-foreground">
@@ -1264,7 +1264,7 @@ export default function CollectionEditPage() {
                     onClick={() => setActiveTab("general")}
                   >
                     <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
+                      <Calendar className="size-3.5" />
                       Date created
                     </div>
                     <div className="truncate text-sm text-foreground">
@@ -1279,7 +1279,7 @@ export default function CollectionEditPage() {
                         onClick={() => setActiveTab("placement")}
                       >
                         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                          <MapPin className="h-3.5 w-3.5" />
+                          <MapPin className="size-3.5" />
                           Location
                         </div>
                         <div className="truncate text-sm text-foreground">
@@ -1292,7 +1292,7 @@ export default function CollectionEditPage() {
                         onClick={() => setActiveTab("placement")}
                       >
                         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                          <Info className="h-3.5 w-3.5" />
+                          <Info className="size-3.5" />
                           Collection
                         </div>
                         <div className="truncate text-sm text-foreground">
@@ -1393,7 +1393,7 @@ export default function CollectionEditPage() {
                                       }
                                       title="Remove alternate accession number"
                                     >
-                                      <Trash2 className="h-4 w-4" />
+                                      <Trash2 className="size-4" />
                                     </Button>
                                   </div>
                                 );
@@ -1425,7 +1425,7 @@ export default function CollectionEditPage() {
                             variant="outline"
                             onClick={handleAddAlternateAccessionNumber}
                           >
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus className="mr-2 size-4" />
                             Add
                           </Button>
                         </div>
@@ -1661,7 +1661,7 @@ export default function CollectionEditPage() {
                             );
                           }}
                         >
-                          <Plus className="mr-2 h-4 w-4" />
+                          <Plus className="mr-2 size-4" />
                           Add Entry
                         </Button>
                       </div>
@@ -1695,7 +1695,7 @@ export default function CollectionEditPage() {
                                           </h3>
                                           {entry.verified ? (
                                             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-500">
-                                              <CheckCircle className="h-3 w-3" />
+                                              <CheckCircle className="size-3" />
                                               Verified
                                             </span>
                                           ) : null}
@@ -1721,9 +1721,9 @@ export default function CollectionEditPage() {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 shrink-0 text-muted-foreground"
+                                            className="size-8 shrink-0 text-muted-foreground"
                                           >
-                                            <MoreHorizontal className="h-4 w-4" />
+                                            <MoreHorizontal className="size-4" />
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
@@ -1734,7 +1734,7 @@ export default function CollectionEditPage() {
                                               )
                                             }
                                           >
-                                            <Edit className="mr-2 h-4 w-4" />
+                                            <Edit className="mr-2 size-4" />
                                             Edit
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
@@ -1751,7 +1751,7 @@ export default function CollectionEditPage() {
                                               );
                                             }}
                                           >
-                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            <Trash2 className="mr-2 size-4" />
                                             Delete
                                           </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -1921,7 +1921,7 @@ export default function CollectionEditPage() {
                                           htmlFor={`verified-${index}`}
                                           className="flex items-center gap-1 text-sm font-normal"
                                         >
-                                          <CheckCircle className="h-3 w-3 text-green-500" />
+                                          <CheckCircle className="size-3 text-green-500" />
                                           Verified
                                         </Label>
                                       </div>
@@ -2035,7 +2035,7 @@ export default function CollectionEditPage() {
                                   updateField("links", nextLinks);
                                 }}
                               >
-                                <X className="h-4 w-4" />
+                                <X className="size-4" />
                               </Button>
                             </div>
                           ) : null}
@@ -2056,7 +2056,7 @@ export default function CollectionEditPage() {
                           ]);
                         }}
                       >
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="mr-2 size-4" />
                         Add Link
                       </Button>
                     </div>
@@ -2316,7 +2316,7 @@ export default function CollectionEditPage() {
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="mr-2 size-4" />
                         Upload Images
                       </Button>
                       <Button
@@ -2324,7 +2324,7 @@ export default function CollectionEditPage() {
                         variant="outline"
                         onClick={() => cameraInputRef.current?.click()}
                       >
-                        <Camera className="mr-2 h-4 w-4" />
+                        <Camera className="mr-2 size-4" />
                         Take Photo
                       </Button>
                     </div>
@@ -2365,7 +2365,7 @@ export default function CollectionEditPage() {
                                   type="button"
                                   size="icon"
                                   variant="secondary"
-                                  className="h-8 w-8"
+                                  className="size-8"
                                   onClick={() =>
                                     setEditingImageId(
                                       file._id as Id<"mediaFiles">,
@@ -2373,29 +2373,29 @@ export default function CollectionEditPage() {
                                   }
                                   title={common("edit")}
                                 >
-                                  <Edit className="h-3.5 w-3.5" />
+                                  <Edit className="size-3.5" />
                                 </Button>
                                 {!file.isPrimary ? (
                                   <Button
                                     type="button"
                                     size="icon"
                                     variant="secondary"
-                                    className="h-8 w-8"
+                                    className="size-8"
                                     onClick={() => handleSetPrimary(file._id)}
                                     title={common("setAsPrimary")}
                                   >
-                                    <Star className="h-3.5 w-3.5" />
+                                    <Star className="size-3.5" />
                                   </Button>
                                 ) : null}
                                 <Button
                                   type="button"
                                   size="icon"
                                   variant="destructive"
-                                  className="h-8 w-8"
+                                  className="size-8"
                                   onClick={() => handleDeleteMedia(file._id)}
                                   title={common("delete")}
                                 >
-                                  <X className="h-3.5 w-3.5" />
+                                  <X className="size-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -2431,7 +2431,7 @@ export default function CollectionEditPage() {
                         variant="outline"
                         onClick={() => documentInputRef.current?.click()}
                       >
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="mr-2 size-4" />
                         Upload Documents
                       </Button>
                     </div>
@@ -2458,7 +2458,7 @@ export default function CollectionEditPage() {
                               onClick={() => handleDeleteMedia(document._id)}
                               title={common("delete")}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="size-4" />
                             </Button>
                           </div>
                         ))}
@@ -2616,7 +2616,7 @@ export default function CollectionEditPage() {
               form="object-edit-form"
               disabled={isSubmitting || !canUpdateObject}
             >
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 size-4" />
               {isSubmitting
                 ? common("updating")
                 : t("form.actions.updateObject")}

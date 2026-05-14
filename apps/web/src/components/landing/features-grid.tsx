@@ -85,8 +85,8 @@ export function FeaturesGrid() {
             >
               <SpotlightCard className="h-full p-8 hover:bg-white/10 transition-colors">
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="w-6 h-6 text-neon-blue" />
+                  <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="size-6 text-neon-blue" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">
                     {feature.title}

@@ -23,7 +23,7 @@ export default function ActivityPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-black px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-black px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-white/10 bg-black p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-white">
@@ -39,8 +39,8 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-black px-6 py-8">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-black px-6 py-8">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         {/* Left Filters Panel */}
         <div className="flex w-64 flex-shrink-0 flex-col">
           <ActivityFilters

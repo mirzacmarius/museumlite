@@ -73,7 +73,7 @@ export function DonationDetailsField({
               onClick={handleClear}
               className="shrink-0 text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="mr-2 size-4" />
               Remove
             </Button>
           </div>
@@ -124,7 +124,7 @@ export function DonationDetailsField({
             onClick={() => setIsExpanded(true)}
             className="w-full"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             Add Donated by
           </Button>
         </>

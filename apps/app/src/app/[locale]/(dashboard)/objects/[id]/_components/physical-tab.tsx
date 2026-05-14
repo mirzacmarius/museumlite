@@ -66,7 +66,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
-                  <Shapes className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Shapes className="size-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
                   {formatObjectType(collection.objectType)}
@@ -94,7 +94,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
-                  <Hammer className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Hammer className="size-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
                   {collection.technique || "Not specified"}
@@ -108,7 +108,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
-                  <Ruler className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Ruler className="size-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
                   {dimensions || "—"}
@@ -228,7 +228,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
             ) : (
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <div className="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 </div>
                 <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                   {collection.condition || "Not assessed"}
@@ -247,7 +247,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
       {/* Inscriptions & Marks */}
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Search className="h-4 w-4 text-sky-500" />
+          <Search className="size-4 text-sky-500" />
           Inscriptions & Marks
         </h3>
         <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-4">

@@ -219,9 +219,9 @@ export default function LibraryAcquisitionsPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{tAcq("noOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -238,9 +238,9 @@ export default function LibraryAcquisitionsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="h-12 w-12 text-muted-foreground" />
+          <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {tAcq("selectOrganization")}
@@ -256,9 +256,9 @@ export default function LibraryAcquisitionsPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="h-12 w-12 text-muted-foreground" />
+          <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{tAcq("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -367,14 +367,14 @@ export default function LibraryAcquisitionsPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Statistics */}
         {statistics && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
+                <Clock className="size-4" />
                 <span className="text-sm">{tAcq("stats.pending")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
@@ -383,28 +383,28 @@ export default function LibraryAcquisitionsPage() {
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-green-500">
-                <Check className="h-4 w-4" />
+                <Check className="size-4" />
                 <span className="text-sm">{tAcq("stats.approved")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.approved}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-purple-500">
-                <Truck className="h-4 w-4" />
+                <Truck className="size-4" />
                 <span className="text-sm">{tAcq("stats.ordered")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.ordered}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-teal-500">
-                <Package className="h-4 w-4" />
+                <Package className="size-4" />
                 <span className="text-sm">{tAcq("stats.received")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">{statistics.received}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <DollarSign className="h-4 w-4" />
+                <DollarSign className="size-4" />
                 <span className="text-sm">{tAcq("stats.spent")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
@@ -413,7 +413,7 @@ export default function LibraryAcquisitionsPage() {
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="size-4" />
                 <span className="text-sm">{tAcq("stats.pendingBudget")}</span>
               </div>
               <p className="mt-2 text-2xl font-medium">
@@ -435,7 +435,7 @@ export default function LibraryAcquisitionsPage() {
               </p>
             </div>
             <Button onClick={() => setIsNewRequestOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               {tAcq("newRequest")}
             </Button>
           </div>
@@ -447,7 +447,7 @@ export default function LibraryAcquisitionsPage() {
           <div className="border-b border-border px-6 py-4">
             <div className="flex gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Filter className="size-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
                   {tLib("filters")}:
                 </span>
@@ -486,11 +486,11 @@ export default function LibraryAcquisitionsPage() {
           {/* Requests List */}
           {requests === undefined ? (
             <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
           ) : requests.page.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center gap-4 p-6">
-              <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+              <ShoppingCart className="size-12 text-muted-foreground" />
               <div className="text-center">
                 <p className="font-medium">
                   {statusFilter !== "all" || priorityFilter !== "all"
@@ -505,7 +505,7 @@ export default function LibraryAcquisitionsPage() {
               </div>
               {statusFilter === "all" && priorityFilter === "all" && (
                 <Button onClick={() => setIsNewRequestOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                   {tAcq("createFirst")}
                 </Button>
               )}
@@ -562,7 +562,7 @@ export default function LibraryAcquisitionsPage() {
                             onClick={() => handleReject(request._id)}
                             disabled={isProcessing}
                           >
-                            <X className="mr-1 h-3 w-3" />
+                            <X className="mr-1 size-3" />
                             {tAcq("actions.reject")}
                           </Button>
                           <Button
@@ -570,7 +570,7 @@ export default function LibraryAcquisitionsPage() {
                             onClick={() => handleApprove(request._id)}
                             disabled={isProcessing}
                           >
-                            <Check className="mr-1 h-3 w-3" />
+                            <Check className="mr-1 size-3" />
                             {tAcq("actions.review")}
                           </Button>
                         </>
@@ -583,7 +583,7 @@ export default function LibraryAcquisitionsPage() {
                             onClick={() => handleReject(request._id)}
                             disabled={isProcessing}
                           >
-                            <X className="mr-1 h-3 w-3" />
+                            <X className="mr-1 size-3" />
                             {tAcq("actions.reject")}
                           </Button>
                           <Button
@@ -591,7 +591,7 @@ export default function LibraryAcquisitionsPage() {
                             onClick={() => handleApprove(request._id)}
                             disabled={isProcessing}
                           >
-                            <Check className="mr-1 h-3 w-3" />
+                            <Check className="mr-1 size-3" />
                             {tAcq("actions.approve")}
                           </Button>
                         </>
@@ -604,7 +604,7 @@ export default function LibraryAcquisitionsPage() {
                           }
                           disabled={isProcessing}
                         >
-                          <Truck className="mr-1 h-3 w-3" />
+                          <Truck className="mr-1 size-3" />
                           {tAcq("actions.markOrdered")}
                         </Button>
                       )}
@@ -616,7 +616,7 @@ export default function LibraryAcquisitionsPage() {
                           }
                           disabled={isProcessing}
                         >
-                          <Package className="mr-1 h-3 w-3" />
+                          <Package className="mr-1 size-3" />
                           {tAcq("actions.markReceived")}
                         </Button>
                       )}
@@ -628,7 +628,7 @@ export default function LibraryAcquisitionsPage() {
                           }
                           disabled={isProcessing}
                         >
-                          <CheckCircle className="mr-1 h-3 w-3" />
+                          <CheckCircle className="mr-1 size-3" />
                           {tAcq("actions.cataloged")}
                         </Button>
                       )}

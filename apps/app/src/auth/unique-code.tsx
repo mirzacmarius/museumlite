@@ -147,7 +147,7 @@ export function AuthUniqueCodeForm({
             onClick={onEmailClear}
             type="button"
           >
-            <XCircle className="h-4 w-4 text-white/40" />
+            <XCircle className="size-4 text-white/40" />
           </button>
         </div>
       </div>
@@ -162,7 +162,7 @@ export function AuthUniqueCodeForm({
         <CodeInput id="unique-code" onChange={setCode} value={code} />
         <div className="flex items-center justify-between px-0.5 pt-1">
           <p className="flex items-center gap-1 text-xs font-medium text-emerald-300">
-            <CircleCheck className="h-3 w-3" />
+            <CircleCheck className="size-3" />
             Paste the code from your email.
           </p>
           <button

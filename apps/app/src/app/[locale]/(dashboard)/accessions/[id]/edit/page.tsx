@@ -112,7 +112,7 @@ export default function EditAccessionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("selectOrganizationDescription")}
         </p>
@@ -122,7 +122,7 @@ export default function EditAccessionPage() {
 
   if (accession === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -130,7 +130,7 @@ export default function EditAccessionPage() {
 
   if (accession === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("accessionNotFound")}</p>
       </div>
     );
@@ -138,8 +138,8 @@ export default function EditAccessionPage() {
 
   if (accession.status !== "pending") {
     return (
-      <div className="flex h-full w-full bg-background px-6">
-        <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+      <div className="flex size-full bg-background px-6">
+        <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
           <div className="flex w-full flex-col rounded-lg border border-border bg-card">
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">
@@ -188,9 +188,9 @@ export default function EditAccessionPage() {
     <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xs">
-          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+          <Button variant="ghost" size="icon" className="size-7" asChild>
             <Link href={`/accessions/${accessionId}`}>
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
           <span className="text-muted-foreground">Accessions</span>
@@ -206,7 +206,7 @@ export default function EditAccessionPage() {
             form="accession-edit-form"
             disabled={isSubmitting}
           >
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 size-4" />
             {isSubmitting ? t("form.updating") : t("form.updateAccession")}
           </Button>
         </PermissionGate>
@@ -216,7 +216,7 @@ export default function EditAccessionPage() {
         <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
           <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
             <div className="flex size-48 shrink-0 flex-col items-center justify-center rounded-xl border border-border/60 bg-secondary text-center shadow-2xl">
-              <Save className="h-10 w-10 text-muted-foreground" />
+              <Save className="size-10 text-muted-foreground" />
               <div className="mt-4 space-y-1 px-6">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   Pending accession
@@ -249,18 +249,18 @@ export default function EditAccessionPage() {
 
               <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="size-4" />
                   <span>
                     Received{" "}
                     {formatDate(new Date(accession.dateReceived), locale)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
+                  <Info className="size-4" />
                   <span>{accession.source || "No source yet"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
+                  <Package className="size-4" />
                   <span className="capitalize">{accession.method}</span>
                 </div>
               </div>
@@ -436,7 +436,7 @@ export default function EditAccessionPage() {
                   </Button>
                   <PermissionGate permission="collections.update">
                     <Button type="submit" disabled={isSubmitting}>
-                      <Save className="mr-2 h-4 w-4" />
+                      <Save className="mr-2 size-4" />
                       {isSubmitting
                         ? t("form.updating")
                         : t("form.updateAccession")}

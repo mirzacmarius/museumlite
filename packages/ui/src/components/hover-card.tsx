@@ -53,7 +53,7 @@ function EntityPreview({
     <div className={cn("space-y-3", className)}>
       {image && (
         <div className="aspect-video w-full overflow-hidden rounded-md bg-muted">
-          <img src={image} alt={title} className="h-full w-full object-cover" />
+          <img src={image} alt={title} className="size-full object-cover" />
         </div>
       )}
 

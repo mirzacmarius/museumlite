@@ -58,12 +58,12 @@ export function SiteSelector({
         <SelectValue placeholder={placeholder}>
           {value === null || value === undefined ? (
             <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
+              <Building2 className="size-4" />
               <span>All Sites</span>
             </div>
           ) : selectedSite ? (
             <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
+              <Building2 className="size-4" />
               <span>{selectedSite.name}</span>
             </div>
           ) : (
@@ -75,7 +75,7 @@ export function SiteSelector({
         {showAllSitesOption && (
           <SelectItem value="__all__">
             <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
+              <Building2 className="size-4" />
               <span>All Sites</span>
             </div>
           </SelectItem>
@@ -83,7 +83,7 @@ export function SiteSelector({
         {sites.map((site) => (
           <SelectItem key={site._id} value={site._id}>
             <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
+              <Building2 className="size-4" />
               <span>{site.name}</span>
               {site.isPrimary && (
                 <span className="text-xs text-muted-foreground">(Primary)</span>

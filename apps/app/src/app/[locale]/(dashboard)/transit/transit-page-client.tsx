@@ -118,9 +118,9 @@ export function TransitPageClient() {
 
   if (!organizations || organizations.length === 0 || !currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">No Organization Selected</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -129,7 +129,7 @@ export function TransitPageClient() {
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               Create Organization
             </Link>
           </Button>
@@ -144,7 +144,7 @@ export function TransitPageClient() {
       isLocked={!hasFeature("loans")}
       tierNeeded="pro"
     >
-      <div className="flex h-full w-full flex-col overflow-y-auto bg-background">
+      <div className="flex size-full flex-col overflow-y-auto bg-background">
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
@@ -158,7 +158,7 @@ export function TransitPageClient() {
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-2 size-4" />
                       Log Transit
                     </Button>
                   </DialogTrigger>

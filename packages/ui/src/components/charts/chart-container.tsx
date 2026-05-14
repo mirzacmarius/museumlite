@@ -23,7 +23,7 @@ export function ChartContainer({
     <div className={cn("w-full", className)} style={{ height }}>
       <Suspense
         fallback={
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="size-full flex items-center justify-center">
             <div className="animate-pulse text-sm text-muted-foreground">
               Loading chart...
             </div>

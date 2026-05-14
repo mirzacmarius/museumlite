@@ -33,7 +33,7 @@ export default function LocationDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganizationToView")}</p>
       </div>
     );
@@ -41,7 +41,7 @@ export default function LocationDetailPage() {
 
   if (location === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
@@ -49,20 +49,20 @@ export default function LocationDetailPage() {
 
   if (location === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("locationNotFound")}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6 py-8">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-6 flex-col">
+    <div className="flex size-full bg-background px-6 py-8">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-6 flex-col">
         {/* Header Actions */}
         <div className="flex w-full items-center justify-between">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/locations">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 size-4" />
               {t("backToLocations")}
             </Link>
           </Button>
@@ -73,7 +73,7 @@ export default function LocationDetailPage() {
               className="text-destructive hover:text-destructive"
               onClick={() => setDeleteDialogOpen(true)}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="mr-2 size-4" />
               {t("delete")}
             </Button>
           </PermissionGate>
@@ -161,7 +161,7 @@ export default function LocationDetailPage() {
 
         <GlassPanel padding="lg">
           <div className="mb-4 flex items-center gap-2">
-            <Archive className="h-5 w-5" />
+            <Archive className="size-5" />
             <h3 className="text-lg font-medium">
               {t("objectsAtThisLocation")} ({location.objectCount})
             </h3>
@@ -171,7 +171,7 @@ export default function LocationDetailPage() {
 
         <GlassPanel padding="lg">
           <div className="mb-4 flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+            <Clock className="size-5" />
             <h3 className="text-lg font-medium">{t("locationHistory")}</h3>
           </div>
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>

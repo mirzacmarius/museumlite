@@ -124,10 +124,10 @@ export function InspectorPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 shrink-0 -mr-2"
+              className="size-8 shrink-0 -mr-2"
               onClick={handleClose}
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
               <span className="sr-only">Close</span>
             </Button>
           </div>
@@ -185,7 +185,7 @@ export function InspectorSection({
         >
           <ChevronRight
             className={cn(
-              "h-4 w-4 transition-transform",
+              "size-4 transition-transform",
               isExpanded && "rotate-90",
             )}
           />

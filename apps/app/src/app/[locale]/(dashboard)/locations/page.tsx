@@ -39,9 +39,9 @@ export default function LocationsPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
               No Organization
@@ -57,9 +57,9 @@ export default function LocationsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-8">
-          <MapPin className="h-12 w-12 text-muted-foreground" />
+          <MapPin className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
               Select Organization
@@ -248,7 +248,7 @@ function LocationLayout({
 
         {allLocations && allLocations.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-4">
-            <MapPin className="h-12 w-12 text-muted-foreground" />
+            <MapPin className="size-12 text-muted-foreground" />
             <div className="text-center">
               <p className="text-muted-foreground">No locations yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -257,7 +257,7 @@ function LocationLayout({
             </div>
             <PermissionGate permission="locations.create">
               <Button variant="outline" onClick={() => setAddDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 size-4" />
                 Add Location
               </Button>
             </PermissionGate>
@@ -299,10 +299,10 @@ function LocationLayout({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="size-8 text-muted-foreground hover:text-destructive"
                     onClick={() => setDeleteDialogOpen(true)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="size-4" />
                   </Button>
                 </PermissionGate>
                 <div className="h-4 w-px bg-border" />
@@ -312,13 +312,13 @@ function LocationLayout({
                     size="sm"
                     onClick={() => setAddDialogOpen(true)}
                   >
-                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    <Plus className="mr-2 size-3.5" />
                     Add Location
                   </Button>
                 </PermissionGate>
                 <PermissionGate permission="locations.update">
                   <Button size="sm" onClick={() => setEditDialogOpen(true)}>
-                    <Pencil className="mr-2 h-3.5 w-3.5" />
+                    <Pencil className="mr-2 size-3.5" />
                     Edit Location
                   </Button>
                 </PermissionGate>

@@ -57,7 +57,7 @@ export default function AccountDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("selectOrganizationDescription")}
         </p>
@@ -67,7 +67,7 @@ export default function AccountDetailPage() {
 
   if (account === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -75,7 +75,7 @@ export default function AccountDetailPage() {
 
   if (account === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("accountNotFound")}</p>
       </div>
     );
@@ -94,14 +94,14 @@ export default function AccountDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accounts">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 Back
               </Link>
             </Button>
@@ -118,7 +118,7 @@ export default function AccountDetailPage() {
             <PermissionGate permission="loans.update">
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/accounts/${accountId}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" />
+                  <Edit className="mr-2 size-4" />
                   Edit
                 </Link>
               </Button>
@@ -132,7 +132,7 @@ export default function AccountDetailPage() {
                     className="text-destructive hover:text-destructive"
                     disabled={isDeleting}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-2 size-4" />
                     Delete
                   </Button>
                 </AlertDialogTrigger>
@@ -315,7 +315,7 @@ export default function AccountDetailPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <UserCog className="h-4 w-4" />
+                    <UserCog className="size-4" />
                     Account Type
                   </h3>
                   <div className="flex items-start gap-3">
@@ -334,7 +334,7 @@ export default function AccountDetailPage() {
               <div className="space-y-4 md:col-span-2">
                 <div>
                   <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
+                    <Shield className="size-4" />
                     Roles with Access
                   </h3>
                   <div className="space-y-2">
@@ -346,7 +346,7 @@ export default function AccountDetailPage() {
                           key={roleId}
                           className="flex items-center gap-2 rounded-lg border border-border bg-card p-3"
                         >
-                          <Shield className="h-4 w-4 text-muted-foreground" />
+                          <Shield className="size-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm font-medium">{role.name}</p>
                             {role.description && (

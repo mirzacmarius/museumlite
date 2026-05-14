@@ -19,7 +19,7 @@ export function AccessionsPageSkeleton({
   statsCount = 3,
 }: AccessionsPageSkeletonProps) {
   return (
-    <div className="flex h-full w-full flex-col bg-background p-6">
+    <div className="flex size-full flex-col bg-background p-6">
       <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
         <div className="flex gap-4">
           {statPlaceholders.slice(0, statsCount).map((id) => (
@@ -47,7 +47,7 @@ export function AccessionsPageSkeleton({
                 className="flex items-center justify-between gap-4 rounded-xl border border-transparent bg-background/40 px-4 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-9 w-9 shrink-0 rounded-lg bg-muted/60" />
+                  <div className="size-9 shrink-0 rounded-lg bg-muted/60" />
                   <div className="space-y-2">
                     <div className="h-4 w-24 rounded bg-muted/60" />
                     <div className="h-3 w-64 rounded bg-muted/50" />

@@ -126,7 +126,7 @@ export function DeaccessionsPageClient({
                 onClick={() => setIsReportOpen(true)}
                 className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="size-3.5" />
                 {t("actions.exportReport")}
               </button>
             </PermissionGate>
@@ -150,9 +150,9 @@ export function DeaccessionsPageClient({
                 className="h-8 px-2.5 text-xs"
               >
                 {isEmptyingTrash ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="size-3.5" />
                 )}
                 {isEmptyingTrash
                   ? objectsT("actions.emptyingTrash")
@@ -170,7 +170,7 @@ export function DeaccessionsPageClient({
                 href="/deaccessions/new"
                 className="flex h-8 items-center gap-1.5 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground shadow-[0_0_15px_-3px_rgba(99,102,241,0.3)] transition-colors hover:bg-primary/90"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="size-3.5" />
                 {t("actions.create")}
               </Link>
             </PermissionGate>
@@ -355,7 +355,7 @@ function DeaccessionsReportDialog({
             </div>
           ) : (
             <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="size-8 animate-spin text-gray-400" />
             </div>
           )}
         </div>
@@ -365,7 +365,7 @@ function DeaccessionsReportDialog({
             {t("actions.close")}
           </Button>
           <Button onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 size-4" />
             {t("actions.print")}
           </Button>
         </div>

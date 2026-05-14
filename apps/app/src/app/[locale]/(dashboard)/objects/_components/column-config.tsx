@@ -84,7 +84,7 @@ export function ColumnConfigDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
-          <Settings2 className="h-4 w-4" />
+          <Settings2 className="size-4" />
           <span className="sr-only">{t("title")}</span>
         </Button>
       </DropdownMenuTrigger>

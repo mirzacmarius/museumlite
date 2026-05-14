@@ -126,7 +126,7 @@ export function ImportFieldMapper({
               disabled={unmappedRequired.length > 0}
               className="bg-indigo-600 hover:bg-indigo-500"
             >
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 size-4" />
               Save Mappings
             </Button>
           )}
@@ -161,7 +161,7 @@ export function ImportFieldMapper({
                   <p className="text-xs text-muted-foreground">Source field</p>
                 </div>
 
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="size-4 text-muted-foreground" />
 
                 <div className="flex flex-1 items-center gap-2">
                   <Select
@@ -220,7 +220,7 @@ export function ImportFieldMapper({
                       size="sm"
                       onClick={() => handleClearMapping(sourceField)}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="size-4" />
                     </Button>
                   )}
                 </div>

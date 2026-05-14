@@ -237,7 +237,7 @@ export function TypeCombobox({
                   className="hover:text-destructive cursor-pointer"
                   aria-label={`Remove ${type}`}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="size-3" />
                 </span>
               </div>
             ))}
@@ -282,11 +282,11 @@ export function TypeCombobox({
                   handleCreateAndSelectType(inputValue);
                 }}
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="size-3.5" />
                 Add
               </Button>
             ) : null}
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
           </div>
         </PopoverTrigger>
         <PopoverContent
@@ -334,7 +334,7 @@ export function TypeCombobox({
                       <div className="flex w-full items-center gap-2">
                         <Check
                           className={cn(
-                            "h-4 w-4 shrink-0",
+                            "size-4 shrink-0",
                             selectedValues.some(
                               (v) =>
                                 v.toLowerCase() === type.value.toLowerCase(),
@@ -349,7 +349,7 @@ export function TypeCombobox({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            className="size-6 p-0 text-destructive hover:text-destructive"
                             onPointerDown={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
@@ -360,7 +360,7 @@ export function TypeCombobox({
                               handleDeleteType(type.id, type.label);
                             }}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="size-3" />
                           </Button>
                         ) : null}
                       </div>

@@ -138,7 +138,7 @@ export default function NotificationsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <div className="flex flex-col items-center gap-4 rounded-lg border p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold">
@@ -171,7 +171,7 @@ export default function NotificationsPage() {
   });
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-primary">
           {t("notificationsPage.title")}
@@ -189,7 +189,7 @@ export default function NotificationsPage() {
       >
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="all" className="gap-2">
-            <Bell className="h-4 w-4" />
+            <Bell className="size-4" />
             <span className="hidden sm:inline">
               {t("notificationsPage.categories.all")}
             </span>
@@ -200,7 +200,7 @@ export default function NotificationsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="approvals" className="gap-2">
-            <ClipboardCheck className="h-4 w-4" />
+            <ClipboardCheck className="size-4" />
             <span className="hidden sm:inline">
               {t("notificationsPage.categories.approvals")}
             </span>
@@ -211,7 +211,7 @@ export default function NotificationsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="reminders" className="gap-2">
-            <CalendarClock className="h-4 w-4" />
+            <CalendarClock className="size-4" />
             <span className="hidden sm:inline">
               {t("notificationsPage.categories.reminders")}
             </span>
@@ -222,7 +222,7 @@ export default function NotificationsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="alerts" className="gap-2">
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className="size-4" />
             <span className="hidden sm:inline">
               {t("notificationsPage.categories.alerts")}
             </span>
@@ -233,7 +233,7 @@ export default function NotificationsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="assignments" className="gap-2">
-            <UserCheck className="h-4 w-4" />
+            <UserCheck className="size-4" />
             <span className="hidden sm:inline">
               {t("notificationsPage.categories.assignments")}
             </span>
@@ -244,7 +244,7 @@ export default function NotificationsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="system" className="gap-2">
-            <Settings className="h-4 w-4" />
+            <Settings className="size-4" />
             <span className="hidden sm:inline">
               {t("notificationsPage.categories.system")}
             </span>
@@ -282,7 +282,7 @@ export default function NotificationsPage() {
 
         {unreadCount > 0 && (
           <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
-            <CheckCheck className="mr-2 h-4 w-4" />
+            <CheckCheck className="mr-2 size-4" />
             {t("notificationsPage.markAllRead")}
           </Button>
         )}
@@ -342,7 +342,7 @@ export default function NotificationsPage() {
                   >
                     <Icon
                       className={cn(
-                        "h-4 w-4",
+                        "size-4",
                         notification.read
                           ? "text-muted-foreground"
                           : "text-primary",
@@ -369,14 +369,14 @@ export default function NotificationsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 flex-shrink-0"
+                          className="size-8 p-0 flex-shrink-0"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleMarkRead(notification._id);
                           }}
                         >
-                          <Check className="h-4 w-4" />
+                          <Check className="size-4" />
                         </Button>
                       )}
                     </div>
@@ -392,7 +392,7 @@ export default function NotificationsPage() {
                       {link && (
                         <span className="flex items-center gap-1 text-xs text-primary">
                           {t("notificationsPage.viewDetails")}
-                          <ArrowRight className="h-3 w-3" />
+                          <ArrowRight className="size-3" />
                         </span>
                       )}
                     </div>

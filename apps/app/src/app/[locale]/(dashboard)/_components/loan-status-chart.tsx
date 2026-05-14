@@ -99,7 +99,7 @@ export function LoanStatusChart({ data }: LoanStatusChartProps) {
         {chartData.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 text-xs">
             <div
-              className="w-3 h-3 rounded-full"
+              className="size-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-muted-foreground">

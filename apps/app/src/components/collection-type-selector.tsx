@@ -26,13 +26,13 @@ interface CollectionTypeSelectorProps {
 }
 
 const collectionTypeIcons: Record<CollectionType, ReactNode> = {
-  general: <Package className="h-4 w-4" />,
-  fine_art: <Gem className="h-4 w-4" />,
-  wine: <Wine className="h-4 w-4" />,
-  automotive: <Car className="h-4 w-4" />,
-  natural_history: <Leaf className="h-4 w-4" />,
-  archive: <Archive className="h-4 w-4" />,
-  coins_stamps: <Coins className="h-4 w-4" />,
+  general: <Package className="size-4" />,
+  fine_art: <Gem className="size-4" />,
+  wine: <Wine className="size-4" />,
+  automotive: <Car className="size-4" />,
+  natural_history: <Leaf className="size-4" />,
+  archive: <Archive className="size-4" />,
+  coins_stamps: <Coins className="size-4" />,
 };
 
 function getCollectionTypes(enabledModules: ReadonlyArray<ModuleId>) {
@@ -127,7 +127,7 @@ export function getCollectionTypeLabel(type?: CollectionType): string {
 export function getCollectionTypeIcon(type?: CollectionType): ReactNode {
   return (
     allCollectionTypes.find((t) => t.value === type)?.icon ?? (
-      <Package className="h-4 w-4" />
+      <Package className="size-4" />
     )
   );
 }

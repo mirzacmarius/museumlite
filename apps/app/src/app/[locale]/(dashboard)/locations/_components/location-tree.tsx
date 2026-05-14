@@ -329,7 +329,7 @@ function LocationTreeInner({
   if (allLocations.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4 p-6">
-        <MapPin className="h-12 w-12 text-muted-foreground" />
+        <MapPin className="size-12 text-muted-foreground" />
         <div className="text-center">
           <p className="text-muted-foreground">{t("noLocations")}</p>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -393,8 +393,8 @@ function LocationTreeInner({
               >
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" className="size-7 p-0">
+                      <MoreHorizontal className="size-4" />
                       <span className="sr-only">{t("actions")}</span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -413,7 +413,7 @@ function LocationTreeInner({
                           });
                         }}
                       >
-                        <Edit className="mr-2 h-4 w-4" />
+                        <Edit className="mr-2 size-4" />
                         {t("edit")}
                       </DropdownMenuItem>
                     </PermissionGate>
@@ -431,7 +431,7 @@ function LocationTreeInner({
                           });
                         }}
                       >
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="mr-2 size-4" />
                         {t("addChild")}
                       </DropdownMenuItem>
                     </PermissionGate>
@@ -447,7 +447,7 @@ function LocationTreeInner({
                           });
                         }}
                       >
-                        <Move className="mr-2 h-4 w-4" />
+                        <Move className="mr-2 size-4" />
                         {t("move")}
                       </DropdownMenuItem>
                     </PermissionGate>
@@ -465,7 +465,7 @@ function LocationTreeInner({
                           });
                         }}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        <Trash2 className="mr-2 size-4" />
                         {t("delete")}
                       </DropdownMenuItem>
                     </PermissionGate>
@@ -542,7 +542,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
               setAddChildDialogOpen(true);
             }}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {t("tree.addNewLocation")}
           </Button>
         </PermissionGate>

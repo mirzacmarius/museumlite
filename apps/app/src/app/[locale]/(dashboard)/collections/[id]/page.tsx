@@ -85,7 +85,7 @@ export default function CollectionGroupDetailPage() {
 
   if (resolved?.type === "collection") {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("redirecting")}</p>
       </div>
     );
@@ -93,7 +93,7 @@ export default function CollectionGroupDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("selectOrganizationDescription")}
         </p>
@@ -103,7 +103,7 @@ export default function CollectionGroupDetailPage() {
 
   if (resolved === undefined || group === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
@@ -111,21 +111,21 @@ export default function CollectionGroupDetailPage() {
 
   if (resolved === null || group === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("notFound")}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border/60 bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/collections">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="mr-2 size-4" />
                   {t("back")}
                 </Link>
               </Button>
@@ -139,7 +139,7 @@ export default function CollectionGroupDetailPage() {
                   </span>
                   {group.curatorName && (
                     <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
+                      <User className="size-3" />
                       {group.curatorName}
                     </span>
                   )}
@@ -150,7 +150,7 @@ export default function CollectionGroupDetailPage() {
               <PermissionGate permission="collections.update">
                 <Button variant="outline" asChild>
                   <Link href={`/collections/${group._id}/edit`}>
-                    <Settings className="mr-2 h-4 w-4" />
+                    <Settings className="mr-2 size-4" />
                     {t("settings")}
                   </Link>
                 </Button>
@@ -160,14 +160,14 @@ export default function CollectionGroupDetailPage() {
                   variant="outline"
                   onClick={() => setIsAddDialogOpen(true)}
                 >
-                  <FolderInput className="mr-2 h-4 w-4" />
+                  <FolderInput className="mr-2 size-4" />
                   {t("importExisting")}
                 </Button>
               </PermissionGate>
               <PermissionGate permission="collections.create">
                 <Button asChild>
                   <Link href={`/objects/new?collectionGroupId=${group._id}`}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
+                    <PlusCircle className="mr-2 size-4" />
                     {t("newObject")}
                   </Link>
                 </Button>
@@ -221,7 +221,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-indigo-500/10 rounded-md border border-indigo-500/20">
-            <Package className="w-4 h-4 text-indigo-400" />
+            <Package className="size-4 text-indigo-400" />
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
@@ -235,7 +235,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
 
         <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-            <Eye className="w-4 h-4 text-emerald-400" />
+            <Eye className="size-4 text-emerald-400" />
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
@@ -249,7 +249,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
 
         <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-blue-500/10 rounded-md border border-blue-500/20">
-            <ArrowLeftRight className="w-4 h-4 text-blue-400" />
+            <ArrowLeftRight className="size-4 text-blue-400" />
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
@@ -263,7 +263,7 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
 
         <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
           <div className="p-2 bg-amber-500/10 rounded-md border border-amber-500/20">
-            <Archive className="w-4 h-4 text-amber-400" />
+            <Archive className="size-4 text-amber-400" />
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
@@ -475,7 +475,7 @@ function CollectionObjectsList({
                               {collection.title}
                             </span>
                           </div>
-                          {isSelected && <X className="h-4 w-4" />}
+                          {isSelected && <X className="size-4" />}
                         </div>
                       </button>
                     );
@@ -509,7 +509,7 @@ function CollectionObjectsList({
                             }
                             className="ml-1 hover:text-destructive"
                           >
-                            <X className="h-3 w-3" />
+                            <X className="size-3" />
                           </button>
                         </div>
                       );
@@ -539,14 +539,14 @@ function CollectionObjectsList({
           <div className="flex gap-2">
             <PermissionGate permission="collections.update">
               <Button onClick={() => onAddDialogOpenChange(true)}>
-                <FolderInput className="mr-2 h-4 w-4" />
+                <FolderInput className="mr-2 size-4" />
                 {t("importExisting")}
               </Button>
             </PermissionGate>
             <PermissionGate permission="collections.create">
               <Button variant="outline" asChild>
                 <Link href={`/objects/new?collectionGroupId=${groupId}`}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <PlusCircle className="mr-2 size-4" />
                   {t("newObject")}
                 </Link>
               </Button>
@@ -598,12 +598,12 @@ function CollectionListItem({
             <img
               src={imageUrl}
               alt={item.title}
-              className="h-full w-full object-cover"
+              className="size-full object-cover"
               loading="lazy"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Building2 className="h-6 w-6 text-muted-foreground" />
+            <div className="flex size-full items-center justify-center">
+              <Building2 className="size-6 text-muted-foreground" />
             </div>
           )}
         </div>
@@ -623,7 +623,7 @@ function CollectionListItem({
           <div className="text-right">
             {item.status === "deaccessioned" ? (
               <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
-                <Archive className="mr-1 h-3 w-3" />
+                <Archive className="mr-1 size-3" />
                 Deaccessioned
               </span>
             ) : (
@@ -637,7 +637,7 @@ function CollectionListItem({
       <div className="ml-4 flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
           <Link href={`/objects/${item.collectionId}`}>
-            <ExternalLink className="h-4 w-4" />
+            <ExternalLink className="size-4" />
           </Link>
         </Button>
         {onRemove && (
@@ -645,7 +645,7 @@ function CollectionListItem({
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm">
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Trash2 className="size-4 text-destructive" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

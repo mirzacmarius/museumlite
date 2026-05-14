@@ -122,7 +122,7 @@ export function ObjectActionsMenu({
             variant="ghost"
             size="icon"
             className={cn(
-              "h-6 w-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              "size-6 rounded-full border border-border bg-background/80 text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               triggerClassName,
             )}
             onClick={(event) => {
@@ -130,7 +130,7 @@ export function ObjectActionsMenu({
               event.stopPropagation();
             }}
           >
-            <MoreVertical className={cn("h-3 w-3", iconClassName)} />
+            <MoreVertical className={cn("size-3", iconClassName)} />
             <span className="sr-only">Actions</span>
           </Button>
         </DropdownMenuTrigger>
@@ -150,7 +150,7 @@ export function ObjectActionsMenu({
             {linkCopied ? (
               <Check className="mr-2 size-4 text-green-500" />
             ) : (
-              <Link2 className="mr-2 h-4 w-4" />
+              <Link2 className="mr-2 size-4" />
             )}
             {linkCopied ? "Link copied" : "Copy Link"}
           </DropdownMenuItem>
@@ -162,7 +162,7 @@ export function ObjectActionsMenu({
               handleOpenPrintPreview();
             }}
           >
-            <Printer className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 size-4" />
             Print
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -173,7 +173,7 @@ export function ObjectActionsMenu({
               handleExportToPdf();
             }}
           >
-            <FileDown className="mr-2 h-4 w-4" />
+            <FileDown className="mr-2 size-4" />
             Export to PDF
           </DropdownMenuItem>
           {canDeaccession && (
@@ -221,7 +221,7 @@ export function ObjectActionsMenu({
                     handleOpenRemovalFlow("deleted");
                   }}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-2 size-4" />
                   Delete
                 </DropdownMenuItem>
               </PermissionGate>
@@ -347,8 +347,8 @@ function ObjectGridItem({
                 className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
-                <Building2 className="h-12 w-12" />
+              <div className="flex size-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
+                <Building2 className="size-12" />
               </div>
             )}
 

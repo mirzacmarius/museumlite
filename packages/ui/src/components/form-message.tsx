@@ -19,9 +19,9 @@ const variantStyles: Record<FormMessageVariant, string> = {
 };
 
 const variantIcons: Record<FormMessageVariant, React.ReactNode> = {
-  error: <AlertCircle className="h-3.5 w-3.5" />,
-  success: <CheckCircle2 className="h-3.5 w-3.5" />,
-  warning: <AlertCircle className="h-3.5 w-3.5" />,
+  error: <AlertCircle className="size-3.5" />,
+  success: <CheckCircle2 className="size-3.5" />,
+  warning: <AlertCircle className="size-3.5" />,
 };
 
 export function FormMessage({

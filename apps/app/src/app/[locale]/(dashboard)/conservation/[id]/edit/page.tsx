@@ -106,15 +106,15 @@ export default function EditTreatmentPage({
 
   if (treatment === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex size-full items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (treatment === null) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background">
+      <div className="flex size-full flex-col items-center justify-center gap-4 bg-background">
         <p className="text-muted-foreground">{t("detail.notFound")}</p>
         <Button asChild variant="outline">
           <Link href="/conservation">{t("detail.backToList")}</Link>
@@ -124,7 +124,7 @@ export default function EditTreatmentPage({
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6 py-8">
+    <div className="flex size-full bg-background px-6 py-8">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-8 flex items-center gap-4">
           <Button
@@ -134,7 +134,7 @@ export default function EditTreatmentPage({
             className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
             <Link href={`/conservation/${id}`}>
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </Link>
           </Button>
           <div>

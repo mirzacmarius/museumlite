@@ -375,7 +375,7 @@ export default function DataPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Please select an organization to manage data.
         </p>
@@ -384,7 +384,7 @@ export default function DataPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-foreground">
           Data Import/Export
@@ -398,11 +398,11 @@ export default function DataPage() {
       <Tabs defaultValue="import" className="w-full">
         <TabsList>
           <TabsTrigger value="import" className="gap-2">
-            <Upload className="h-4 w-4" />
+            <Upload className="size-4" />
             Import
           </TabsTrigger>
           <TabsTrigger value="export" className="gap-2">
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Export
           </TabsTrigger>
         </TabsList>
@@ -411,7 +411,7 @@ export default function DataPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5" />
+                <FileSpreadsheet className="size-5" />
                 CSV Import
               </CardTitle>
               <CardDescription>
@@ -440,7 +440,7 @@ export default function DataPage() {
                 </Select>
 
                 <Button variant="outline" onClick={downloadTemplate}>
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 size-4" />
                   {t("downloadTemplate")}
                 </Button>
               </div>
@@ -477,7 +477,7 @@ export default function DataPage() {
                     </>
                   ) : (
                     <>
-                      <Upload className="mr-2 h-4 w-4" />
+                      <Upload className="mr-2 size-4" />
                       Upload CSV
                     </>
                   )}
@@ -500,11 +500,11 @@ export default function DataPage() {
                     >
                       <div className="flex items-center gap-4">
                         {job.status === "completed" ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          <CheckCircle2 className="size-5 text-green-500" />
                         ) : job.status === "failed" ? (
-                          <AlertCircle className="h-5 w-5 text-red-500" />
+                          <AlertCircle className="size-5 text-red-500" />
                         ) : (
-                          <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                          <Loader2 className="size-5 animate-spin text-blue-500" />
                         )}
                         <div>
                           <p className="font-medium capitalize">
@@ -541,7 +541,7 @@ export default function DataPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5" />
+                <Download className="size-5" />
                 CSV Export
               </CardTitle>
               <CardDescription>
@@ -577,7 +577,7 @@ export default function DataPage() {
                     </>
                   ) : (
                     <>
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className="mr-2 size-4" />
                       {t("exportToCsv")}
                     </>
                   )}

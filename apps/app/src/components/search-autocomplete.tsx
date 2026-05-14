@@ -146,7 +146,7 @@ export function SearchAutocomplete({
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Clear search"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </button>
           )}
         </div>
@@ -177,7 +177,7 @@ export function SearchAutocomplete({
                   aria-selected={inputValue === history.query}
                 >
                   <div className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <Clock className="size-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate">{history.query}</span>
                   </div>
                 </button>
@@ -209,7 +209,7 @@ export function SearchAutocomplete({
                   aria-selected={inputValue === suggestion}
                 >
                   <div className="flex items-center gap-2">
-                    <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <Search className="size-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate">{suggestion}</span>
                   </div>
                 </button>

@@ -32,7 +32,7 @@ export function InfoTooltip({
               className,
             )}
           >
-            <HelpCircle className="h-4 w-4" />
+            <HelpCircle className="size-4" />
             <span className="sr-only">More information</span>
           </button>
         </TooltipTrigger>

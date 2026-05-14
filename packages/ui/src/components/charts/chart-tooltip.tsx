@@ -47,7 +47,7 @@ export function ChartTooltipContent({
             className="flex items-center gap-2 text-sm"
           >
             <div
-              className="h-2 w-2 rounded-full"
+              className="size-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-muted-foreground">{entry.name}:</span>

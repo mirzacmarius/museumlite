@@ -220,7 +220,7 @@ export default function MediaImportPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("selectOrganizationContinue")}
         </p>
@@ -229,13 +229,13 @@ export default function MediaImportPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/collections">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("backToCollections")}
               </Link>
             </Button>
@@ -325,20 +325,20 @@ export default function MediaImportPage() {
                     >
                       {state.csvFile ? (
                         <div className="flex items-center gap-2 text-primary">
-                          <FileSpreadsheet className="h-6 w-6" />
+                          <FileSpreadsheet className="size-6" />
                           <span className="font-medium">
                             {state.csvFile.name}
                           </span>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 ml-2"
+                            className="size-6 ml-2"
                             onClick={(e) => {
                               e.stopPropagation();
                               setState((s) => ({ ...s, csvFile: null }));
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="size-4" />
                           </Button>
                         </div>
                       ) : (
@@ -410,7 +410,7 @@ export default function MediaImportPage() {
                             className="flex items-center justify-between p-2 hover:bg-muted/50 rounded"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
-                              <FileImage className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <FileImage className="size-4 text-muted-foreground shrink-0" />
                               <span className="truncate text-sm">
                                 {file.name}
                               </span>
@@ -421,10 +421,10 @@ export default function MediaImportPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              className="size-6 text-muted-foreground hover:text-destructive"
                               onClick={() => removeMediaFile(i)}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="size-4" />
                             </Button>
                           </div>
                         ))}
@@ -575,7 +575,7 @@ function UnmappedFilesReview({
   if (!unmappedFiles) {
     return (
       <div className="flex justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -654,12 +654,12 @@ function UnmappedFilesReview({
               <TableRow key={file.storageId}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <FileImage className="h-4 w-4 text-muted-foreground" />
+                    <FileImage className="size-4 text-muted-foreground" />
                     {file.fileName}
                   </div>
                   {file.error && (
                     <div className="text-xs text-destructive mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
+                      <AlertCircle className="size-3" />
                       {file.error}
                     </div>
                   )}
@@ -683,7 +683,7 @@ function UnmappedFilesReview({
                     className="text-muted-foreground hover:text-destructive"
                     onClick={() => handleDelete(file.storageId)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="size-4" />
                   </Button>
                 </TableCell>
               </TableRow>

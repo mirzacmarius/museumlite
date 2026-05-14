@@ -89,7 +89,7 @@ export function BulkAddToGroupDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FolderPlus className="h-5 w-5" />
+            <FolderPlus className="size-5" />
             Add to Collection Group
           </DialogTitle>
           <DialogDescription>

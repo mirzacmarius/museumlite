@@ -114,7 +114,7 @@ export default function DeaccessionDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("detail.selectOrg")}</p>
       </div>
     );
@@ -122,7 +122,7 @@ export default function DeaccessionDetailPage() {
 
   if (deaccession === undefined || collection === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{tCommon("loading")}</p>
       </div>
     );
@@ -130,7 +130,7 @@ export default function DeaccessionDetailPage() {
 
   if (deaccession === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("detail.notFound")}</p>
       </div>
     );
@@ -177,21 +177,21 @@ export default function DeaccessionDetailPage() {
       case "pending":
         return (
           <span className="inline-flex items-center rounded-full bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-600">
-            <Clock className="mr-1.5 h-4 w-4" />
+            <Clock className="mr-1.5 size-4" />
             {t("status.pending")}
           </span>
         );
       case "approved":
         return (
           <span className="inline-flex items-center rounded-full bg-green-500/10 px-3 py-1 text-sm font-medium text-green-600">
-            <CheckCircle className="mr-1.5 h-4 w-4" />
+            <CheckCircle className="mr-1.5 size-4" />
             {t("status.approved")}
           </span>
         );
       case "rejected":
         return (
           <span className="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-sm font-medium text-red-600">
-            <XCircle className="mr-1.5 h-4 w-4" />
+            <XCircle className="mr-1.5 size-4" />
             {t("status.rejected")}
           </span>
         );
@@ -222,7 +222,7 @@ export default function DeaccessionDetailPage() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <Button variant="ghost" size="sm" asChild className="w-fit">
                 <Link href="/deaccessions">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="mr-2 size-4" />
                   {t("actions.backToDeaccessions")}
                 </Link>
               </Button>
@@ -232,7 +232,7 @@ export default function DeaccessionDetailPage() {
                 onClick={() => setIsPrintModalOpen(true)}
                 className="border-border/70 bg-card/70 backdrop-blur"
               >
-                <Printer className="mr-2 h-4 w-4" />
+                <Printer className="mr-2 size-4" />
                 {t("actions.boardReport")}
               </Button>
             </div>
@@ -253,13 +253,13 @@ export default function DeaccessionDetailPage() {
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                         <span>{formattedDeaccessionedDate}</span>
-                        <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                        <span className="size-1 rounded-full bg-muted-foreground/50" />
                         <span>{actionLabel}</span>
-                        <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                        <span className="size-1 rounded-full bg-muted-foreground/50" />
                         <span className="capitalize">{deaccession.method}</span>
                         {collection && (
                           <>
-                            <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                            <span className="size-1 rounded-full bg-muted-foreground/50" />
                             <span className="truncate">{collection.title}</span>
                           </>
                         )}
@@ -343,11 +343,11 @@ export default function DeaccessionDetailPage() {
                               <img
                                 src={collectionThumbnail.thumbnailUrl}
                                 alt={collection.title}
-                                className="h-full w-full object-cover"
+                                className="size-full object-cover"
                                 loading="lazy"
                               />
                             ) : (
-                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                              <ImageIcon className="size-5 text-muted-foreground" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -356,11 +356,11 @@ export default function DeaccessionDetailPage() {
                             </p>
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                               <span>{collection.accessionNumber}</span>
-                              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                              <span className="size-1 rounded-full bg-muted-foreground/40" />
                               <span>{collectionStatusLabel}</span>
                             </div>
                           </div>
-                          <ArrowLeft className="h-4 w-4 flex-shrink-0 rotate-180 text-muted-foreground" />
+                          <ArrowLeft className="size-4 flex-shrink-0 rotate-180 text-muted-foreground" />
                         </Link>
                       </div>
                     )}
@@ -399,7 +399,7 @@ export default function DeaccessionDetailPage() {
                                   <Loader2 className="mr-2 size-4 animate-spin" />
                                 )}
                                 {!isApproving && (
-                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  <CheckCircle className="mr-2 size-4" />
                                 )}
                                 {`Approve ${actionLabel}`}
                               </Button>
@@ -413,7 +413,7 @@ export default function DeaccessionDetailPage() {
                                   <Loader2 className="mr-2 size-4 animate-spin" />
                                 )}
                                 {!isRejecting && (
-                                  <XCircle className="mr-2 h-4 w-4" />
+                                  <XCircle className="mr-2 size-4" />
                                 )}
                                 {t("actions.reject")}
                               </Button>
@@ -501,7 +501,7 @@ export default function DeaccessionDetailPage() {
                     <img
                       src={exportData.collection.primaryImageUrl}
                       alt={exportData.collection.title}
-                      className="h-24 w-24 flex-shrink-0 rounded border border-gray-300 object-cover print:h-20 print:w-20"
+                      className="size-24 flex-shrink-0 rounded border border-gray-300 object-cover print:size-20"
                     />
                   )}
                   <div className="flex-1 min-w-0">
@@ -742,7 +742,7 @@ export default function DeaccessionDetailPage() {
                             )}
                           </p>
                         </div>
-                        <CheckCircle className="h-8 w-8 text-green-600" />
+                        <CheckCircle className="size-8 text-green-600" />
                       </div>
                     </div>
                   )}
@@ -761,7 +761,7 @@ export default function DeaccessionDetailPage() {
               </div>
             ) : (
               <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                <Loader2 className="size-8 animate-spin text-gray-400" />
               </div>
             )}
           </div>
@@ -774,7 +774,7 @@ export default function DeaccessionDetailPage() {
               {t("actions.close")}
             </Button>
             <Button onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" />
+              <Printer className="mr-2 size-4" />
               {t("actions.print")}
             </Button>
           </div>

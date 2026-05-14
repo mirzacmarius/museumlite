@@ -46,12 +46,12 @@ function formatFileSize(bytes: number): string {
 
 function getFileIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) {
-    return <FileImage className="h-4 w-4" />;
+    return <FileImage className="size-4" />;
   }
   if (mimeType.startsWith("video/")) {
-    return <FileVideo className="h-4 w-4" />;
+    return <FileVideo className="size-4" />;
   }
-  return <FileText className="h-4 w-4" />;
+  return <FileText className="size-4" />;
 }
 
 export function DropzoneUploader({
@@ -226,7 +226,7 @@ export function DropzoneUploader({
         ) : (
           <Upload
             className={cn(
-              "mb-2 h-8 w-8",
+              "mb-2 size-8",
               isDragOver ? "text-primary" : "text-muted-foreground",
             )}
           />
@@ -253,7 +253,7 @@ export function DropzoneUploader({
               key={error}
               className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive"
             >
-              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <AlertCircle className="size-3.5 flex-shrink-0" />
               <span>{error}</span>
             </div>
           ))}
@@ -269,11 +269,11 @@ export function DropzoneUploader({
             >
               <div className="flex-shrink-0">
                 {upload.status === "complete" ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="size-4 text-green-500" />
                 ) : upload.status === "error" ? (
-                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <AlertCircle className="size-4 text-destructive" />
                 ) : upload.status === "uploading" ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <Loader2 className="size-4 animate-spin text-primary" />
                 ) : (
                   getFileIcon(upload.file.type)
                 )}

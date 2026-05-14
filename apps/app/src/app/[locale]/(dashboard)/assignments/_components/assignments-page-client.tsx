@@ -79,10 +79,10 @@ export function AssignmentsPageClient({
     assignments;
 
   return (
-    <div className="flex h-full w-full flex-col bg-background">
+    <div className="flex size-full flex-col bg-background">
       <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <ClipboardList className="h-5 w-5 text-indigo-400" />
+          <ClipboardList className="size-5 text-indigo-400" />
           <h1 className="text-lg font-semibold text-white">
             {t("assignmentsPage.title")}
           </h1>
@@ -91,7 +91,7 @@ export function AssignmentsPageClient({
           <div className="flex items-center gap-6 text-xs">
             <div className="flex items-center gap-2">
               <div className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
-                <Clock className="h-3.5 w-3.5" />
+                <Clock className="size-3.5" />
               </div>
               <span className="text-muted-foreground">
                 {stats.totalPendingApprovals}{" "}
@@ -100,7 +100,7 @@ export function AssignmentsPageClient({
             </div>
             <div className="flex items-center gap-2">
               <div className="flex size-6 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
-                <CheckCircle2 className="h-3.5 w-3.5" />
+                <CheckCircle2 className="size-3.5" />
               </div>
               <span className="text-muted-foreground">
                 {stats.totalCatalogedItems}{" "}
@@ -109,7 +109,7 @@ export function AssignmentsPageClient({
             </div>
             <div className="flex items-center gap-2">
               <div className="flex size-6 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
-                <History className="h-3.5 w-3.5" />
+                <History className="size-3.5" />
               </div>
               <span className="text-muted-foreground">
                 {stats.itemsModifiedThisWeek}{" "}
@@ -126,7 +126,7 @@ export function AssignmentsPageClient({
             <section>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-400" />
+                  <AlertCircle className="size-4 text-amber-400" />
                   <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
                     {t("assignmentsPage.sections.pendingApproval")}
                   </h2>
@@ -148,7 +148,7 @@ export function AssignmentsPageClient({
             <section>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <History className="h-4 w-4 text-blue-400" />
+                  <History className="size-4 text-blue-400" />
                   <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
                     {t("assignmentsPage.sections.recentlyModified")}
                   </h2>
@@ -158,7 +158,7 @@ export function AssignmentsPageClient({
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground/80 transition-colors"
                 >
                   {t("assignmentsPage.links.viewAllActivity")}
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="size-3" />
                 </Link>
               </div>
 
@@ -178,7 +178,7 @@ export function AssignmentsPageClient({
             <section>
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4 text-emerald-400" />
+                  <LayoutGrid className="size-4 text-emerald-400" />
                   <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
                     {t("assignmentsPage.sections.catalogedByYou")}
                   </h2>
@@ -192,7 +192,7 @@ export function AssignmentsPageClient({
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground/80 transition-colors"
                 >
                   {t("assignmentsPage.links.viewAllObjects")}
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="size-3" />
                 </Link>
               </div>
 
@@ -219,7 +219,7 @@ export function AssignmentsPageClient({
             recentlyModified.length === 0 &&
             myCatalogedItems.length === 0 && (
               <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border bg-muted/20">
-                <Inbox className="h-12 w-12 text-muted-foreground" />
+                <Inbox className="size-12 text-muted-foreground" />
                 <div className="text-center">
                   <h3 className="text-sm font-medium text-muted-foreground">
                     {t("assignmentsPage.empty.title")}
@@ -303,7 +303,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
                 "bg-cyan-500/10 border-cyan-500/30 text-cyan-400",
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="size-5" />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -327,7 +327,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
             )}
           </div>
 
-          <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          <ExternalLink className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
 
         <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/50 pt-3">
@@ -374,11 +374,11 @@ function CollectionCard({
             <img
               src={item.thumbnailUrl}
               alt={item.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-60 group-hover:opacity-80"
+              className="size-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-60 group-hover:opacity-80"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package className="h-8 w-8 text-muted-foreground" />
+            <div className="size-full flex items-center justify-center">
+              <Package className="size-8 text-muted-foreground" />
             </div>
           )}
 
@@ -410,7 +410,7 @@ function CollectionCard({
         <div className="p-3 bg-muted/20">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/50 pt-2">
             <span>{subtitle}</span>
-            <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </div>
       </div>

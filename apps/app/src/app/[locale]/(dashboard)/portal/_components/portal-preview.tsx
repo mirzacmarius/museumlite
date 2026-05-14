@@ -21,9 +21,9 @@ export function PortalPreview({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 rounded-t-lg border border-border bg-secondary/50 px-4 py-3">
         <div className="flex gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-red-500" />
-          <div className="h-3 w-3 rounded-full bg-yellow-500" />
-          <div className="h-3 w-3 rounded-full bg-green-500" />
+          <div className="size-3 rounded-full bg-red-500" />
+          <div className="size-3 rounded-full bg-yellow-500" />
+          <div className="size-3 rounded-full bg-green-500" />
         </div>
         <div className="code-text ml-4 flex-1 truncate rounded-md bg-background/60 px-3 py-1.5 text-muted-foreground">
           {portalUrl}
@@ -34,7 +34,7 @@ export function PortalPreview({
         {isEnabled && orgSlug ? (
           <iframe
             src={portalUrl}
-            className="h-full w-full border-0"
+            className="size-full border-0"
             title="Portal Preview"
           />
         ) : (

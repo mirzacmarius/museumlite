@@ -66,7 +66,7 @@ export function AccessionsWorkbenchNav({
                       : "border-border/60 bg-background text-muted-foreground",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="size-4" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{item.label}</p>

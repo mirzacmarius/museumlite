@@ -73,7 +73,7 @@ export default function LoanDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {tLoans("selectOrg.description")}
         </p>
@@ -83,7 +83,7 @@ export default function LoanDetailPage() {
 
   if (loan === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );
@@ -91,7 +91,7 @@ export default function LoanDetailPage() {
 
   if (loan === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {tLoans("emptyState.noLoansFound")}
         </p>
@@ -119,9 +119,9 @@ export default function LoanDetailPage() {
           {/* Navbar */}
           <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
             <div className="flex items-center gap-2 text-xs">
-              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+              <Button variant="ghost" size="icon" className="size-7" asChild>
                 <Link href="/loans">
-                  <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  <ArrowLeft className="size-4 text-muted-foreground" />
                 </Link>
               </Button>
               <span className="text-muted-foreground flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function LoanDetailPage() {
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded text-[10px] font-medium text-amber-600 dark:text-amber-500">
-                <AlertCircle className="h-3 w-3" />
+                <AlertCircle className="size-3" />
                 {tActions("pendingFacilityReportApproval")}
               </div>
               <div className="h-4 w-px bg-border" />
@@ -165,11 +165,11 @@ export default function LoanDetailPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                className="size-8 text-muted-foreground hover:text-foreground"
                 title={common("printManifest")}
                 onClick={() => setIsPrintModalOpen(true)}
               >
-                <Printer className="h-4 w-4" />
+                <Printer className="size-4" />
               </Button>
             </div>
           </header>
@@ -181,7 +181,7 @@ export default function LoanDetailPage() {
               <div className="mx-auto flex max-w-7xl items-start gap-8">
                 <div className="shrink-0 relative group">
                   {/* Borrower Logo Mockup */}
-                  <div className="w-32 h-32 rounded-xl border border-border shadow-2xl bg-background flex items-center justify-center p-2 relative overflow-hidden">
+                  <div className="size-32 rounded-xl border border-border shadow-2xl bg-background flex items-center justify-center p-2 relative overflow-hidden">
                     <div
                       className="absolute inset-0 opacity-10"
                       style={{
@@ -227,10 +227,10 @@ export default function LoanDetailPage() {
                       </span>
                       <span>{loan.loanNumber}</span>
                       {copied ? (
-                        <Check className="h-3 w-3 text-green-500" />
+                        <Check className="size-3 text-green-500" />
                       ) : (
                         <Copy
-                          className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                          className="size-3 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                           onClick={handleCopyId}
                         />
                       )}
@@ -253,7 +253,7 @@ export default function LoanDetailPage() {
                   {/* Metadata Row */}
                   <div className="flex items-center gap-6 pt-2">
                     <div className="flex items-center gap-2 text-xs">
-                      <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                      <CalendarRange className="size-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
                         {formatDate(new Date(loan.startDate), locale, {
                           month: "short",
@@ -271,14 +271,14 @@ export default function LoanDetailPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <Layers className="h-4 w-4 text-muted-foreground" />
+                      <Layers className="size-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
                         {loan.items.length} Objects (Paintings)
                       </span>
                     </div>
                     {loan.insuranceValue && (
                       <div className="flex items-center gap-2 text-xs">
-                        <Banknote className="h-4 w-4 text-muted-foreground" />
+                        <Banknote className="size-4 text-muted-foreground" />
                         <span className="text-muted-foreground">
                           {tActions("totalValue")}{" "}
                           {formatCurrency(loan.insuranceValue, locale, "USD")}
@@ -319,7 +319,7 @@ export default function LoanDetailPage() {
                       className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none flex items-center gap-1.5"
                     >
                       {tActions("facilityTab")}
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span className="size-1.5 rounded-full bg-amber-500" />
                     </TabsTrigger>
                     <TabsTrigger
                       value="logistics"
@@ -384,7 +384,7 @@ export default function LoanDetailPage() {
             <DialogTitle>Print Dispatch Manifest</DialogTitle>
             <div className="flex items-center gap-3">
               <Button onClick={() => window.print()} className="h-8 text-xs">
-                <Printer className="mr-2 h-4 w-4" />
+                <Printer className="mr-2 size-4" />
                 Print
               </Button>
             </div>
@@ -398,7 +398,7 @@ export default function LoanDetailPage() {
               <div className="border-b border-zinc-200 pb-6 flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                    <div className="w-6 h-6 bg-cyan-600 rounded flex items-center justify-center text-white font-bold text-xs">
+                    <div className="size-6 bg-cyan-600 rounded flex items-center justify-center text-white font-bold text-xs">
                       NM
                     </div>
                     <span className="text-[10px] uppercase tracking-widest font-semibold">

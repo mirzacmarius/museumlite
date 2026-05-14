@@ -24,11 +24,11 @@ export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
       >
         <div className="flex items-start gap-2">
           {currentTheme === "light" ? (
-            <Sun className="h-[14px] w-[14px]" />
+            <Sun className="size-[14px]" />
           ) : currentTheme === "dark" ? (
-            <Moon className="h-[14px] w-[14px]" />
+            <Moon className="size-[14px]" />
           ) : (
-            <Monitor className="h-[14px] w-[14px]" />
+            <Monitor className="size-[14px]" />
           )}
           {currentTheme && (
             <span className="text-xs font-medium">
@@ -64,11 +64,11 @@ export function ThemeSwitcherHome() {
           type="button"
         >
           {theme === "light" ? (
-            <Sun className="h-4 w-4 text-primary/80 hover:text-primary" />
+            <Sun className="size-4 text-primary/80 hover:text-primary" />
           ) : theme === "dark" ? (
-            <Moon className="h-4 w-4 text-primary/80 hover:text-primary" />
+            <Moon className="size-4 text-primary/80 hover:text-primary" />
           ) : (
-            <Monitor className="h-4 w-4 text-primary/80 hover:text-primary" />
+            <Monitor className="size-4 text-primary/80 hover:text-primary" />
           )}
         </button>
       ))}

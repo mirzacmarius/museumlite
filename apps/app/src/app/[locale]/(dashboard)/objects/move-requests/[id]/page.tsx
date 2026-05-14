@@ -30,7 +30,7 @@ function getStatusBadge(status: string) {
     case "pending_source_approval":
       return (
         <Badge className="border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/10">
-          <Clock className="mr-1 h-3 w-3" />
+          <Clock className="mr-1 size-3" />
           Pending transfer approval
         </Badge>
       );
@@ -38,28 +38,28 @@ function getStatusBadge(status: string) {
     case "awaiting_acceptance":
       return (
         <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10">
-          <Clock className="mr-1 h-3 w-3" />
+          <Clock className="mr-1 size-3" />
           Awaiting acceptance
         </Badge>
       );
     case "executed":
       return (
         <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/10">
-          <CheckCircle className="mr-1 h-3 w-3" />
+          <CheckCircle className="mr-1 size-3" />
           Executed
         </Badge>
       );
     case "rejected":
       return (
         <Badge className="border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/10">
-          <XCircle className="mr-1 h-3 w-3" />
+          <XCircle className="mr-1 size-3" />
           Rejected
         </Badge>
       );
     case "cancelled":
       return (
         <Badge variant="secondary">
-          <XCircle className="mr-1 h-3 w-3" />
+          <XCircle className="mr-1 size-3" />
           Cancelled
         </Badge>
       );
@@ -143,7 +143,7 @@ export default function MoveRequestDetailPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           Select an organization to continue.
         </p>
@@ -153,7 +153,7 @@ export default function MoveRequestDetailPage() {
 
   if (request === undefined || currentUser === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">Loading move request...</p>
       </div>
     );
@@ -161,7 +161,7 @@ export default function MoveRequestDetailPage() {
 
   if (request === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">Move request not found.</p>
       </div>
     );
@@ -254,7 +254,7 @@ export default function MoveRequestDetailPage() {
         <div className="mx-auto flex w-full max-w-screen-lg flex-col gap-6 py-6">
           <Button variant="ghost" size="sm" asChild className="w-fit">
             <Link href="/objects">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 size-4" />
               Back to objects
             </Link>
           </Button>
@@ -263,7 +263,7 @@ export default function MoveRequestDetailPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <ArrowRightLeft className="h-4 w-4" />
+                  <ArrowRightLeft className="size-4" />
                   Object move request
                 </div>
                 <h1 className="text-2xl font-semibold">

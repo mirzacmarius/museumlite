@@ -137,7 +137,7 @@ export function AuthPasswordForm({
             onClick={onEmailClear}
             type="button"
           >
-            <XCircle className="h-4 w-4 text-white/40" />
+            <XCircle className="size-4 text-white/40" />
           </button>
         </div>
       </div>
@@ -166,9 +166,9 @@ export function AuthPasswordForm({
             type="button"
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4 text-white/40" />
+              <EyeOff className="size-4 text-white/40" />
             ) : (
-              <Eye className="h-4 w-4 text-white/40" />
+              <Eye className="size-4 text-white/40" />
             )}
           </button>
         </div>
@@ -212,9 +212,9 @@ export function AuthPasswordForm({
               type="button"
             >
               {showRetypePassword ? (
-                <EyeOff className="h-4 w-4 text-white/40" />
+                <EyeOff className="size-4 text-white/40" />
               ) : (
-                <Eye className="h-4 w-4 text-white/40" />
+                <Eye className="size-4 text-white/40" />
               )}
             </button>
           </div>

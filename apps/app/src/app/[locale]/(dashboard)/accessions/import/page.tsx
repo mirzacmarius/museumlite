@@ -351,7 +351,7 @@ export default function ImportAccessionsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
           {t("selectOrganizationDescription")}
         </p>
@@ -360,18 +360,18 @@ export default function ImportAccessionsPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/accessions">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("backToAccessions")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="mr-2 size-4" />
               {t("import.downloadTemplate")}
             </Button>
           </div>
@@ -447,7 +447,7 @@ export default function ImportAccessionsPage() {
                     </p>
                   </div>
                   <Button variant="outline" onClick={handleReset}>
-                    <X className="mr-2 h-4 w-4" />
+                    <X className="mr-2 size-4" />
                     {t("import.cancel")}
                   </Button>
                 </div>
@@ -477,7 +477,7 @@ export default function ImportAccessionsPage() {
                         setState((prev) => ({ ...prev, step: "mapping" }))
                       }
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      <ArrowLeft className="mr-2 size-4" />
                       Back to Mapping
                     </Button>
                     {state.rows.length > 0 && (
@@ -494,7 +494,7 @@ export default function ImportAccessionsPage() {
                 {state.validationErrors.length > 0 && (
                   <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
                     <div className="flex items-center gap-2 text-destructive">
-                      <AlertCircle className="h-4 w-4" />
+                      <AlertCircle className="size-4" />
                       <span className="font-medium">
                         {state.validationErrors.length} validation errors
                       </span>
@@ -512,7 +512,7 @@ export default function ImportAccessionsPage() {
                 {state.rows.length > 0 && (
                   <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
                     <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="size-4" />
                       <span className="font-medium">
                         {state.rows.length} rows passed validation
                       </span>
@@ -543,7 +543,7 @@ export default function ImportAccessionsPage() {
                         setState((prev) => ({ ...prev, step: "validation" }))
                       }
                     >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      <ArrowLeft className="mr-2 size-4" />
                       Back to Validation
                     </Button>
                     <PermissionGate permission="collections.create">
@@ -552,7 +552,7 @@ export default function ImportAccessionsPage() {
                         disabled={state.rows.length === 0}
                         className="bg-indigo-600 hover:bg-indigo-500"
                       >
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="mr-2 size-4" />
                         {t("import.importButton", { count: state.rows.length })}
                       </Button>
                     </PermissionGate>
@@ -562,7 +562,7 @@ export default function ImportAccessionsPage() {
                 {state.validationErrors.length > 0 && (
                   <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
                     <div className="flex items-center gap-2 text-amber-600">
-                      <AlertCircle className="h-4 w-4" />
+                      <AlertCircle className="size-4" />
                       <span className="font-medium">
                         {state.validationErrors.length} rows were skipped due to
                         validation errors
@@ -574,7 +574,7 @@ export default function ImportAccessionsPage() {
                 {state.errors.length > 0 && (
                   <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
                     <div className="flex items-center gap-2 text-destructive">
-                      <AlertCircle className="h-4 w-4" />
+                      <AlertCircle className="size-4" />
                       <span className="font-medium">
                         {t("import.validationErrors", {
                           count: state.errors.length,
@@ -678,7 +678,7 @@ export default function ImportAccessionsPage() {
                 {state.errors.length > 0 && (
                   <div className="mt-6 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-left">
                     <div className="flex items-center gap-2 text-amber-600">
-                      <AlertCircle className="h-4 w-4" />
+                      <AlertCircle className="size-4" />
                       <span className="font-medium">
                         {t("import.issuesMessage", {
                           count: state.errors.length,

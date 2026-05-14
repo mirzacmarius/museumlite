@@ -48,9 +48,9 @@ export default function LibraryDashboardPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
+          <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
               {t("noOrganizationTitle")}
@@ -69,9 +69,9 @@ export default function LibraryDashboardPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="h-12 w-12 text-muted-foreground" />
+          <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("selectOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -85,9 +85,9 @@ export default function LibraryDashboardPage() {
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="h-12 w-12 text-muted-foreground" />
+          <Library className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">{t("notEnabled")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -141,13 +141,13 @@ export default function LibraryDashboardPage() {
   ];
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-6 flex-col py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-6 flex-col py-6">
         {/* Header */}
         <div className="flex w-full flex-col rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
-              <Library className="h-6 w-6 text-primary" />
+              <Library className="size-6 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold">{t("title")}</h1>
@@ -164,7 +164,7 @@ export default function LibraryDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 {t("stats.totalItems")}
               </span>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <BookOpen className="size-4 text-muted-foreground" />
             </div>
             <span className="mt-2 text-2xl font-semibold">
               {libraryStats?.totalItems ?? 0}
@@ -178,7 +178,7 @@ export default function LibraryDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 {t("stats.activePatrons")}
               </span>
-              <BookUser className="h-4 w-4 text-muted-foreground" />
+              <BookUser className="size-4 text-muted-foreground" />
             </div>
             <span className="mt-2 text-2xl font-semibold">
               {libraryStats?.activePatrons ?? 0}
@@ -192,7 +192,7 @@ export default function LibraryDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 {t("stats.checkedOut")}
               </span>
-              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              <RefreshCw className="size-4 text-muted-foreground" />
             </div>
             <span className="mt-2 text-2xl font-semibold">
               {libraryStats?.checkedOutItems ?? 0}
@@ -206,7 +206,7 @@ export default function LibraryDashboardPage() {
               <span className="text-sm text-muted-foreground">
                 {t("stats.outstandingFines")}
               </span>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="size-4 text-muted-foreground" />
             </div>
             <span className="mt-2 text-2xl font-semibold">
               ${(libraryStats?.outstandingFines ?? 0).toFixed(2)}
@@ -235,7 +235,7 @@ export default function LibraryDashboardPage() {
                 <div
                   className={`flex size-10 items-center justify-center rounded-lg bg-muted ${action.color}`}
                 >
-                  <action.icon className="h-5 w-5" />
+                  <action.icon className="size-5" />
                 </div>
                 <div>
                   <h3 className="font-medium">{action.title}</h3>

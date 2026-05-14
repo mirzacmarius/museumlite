@@ -20,7 +20,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
         <div className="flex gap-2">
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-cyan-500 transition-colors" />
+              <Search className="size-4 text-muted-foreground group-focus-within:text-cyan-500 transition-colors" />
             </div>
             <input
               type="text"
@@ -46,7 +46,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
               className="bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/20 transition-colors group"
             >
               <div className="h-40 bg-secondary relative overflow-hidden flex items-center justify-center">
-                <Box className="w-10 h-10 text-muted-foreground/30" />
+                <Box className="size-10 text-muted-foreground/30" />
                 <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[10px] font-mono text-white">
                   {item.accessionNumber}
                 </div>
@@ -65,7 +65,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
                       Condition Out
                     </p>
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{" "}
+                      <span className="size-1.5 rounded-full bg-emerald-500" />{" "}
                       {item.conditionOut || tActions("stable")}
                     </p>
                   </div>
@@ -75,12 +75,12 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
                     </p>
                     {item.conditionIn ? (
                       <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{" "}
+                        <span className="size-1.5 rounded-full bg-blue-500" />{" "}
                         Returned
                       </p>
                     ) : (
                       <p className="text-xs text-amber-600 dark:text-amber-500 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{" "}
+                        <span className="size-1.5 rounded-full bg-amber-500" />{" "}
                         On Loan
                       </p>
                     )}

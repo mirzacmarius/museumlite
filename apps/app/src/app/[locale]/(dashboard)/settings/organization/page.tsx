@@ -78,7 +78,7 @@ export default function OrganizationSettingsPage() {
       </div>
       <Button asChild>
         <Link href="/settings/organization/new">
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 size-4" />
           {t("organization.addOrganization")}
         </Link>
       </Button>
@@ -218,7 +218,7 @@ export default function OrganizationSettingsPage() {
         <PermissionGate permission="organization.manage_settings">
           <div className="rounded-lg border border-border bg-card p-6">
             <div className="mb-4 flex items-center gap-2">
-              <Droplet className="h-5 w-5" />
+              <Droplet className="size-5" />
               <h2 className="text-lg font-medium">Watermark Settings</h2>
             </div>
             <div className="space-y-4">
@@ -344,7 +344,7 @@ export default function OrganizationSettingsPage() {
                       onClick={handleSaveWatermarkSettings}
                       disabled={isSubmitting || !watermarkSettings.text.trim()}
                     >
-                      <Save className="mr-2 h-4 w-4" />
+                      <Save className="mr-2 size-4" />
                       Save Watermark Settings
                     </Button>
                   </div>
@@ -355,7 +355,7 @@ export default function OrganizationSettingsPage() {
 
           <div className="flex justify-end gap-4">
             <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 size-4" />
               {isSubmitting
                 ? t("organization.saving")
                 : t("organization.saveChanges")}

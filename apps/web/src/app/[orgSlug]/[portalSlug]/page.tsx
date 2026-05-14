@@ -102,7 +102,7 @@ export default function PublicPortalPage() {
                 onClick={() => setViewMode("grid")}
                 className="border-white/10"
               >
-                <Grid className="h-4 w-4" />
+                <Grid className="size-4" />
               </Button>
               <Button
                 variant={viewMode === "list" ? "secondary" : "outline"}
@@ -110,7 +110,7 @@ export default function PublicPortalPage() {
                 onClick={() => setViewMode("list")}
                 className="border-white/10"
               >
-                <List className="h-4 w-4" />
+                <List className="size-4" />
               </Button>
             </div>
           </div>
@@ -170,7 +170,7 @@ export default function PublicPortalPage() {
                 onClick={clearFilters}
                 className="text-white/60 hover:text-white"
               >
-                <X className="mr-2 h-4 w-4" />
+                <X className="mr-2 size-4" />
                 Clear Filters
               </Button>
             )}
@@ -262,7 +262,7 @@ export default function PublicPortalPage() {
                   href={`${basePath}/${encodeURIComponent(item.urlSlug || item.accessionNumber)}`}
                   className="group flex gap-4 p-4 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-24 h-24 relative rounded overflow-hidden flex-shrink-0">
+                  <div className="size-24 relative rounded overflow-hidden flex-shrink-0">
                     {item.primaryImageUrl ? (
                       <Image
                         src={item.primaryImageUrl}
@@ -292,7 +292,7 @@ export default function PublicPortalPage() {
                       {item.dateCreated && <span>{item.dateCreated}</span>}
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-white/40 self-center flex-shrink-0" />
+                  <ChevronRight className="size-5 text-white/40 self-center flex-shrink-0" />
                 </Link>
               ),
             )}

@@ -32,7 +32,7 @@ export function FacilityTab() {
         {/* Environment Stats */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-            <LayoutGrid className="w-3.5 h-3.5 text-cyan-500" />
+            <LayoutGrid className="size-3.5 text-cyan-500" />
             {t("climateControl")}
           </h3>
           <div className="space-y-6">
@@ -92,7 +92,7 @@ export function FacilityTab() {
         {/* Security Info */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-            <Shield className="w-3.5 h-3.5 text-red-500" />
+            <Shield className="size-3.5 text-red-500" />
             {t("securityAccess")}
           </h3>
           <ul className="space-y-4">

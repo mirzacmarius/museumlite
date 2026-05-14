@@ -100,7 +100,7 @@ export default function ModulesSettingsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">{t("selectOrganization")}</p>
         </div>
@@ -110,16 +110,16 @@ export default function ModulesSettingsPage() {
 
   if (organization === undefined || enabledIntegrations === undefined) {
     return (
-      <div className="flex h-full w-full flex-col gap-6">
+      <div className="flex size-full flex-col gap-6">
         <div className="flex w-full items-center justify-center rounded-lg border border-border bg-card p-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
         <p className="text-sm text-muted-foreground">{t("description")}</p>
@@ -142,7 +142,7 @@ export default function ModulesSettingsPage() {
               <div className="flex w-full items-start justify-between p-6">
                 <div className="flex items-start gap-4">
                   <div className="flex size-12 items-center justify-center rounded-lg bg-primary/5 text-primary">
-                    <Icon className="h-6 w-6" />
+                    <Icon className="size-6" />
                   </div>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function ModulesSettingsPage() {
                       </h3>
                       {isEnabled && (
                         <Badge variant="secondary" className="text-xs">
-                          <Check className="mr-1 h-3 w-3" />
+                          <Check className="mr-1 size-3" />
                           {t("enabled")}
                         </Badge>
                       )}
@@ -170,7 +170,7 @@ export default function ModulesSettingsPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
                   ) : (
                     <Switch
                       checked={isEnabled}

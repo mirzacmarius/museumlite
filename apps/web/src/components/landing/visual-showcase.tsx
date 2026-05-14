@@ -42,9 +42,9 @@ export function VisualShowcase() {
           <div className="relative rounded-xl bg-black/80 border border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10">
             {/* Header */}
             <div className="h-12 border-b border-white/10 flex items-center px-4 gap-2 bg-white/5">
-              <div className="w-3 h-3 rounded-full bg-red-500/50" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-              <div className="w-3 h-3 rounded-full bg-green-500/50" />
+              <div className="size-3 rounded-full bg-red-500/50" />
+              <div className="size-3 rounded-full bg-yellow-500/50" />
+              <div className="size-3 rounded-full bg-green-500/50" />
               <div className="ml-4 h-6 w-64 rounded-full bg-white/5" />
             </div>
 
@@ -60,7 +60,7 @@ export function VisualShowcase() {
                   {/* Top Bar */}
                   <div className="h-16 w-full rounded-lg bg-white/5 border border-white/5 flex items-center px-6 justify-between">
                     <div className="h-4 w-32 bg-white/10 rounded" />
-                    <div className="h-8 w-8 rounded-full bg-neon-blue/20" />
+                    <div className="size-8 rounded-full bg-neon-blue/20" />
                   </div>
 
                   {/* Grid */}

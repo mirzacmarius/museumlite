@@ -149,7 +149,7 @@ export function ActivityList({
 
   if (activities === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{common("loading")}</p>
       </div>
     );

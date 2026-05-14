@@ -40,7 +40,7 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
   return (
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
-        <Send className="h-4 w-4 text-blue-500" />
+        <Send className="size-4 text-blue-500" />
         Loan History
       </h3>
 

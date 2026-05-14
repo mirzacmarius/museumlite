@@ -664,7 +664,7 @@ export function ReportExportsCard({
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
+            <Download className="size-4" />
             {t("title")}
           </span>
         </CardTitle>
@@ -675,16 +675,16 @@ export function ReportExportsCard({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 {exporting === "board" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  <FileText className="w-4 h-4" />
+                  <FileText className="size-4" />
                 )}
                 {t("boardReport")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={exportBoardReport}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                <FileSpreadsheet className="size-4 mr-2" />
                 {t("exportAsCSV")}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -694,16 +694,16 @@ export function ReportExportsCard({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 {exporting === "insurance" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  <Package className="w-4 h-4" />
+                  <Package className="size-4" />
                 )}
                 {t("insuranceReport")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={exportInsuranceReport}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                <FileSpreadsheet className="size-4 mr-2" />
                 {t("exportAsCSV")}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -712,7 +712,7 @@ export function ReportExportsCard({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
-                <FileSpreadsheet className="w-4 h-4" />
+                <FileSpreadsheet className="size-4" />
                 {t("individualReports")}
               </Button>
             </DropdownMenuTrigger>

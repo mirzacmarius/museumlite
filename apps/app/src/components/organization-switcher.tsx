@@ -37,7 +37,7 @@ export function OrganizationSwitcher() {
   if (isLoading) {
     return (
       <Button variant="ghost" className="gap-2 px-2" disabled>
-        <Building2 className="h-4 w-4" />
+        <Building2 className="size-4" />
         <span className="text-sm font-medium">Loading...</span>
       </Button>
     );
@@ -47,7 +47,7 @@ export function OrganizationSwitcher() {
     return (
       <Button variant="ghost" className="gap-2 px-2" asChild>
         <Link href="/settings/organization/new">
-          <Plus className="h-4 w-4" />
+          <Plus className="size-4" />
           <span className="text-sm font-medium">Create Organization</span>
         </Link>
       </Button>
@@ -62,11 +62,11 @@ export function OrganizationSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="gap-2 px-2">
-          <Building2 className="h-4 w-4" />
+          <Building2 className="size-4" />
           <span className="text-sm font-medium">
             {currentOrg?.name || "Select Organization"}
           </span>
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-56">
@@ -86,7 +86,7 @@ export function OrganizationSwitcher() {
                 </span>
               </div>
               {currentOrganizationId === org._id && (
-                <Check className="h-4 w-4" />
+                <Check className="size-4" />
               )}
             </div>
           </DropdownMenuItem>

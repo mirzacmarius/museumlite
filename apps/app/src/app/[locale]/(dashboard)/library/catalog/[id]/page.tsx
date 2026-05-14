@@ -131,15 +131,15 @@ export default function CatalogItemDetailPage() {
 
   if (item === undefined) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex size-full items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (item === null) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground">{tDetail("itemNotFound")}</p>
           <Button asChild className="mt-4">
@@ -209,14 +209,14 @@ export default function CatalogItemDetailPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl flex-col gap-6 py-6">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl flex-col gap-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/library/catalog">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {tLib("back")}
               </Link>
             </Button>
@@ -233,7 +233,7 @@ export default function CatalogItemDetailPage() {
           <div className="flex gap-2">
             {item.catalogStatus === "draft" && (
               <Button variant="outline" onClick={handlePublish}>
-                <Check className="mr-2 h-4 w-4" />
+                <Check className="mr-2 size-4" />
                 {tDetail("publish")}
               </Button>
             )}
@@ -241,7 +241,7 @@ export default function CatalogItemDetailPage() {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline">
-                    <Archive className="mr-2 h-4 w-4" />
+                    <Archive className="mr-2 size-4" />
                     {tDetail("archive")}
                   </Button>
                 </AlertDialogTrigger>
@@ -265,14 +265,14 @@ export default function CatalogItemDetailPage() {
             )}
             <Button variant="outline" asChild>
               <Link href={`/library/catalog/${itemId}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
+                <Edit className="mr-2 size-4" />
                 {tDetail("edit")}
               </Link>
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-2 size-4" />
                   {tCommon("delete")}
                 </Button>
               </AlertDialogTrigger>
@@ -434,18 +434,18 @@ export default function CatalogItemDetailPage() {
                   </p>
                 </div>
                 <Button onClick={() => setIsAddCopyOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                   {tDetail("addCopy")}
                 </Button>
               </div>
               <div className="p-6">
                 {copies === undefined ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : copies.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Copy className="h-12 w-12 text-muted-foreground" />
+                    <Copy className="size-12 text-muted-foreground" />
                     <p className="mt-4 text-muted-foreground">
                       {tDetail("noCopiesYet")}
                     </p>
@@ -454,7 +454,7 @@ export default function CatalogItemDetailPage() {
                       className="mt-4"
                       onClick={() => setIsAddCopyOpen(true)}
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-2 size-4" />
                       {tDetail("addFirstCopy")}
                     </Button>
                   </div>
@@ -482,7 +482,7 @@ export default function CatalogItemDetailPage() {
                               {copy.shelfLocation && (
                                 <>
                                   <span>|</span>
-                                  <MapPin className="h-3 w-3" />
+                                  <MapPin className="size-3" />
                                   <span>{copy.shelfLocation}</span>
                                 </>
                               )}
@@ -498,7 +498,7 @@ export default function CatalogItemDetailPage() {
                                 size="sm"
                                 disabled={copy.status === "checked_out"}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <Trash2 className="size-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -546,7 +546,7 @@ export default function CatalogItemDetailPage() {
                   />
                 ) : (
                   <div className="flex aspect-[2/3] items-center justify-center rounded-lg bg-muted">
-                    <BookOpen className="h-16 w-16 text-muted-foreground" />
+                    <BookOpen className="size-16 text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -703,7 +703,7 @@ export default function CatalogItemDetailPage() {
                 {isAddingCopy ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 size-4" />
                 )}
                 {tDetail("addCopyDialog.addCopyButton")}
               </Button>

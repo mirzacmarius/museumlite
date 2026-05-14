@@ -121,7 +121,7 @@ export function RecordContextSidebar({
           <img
             src={heroImageUrl}
             alt="Object"
-            className="h-full w-full object-cover"
+            className="size-full object-cover"
           />
         </div>
       )}
@@ -236,13 +236,13 @@ export function RecordContextSidebar({
                     href={`/objects/${obj._id}`}
                     className="group flex items-center gap-2 rounded-full border border-border bg-background/50 py-1 pl-1 pr-3 transition-all hover:border-accent hover:bg-accent/5"
                   >
-                    <Avatar className="h-8 w-8 ring-1 ring-border group-hover:ring-accent">
+                    <Avatar className="size-8 ring-1 ring-border group-hover:ring-accent">
                       <AvatarImage
                         src={obj.thumbnailUrl ?? undefined}
                         alt={obj.title}
                       />
                       <AvatarFallback className="bg-secondary text-[10px]">
-                        <ImageOff className="h-3 w-3 text-muted-foreground" />
+                        <ImageOff className="size-3 text-muted-foreground" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
@@ -307,7 +307,7 @@ export function RecordContextSidebar({
       <SidebarFooter className="border-t border-border/60 p-3">
         {verified && (
           <div className="mb-3 flex items-center gap-3 rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-2">
-            <ShieldCheck className="h-4 w-4 text-indigo-400" />
+            <ShieldCheck className="size-4 text-indigo-400" />
             <div className="flex-1">
               <p className="text-[10px] font-medium text-indigo-200">
                 Record Verified
@@ -326,12 +326,12 @@ export function RecordContextSidebar({
             asChild
           >
             <Link href={`/objects/${collectionId}/edit`}>
-              <Pencil className="mr-1.5 h-3 w-3" />
+              <Pencil className="mr-1.5 size-3" />
               Edit
             </Link>
           </Button>
           <Button variant="outline" size="sm" className="flex-1 text-xs">
-            <Share2 className="mr-1.5 h-3 w-3" />
+            <Share2 className="mr-1.5 size-3" />
             Share
           </Button>
         </div>

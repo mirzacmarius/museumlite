@@ -80,7 +80,7 @@ export function PortalSettingsSidebar() {
       <div className="w-0 flex-shrink-0">
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         </div>
       </div>
@@ -129,7 +129,7 @@ export function PortalSettingsSidebar() {
                   rel="noopener noreferrer"
                   className="rounded-md p-2 transition-colors hover:bg-secondary"
                 >
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  <ExternalLink className="size-4 text-muted-foreground" />
                 </a>
               )}
             </div>
@@ -218,12 +218,12 @@ export function PortalSettingsSidebar() {
               </>
             ) : showSuccess ? (
               <>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Saved!
               </>
             ) : (
               <>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Save Settings
               </>
             )}

@@ -44,7 +44,7 @@ export default function NewDeaccessionPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("form.selectOrg")}</p>
       </div>
     );
@@ -85,13 +85,13 @@ export default function NewDeaccessionPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-xl gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/deaccessions">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-2 size-4" />
                 {t("actions.backToDeaccessions")}
               </Link>
             </Button>
@@ -236,7 +236,7 @@ export default function NewDeaccessionPage() {
                 </Button>
                 <PermissionGate permission="collections.create">
                   <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className="mr-2 size-4" />
                     {isSubmitting ? t("actions.creating") : t("actions.create")}
                   </Button>
                 </PermissionGate>

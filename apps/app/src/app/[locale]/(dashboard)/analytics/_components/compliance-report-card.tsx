@@ -103,13 +103,13 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <FileCheck className="w-4 h-4" />
+          <FileCheck className="size-4" />
           {t("analytics.compliance.title")}
         </CardTitle>
         <div className="grid grid-cols-3 gap-2 mt-4">
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-2 text-center group hover:bg-amber-500/20 transition-colors cursor-default">
             <div className="text-lg font-bold text-amber-500 flex items-center justify-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
+              <Clock className="size-3.5" />
               {totalPending}
             </div>
             <div className="text-[10px] text-amber-400 uppercase tracking-wider">
@@ -118,7 +118,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
           </div>
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-md p-2 text-center group hover:bg-emerald-500/20 transition-colors cursor-default">
             <div className="text-lg font-bold text-emerald-500 flex items-center justify-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="size-3.5" />
               {totalApproved}
             </div>
             <div className="text-[10px] text-emerald-400 uppercase tracking-wider">
@@ -127,7 +127,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
           </div>
           <div className="bg-red-500/10 border border-red-500/20 rounded-md p-2 text-center group hover:bg-red-500/20 transition-colors cursor-default">
             <div className="text-lg font-bold text-red-500 flex items-center justify-center gap-1">
-              <XCircle className="w-3.5 h-3.5" />
+              <XCircle className="size-3.5" />
               {totalRejected}
             </div>
             <div className="text-[10px] text-red-400 uppercase tracking-wider">
@@ -140,7 +140,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
         <Tabs defaultValue="accessions" className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-2 h-8 bg-muted/50">
             <TabsTrigger value="accessions" className="text-xs h-7 gap-1">
-              <ScrollText className="w-3 h-3" />
+              <ScrollText className="size-3" />
               {t("analytics.compliance.accessions")}
               {data.accessions.pending > 0 && (
                 <Badge
@@ -152,7 +152,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               )}
             </TabsTrigger>
             <TabsTrigger value="deaccessions" className="text-xs h-7 gap-1">
-              <ScrollText className="w-3 h-3" />
+              <ScrollText className="size-3" />
               {t("analytics.compliance.deaccessions")}
               {data.deaccessions.pending > 0 && (
                 <Badge
@@ -170,7 +170,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               {data.accessions.pendingApprovals.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-amber-500 mb-2 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
+                    <Clock className="size-3" />
                     {t("analytics.compliance.pending")} (
                     {data.accessions.pending})
                   </h4>
@@ -219,7 +219,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
 
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
+                  <CheckCircle2 className="size-3" />
                   {t("analytics.compliance.recentActivity")}
                 </h4>
                 <div className="rounded-md border border-border bg-background/50 overflow-hidden">
@@ -294,7 +294,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
               {data.deaccessions.pendingApprovals.length > 0 && (
                 <div>
                   <h4 className="text-xs font-semibold text-amber-500 mb-2 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
+                    <Clock className="size-3" />
                     {t("analytics.compliance.pending")} (
                     {data.deaccessions.pending})
                   </h4>
@@ -346,7 +346,7 @@ export function ComplianceReportCard({ data }: ComplianceReportCardProps) {
 
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
+                  <CheckCircle2 className="size-3" />
                   {t("analytics.compliance.recentActivity")}
                 </h4>
                 <div className="rounded-md border border-border bg-background/50 overflow-hidden">

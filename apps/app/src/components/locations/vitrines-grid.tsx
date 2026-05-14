@@ -78,7 +78,7 @@ function VitrineCard({ item }: VitrineCardProps) {
           <span className="text-[10px] font-mono text-zinc-500">
             {item.id.toUpperCase()}
           </span>
-          <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+          <div className={`size-1.5 rounded-full ${statusDot}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
           <span className="text-[9px] text-zinc-600">Empty Slot</span>
@@ -94,11 +94,11 @@ function VitrineCard({ item }: VitrineCardProps) {
           <span className="text-[10px] font-mono text-zinc-400">
             {item.id.toUpperCase()}
           </span>
-          <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+          <div className={`size-1.5 rounded-full ${statusDot}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
           <div className="text-center space-y-2">
-            <Package className="w-12 h-12 text-zinc-600 mx-auto" />
+            <Package className="size-12 text-zinc-600 mx-auto" />
             <p className="text-[10px] text-zinc-500">Under Maintenance</p>
           </div>
         </div>
@@ -114,21 +114,21 @@ function VitrineCard({ item }: VitrineCardProps) {
           {item.id.toUpperCase()} (
           {item.type.charAt(0).toUpperCase() + item.type.slice(1)})
         </span>
-        <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+        <div className={`size-1.5 rounded-full ${statusDot}`} />
       </div>
       <div className="p-4 pt-12 h-full flex flex-col gap-4">
         <div className="flex-1 border-b border-white/5 flex items-end justify-center pb-2 relative">
-          <div className="w-16 h-16 relative group/item cursor-pointer">
+          <div className="size-16 relative group/item cursor-pointer">
             <div className="absolute inset-0 bg-amber-500/20 blur-xl opacity-0 group-hover/item:opacity-50 transition-opacity" />
-            <Package className="w-full h-full text-zinc-300 drop-shadow-xl relative z-10" />
+            <Package className="size-full text-zinc-300 drop-shadow-xl relative z-10" />
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-0.5 rounded text-[8px] text-white opacity-0 group-hover/item:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
               {item.name}
             </div>
           </div>
         </div>
         <div className="flex-1 flex items-end justify-center pb-2 relative">
-          <div className="w-12 h-12 relative group/item cursor-pointer">
-            <Package className="w-full h-full text-zinc-400 drop-shadow-xl relative z-10" />
+          <div className="size-12 relative group/item cursor-pointer">
+            <Package className="size-full text-zinc-400 drop-shadow-xl relative z-10" />
           </div>
         </div>
       </div>

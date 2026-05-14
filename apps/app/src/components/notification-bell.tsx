@@ -104,7 +104,7 @@ export function NotificationBell() {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="relative size-8 rounded-full p-0">
-          <Bell className="h-4 w-4" />
+          <Bell className="size-4" />
           {unreadCountValue > 0 && (
             <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
               {unreadCountValue > 9 ? "9+" : unreadCountValue}
@@ -124,7 +124,7 @@ export function NotificationBell() {
                 className="h-7 text-xs"
                 onClick={handleMarkAllRead}
               >
-                <CheckCheck className="mr-1 h-3 w-3" />
+                <CheckCheck className="mr-1 size-3" />
                 Mark all read
               </Button>
             )}
@@ -168,9 +168,9 @@ export function NotificationBell() {
                     >
                       <div className="mt-0.5 flex-shrink-0">
                         {notification.relatedEntityType === "move_request" ? (
-                          <ArrowRightLeft className="h-4 w-4 text-primary" />
+                          <ArrowRightLeft className="size-4 text-primary" />
                         ) : !notification.read ? (
-                          <div className="h-2 w-2 rounded-full bg-primary" />
+                          <div className="size-2 rounded-full bg-primary" />
                         ) : null}
                       </div>
                       <div className="flex flex-1 flex-col gap-1">
@@ -194,7 +194,7 @@ export function NotificationBell() {
                                 handleMarkRead(notification._id);
                               }}
                             >
-                              <Check className="h-3 w-3" />
+                              <Check className="size-3" />
                             </Button>
                           )}
                         </div>

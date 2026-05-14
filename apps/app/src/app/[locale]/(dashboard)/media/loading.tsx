@@ -2,7 +2,7 @@ import { MediaGridSkeleton } from "./media-skeletons";
 
 export default function MediaLoading() {
   return (
-    <div className="flex h-full w-full flex-col bg-background">
+    <div className="flex size-full flex-col bg-background">
       <div className="flex h-full flex-col p-6">
         <div className="mb-6 flex items-end justify-between">
           <div>
@@ -13,7 +13,7 @@ export default function MediaLoading() {
             {Array.from({ length: 3 }, (_, i) => `media-stat-${i}`).map(
               (key) => (
                 <div key={key} className="flex items-center gap-2">
-                  <div className="h-4 w-4 rounded bg-muted/50" />
+                  <div className="size-4 rounded bg-muted/50" />
                   <div className="flex flex-col gap-1">
                     <div className="h-3 w-12 rounded bg-muted/40" />
                     <div className="h-4 w-16 rounded bg-muted/60" />

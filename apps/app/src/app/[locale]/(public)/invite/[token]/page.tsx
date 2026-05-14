@@ -77,11 +77,11 @@ export default function InvitePage({ params }: PageProps) {
   // Loading state
   if (invitation === undefined) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="size-screen flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
           <Logo width={200} height={200} />
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
             <p>{t("loading")}</p>
           </div>
         </div>
@@ -92,13 +92,13 @@ export default function InvitePage({ params }: PageProps) {
   // Invitation not found
   if (invitation === null) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="size-screen flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
           <Logo width={200} height={200} />
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center">
               <div className="rounded-full bg-destructive/10 p-3">
-                <XCircle className="h-8 w-8 text-destructive" />
+                <XCircle className="size-8 text-destructive" />
               </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -117,13 +117,13 @@ export default function InvitePage({ params }: PageProps) {
   // Success state
   if (success) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="size-screen flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
           <Logo width={200} height={200} />
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center">
               <div className="rounded-full bg-green-500/10 p-3">
-                <CheckCircle className="h-8 w-8 text-green-500" />
+                <CheckCircle className="size-8 text-green-500" />
               </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">{success}</h1>
@@ -137,13 +137,13 @@ export default function InvitePage({ params }: PageProps) {
   // Expired invitation
   if (invitation.isExpired || invitation.status === "expired") {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="size-screen flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
           <Logo width={200} height={200} />
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center">
               <div className="rounded-full bg-orange-500/10 p-3">
-                <AlertCircle className="h-8 w-8 text-orange-500" />
+                <AlertCircle className="size-8 text-orange-500" />
               </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -162,13 +162,13 @@ export default function InvitePage({ params }: PageProps) {
   // Already accepted
   if (invitation.status === "accepted") {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="size-screen flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
           <Logo width={200} height={200} />
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center">
               <div className="rounded-full bg-blue-500/10 p-3">
-                <CheckCircle className="h-8 w-8 text-blue-500" />
+                <CheckCircle className="size-8 text-blue-500" />
               </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -189,13 +189,13 @@ export default function InvitePage({ params }: PageProps) {
   // Already declined
   if (invitation.status === "declined") {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+      <div className="size-screen flex flex-col items-center justify-center px-4">
         <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
           <Logo width={200} height={200} />
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center">
               <div className="rounded-full bg-destructive/10 p-3">
-                <XCircle className="h-8 w-8 text-destructive" />
+                <XCircle className="size-8 text-destructive" />
               </div>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -222,7 +222,7 @@ export default function InvitePage({ params }: PageProps) {
 
   // Main invitation view
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center px-4">
+    <div className="size-screen flex flex-col items-center justify-center px-4">
       <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
         <Logo width={200} height={200} />
         <div className="text-center space-y-2">
@@ -259,7 +259,7 @@ export default function InvitePage({ params }: PageProps) {
 
         {error && (
           <div className="w-full rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             {error}
           </div>
         )}

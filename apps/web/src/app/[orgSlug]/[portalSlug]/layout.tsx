@@ -34,17 +34,17 @@ export default function PortalLayout({
               href={`/${orgSlug}/${portalSlug}`}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
+              <div className="size-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
                 {organization?.logoUrl ? (
                   <Image
                     src={organization.logoUrl}
                     alt={organization.name}
                     width={40}
                     height={40}
-                    className="object-cover w-full h-full"
+                    className="object-cover size-full"
                   />
                 ) : (
-                  <Building2 className="h-5 w-5 text-white/60" />
+                  <Building2 className="size-5 text-white/60" />
                 )}
               </div>
               <div>

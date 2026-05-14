@@ -62,7 +62,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <Presentation className="w-4 h-4" />
+          <Presentation className="size-4" />
           {t("analytics.exhibitions.title")}
         </CardTitle>
         <div className="mt-4 space-y-3">
@@ -72,21 +72,21 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
               variant="outline"
               className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 hover:bg-emerald-500/20"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <div className="size-1.5 rounded-full bg-emerald-500" />
               {data.active} {t("analytics.exhibitions.active")}
             </Badge>
             <Badge
               variant="outline"
               className="text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1 hover:bg-blue-500/20"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <div className="size-1.5 rounded-full bg-blue-500" />
               {data.approved} {t("analytics.exhibitions.approved")}
             </Badge>
             <Badge
               variant="outline"
               className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/20 gap-1 hover:bg-amber-500/20"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <div className="size-1.5 rounded-full bg-amber-500" />
               {data.proposed} {t("analytics.exhibitions.proposed")}
             </Badge>
           </div>
@@ -96,8 +96,8 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
         {data.activeNow.length > 0 && (
           <div>
             <h4 className="text-xs font-semibold text-emerald-500 mb-3 uppercase tracking-wider flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative flex size-2">
+                <span className="animate-ping absolute inline-flex size-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
               </span>
               {t("analytics.exhibitions.activeNow")}
@@ -114,7 +114,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                     {exh.location && (
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {exh.location}
+                        <MapPin className="size-3" /> {exh.location}
                       </span>
                     )}
                   </div>
@@ -145,7 +145,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                     </h5>
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />{" "}
+                        <Calendar className="size-3" />{" "}
                         {formatDate(new Date(exh.startDate), locale)}
                       </span>
                       {exh.location && <span>• {exh.location}</span>}

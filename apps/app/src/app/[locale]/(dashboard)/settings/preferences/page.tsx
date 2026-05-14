@@ -128,7 +128,7 @@ function LocationTypesEditor({
           placeholder="Gallery, Vault, Shelf"
         />
         <Button type="button" variant="outline" onClick={addLocationType}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 size-4" />
           Add
         </Button>
       </div>
@@ -148,7 +148,7 @@ function LocationTypesEditor({
                 className="text-muted-foreground hover:text-destructive"
                 aria-label={`Delete ${type}`}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="size-3.5" />
               </button>
             </div>
           ))}
@@ -603,7 +603,7 @@ export default function PreferencesSettingsPage() {
 
         <div className="flex justify-end">
           <Button onClick={handleSavePreferences} disabled={isSubmitting}>
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 size-4" />
             {isSubmitting
               ? t("organization.saving")
               : t("organization.saveChanges")}

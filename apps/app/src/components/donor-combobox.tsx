@@ -346,7 +346,7 @@ export function DonorCombobox({
                   className="hover:text-destructive cursor-pointer"
                   aria-label={`Remove ${donor}`}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="size-3" />
                 </span>
               </div>
             ))}
@@ -393,7 +393,7 @@ export function DonorCombobox({
               disabled={disabled}
             />
 
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
@@ -448,7 +448,7 @@ export function DonorCombobox({
                       <div className="flex w-full items-center gap-2">
                         <Check
                           className={cn(
-                            "h-4 w-4 shrink-0",
+                            "size-4 shrink-0",
                             selectedValues.some(
                               (v) =>
                                 v.toLowerCase() === donor.value.toLowerCase(),
@@ -486,7 +486,7 @@ export function DonorCombobox({
                       <div className="flex w-full items-center gap-2">
                         <Check
                           className={cn(
-                            "h-4 w-4 shrink-0",
+                            "size-4 shrink-0",
                             selectedValues.some(
                               (v) =>
                                 v.toLowerCase() === donor.value.toLowerCase(),

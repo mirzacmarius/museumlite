@@ -92,7 +92,7 @@ export function RepeatableTextField({
                 onClick={() => handleRemove(index)}
                 title="Remove"
               >
-                <X className="h-4 w-4" />
+                <X className="size-4" />
               </Button>
             </div>
           ))
@@ -104,7 +104,7 @@ export function RepeatableTextField({
           onClick={handleAdd}
           className="w-full"
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 size-4" />
           Add {label}
         </Button>
       </div>

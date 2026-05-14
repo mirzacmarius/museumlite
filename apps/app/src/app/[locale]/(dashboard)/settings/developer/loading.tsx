@@ -44,7 +44,7 @@ export default function DeveloperSettingsLoading() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-9 w-20 rounded-lg bg-muted/50" />
-                      <div className="h-9 w-9 rounded bg-muted/30" />
+                      <div className="size-9 rounded bg-muted/30" />
                     </div>
                   </div>
                 ),

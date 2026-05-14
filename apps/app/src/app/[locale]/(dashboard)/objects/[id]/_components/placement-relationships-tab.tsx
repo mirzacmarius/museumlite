@@ -32,7 +32,7 @@ export function PlacementRelationshipsTab({
     <div className="space-y-8">
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <MapPin className="h-4 w-4 text-emerald-500" />
+          <MapPin className="size-4 text-emerald-500" />
           Placement
         </h3>
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">
@@ -64,7 +64,7 @@ export function PlacementRelationshipsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Boxes className="h-4 w-4 text-sky-500" />
+          <Boxes className="size-4 text-sky-500" />
           Relationships
         </h3>
         <div className="space-y-4 rounded-xl border border-border/60 bg-secondary/20 p-6">

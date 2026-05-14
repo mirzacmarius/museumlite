@@ -74,7 +74,7 @@ export function VehicleDetailsTab({
             {common("noDetailsYet", { module: "vehicle" })}
           </p>
           <Button variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             {common("addDetails", { module: "Vehicle" })}
           </Button>
         </div>
@@ -87,7 +87,7 @@ export function VehicleDetailsTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Car className="h-4 w-4 text-blue-500" />
+            <Car className="size-4 text-blue-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("vehicle")}
             </span>
@@ -100,7 +100,7 @@ export function VehicleDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Settings className="h-4 w-4 text-muted-foreground" />
+            <Settings className="size-4 text-muted-foreground" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("vin")}
             </span>
@@ -112,7 +112,7 @@ export function VehicleDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Gauge className="h-4 w-4 text-amber-500" />
+            <Gauge className="size-4 text-amber-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("odometer")}
             </span>
@@ -127,7 +127,7 @@ export function VehicleDetailsTab({
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
+            <DollarSign className="size-4 text-emerald-500" />
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {t("insuranceValue")}
             </span>
@@ -226,7 +226,7 @@ export function VehicleDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Wrench className="h-4 w-4 text-blue-500" />
+          <Wrench className="size-4 text-blue-500" />
           {t("serviceHistory")}
         </h3>
 
@@ -279,7 +279,7 @@ export function VehicleDetailsTab({
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <Trophy className="h-4 w-4 text-amber-500" />
+          <Trophy className="size-4 text-amber-500" />
           {t("eventHistory")}
         </h3>
 
@@ -331,7 +331,7 @@ export function VehicleDetailsTab({
                         key={award}
                         className="flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-500"
                       >
-                        <Award className="h-3 w-3" />
+                        <Award className="size-3" />
                         {award}
                       </span>
                     ))}

@@ -16,7 +16,7 @@ export function Header() {
   return (
     <header className="fixed top-0 w-full flex items-center justify-between p-4 z-50 bg-background/80 backdrop-blur-sm border-b border-border/40">
       <Link href="/" className="flex items-center gap-2">
-        <Logo className="w-10 h-10 md:w-12 md:h-12" />
+        <Logo className="size-10 md:size-12" />
         <span className="font-departure text-lg md:text-xl">MuseumLite</span>
       </Link>
 

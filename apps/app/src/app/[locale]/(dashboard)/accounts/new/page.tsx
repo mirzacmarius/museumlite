@@ -85,7 +85,7 @@ export default function NewAccountPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">{t("selectOrganizationCreate")}</p>
       </div>
     );
@@ -145,14 +145,14 @@ export default function NewAccountPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-background px-6">
-      <div className="z-10 mx-auto flex h-full w-full max-w-screen-md gap-12">
+    <div className="flex size-full bg-background px-6">
+      <div className="z-10 mx-auto flex size-full max-w-screen-md gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <div className="flex w-full items-center justify-between rounded-lg p-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/accounts">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="mr-2 size-4" />
                   {t("back")}
                 </Link>
               </Button>
@@ -460,7 +460,7 @@ export default function NewAccountPage() {
             {/* Account Type / Role */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <UserCog className="h-4 w-4" />
+                <UserCog className="size-4" />
                 {t("form.accountTypeRole")}
               </h3>
               <div className="space-y-4">
@@ -502,7 +502,7 @@ export default function NewAccountPage() {
               rolesWithLoansPermissions.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
+                    <Shield className="size-4" />
                     {t("form.rolesWithAccess")}
                   </h3>
                   <div className="space-y-4 rounded-lg border border-border p-4">
@@ -546,7 +546,7 @@ export default function NewAccountPage() {
                 {isSubmitting ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : (
-                  <Save className="mr-2 h-4 w-4" />
+                  <Save className="mr-2 size-4" />
                 )}
                 {isSubmitting ? t("form.creating") : t("form.createButton")}
               </Button>

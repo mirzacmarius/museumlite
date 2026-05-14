@@ -29,7 +29,7 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
         onClick={() => onChange("list")}
         aria-label={tCommon("listView")}
       >
-        <List className="h-4 w-4" />
+        <List className="size-4" />
       </Button>
       <Button
         variant="ghost"
@@ -41,7 +41,7 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
         onClick={() => onChange("grid")}
         aria-label={tCommon("gridView")}
       >
-        <LayoutGrid className="h-4 w-4" />
+        <LayoutGrid className="size-4" />
       </Button>
     </div>
   );

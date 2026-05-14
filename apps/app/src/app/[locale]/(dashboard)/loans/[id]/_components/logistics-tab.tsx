@@ -12,8 +12,8 @@ export function LogisticsTab() {
         </h3>
         {/* Crate 1 */}
         <div className="bg-card border border-border rounded-xl p-4 flex gap-4 items-center">
-          <div className="w-16 h-16 bg-secondary rounded border border-border flex flex-col items-center justify-center shrink-0">
-            <Box className="w-5 h-5 text-muted-foreground mb-1" />
+          <div className="size-16 bg-secondary rounded border border-border flex flex-col items-center justify-center shrink-0">
+            <Box className="size-5 text-muted-foreground mb-1" />
             <span className="text-[10px] font-mono text-muted-foreground">
               #01
             </span>
@@ -32,17 +32,17 @@ export function LogisticsTab() {
             </p>
             <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1">
-                <AlertTriangle className="w-2.5 h-2.5" /> Shock Sensors
+                <AlertTriangle className="size-2.5" /> Shock Sensors
               </span>
               <span className="flex items-center gap-1">
-                <Box className="w-2.5 h-2.5" /> Tyvek Lined
+                <Box className="size-2.5" /> Tyvek Lined
               </span>
             </div>
           </div>
         </div>
         {/* Crate 2 */}
         <div className="bg-card border border-border rounded-xl p-4 flex gap-4 items-center opacity-70">
-          <div className="w-16 h-16 bg-secondary rounded border border-border flex flex-col items-center justify-center shrink-0 border-dashed">
+          <div className="size-16 bg-secondary rounded border border-border flex flex-col items-center justify-center shrink-0 border-dashed">
             <span className="text-[10px] font-mono text-muted-foreground">
               #02
             </span>
@@ -75,8 +75,8 @@ export function LogisticsTab() {
           Transport Agent
         </h3>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center shadow-sm">
-            <Truck className="w-5 h-5" />
+          <div className="size-10 bg-background rounded-lg flex items-center justify-center shadow-sm">
+            <Truck className="size-5" />
           </div>
           <div>
             <p className="text-sm font-semibold text-foreground">
