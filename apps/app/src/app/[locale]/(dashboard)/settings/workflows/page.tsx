@@ -43,11 +43,40 @@ interface WorkflowStep {
   name: string;
 }
 
+interface EditableWorkflowStep extends WorkflowStep {
+  clientKey: string;
+}
+
 interface WorkflowConfig {
   workflowType: WorkflowType;
   steps: WorkflowStep[];
   canInitiateRoles: Id<"roles">[];
 }
+
+interface RoleOption {
+  _id: Id<"roles">;
+  name: string;
+}
+
+const WORKFLOW_TYPES: WorkflowType[] = [
+  "accession",
+  "deaccession",
+  "loan",
+  "acquisition",
+  "exhibition",
+  "conservation",
+];
+
+const createStepKey = (workflowType: WorkflowType, step: WorkflowStep) =>
+  `${workflowType}-${step.stepNumber}-${step.roleId}-${step.name}`;
+
+const createNewStepKey = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `step-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 export default function WorkflowsSettingsPage() {
   const t = useScopedI18n("workflows");
@@ -58,7 +87,7 @@ export default function WorkflowsSettingsPage() {
     null,
   );
   const [formData, setFormData] = useState<{
-    steps: WorkflowStep[];
+    steps: EditableWorkflowStep[];
     canInitiateRoles: Id<"roles">[];
   }>({
     steps: [],
@@ -98,7 +127,12 @@ export default function WorkflowsSettingsPage() {
     const config = getWorkflowConfig(type);
     setEditingWorkflow(type);
     setFormData({
-      steps: config?.steps ? [...config.steps] : [],
+      steps: config?.steps
+        ? config.steps.map((step) => ({
+            ...step,
+            clientKey: createStepKey(type, step),
+          }))
+        : [],
       canInitiateRoles: config?.canInitiateRoles
         ? [...config.canInitiateRoles]
         : [],
@@ -113,7 +147,8 @@ export default function WorkflowsSettingsPage() {
     setIsSubmitting(true);
     try {
       const indexedSteps = formData.steps.map((step, index) => ({
-        ...step,
+        name: step.name,
+        roleId: step.roleId,
         stepNumber: index + 1,
       }));
 
@@ -141,6 +176,7 @@ export default function WorkflowsSettingsPage() {
           stepNumber: prev.steps.length + 1,
           roleId: roles[0]!._id,
           name: `Step ${prev.steps.length + 1}`,
+          clientKey: createNewStepKey(),
         },
       ],
     }));
@@ -199,118 +235,8 @@ export default function WorkflowsSettingsPage() {
     }));
   };
 
-  const getWorkflowTitle = (type: WorkflowType | null): string => {
-    switch (type) {
-      case "accession":
-        return t("accession");
-      case "deaccession":
-        return t("deaccession");
-      case "loan":
-        return t("loan");
-      case "acquisition":
-        return t("acquisition");
-      case "exhibition":
-        return t("exhibition");
-      case "conservation":
-        return t("conservation");
-      default:
-        return "";
-    }
-  };
-
-  const renderWorkflowCard = (type: WorkflowType) => {
-    const config = getWorkflowConfig(type);
-    const stepCount = config?.steps.length || 0;
-    const initiatorCount = config?.canInitiateRoles.length || 0;
-
-    return (
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-medium text-foreground">
-              {getWorkflowTitle(type)}
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("configureSteps")}
-            </p>
-          </div>
-          <PermissionGate permission="organization.manage_settings">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleEditClick(type)}
-              className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
-            >
-              <Edit className="mr-2 size-4" />
-              {t("editWorkflow")}
-            </Button>
-          </PermissionGate>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <h4 className="mb-3 text-sm font-medium text-foreground/80">
-              {t("approvalSteps")}
-            </h4>
-            {stepCount === 0 ? (
-              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
-                {t("noStepsConfigured")}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {config?.steps.map((step, index) => {
-                  const role = roles?.find((r) => r._id === step.roleId);
-                  return (
-                    <div
-                      key={`${step.stepNumber}-${step.roleId}`}
-                      className="flex items-center gap-4 rounded-lg border border-border bg-background/50 p-3"
-                    >
-                      <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-foreground">
-                          {step.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Role: {role?.name || t("unknownRole")}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <h4 className="mb-3 text-sm font-medium text-foreground/80">
-              {t("canInitiate")}
-            </h4>
-            {initiatorCount === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {t("noRolesAssigned")}
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {config?.canInitiateRoles.map((roleId) => {
-                  const role = roles?.find((r) => r._id === roleId);
-                  return (
-                    <span
-                      key={roleId}
-                      className="rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground"
-                    >
-                      {role?.name || t("unknownRole")}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const getWorkflowTitle = (type: WorkflowType | null): string =>
+    getWorkflowTitleLabel(type, t);
 
   return (
     <div className="flex w-full flex-col gap-8 bg-background">
@@ -320,12 +246,17 @@ export default function WorkflowsSettingsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {renderWorkflowCard("accession")}
-        {renderWorkflowCard("deaccession")}
-        {renderWorkflowCard("loan")}
-        {renderWorkflowCard("acquisition")}
-        {renderWorkflowCard("exhibition")}
-        {renderWorkflowCard("conservation")}
+        {WORKFLOW_TYPES.map((type) => (
+          <WorkflowCard
+            key={type}
+            config={getWorkflowConfig(type)}
+            roles={roles}
+            title={getWorkflowTitle(type)}
+            t={t}
+            type={type}
+            onEdit={handleEditClick}
+          />
+        ))}
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -365,7 +296,7 @@ export default function WorkflowsSettingsPage() {
                 <div className="space-y-3">
                   {formData.steps.map((step, index) => (
                     <div
-                      key={`form-step-${index}-${step.roleId}`}
+                      key={step.clientKey}
                       className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4"
                     >
                       <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground mt-2.5">
@@ -461,7 +392,7 @@ export default function WorkflowsSettingsPage() {
               <div className="rounded-lg border border-border bg-muted/30 p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {roles?.map((role) => (
-                    <div key={role._id} className="flex items-center space-x-2">
+                    <div key={role._id} className="flex items-center gap-x-2">
                       <Checkbox
                         id={`role-${role._id}`}
                         checked={formData.canInitiateRoles.includes(role._id)}
@@ -500,6 +431,180 @@ export default function WorkflowsSettingsPage() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function getWorkflowTitleLabel(
+  type: WorkflowType | null,
+  t: ReturnType<typeof useScopedI18n<"workflows">>,
+): string {
+  switch (type) {
+    case "accession":
+      return t("accession");
+    case "deaccession":
+      return t("deaccession");
+    case "loan":
+      return t("loan");
+    case "acquisition":
+      return t("acquisition");
+    case "exhibition":
+      return t("exhibition");
+    case "conservation":
+      return t("conservation");
+    default:
+      return "";
+  }
+}
+
+interface WorkflowCardProps {
+  type: WorkflowType;
+  title: string;
+  config: WorkflowConfig | undefined;
+  roles: RoleOption[] | undefined;
+  t: ReturnType<typeof useScopedI18n<"workflows">>;
+  onEdit: (type: WorkflowType) => void;
+}
+
+function WorkflowCard({
+  type,
+  title,
+  config,
+  roles,
+  t,
+  onEdit,
+}: WorkflowCardProps) {
+  const stepCount = config?.steps.length || 0;
+  const initiatorCount = config?.canInitiateRoles.length || 0;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-6">
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-medium text-foreground">{title}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("configureSteps")}
+          </p>
+        </div>
+        <PermissionGate permission="organization.manage_settings">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(type)}
+            className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
+          >
+            <Edit className="mr-2 size-4" />
+            {t("editWorkflow")}
+          </Button>
+        </PermissionGate>
+      </div>
+
+      <div className="space-y-6">
+        <WorkflowStepsSummary
+          steps={config?.steps}
+          roles={roles}
+          stepCount={stepCount}
+          t={t}
+        />
+        <WorkflowInitiatorsSummary
+          roleIds={config?.canInitiateRoles}
+          roles={roles}
+          initiatorCount={initiatorCount}
+          t={t}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface WorkflowStepsSummaryProps {
+  steps: WorkflowStep[] | undefined;
+  roles: RoleOption[] | undefined;
+  stepCount: number;
+  t: ReturnType<typeof useScopedI18n<"workflows">>;
+}
+
+function WorkflowStepsSummary({
+  steps,
+  roles,
+  stepCount,
+  t,
+}: WorkflowStepsSummaryProps) {
+  return (
+    <div>
+      <h4 className="mb-3 text-sm font-medium text-foreground/80">
+        {t("approvalSteps")}
+      </h4>
+      {stepCount === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+          {t("noStepsConfigured")}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {steps?.map((step, index) => {
+            const role = roles?.find(
+              (roleOption) => roleOption._id === step.roleId,
+            );
+            return (
+              <div
+                key={`${step.stepNumber}-${step.roleId}`}
+                className="flex items-center gap-4 rounded-lg border border-border bg-background/50 p-3"
+              >
+                <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                  {index + 1}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-foreground">
+                    {step.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Role: {role?.name || t("unknownRole")}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface WorkflowInitiatorsSummaryProps {
+  roleIds: Id<"roles">[] | undefined;
+  roles: RoleOption[] | undefined;
+  initiatorCount: number;
+  t: ReturnType<typeof useScopedI18n<"workflows">>;
+}
+
+function WorkflowInitiatorsSummary({
+  roleIds,
+  roles,
+  initiatorCount,
+  t,
+}: WorkflowInitiatorsSummaryProps) {
+  return (
+    <div>
+      <h4 className="mb-3 text-sm font-medium text-foreground/80">
+        {t("canInitiate")}
+      </h4>
+      {initiatorCount === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("noRolesAssigned")}</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {roleIds?.map((roleId) => {
+            const role = roles?.find((roleOption) => roleOption._id === roleId);
+            return (
+              <span
+                key={roleId}
+                className="rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+              >
+                {role?.name || t("unknownRole")}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

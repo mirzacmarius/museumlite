@@ -1,45 +1,96 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 
 export interface CursorStackPaginationOptions {
   resetKey: string;
   initialCursor?: string | null;
 }
 
+interface CursorStackPaginationState {
+  resetKey: string;
+  initialCursor: string | null;
+  cursor: string | null;
+  stack: Array<string | null>;
+}
+
 export function useCursorStackPagination({
   resetKey,
   initialCursor = null,
 }: CursorStackPaginationOptions) {
-  const [cursor, setCursor] = useState<string | null>(initialCursor);
-  const [stack, setStack] = useState<Array<string | null>>([]);
+  const [state, setState] = useState<CursorStackPaginationState>({
+    resetKey,
+    initialCursor,
+    cursor: initialCursor,
+    stack: [],
+  });
 
-  useEffect(() => {
-    setCursor(initialCursor);
-    setStack([]);
-  }, [initialCursor, resetKey]);
+  const isReset =
+    state.resetKey !== resetKey || state.initialCursor !== initialCursor;
+  const cursor = isReset ? initialCursor : state.cursor;
+  const stack = isReset ? [] : state.stack;
+  const canGoPrev = stack.length > 0;
 
-  const goNext = useCallback((nextCursor: string) => {
-    setStack((prev) => [...prev, cursor]);
-    setCursor(nextCursor);
-  }, [cursor]);
+  const goNext = useCallback(
+    (nextCursor: string) => {
+      setState({
+        resetKey,
+        initialCursor,
+        cursor: nextCursor,
+        stack: [...stack, cursor],
+      });
+    },
+    [cursor, initialCursor, resetKey, stack],
+  );
 
   const goPrev = useCallback(() => {
-    setStack((prev) => {
-      if (prev.length === 0) return prev;
-      const nextStack = prev.slice(0, -1);
-      const prevCursor = prev[prev.length - 1] ?? null;
-      setCursor(prevCursor);
-      return nextStack;
-    });
-  }, []);
+    setState((prev) => {
+      const currentStack =
+        prev.resetKey !== resetKey || prev.initialCursor !== initialCursor
+          ? []
+          : prev.stack;
 
-  const canGoPrev = useMemo(() => stack.length > 0, [stack.length]);
+      if (currentStack.length === 0) {
+        return {
+          resetKey,
+          initialCursor,
+          cursor: initialCursor,
+          stack: [],
+        };
+      }
+
+      return {
+        resetKey,
+        initialCursor,
+        cursor: currentStack[currentStack.length - 1] ?? null,
+        stack: currentStack.slice(0, -1),
+      };
+    });
+  }, [initialCursor, resetKey]);
 
   const reset = useCallback(() => {
-    setCursor(initialCursor);
-    setStack([]);
-  }, [initialCursor]);
+    setState({
+      resetKey,
+      initialCursor,
+      cursor: initialCursor,
+      stack: [],
+    });
+  }, [initialCursor, resetKey]);
+
+  const setCursor = useCallback(
+    (nextCursor: string | null) => {
+      setState((prev) => ({
+        resetKey,
+        initialCursor,
+        cursor: nextCursor,
+        stack:
+          prev.resetKey !== resetKey || prev.initialCursor !== initialCursor
+            ? []
+            : prev.stack,
+      }));
+    },
+    [initialCursor, resetKey],
+  );
 
   return {
     cursor,
@@ -50,4 +101,3 @@ export function useCursorStackPagination({
     reset,
   };
 }
-
