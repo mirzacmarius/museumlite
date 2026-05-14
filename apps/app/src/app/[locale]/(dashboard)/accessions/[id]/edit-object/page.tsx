@@ -4,14 +4,12 @@ import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { redirect, useParams } from "next/navigation";
 import { ObjectRequestFormPage } from "../../../objects/new/page";
 
 export default function EditAccessionObjectPage() {
   const params = useParams();
   const accessionId = params.id as string;
-  const router = useRouter();
   const tCommon = useScopedI18n("common");
 
   const accession = useQuery(
@@ -35,21 +33,16 @@ export default function EditAccessionObjectPage() {
     );
   }
 
-  const isDraft =
-    accession.status === "pending" && accession.workflowStep === 0;
   const canEditObjectDraft =
     accession.status === "pending" && Boolean(accession.draftObjectData);
+  const shouldEditAccessionFirst =
+    accession.status === "pending" &&
+    accession.workflowStep === 0 &&
+    !accession.draftObjectData;
 
-  useEffect(() => {
-    if (
-      accession &&
-      accession.status === "pending" &&
-      accession.workflowStep === 0 &&
-      !accession.draftObjectData
-    ) {
-      router.replace(`/accessions/${accessionId}/edit`);
-    }
-  }, [accession, accessionId, router]);
+  if (shouldEditAccessionFirst) {
+    redirect(`/accessions/${accessionId}/edit`);
+  }
 
   if (!canEditObjectDraft || !accession.draftObjectData) {
     return (
