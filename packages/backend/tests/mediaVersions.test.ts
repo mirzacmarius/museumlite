@@ -6,10 +6,7 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -98,7 +95,9 @@ async function createTestSetup(
   });
 
   const storageId = await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }));
+    return await ctx.storage.store(
+      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+    );
   });
 
   const mediaFileId = await t.run(async (ctx) => {
@@ -134,15 +133,12 @@ describe("mediaVersions", () => {
     const setup = await createTestSetup(t);
 
     const authed = authedForUser(t, setup.userId);
-    const versionId = await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "crop",
-        editMetadata: { x: 0, y: 0, width: 100, height: 100 },
-      },
-    );
+    const versionId = await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "crop",
+      editMetadata: { x: 0, y: 0, width: 100, height: 100 },
+    });
 
     expect(versionId).toBeDefined();
 
@@ -161,24 +157,18 @@ describe("mediaVersions", () => {
     const authed = authedForUser(t, setup.userId);
 
     // Create version 1
-    await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "crop",
-      },
-    );
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "crop",
+    });
 
     // Create version 2
-    const version2Id = await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "rotate",
-      },
-    );
+    const version2Id = await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "rotate",
+    });
 
     const version2 = await t.run(async (ctx) => {
       return await ctx.db.get(version2Id);
@@ -217,39 +207,27 @@ describe("mediaVersions", () => {
     const authed = authedForUser(t, setup.userId);
 
     // Create multiple versions
-    await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "crop",
-      },
-    );
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "crop",
+    });
 
-    await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "rotate",
-      },
-    );
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "rotate",
+    });
 
-    await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "adjust",
-      },
-    );
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "adjust",
+    });
 
-    const versions = await authed.query(
-      api.mediaVersions.listVersions,
-      {
-        mediaId: setup.mediaFileId,
-      },
-    );
+    const versions = await authed.query(api.mediaVersions.listVersions, {
+      mediaId: setup.mediaFileId,
+    });
 
     expect(versions.length).toBe(3);
     expect(versions[0].versionNumber).toBe(3); // Newest first
@@ -263,31 +241,22 @@ describe("mediaVersions", () => {
     const authed = authedForUser(t, setup.userId);
 
     // Create versions
-    const version1Id = await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "crop",
-      },
-    );
+    const version1Id = await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "crop",
+    });
 
-    await authed.mutation(
-      api.mediaVersions.createVersion,
-      {
-        mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
-        editType: "rotate",
-      },
-    );
+    await authed.mutation(api.mediaVersions.createVersion, {
+      mediaId: setup.mediaFileId,
+      storageId: setup.storageId,
+      editType: "rotate",
+    });
 
     // Revert to version 1
-    await authed.mutation(
-      api.mediaVersions.revertToVersion,
-      {
-        versionId: version1Id,
-      },
-    );
+    await authed.mutation(api.mediaVersions.revertToVersion, {
+      versionId: version1Id,
+    });
 
     const mediaFile = await t.run(async (ctx) => {
       return await ctx.db.get(setup.mediaFileId);
@@ -359,17 +328,17 @@ describe("mediaVersions", () => {
     });
 
     const otherRoleId = await t.run(async (ctx) => {
-      const mediaUploadPermId = await ctx.db.insert("permissions", {
-        name: "media.upload",
-        category: "media",
-      });
-
-      const roleId = await ctx.db.insert("roles", {
-        organizationId: otherOrgId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-
+      const [mediaUploadPermId, roleId] = await Promise.all([
+        ctx.db.insert("permissions", {
+          name: "media.upload",
+          category: "media",
+        }),
+        ctx.db.insert("roles", {
+          organizationId: otherOrgId,
+          name: "Admin",
+          isSystemRole: true,
+        }),
+      ]);
       await ctx.db.insert("rolePermissions", {
         roleId,
         permissionId: mediaUploadPermId,
@@ -389,14 +358,11 @@ describe("mediaVersions", () => {
 
     // Try to create version for media in different org - should throw
     await expect(
-      authedForUser(t, otherUserId).mutation(
-        api.mediaVersions.createVersion,
-        {
-          mediaId: setup.mediaFileId,
-          storageId: setup.storageId,
-          editType: "crop",
-        },
-      ),
+      authedForUser(t, otherUserId).mutation(api.mediaVersions.createVersion, {
+        mediaId: setup.mediaFileId,
+        storageId: setup.storageId,
+        editType: "crop",
+      }),
     ).rejects.toThrow();
   });
 });

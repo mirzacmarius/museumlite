@@ -523,21 +523,20 @@ test("should filter locations by siteId in listAll", async () => {
       isActive: true,
     });
 
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-    });
-
+    const [userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -621,21 +620,20 @@ test("should filter locations by siteId in list", async () => {
       isActive: true,
     });
 
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-    });
-
+    const [userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -721,21 +719,20 @@ test("should list locations by site using listBySite query", async () => {
       isActive: true,
     });
 
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-    });
-
+    const [userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,

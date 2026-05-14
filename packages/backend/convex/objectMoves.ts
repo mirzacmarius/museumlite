@@ -129,9 +129,10 @@ async function getTransferHierarchy(
   sourceOrganizationId: Id<"organizations">,
   targetOrganizationId: Id<"organizations">,
 ) {
-  const sourceOrganization = await ctx.db.get(sourceOrganizationId);
-  const targetOrganization = await ctx.db.get(targetOrganizationId);
-
+  const [sourceOrganization, targetOrganization] = await Promise.all([
+    ctx.db.get(sourceOrganizationId),
+    ctx.db.get(targetOrganizationId),
+  ]);
   if (!sourceOrganization || !targetOrganization) {
     throw new Error("Organization not found");
   }
@@ -752,8 +753,10 @@ async function createApprovedTransferDeaccession(
     return request.deaccessionId;
   }
 
-  const sourceOrganization = await ctx.db.get(request.sourceOrganizationId);
-  const targetOrganization = await ctx.db.get(request.targetOrganizationId);
+  const [sourceOrganization, targetOrganization] = await Promise.all([
+    ctx.db.get(request.sourceOrganizationId),
+    ctx.db.get(request.targetOrganizationId),
+  ]);
   if (!sourceOrganization || !targetOrganization) {
     throw new Error("Organization not found");
   }
@@ -856,8 +859,10 @@ export const listEligibleTargetOrganizations = query({
           return null;
         }
 
-        const organization = await ctx.db.get(membership.organizationId);
-        const role = await ctx.db.get(membership.roleId);
+        const [organization, role] = await Promise.all([
+          ctx.db.get(membership.organizationId),
+          ctx.db.get(membership.roleId),
+        ]);
         if (!organization) {
           return null;
         }
@@ -1123,25 +1128,25 @@ export const get = query({
       return null;
     }
 
-    const canReadSource = await hasPermission(
-      ctx,
-      request.sourceOrganizationId,
-      "collections.read",
-    );
-    const canReadTarget = await hasPermission(
-      ctx,
-      request.targetOrganizationId,
-      "collections.read",
-    );
-
+    const [canReadSource, canReadTarget] = await Promise.all([
+      hasPermission(ctx, request.sourceOrganizationId, "collections.read"),
+      hasPermission(ctx, request.targetOrganizationId, "collections.read"),
+    ]);
     if (!canReadSource && !canReadTarget && request.requestedBy !== userId) {
       throw new Error("Permission denied: collections.read");
     }
 
-    const collection = await ctx.db.get(request.collectionId);
-    const sourceOrganization = await ctx.db.get(request.sourceOrganizationId);
-    const targetOrganization = await ctx.db.get(request.targetOrganizationId);
-    const requestedByUser = await ctx.db.get(request.requestedBy);
+    const [
+      collection,
+      sourceOrganization,
+      targetOrganization,
+      requestedByUser,
+    ] = await Promise.all([
+      ctx.db.get(request.collectionId),
+      ctx.db.get(request.sourceOrganizationId),
+      ctx.db.get(request.targetOrganizationId),
+      ctx.db.get(request.requestedBy),
+    ]);
     const reviewedByUser = request.reviewedBy
       ? await ctx.db.get(request.reviewedBy)
       : null;
@@ -1231,11 +1236,12 @@ export const listForOrganization = query({
 
     let enrichedRequests = await Promise.all(
       requests.map(async (request) => {
-        const collection = await ctx.db.get(request.collectionId);
-        const targetOrganization = await ctx.db.get(
-          request.targetOrganizationId,
-        );
-        const requestedByUser = await ctx.db.get(request.requestedBy);
+        const [collection, targetOrganization, requestedByUser] =
+          await Promise.all([
+            ctx.db.get(request.collectionId),
+            ctx.db.get(request.targetOrganizationId),
+            ctx.db.get(request.requestedBy),
+          ]);
         const reviewedByUser = request.reviewedBy
           ? await ctx.db.get(request.reviewedBy)
           : null;

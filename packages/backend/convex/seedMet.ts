@@ -308,26 +308,27 @@ export const createMediaFile = internalMutation({
   },
   returns: v.id("mediaFiles"),
   handler: async (ctx, args) => {
-    const mediaId = await ctx.db.insert("mediaFiles", {
-      collectionId: args.collectionId,
-      organizationId: args.organizationId,
-      storageId: args.storageId,
-      fileName: args.fileName,
-      fileType: "image",
-      fileSize: args.fileSize,
-      mimeType: "image/jpeg",
-      mediaCategory: "image",
-      isPrimary: true,
-      photographer: args.photographer,
-      copyright: args.photographer
-        ? `Photo by ${args.photographer}`
-        : "Public Domain",
-      uploadedBy: args.userId,
-      uploadedAt: Date.now(),
-      uploadStatus: "completed",
-    });
-
-    const storageBytes = await getStorageBytes(ctx, args.storageId);
+    const [mediaId, storageBytes] = await Promise.all([
+      ctx.db.insert("mediaFiles", {
+        collectionId: args.collectionId,
+        organizationId: args.organizationId,
+        storageId: args.storageId,
+        fileName: args.fileName,
+        fileType: "image",
+        fileSize: args.fileSize,
+        mimeType: "image/jpeg",
+        mediaCategory: "image",
+        isPrimary: true,
+        photographer: args.photographer,
+        copyright: args.photographer
+          ? `Photo by ${args.photographer}`
+          : "Public Domain",
+        uploadedBy: args.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      }),
+      getStorageBytes(ctx, args.storageId),
+    ]);
     await applyUsageCounterDelta(ctx, args.organizationId, {
       mediaFileCount: 1,
       mediaTypeDeltas: [
@@ -801,15 +802,17 @@ export const createCollectionGroupItem = internalMutation({
       return existing._id;
     }
 
-    const itemId = await ctx.db.insert("collectionGroupItems", {
-      collectionGroupId: args.collectionGroupId,
-      collectionId: args.collectionId,
-      addedBy: args.userId,
-      addedAt: Date.now(),
-    });
+    const [itemId, group] = await Promise.all([
+      ctx.db.insert("collectionGroupItems", {
+        collectionGroupId: args.collectionGroupId,
+        collectionId: args.collectionId,
+        addedBy: args.userId,
+        addedAt: Date.now(),
+      }),
+      ctx.db.get(args.collectionGroupId),
+    ]);
 
     // Update items count on the group
-    const group = await ctx.db.get(args.collectionGroupId);
     if (group) {
       await ctx.db.patch(args.collectionGroupId, {
         itemsCount: (group.itemsCount ?? 0) + 1,

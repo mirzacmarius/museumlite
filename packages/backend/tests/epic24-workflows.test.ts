@@ -308,17 +308,15 @@ describe("Epic 24: Multi-Approver Logic", () => {
   test("multi approval mode requires threshold before fully approved", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "organization.manage_settings",
+    const [{ organizationId, userId, roleId }, userId2] = await Promise.all([
+      createOrgWithRole(t, ["organization.manage_settings"]),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Second User",
+          email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
+      }),
     ]);
-
-    const userId2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Second User",
-        email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
-    });
-
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowConfigs", {
         organizationId,
@@ -409,17 +407,15 @@ describe("Epic 24: Multi-Approver Logic", () => {
   test("clearStepApprovals removes all approvals for a step", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createOrgWithRole(t, [
-      "organization.manage_settings",
+    const [{ organizationId, userId }, userId2] = await Promise.all([
+      createOrgWithRole(t, ["organization.manage_settings"]),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Another User",
+          email: `another-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
+      }),
     ]);
-
-    const userId2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Another User",
-        email: `another-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
-    });
-
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowStepApprovals", {
         organizationId,
@@ -492,13 +488,14 @@ describe("Epic 24: Workflow Templates", () => {
     });
 
     // #when
-    const accessionTemplates = await t.query(api.workflows.listTemplates, {
-      workflowType: "accession",
-    });
-    const loanTemplates = await t.query(api.workflows.listTemplates, {
-      workflowType: "loan",
-    });
-
+    const [accessionTemplates, loanTemplates] = await Promise.all([
+      t.query(api.workflows.listTemplates, {
+        workflowType: "accession",
+      }),
+      t.query(api.workflows.listTemplates, {
+        workflowType: "loan",
+      }),
+    ]);
     // #then
     expect(accessionTemplates.length).toBe(1);
     expect(accessionTemplates[0]?.name).toBe("Accession Template");
@@ -565,22 +562,20 @@ describe("Epic 24: Workflow Templates", () => {
   test("applyTemplateToOrganization throws if role not found", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createOrgWithRole(
-      t,
-      ["organization.manage_settings"],
-      "Admin",
-    );
-
-    const templateId = await t.run(async (ctx) => {
-      return await ctx.db.insert("workflowTemplates", {
-        name: "Missing Role Template",
-        workflowType: "accession",
-        isSystem: true,
-        steps: [{ stepNumber: 1, name: "Review", roleName: "NonExistentRole" }],
-        createdAt: Date.now(),
-      });
-    });
-
+    const [{ organizationId, userId }, templateId] = await Promise.all([
+      createOrgWithRole(t, ["organization.manage_settings"], "Admin"),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("workflowTemplates", {
+          name: "Missing Role Template",
+          workflowType: "accession",
+          isSystem: true,
+          steps: [
+            { stepNumber: 1, name: "Review", roleName: "NonExistentRole" },
+          ],
+          createdAt: Date.now(),
+        });
+      }),
+    ]);
     // #when / #then
     const authed = t.withIdentity({
       subject: `${userId}|session-missing-role`,

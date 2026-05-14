@@ -35,31 +35,30 @@ describe("contacts", () => {
     });
 
     roleId = await t.run(async (ctx) => {
-      const role = await ctx.db.insert("roles", {
-        organizationId,
-        name: "Admin",
-        description: "Administrator role",
-        isSystemRole: true,
-      });
-
-      const readPermission = await ctx.db.insert("permissions", {
-        name: "accounts.read",
-        description: "Read accounts",
-        category: "accounts",
-      });
-
-      const writePermission = await ctx.db.insert("permissions", {
-        name: "accounts.write",
-        description: "Write accounts",
-        category: "accounts",
-      });
-
-      const deletePermission = await ctx.db.insert("permissions", {
-        name: "accounts.delete",
-        description: "Delete accounts",
-        category: "accounts",
-      });
-
+      const [role, readPermission, writePermission, deletePermission] =
+        await Promise.all([
+          ctx.db.insert("roles", {
+            organizationId,
+            name: "Admin",
+            description: "Administrator role",
+            isSystemRole: true,
+          }),
+          ctx.db.insert("permissions", {
+            name: "accounts.read",
+            description: "Read accounts",
+            category: "accounts",
+          }),
+          ctx.db.insert("permissions", {
+            name: "accounts.write",
+            description: "Write accounts",
+            category: "accounts",
+          }),
+          ctx.db.insert("permissions", {
+            name: "accounts.delete",
+            description: "Delete accounts",
+            category: "accounts",
+          }),
+        ]);
       await ctx.db.insert("rolePermissions", {
         roleId: role,
         permissionId: readPermission,
@@ -286,33 +285,34 @@ describe("contacts", () => {
       issuer: "https://example.test",
     });
 
-    const contact1Id = await authed.mutation(api.contacts.create, {
-      accountId,
-      firstName: "John",
-      lastName: "Doe",
-      role: "primary",
-      isPrimary: true,
-      isActive: true,
-    });
-
-    const contact2Id = await authed.mutation(api.contacts.create, {
-      accountId,
-      firstName: "Jane",
-      lastName: "Smith",
-      role: "billing",
-      isPrimary: false,
-      isActive: true,
-    });
-
+    const [contact1Id, contact2Id] = await Promise.all([
+      authed.mutation(api.contacts.create, {
+        accountId,
+        firstName: "John",
+        lastName: "Doe",
+        role: "primary",
+        isPrimary: true,
+        isActive: true,
+      }),
+      authed.mutation(api.contacts.create, {
+        accountId,
+        firstName: "Jane",
+        lastName: "Smith",
+        role: "billing",
+        isPrimary: false,
+        isActive: true,
+      }),
+    ]);
     await authed.mutation(api.contacts.setPrimary, { contactId: contact2Id });
 
-    const contact1 = await authed.query(api.contacts.get, {
-      contactId: contact1Id,
-    });
-    const contact2 = await authed.query(api.contacts.get, {
-      contactId: contact2Id,
-    });
-
+    const [contact1, contact2] = await Promise.all([
+      authed.query(api.contacts.get, {
+        contactId: contact1Id,
+      }),
+      authed.query(api.contacts.get, {
+        contactId: contact2Id,
+      }),
+    ]);
     expect(contact1?.isPrimary).toBe(false);
     expect(contact2?.isPrimary).toBe(true);
   });
@@ -373,19 +373,19 @@ describe("contacts", () => {
     });
 
     const role2Id = await t.run(async (ctx) => {
-      const role = await ctx.db.insert("roles", {
-        organizationId: org2Id,
-        name: "Admin",
-        description: "Administrator role",
-        isSystemRole: true,
-      });
-
-      const readPermission = await ctx.db.insert("permissions", {
-        name: "accounts.read",
-        description: "Read accounts",
-        category: "accounts",
-      });
-
+      const [role, readPermission] = await Promise.all([
+        ctx.db.insert("roles", {
+          organizationId: org2Id,
+          name: "Admin",
+          description: "Administrator role",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("permissions", {
+          name: "accounts.read",
+          description: "Read accounts",
+          category: "accounts",
+        }),
+      ]);
       await ctx.db.insert("rolePermissions", {
         roleId: role,
         permissionId: readPermission,
@@ -444,19 +444,19 @@ describe("contacts", () => {
     });
 
     const role2Id = await t.run(async (ctx) => {
-      const role = await ctx.db.insert("roles", {
-        organizationId: org2Id,
-        name: "Admin",
-        description: "Administrator role",
-        isSystemRole: true,
-      });
-
-      const readPermission = await ctx.db.insert("permissions", {
-        name: "accounts.read",
-        description: "Read accounts",
-        category: "accounts",
-      });
-
+      const [role, readPermission] = await Promise.all([
+        ctx.db.insert("roles", {
+          organizationId: org2Id,
+          name: "Admin",
+          description: "Administrator role",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("permissions", {
+          name: "accounts.read",
+          description: "Read accounts",
+          category: "accounts",
+        }),
+      ]);
       await ctx.db.insert("rolePermissions", {
         roleId: role,
         permissionId: readPermission,
@@ -498,36 +498,37 @@ describe("contacts", () => {
       issuer: "https://example.test",
     });
 
-    const contact1Id = await authed.mutation(api.contacts.create, {
-      accountId,
-      firstName: "John",
-      lastName: "Doe",
-      role: "primary",
-      isPrimary: true,
-      isActive: true,
-    });
-
-    const contact2Id = await authed.mutation(api.contacts.create, {
-      accountId,
-      firstName: "Jane",
-      lastName: "Smith",
-      role: "billing",
-      isPrimary: false,
-      isActive: true,
-    });
-
+    const [contact1Id, contact2Id] = await Promise.all([
+      authed.mutation(api.contacts.create, {
+        accountId,
+        firstName: "John",
+        lastName: "Doe",
+        role: "primary",
+        isPrimary: true,
+        isActive: true,
+      }),
+      authed.mutation(api.contacts.create, {
+        accountId,
+        firstName: "Jane",
+        lastName: "Smith",
+        role: "billing",
+        isPrimary: false,
+        isActive: true,
+      }),
+    ]);
     await authed.mutation(api.contacts.update, {
       contactId: contact2Id,
       isPrimary: true,
     });
 
-    const contact1 = await authed.query(api.contacts.get, {
-      contactId: contact1Id,
-    });
-    const contact2 = await authed.query(api.contacts.get, {
-      contactId: contact2Id,
-    });
-
+    const [contact1, contact2] = await Promise.all([
+      authed.query(api.contacts.get, {
+        contactId: contact1Id,
+      }),
+      authed.query(api.contacts.get, {
+        contactId: contact2Id,
+      }),
+    ]);
     expect(contact1?.isPrimary).toBe(false);
     expect(contact2?.isPrimary).toBe(true);
   });

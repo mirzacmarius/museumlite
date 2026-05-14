@@ -61,17 +61,17 @@ export async function createOrgUserWithPermissions(
     });
 
     const userEmailPrefix = options.userEmailPrefix ?? "user";
-    const userId = await ctx.db.insert("users", {
-      email: `${userEmailPrefix}-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      name: options.userName ?? "Test User",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: options.roleName ?? "Test Role",
-      isSystemRole: false,
-    });
-
+    const [userId, roleId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: `${userEmailPrefix}-${Math.random().toString(36).slice(2, 8)}@example.com`,
+        name: options.userName ?? "Test User",
+      }),
+      ctx.db.insert("roles", {
+        organizationId,
+        name: options.roleName ?? "Test Role",
+        isSystemRole: false,
+      }),
+    ]);
     for (const permissionName of permissionNames) {
       const permissionId = await ctx.db.insert("permissions", {
         name: permissionName,

@@ -7,10 +7,7 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -48,15 +45,18 @@ describe("notification center data structure", () => {
     });
 
     // Create notifications using sendNotification internal mutation
-    const notificationId = await t.mutation(internal.notifications.sendNotification, {
-      organizationId: orgId,
-      userId,
-      type: "loan_pending_approval",
-      title: "Loan Pending Approval",
-      message: "A new loan requires your review",
-      relatedEntityType: "loan",
-      relatedEntityId: "loan_123",
-    });
+    const notificationId = await t.mutation(
+      internal.notifications.sendNotification,
+      {
+        organizationId: orgId,
+        userId,
+        type: "loan_pending_approval",
+        title: "Loan Pending Approval",
+        message: "A new loan requires your review",
+        relatedEntityType: "loan",
+        relatedEntityId: "loan_123",
+      },
+    );
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);
@@ -77,21 +77,21 @@ describe("notification center data structure", () => {
   test("should create notifications with different categories", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create notifications of different types
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -135,52 +135,55 @@ describe("notification queries with indexes", () => {
   test("getUnreadCount and markAllRead stay scoped to one organization", async () => {
     const t = convexTest(schema, modules);
 
-    const { organizationAId, organizationBId, userId } = await t.run(async (ctx) => {
-      const organizationAId = await ctx.db.insert("organizations", {
-        name: "Org A",
-        slug: "org-a",
-        type: "museum",
-      });
-      const organizationBId = await ctx.db.insert("organizations", {
-        name: "Org B",
-        slug: "org-b",
-        type: "museum",
-      });
-      const userId = await ctx.db.insert("users", {
-        name: "Unread Counter User",
-        email: "unread-counter@example.com",
-      });
+    const { organizationAId, organizationBId, userId } = await t.run(
+      async (ctx) => {
+        const [organizationAId, organizationBId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Org A",
+            slug: "org-a",
+            type: "museum",
+          }),
+          ctx.db.insert("organizations", {
+            name: "Org B",
+            slug: "org-b",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Unread Counter User",
+            email: "unread-counter@example.com",
+          }),
+        ]);
+        await ctx.db.insert("notifications", {
+          organizationId: organizationAId,
+          userId,
+          type: "loan_pending_approval",
+          title: "Unread A1",
+          message: "Unread in org A",
+          read: false,
+          createdAt: Date.now(),
+        });
+        await ctx.db.insert("notifications", {
+          organizationId: organizationAId,
+          userId,
+          type: "task_assigned",
+          title: "Unread A2",
+          message: "Also unread in org A",
+          read: false,
+          createdAt: Date.now() + 1,
+        });
+        await ctx.db.insert("notifications", {
+          organizationId: organizationBId,
+          userId,
+          type: "loan_due_soon",
+          title: "Unread B1",
+          message: "Unread in org B",
+          read: false,
+          createdAt: Date.now() + 2,
+        });
 
-      await ctx.db.insert("notifications", {
-        organizationId: organizationAId,
-        userId,
-        type: "loan_pending_approval",
-        title: "Unread A1",
-        message: "Unread in org A",
-        read: false,
-        createdAt: Date.now(),
-      });
-      await ctx.db.insert("notifications", {
-        organizationId: organizationAId,
-        userId,
-        type: "task_assigned",
-        title: "Unread A2",
-        message: "Also unread in org A",
-        read: false,
-        createdAt: Date.now() + 1,
-      });
-      await ctx.db.insert("notifications", {
-        organizationId: organizationBId,
-        userId,
-        type: "loan_due_soon",
-        title: "Unread B1",
-        message: "Unread in org B",
-        read: false,
-        createdAt: Date.now() + 2,
-      });
-
-      return { organizationAId, organizationBId, userId };
-    });
+        return { organizationAId, organizationBId, userId };
+      },
+    );
 
     const authed = authedForUser(t, userId);
 
@@ -214,28 +217,27 @@ describe("notification queries with indexes", () => {
   test("should query notifications by user", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId1 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "User 1",
-        email: "user1@example.com",
-      });
-    });
-
-    const userId2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "User 2",
-        email: "user2@example.com",
-      });
-    });
-
+    const [orgId, userId1, userId2] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "User 1",
+          email: "user1@example.com",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "User 2",
+          email: "user2@example.com",
+        });
+      }),
+    ]);
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
       userId: userId1,
@@ -252,20 +254,20 @@ describe("notification queries with indexes", () => {
       message: "Your loan has been approved",
     });
 
-    const user1Notifications = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user", (q) => q.eq("userId", userId1))
-        .collect();
-    });
-
-    const user2Notifications = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user", (q) => q.eq("userId", userId2))
-        .collect();
-    });
-
+    const [user1Notifications, user2Notifications] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user", (q) => q.eq("userId", userId1))
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user", (q) => q.eq("userId", userId2))
+          .collect();
+      }),
+    ]);
     expect(user1Notifications).toHaveLength(1);
     expect(user2Notifications).toHaveLength(1);
     expect(user1Notifications[0].userId).toBe(userId1);
@@ -275,21 +277,21 @@ describe("notification queries with indexes", () => {
   test("should query unread notifications by user", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create unread notification
     await t.run(async (ctx) => {
       await ctx.db.insert("notifications", {
@@ -504,9 +506,7 @@ describe("notification CRUD operations", () => {
     });
 
     const notifications = await t.run(async (ctx) => {
-      return await Promise.all(
-        notificationIds.map((id) => ctx.db.get(id)),
-      );
+      return await Promise.all(notificationIds.map((id) => ctx.db.get(id)));
     });
 
     expect(notifications.every((n) => n?.read === true)).toBe(true);
@@ -555,9 +555,7 @@ describe("notification CRUD operations", () => {
     });
 
     const notifications = await t.run(async (ctx) => {
-      return await Promise.all(
-        notificationIds.map((id) => ctx.db.get(id)),
-      );
+      return await Promise.all(notificationIds.map((id) => ctx.db.get(id)));
     });
 
     expect(notifications.every((n) => n === null)).toBe(true);
@@ -568,21 +566,21 @@ describe("notification cleanup", () => {
   test("should identify old read notifications for cleanup", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const now = Date.now();
     const thirtyOneDaysAgo = now - 31 * 24 * 60 * 60 * 1000;
     const twentyNineDaysAgo = now - 29 * 24 * 60 * 60 * 1000;
@@ -705,21 +703,21 @@ describe("notification preferences", () => {
   test("should query preferences by user and organization", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("notificationPreferences", {
         userId,
@@ -814,15 +812,18 @@ describe("sendNotification", () => {
       });
     });
 
-    const notificationId = await t.mutation(internal.notifications.sendNotification, {
-      organizationId: orgId,
-      userId,
-      type: "loan_approved",
-      title: "Loan Approved",
-      message: "Your loan has been approved",
-      relatedEntityType: "loan",
-      relatedEntityId: "loan_123",
-    });
+    const notificationId = await t.mutation(
+      internal.notifications.sendNotification,
+      {
+        organizationId: orgId,
+        userId,
+        type: "loan_approved",
+        title: "Loan Approved",
+        message: "Your loan has been approved",
+        relatedEntityType: "loan",
+        relatedEntityId: "loan_123",
+      },
+    );
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);
@@ -861,13 +862,16 @@ describe("sendNotificationToUsers", () => {
       return ids;
     });
 
-    const count = await t.mutation(internal.notifications.sendNotificationToUsers, {
-      organizationId: orgId,
-      userIds,
-      type: "system_announcement",
-      title: "System Announcement",
-      message: "Important system update",
-    });
+    const count = await t.mutation(
+      internal.notifications.sendNotificationToUsers,
+      {
+        organizationId: orgId,
+        userIds,
+        type: "system_announcement",
+        title: "System Announcement",
+        message: "Important system update",
+      },
+    );
 
     expect(count).toBe(3);
 
@@ -893,21 +897,21 @@ describe("notification categories", () => {
   test("should correctly categorize approval notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create approval type notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -943,27 +947,29 @@ describe("notification categories", () => {
     expect(notifications).toHaveLength(3);
     expect(notifications.map((n) => n.type)).toContain("loan_pending_approval");
     expect(notifications.map((n) => n.type)).toContain("accession_approved");
-    expect(notifications.map((n) => n.type)).toContain("exhibition_pending_approval");
+    expect(notifications.map((n) => n.type)).toContain(
+      "exhibition_pending_approval",
+    );
   });
 
   test("should correctly categorize reminder notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create reminder type notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1005,21 +1011,21 @@ describe("notification categories", () => {
   test("should correctly categorize alert notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create alert type notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1061,21 +1067,21 @@ describe("notification categories", () => {
   test("should correctly categorize assignment notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create assignment type notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1117,21 +1123,21 @@ describe("notification categories", () => {
   test("should correctly categorize system notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create system type notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1175,21 +1181,21 @@ describe("notification category filtering", () => {
   test("should filter notifications by category - approvals only", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create mix of notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1242,28 +1248,32 @@ describe("notification category filtering", () => {
     );
 
     expect(approvalNotifications).toHaveLength(2);
-    expect(approvalNotifications.map((n) => n.type)).toContain("loan_pending_approval");
-    expect(approvalNotifications.map((n) => n.type)).toContain("accession_approved");
+    expect(approvalNotifications.map((n) => n.type)).toContain(
+      "loan_pending_approval",
+    );
+    expect(approvalNotifications.map((n) => n.type)).toContain(
+      "accession_approved",
+    );
   });
 
   test("should filter notifications by category - reminders only", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create mix of notifications
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1311,27 +1321,29 @@ describe("notification category filtering", () => {
 
     expect(reminderNotifications).toHaveLength(2);
     expect(reminderNotifications.map((n) => n.type)).toContain("loan_due_soon");
-    expect(reminderNotifications.map((n) => n.type)).toContain("insurance_expiring");
+    expect(reminderNotifications.map((n) => n.type)).toContain(
+      "insurance_expiring",
+    );
   });
 
   test("should filter unread notifications by category", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create unread alert
     await t.mutation(internal.notifications.sendNotification, {
       organizationId: orgId,
@@ -1342,13 +1354,16 @@ describe("notification category filtering", () => {
     });
 
     // Create read alert
-    const readAlertId = await t.mutation(internal.notifications.sendNotification, {
-      organizationId: orgId,
-      userId,
-      type: "environmental_alert",
-      title: "Read Alert",
-      message: "Already seen",
-    });
+    const readAlertId = await t.mutation(
+      internal.notifications.sendNotification,
+      {
+        organizationId: orgId,
+        userId,
+        type: "environmental_alert",
+        title: "Read Alert",
+        message: "Already seen",
+      },
+    );
 
     await t.run(async (ctx) => {
       await ctx.db.patch(readAlertId, { read: true });
@@ -1373,7 +1388,11 @@ describe("notification category filtering", () => {
     });
 
     // Filter unread alerts only
-    const alertTypes = ["condition_alert", "environmental_alert", "capacity_alert"];
+    const alertTypes = [
+      "condition_alert",
+      "environmental_alert",
+      "capacity_alert",
+    ];
     const unreadAlerts = allNotifications.filter((n) =>
       alertTypes.includes(n.type),
     );
@@ -1388,21 +1407,21 @@ describe("notification type validation", () => {
   test("should accept all valid notification types", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const validTypes = [
       "loan_pending_approval",
       "loan_approved",
@@ -1441,31 +1460,34 @@ describe("notification type validation", () => {
   test("should store custom notification types", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // The schema allows any string for type, testing custom types
     const customType = "custom_notification_type";
 
-    const notificationId = await t.mutation(internal.notifications.sendNotification, {
-      organizationId: orgId,
-      userId,
-      type: customType,
-      title: "Custom Type",
-      message: "Custom notification",
-    });
+    const notificationId = await t.mutation(
+      internal.notifications.sendNotification,
+      {
+        organizationId: orgId,
+        userId,
+        type: customType,
+        title: "Custom Type",
+        message: "Custom notification",
+      },
+    );
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);
@@ -1498,13 +1520,16 @@ describe("notification read/unread state management", () => {
       });
     });
 
-    const notificationId = await t.mutation(internal.notifications.sendNotification, {
-      organizationId: orgId,
-      userId,
-      type: "task_assigned",
-      title: "New Task",
-      message: "You have a new task",
-    });
+    const notificationId = await t.mutation(
+      internal.notifications.sendNotification,
+      {
+        organizationId: orgId,
+        userId,
+        type: "task_assigned",
+        title: "New Task",
+        message: "You have a new task",
+      },
+    );
 
     const notification = await t.run(async (ctx) => {
       return await ctx.db.get(notificationId);
@@ -1694,21 +1719,21 @@ describe("notification read/unread state management", () => {
   test("should correctly count unread notifications", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create 3 unread and 2 read notifications
     await t.run(async (ctx) => {
       await ctx.db.insert("notifications", {
@@ -1794,26 +1819,26 @@ describe("notification read/unread state management", () => {
 
     // Create 2 unread notifications
     const notificationIds = await t.run(async (ctx) => {
-      const id1 = await ctx.db.insert("notifications", {
-        organizationId: orgId,
-        userId,
-        type: "task_assigned",
-        title: "Unread 1",
-        message: "Message 1",
-        read: false,
-        createdAt: Date.now(),
-      });
-
-      const id2 = await ctx.db.insert("notifications", {
-        organizationId: orgId,
-        userId,
-        type: "task_assigned",
-        title: "Unread 2",
-        message: "Message 2",
-        read: false,
-        createdAt: Date.now(),
-      });
-
+      const [id1, id2] = await Promise.all([
+        ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId,
+          type: "task_assigned",
+          title: "Unread 1",
+          message: "Message 1",
+          read: false,
+          createdAt: Date.now(),
+        }),
+        ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId,
+          type: "task_assigned",
+          title: "Unread 2",
+          message: "Message 2",
+          read: false,
+          createdAt: Date.now(),
+        }),
+      ]);
       return [id1, id2];
     });
 
@@ -1963,25 +1988,26 @@ describe("notification read/unread state management", () => {
     });
 
     // Verify user1 has no unread
-    const user1Unread = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user_and_read", (q) =>
-          q.eq("userId", userId1).eq("read", false),
-        )
-        .collect();
-    });
+    const [user1Unread, user2Unread] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user_and_read", (q) =>
+            q.eq("userId", userId1).eq("read", false),
+          )
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user_and_read", (q) =>
+            q.eq("userId", userId2).eq("read", false),
+          )
+          .collect();
+      }),
+    ]);
 
     // Verify user2 still has 1 unread
-    const user2Unread = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user_and_read", (q) =>
-          q.eq("userId", userId2).eq("read", false),
-        )
-        .collect();
-    });
-
     expect(user1Unread).toHaveLength(0);
     expect(user2Unread).toHaveLength(1);
   });
@@ -1989,21 +2015,21 @@ describe("notification read/unread state management", () => {
   test("should filter notifications by read state", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create mix of read and unread
     await t.run(async (ctx) => {
       await ctx.db.insert("notifications", {
@@ -2048,25 +2074,26 @@ describe("notification read/unread state management", () => {
     });
 
     // Query only unread
-    const unreadNotifications = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user_and_read", (q) =>
-          q.eq("userId", userId).eq("read", false),
-        )
-        .collect();
-    });
+    const [unreadNotifications, readNotifications] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user_and_read", (q) =>
+            q.eq("userId", userId).eq("read", false),
+          )
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user_and_read", (q) =>
+            q.eq("userId", userId).eq("read", true),
+          )
+          .collect();
+      }),
+    ]);
 
     // Query only read
-    const readNotifications = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user_and_read", (q) =>
-          q.eq("userId", userId).eq("read", true),
-        )
-        .collect();
-    });
-
     expect(unreadNotifications).toHaveLength(2);
     expect(readNotifications).toHaveLength(2);
     expect(unreadNotifications.every((n) => n.read === false)).toBe(true);
@@ -2076,21 +2103,21 @@ describe("notification read/unread state management", () => {
   test("should mark all unread notifications as read", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create multiple unread notifications
     await t.run(async (ctx) => {
       for (let i = 0; i < 10; i++) {

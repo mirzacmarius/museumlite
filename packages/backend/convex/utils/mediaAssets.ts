@@ -107,25 +107,26 @@ export async function insertCompletedMediaAsset(
     mediaCategory,
   );
 
-  const mediaId = await ctx.db.insert("mediaFiles", {
-    collectionId,
-    organizationId,
-    storageId,
-    fileName,
-    fileType,
-    fileSize,
-    mimeType,
-    mediaCategory: resolvedMediaCategory,
-    isPrimary,
-    caption,
-    photographer,
-    copyright,
-    uploadedBy,
-    uploadedAt,
-    uploadStatus: "completed",
-  });
-
-  const storageBytes = await getStorageBytes(ctx, storageId);
+  const [mediaId, storageBytes] = await Promise.all([
+    ctx.db.insert("mediaFiles", {
+      collectionId,
+      organizationId,
+      storageId,
+      fileName,
+      fileType,
+      fileSize,
+      mimeType,
+      mediaCategory: resolvedMediaCategory,
+      isPrimary,
+      caption,
+      photographer,
+      copyright,
+      uploadedBy,
+      uploadedAt,
+      uploadStatus: "completed",
+    }),
+    getStorageBytes(ctx, storageId),
+  ]);
   await applyUsageCounterDelta(ctx, organizationId, {
     mediaFileCount: 1,
     mediaTypeDeltas: [

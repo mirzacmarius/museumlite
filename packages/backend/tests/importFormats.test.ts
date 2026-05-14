@@ -603,33 +603,32 @@ describe("Import E2E Verification (manual)", () => {
     const asUser = authedForUser(t, userId);
 
     // Create multiple field mappings
-    const mapping1 = await asUser.mutation(api.imports.saveFieldMapping, {
-      organizationId: orgId as Id<"organizations">,
-      name: "Test Mapping 1",
-      entityType: "accessions",
-      mappings: [
-        {
-          sourceField: "field1",
-          targetField: "accessionNumber",
-          required: true,
-        },
-      ],
-    });
-
-    const mapping2 = await asUser.mutation(api.imports.saveFieldMapping, {
-      organizationId: orgId as Id<"organizations">,
-      name: "Test Mapping 2",
-      entityType: "objects",
-      mappings: [
-        { sourceField: "field2", targetField: "title", required: true },
-      ],
-    });
-
+    const [mapping1, mapping2, allMappings] = await Promise.all([
+      asUser.mutation(api.imports.saveFieldMapping, {
+        organizationId: orgId as Id<"organizations">,
+        name: "Test Mapping 1",
+        entityType: "accessions",
+        mappings: [
+          {
+            sourceField: "field1",
+            targetField: "accessionNumber",
+            required: true,
+          },
+        ],
+      }),
+      asUser.mutation(api.imports.saveFieldMapping, {
+        organizationId: orgId as Id<"organizations">,
+        name: "Test Mapping 2",
+        entityType: "objects",
+        mappings: [
+          { sourceField: "field2", targetField: "title", required: true },
+        ],
+      }),
+      asUser.query(api.imports.listFieldMappings, {
+        organizationId: orgId as Id<"organizations">,
+      }),
+    ]);
     // List all mappings
-    const allMappings = await asUser.query(api.imports.listFieldMappings, {
-      organizationId: orgId as Id<"organizations">,
-    });
-
     expect(allMappings.length).toBeGreaterThanOrEqual(2);
 
     // List mappings filtered by entity type

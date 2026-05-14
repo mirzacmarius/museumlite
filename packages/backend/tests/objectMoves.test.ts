@@ -627,12 +627,14 @@ describe("objectMoves", () => {
       reviewNotes: "Approved by source admin",
     });
 
-    const collection = await t.run(async (ctx) => {
-      return await ctx.db.get(fixture.collectionId);
-    });
-    const request = await t.run(async (ctx) => {
-      return await ctx.db.get(requestId);
-    });
+    const [collection, request] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(fixture.collectionId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.get(requestId);
+      }),
+    ]);
     const deaccession = request?.deaccessionId
       ? await t.run(async (ctx) => {
           return await ctx.db.get(request.deaccessionId!);
@@ -681,65 +683,76 @@ describe("objectMoves", () => {
       reviewNotes: "Accepted by target admin",
     });
 
-    const collection = await t.run(async (ctx) => {
-      return await ctx.db.get(fixture.collectionId);
-    });
-    const request = await t.run(async (ctx) => {
-      return await ctx.db.get(requestId);
-    });
-    const remainingGroupLinks = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", fixture.collectionId),
-        )
-        .collect();
-    });
-    const movedComments = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("objectComments")
-        .withIndex("by_object", (q) => q.eq("objectId", fixture.collectionId))
-        .collect();
-    });
-    const movedAppraisals = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", fixture.collectionId),
-        )
-        .collect();
-    });
-    const movedCoinsStampsDetails = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("coinsStampsDetails")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", fixture.collectionId),
-        )
-        .collect();
-    });
-    const requesterNotifications = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user", (q) => q.eq("userId", fixture.requesterId))
-        .collect();
-    });
-    const sourceAuditEntries = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("auditLog")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", fixture.sourceOrganizationId),
-        )
-        .collect();
-    });
-    const targetAuditEntries = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("auditLog")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", fixture.targetOrganizationId),
-        )
-        .collect();
-    });
-
+    const [
+      collection,
+      request,
+      remainingGroupLinks,
+      movedComments,
+      movedAppraisals,
+      movedCoinsStampsDetails,
+      requesterNotifications,
+      sourceAuditEntries,
+      targetAuditEntries,
+    ] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(fixture.collectionId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.get(requestId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("collectionGroupItems")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", fixture.collectionId),
+          )
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("objectComments")
+          .withIndex("by_object", (q) => q.eq("objectId", fixture.collectionId))
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("appraisals")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", fixture.collectionId),
+          )
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("coinsStampsDetails")
+          .withIndex("by_collection", (q) =>
+            q.eq("collectionId", fixture.collectionId),
+          )
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user", (q) => q.eq("userId", fixture.requesterId))
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", fixture.sourceOrganizationId),
+          )
+          .collect();
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", fixture.targetOrganizationId),
+          )
+          .collect();
+      }),
+    ]);
     expect(request?.status).toBe("executed");
     expect(request?.finalAccessionNumber).toBe("SRC-001");
     expect(request?.targetReviewNotes).toBe("Accepted by target admin");
@@ -930,19 +943,20 @@ describe("objectMoves", () => {
       reviewNotes: "Insufficient transfer documentation",
     });
 
-    const request = await t.run(async (ctx) => {
-      return await ctx.db.get(requestId);
-    });
-    const collection = await t.run(async (ctx) => {
-      return await ctx.db.get(fixture.collectionId);
-    });
-    const requesterNotifications = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("notifications")
-        .withIndex("by_user", (q) => q.eq("userId", fixture.requesterId))
-        .collect();
-    });
-
+    const [request, collection, requesterNotifications] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(requestId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.get(fixture.collectionId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("notifications")
+          .withIndex("by_user", (q) => q.eq("userId", fixture.requesterId))
+          .collect();
+      }),
+    ]);
     expect(request?.status).toBe("rejected");
     expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
     expect(collection?.accessionNumber).toBe("SRC-001");
@@ -1009,20 +1023,18 @@ describe("objectMoves", () => {
       reviewNotes: "Target cannot accept custody",
     });
 
-    const request = await t.run(async (ctx) => {
-      return await ctx.db.get(requestId);
-    });
-    const collection = await t.run(async (ctx) => {
-      return await ctx.db.get(fixture.collectionId);
-    });
-    const rejectedRequests = await fixture.admin.query(
-      api.objectMoves.listForOrganization,
-      {
+    const [request, collection, rejectedRequests] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(requestId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.get(fixture.collectionId);
+      }),
+      fixture.admin.query(api.objectMoves.listForOrganization, {
         organizationId: fixture.sourceOrganizationId,
         status: "rejected",
-      },
-    );
-
+      }),
+    ]);
     expect(request?.status).toBe("rejected");
     expect(request?.targetReviewNotes).toBe("Target cannot accept custody");
     expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
@@ -1047,13 +1059,14 @@ describe("objectMoves", () => {
 
     await fixture.requester.mutation(api.objectMoves.cancel, { requestId });
 
-    const request = await t.run(async (ctx) => {
-      return await ctx.db.get(requestId);
-    });
-    const collection = await t.run(async (ctx) => {
-      return await ctx.db.get(fixture.collectionId);
-    });
-
+    const [request, collection] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(requestId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.get(fixture.collectionId);
+      }),
+    ]);
     expect(request?.status).toBe("cancelled");
     expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
     expect(collection?.collectionGroupId).toBe(fixture.collectionGroupId);

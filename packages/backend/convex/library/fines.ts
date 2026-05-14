@@ -473,23 +473,22 @@ export const getReceipt = query({
 
     await requireModuleEnabled(ctx, payment.organizationId, "library");
 
-    const account = await ctx.db.get(payment.accountId);
-    const receivedBy = await ctx.db.get(payment.receivedBy);
-
-    const fines = await Promise.all(
-      payment.fineIds.map(async (fineId) => {
-        const fine = await ctx.db.get(fineId);
-        return fine;
-      }),
-    );
-
-    const settings = await ctx.db
-      .query("librarySettings")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", payment.organizationId),
-      )
-      .first();
-
+    const [account, receivedBy, fines, settings] = await Promise.all([
+      ctx.db.get(payment.accountId),
+      ctx.db.get(payment.receivedBy),
+      Promise.all(
+        payment.fineIds.map(async (fineId) => {
+          const fine = await ctx.db.get(fineId);
+          return fine;
+        }),
+      ),
+      ctx.db
+        .query("librarySettings")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", payment.organizationId),
+        )
+        .first(),
+    ]);
     return {
       payment,
       account,

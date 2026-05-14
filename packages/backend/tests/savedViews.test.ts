@@ -49,18 +49,18 @@ describe("savedViews schema", () => {
   test("should query savedViews by user and module index", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("savedViews", {
         organizationId: orgId,
@@ -114,18 +114,18 @@ describe("savedViews schema", () => {
   test("should support isDefault flag", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("savedViews", {
         organizationId: orgId,
@@ -164,18 +164,18 @@ describe("savedViews schema", () => {
   test("should support all module types", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     const moduleTypes = [
       "objects",
       "loans",

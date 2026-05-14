@@ -394,18 +394,18 @@ describe("API Key Generation Security", () => {
       issuer: "https://example.test",
     });
 
-    const key1 = await authed.mutation(api.apiKeys.create, {
-      organizationId: org1Id,
-      name: "Org 1 Key",
-      permissions: ["read"],
-    });
-
-    const key2 = await authed.mutation(api.apiKeys.create, {
-      organizationId: org2Id,
-      name: "Org 2 Key",
-      permissions: ["read"],
-    });
-
+    const [key1, key2] = await Promise.all([
+      authed.mutation(api.apiKeys.create, {
+        organizationId: org1Id,
+        name: "Org 1 Key",
+        permissions: ["read"],
+      }),
+      authed.mutation(api.apiKeys.create, {
+        organizationId: org2Id,
+        name: "Org 2 Key",
+        permissions: ["read"],
+      }),
+    ]);
     expect(key1.key).not.toBe(key2.key);
     expect(key1.key).toMatch(/^ml_[A-Za-z0-9]{37}$/);
     expect(key2.key).toMatch(/^ml_[A-Za-z0-9]{37}$/);

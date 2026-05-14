@@ -11,10 +11,7 @@ type OrgSetup = {
   roleId: Id<"roles">;
 };
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -308,31 +305,29 @@ describe("Workflow Config CRUD", () => {
   test("remove throws error when config not found", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { userId } = await createOrgWithRole(t, [
-      "organization.manage_settings",
+    const [{ userId }, fakeId] = await Promise.all([
+      createOrgWithRole(t, ["organization.manage_settings"]),
+      t.run(async (ctx) => {
+        const organizationId = await ctx.db.insert("organizations", {
+          name: "Temp Org",
+          slug: `temp-org-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        });
+        const roleId = await ctx.db.insert("roles", {
+          organizationId,
+          name: "Temp Role",
+          isSystemRole: true,
+        });
+        const configId = await ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "accession",
+          steps: [{ stepNumber: 1, roleId, name: "Temp Step" }],
+          canInitiateRoles: [roleId],
+        });
+        await ctx.db.delete(configId);
+        return configId;
+      }),
     ]);
-
-    const fakeId = await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Temp Org",
-        slug: `temp-org-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-      const roleId = await ctx.db.insert("roles", {
-        organizationId,
-        name: "Temp Role",
-        isSystemRole: true,
-      });
-      const configId = await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "accession",
-        steps: [{ stepNumber: 1, roleId, name: "Temp Step" }],
-        canInitiateRoles: [roleId],
-      });
-      await ctx.db.delete(configId);
-      return configId;
-    });
-
     // #when #then
     await expect(
       authedForUser(t, userId).mutation(api.workflows.remove, {
@@ -756,17 +751,15 @@ describe("Workflow Approval Modes", () => {
   test("multi approval mode requires threshold before fully approved", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
+    const [{ organizationId, userId, roleId }, userId2] = await Promise.all([
+      createOrgWithRole(t, ["settings.read"]),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Second User",
+          email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
+      }),
     ]);
-
-    const userId2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Second User",
-        email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
-    });
-
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowConfigs", {
         organizationId,
@@ -825,24 +818,22 @@ describe("Workflow Approval Modes", () => {
   test("multi approval mode marks fully approved when threshold met", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
-    ]);
-
-    const userId2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Second User",
-        email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
-    });
-
-    const userId3 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Third User",
-        email: `third-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
-    });
-
+    const [{ organizationId, userId, roleId }, userId2, userId3] =
+      await Promise.all([
+        createOrgWithRole(t, ["settings.read"]),
+        t.run(async (ctx) => {
+          return await ctx.db.insert("users", {
+            name: "Second User",
+            email: `second-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+          });
+        }),
+        t.run(async (ctx) => {
+          return await ctx.db.insert("users", {
+            name: "Third User",
+            email: `third-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+          });
+        }),
+      ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowConfigs", {
         organizationId,
@@ -1103,17 +1094,15 @@ describe("Workflow Approval Modes", () => {
   test("checkStepApprovalStatus returns correct approvers list", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId, roleId } = await createOrgWithRole(t, [
-      "settings.read",
+    const [{ organizationId, userId, roleId }, userId2] = await Promise.all([
+      createOrgWithRole(t, ["settings.read"]),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Approver Two",
+          email: `approver2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
+      }),
     ]);
-
-    const userId2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Approver Two",
-        email: `approver2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
-    });
-
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowConfigs", {
         organizationId,

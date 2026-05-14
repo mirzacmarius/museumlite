@@ -237,8 +237,10 @@ export const get = query({
 
     await requireModuleEnabled(ctx, hold.organizationId, "library");
 
-    const account = await ctx.db.get(hold.accountId);
-    const item = await ctx.db.get(hold.itemId);
+    const [account, item] = await Promise.all([
+      ctx.db.get(hold.accountId),
+      ctx.db.get(hold.itemId),
+    ]);
     const copy = hold.copyId ? await ctx.db.get(hold.copyId) : null;
     const pickupLocation = hold.pickupLocationId
       ? await ctx.db.get(hold.pickupLocationId)
@@ -321,8 +323,10 @@ export const list = query({
 
     const enrichedPage = await Promise.all(
       holds.page.map(async (hold) => {
-        const account = await ctx.db.get(hold.accountId);
-        const item = await ctx.db.get(hold.itemId);
+        const [account, item] = await Promise.all([
+          ctx.db.get(hold.accountId),
+          ctx.db.get(hold.itemId),
+        ]);
         const pickupLocation = hold.pickupLocationId
           ? await ctx.db.get(hold.pickupLocationId)
           : null;
@@ -359,8 +363,10 @@ export const listAvailable = query({
 
     const enrichedPage = await Promise.all(
       holds.page.map(async (hold) => {
-        const account = await ctx.db.get(hold.accountId);
-        const item = await ctx.db.get(hold.itemId);
+        const [account, item] = await Promise.all([
+          ctx.db.get(hold.accountId),
+          ctx.db.get(hold.itemId),
+        ]);
         const pickupLocation = hold.pickupLocationId
           ? await ctx.db.get(hold.pickupLocationId)
           : null;

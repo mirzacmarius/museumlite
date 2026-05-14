@@ -132,14 +132,10 @@ export const get = query({
 
     await requirePermission(ctx, exhibition.organizationId, "collections.read");
 
-    const collection = await ctx.db.get(exhibition.collectionId);
-
-    const workflowConfig = await getWorkflowConfig(
-      ctx,
-      exhibition.organizationId,
-      "exhibition",
-    );
-
+    const [collection, workflowConfig] = await Promise.all([
+      ctx.db.get(exhibition.collectionId),
+      getWorkflowConfig(ctx, exhibition.organizationId, "exhibition"),
+    ]);
     const approver = exhibition.approvedBy
       ? await ctx.db.get(exhibition.approvedBy)
       : null;
@@ -1147,8 +1143,10 @@ export const listDocuments = query({
 
     const enrichedDocs = await Promise.all(
       documents.map(async (doc) => {
-        const uploader = await ctx.db.get(doc.uploadedBy);
-        const url = await ctx.storage.getUrl(doc.storageId);
+        const [uploader, url] = await Promise.all([
+          ctx.db.get(doc.uploadedBy),
+          ctx.storage.getUrl(doc.storageId),
+        ]);
         return {
           _id: doc._id,
           storageId: doc.storageId,

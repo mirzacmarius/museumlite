@@ -197,20 +197,21 @@ test("collections.list paginates newest objects and enriches visible rows", asyn
       catalogedAt: 2,
       objectType: "Painting",
     });
-    const newestCollectionId = await ctx.db.insert("collections", {
-      organizationId,
-      accessionNumber: "A-0003",
-      title: "Newest item",
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: 3,
-      objectType: "Sculpture",
-      currentLocationId: shelfId,
-    });
-
-    const storageId = await ctx.storage.store(
-      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
-    );
+    const [newestCollectionId, storageId] = await Promise.all([
+      ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "A-0003",
+        title: "Newest item",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: 3,
+        objectType: "Sculpture",
+        currentLocationId: shelfId,
+      }),
+      ctx.storage.store(
+        new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+      ),
+    ]);
     await ctx.db.insert("mediaFiles", {
       collectionId: newestCollectionId,
       organizationId,
@@ -320,30 +321,31 @@ test("collections.emptyDeletedCollections permanently deletes deleted objects", 
         joinedAt: Date.now(),
       });
 
-      const activeCollectionId = await ctx.db.insert("collections", {
-        organizationId,
-        accessionNumber: "A-0001",
-        title: "Active item",
-        status: "active",
-        catalogedBy: userId,
-        catalogedAt: Date.now(),
-      });
-
-      const deletedCollectionId = await ctx.db.insert("collections", {
-        organizationId,
-        accessionNumber: "D-0001",
-        title: "Deleted item",
-        status: "deleted",
-        catalogedBy: userId,
-        catalogedAt: Date.now(),
-      });
-
-      const groupId = await ctx.db.insert("collectionGroups", {
-        organizationId,
-        name: "Trash test group",
-        createdBy: userId,
-        createdAt: Date.now(),
-      });
+      const [activeCollectionId, deletedCollectionId, groupId] =
+        await Promise.all([
+          ctx.db.insert("collections", {
+            organizationId,
+            accessionNumber: "A-0001",
+            title: "Active item",
+            status: "active",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+          }),
+          ctx.db.insert("collections", {
+            organizationId,
+            accessionNumber: "D-0001",
+            title: "Deleted item",
+            status: "deleted",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+          }),
+          ctx.db.insert("collectionGroups", {
+            organizationId,
+            name: "Trash test group",
+            createdBy: userId,
+            createdAt: Date.now(),
+          }),
+        ]);
       await ctx.db.insert("collectionGroupItems", {
         collectionGroupId: groupId,
         collectionId: deletedCollectionId,
@@ -544,21 +546,22 @@ test("coins and stamps details require enabled module and surface in module deta
 
   const asUser = t.withIdentity({ subject: userId });
 
-  const detailsId = await asUser.mutation(api.coinsStampsDetails.upsert, {
-    collectionId,
-    itemCategory: "stamp",
-    issuingAuthority: "United Kingdom",
-    countryOrRegion: "Great Britain",
-    denomination: "1d",
-    issueYear: 1840,
-    catalogNumber: "SG 2",
-    grade: "Fine used",
-    estimatedValue: 250,
-  });
-
-  const details = await asUser.query(api.coinsStampsDetails.get, {
-    collectionId,
-  });
+  const [detailsId, details] = await Promise.all([
+    asUser.mutation(api.coinsStampsDetails.upsert, {
+      collectionId,
+      itemCategory: "stamp",
+      issuingAuthority: "United Kingdom",
+      countryOrRegion: "Great Britain",
+      denomination: "1d",
+      issueYear: 1840,
+      catalogNumber: "SG 2",
+      grade: "Fine used",
+      estimatedValue: 250,
+    }),
+    asUser.query(api.coinsStampsDetails.get, {
+      collectionId,
+    }),
+  ]);
   expect(details?._id).toEqual(detailsId);
   expect(details?.catalogNumber).toBe("SG 2");
 

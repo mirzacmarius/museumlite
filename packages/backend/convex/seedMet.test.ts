@@ -1,10 +1,10 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 
+import { modules } from "../tests/testSetup";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules } from "../tests/testSetup";
 
 function buildLocationCode(locationCode: string) {
   return {
@@ -195,16 +195,17 @@ test("seedMet.getMovableCollectionsForOrganization excludes loaned and deaccessi
   const t = convexTest(schema, modules);
 
   const { organizationId, userId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", {
-      email: "collections@example.com",
-      name: "Collection Tester",
-    });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Movable Collections Org",
-      slug: "movable-collections-org",
-      type: "museum",
-    });
-
+    const [userId, organizationId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "collections@example.com",
+        name: "Collection Tester",
+      }),
+      ctx.db.insert("organizations", {
+        name: "Movable Collections Org",
+        slug: "movable-collections-org",
+        type: "museum",
+      }),
+    ]);
     await ctx.db.insert("collections", {
       organizationId,
       accessionNumber: "A-002",
@@ -455,20 +456,26 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
   ]);
 
   const verification = await t.run(async (ctx) => {
-    const unchangedCollection = await ctx.db.get(setup.unchangedCollectionId);
-    const movedCollection = await ctx.db.get(setup.movedCollectionId);
-    const skippedCollection = await ctx.db.get(setup.skippedCollectionId);
-    const loanedCollection = await ctx.db.get(setup.loanedCollectionId);
-    const skippedNoLocationCollection = await ctx.db.get(
-      setup.skippedNoLocationCollectionId,
-    );
-    const historyEntries = await ctx.db
-      .query("locationHistory")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", setup.movedCollectionId),
-      )
-      .collect();
-
+    const [
+      unchangedCollection,
+      movedCollection,
+      skippedCollection,
+      loanedCollection,
+      skippedNoLocationCollection,
+      historyEntries,
+    ] = await Promise.all([
+      ctx.db.get(setup.unchangedCollectionId),
+      ctx.db.get(setup.movedCollectionId),
+      ctx.db.get(setup.skippedCollectionId),
+      ctx.db.get(setup.loanedCollectionId),
+      ctx.db.get(setup.skippedNoLocationCollectionId),
+      ctx.db
+        .query("locationHistory")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", setup.movedCollectionId),
+        )
+        .collect(),
+    ]);
     return {
       unchangedCollection,
       movedCollection,

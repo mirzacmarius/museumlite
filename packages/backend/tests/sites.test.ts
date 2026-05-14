@@ -79,10 +79,7 @@ async function createOrgWithRole(
   return { organizationId, userId, roleId };
 }
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -174,7 +171,9 @@ describe("sites CRUD operations", () => {
 
   test("should return null for non-existent site", async () => {
     const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createOrgWithRole(t, ["sites.read"]);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "sites.read",
+    ]);
     const authed = authedForUser(t, userId);
 
     const siteId = await t.run(async (ctx) => {
@@ -295,20 +294,20 @@ describe("sites CRUD operations", () => {
     const authed = authedForUser(t, userId);
 
     const { site1Id, site2Id } = await t.run(async (ctx) => {
-      const site1Id = await ctx.db.insert("sites", {
-        organizationId,
-        name: "Site 1",
-        isActive: true,
-        isPrimary: true,
-      });
-
-      const site2Id = await ctx.db.insert("sites", {
-        organizationId,
-        name: "Site 2",
-        isActive: true,
-        isPrimary: false,
-      });
-
+      const [site1Id, site2Id] = await Promise.all([
+        ctx.db.insert("sites", {
+          organizationId,
+          name: "Site 1",
+          isActive: true,
+          isPrimary: true,
+        }),
+        ctx.db.insert("sites", {
+          organizationId,
+          name: "Site 2",
+          isActive: true,
+          isPrimary: false,
+        }),
+      ]);
       return { site1Id, site2Id };
     });
 
@@ -362,9 +361,9 @@ describe("sites CRUD operations", () => {
       });
     });
 
-    await expect(authed.mutation(api.sites.archive, { siteId })).rejects.toThrow(
-      "Cannot archive the primary site",
-    );
+    await expect(
+      authed.mutation(api.sites.archive, { siteId }),
+    ).rejects.toThrow("Cannot archive the primary site");
 
     const site = await t.run(async (ctx) => await ctx.db.get(siteId));
     expect(site?.isActive).toBe(true);
@@ -474,22 +473,22 @@ describe("sites CRUD operations", () => {
     ]);
     const authed = authedForUser(t, userId);
 
-    const otherUserId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Outsider User",
-        email: `outsider-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      });
-    });
-
-    const siteId = await t.run(async (ctx) => {
-      return await ctx.db.insert("sites", {
-        organizationId,
-        name: "Test Site",
-        isActive: true,
-        isPrimary: false,
-      });
-    });
-
+    const [otherUserId, siteId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Outsider User",
+          email: `outsider-${Math.random().toString(36).slice(2, 8)}@example.com`,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("sites", {
+          organizationId,
+          name: "Test Site",
+          isActive: true,
+          isPrimary: false,
+        });
+      }),
+    ]);
     await expect(
       authed.mutation(api.sites.grantUserSiteAccess, {
         siteId,
@@ -543,7 +542,9 @@ describe("sites CRUD operations", () => {
       userId: otherUserId,
     });
 
-    const updatedUserSite = await t.run(async (ctx) => await ctx.db.get(userSiteId));
+    const updatedUserSite = await t.run(
+      async (ctx) => await ctx.db.get(userSiteId),
+    );
     expect(updatedUserSite?.canAccess).toBe(false);
   });
 

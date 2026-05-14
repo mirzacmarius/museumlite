@@ -10,10 +10,7 @@ type OrgSetup = {
   userId: Id<"users">;
 };
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -79,34 +76,30 @@ async function createOrgWithUser(
 describe("Export Formats E2E Verification (manual)", () => {
   test("should export accessions in all supported formats", async () => {
     const t = convexTest(schema, modules);
-    const { orgId, userId } = await createOrgWithUser(t, [
-      "collections.read",
-    ]);
+    const { orgId, userId } = await createOrgWithUser(t, ["collections.read"]);
     const asUser = authedForUser(t, userId);
 
     // Create test data - accession
-    const accessionId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("accessions", {
-        organizationId: orgId as Id<"organizations">,
-        accessionNumber: "ACC-2024-001",
-        dateReceived: Date.now(),
-        source: "Test Donor",
-        method: "gift",
-        cost: 1000,
-        notes: "Test accession for export verification",
-        status: "approved",
-      });
-    });
-
-    // Test CSV export
-    const csvExport = await asUser.mutation(
-      api.imports.exportAccessionsWithFormat,
-      {
+    const [accessionId, csvExport] = await Promise.all([
+      asUser.run(async (ctx) => {
+        return ctx.db.insert("accessions", {
+          organizationId: orgId as Id<"organizations">,
+          accessionNumber: "ACC-2024-001",
+          dateReceived: Date.now(),
+          source: "Test Donor",
+          method: "gift",
+          cost: 1000,
+          notes: "Test accession for export verification",
+          status: "approved",
+        });
+      }),
+      asUser.mutation(api.imports.exportAccessionsWithFormat, {
         organizationId: orgId as Id<"organizations">,
         format: "csv",
-      },
-    );
+      }),
+    ]);
 
+    // Test CSV export
     expect(csvExport).toContain("accessionNumber");
     expect(csvExport).toContain("ACC-2024-001");
     expect(csvExport).toContain("Test Donor");
@@ -157,52 +150,46 @@ describe("Export Formats E2E Verification (manual)", () => {
 
     expect(spectrumExport).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(spectrumExport).toContain("spectrum:entries");
-    expect(spectrumExport).toContain(
-      "<entryNumber>ACC-2024-001</entryNumber>",
-    );
+    expect(spectrumExport).toContain("<entryNumber>ACC-2024-001</entryNumber>");
     console.log("✓ SPECTRUM export verified - valid SPECTRUM XML structure");
   });
 
   test("should export collections in all supported formats", async () => {
     const t = convexTest(schema, modules);
-    const { orgId, userId } = await createOrgWithUser(t, [
-      "collections.read",
-    ]);
+    const { orgId, userId } = await createOrgWithUser(t, ["collections.read"]);
     const asUser = authedForUser(t, userId);
 
     // Create test collection item
-    const collectionId = await asUser.run(async (ctx) => {
-      return ctx.db.insert("collections", {
-        organizationId: orgId as Id<"organizations">,
-        accessionNumber: "2024.001",
-        title: "Test Artwork",
-        creator: "Test Artist",
-        objectType: "Painting",
-        objectName: "Oil Painting",
-        culture: "Contemporary",
-        period: "21st Century",
-        dateCreated: "2024",
-        materials: "Oil on canvas",
-        technique: "Impasto",
-        dimensions: "100 x 80 cm",
-        description: "A test artwork for export verification",
-        condition: "Excellent",
-        provenance: "Acquired from Test Gallery",
-        status: "active",
-        catalogedBy: userId,
-        catalogedAt: Date.now(),
-      });
-    });
-
-    // Test CSV export
-    const csvExport = await asUser.mutation(
-      api.imports.exportObjectsWithFormat,
-      {
+    const [collectionId, csvExport] = await Promise.all([
+      asUser.run(async (ctx) => {
+        return ctx.db.insert("collections", {
+          organizationId: orgId as Id<"organizations">,
+          accessionNumber: "2024.001",
+          title: "Test Artwork",
+          creator: "Test Artist",
+          objectType: "Painting",
+          objectName: "Oil Painting",
+          culture: "Contemporary",
+          period: "21st Century",
+          dateCreated: "2024",
+          materials: "Oil on canvas",
+          technique: "Impasto",
+          dimensions: "100 x 80 cm",
+          description: "A test artwork for export verification",
+          condition: "Excellent",
+          provenance: "Acquired from Test Gallery",
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: Date.now(),
+        });
+      }),
+      asUser.mutation(api.imports.exportObjectsWithFormat, {
         organizationId: orgId as Id<"organizations">,
         format: "csv",
-      },
-    );
+      }),
+    ]);
 
+    // Test CSV export
     expect(csvExport).toContain("accessionNumber");
     expect(csvExport).toContain("2024.001");
     expect(csvExport).toContain("Test Artwork");
@@ -273,9 +260,7 @@ describe("Export Formats E2E Verification (manual)", () => {
 
   test("should handle empty exports gracefully", async () => {
     const t = convexTest(schema, modules);
-    const { orgId, userId } = await createOrgWithUser(t, [
-      "collections.read",
-    ]);
+    const { orgId, userId } = await createOrgWithUser(t, ["collections.read"]);
     const asUser = authedForUser(t, userId);
 
     // Test empty CSV export
@@ -321,9 +306,7 @@ describe("Export Formats E2E Verification (manual)", () => {
 
   test("should properly escape special characters in exports", async () => {
     const t = convexTest(schema, modules);
-    const { orgId, userId } = await createOrgWithUser(t, [
-      "collections.read",
-    ]);
+    const { orgId, userId } = await createOrgWithUser(t, ["collections.read"]);
     const asUser = authedForUser(t, userId);
 
     // Create collection with special characters

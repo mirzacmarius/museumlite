@@ -707,13 +707,10 @@ export const listByOrganization = query({
 
     const collectionIds = paginationResult.page.map((m) => m.collectionId);
     const uploaderIds = paginationResult.page.map((m) => m.uploadedBy);
-    const collections = await batchGetByIds<"collections">(
-      ctx,
-      collectionIds,
-      "collections",
-    );
-    const uploaders = await batchGetByIds<"users">(ctx, uploaderIds, "users");
-
+    const [collections, uploaders] = await Promise.all([
+      batchGetByIds<"collections">(ctx, collectionIds, "collections"),
+      batchGetByIds<"users">(ctx, uploaderIds, "users"),
+    ]);
     const collectionMap = createLookupMap<"collections">(collections);
     const uploaderMap = createLookupMap<"users">(uploaders);
 
@@ -1038,8 +1035,10 @@ export const getWithMetadata = query({
 
     await requirePermission(ctx, media.organizationId, "media.read");
 
-    const collection = await ctx.db.get(media.collectionId);
-    const url = await ctx.storage.getUrl(media.storageId);
+    const [collection, url] = await Promise.all([
+      ctx.db.get(media.collectionId),
+      ctx.storage.getUrl(media.storageId),
+    ]);
     const thumbnailUrl = media.thumbnailStorageId
       ? await ctx.storage.getUrl(media.thumbnailStorageId)
       : null;
@@ -1413,18 +1412,18 @@ export const trackDownload = mutation({
     }
 
     // Track the download
-    const downloadId = await ctx.db.insert("mediaDownloads", {
-      mediaId: args.mediaId,
-      organizationId: media.organizationId,
-      userId,
-      downloadedAt: Date.now(),
-      purpose: args.purpose,
-      purposeDetails: args.purposeDetails,
-      acknowledgedRights: args.acknowledgedRights,
-    });
-
-    const url = await ctx.storage.getUrl(media.storageId);
-
+    const [downloadId, url] = await Promise.all([
+      ctx.db.insert("mediaDownloads", {
+        mediaId: args.mediaId,
+        organizationId: media.organizationId,
+        userId,
+        downloadedAt: Date.now(),
+        purpose: args.purpose,
+        purposeDetails: args.purposeDetails,
+        acknowledgedRights: args.acknowledgedRights,
+      }),
+      ctx.storage.getUrl(media.storageId),
+    ]);
     return {
       downloadId,
       url,

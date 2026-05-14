@@ -378,18 +378,18 @@ export const listPolicies = query({
 
     const policiesWithCounts = await Promise.all(
       page.map(async (policy) => {
-        const coverages = await ctx.db
-          .query("insuranceCoverages")
-          .withIndex("by_policy_and_status", (q) =>
-            q.eq("policyId", policy._id).eq("status", "active"),
-          )
-          .collect();
-
-        const claims = await ctx.db
-          .query("insuranceClaims")
-          .withIndex("by_policy", (q) => q.eq("policyId", policy._id))
-          .collect();
-
+        const [coverages, claims] = await Promise.all([
+          ctx.db
+            .query("insuranceCoverages")
+            .withIndex("by_policy_and_status", (q) =>
+              q.eq("policyId", policy._id).eq("status", "active"),
+            )
+            .collect(),
+          ctx.db
+            .query("insuranceClaims")
+            .withIndex("by_policy", (q) => q.eq("policyId", policy._id))
+            .collect(),
+        ]);
         return {
           _id: policy._id,
           policyNumber: policy.policyNumber,
@@ -1930,35 +1930,36 @@ export const createAutoClaimForTransitDamage = internalMutation({
     const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
     const now = Date.now();
 
-    const claimId = await ctx.db.insert("insuranceClaims", {
-      organizationId: args.organizationId,
-      policyId: policy._id,
-      claimNumber,
-      collectionIds: args.collectionIds,
-      loanId: args.loanId,
-      incidentDate: now,
-      incidentType: "transit",
-      incidentDescription: args.incidentDescription,
-      claimedAmount,
-      status: "draft",
-      reportedDate: now,
-      isAutoClaim: true,
-      autoClaimSource: "loan_return_damage",
-      conditionDisputeId: args.conditionDisputeId,
-      internalNotes:
-        "Auto-generated claim based on condition change detected during loan return.",
-      createdBy: (await ctx.db.query("users").first())?._id as Id<"users">,
-      createdAt: now,
-    });
+    const [claimId, userOrgs] = await Promise.all([
+      ctx.db.insert("insuranceClaims", {
+        organizationId: args.organizationId,
+        policyId: policy._id,
+        claimNumber,
+        collectionIds: args.collectionIds,
+        loanId: args.loanId,
+        incidentDate: now,
+        incidentType: "transit",
+        incidentDescription: args.incidentDescription,
+        claimedAmount,
+        status: "draft",
+        reportedDate: now,
+        isAutoClaim: true,
+        autoClaimSource: "loan_return_damage",
+        conditionDisputeId: args.conditionDisputeId,
+        internalNotes:
+          "Auto-generated claim based on condition change detected during loan return.",
+        createdBy: (await ctx.db.query("users").first())?._id as Id<"users">,
+        createdAt: now,
+      }),
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ]);
 
     // Notify insurance coordinators
-    const userOrgs = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
     for (const userOrg of userOrgs) {
       const role = await ctx.db.get(userOrg.roleId);
       if (!role) continue;
@@ -2414,58 +2415,58 @@ export const getCoverageAlerts = query({
       (p) => p.expirationDate >= now && p.expirationDate <= in90Days,
     );
 
-    const enrichedExpiringPolicies = await Promise.all(
-      expiringPolicies.map(async (policy) => {
-        const coverages = await ctx.db
-          .query("insuranceCoverages")
-          .withIndex("by_policy_and_status", (q) =>
-            q.eq("policyId", policy._id).eq("status", "active"),
+    const [enrichedExpiringPolicies, allActiveObjects, allCoverages] =
+      await Promise.all([
+        Promise.all(
+          expiringPolicies.map(async (policy) => {
+            const coverages = await ctx.db
+              .query("insuranceCoverages")
+              .withIndex("by_policy_and_status", (q) =>
+                q.eq("policyId", policy._id).eq("status", "active"),
+              )
+              .collect();
+
+            const totalCoveredValue = coverages.reduce(
+              (sum, c) => sum + c.coveredValue,
+              0,
+            );
+
+            const daysUntilExpiry = Math.ceil(
+              (policy.expirationDate - now) / (24 * 60 * 60 * 1000),
+            );
+
+            let severity: "critical" | "warning" | "info" = "info";
+            if (daysUntilExpiry <= 7) {
+              severity = "critical";
+            } else if (daysUntilExpiry <= 30) {
+              severity = "warning";
+            }
+
+            return {
+              _id: policy._id,
+              policyNumber: policy.policyNumber,
+              carrier: policy.carrier,
+              expirationDate: policy.expirationDate,
+              daysUntilExpiry,
+              coverageCount: coverages.length,
+              totalCoveredValue,
+              severity,
+            };
+          }),
+        ),
+        ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", "active"),
           )
-          .collect();
-
-        const totalCoveredValue = coverages.reduce(
-          (sum, c) => sum + c.coveredValue,
-          0,
-        );
-
-        const daysUntilExpiry = Math.ceil(
-          (policy.expirationDate - now) / (24 * 60 * 60 * 1000),
-        );
-
-        let severity: "critical" | "warning" | "info" = "info";
-        if (daysUntilExpiry <= 7) {
-          severity = "critical";
-        } else if (daysUntilExpiry <= 30) {
-          severity = "warning";
-        }
-
-        return {
-          _id: policy._id,
-          policyNumber: policy.policyNumber,
-          carrier: policy.carrier,
-          expirationDate: policy.expirationDate,
-          daysUntilExpiry,
-          coverageCount: coverages.length,
-          totalCoveredValue,
-          severity,
-        };
-      }),
-    );
-
-    const allActiveObjects = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
-      )
-      .collect();
-
-    const allCoverages = await ctx.db
-      .query("insuranceCoverages")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
-      )
-      .collect();
-
+          .collect(),
+        ctx.db
+          .query("insuranceCoverages")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", "active"),
+          )
+          .collect(),
+      ]);
     const coveredObjectIds = new Set<string>();
     for (const coverage of allCoverages) {
       if (coverage.collectionId) {
@@ -2479,28 +2480,28 @@ export const getCoverageAlerts = query({
     const coveragePercentage =
       totalObjects > 0 ? Math.round((coveredObjects / totalObjects) * 100) : 0;
 
-    const expiredPoliciesCount = await ctx.db
-      .query("insurancePolicies")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "expired"),
-      )
-      .collect()
-      .then((policies) => policies.length);
-
-    const pendingClaims = await ctx.db
-      .query("insuranceClaims")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "draft"),
-          q.eq(q.field("status"), "submitted"),
-          q.eq(q.field("status"), "under_review"),
-        ),
-      )
-      .collect();
-
+    const [expiredPoliciesCount, pendingClaims] = await Promise.all([
+      ctx.db
+        .query("insurancePolicies")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "expired"),
+        )
+        .collect()
+        .then((policies) => policies.length),
+      ctx.db
+        .query("insuranceClaims")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("status"), "draft"),
+            q.eq(q.field("status"), "submitted"),
+            q.eq(q.field("status"), "under_review"),
+          ),
+        )
+        .collect(),
+    ]);
     // Count stale appraisals (older than 3 years)
     const threeYearsAgo = now - 3 * 365 * 24 * 60 * 60 * 1000;
     const appraisals = await ctx.db

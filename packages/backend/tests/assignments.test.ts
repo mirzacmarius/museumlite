@@ -28,22 +28,22 @@ test("should require authentication for listMyAssignments", async () => {
 test("should return empty assignments when no data exists", async () => {
   const t = convexTest(schema, modules);
 
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: "test@example.com",
-    });
-  });
-
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-  });
-
+  const [userId, orgId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: { enabledModules: [] },
+      });
+    }),
+  ]);
   const authed = t.withIdentity({
     subject: `${userId}|session-empty-assignments`,
     issuer: "https://example.test",
@@ -70,22 +70,22 @@ test("should return empty assignments when no data exists", async () => {
 test("should return valid assignment data structure", async () => {
   const t = convexTest(schema, modules);
 
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: "test@example.com",
-    });
-  });
-
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-  });
-
+  const [userId, orgId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: { enabledModules: [] },
+      });
+    }),
+  ]);
   const authed = t.withIdentity({
     subject: `${userId}|session-data-structure`,
     issuer: "https://example.test",
@@ -105,22 +105,22 @@ test("should return valid assignment data structure", async () => {
 test("should return zero counts when no assignments exist", async () => {
   const t = convexTest(schema, modules);
 
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: "test@example.com",
-    });
-  });
-
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-  });
-
+  const [userId, orgId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: "test@example.com",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: { enabledModules: [] },
+      });
+    }),
+  ]);
   const authed = t.withIdentity({
     subject: `${userId}|session-counts`,
     issuer: "https://example.test",

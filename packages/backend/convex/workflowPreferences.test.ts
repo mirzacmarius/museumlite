@@ -101,13 +101,17 @@ test("disabled accession workflow publishes submitted object drafts immediately"
   });
 
   const result = await t.run(async (ctx) => {
-    const accession = await ctx.db.get(accessionId);
-    const collection = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_accessionNumber", (q) =>
-        q.eq("organizationId", organizationId).eq("accessionNumber", "AUTO-1"),
-      )
-      .first();
+    const [accession, collection] = await Promise.all([
+      ctx.db.get(accessionId),
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_accessionNumber", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("accessionNumber", "AUTO-1"),
+        )
+        .first(),
+    ]);
     const media = collection
       ? await ctx.db
           .query("mediaFiles")
@@ -174,8 +178,10 @@ test("disabled deaccession workflow applies the collection disposition immediate
   });
 
   const result = await t.run(async (ctx) => {
-    const deaccession = await ctx.db.get(deaccessionId);
-    const collection = await ctx.db.get(collectionId as Id<"collections">);
+    const [deaccession, collection] = await Promise.all([
+      ctx.db.get(deaccessionId),
+      ctx.db.get(collectionId as Id<"collections">),
+    ]);
     return { collection, deaccession };
   });
 

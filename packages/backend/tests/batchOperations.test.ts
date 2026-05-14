@@ -188,18 +188,18 @@ describe("batchOperations schema", () => {
   test("should query jobs by organization and status", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("batchJobs", {
         organizationId: orgId,

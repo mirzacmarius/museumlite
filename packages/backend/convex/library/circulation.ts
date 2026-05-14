@@ -246,10 +246,11 @@ export const markLost = mutation({
       throw new Error("Invalid status for marking as lost");
     }
 
-    const copy = await ctx.db.get(circulation.copyId);
-    const item = await ctx.db.get(circulation.itemId);
-    const account = await ctx.db.get(circulation.accountId);
-
+    const [copy, item, account] = await Promise.all([
+      ctx.db.get(circulation.copyId),
+      ctx.db.get(circulation.itemId),
+      ctx.db.get(circulation.accountId),
+    ]);
     const now = Date.now();
     const replacementCost = copy?.replacementCost || 25;
 
@@ -328,10 +329,11 @@ export const get = query({
 
     await requireModuleEnabled(ctx, circulation.organizationId, "library");
 
-    const account = await ctx.db.get(circulation.accountId);
-    const copy = await ctx.db.get(circulation.copyId);
-    const item = await ctx.db.get(circulation.itemId);
-
+    const [account, copy, item] = await Promise.all([
+      ctx.db.get(circulation.accountId),
+      ctx.db.get(circulation.copyId),
+      ctx.db.get(circulation.itemId),
+    ]);
     return {
       ...circulation,
       account,
@@ -375,9 +377,10 @@ export const getByBarcode = query({
       return { copy, circulation: null };
     }
 
-    const account = await ctx.db.get(circulation.accountId);
-    const item = await ctx.db.get(circulation.itemId);
-
+    const [account, item] = await Promise.all([
+      ctx.db.get(circulation.accountId),
+      ctx.db.get(circulation.itemId),
+    ]);
     return {
       copy,
       circulation: {
@@ -406,9 +409,11 @@ export const listActive = query({
 
     const enrichedPage = await Promise.all(
       circulations.page.map(async (circulation) => {
-        const account = await ctx.db.get(circulation.accountId);
-        const copy = await ctx.db.get(circulation.copyId);
-        const item = await ctx.db.get(circulation.itemId);
+        const [account, copy, item] = await Promise.all([
+          ctx.db.get(circulation.accountId),
+          ctx.db.get(circulation.copyId),
+          ctx.db.get(circulation.itemId),
+        ]);
         return {
           ...circulation,
           account,
@@ -445,9 +450,11 @@ export const listOverdue = query({
 
     const enrichedPage = await Promise.all(
       circulations.page.map(async (circulation) => {
-        const account = await ctx.db.get(circulation.accountId);
-        const copy = await ctx.db.get(circulation.copyId);
-        const item = await ctx.db.get(circulation.itemId);
+        const [account, copy, item] = await Promise.all([
+          ctx.db.get(circulation.accountId),
+          ctx.db.get(circulation.copyId),
+          ctx.db.get(circulation.itemId),
+        ]);
         const daysOverdue = Math.ceil(
           (now - circulation.dueDate) / (24 * 60 * 60 * 1000),
         );
@@ -1129,9 +1136,10 @@ export const createRecall = mutation({
     });
 
     // Send notification to borrower
-    const account = await ctx.db.get(circulation.accountId);
-    const item = await ctx.db.get(circulation.itemId);
-
+    const [account, item] = await Promise.all([
+      ctx.db.get(circulation.accountId),
+      ctx.db.get(circulation.itemId),
+    ]);
     if (account?.userId) {
       await ctx.runMutation(internal.audit.createNotificationInternal, {
         organizationId: circulation.organizationId,
@@ -1243,8 +1251,10 @@ export const listRecalls = query({
 
     const enrichedPage = await Promise.all(
       recalls.page.map(async (recall) => {
-        const account = await ctx.db.get(recall.accountId);
-        const item = await ctx.db.get(recall.itemId);
+        const [account, item] = await Promise.all([
+          ctx.db.get(recall.accountId),
+          ctx.db.get(recall.itemId),
+        ]);
         const requestingAccount = recall.recalledByAccountId
           ? await ctx.db.get(recall.recalledByAccountId)
           : null;
@@ -1355,9 +1365,10 @@ export const listPatronCheckouts = query({
 
     const enriched = await Promise.all(
       circulations.map(async (circ) => {
-        const item = await ctx.db.get(circ.itemId);
-        const copy = await ctx.db.get(circ.copyId);
-
+        const [item, copy] = await Promise.all([
+          ctx.db.get(circ.itemId),
+          ctx.db.get(circ.copyId),
+        ]);
         return {
           ...circ,
           item,

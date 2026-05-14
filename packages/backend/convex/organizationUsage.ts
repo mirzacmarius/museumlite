@@ -2,10 +2,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
+  type QueryCtx,
   internalAction,
   internalMutation,
   internalQuery,
-  type QueryCtx,
 } from "./_generated/server";
 import {
   createEmptyUsageCounter,
@@ -38,15 +38,21 @@ async function buildUsageCounterSnapshot(
   const [collections, mediaFiles, mediaVersions] = await Promise.all([
     ctx.db
       .query("collections")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
       .collect(),
     ctx.db
       .query("mediaFiles")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
       .collect(),
     ctx.db
       .query("mediaVersions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
       .collect(),
   ]);
 
@@ -86,14 +92,15 @@ export const recomputeOrganizationUsageCounter = internalMutation({
   },
   returns: usageCounterSnapshotValidator,
   handler: async (ctx, args) => {
-    const snapshot = await buildUsageCounterSnapshot(ctx, args.organizationId);
-    const existing = await ctx.db
-      .query("organizationUsageCounters")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .unique();
-
+    const [snapshot, existing] = await Promise.all([
+      buildUsageCounterSnapshot(ctx, args.organizationId),
+      ctx.db
+        .query("organizationUsageCounters")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .unique(),
+    ]);
     if (existing) {
       await ctx.db.patch(existing._id, snapshot);
     } else {

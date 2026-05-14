@@ -29,18 +29,18 @@ describe("collections publishing", () => {
     const t = convexTest(schema, modules);
 
     await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Free Org",
-        slug: "free-org",
-        type: "museum",
-        subscriptionTier: "free",
-        settings: {
-          portalSettings: { isEnabled: true, portalSlug: "gallery" },
-        },
-      });
-
-      const userId = await ctx.db.insert("users", { email: "u@example.com" });
-
+      const [organizationId, userId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Free Org",
+          slug: "free-org",
+          type: "museum",
+          subscriptionTier: "free",
+          settings: {
+            portalSettings: { isEnabled: true, portalSlug: "gallery" },
+          },
+        }),
+        ctx.db.insert("users", { email: "u@example.com" }),
+      ]);
       await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: "A-1",
@@ -65,18 +65,18 @@ describe("collections publishing", () => {
     const t = convexTest(schema, modules);
 
     await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Pro Org",
-        slug: "pro-org",
-        type: "museum",
-        subscriptionTier: "pro",
-        settings: {
-          portalSettings: { isEnabled: false, portalSlug: "gallery" },
-        },
-      });
-
-      const userId = await ctx.db.insert("users", { email: "u2@example.com" });
-
+      const [organizationId, userId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Pro Org",
+          slug: "pro-org",
+          type: "museum",
+          subscriptionTier: "pro",
+          settings: {
+            portalSettings: { isEnabled: false, portalSlug: "gallery" },
+          },
+        }),
+        ctx.db.insert("users", { email: "u2@example.com" }),
+      ]);
       await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: "A-2",
@@ -100,18 +100,18 @@ describe("collections publishing", () => {
     const t = convexTest(schema, modules);
 
     await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Pro Org 2",
-        slug: "pro-org-2",
-        type: "museum",
-        subscriptionTier: "pro",
-        settings: {
-          portalSettings: { isEnabled: true, portalSlug: "gallery" },
-        },
-      });
-
-      const userId = await ctx.db.insert("users", { email: "u3@example.com" });
-
+      const [organizationId, userId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Pro Org 2",
+          slug: "pro-org-2",
+          type: "museum",
+          subscriptionTier: "pro",
+          settings: {
+            portalSettings: { isEnabled: true, portalSlug: "gallery" },
+          },
+        }),
+        ctx.db.insert("users", { email: "u3@example.com" }),
+      ]);
       await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: "A-3",
@@ -135,18 +135,18 @@ describe("collections publishing", () => {
     const t = convexTest(schema, modules);
 
     await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Pro Org 3",
-        slug: "pro-org-3",
-        type: "museum",
-        subscriptionTier: "pro",
-        settings: {
-          portalSettings: { isEnabled: true, portalSlug: "gallery" },
-        },
-      });
-
-      const userId = await ctx.db.insert("users", { email: "u4@example.com" });
-
+      const [organizationId, userId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Pro Org 3",
+          slug: "pro-org-3",
+          type: "museum",
+          subscriptionTier: "pro",
+          settings: {
+            portalSettings: { isEnabled: true, portalSlug: "gallery" },
+          },
+        }),
+        ctx.db.insert("users", { email: "u4@example.com" }),
+      ]);
       await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: "A-4",
@@ -170,18 +170,18 @@ describe("collections publishing", () => {
     const t = convexTest(schema, modules);
 
     await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Pro Org 4",
-        slug: "pro-org-4",
-        type: "museum",
-        subscriptionTier: "pro",
-        settings: {
-          portalSettings: { isEnabled: true, portalSlug: "gallery" },
-        },
-      });
-
-      const userId = await ctx.db.insert("users", { email: "u5@example.com" });
-
+      const [organizationId, userId] = await Promise.all([
+        ctx.db.insert("organizations", {
+          name: "Pro Org 4",
+          slug: "pro-org-4",
+          type: "museum",
+          subscriptionTier: "pro",
+          settings: {
+            portalSettings: { isEnabled: true, portalSlug: "gallery" },
+          },
+        }),
+        ctx.db.insert("users", { email: "u5@example.com" }),
+      ]);
       await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: "A-5",
@@ -210,54 +210,57 @@ describe("collections publishing", () => {
   test("public portal includes published library items", async () => {
     const t = convexTest(schema, modules);
 
-    const { itemId } = await t.run(async (ctx) => {
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Library Org",
-        slug: "library-org",
-        type: "library",
-        subscriptionTier: "pro",
-        settings: {
-          enabledModules: ["library"],
-          portalSettings: { isEnabled: true, portalSlug: "catalog" },
-        },
-      });
+    const [{ itemId }, listResult] = await Promise.all([
+      t.run(async (ctx) => {
+        const organizationId = await ctx.db.insert("organizations", {
+          name: "Library Org",
+          slug: "library-org",
+          type: "library",
+          subscriptionTier: "pro",
+          settings: {
+            enabledModules: ["library"],
+            portalSettings: { isEnabled: true, portalSlug: "catalog" },
+          },
+        });
 
-      const userId = await ctx.db.insert("users", { email: "u6@example.com" });
+        const userId = await ctx.db.insert("users", {
+          email: "u6@example.com",
+        });
 
-      const itemId = await ctx.db.insert("libraryItems", {
-        organizationId,
-        itemType: "book",
-        title: "Published Library Item",
-        authors: ["Test Author"],
-        language: "en",
-        totalCopies: 1,
-        availableCopies: 1,
-        catalogStatus: "published",
-        isCirculating: true,
-        createdBy: userId,
-        createdAt: Date.now(),
-      });
+        const itemId = await ctx.db.insert("libraryItems", {
+          organizationId,
+          itemType: "book",
+          title: "Published Library Item",
+          authors: ["Test Author"],
+          language: "en",
+          totalCopies: 1,
+          availableCopies: 1,
+          catalogStatus: "published",
+          isCirculating: true,
+          createdBy: userId,
+          createdAt: Date.now(),
+        });
 
-      await ctx.db.insert("libraryItems", {
-        organizationId,
-        itemType: "book",
-        title: "Draft Library Item",
-        authors: ["Hidden Author"],
-        language: "en",
-        totalCopies: 1,
-        availableCopies: 1,
-        catalogStatus: "draft",
-        isCirculating: true,
-        createdBy: userId,
-        createdAt: Date.now(),
-      });
+        await ctx.db.insert("libraryItems", {
+          organizationId,
+          itemType: "book",
+          title: "Draft Library Item",
+          authors: ["Hidden Author"],
+          language: "en",
+          totalCopies: 1,
+          availableCopies: 1,
+          catalogStatus: "draft",
+          isCirculating: true,
+          createdBy: userId,
+          createdAt: Date.now(),
+        });
 
-      return { itemId };
-    });
-
-    const listResult = await t.query(api.collections.listPublic, {
-      organizationSlug: "library-org",
-    });
+        return { itemId };
+      }),
+      t.query(api.collections.listPublic, {
+        organizationSlug: "library-org",
+      }),
+    ]);
     expect(listResult.items.map((item) => item.title)).toEqual([
       "Published Library Item",
     ]);

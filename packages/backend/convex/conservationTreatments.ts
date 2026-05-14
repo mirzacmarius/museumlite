@@ -69,8 +69,10 @@ export const listByOrganization = query({
 
     const results = await Promise.all(
       treatments.map(async (treatment) => {
-        const collection = await ctx.db.get(treatment.collectionId);
-        const user = await ctx.db.get(treatment.performedBy);
+        const [collection, user] = await Promise.all([
+          ctx.db.get(treatment.collectionId),
+          ctx.db.get(treatment.performedBy),
+        ]);
         return {
           _id: treatment._id,
           _creationTime: treatment._creationTime,
@@ -121,9 +123,10 @@ export const get = query({
     await requireConservationAccess(ctx, treatment.organizationId);
     await requirePermission(ctx, treatment.organizationId, "collections.read");
 
-    const collection = await ctx.db.get(treatment.collectionId);
-    const user = await ctx.db.get(treatment.performedBy);
-
+    const [collection, user] = await Promise.all([
+      ctx.db.get(treatment.collectionId),
+      ctx.db.get(treatment.performedBy),
+    ]);
     return {
       _id: treatment._id,
       _creationTime: treatment._creationTime,
@@ -357,13 +360,10 @@ export const create = mutation({
       );
     }
 
-    const user = await ctx.db.get(userId);
-
-    const workflowConfig = await getWorkflowConfig(
-      ctx,
-      collection.organizationId,
-      "conservation",
-    );
+    const [user, workflowConfig] = await Promise.all([
+      ctx.db.get(userId),
+      getWorkflowConfig(ctx, collection.organizationId, "conservation"),
+    ]);
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -976,8 +976,10 @@ export const listAttachments = query({
 
     return Promise.all(
       attachments.map(async (attachment) => {
-        const url = await ctx.storage.getUrl(attachment.storageId);
-        const user = await ctx.db.get(attachment.uploadedBy);
+        const [url, user] = await Promise.all([
+          ctx.storage.getUrl(attachment.storageId),
+          ctx.db.get(attachment.uploadedBy),
+        ]);
         return {
           _id: attachment._id,
           storageId: attachment.storageId,

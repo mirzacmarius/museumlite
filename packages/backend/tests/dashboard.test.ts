@@ -413,16 +413,16 @@ describe("Dashboard: getAnalytics", () => {
   test("enforces organization isolation", async () => {
     // #given
     const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createTestOrg(t);
-
-    const otherOrgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Other Org",
-        slug: `other-org-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-    });
-
+    const [{ organizationId, userId }, otherOrgId] = await Promise.all([
+      createTestOrg(t),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Other Org",
+          slug: `other-org-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        });
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert(
         "collections",

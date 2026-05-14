@@ -1,7 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import schema from "../convex/schema";
 import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
 import {
   batchGetByIds,
   batchLookup,
@@ -107,22 +107,22 @@ test("createLookupMap should create map from documents", async () => {
   const t = convexTest(schema, modules);
 
   // Create test organizations
-  const org1Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Museum 1",
-      slug: "museum-1",
-      type: "museum",
-    });
-  });
-
-  const org2Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Museum 2",
-      slug: "museum-2",
-      type: "gallery",
-    });
-  });
-
+  const [org1Id, org2Id] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Museum 1",
+        slug: "museum-1",
+        type: "museum",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Museum 2",
+        slug: "museum-2",
+        type: "gallery",
+      });
+    }),
+  ]);
   // Fetch documents and create lookup map (perform all assertions inside t.run)
   await t.run(async (ctx) => {
     const docs = await batchGetByIds(ctx, [org1Id, org2Id], "organizations");
@@ -170,30 +170,29 @@ test("batchLookup should combine fetch and map creation", async () => {
   const t = convexTest(schema, modules);
 
   // Create test organizations
-  const org1Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Gallery A",
-      slug: "gallery-a",
-      type: "gallery",
-    });
-  });
-
-  const org2Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Gallery B",
-      slug: "gallery-b",
-      type: "gallery",
-    });
-  });
-
-  const org3Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Gallery C",
-      slug: "gallery-c",
-      type: "gallery",
-    });
-  });
-
+  const [org1Id, org2Id, org3Id] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Gallery A",
+        slug: "gallery-a",
+        type: "gallery",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Gallery B",
+        slug: "gallery-b",
+        type: "gallery",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Gallery C",
+        slug: "gallery-c",
+        type: "gallery",
+      });
+    }),
+  ]);
   // Use convenience function (perform all assertions inside t.run)
   await t.run(async (ctx) => {
     const lookupMap = await batchLookup(

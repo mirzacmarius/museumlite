@@ -210,10 +210,12 @@ export const create = mutation({
   },
   returns: v.id("contacts"),
   handler: async (ctx, args) => {
-    const userId = await requireAuthenticatedUser(ctx);
+    const [userId, account] = await Promise.all([
+      requireAuthenticatedUser(ctx),
+      ctx.db.get(args.accountId),
+    ]);
 
     // Get account to check organization
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -297,9 +299,10 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireAuthenticatedUser(ctx);
-
-    const contact = await ctx.db.get(args.contactId);
+    const [userId, contact] = await Promise.all([
+      requireAuthenticatedUser(ctx),
+      ctx.db.get(args.contactId),
+    ]);
     if (!contact) {
       throw new Error("Contact not found");
     }
@@ -377,9 +380,10 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireAuthenticatedUser(ctx);
-
-    const contact = await ctx.db.get(args.contactId);
+    const [userId, contact] = await Promise.all([
+      requireAuthenticatedUser(ctx),
+      ctx.db.get(args.contactId),
+    ]);
     if (!contact) {
       throw new Error("Contact not found");
     }
@@ -424,9 +428,10 @@ export const setPrimary = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await requireAuthenticatedUser(ctx);
-
-    const contact = await ctx.db.get(args.contactId);
+    const [userId, contact] = await Promise.all([
+      requireAuthenticatedUser(ctx),
+      ctx.db.get(args.contactId),
+    ]);
     if (!contact) {
       throw new Error("Contact not found");
     }

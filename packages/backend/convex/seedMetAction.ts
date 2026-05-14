@@ -2200,16 +2200,16 @@ async function seedWorkflowData(
     templateIds.set(template.workflowType, templateId);
   }
 
-  const adminRoleId = await ctx.runQuery(internal.seedMet.getRoleByName, {
-    organizationId: orgId,
-    name: "admin",
-  });
-
-  const curatorRoleId = await ctx.runQuery(internal.seedMet.getRoleByName, {
-    organizationId: orgId,
-    name: "curator",
-  });
-
+  const [adminRoleId, curatorRoleId] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getRoleByName, {
+      organizationId: orgId,
+      name: "admin",
+    }),
+    ctx.runQuery(internal.seedMet.getRoleByName, {
+      organizationId: orgId,
+      name: "curator",
+    }),
+  ]);
   if (!adminRoleId) {
     console.log("  Warning: Admin role not found, skipping workflow configs");
     return;
@@ -2304,16 +2304,16 @@ async function seedLoansData(
     return;
   }
 
-  const lenderAccounts = await ctx.runQuery(internal.seedMet.getAccounts, {
-    organizationId: orgId,
-    accountType: "lender",
-  });
-
-  const borrowerAccounts = await ctx.runQuery(internal.seedMet.getAccounts, {
-    organizationId: orgId,
-    accountType: "borrower",
-  });
-
+  const [lenderAccounts, borrowerAccounts] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getAccounts, {
+      organizationId: orgId,
+      accountType: "lender",
+    }),
+    ctx.runQuery(internal.seedMet.getAccounts, {
+      organizationId: orgId,
+      accountType: "borrower",
+    }),
+  ]);
   if (lenderAccounts.length === 0 || borrowerAccounts.length === 0) {
     console.log("  No accounts found, skipping loans seeding");
     return;
@@ -2701,14 +2701,14 @@ async function seedAccessionsData(
   orgId: Id<"organizations">,
   userId: Id<"users">,
 ): Promise<void> {
-  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
-    organizationId: orgId,
-  });
-
-  const accounts = await ctx.runQuery(internal.seedMet.getAccounts, {
-    organizationId: orgId,
-  });
-
+  const [collections, accounts] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getCollections, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getAccounts, {
+      organizationId: orgId,
+    }),
+  ]);
   const donorAccounts = accounts.filter(
     (a) =>
       a.accountType === "lender" ||
@@ -2963,18 +2963,17 @@ async function seedInsuranceData(
   orgId: Id<"organizations">,
   userId: Id<"users">,
 ): Promise<void> {
-  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
-    organizationId: orgId,
-  });
-
-  const loans = await ctx.runQuery(internal.seedMet.getLoans, {
-    organizationId: orgId,
-  });
-
-  const exhibitions = await ctx.runQuery(internal.seedMet.getExhibitions, {
-    organizationId: orgId,
-  });
-
+  const [collections, loans, exhibitions] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getCollections, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getLoans, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getExhibitions, {
+      organizationId: orgId,
+    }),
+  ]);
   if (collections.length === 0) {
     console.log("  No collections found, skipping insurance seeding");
     return;
@@ -3279,14 +3278,14 @@ async function seedExhibitionsData(
   orgId: Id<"organizations">,
   userId: Id<"users">,
 ): Promise<void> {
-  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
-    organizationId: orgId,
-  });
-
-  const locations = await ctx.runQuery(internal.seedMet.getLocations, {
-    organizationId: orgId,
-  });
-
+  const [collections, locations] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getCollections, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getLocations, {
+      organizationId: orgId,
+    }),
+  ]);
   if (collections.length === 0) {
     console.log("  No collections found, skipping exhibitions seeding");
     return;
@@ -3459,14 +3458,14 @@ async function seedConservationData(
   orgId: Id<"organizations">,
   userId: Id<"users">,
 ): Promise<void> {
-  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
-    organizationId: orgId,
-  });
-
-  const locations = await ctx.runQuery(internal.seedMet.getLocations, {
-    organizationId: orgId,
-  });
-
+  const [collections, locations] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getCollections, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getLocations, {
+      organizationId: orgId,
+    }),
+  ]);
   if (collections.length === 0) {
     console.log("  No collections found, skipping conservation seeding");
     return;
@@ -3655,14 +3654,14 @@ async function seedTransitData(
   orgId: Id<"organizations">,
   userId: Id<"users">,
 ): Promise<void> {
-  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
-    organizationId: orgId,
-  });
-
-  const loans = await ctx.runQuery(internal.seedMet.getLoans, {
-    organizationId: orgId,
-  });
-
+  const [collections, loans] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getCollections, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getLoans, {
+      organizationId: orgId,
+    }),
+  ]);
   if (collections.length === 0) {
     console.log("  No collections found, skipping transit seeding");
     return;
@@ -4306,7 +4305,7 @@ async function seedLibraryData(
           circulationId,
           copyId,
           fineType: "overdue",
-          description: `Overdue fine for late return`,
+          description: "Overdue fine for late return",
           amount: fineAmount,
           amountPaid: Math.random() > 0.5 ? fineAmount : 0,
           balance: Math.random() > 0.5 ? 0 : fineAmount,
@@ -4613,14 +4612,14 @@ async function seedAuditData(
   const oneDay = 24 * 60 * 60 * 1000;
   const oneMonth = 30 * oneDay;
 
-  const collections = await ctx.runQuery(internal.seedMet.getCollections, {
-    organizationId: orgId,
-  });
-
-  const locations = await ctx.runQuery(internal.seedMet.getLocations, {
-    organizationId: orgId,
-  });
-
+  const [collections, locations] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getCollections, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getLocations, {
+      organizationId: orgId,
+    }),
+  ]);
   let totalAuditLogs = 0;
   let totalNotifications = 0;
   let totalLocationHistory = 0;
@@ -5033,21 +5032,20 @@ async function seedRelationshipsAndDocuments(
   console.log("  Seeding relationships and documents...");
 
   // --- Account Relationships ---
-  const lenders = await ctx.runQuery(internal.seedMet.getAccounts, {
-    organizationId: orgId,
-    accountType: "lender",
-  });
-
-  const borrowers = await ctx.runQuery(internal.seedMet.getAccounts, {
-    organizationId: orgId,
-    accountType: "borrower",
-  });
-
+  const [lenders, borrowers, loans] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getAccounts, {
+      organizationId: orgId,
+      accountType: "lender",
+    }),
+    ctx.runQuery(internal.seedMet.getAccounts, {
+      organizationId: orgId,
+      accountType: "borrower",
+    }),
+    ctx.runQuery(internal.seedMet.getLoans, {
+      organizationId: orgId,
+    }),
+  ]);
   // Get loans to link accounts to
-  const loans = await ctx.runQuery(internal.seedMet.getLoans, {
-    organizationId: orgId,
-  });
-
   let relationshipCount = 0;
   for (const lender of lenders.slice(0, 10)) {
     // Link each lender to 2-3 random loans
@@ -5267,8 +5265,7 @@ async function seedAdminData(
       organizationId: orgId,
       name: key.name,
       prefix: `seed_${Date.now().toString(36)}`,
-      keyHash:
-        "seed_key_hash_placeholder_" + Math.random().toString(36).slice(2),
+      keyHash: `seed_key_hash_placeholder_${Math.random().toString(36).slice(2)}`,
       permissions: key.permissions,
       isRevoked: false,
       createdBy: userId,
@@ -5301,10 +5298,8 @@ async function seedAdminData(
     await ctx.runMutation(internal.seedMet.createWebhook, {
       organizationId: orgId,
       name: webhook.name,
-      url:
-        "https://example.com/webhook/seed-" +
-        webhook.name.toLowerCase().replace(/\s+/g, "-"),
-      secret: "whsec_seed_secret_" + Math.random().toString(36).slice(2),
+      url: `https://example.com/webhook/seed-${webhook.name.toLowerCase().replace(/\s+/g, "-")}`,
+      secret: `whsec_seed_secret_${Math.random().toString(36).slice(2)}`,
       events: webhook.events,
       isActive: true,
       createdBy: userId,
@@ -5404,12 +5399,9 @@ async function seedLibraryExtensions(
       {
         organizationId: orgId,
         name: vendor.name,
-        contactName: vendor.name + " Sales Team",
-        email:
-          "sales@" +
-          vendor.name.toLowerCase().replace(/\s+/g, "") +
-          ".example.com",
-        phone: "+1-555-" + Math.floor(Math.random() * 9000 + 1000).toString(),
+        contactName: `${vendor.name} Sales Team`,
+        email: `sales@${vendor.name.toLowerCase().replace(/\s+/g, "")}.example.com`,
+        phone: `+1-555-${Math.floor(Math.random() * 9000 + 1000).toString()}`,
         website: vendor.website,
         paymentTerms: "Net 30",
         discountPercent: 10 + Math.floor(Math.random() * 15),
@@ -5451,9 +5443,8 @@ async function seedLibraryExtensions(
     await ctx.runMutation(internal.seedMet.createLibraryAcquisitionRequest, {
       organizationId: orgId,
       title,
-      authors: ["Author " + Math.floor(Math.random() * 100)],
-      isbn:
-        "978-" + Math.floor(Math.random() * 9000000000 + 1000000000).toString(),
+      authors: [`Author ${Math.floor(Math.random() * 100)}`],
+      isbn: `978-${Math.floor(Math.random() * 9000000000 + 1000000000).toString()}`,
       publisher:
         vendorData[Math.floor(Math.random() * vendorData.length)]!.name,
       requestedBy: userId,
@@ -5491,7 +5482,7 @@ async function seedLibraryExtensions(
         organizationId: orgId,
         itemId: item._id,
         vendorId,
-        subscriptionNumber: "SUB-" + Date.now().toString(36) + "-" + i,
+        subscriptionNumber: `SUB-${Date.now().toString(36)}-${i}`,
         startDate: Date.now() - 365 * 24 * 60 * 60 * 1000,
         endDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
         frequency,
@@ -5520,7 +5511,7 @@ async function seedLibraryExtensions(
         subscriptionId,
         itemId: item._id,
         issueNumber: (j + 1).toString(),
-        volume: "Vol. " + (2024 - Math.floor(j / 4)),
+        volume: `Vol. ${2024 - Math.floor(j / 4)}`,
         issueDate: Date.now() - (issueCount - j) * 30 * 24 * 60 * 60 * 1000,
         receivedDate:
           issueStatus === "received"

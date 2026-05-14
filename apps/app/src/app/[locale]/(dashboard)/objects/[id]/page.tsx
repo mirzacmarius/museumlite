@@ -80,8 +80,7 @@ export default async function ObjectDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const token = await convexAuthNextjsToken();
-  const { id } = await params;
+  const [token, { id }] = await Promise.all([convexAuthNextjsToken(), params]);
   const collectionId = id as Id<"collections">;
   try {
     const preloadedObjectDetail = await preloadQuery(

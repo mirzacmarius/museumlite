@@ -1126,8 +1126,10 @@ export const listUserOrganizations = query({
 
     const organizations = await Promise.all(
       userOrganizations.map(async (uo) => {
-        const org = await ctx.db.get(uo.organizationId);
-        const role = await ctx.db.get(uo.roleId);
+        const [org, role] = await Promise.all([
+          ctx.db.get(uo.organizationId),
+          ctx.db.get(uo.roleId),
+        ]);
         if (!org || !role) {
           return null;
         }
@@ -1273,17 +1275,15 @@ export const inviteUser = mutation({
       throw error;
     }
 
-    const invitation = await ctx.runMutation(
-      internal.invitations.createInvitationInternal,
-      {
+    const [invitation, organization] = await Promise.all([
+      ctx.runMutation(internal.invitations.createInvitationInternal, {
         organizationId: args.organizationId,
         roleId: args.roleId,
         email: normalizedEmail,
         invitedBy: userId,
-      },
-    );
-
-    const organization = await ctx.db.get(args.organizationId);
+      }),
+      ctx.db.get(args.organizationId),
+    ]);
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
@@ -1439,8 +1439,10 @@ export const listOrganizationUsers = query({
 
     const usersWithRoles = await Promise.all(
       userOrganizations.map(async (uo) => {
-        const user = await ctx.db.get(uo.userId);
-        const role = await ctx.db.get(uo.roleId);
+        const [user, role] = await Promise.all([
+          ctx.db.get(uo.userId),
+          ctx.db.get(uo.roleId),
+        ]);
         if (!user || !role) {
           return null;
         }
@@ -1513,42 +1515,41 @@ export const createDefaultRoles = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     // Create system roles
-    const adminRole = await ctx.db.insert("roles", {
-      organizationId: args.organizationId,
-      name: "admin",
-      description: "Full organization access",
-      isSystemRole: true,
-    });
-
-    const curatorRole = await ctx.db.insert("roles", {
-      organizationId: args.organizationId,
-      name: "curator",
-      description: "Collection management and accession/deaccession approval",
-      isSystemRole: true,
-    });
-
-    const registrarRole = await ctx.db.insert("roles", {
-      organizationId: args.organizationId,
-      name: "registrar",
-      description:
-        "Accession/deaccession workflows, location management, loans",
-      isSystemRole: true,
-    });
-
-    const catalogerRole = await ctx.db.insert("roles", {
-      organizationId: args.organizationId,
-      name: "cataloger",
-      description: "Object cataloging and media management",
-      isSystemRole: true,
-    });
-
-    const viewerRole = await ctx.db.insert("roles", {
-      organizationId: args.organizationId,
-      name: "viewer",
-      description: "Read-only access",
-      isSystemRole: true,
-    });
-
+    const [adminRole, curatorRole, registrarRole, catalogerRole, viewerRole] =
+      await Promise.all([
+        ctx.db.insert("roles", {
+          organizationId: args.organizationId,
+          name: "admin",
+          description: "Full organization access",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("roles", {
+          organizationId: args.organizationId,
+          name: "curator",
+          description:
+            "Collection management and accession/deaccession approval",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("roles", {
+          organizationId: args.organizationId,
+          name: "registrar",
+          description:
+            "Accession/deaccession workflows, location management, loans",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("roles", {
+          organizationId: args.organizationId,
+          name: "cataloger",
+          description: "Object cataloging and media management",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("roles", {
+          organizationId: args.organizationId,
+          name: "viewer",
+          description: "Read-only access",
+          isSystemRole: true,
+        }),
+      ]);
     // Create default permissions (if they don't exist)
     const permissionNames = [
       // Collections

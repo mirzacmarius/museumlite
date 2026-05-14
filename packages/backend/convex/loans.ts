@@ -1832,9 +1832,10 @@ export const listLoanDocuments = query({
 
     const documentsWithUrls = await Promise.all(
       documents.map(async (doc) => {
-        const url = await ctx.storage.getUrl(doc.storageId);
-        const uploader = await ctx.db.get(doc.uploadedBy);
-
+        const [url, uploader] = await Promise.all([
+          ctx.storage.getUrl(doc.storageId),
+          ctx.db.get(doc.uploadedBy),
+        ]);
         return {
           _id: doc._id,
           storageId: doc.storageId,
@@ -2481,25 +2482,21 @@ export const requestExtension = mutation({
       throw new Error("An extension request is already pending for this loan");
     }
 
-    const requestId = await ctx.db.insert("loanExtensionRequests", {
-      loanId: args.loanId,
-      organizationId: loan.organizationId,
-      requestedBy: userId,
-      requestedAt: Date.now(),
-      originalEndDate: loan.endDate ?? Date.now(),
-      newRequestedEndDate: args.newEndDate,
-      reason: args.reason,
-      status: "pending",
-    });
+    const [requestId, approvers] = await Promise.all([
+      ctx.db.insert("loanExtensionRequests", {
+        loanId: args.loanId,
+        organizationId: loan.organizationId,
+        requestedBy: userId,
+        requestedAt: Date.now(),
+        originalEndDate: loan.endDate ?? Date.now(),
+        newRequestedEndDate: args.newEndDate,
+        reason: args.reason,
+        status: "pending",
+      }),
+      getUsersToNotifyForWorkflowStep(ctx, loan.organizationId, "loan", 1),
+    ]);
 
     // Create notification for approvers
-    const approvers = await getUsersToNotifyForWorkflowStep(
-      ctx,
-      loan.organizationId,
-      "loan",
-      1,
-    );
-
     for (const approverId of approvers) {
       await ctx.runMutation(internal.audit.createNotificationInternal, {
         organizationId: loan.organizationId,
@@ -3299,10 +3296,11 @@ export const listConditionDisputes = query({
 
     const enrichedDisputes = await Promise.all(
       result.page.map(async (dispute) => {
-        const loan = await ctx.db.get(dispute.loanId);
-        const collection = await ctx.db.get(dispute.collectionId);
-        const reporter = await ctx.db.get(dispute.reportedBy);
-
+        const [loan, collection, reporter] = await Promise.all([
+          ctx.db.get(dispute.loanId),
+          ctx.db.get(dispute.collectionId),
+          ctx.db.get(dispute.reportedBy),
+        ]);
         return {
           _id: dispute._id,
           _creationTime: dispute._creationTime,
@@ -3417,9 +3415,11 @@ export const getConditionDispute = query({
 
     await requirePermission(ctx, dispute.organizationId, "loans.read");
 
-    const loan = await ctx.db.get(dispute.loanId);
-    const collection = await ctx.db.get(dispute.collectionId);
-    const reporter = await ctx.db.get(dispute.reportedBy);
+    const [loan, collection, reporter] = await Promise.all([
+      ctx.db.get(dispute.loanId),
+      ctx.db.get(dispute.collectionId),
+      ctx.db.get(dispute.reportedBy),
+    ]);
     const investigator = dispute.investigatorId
       ? await ctx.db.get(dispute.investigatorId)
       : null;

@@ -73,12 +73,15 @@ async function upsertDeaccessionSearchDocument(
   ctx: MutationCtx,
   deaccession: Doc<"deaccessions">,
 ) {
-  const searchText = await buildDeaccessionSearchText(ctx, deaccession);
-  const existing = await ctx.db
-    .query("deaccessionSearchDocuments")
-    .withIndex("by_deaccession", (q) => q.eq("deaccessionId", deaccession._id))
-    .first();
-
+  const [searchText, existing] = await Promise.all([
+    buildDeaccessionSearchText(ctx, deaccession),
+    ctx.db
+      .query("deaccessionSearchDocuments")
+      .withIndex("by_deaccession", (q) =>
+        q.eq("deaccessionId", deaccession._id),
+      )
+      .first(),
+  ]);
   const fields = {
     organizationId: deaccession.organizationId,
     deaccessionId: deaccession._id,
@@ -1436,9 +1439,10 @@ export const getExportData = query({
       "collections.read",
     );
 
-    const collection = await ctx.db.get(deaccession.collectionId);
-    const organization = await ctx.db.get(deaccession.organizationId);
-
+    const [collection, organization] = await Promise.all([
+      ctx.db.get(deaccession.collectionId),
+      ctx.db.get(deaccession.organizationId),
+    ]);
     if (!organization) {
       return null;
     }

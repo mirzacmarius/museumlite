@@ -90,11 +90,13 @@ describe("Domain number interface", () => {
     const month = String(new Date().getMonth() + 1).padStart(2, "0");
 
     const numbers = await t.run(async (ctx) => {
-      const loanNumber = await generateNextLoanNumber(ctx, orgId);
-      const deaccessionNumber = await generateNextDeaccessionNumber(ctx, orgId);
-      const transitNumber = await generateNextTransitNumber(ctx, orgId);
-      const claimNumber = await generateNextClaimNumber(ctx, orgId);
-
+      const [loanNumber, deaccessionNumber, transitNumber, claimNumber] =
+        await Promise.all([
+          generateNextLoanNumber(ctx, orgId),
+          generateNextDeaccessionNumber(ctx, orgId),
+          generateNextTransitNumber(ctx, orgId),
+          generateNextClaimNumber(ctx, orgId),
+        ]);
       return { claimNumber, deaccessionNumber, loanNumber, transitNumber };
     });
 

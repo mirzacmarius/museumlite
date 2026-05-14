@@ -182,8 +182,10 @@ test("should dispatch active loan and change status to dispatched", async () => 
   await authed.mutation(api.loans.dispatch, { loanId });
 
   const result = await t.run(async (ctx) => {
-    const loan = await ctx.db.get(loanId);
-    const collection = await ctx.db.get(collectionId);
+    const [loan, collection] = await Promise.all([
+      ctx.db.get(loanId),
+      ctx.db.get(collectionId),
+    ]);
     return { collection, loan };
   });
 
@@ -206,12 +208,14 @@ test("should return dispatched loan and change status to returned", async () => 
   });
 
   const result = await t.run(async (ctx) => {
-    const loan = await ctx.db.get(loanId);
-    const collection = await ctx.db.get(collectionId);
-    const loanItem = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-      .first();
+    const [loan, collection, loanItem] = await Promise.all([
+      ctx.db.get(loanId),
+      ctx.db.get(collectionId),
+      ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+        .first(),
+    ]);
     return { collection, loan, loanItem };
   });
 
@@ -230,12 +234,14 @@ test("should return active loan directly (without dispatch)", async () => {
   await authed.mutation(api.loans.returnLoan, { loanId });
 
   const result = await t.run(async (ctx) => {
-    const loan = await ctx.db.get(loanId);
-    const collection = await ctx.db.get(collectionId);
-    const loanItem = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-      .first();
+    const [loan, collection, loanItem] = await Promise.all([
+      ctx.db.get(loanId),
+      ctx.db.get(collectionId),
+      ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+        .first(),
+    ]);
     return { collection, loan, loanItem };
   });
 

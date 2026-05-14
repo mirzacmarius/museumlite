@@ -100,12 +100,13 @@ async function upsertAccessionSearchDocument(
   ctx: MutationCtx,
   accession: Doc<"accessions">,
 ) {
-  const searchText = await buildAccessionSearchText(ctx, accession);
-  const existing = await ctx.db
-    .query("accessionSearchDocuments")
-    .withIndex("by_accession", (q) => q.eq("accessionId", accession._id))
-    .first();
-
+  const [searchText, existing] = await Promise.all([
+    buildAccessionSearchText(ctx, accession),
+    ctx.db
+      .query("accessionSearchDocuments")
+      .withIndex("by_accession", (q) => q.eq("accessionId", accession._id))
+      .first(),
+  ]);
   const fields = {
     organizationId: accession.organizationId,
     accessionId: accession._id,
@@ -2506,17 +2507,18 @@ export const getDocumentChecklist = query({
     const uploaderIds = checklist.flatMap((item) =>
       item.uploadedBy === undefined ? [] : [item.uploadedBy],
     );
-    const uploaderMap = await batchLookup(ctx, uploaderIds, "users");
+    const [uploaderMap, storageUrls] = await Promise.all([
+      batchLookup(ctx, uploaderIds, "users"),
+      Promise.all(
+        checklist.map((item) =>
+          item.storageId
+            ? ctx.storage.getUrl(item.storageId)
+            : Promise.resolve(null),
+        ),
+      ),
+    ]);
 
     // Fetch storage URLs in parallel
-    const storageUrls = await Promise.all(
-      checklist.map((item) =>
-        item.storageId
-          ? ctx.storage.getUrl(item.storageId)
-          : Promise.resolve(null),
-      ),
-    );
-
     // Enrich with uploader names and URLs using batch lookup map
     const enrichedChecklist = checklist.map((item, index) => {
       let uploaderName: string | undefined;

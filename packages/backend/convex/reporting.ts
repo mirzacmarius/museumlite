@@ -663,29 +663,28 @@ export const getCollectionTrends = query({
       "organization.view_analytics",
     );
 
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const accessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "approved"))
-      .collect();
-
-    const deaccessions = await ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "approved"))
-      .collect();
-
+    const [collections, accessions, deaccessions] = await Promise.all([
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+      ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("status"), "approved"))
+        .collect(),
+      ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("status"), "approved"))
+        .collect(),
+    ]);
     // Generate date buckets
     const buckets = generateDateBuckets(
       args.startDate,
@@ -1099,36 +1098,34 @@ export const getCollectionHealthDashboard = query({
     ).length;
 
     // Insurance metrics
-    const coverages = await ctx.db
-      .query("insuranceCoverages")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
-
-    const policies = await ctx.db
-      .query("insurancePolicies")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
-
-    const claims = await ctx.db
-      .query("insuranceClaims")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const appraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
+    const [coverages, policies, claims, appraisals] = await Promise.all([
+      ctx.db
+        .query("insuranceCoverages")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .collect(),
+      ctx.db
+        .query("insurancePolicies")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .collect(),
+      ctx.db
+        .query("insuranceClaims")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+      ctx.db
+        .query("appraisals")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ]);
     const coveredCollectionIds = new Set(
       coverages.flatMap((coverage) =>
         coverage.collectionId ? [coverage.collectionId] : [],

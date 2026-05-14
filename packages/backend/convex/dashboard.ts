@@ -200,125 +200,126 @@ export const getAnalytics = query({
       loans = loans.filter((l) => loanIdsForSite.has(l._id));
     }
 
-    const recentCollectionGroups = await Promise.all(
-      collectionGroups
-        .toSorted((a, b) => b._creationTime - a._creationTime)
-        .slice(0, 4)
-        .map(async (group) => {
-          let imageUrl: string | undefined;
+    const [recentCollectionGroups, recentObjects] = await Promise.all([
+      Promise.all(
+        collectionGroups
+          .toSorted((a, b) => b._creationTime - a._creationTime)
+          .slice(0, 4)
+          .map(async (group) => {
+            let imageUrl: string | undefined;
 
-          // 1. Try group's own image first
-          if (group.imageId) {
-            imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
-          }
-
-          // 2. Fallback to item images if no group image
-          if (!imageUrl) {
-            // Find items in this group
-            const groupItems = await ctx.db
-              .query("collectionGroupItems")
-              .withIndex("by_collectionGroup", (q) =>
-                q.eq("collectionGroupId", group._id),
-              )
-              .take(20);
-
-            // Look for primary image first
-            for (const groupItem of groupItems) {
-              const primaryMedia = await ctx.db
-                .query("mediaFiles")
-                .withIndex("by_collection", (q) =>
-                  q.eq("collectionId", groupItem.collectionId),
-                )
-                .filter((q) =>
-                  q.and(
-                    q.eq(q.field("isPrimary"), true),
-                    q.eq(q.field("fileType"), "image"),
-                  ),
-                )
-                .first();
-
-              if (primaryMedia) {
-                if (primaryMedia.thumbnailStorageId) {
-                  imageUrl =
-                    (await ctx.storage.getUrl(
-                      primaryMedia.thumbnailStorageId,
-                    )) ?? undefined;
-                } else {
-                  imageUrl =
-                    (await ctx.storage.getUrl(primaryMedia.storageId)) ??
-                    undefined;
-                }
-                break;
-              }
+            // 1. Try group's own image first
+            if (group.imageId) {
+              imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
             }
 
-            // If no primary, try any image
+            // 2. Fallback to item images if no group image
             if (!imageUrl) {
+              // Find items in this group
+              const groupItems = await ctx.db
+                .query("collectionGroupItems")
+                .withIndex("by_collectionGroup", (q) =>
+                  q.eq("collectionGroupId", group._id),
+                )
+                .take(20);
+
+              // Look for primary image first
               for (const groupItem of groupItems) {
-                const anyMedia = await ctx.db
+                const primaryMedia = await ctx.db
                   .query("mediaFiles")
                   .withIndex("by_collection", (q) =>
                     q.eq("collectionId", groupItem.collectionId),
                   )
-                  .filter((q) => q.eq(q.field("fileType"), "image"))
+                  .filter((q) =>
+                    q.and(
+                      q.eq(q.field("isPrimary"), true),
+                      q.eq(q.field("fileType"), "image"),
+                    ),
+                  )
                   .first();
 
-                if (anyMedia) {
-                  if (anyMedia.thumbnailStorageId) {
+                if (primaryMedia) {
+                  if (primaryMedia.thumbnailStorageId) {
                     imageUrl =
-                      (await ctx.storage.getUrl(anyMedia.thumbnailStorageId)) ??
-                      undefined;
+                      (await ctx.storage.getUrl(
+                        primaryMedia.thumbnailStorageId,
+                      )) ?? undefined;
                   } else {
                     imageUrl =
-                      (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                      (await ctx.storage.getUrl(primaryMedia.storageId)) ??
                       undefined;
                   }
                   break;
                 }
               }
+
+              // If no primary, try any image
+              if (!imageUrl) {
+                for (const groupItem of groupItems) {
+                  const anyMedia = await ctx.db
+                    .query("mediaFiles")
+                    .withIndex("by_collection", (q) =>
+                      q.eq("collectionId", groupItem.collectionId),
+                    )
+                    .filter((q) => q.eq(q.field("fileType"), "image"))
+                    .first();
+
+                  if (anyMedia) {
+                    if (anyMedia.thumbnailStorageId) {
+                      imageUrl =
+                        (await ctx.storage.getUrl(
+                          anyMedia.thumbnailStorageId,
+                        )) ?? undefined;
+                    } else {
+                      imageUrl =
+                        (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                        undefined;
+                    }
+                    break;
+                  }
+                }
+              }
             }
-          }
 
-          return {
-            id: group._id,
-            name: group.name,
-            description: group.description,
-            itemsCount: group.itemsCount ?? 0,
-            imageUrl,
-            storageLocation: group.storageLocation,
-            valuation: group.valuation,
-          };
-        }),
-    );
+            return {
+              id: group._id,
+              name: group.name,
+              description: group.description,
+              itemsCount: group.itemsCount ?? 0,
+              imageUrl,
+              storageLocation: group.storageLocation,
+              valuation: group.valuation,
+            };
+          }),
+      ),
+      Promise.all(
+        collections
+          .toSorted((a, b) => b._creationTime - a._creationTime)
+          .slice(0, 6)
+          .map(async (collection) => {
+            const primaryMedia = await ctx.db
+              .query("mediaFiles")
+              .withIndex("by_collection", (q) =>
+                q.eq("collectionId", collection._id),
+              )
+              .filter((q) => q.eq(q.field("isPrimary"), true))
+              .first();
 
-    const recentObjects = await Promise.all(
-      collections
-        .toSorted((a, b) => b._creationTime - a._creationTime)
-        .slice(0, 6)
-        .map(async (collection) => {
-          const primaryMedia = await ctx.db
-            .query("mediaFiles")
-            .withIndex("by_collection", (q) =>
-              q.eq("collectionId", collection._id),
-            )
-            .filter((q) => q.eq(q.field("isPrimary"), true))
-            .first();
+            const imageUrl = primaryMedia?.storageId
+              ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
+              : undefined;
 
-          const imageUrl = primaryMedia?.storageId
-            ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
-            : undefined;
-
-          return {
-            id: collection._id,
-            title: collection.title,
-            accessionNumber: collection.accessionNumber,
-            objectType: collection.objectType,
-            status: collection.status,
-            imageUrl,
-          };
-        }),
-    );
-
+            return {
+              id: collection._id,
+              title: collection.title,
+              accessionNumber: collection.accessionNumber,
+              objectType: collection.objectType,
+              status: collection.status,
+              imageUrl,
+            };
+          }),
+      ),
+    ]);
     let auditLogEntries = await ctx.db
       .query("auditLog")
       .withIndex("by_organization", (q) =>
@@ -666,31 +667,33 @@ export const getComplianceReport = query({
       .sort((a, b) => (b.approvedAt ?? 0) - (a.approvedAt ?? 0))
       .slice(0, 10);
 
-    const recentAccessionApprovalDetails = await Promise.all(
-      recentAccessionApprovals.map(async (accession) => {
-        let approvedByName = "Unknown";
-        if (accession.approvedBy) {
-          const user = await ctx.db.get(accession.approvedBy);
-          approvedByName = user?.name ?? user?.email ?? "Unknown";
-        }
-        return {
-          id: accession._id,
-          accessionNumber: accession.accessionNumber,
-          source: accession.source,
-          approvedAt: accession.approvedAt as number,
-          approvedByName,
-          status: accession.status,
-        };
-      }),
+    const [recentAccessionApprovalDetails, allDeaccessions] = await Promise.all(
+      [
+        Promise.all(
+          recentAccessionApprovals.map(async (accession) => {
+            let approvedByName = "Unknown";
+            if (accession.approvedBy) {
+              const user = await ctx.db.get(accession.approvedBy);
+              approvedByName = user?.name ?? user?.email ?? "Unknown";
+            }
+            return {
+              id: accession._id,
+              accessionNumber: accession.accessionNumber,
+              source: accession.source,
+              approvedAt: accession.approvedAt as number,
+              approvedByName,
+              status: accession.status,
+            };
+          }),
+        ),
+        ctx.db
+          .query("deaccessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+      ],
     );
-
-    const allDeaccessions = await ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
     const deaccessionsByStatus = {
       total: allDeaccessions.length,
       pending: allDeaccessions.filter((d) => d.status === "pending").length,
@@ -725,32 +728,32 @@ export const getComplianceReport = query({
       .sort((a, b) => (b.approvedAt ?? 0) - (a.approvedAt ?? 0))
       .slice(0, 10);
 
-    const recentDeaccessionApprovalDetails = await Promise.all(
-      recentDeaccessionApprovals.map(async (deaccession) => {
-        let approvedByName = "Unknown";
-        if (deaccession.approvedBy) {
-          const user = await ctx.db.get(deaccession.approvedBy);
-          approvedByName = user?.name ?? user?.email ?? "Unknown";
-        }
-        return {
-          id: deaccession._id,
-          deaccessionNumber: deaccession.deaccessionNumber,
-          reason: deaccession.reason,
-          approvedAt: deaccession.approvedAt as number,
-          approvedByName,
-          status: deaccession.status,
-          proceedsAmount: deaccession.proceedsAmount,
-        };
-      }),
-    );
-
-    const auditEvents = await ctx.db
-      .query("auditLog")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
+    const [recentDeaccessionApprovalDetails, auditEvents] = await Promise.all([
+      Promise.all(
+        recentDeaccessionApprovals.map(async (deaccession) => {
+          let approvedByName = "Unknown";
+          if (deaccession.approvedBy) {
+            const user = await ctx.db.get(deaccession.approvedBy);
+            approvedByName = user?.name ?? user?.email ?? "Unknown";
+          }
+          return {
+            id: deaccession._id,
+            deaccessionNumber: deaccession.deaccessionNumber,
+            reason: deaccession.reason,
+            approvedAt: deaccession.approvedAt as number,
+            approvedByName,
+            status: deaccession.status,
+            proceedsAmount: deaccession.proceedsAmount,
+          };
+        }),
+      ),
+      ctx.db
+        .query("auditLog")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ]);
     const filteredEvents = auditEvents.filter(
       (e) => e.timestamp >= rangeStart && e.timestamp <= rangeEnd,
     );
@@ -894,27 +897,27 @@ export const getLocationUtilization = query({
 
     const now = Date.now();
 
-    const allLocations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    const allCollections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("currentLocationId"), undefined),
-          q.neq(q.field("status"), "deaccessioned"),
-        ),
-      )
-      .collect();
-
+    const [allLocations, allCollections] = await Promise.all([
+      ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .collect(),
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("currentLocationId"), undefined),
+            q.neq(q.field("status"), "deaccessioned"),
+          ),
+        )
+        .collect(),
+    ]);
     const occupancyMap = new Map<string, number>();
     for (const collection of allCollections) {
       if (collection.currentLocationId) {
@@ -1122,27 +1125,26 @@ export const getKpiTrends = query({
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const loans = await ctx.db
-      .query("loans")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const accessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
+    const [collections, loans, accessions] = await Promise.all([
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+      ctx.db
+        .query("loans")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+      ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ]);
     const totalObjects: number[] = [];
     const objectsOnLoan: number[] = [];
     const activeLoans: number[] = [];

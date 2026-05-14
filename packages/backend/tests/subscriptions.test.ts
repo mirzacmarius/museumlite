@@ -43,19 +43,19 @@ describe("organization subscriptions", () => {
       },
     });
 
-    const organization = await t.run(async (ctx) => {
-      return await ctx.db.get(organizationId);
-    });
-
-    const subscription = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("organizationSubscriptions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        )
-        .first();
-    });
-
+    const [organization, subscription] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(organizationId);
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db
+          .query("organizationSubscriptions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .first();
+      }),
+    ]);
     expect(organization?.subscriptionTier).toBe("pro");
     expect(subscription?.productId).toBe("prod_pro_monthly");
     expect(subscription?.status).toBe("active");

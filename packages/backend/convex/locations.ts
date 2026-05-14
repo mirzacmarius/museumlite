@@ -477,22 +477,23 @@ export const get = query({
       : undefined;
 
     // Get children
-    const children = await ctx.db
-      .query("locations")
-      .withIndex("by_parentLocation", (q) =>
-        q.eq("parentLocationId", args.locationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
+    const [children, objects] = await Promise.all([
+      ctx.db
+        .query("locations")
+        .withIndex("by_parentLocation", (q) =>
+          q.eq("parentLocationId", args.locationId),
+        )
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .collect(),
+      ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", args.locationId),
+        )
+        .collect(),
+    ]);
 
     // Count objects at this location
-    const objects = await ctx.db
-      .query("collections")
-      .withIndex("by_currentLocation", (q) =>
-        q.eq("currentLocationId", args.locationId),
-      )
-      .collect();
-
     return {
       _id: location._id,
       organizationId: location.organizationId,
@@ -1503,8 +1504,10 @@ export const listMoveRequests = query({
         const fromLocation = req.fromLocationId
           ? await ctx.db.get(req.fromLocationId)
           : null;
-        const toLocation = await ctx.db.get(req.toLocationId);
-        const requestedBy = await ctx.db.get(req.requestedBy);
+        const [toLocation, requestedBy] = await Promise.all([
+          ctx.db.get(req.toLocationId),
+          ctx.db.get(req.requestedBy),
+        ]);
         const reviewedBy = req.reviewedBy
           ? await ctx.db.get(req.reviewedBy)
           : null;
@@ -1556,8 +1559,10 @@ export const getMoveRequest = query({
     const fromLocation = request.fromLocationId
       ? await ctx.db.get(request.fromLocationId)
       : null;
-    const toLocation = await ctx.db.get(request.toLocationId);
-    const requestedBy = await ctx.db.get(request.requestedBy);
+    const [toLocation, requestedBy] = await Promise.all([
+      ctx.db.get(request.toLocationId),
+      ctx.db.get(request.requestedBy),
+    ]);
     const reviewedBy = request.reviewedBy
       ? await ctx.db.get(request.reviewedBy)
       : null;
@@ -2114,22 +2119,22 @@ export const getLocationHistory = query({
 
     const limit = args.limit ?? 50;
 
-    const movedIn = await ctx.db
-      .query("locationHistory")
-      .withIndex("by_toLocation_and_movedAt", (q) =>
-        q.eq("toLocationId", args.locationId),
-      )
-      .order("desc")
-      .take(limit);
-
-    const movedOut = await ctx.db
-      .query("locationHistory")
-      .withIndex("by_fromLocation_and_movedAt", (q) =>
-        q.eq("fromLocationId", args.locationId),
-      )
-      .order("desc")
-      .take(limit);
-
+    const [movedIn, movedOut] = await Promise.all([
+      ctx.db
+        .query("locationHistory")
+        .withIndex("by_toLocation_and_movedAt", (q) =>
+          q.eq("toLocationId", args.locationId),
+        )
+        .order("desc")
+        .take(limit),
+      ctx.db
+        .query("locationHistory")
+        .withIndex("by_fromLocation_and_movedAt", (q) =>
+          q.eq("fromLocationId", args.locationId),
+        )
+        .order("desc")
+        .take(limit),
+    ]);
     const allEvents = [...movedIn, ...movedOut];
 
     const enrichedEvents = await Promise.all(
@@ -2212,9 +2217,10 @@ export const getCollectionLocationHistory = query({
         const fromLocation = entry.fromLocationId
           ? await ctx.db.get(entry.fromLocationId)
           : null;
-        const toLocation = await ctx.db.get(entry.toLocationId);
-        const movedBy = await ctx.db.get(entry.movedBy);
-
+        const [toLocation, movedBy] = await Promise.all([
+          ctx.db.get(entry.toLocationId),
+          ctx.db.get(entry.movedBy),
+        ]);
         return {
           ...entry,
           fromLocationName: fromLocation?.name || undefined,

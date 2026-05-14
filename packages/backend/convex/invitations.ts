@@ -73,9 +73,10 @@ export const listPendingInvitations = query({
     // Enrich with role and inviter information
     const enrichedInvitations = await Promise.all(
       invitations.map(async (invitation) => {
-        const role = await ctx.db.get(invitation.roleId);
-        const inviter = await ctx.db.get(invitation.invitedBy);
-
+        const [role, inviter] = await Promise.all([
+          ctx.db.get(invitation.roleId),
+          ctx.db.get(invitation.invitedBy),
+        ]);
         return {
           _id: invitation._id,
           _creationTime: invitation._creationTime,
@@ -133,10 +134,11 @@ export const getInvitationByToken = query({
       return null;
     }
 
-    const organization = await ctx.db.get(invitation.organizationId);
-    const role = await ctx.db.get(invitation.roleId);
-    const inviter = await ctx.db.get(invitation.invitedBy);
-
+    const [organization, role, inviter] = await Promise.all([
+      ctx.db.get(invitation.organizationId),
+      ctx.db.get(invitation.roleId),
+      ctx.db.get(invitation.invitedBy),
+    ]);
     return {
       _id: invitation._id,
       email: invitation.email,
@@ -283,14 +285,15 @@ export const declineInvitation = mutation({
   ),
   handler: async (ctx, args) => {
     // Get current user (optional - can decline without auth)
-    const userId = await getAuthUserId(ctx);
+    const [userId, invitation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db
+        .query("organizationInvitations")
+        .withIndex("by_token", (q) => q.eq("token", args.token))
+        .first(),
+    ]);
 
     // Find invitation by token
-    const invitation = await ctx.db
-      .query("organizationInvitations")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
-      .first();
-
     if (!invitation) {
       return { success: false, error: "Invitation not found" };
     }
@@ -394,9 +397,11 @@ export const resendInvitation = mutation({
       },
     });
 
-    const organization = await ctx.db.get(invitation.organizationId);
-    const role = await ctx.db.get(invitation.roleId);
-    const inviter = await ctx.db.get(invitation.invitedBy);
+    const [organization, role, inviter] = await Promise.all([
+      ctx.db.get(invitation.organizationId),
+      ctx.db.get(invitation.roleId),
+      ctx.db.get(invitation.invitedBy),
+    ]);
     const inviterName = inviter?.name ?? inviter?.email ?? "A team member";
 
     await ctx.scheduler.runAfter(

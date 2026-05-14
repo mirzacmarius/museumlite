@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, query } from "./_generated/server";
+import { type QueryCtx, internalMutation, query } from "./_generated/server";
 import { hasPermission } from "./utils/permissions";
 
 /**
@@ -42,11 +42,9 @@ export const logSearchPerformance = internalMutation({
     // Log performance data
     if (!args.isWithinThreshold) {
       // Log slow queries with warning
-      // biome-ignore lint/suspicious/noConsoleLog: Performance monitoring
       console.log("[SEARCH_PERFORMANCE_WARNING]", JSON.stringify(logData));
     } else {
       // Log normal performance
-      // biome-ignore lint/suspicious/noConsoleLog: Performance monitoring
       console.log("[SEARCH_PERFORMANCE]", JSON.stringify(logData));
     }
 
@@ -60,7 +58,7 @@ export const logSearchPerformance = internalMutation({
  * Combines results from multiple search strategies and deduplicates
  */
 async function multiFieldSearch(
-  ctx: any,
+  ctx: QueryCtx,
   organizationId: Id<"organizations">,
   searchQuery: string,
   limit: number,
@@ -68,84 +66,84 @@ async function multiFieldSearch(
   const lowerQuery = searchQuery.toLowerCase();
 
   // Search using the search index on title (primary search)
-  const titleResults = await ctx.db
-    .query("collections")
-    .withSearchIndex("search_index", (q: any) =>
-      q.search("title", searchQuery).eq("organizationId", organizationId),
-    )
-    .take(limit);
-
-  // Search accessionNumber using index - exact match and prefix match
-  const accessionResults = await ctx.db
-    .query("collections")
-    .withIndex("by_organization_and_accessionNumber", (q: any) =>
-      q.eq("organizationId", organizationId),
-    )
-    .filter((q: any) =>
-      q.or(
-        q.eq(q.field("accessionNumber"), searchQuery),
-        q.gte(q.field("accessionNumber"), searchQuery),
-      ),
-    )
-    .take(limit);
-
-  // Search other metadata fields using organization index with filters
-  // This searches: creator, alternativeTitle, objectName, objectType, culture
-  const metadataResults = await ctx.db
-    .query("collections")
-    .withIndex("by_organization", (q: any) =>
-      q.eq("organizationId", organizationId),
-    )
-    .filter((q: any) =>
-      q.or(
-        // Search in creator field (case-insensitive prefix match)
-        q.and(
-          q.neq(q.field("creator"), undefined),
-          q.or(
-            q.gte(q.field("creator"), searchQuery),
-            q.gte(q.field("creator"), lowerQuery),
-            q.gte(
-              q.field("creator"),
-              searchQuery.charAt(0).toUpperCase() + searchQuery.slice(1),
+  const [titleResults, accessionResults, metadataResults] = await Promise.all([
+    ctx.db
+      .query("collections")
+      .withSearchIndex("search_index", (q) =>
+        q.search("title", searchQuery).eq("organizationId", organizationId),
+      )
+      .take(limit),
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_accessionNumber", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("accessionNumber"), searchQuery),
+          q.gte(q.field("accessionNumber"), searchQuery),
+        ),
+      )
+      .take(limit),
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .filter((q) =>
+        q.or(
+          // Search in creator field (case-insensitive prefix match)
+          q.and(
+            q.neq(q.field("creator"), undefined),
+            q.or(
+              q.gte(q.field("creator"), searchQuery),
+              q.gte(q.field("creator"), lowerQuery),
+              q.gte(
+                q.field("creator"),
+                searchQuery.charAt(0).toUpperCase() + searchQuery.slice(1),
+              ),
+            ),
+          ),
+          // Search in alternative title
+          q.and(
+            q.neq(q.field("alternativeTitle"), undefined),
+            q.or(
+              q.gte(q.field("alternativeTitle"), searchQuery),
+              q.gte(q.field("alternativeTitle"), lowerQuery),
+            ),
+          ),
+          // Search in object name
+          q.and(
+            q.neq(q.field("objectName"), undefined),
+            q.or(
+              q.gte(q.field("objectName"), searchQuery),
+              q.gte(q.field("objectName"), lowerQuery),
+            ),
+          ),
+          // Search in object type
+          q.and(
+            q.neq(q.field("objectType"), undefined),
+            q.or(
+              q.gte(q.field("objectType"), searchQuery),
+              q.gte(q.field("objectType"), lowerQuery),
+            ),
+          ),
+          // Search in culture
+          q.and(
+            q.neq(q.field("culture"), undefined),
+            q.or(
+              q.gte(q.field("culture"), searchQuery),
+              q.gte(q.field("culture"), lowerQuery),
             ),
           ),
         ),
-        // Search in alternative title
-        q.and(
-          q.neq(q.field("alternativeTitle"), undefined),
-          q.or(
-            q.gte(q.field("alternativeTitle"), searchQuery),
-            q.gte(q.field("alternativeTitle"), lowerQuery),
-          ),
-        ),
-        // Search in object name
-        q.and(
-          q.neq(q.field("objectName"), undefined),
-          q.or(
-            q.gte(q.field("objectName"), searchQuery),
-            q.gte(q.field("objectName"), lowerQuery),
-          ),
-        ),
-        // Search in object type
-        q.and(
-          q.neq(q.field("objectType"), undefined),
-          q.or(
-            q.gte(q.field("objectType"), searchQuery),
-            q.gte(q.field("objectType"), lowerQuery),
-          ),
-        ),
-        // Search in culture
-        q.and(
-          q.neq(q.field("culture"), undefined),
-          q.or(
-            q.gte(q.field("culture"), searchQuery),
-            q.gte(q.field("culture"), lowerQuery),
-          ),
-        ),
-      ),
-    )
-    .take(limit);
+      )
+      .take(limit),
+  ]);
 
+  // Search accessionNumber using index - exact match and prefix match
+  // Search other metadata fields using organization index with filters
+  // This searches: creator, alternativeTitle, objectName, objectType, culture
   // Combine and deduplicate results using the same pattern as accounts search
   const seen = new Set<string>();
   const allResults = [
@@ -553,41 +551,32 @@ export const searchSuggestions = query({
 
     for (const item of collections) {
       // Add title suggestions
-      if (item.title && item.title.toLowerCase().includes(queryPrefix)) {
+      if (item.title?.toLowerCase().includes(queryPrefix)) {
         suggestions.add(item.title);
       }
 
       // Add creator suggestions
-      if (item.creator && item.creator.toLowerCase().includes(queryPrefix)) {
+      if (item.creator?.toLowerCase().includes(queryPrefix)) {
         suggestions.add(item.creator);
       }
 
       // Add object name suggestions
-      if (
-        item.objectName &&
-        item.objectName.toLowerCase().includes(queryPrefix)
-      ) {
+      if (item.objectName?.toLowerCase().includes(queryPrefix)) {
         suggestions.add(item.objectName);
       }
 
       // Add object type suggestions
-      if (
-        item.objectType &&
-        item.objectType.toLowerCase().includes(queryPrefix)
-      ) {
+      if (item.objectType?.toLowerCase().includes(queryPrefix)) {
         suggestions.add(item.objectType);
       }
 
       // Add culture suggestions
-      if (item.culture && item.culture.toLowerCase().includes(queryPrefix)) {
+      if (item.culture?.toLowerCase().includes(queryPrefix)) {
         suggestions.add(item.culture);
       }
 
       // Add alternative title suggestions
-      if (
-        item.alternativeTitle &&
-        item.alternativeTitle.toLowerCase().includes(queryPrefix)
-      ) {
+      if (item.alternativeTitle?.toLowerCase().includes(queryPrefix)) {
         suggestions.add(item.alternativeTitle);
       }
 
