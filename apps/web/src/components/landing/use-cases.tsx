@@ -38,7 +38,7 @@ export function UseCases() {
           >
             Built for Everyone
           </motion.h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
             Scalable solutions for every type of collection.
           </p>
         </div>
@@ -63,7 +63,7 @@ export function UseCases() {
                 <h3 className="text-2xl font-bold text-white mb-4">
                   {useCase.title}
                 </h3>
-                <p className="text-gray-400 leading-relaxed">
+                <p className="text-zinc-400 leading-relaxed">
                   {useCase.description}
                 </p>
               </SpotlightCard>

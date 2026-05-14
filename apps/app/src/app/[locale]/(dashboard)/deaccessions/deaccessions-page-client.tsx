@@ -341,7 +341,7 @@ function DeaccessionsReportDialog({
                 </table>
               </div>
 
-              <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400">
+              <div className="border-t border-gray-200 pt-3 text-[10px] text-zinc-400">
                 <p>
                   {t("report.generatedOn")}{" "}
                   {formatDateFns(
@@ -355,7 +355,7 @@ function DeaccessionsReportDialog({
             </div>
           ) : (
             <div className="flex h-full items-center justify-center">
-              <Loader2 className="size-8 animate-spin text-gray-400" />
+              <Loader2 className="size-8 animate-spin text-zinc-400" />
             </div>
           )}
         </div>

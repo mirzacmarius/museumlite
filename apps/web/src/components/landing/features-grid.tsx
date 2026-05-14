@@ -1,17 +1,17 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
 import { motion } from "framer-motion";
 import {
   Archive,
   FileCheck,
+  Globe,
+  Image as ImageIcon,
   MapPinned,
   Repeat,
-  Image as ImageIcon,
-  ShieldCheck,
   Search,
-  Globe,
+  ShieldCheck,
 } from "lucide-react";
-import { cn } from "@v1/ui/utils";
 import { SpotlightCard } from "../spotlight-card";
 
 const features = [
@@ -66,7 +66,7 @@ export function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-gray-400 text-lg max-w-2xl mx-auto"
+            className="text-zinc-400 text-lg max-w-2xl mx-auto"
           >
             Advanced tools designed for the next generation of museums and
             galleries.
@@ -91,7 +91,7 @@ export function FeaturesGrid() {
                   <h3 className="text-2xl font-bold text-white mb-3">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-400 leading-relaxed">
+                  <p className="text-zinc-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>

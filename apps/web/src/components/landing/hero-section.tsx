@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@v1/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
-import { Button } from "@v1/ui/button";
 import Link from "next/link";
 import { seededRandom } from "./seeded-rng";
 
@@ -92,7 +92,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
           Experience the next generation of museum software.
           <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">

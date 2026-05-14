@@ -24,7 +24,7 @@ export function VisualShowcase() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-gray-400 text-lg max-w-2xl mx-auto"
+            className="text-zinc-400 text-lg max-w-2xl mx-auto"
           >
             Experience a workspace that feels like the future.
           </motion.p>

@@ -446,7 +446,7 @@ export function PrintPreviewModal({
             </div>
 
             {/* Footer with print date */}
-            <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
+            <div className="border-t border-gray-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
               <p>
                 {t("printedOn")}{" "}
                 {formatDate(new Date(), locale, {

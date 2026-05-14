@@ -1,9 +1,9 @@
 "use client";
 
+import { Button } from "@v1/ui/button";
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@v1/ui/button";
 import { SpotlightCard } from "../spotlight-card";
 
 const plans = [
@@ -68,7 +68,7 @@ export function PricingSection() {
           >
             Simple Pricing
           </motion.h2>
-          <p className="text-gray-400 text-lg">
+          <p className="text-zinc-400 text-lg">
             Choose the plan that fits your collection.
           </p>
         </div>
@@ -112,10 +112,10 @@ export function PricingSection() {
                       {plan.price}
                     </span>
                     {plan.price !== "Custom" && (
-                      <span className="text-gray-400">/mo</span>
+                      <span className="text-zinc-400">/mo</span>
                     )}
                   </div>
-                  <p className="text-gray-400 text-sm">{plan.description}</p>
+                  <p className="text-zinc-400 text-sm">{plan.description}</p>
                 </div>
 
                 <ul className="space-y-4 mb-8 flex-1">

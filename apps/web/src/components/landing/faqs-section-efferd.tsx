@@ -21,7 +21,7 @@ export function FaqsSectionEfferd() {
           >
             Frequently Asked Questions
           </motion.h2>
-          <p className="text-gray-400 text-lg">
+          <p className="text-zinc-400 text-lg">
             Everything you need to know about MuseumLite.
           </p>
         </div>
@@ -47,7 +47,7 @@ export function FaqsSectionEfferd() {
                 <AccordionTrigger className="py-6 text-lg font-medium text-white hover:text-neon-blue hover:no-underline transition-colors">
                   {item.title}
                 </AccordionTrigger>
-                <AccordionContent className="pb-6 text-gray-400 leading-relaxed">
+                <AccordionContent className="pb-6 text-zinc-400 leading-relaxed">
                   {item.content}
                 </AccordionContent>
               </AccordionItem>

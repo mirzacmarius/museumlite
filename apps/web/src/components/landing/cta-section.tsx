@@ -1,9 +1,9 @@
 "use client";
 
+import { Button } from "@v1/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@v1/ui/button";
 
 export function CTASection() {
   return (
@@ -27,7 +27,7 @@ export function CTASection() {
             </span>
           </h2>
 
-          <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+          <p className="text-xl text-zinc-400 mb-12 max-w-2xl mx-auto">
             Join the revolution in collection management. Start your free trial
             today.
           </p>

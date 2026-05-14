@@ -747,7 +747,7 @@ export default function DeaccessionDetailPage() {
                     </div>
                   )}
 
-                <div className="border-t border-gray-200 pt-3 text-[10px] text-gray-400 print:pt-2 print:text-[9px]">
+                <div className="border-t border-gray-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
                   <p>
                     Generated on{" "}
                     {formatDateFns(
@@ -761,7 +761,7 @@ export default function DeaccessionDetailPage() {
               </div>
             ) : (
               <div className="flex h-full items-center justify-center">
-                <Loader2 className="size-8 animate-spin text-gray-400" />
+                <Loader2 className="size-8 animate-spin text-zinc-400" />
               </div>
             )}
           </div>
