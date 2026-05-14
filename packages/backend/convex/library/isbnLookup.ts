@@ -288,15 +288,16 @@ async function lookupOpenLibraryBibkeys(
     }
 
     const authorNames =
-      bookData.authors
-        ?.map((author: { name?: string }) => author.name)
-        .filter((name): name is string => Boolean(name)) ?? [];
+      bookData.authors?.flatMap((author: { name?: string }) =>
+        author.name ? [author.name] : [],
+      ) ?? [];
 
     const subjectNames =
       bookData.subjects
         ?.slice(0, 10)
-        .map((subject: { name?: string }) => subject.name)
-        .filter((name): name is string => Boolean(name)) ?? [];
+        .flatMap((subject: { name?: string }) =>
+          subject.name ? [subject.name] : [],
+        ) ?? [];
 
     const result: IsbnLookupResult = {
       found: true,

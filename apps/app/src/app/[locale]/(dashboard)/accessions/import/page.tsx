@@ -202,9 +202,9 @@ export default function ImportAccessionsPage() {
       }));
 
       const mappingMap = new Map(
-        mappings
-          .filter((m) => m.targetField !== null)
-          .map((m) => [m.targetField, m.sourceField]),
+        mappings.flatMap((m) =>
+          m.targetField === null ? [] : [[m.targetField, m.sourceField]],
+        ),
       );
 
       const getValue = (field: string) => {

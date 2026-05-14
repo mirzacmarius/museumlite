@@ -147,7 +147,9 @@ export function validateAccessions(
 
   // Count valid rows (rows without errors)
   const rowsWithErrors = new Set(
-    allErrors.filter((e) => e.severity === "error").map((e) => e.row),
+    allErrors.flatMap((error) =>
+      error.severity === "error" ? [error.row] : [],
+    ),
   );
   const validRows = rows.length - rowsWithErrors.size;
 
@@ -185,7 +187,9 @@ export function validateCollections(
 
   // Count valid rows (rows without errors)
   const rowsWithErrors = new Set(
-    allErrors.filter((e) => e.severity === "error").map((e) => e.row),
+    allErrors.flatMap((error) =>
+      error.severity === "error" ? [error.row] : [],
+    ),
   );
   const validRows = rows.length - rowsWithErrors.size;
 

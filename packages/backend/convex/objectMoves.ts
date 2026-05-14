@@ -281,7 +281,10 @@ function dedupeStrings(values: string[] | undefined) {
 
   return Array.from(
     new Set(
-      values.map((value) => value.trim()).filter((value) => value.length > 0),
+      values.flatMap((value) => {
+        const trimmedValue = value.trim();
+        return trimmedValue.length > 0 ? [trimmedValue] : [];
+      }),
     ),
   );
 }

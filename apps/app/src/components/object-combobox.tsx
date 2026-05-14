@@ -51,19 +51,22 @@ export function ObjectCombobox({
   // Convert collections to options format, excluding current collection
   const objectOptions = React.useMemo(() => {
     if (!collections) return [];
-    return collections.page
-      .filter((obj: { _id: Id<"collections"> }) => obj._id !== collectionId)
-      .map(
-        (obj: {
-          _id: Id<"collections">;
-          title: string;
-          accessionNumber: string;
-        }) => ({
-          value: obj._id,
-          label: obj.title,
-          accessionNumber: obj.accessionNumber,
-        }),
-      );
+    return collections.page.flatMap(
+      (obj: {
+        _id: Id<"collections">;
+        title: string;
+        accessionNumber: string;
+      }) =>
+        obj._id === collectionId
+          ? []
+          : [
+              {
+                value: obj._id,
+                label: obj.title,
+                accessionNumber: obj.accessionNumber,
+              },
+            ],
+    );
   }, [collections, collectionId]);
 
   // Get selected object

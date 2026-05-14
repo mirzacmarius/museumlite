@@ -1295,11 +1295,22 @@ export const getTasksForBoard = query({
       dependsOnTaskIds: t.dependsOnTaskIds,
     });
 
+    const groupedTasks = {
+      todo: [] as ReturnType<typeof mapTask>[],
+      in_progress: [] as ReturnType<typeof mapTask>[],
+      completed: [] as ReturnType<typeof mapTask>[],
+      blocked: [] as ReturnType<typeof mapTask>[],
+    };
+
+    for (const task of tasks) {
+      groupedTasks[task.status].push(mapTask(task));
+    }
+
     return {
-      todo: tasks.filter((t) => t.status === "todo").map(mapTask),
-      in_progress: tasks.filter((t) => t.status === "in_progress").map(mapTask),
-      completed: tasks.filter((t) => t.status === "completed").map(mapTask),
-      blocked: tasks.filter((t) => t.status === "blocked").map(mapTask),
+      todo: groupedTasks.todo,
+      in_progress: groupedTasks.in_progress,
+      completed: groupedTasks.completed,
+      blocked: groupedTasks.blocked,
     };
   },
 });

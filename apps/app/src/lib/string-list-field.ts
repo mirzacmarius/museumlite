@@ -2,7 +2,10 @@ export function parseStringListField(
   value?: string | string[] | null,
 ): string[] {
   if (Array.isArray(value)) {
-    return value.map((item) => item.trim()).filter(Boolean);
+    return value.flatMap((item) => {
+      const trimmedItem = item.trim();
+      return trimmedItem ? [trimmedItem] : [];
+    });
   }
 
   if (typeof value !== "string") {
@@ -18,10 +21,14 @@ export function parseStringListField(
     const parsedValue: unknown = JSON.parse(trimmedValue);
 
     if (Array.isArray(parsedValue)) {
-      return parsedValue
-        .filter((item): item is string => typeof item === "string")
-        .map((item) => item.trim())
-        .filter(Boolean);
+      return parsedValue.flatMap((item) => {
+        if (typeof item !== "string") {
+          return [];
+        }
+
+        const trimmedItem = item.trim();
+        return trimmedItem ? [trimmedItem] : [];
+      });
     }
 
     if (typeof parsedValue === "string") {

@@ -236,21 +236,18 @@ export const getOrganizationsWithSlaConfigs = internalQuery({
   handler: async (ctx) => {
     const configs = await ctx.db.query("workflowSlaConfigs").collect();
     const activeOrganizationIds = uniqueIds(
-      configs
-        .filter((config) => config.isActive !== false)
-        .map((config) => config.organizationId),
+      configs.flatMap((config) =>
+        config.isActive !== false ? [config.organizationId] : [],
+      ),
     );
 
     const organizations = await Promise.all(
       activeOrganizationIds.map((organizationId) => ctx.db.get(organizationId)),
     );
 
-    return organizations
-      .filter(
-        (organization): organization is NonNullable<typeof organization> =>
-          organization !== null,
-      )
-      .map((organization) => organization._id);
+    return organizations.flatMap((organization) =>
+      organization === null ? [] : [organization._id],
+    );
   },
 });
 

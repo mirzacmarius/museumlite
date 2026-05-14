@@ -71,8 +71,10 @@ async function isAccessionWorkflowEnabled(
 
 function buildSearchText(values: Array<string | null | undefined>) {
   return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value))
+    .flatMap((value) => {
+      const trimmedValue = value?.trim();
+      return trimmedValue ? [trimmedValue] : [];
+    })
     .join(" ");
 }
 
@@ -1040,21 +1042,17 @@ export const list = query({
       return { ...accession, collectionTitle };
     });
 
-    allResults = accessionsWithCollectionInfo
-      .filter((accession) => {
-        return (
-          accession.accessionNumber?.toLowerCase().includes(searchLower) ||
-          accession.draftObjectData?.title
-            ?.toLowerCase()
-            .includes(searchLower) ||
-          accession.source?.toLowerCase().includes(searchLower) ||
-          accession.notes?.toLowerCase().includes(searchLower) ||
-          accession.collectionTitle?.toLowerCase().includes(searchLower) ||
-          accession.method?.toLowerCase().includes(searchLower) ||
-          false
-        );
-      })
-      .map(({ collectionTitle, ...accession }) => accession); // Remove temporary field
+    allResults = accessionsWithCollectionInfo.flatMap(
+      ({ collectionTitle, ...accession }) =>
+        accession.accessionNumber?.toLowerCase().includes(searchLower) ||
+        accession.draftObjectData?.title?.toLowerCase().includes(searchLower) ||
+        accession.source?.toLowerCase().includes(searchLower) ||
+        accession.notes?.toLowerCase().includes(searchLower) ||
+        collectionTitle?.toLowerCase().includes(searchLower) ||
+        accession.method?.toLowerCase().includes(searchLower)
+          ? [accession]
+          : [],
+    );
 
     // Sort by date received (newest first)
     allResults.sort((a, b) => b.dateReceived - a.dateReceived);
@@ -2168,16 +2166,20 @@ export const listMyAssigned = query({
       .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
       .collect();
 
-    return accessions
-      .filter((a) => a.organizationId === args.organizationId)
-      .map((a) => ({
-        _id: a._id,
-        accessionNumber: a.accessionNumber,
-        source: a.source,
-        status: a.status,
-        workflowStep: a.workflowStep,
-        dateReceived: a.dateReceived,
-      }));
+    return accessions.flatMap((accession) =>
+      accession.organizationId === args.organizationId
+        ? [
+            {
+              _id: accession._id,
+              accessionNumber: accession.accessionNumber,
+              source: accession.source,
+              status: accession.status,
+              workflowStep: accession.workflowStep,
+              dateReceived: accession.dateReceived,
+            },
+          ]
+        : [],
+    );
   },
 });
 
@@ -2501,9 +2503,9 @@ export const getDocumentChecklist = query({
     const checklist = accession.documentChecklist ?? [];
 
     // Batch fetch uploader users to avoid N+1 queries
-    const uploaderIds = checklist
-      .map((item) => item.uploadedBy)
-      .filter((id) => id !== undefined) as Id<"users">[];
+    const uploaderIds = checklist.flatMap((item) =>
+      item.uploadedBy === undefined ? [] : [item.uploadedBy],
+    );
     const uploaderMap = await batchLookup(ctx, uploaderIds, "users");
 
     // Fetch storage URLs in parallel

@@ -29,11 +29,13 @@ export function KeyboardShortcutsDialog({
               Navigation
             </h4>
             <div className="space-y-1">
-              {KEYBOARD_SHORTCUTS.filter((s) =>
-                ["dashboard", "objects", "loans", "search"].includes(s.key),
-              ).map((shortcut) => (
-                <ShortcutRow key={shortcut.key} shortcut={shortcut} />
-              ))}
+              {KEYBOARD_SHORTCUTS.flatMap((shortcut) =>
+                ["dashboard", "objects", "loans", "search"].includes(
+                  shortcut.key,
+                )
+                  ? [<ShortcutRow key={shortcut.key} shortcut={shortcut} />]
+                  : [],
+              )}
             </div>
           </div>
 
@@ -42,11 +44,11 @@ export function KeyboardShortcutsDialog({
               Actions
             </h4>
             <div className="space-y-1">
-              {KEYBOARD_SHORTCUTS.filter((s) =>
-                ["new-object", "new-loan"].includes(s.key),
-              ).map((shortcut) => (
-                <ShortcutRow key={shortcut.key} shortcut={shortcut} />
-              ))}
+              {KEYBOARD_SHORTCUTS.flatMap((shortcut) =>
+                ["new-object", "new-loan"].includes(shortcut.key)
+                  ? [<ShortcutRow key={shortcut.key} shortcut={shortcut} />]
+                  : [],
+              )}
             </div>
           </div>
 
@@ -55,10 +57,10 @@ export function KeyboardShortcutsDialog({
               Help
             </h4>
             <div className="space-y-1">
-              {KEYBOARD_SHORTCUTS.filter((s) => s.key === "help").map(
-                (shortcut) => (
-                  <ShortcutRow key={shortcut.key} shortcut={shortcut} />
-                ),
+              {KEYBOARD_SHORTCUTS.flatMap((shortcut) =>
+                shortcut.key === "help"
+                  ? [<ShortcutRow key={shortcut.key} shortcut={shortcut} />]
+                  : [],
               )}
             </div>
           </div>

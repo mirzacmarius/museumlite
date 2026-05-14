@@ -1,13 +1,13 @@
-import { expect, test, describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
+  type FieldMapping,
   PASTPERFECT_TEMPLATE,
   TMS_TEMPLATE,
+  applyMappings,
+  findMapping,
   getTemplate,
   listTemplates,
-  applyMappings,
   validateMappings,
-  findMapping,
-  type FieldMapping,
 } from "./legacyTemplates";
 
 describe("Legacy Templates", () => {
@@ -32,9 +32,9 @@ describe("Legacy Templates", () => {
 
     test("PastPerfect collection mappings include required fields", () => {
       const requiredFields = ["accessionNumber", "title"];
-      const mappedFields = PASTPERFECT_TEMPLATE.collectionMappings
-        .filter((m) => m.required)
-        .map((m) => m.targetField);
+      const mappedFields = PASTPERFECT_TEMPLATE.collectionMappings.flatMap(
+        (mapping) => (mapping.required ? [mapping.targetField] : []),
+      );
 
       for (const field of requiredFields) {
         expect(mappedFields).toContain(field);
@@ -43,9 +43,9 @@ describe("Legacy Templates", () => {
 
     test("TMS collection mappings include required fields", () => {
       const requiredFields = ["accessionNumber", "title"];
-      const mappedFields = TMS_TEMPLATE.collectionMappings
-        .filter((m) => m.required)
-        .map((m) => m.targetField);
+      const mappedFields = TMS_TEMPLATE.collectionMappings.flatMap((mapping) =>
+        mapping.required ? [mapping.targetField] : [],
+      );
 
       for (const field of requiredFields) {
         expect(mappedFields).toContain(field);
@@ -59,9 +59,9 @@ describe("Legacy Templates", () => {
         "source",
         "method",
       ];
-      const mappedFields = PASTPERFECT_TEMPLATE.accessionMappings
-        .filter((m) => m.required)
-        .map((m) => m.targetField);
+      const mappedFields = PASTPERFECT_TEMPLATE.accessionMappings.flatMap(
+        (mapping) => (mapping.required ? [mapping.targetField] : []),
+      );
 
       for (const field of requiredFields) {
         expect(mappedFields).toContain(field);

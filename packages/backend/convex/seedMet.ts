@@ -4366,14 +4366,13 @@ export const getCollectionsWithoutLocation = internalQuery({
       )
       .collect();
 
-    return collections
-      .filter(
-        (c) =>
-          c.currentLocationId === undefined &&
-          c.status !== "loaned" &&
-          c.status !== "deaccessioned",
-      )
-      .map((c) => ({ _id: c._id, status: c.status }));
+    return collections.flatMap((collection) =>
+      collection.currentLocationId === undefined &&
+      collection.status !== "loaned" &&
+      collection.status !== "deaccessioned"
+        ? [{ _id: collection._id, status: collection.status }]
+        : [],
+    );
   },
 });
 
@@ -5076,8 +5075,14 @@ export const getEligibleDeepLocations = internalQuery({
     );
 
     const eligibleLeafLocations = leafLocations
-      .filter((location) => isEligibleDeepTargetLocation(location))
-      .map((location) => locationsById.get(location._id)!)
+      .flatMap((location) => {
+        if (!isEligibleDeepTargetLocation(location)) {
+          return [];
+        }
+
+        const fullLocation = locationsById.get(location._id);
+        return fullLocation === undefined ? [] : [fullLocation];
+      })
       .sort((left, right) =>
         compareLocationRecords(locationsById, left, right),
       );

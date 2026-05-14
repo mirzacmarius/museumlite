@@ -341,9 +341,10 @@ function buildObjectDraftPayload(formData: CollectionFormData) {
     collectionGroupId: formData.collectionGroupId
       ? (formData.collectionGroupId as Id<"collectionGroups">)
       : undefined,
-    collectionGroupIds: formData.collectionGroupIds
-      ?.filter(Boolean)
-      .map((collectionGroupId) => collectionGroupId as Id<"collectionGroups">),
+    collectionGroupIds: formData.collectionGroupIds?.flatMap(
+      (collectionGroupId) =>
+        collectionGroupId ? [collectionGroupId as Id<"collectionGroups">] : [],
+    ),
     alternateAccessionNumbers:
       formData.alternateAccessionNumbers?.filter(Boolean) || [],
     ownershipHistory:
@@ -1901,32 +1902,34 @@ export function ObjectRequestFormPage({
                           Already attached
                         </p>
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                          {persistedDraftMedia
-                            .filter((item) => item.mediaCategory === "image")
-                            .map((item) => (
-                              <div
-                                key={item.storageId}
-                                className="overflow-hidden rounded-xl border border-border/60 bg-background/70"
-                              >
-                                {item.url ? (
-                                  <img
-                                    src={item.url}
-                                    alt={item.fileName}
-                                    className="aspect-square w-full object-cover"
-                                  />
-                                ) : null}
-                                <div className="px-4 py-3">
-                                  <p className="truncate text-sm font-medium text-foreground">
-                                    {item.fileName}
-                                  </p>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    {item.isPrimary
-                                      ? "Primary image already saved"
-                                      : "Saved with this draft"}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                          {persistedDraftMedia.flatMap((item) =>
+                            item.mediaCategory === "image"
+                              ? [
+                                  <div
+                                    key={item.storageId}
+                                    className="overflow-hidden rounded-xl border border-border/60 bg-background/70"
+                                  >
+                                    {item.url ? (
+                                      <img
+                                        src={item.url}
+                                        alt={item.fileName}
+                                        className="aspect-square w-full object-cover"
+                                      />
+                                    ) : null}
+                                    <div className="px-4 py-3">
+                                      <p className="truncate text-sm font-medium text-foreground">
+                                        {item.fileName}
+                                      </p>
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        {item.isPrimary
+                                          ? "Primary image already saved"
+                                          : "Saved with this draft"}
+                                      </p>
+                                    </div>
+                                  </div>,
+                                ]
+                              : [],
+                          )}
                         </div>
                       </div>
                     ) : null}
@@ -2034,23 +2037,25 @@ export function ObjectRequestFormPage({
                           Already attached
                         </p>
                         <div className="space-y-3">
-                          {persistedDraftMedia
-                            .filter((item) => item.mediaCategory === "document")
-                            .map((item) => (
-                              <div
-                                key={item.storageId}
-                                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-3"
-                              >
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-medium text-foreground">
-                                    {item.fileName}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Saved with this draft
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                          {persistedDraftMedia.flatMap((item) =>
+                            item.mediaCategory === "document"
+                              ? [
+                                  <div
+                                    key={item.storageId}
+                                    className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 px-4 py-3"
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-medium text-foreground">
+                                        {item.fileName}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Saved with this draft
+                                      </p>
+                                    </div>
+                                  </div>,
+                                ]
+                              : [],
+                          )}
                         </div>
                       </div>
                     ) : null}

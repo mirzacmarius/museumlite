@@ -347,15 +347,19 @@ export const getUnmappedFiles = query({
 
     if (!mediaData) return [];
 
-    return mediaData.uploadedFiles
-      .filter((f) => !f.mapped)
-      .map((f) => ({
-        fileName: f.fileName,
-        storageId: f.storageId,
-        fileSize: f.fileSize,
-        mimeType: f.mimeType,
-        error: f.error,
-      }));
+    return mediaData.uploadedFiles.flatMap((file) =>
+      file.mapped
+        ? []
+        : [
+            {
+              fileName: file.fileName,
+              storageId: file.storageId,
+              fileSize: file.fileSize,
+              mimeType: file.mimeType,
+              error: file.error,
+            },
+          ],
+    );
   },
 });
 

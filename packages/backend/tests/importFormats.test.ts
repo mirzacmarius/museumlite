@@ -10,10 +10,7 @@ type OrgSetup = {
   userId: Id<"users">;
 };
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -503,7 +500,10 @@ describe("Import E2E Verification (manual)", () => {
     expect(template?.system).toBe("TMS");
 
     // List all available templates
-    const allTemplates = await asUser.query(api.imports.listImportTemplates, {});
+    const allTemplates = await asUser.query(
+      api.imports.listImportTemplates,
+      {},
+    );
 
     expect(allTemplates.length).toBeGreaterThanOrEqual(2);
     expect(allTemplates.some((t) => t.name === "TMS")).toBe(true);
@@ -726,7 +726,9 @@ describe("Import E2E Verification (manual)", () => {
 
     // Verify we have errors for different rows
     const rowsWithErrors = new Set(
-      validation.errors.filter((e) => e.severity === "error").map((e) => e.row),
+      validation.errors.flatMap((error) =>
+        error.severity === "error" ? [error.row] : [],
+      ),
     );
     expect(rowsWithErrors.size).toBeGreaterThan(1);
 

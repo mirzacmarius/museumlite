@@ -243,8 +243,11 @@ export default function NewLoanPage() {
     if (problematicCollectionIds.size > 0) {
       const problematicList = Array.from(problematicCollectionIds);
       const problematicNames = selectedCollectionsList
-        .filter((c) => problematicList.includes(c._id))
-        .map((c) => c.title || c.accessionNumber)
+        .flatMap((collection) =>
+          problematicList.includes(collection._id)
+            ? [collection.title || collection.accessionNumber]
+            : [],
+        )
         .join(", ");
 
       setError(

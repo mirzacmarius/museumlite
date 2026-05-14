@@ -488,18 +488,18 @@ function getDisplayUnitLocations(
   });
 
   return {
-    vitrines: descendantLocations
-      .filter((location) => isVitrineLocation(location.type))
-      .map(toDisplayUnitLocation),
-    walls: descendantLocations
-      .filter((location) => isWallLocation(location.type))
-      .map(toDisplayUnitLocation),
-    cabinets: descendantLocations
-      .filter((location) => isCabinetLocation(location.type))
-      .map(toDisplayUnitLocation),
-    shelves: descendantLocations
-      .filter((location) => isShelfLocation(location.type))
-      .map(toDisplayUnitLocation),
+    vitrines: descendantLocations.flatMap((location) =>
+      isVitrineLocation(location.type) ? [toDisplayUnitLocation(location)] : [],
+    ),
+    walls: descendantLocations.flatMap((location) =>
+      isWallLocation(location.type) ? [toDisplayUnitLocation(location)] : [],
+    ),
+    cabinets: descendantLocations.flatMap((location) =>
+      isCabinetLocation(location.type) ? [toDisplayUnitLocation(location)] : [],
+    ),
+    shelves: descendantLocations.flatMap((location) =>
+      isShelfLocation(location.type) ? [toDisplayUnitLocation(location)] : [],
+    ),
   };
 }
 

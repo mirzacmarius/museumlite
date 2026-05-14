@@ -636,8 +636,7 @@ function setProperty(
   key: string,
   value: unknown,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (obj as any)[key] = value;
+  obj[key] = value;
 }
 
 /**
@@ -752,10 +751,10 @@ function parseArray(value: unknown): string[] {
     const delimiters = [";", ",", "|", "\n"];
     for (const delimiter of delimiters) {
       if (value.includes(delimiter)) {
-        return value
-          .split(delimiter)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
+        return value.split(delimiter).flatMap((item) => {
+          const trimmedItem = item.trim();
+          return trimmedItem.length > 0 ? [trimmedItem] : [];
+        });
       }
     }
     // Return single-item array if no delimiters found

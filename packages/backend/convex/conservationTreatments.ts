@@ -2527,15 +2527,15 @@ export const getEnvironmentalSummary = query({
       .collect();
 
     // Calculate stats
-    const temps = readings
-      .filter((r) => r.temperature !== undefined)
-      .map((r) => r.temperature!);
-    const humids = readings
-      .filter((r) => r.humidity !== undefined)
-      .map((r) => r.humidity!);
-    const lights = readings
-      .filter((r) => r.lightLevel !== undefined)
-      .map((r) => r.lightLevel!);
+    const temps = readings.flatMap((reading) =>
+      reading.temperature === undefined ? [] : [reading.temperature],
+    );
+    const humids = readings.flatMap((reading) =>
+      reading.humidity === undefined ? [] : [reading.humidity],
+    );
+    const lights = readings.flatMap((reading) =>
+      reading.lightLevel === undefined ? [] : [reading.lightLevel],
+    );
 
     const calcStats = (values: number[]) => {
       if (values.length === 0)

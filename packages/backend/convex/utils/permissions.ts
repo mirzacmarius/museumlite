@@ -84,9 +84,9 @@ export async function getUserPermissions(
     rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
   );
 
-  return permissions
-    .filter((p): p is NonNullable<typeof p> => p !== null)
-    .map((p) => p.name);
+  return permissions.flatMap((permission) =>
+    permission === null ? [] : [permission.name],
+  );
 }
 
 /**
@@ -254,7 +254,9 @@ export async function canApproveAtStep(
   }
 
   // Organization administrators are allowed to override workflow step roles.
-  if (await hasPermission(ctx, organizationId, "organization.manage_settings")) {
+  if (
+    await hasPermission(ctx, organizationId, "organization.manage_settings")
+  ) {
     return true;
   }
 
@@ -324,9 +326,9 @@ export async function getUsersToNotifyForWorkflowStep(
         rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
       );
 
-      const permissionNames = permissions
-        .filter((p): p is NonNullable<typeof p> => p !== null)
-        .map((p) => p.name);
+      const permissionNames = permissions.flatMap((permission) =>
+        permission === null ? [] : [permission.name],
+      );
 
       if (permissionNames.includes(permissionName)) {
         userIds.push(userOrg.userId);

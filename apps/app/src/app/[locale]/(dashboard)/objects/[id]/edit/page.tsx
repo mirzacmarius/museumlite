@@ -958,9 +958,9 @@ export default function CollectionEditPage() {
           parsedDimensionWeight.value === undefined
             ? ""
             : parsedDimensionWeight.unit || formData.weightUnit?.trim() || "",
-        links: formData.links
-          ?.filter((link) => link.url.trim() !== "")
-          .map(({ localId: _localId, ...entry }) => entry),
+        links: formData.links?.flatMap(({ localId: _localId, ...entry }) =>
+          entry.url.trim() !== "" ? [entry] : [],
+        ),
         parentObjectId: formData.parentObjectId
           ? (formData.parentObjectId as Id<"collections">)
           : undefined,
@@ -972,11 +972,12 @@ export default function CollectionEditPage() {
         collectionGroupId: formData.collectionGroupIds?.[0]
           ? (formData.collectionGroupIds[0] as Id<"collectionGroups">)
           : undefined,
-        collectionGroupIds: formData.collectionGroupIds
-          ?.filter(Boolean)
-          .map(
-            (collectionGroupId) => collectionGroupId as Id<"collectionGroups">,
-          ),
+        collectionGroupIds: formData.collectionGroupIds?.flatMap(
+          (collectionGroupId) =>
+            collectionGroupId
+              ? [collectionGroupId as Id<"collectionGroups">]
+              : [],
+        ),
         conditionChangeNote: hasConditionChanged
           ? conditionChangeNote.trim() || undefined
           : undefined,
@@ -1086,8 +1087,9 @@ export default function CollectionEditPage() {
     "No location assigned";
   const collectionSummary =
     collectionGroups
-      ?.filter((group) => formData.collectionGroupIds?.includes(group._id))
-      .map((group) => group.name)
+      ?.flatMap((group) =>
+        formData.collectionGroupIds?.includes(group._id) ? [group.name] : [],
+      )
       .join(", ") || "Not assigned to a collection";
 
   return (

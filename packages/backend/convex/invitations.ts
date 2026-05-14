@@ -480,8 +480,12 @@ export const createInvitationInternal = internalMutation({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
-      .filter((q) => q.eq(q.field("email"), args.email.toLowerCase()))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("email"), args.email.toLowerCase()),
+          q.eq(q.field("status"), "pending"),
+        ),
+      )
       .first();
 
     if (existingInvitation) {

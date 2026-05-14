@@ -1080,13 +1080,17 @@ export const getClaim = query({
       const collectionDocs = await Promise.all(
         claim.collectionIds.map((id) => ctx.db.get(id)),
       );
-      collections = collectionDocs
-        .filter((c): c is NonNullable<typeof c> => c !== null)
-        .map((c) => ({
-          _id: c._id,
-          title: c.title,
-          accessionNumber: c.accessionNumber,
-        }));
+      collections = collectionDocs.flatMap((collection) =>
+        collection === null
+          ? []
+          : [
+              {
+                _id: collection._id,
+                title: collection.title,
+                accessionNumber: collection.accessionNumber,
+              },
+            ],
+      );
     }
 
     let exhibitionTitle: string | undefined;
@@ -1522,9 +1526,9 @@ export const checkExpiringPoliciesInternal = internalMutation({
               rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
             );
 
-            const permissionNames = permissions
-              .filter((p): p is NonNullable<typeof p> => p !== null)
-              .map((p) => p.name);
+            const permissionNames = permissions.flatMap((permission) =>
+              permission === null ? [] : [permission.name],
+            );
 
             if (permissionNames.includes("organization.manage_settings")) {
               await ctx.runMutation(internal.audit.createNotificationInternal, {
@@ -1603,9 +1607,9 @@ export const checkMissingCoverageInternal = internalMutation({
             rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
           );
 
-          const permissionNames = permissions
-            .filter((p): p is NonNullable<typeof p> => p !== null)
-            .map((p) => p.name);
+          const permissionNames = permissions.flatMap((permission) =>
+            permission === null ? [] : [permission.name],
+          );
 
           if (permissionNames.includes("organization.manage_settings")) {
             await ctx.runMutation(internal.audit.createNotificationInternal, {
@@ -1968,9 +1972,9 @@ export const createAutoClaimForTransitDamage = internalMutation({
         rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
       );
 
-      const permissionNames = permissions
-        .filter((p): p is NonNullable<typeof p> => p !== null)
-        .map((p) => p.name);
+      const permissionNames = permissions.flatMap((permission) =>
+        permission === null ? [] : [permission.name],
+      );
 
       if (permissionNames.includes("organization.manage_settings")) {
         await ctx.runMutation(internal.audit.createNotificationInternal, {

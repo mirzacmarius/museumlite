@@ -90,7 +90,7 @@ export function ImportFieldMapper({
 
   const getUsedTargetFields = useCallback(() => {
     return new Set(
-      mappings.map((m) => m.targetField).filter((t): t is string => t !== null),
+      mappings.flatMap((m) => (m.targetField === null ? [] : [m.targetField])),
     );
   }, [mappings]);
 

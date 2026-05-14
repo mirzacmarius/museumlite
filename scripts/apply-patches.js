@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const patchesDir = path.join(__dirname, "..", "patches");
 const nodeModulesDir = path.join(__dirname, "..", "node_modules");
@@ -52,8 +52,9 @@ function applyPatch(patchFile) {
 if (fs.existsSync(patchesDir)) {
   const patches = fs
     .readdirSync(patchesDir)
-    .filter((file) => file.endsWith(".patch"))
-    .map((file) => path.join(patchesDir, file));
+    .flatMap((file) =>
+      file.endsWith(".patch") ? [path.join(patchesDir, file)] : [],
+    );
 
   if (patches.length === 0) {
     console.log("No patches found");

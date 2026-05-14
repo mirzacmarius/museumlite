@@ -94,19 +94,19 @@ export function ObjectComments({
 
   const mentionUsers = useMemo(() => {
     if (!organizationUsers) return [];
-    return organizationUsers
-      .map((user) => {
-        const handle = getUserHandle(user);
-        if (!handle) return null;
-        return {
+    return organizationUsers.flatMap((user) => {
+      const handle = getUserHandle(user);
+      if (!handle) return [];
+      return [
+        {
           _id: user._id,
           name: user.name,
           email: user.email,
           image: user.image,
           handle,
-        } as MentionUser;
-      })
-      .filter((user): user is MentionUser => user !== null);
+        },
+      ];
+    });
   }, [organizationUsers]);
 
   const mentionSuggestions = useMemo(() => {

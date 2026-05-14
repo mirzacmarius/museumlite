@@ -185,15 +185,19 @@ export function MediaGallery({
 
   const lightboxImages: LightboxImage[] = useMemo(
     () =>
-      images
-        .filter((img) => img.url && img.fileType === "image")
-        .map((img) => ({
-          id: img._id,
-          url: img.url as string,
-          thumbnailUrl: img.thumbnailUrl || undefined,
-          title: img.fileName,
-          caption: img.caption || undefined,
-        })),
+      images.flatMap((image) =>
+        image.url && image.fileType === "image"
+          ? [
+              {
+                id: image._id,
+                url: image.url,
+                thumbnailUrl: image.thumbnailUrl || undefined,
+                title: image.fileName,
+                caption: image.caption || undefined,
+              },
+            ]
+          : [],
+      ),
     [images],
   );
 

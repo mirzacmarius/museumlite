@@ -268,7 +268,7 @@ async function getCollectionPrimaryImageUrls(
         preferredMedia.thumbnailStorageId ??
         (isImageMedia(preferredMedia) ? preferredMedia.storageId : undefined);
       const url = storageId
-        ? ((await ctx.storage.getUrl(storageId)) ?? undefined)
+        ? (await ctx.storage.getUrl(storageId)) ?? undefined
         : undefined;
 
       return [collectionId, url] as const;
@@ -777,9 +777,9 @@ async function enrichCollectionListPage(
   page: CollectionListPageItem[],
 ) {
   const collectionIds = page.map((item) => item._id);
-  const locationIds = page
-    .map((item) => item.currentLocationId)
-    .filter((id): id is Id<"locations"> => id !== undefined);
+  const locationIds = page.flatMap((item) =>
+    item.currentLocationId === undefined ? [] : [item.currentLocationId],
+  );
 
   const [locationPathById, primaryImageUrlByCollectionId] = await Promise.all([
     getLocationPathStrings(ctx, locationIds),
@@ -2801,18 +2801,18 @@ export const getBatch = query({
     );
 
     // Filter out nulls and verify organization ownership
-    return collections
-      .filter(
-        (collection): collection is NonNullable<typeof collection> =>
-          collection !== null &&
-          collection.organizationId === args.organizationId,
-      )
-      .map((collection) => ({
-        _id: collection._id,
-        _creationTime: collection._creationTime,
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-      }));
+    return collections.flatMap((collection) =>
+      collection !== null && collection.organizationId === args.organizationId
+        ? [
+            {
+              _id: collection._id,
+              _creationTime: collection._creationTime,
+              accessionNumber: collection.accessionNumber,
+              title: collection.title,
+            },
+          ]
+        : [],
+    );
   },
 });
 
@@ -3980,22 +3980,29 @@ export const getPublicFilters = query({
 
     const objectTypes = [
       ...new Set([
-        ...collections.map((c) => c.objectType).filter(Boolean),
+        ...collections.flatMap((collection) =>
+          collection.objectType ? [collection.objectType] : [],
+        ),
         ...libraryItems.map((item) => item.itemType),
       ]),
     ] as string[];
     const cultures = [
       ...new Set([
-        ...collections.map((c) => c.culture).filter(Boolean),
+        ...collections.flatMap((collection) =>
+          collection.culture ? [collection.culture] : [],
+        ),
         ...libraryItems.map((item) => item.language),
       ]),
     ] as string[];
     const periods = [
       ...new Set([
-        ...collections.map((c) => c.period).filter(Boolean),
-        ...libraryItems
-          .map((item) => item.publicationYear?.toString())
-          .filter(Boolean),
+        ...collections.flatMap((collection) =>
+          collection.period ? [collection.period] : [],
+        ),
+        ...libraryItems.flatMap((item) => {
+          const publicationYear = item.publicationYear?.toString();
+          return publicationYear ? [publicationYear] : [];
+        }),
       ]),
     ] as string[];
 

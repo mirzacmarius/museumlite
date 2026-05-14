@@ -115,24 +115,17 @@ export const COLLECTION_TYPE_OPTIONS = [
 }>;
 
 export const COLLECTION_MODULE_TAB_LABELS = Object.fromEntries(
-  COLLECTION_TYPE_OPTIONS.filter(
-    (
-      option,
-    ): option is (typeof COLLECTION_TYPE_OPTIONS)[number] & {
-      value: CollectionModuleId;
-    } => option.value !== "general",
-  ).map((option) => [option.value, option.tabLabel]),
+  COLLECTION_TYPE_OPTIONS.flatMap((option) =>
+    option.value === "general" ? [] : [[option.value, option.tabLabel]],
+  ),
 ) as Record<CollectionModuleId, string>;
 
 export const COLLECTION_DETAIL_LIFECYCLE_MODULES =
-  COLLECTION_TYPE_OPTIONS.filter(
-    (
-      option,
-    ): option is (typeof COLLECTION_TYPE_OPTIONS)[number] & {
-      value: CollectionModuleId;
-      hasDetailLifecycle: true;
-    } => option.value !== "general" && option.hasDetailLifecycle === true,
-  ).map((option) => option.value);
+  COLLECTION_TYPE_OPTIONS.flatMap((option) =>
+    option.value !== "general" && option.hasDetailLifecycle === true
+      ? [option.value]
+      : [],
+  );
 
 export function isCollectionModuleId(
   value: string | undefined,

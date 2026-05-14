@@ -94,7 +94,11 @@ export const createScheduledReport = mutation({
     }
 
     await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const nextRunAt = calculateNextRun(
       args.schedule,
@@ -177,7 +181,11 @@ export const updateScheduledReport = mutation({
     }
 
     await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(ctx, report.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      report.organizationId,
+      "organization.manage_settings",
+    );
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
@@ -242,7 +250,11 @@ export const deleteScheduledReport = mutation({
     }
 
     await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(ctx, report.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      report.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.delete(args.reportId);
 
@@ -472,22 +484,19 @@ export const listReportRuns = query({
       "organization.view_analytics",
     );
 
-    let runs;
-    if (args.scheduledReportId) {
-      runs = await ctx.db
-        .query("reportRuns")
-        .withIndex("by_scheduled_report", (q) =>
-          q.eq("scheduledReportId", args.scheduledReportId),
-        )
-        .collect();
-    } else {
-      runs = await ctx.db
-        .query("reportRuns")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect();
-    }
+    const runs = args.scheduledReportId
+      ? await ctx.db
+          .query("reportRuns")
+          .withIndex("by_scheduled_report", (q) =>
+            q.eq("scheduledReportId", args.scheduledReportId),
+          )
+          .collect()
+      : await ctx.db
+          .query("reportRuns")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect();
 
     // Sort by start time descending
     runs.sort((a, b) => b.startedAt - a.startedAt);
@@ -713,7 +722,7 @@ export const getCollectionTrends = query({
     });
 
     // Calculate comparison period if requested
-    let comparisonData;
+    let comparisonData: typeof currentData | undefined;
     if (args.includeComparison) {
       const periodLength = args.endDate - args.startDate;
       const comparisonStart = args.startDate - periodLength;
@@ -1121,7 +1130,9 @@ export const getCollectionHealthDashboard = query({
       .collect();
 
     const coveredCollectionIds = new Set(
-      coverages.map((c) => c.collectionId).filter(Boolean),
+      coverages.flatMap((coverage) =>
+        coverage.collectionId ? [coverage.collectionId] : [],
+      ),
     );
     const totalCoveredValue = coverages.reduce(
       (sum, c) => sum + (c.coveredValue || 0),

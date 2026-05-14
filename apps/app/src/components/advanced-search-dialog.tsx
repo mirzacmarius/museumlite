@@ -174,14 +174,12 @@ export function AdvancedSearchDialog({
 
   const handleApply = () => {
     // Filter out empty filter groups
-    const validFilterGroups = filterGroups
-      .map((group) => ({
-        operator: group.operator,
-        filters: group.filters.filter(
-          (f) => f.value !== "" && f.value !== null,
-        ),
-      }))
-      .filter((group) => group.filters.length > 0);
+    const validFilterGroups = filterGroups.flatMap((group) => {
+      const filters = group.filters.filter(
+        (filter) => filter.value !== "" && filter.value !== null,
+      );
+      return filters.length > 0 ? [{ operator: group.operator, filters }] : [];
+    });
 
     onApply(
       validFilterGroups.map((g) => ({

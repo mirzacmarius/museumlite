@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -15,7 +20,7 @@ const confidentialityLevelValidator = v.union(
 );
 
 async function requireArchiveModule(
-  ctx: any,
+  ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
 ) {
   await requireModuleEnabled(ctx, organizationId, "archive");
@@ -292,15 +297,19 @@ export const listFlaggedForDestruction = query({
       )
       .collect();
 
-    return archives
-      .filter((a) => !a.legalHold)
-      .map((a) => ({
-        _id: a._id,
-        collectionId: a.collectionId,
-        documentType: a.documentType,
-        retentionExpiresAt: a.retentionExpiresAt,
-        legalHold: a.legalHold,
-      }));
+    return archives.flatMap((archive) =>
+      archive.legalHold
+        ? []
+        : [
+            {
+              _id: archive._id,
+              collectionId: archive.collectionId,
+              documentType: archive.documentType,
+              retentionExpiresAt: archive.retentionExpiresAt,
+              legalHold: archive.legalHold,
+            },
+          ],
+    );
   },
 });
 

@@ -268,9 +268,9 @@ export const create = mutation({
           rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
         );
 
-        const permissionNames = permissions
-          .filter((p): p is NonNullable<typeof p> => p !== null)
-          .map((p) => p.name);
+        const permissionNames = permissions.flatMap((permission) =>
+          permission === null ? [] : [permission.name],
+        );
 
         if (
           permissionNames.includes("loans.approve") &&
@@ -509,19 +509,17 @@ export const list = query({
         }),
       );
 
-      allResults = loansWithCollectionInfo
-        .filter((loan) => {
-          return (
-            loan.loanNumber?.toLowerCase().includes(searchLower) ||
-            loan.lenderBorrowerName?.toLowerCase().includes(searchLower) ||
-            loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
-            loan.notes?.toLowerCase().includes(searchLower) ||
-            loan.terms?.toLowerCase().includes(searchLower) ||
-            loan.collectionTitle?.toLowerCase().includes(searchLower) ||
-            false
-          );
-        })
-        .map(({ collectionTitle, ...loan }) => loan); // Remove temporary field
+      allResults = loansWithCollectionInfo.flatMap(
+        ({ collectionTitle, ...loan }) =>
+          loan.loanNumber?.toLowerCase().includes(searchLower) ||
+          loan.lenderBorrowerName?.toLowerCase().includes(searchLower) ||
+          loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
+          loan.notes?.toLowerCase().includes(searchLower) ||
+          loan.terms?.toLowerCase().includes(searchLower) ||
+          collectionTitle?.toLowerCase().includes(searchLower)
+            ? [loan]
+            : [],
+      );
     }
 
     // Sort by start date (newest first)

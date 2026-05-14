@@ -198,12 +198,12 @@ export function LoanApprovalWorkflow({
       if (hasMultipleItems && loanItems.length > 0) {
         // Open dialog for item selection - start with nothing selected
         // Explicitly filter out already returned items
-        const nonReturnedItems = loanItems
-          .filter((item: { _id: Id<"loanItems">; conditionIn?: string }) => {
-            // An item is returned if conditionIn exists and is not empty
-            return !(item.conditionIn && item.conditionIn.trim().length > 0);
-          })
-          .map((item: { _id: Id<"loanItems"> }) => item._id);
+        const nonReturnedItems = loanItems.flatMap(
+          (item: { _id: Id<"loanItems">; conditionIn?: string }) =>
+            item.conditionIn && item.conditionIn.trim().length > 0
+              ? []
+              : [item._id],
+        );
         setSelectedItemIds(new Set());
         setIsReturnDialogOpen(true);
       } else {
@@ -307,22 +307,16 @@ export function LoanApprovalWorkflow({
                             size="sm"
                             className="h-7 text-xs"
                             onClick={() => {
-                              const nonReturnedItems = loanItems
-                                .filter(
-                                  (item: {
-                                    _id: Id<"loanItems">;
-                                    conditionIn?: string;
-                                  }) => {
-                                    // An item is returned if conditionIn exists and is not empty
-                                    return !(
-                                      item.conditionIn &&
-                                      item.conditionIn.trim().length > 0
-                                    );
-                                  },
-                                )
-                                .map(
-                                  (item: { _id: Id<"loanItems"> }) => item._id,
-                                );
+                              const nonReturnedItems = loanItems.flatMap(
+                                (item: {
+                                  _id: Id<"loanItems">;
+                                  conditionIn?: string;
+                                }) =>
+                                  item.conditionIn &&
+                                  item.conditionIn.trim().length > 0
+                                    ? []
+                                    : [item._id],
+                              );
                               setSelectedItemIds(new Set(nonReturnedItems));
                             }}
                           >
@@ -579,12 +573,12 @@ export function LoanApprovalWorkflow({
       if (hasMultipleItems && loanItems.length > 0) {
         // Open dialog for item selection - start with nothing selected
         // Explicitly filter out already returned items
-        const nonReturnedItems = loanItems
-          .filter((item: { _id: Id<"loanItems">; conditionIn?: string }) => {
-            // An item is returned if conditionIn exists and is not empty
-            return !(item.conditionIn && item.conditionIn.trim().length > 0);
-          })
-          .map((item: { _id: Id<"loanItems"> }) => item._id);
+        const nonReturnedItems = loanItems.flatMap(
+          (item: { _id: Id<"loanItems">; conditionIn?: string }) =>
+            item.conditionIn && item.conditionIn.trim().length > 0
+              ? []
+              : [item._id],
+        );
         setSelectedItemIds(new Set());
         setIsReturnDialogOpen(true);
       } else {
@@ -677,22 +671,16 @@ export function LoanApprovalWorkflow({
                           size="sm"
                           className="h-7 text-xs"
                           onClick={() => {
-                            const nonReturnedItems = loanItems
-                              .filter(
-                                (item: {
-                                  _id: Id<"loanItems">;
-                                  conditionIn?: string;
-                                }) => {
-                                  // An item is returned if conditionIn exists and is not empty
-                                  return !(
-                                    item.conditionIn &&
-                                    item.conditionIn.trim().length > 0
-                                  );
-                                },
-                              )
-                              .map(
-                                (item: { _id: Id<"loanItems"> }) => item._id,
-                              );
+                            const nonReturnedItems = loanItems.flatMap(
+                              (item: {
+                                _id: Id<"loanItems">;
+                                conditionIn?: string;
+                              }) =>
+                                item.conditionIn &&
+                                item.conditionIn.trim().length > 0
+                                  ? []
+                                  : [item._id],
+                            );
                             setSelectedItemIds(new Set(nonReturnedItems));
                           }}
                         >

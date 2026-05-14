@@ -139,9 +139,9 @@ export const getAnalytics = query({
         .query("collectionGroupItems")
         .collect();
       const groupIdsForSite = new Set(
-        collectionGroupItems
-          .filter((item) => collectionIds.has(item.collectionId))
-          .map((item) => item.collectionGroupId),
+        collectionGroupItems.flatMap((item) =>
+          collectionIds.has(item.collectionId) ? [item.collectionGroupId] : [],
+        ),
       );
       collectionGroups = collectionGroups.filter((g) =>
         groupIdsForSite.has(g._id),
@@ -193,9 +193,9 @@ export const getAnalytics = query({
       // Filter loans by checking loanItems
       const loanItems = await ctx.db.query("loanItems").collect();
       const loanIdsForSite = new Set(
-        loanItems
-          .filter((item) => collectionIds.has(item.collectionId))
-          .map((item) => item.loanId),
+        loanItems.flatMap((item) =>
+          collectionIds.has(item.collectionId) ? [item.loanId] : [],
+        ),
       );
       loans = loans.filter((l) => loanIdsForSite.has(l._id));
     }
@@ -454,13 +454,11 @@ export const getAnalytics = query({
     );
 
     const collectionIdsWithOpenDeaccessions = new Set(
-      deaccessions
-        .filter(
-          (deaccession) =>
-            deaccession.status === "pending" ||
-            deaccession.status === "approved",
-        )
-        .map((deaccession) => deaccession.collectionId),
+      deaccessions.flatMap((deaccession) =>
+        deaccession.status === "pending" || deaccession.status === "approved"
+          ? [deaccession.collectionId]
+          : [],
+      ),
     );
     const catalogObjects = collections.filter(
       (collection) =>

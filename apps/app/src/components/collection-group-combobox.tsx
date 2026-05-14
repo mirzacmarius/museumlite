@@ -51,9 +51,10 @@ export function CollectionGroupCombobox({
     const groupsById = new Map<string, (typeof collectionGroups)[number]>(
       collectionGroups.map((group) => [group._id, group]),
     );
-    return selectedValues
-      .map((selectedValue) => groupsById.get(selectedValue))
-      .filter((group): group is NonNullable<typeof group> => Boolean(group));
+    return selectedValues.flatMap((selectedValue) => {
+      const group = groupsById.get(selectedValue);
+      return group === undefined ? [] : [group];
+    });
   }, [collectionGroups, selectedValues]);
 
   const filteredGroups = React.useMemo(() => {
