@@ -401,10 +401,11 @@ export function ObjectRequestFormPage({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
-  const router = useRouter();
+  const { push } = useRouter();
   const searchParams = useSearchParams();
+  const getSearchParam = searchParams.get.bind(searchParams);
   const collectionGroupId =
-    prefilledCollectionGroupId || searchParams.get("collectionGroupId");
+    prefilledCollectionGroupId || getSearchParam("collectionGroupId");
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const { enabledModules } = useFeatureAccess();
   const isLocationTrackingEnabled =
@@ -773,7 +774,7 @@ export function ObjectRequestFormPage({
         setDraftSavedAt(Date.now());
 
         if (redirectToDetail) {
-          router.push(`/accessions/${savedAccessionId}`);
+          push(`/accessions/${savedAccessionId}`);
         }
 
         return true;
@@ -789,7 +790,7 @@ export function ObjectRequestFormPage({
       currentOrganizationId,
       formData,
       persistedDraftMedia,
-      router,
+      push,
       selectedDocuments,
       selectedFiles,
       upsertObjectDraft,
@@ -832,7 +833,7 @@ export function ObjectRequestFormPage({
             ? buildDraftMediaPayload(draftMedia)
             : undefined,
         });
-        router.push(`/accessions/${accessionId}`);
+        push(`/accessions/${accessionId}`);
       } catch (err) {
         console.error("Error submitting object request:", err);
         setError(
@@ -847,7 +848,7 @@ export function ObjectRequestFormPage({
       activeDraftAccessionId,
       formData,
       persistedDraftMedia,
-      router,
+      push,
       t,
       upsertObjectDraft,
       uploadDraftMedia,
@@ -860,19 +861,19 @@ export function ObjectRequestFormPage({
         setPendingNavigation(href);
         setShowUnsavedDialog(true);
       } else {
-        router.push(href);
+        push(href);
       }
     },
-    [hasUnsavedChanges, router],
+    [hasUnsavedChanges, push],
   );
 
   const handleDiscardAndNavigate = useCallback(() => {
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      push(pendingNavigation);
     }
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
-  }, [pendingNavigation, router]);
+  }, [pendingNavigation, push]);
 
   const handleSaveAndNavigate = useCallback(async () => {
     const didSave = await handleSaveDraft();
@@ -881,11 +882,11 @@ export function ObjectRequestFormPage({
     }
 
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      push(pendingNavigation);
     }
     setPendingNavigation(null);
     return true;
-  }, [handleSaveDraft, pendingNavigation, router]);
+  }, [handleSaveDraft, pendingNavigation, push]);
 
   if (!currentOrganizationId) {
     return (

@@ -21,7 +21,7 @@ interface AuthRootProps {
 
 export function AuthRoot({ initialMode, redirectTo }: AuthRootProps) {
   const locale = useCurrentLocale();
-  const router = useRouter();
+  const { push, refresh } = useRouter();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [step, setStep] = useState<AuthStep>("email");
@@ -30,8 +30,8 @@ export function AuthRoot({ initialMode, redirectTo }: AuthRootProps) {
   const [codeFlow, setCodeFlow] = useState<UniqueCodeFlow>("otp");
 
   const handleSignedIn = () => {
-    router.push(redirectTo ?? `/${locale}`);
-    router.refresh();
+    push(redirectTo ?? `/${locale}`);
+    refresh();
   };
 
   return (

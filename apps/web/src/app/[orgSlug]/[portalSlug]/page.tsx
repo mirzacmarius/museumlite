@@ -20,16 +20,15 @@ import { useEffect, useState } from "react";
 export default function PublicPortalPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const getSearchParam = searchParams.get.bind(searchParams);
+  const { push } = useRouter();
   const orgSlug = params.orgSlug as string;
   const portalSlug = params.portalSlug as string;
 
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [objectType, setObjectType] = useState(
-    searchParams.get("type") ?? "all",
-  );
-  const [culture, setCulture] = useState(searchParams.get("culture") ?? "all");
-  const [period, setPeriod] = useState(searchParams.get("period") ?? "all");
+  const [search, setSearch] = useState(getSearchParam("search") ?? "");
+  const [objectType, setObjectType] = useState(getSearchParam("type") ?? "all");
+  const [culture, setCulture] = useState(getSearchParam("culture") ?? "all");
+  const [period, setPeriod] = useState(getSearchParam("period") ?? "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const filters = useQuery(api.collections.getPublicFilters, {
@@ -54,7 +53,7 @@ export default function PublicPortalPage() {
     if (culture !== "all") urlParams.set("culture", culture);
     if (period !== "all") urlParams.set("period", period);
     const queryString = urlParams.toString();
-    router.push(`${basePath}${queryString ? `?${queryString}` : ""}`);
+    push(`${basePath}${queryString ? `?${queryString}` : ""}`);
   };
 
   useEffect(() => {

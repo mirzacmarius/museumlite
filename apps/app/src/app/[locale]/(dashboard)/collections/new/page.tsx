@@ -24,7 +24,7 @@ import { useState } from "react";
 export default function NewCollectionPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
-  const router = useRouter();
+  const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createGroup = useMutation(api.collectionGroups.create);
 
@@ -77,7 +77,7 @@ export default function NewCollectionPage() {
           ? (formData.managedByRoleId as Id<"roles">)
           : undefined,
       });
-      router.push("/collections");
+      push("/collections");
     } catch (err) {
       console.error("Error creating collection:", err);
       setError(err instanceof Error ? err.message : t("form.createError"));

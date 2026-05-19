@@ -61,7 +61,7 @@ function isOrganizationSlugTakenError(error: unknown): boolean {
 
 export default function OnboardingPage() {
   const t = useI18n();
-  const router = useRouter();
+  const { push } = useRouter();
   const user = useQuery(api.users.getUser);
   const organizations = useQuery(api.organizations.listUserOrganizations);
   const updateUsername = useMutation(api.users.updateUsername);
@@ -107,7 +107,7 @@ export default function OnboardingPage() {
       if (collectionsPreview === undefined) return;
 
       if (collectionsPreview.page.length > 0) {
-        router.push("/");
+        push("/");
         return;
       }
 
@@ -118,7 +118,7 @@ export default function OnboardingPage() {
     if (user.username) {
       setCurrentStep("organization");
     }
-  }, [user, organizations, router, collectionsPreview, createdOrgId]);
+  }, [user, organizations, push, collectionsPreview, createdOrgId]);
 
   const handleOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,7 +368,7 @@ export default function OnboardingPage() {
             </Button>
           </div>
 
-          <Button variant="ghost" onClick={() => router.push("/")}>
+          <Button variant="ghost" onClick={() => push("/")}>
             {t("onboardingPage.skipForNow")}
           </Button>
         </div>

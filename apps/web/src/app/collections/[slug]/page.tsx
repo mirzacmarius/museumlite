@@ -20,15 +20,14 @@ import { useEffect, useState } from "react";
 export default function PublicCollectionPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const getSearchParam = searchParams.get.bind(searchParams);
+  const { push } = useRouter();
   const slug = params.slug as string;
 
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [objectType, setObjectType] = useState(
-    searchParams.get("type") ?? "all",
-  );
-  const [culture, setCulture] = useState(searchParams.get("culture") ?? "all");
-  const [period, setPeriod] = useState(searchParams.get("period") ?? "all");
+  const [search, setSearch] = useState(getSearchParam("search") ?? "");
+  const [objectType, setObjectType] = useState(getSearchParam("type") ?? "all");
+  const [culture, setCulture] = useState(getSearchParam("culture") ?? "all");
+  const [period, setPeriod] = useState(getSearchParam("period") ?? "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const filters = useQuery(api.collections.getPublicFilters, {
@@ -50,7 +49,7 @@ export default function PublicCollectionPage() {
     if (culture !== "all") params.set("culture", culture);
     if (period !== "all") params.set("period", period);
     const queryString = params.toString();
-    router.push(`/collections/${slug}${queryString ? `?${queryString}` : ""}`);
+    push(`/collections/${slug}${queryString ? `?${queryString}` : ""}`);
   };
 
   useEffect(() => {

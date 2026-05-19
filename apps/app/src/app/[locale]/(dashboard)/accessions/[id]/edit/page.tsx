@@ -70,7 +70,7 @@ function GuideCard({
 
 export default function EditAccessionPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push, back } = useRouter();
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
   const locale = useCurrentLocale();
@@ -176,7 +176,7 @@ export default function EditAccessionPage() {
         cost: formData.cost ? Number.parseFloat(formData.cost) : undefined,
         notes: formData.notes || undefined,
       });
-      router.push(`/accessions/${accessionId}`);
+      push(`/accessions/${accessionId}`);
     } catch (err) {
       console.error("Error updating accession:", err);
       setError(err instanceof Error ? err.message : t("error.failedToUpdate"));
@@ -441,7 +441,7 @@ export default function EditAccessionPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.back()}
+                    onClick={() => back()}
                   >
                     {tCommon("cancel")}
                   </Button>

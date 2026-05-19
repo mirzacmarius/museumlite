@@ -75,7 +75,7 @@ export function DeaccessionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const router = useRouter();
+  const { push } = useRouter();
   const createDeaccession = useMutation(api.deaccessions.create);
   const createMoveRequest = useMutation(api.objectMoves.createRequest);
 
@@ -167,7 +167,7 @@ export function DeaccessionDialog({
         });
         resetForm();
         onOpenChange(false);
-        router.push(`/deaccessions/${deaccessionId}`);
+        push(`/deaccessions/${deaccessionId}`);
       } else if (removalType === "archived") {
         const deaccessionId = await createDeaccession({
           organizationId,
@@ -180,7 +180,7 @@ export function DeaccessionDialog({
         });
         resetForm();
         onOpenChange(false);
-        router.push(`/deaccessions/${deaccessionId}`);
+        push(`/deaccessions/${deaccessionId}`);
       } else if (removalType === "deleted") {
         const deaccessionId = await createDeaccession({
           organizationId,
@@ -193,7 +193,7 @@ export function DeaccessionDialog({
         });
         resetForm();
         onOpenChange(false);
-        router.push(`/deaccessions/${deaccessionId}`);
+        push(`/deaccessions/${deaccessionId}`);
       } else if (removalType === "move") {
         const requestId = await createMoveRequest({
           collectionId,
@@ -208,7 +208,7 @@ export function DeaccessionDialog({
         });
         resetForm();
         onOpenChange(false);
-        router.push(`/objects/move-requests/${requestId}`);
+        push(`/objects/move-requests/${requestId}`);
       }
     } catch (err) {
       console.error("Failed to process object removal or transfer:", err);

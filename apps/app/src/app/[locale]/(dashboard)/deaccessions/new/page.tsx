@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewDeaccessionPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const t = useScopedI18n("deaccessions");
   const { currentOrganizationId } = useOrganization();
   const createDeaccession = useMutation(api.deaccessions.create);
@@ -74,7 +74,7 @@ export default function NewDeaccessionPage() {
         disposition: formData.disposition || undefined,
         notes: formData.notes || undefined,
       });
-      router.push("/deaccessions");
+      push("/deaccessions");
     } catch (err) {
       console.error("Error creating deaccession:", err);
       setError(
@@ -227,11 +227,7 @@ export default function NewDeaccessionPage() {
               </div>
 
               <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
+                <Button type="button" variant="outline" onClick={() => back()}>
                   {t("actions.cancel")}
                 </Button>
                 <PermissionGate permission="collections.create">

@@ -425,7 +425,7 @@ export default function CollectionEditPage() {
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const collectionId = params.id as string;
   const typedCollectionId = collectionId as Id<"collections">;
   const { currentOrganization, currentOrganizationId } = useOrganization();
@@ -1013,15 +1013,15 @@ export default function CollectionEditPage() {
     async (event: React.FormEvent) => {
       event.preventDefault();
       if (!isFormDirty && hasMediaChanges) {
-        router.push(`/objects/${collectionId}`);
+        push(`/objects/${collectionId}`);
         return;
       }
 
       if (await saveRecord()) {
-        router.push(`/objects/${collectionId}`);
+        push(`/objects/${collectionId}`);
       }
     },
-    [collectionId, hasMediaChanges, isFormDirty, router, saveRecord],
+    [collectionId, hasMediaChanges, isFormDirty, push, saveRecord],
   );
 
   const handleNavigate = useCallback(
@@ -1031,18 +1031,18 @@ export default function CollectionEditPage() {
         setShowUnsavedDialog(true);
         return;
       }
-      router.push(href);
+      push(href);
     },
-    [isFormDirty, router],
+    [isFormDirty, push],
   );
 
   const handleDiscardAndNavigate = useCallback(() => {
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      push(pendingNavigation);
     }
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
-  }, [pendingNavigation, router]);
+  }, [pendingNavigation, push]);
 
   const handleSaveAndNavigate = useCallback(async () => {
     const didSave = await saveRecord();
@@ -1051,11 +1051,11 @@ export default function CollectionEditPage() {
     }
 
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      push(pendingNavigation);
     }
     setPendingNavigation(null);
     return true;
-  }, [pendingNavigation, router, saveRecord]);
+  }, [pendingNavigation, push, saveRecord]);
 
   if (!currentOrganizationId) {
     return (

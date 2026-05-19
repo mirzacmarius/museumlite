@@ -39,7 +39,7 @@ export default function AccountDetailPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const accountId = params.id as Id<"accounts">;
   const { currentOrganizationId } = useOrganization();
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export default function AccountDetailPage() {
     setIsDeleting(true);
     try {
       await deleteAccount({ accountId });
-      router.push("/accounts");
+      push("/accounts");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete account");
       setIsDeleting(false);

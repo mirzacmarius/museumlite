@@ -51,7 +51,7 @@ export default function TreatmentDetailPage({
   const locale = useCurrentLocale();
   const t = useScopedI18n("conservation");
   const { id } = use(params);
-  const router = useRouter();
+  const { push } = useRouter();
   const treatment = useQuery(api.conservationTreatments.get, {
     id: id as Id<"conservationTreatments">,
   });
@@ -80,7 +80,7 @@ export default function TreatmentDetailPage({
     try {
       await removeTreatment({ id: id as Id<"conservationTreatments"> });
       toast.success(t("form.deleteSuccess"));
-      router.push("/conservation");
+      push("/conservation");
     } catch (error) {
       console.error(error);
       toast.error(t("form.deleteError"));

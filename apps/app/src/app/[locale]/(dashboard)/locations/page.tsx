@@ -88,7 +88,7 @@ function LocationLayout({
 }: {
   organizationId: Id<"organizations">;
 }) {
-  const router = useRouter();
+  const { push } = useRouter();
   const [selectedLocationId, setSelectedLocationId] =
     useState<Id<"locations"> | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -234,7 +234,7 @@ function LocationLayout({
         onDeleted={({ sentToDeaccessions }) => {
           setDeleteDialogOpen(false);
           if (sentToDeaccessions) {
-            router.push("/deaccessions");
+            push("/deaccessions");
           } else {
             setSelectedLocationId(null);
           }

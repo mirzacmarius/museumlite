@@ -36,7 +36,7 @@ type TreatmentType =
 export default function NewTreatmentPage() {
   const t = useScopedI18n("conservation");
   const { currentOrganizationId } = useOrganization();
-  const router = useRouter();
+  const { push } = useRouter();
   const createTreatment = useMutation(api.conservationTreatments.create);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,7 +83,7 @@ export default function NewTreatmentPage() {
       });
 
       toast.success(t("form.createSuccess"));
-      router.push(`/conservation/${treatmentId}`);
+      push(`/conservation/${treatmentId}`);
     } catch (error) {
       console.error(error);
       toast.error(t("form.createError"));

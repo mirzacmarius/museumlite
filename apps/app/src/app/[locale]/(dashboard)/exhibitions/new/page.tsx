@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewExhibitionPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const locale = useCurrentLocale();
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("exhibitions");
@@ -85,7 +85,7 @@ export default function NewExhibitionPage() {
         loanVenue: formData.isLoan ? formData.loanVenue : undefined,
         notes: formData.notes || undefined,
       });
-      router.push("/exhibitions");
+      push("/exhibitions");
     } catch (err) {
       console.error("Error creating exhibition:", err);
       setError(t("form.createError"));
@@ -342,7 +342,7 @@ export default function NewExhibitionPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => back()}
                 className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 {t("actions.cancel")}

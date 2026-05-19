@@ -55,7 +55,7 @@ export default function CollectionGroupDetailPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
   const params = useParams();
-  const router = useRouter();
+  const { replace } = useRouter();
   const rawId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -74,9 +74,9 @@ export default function CollectionGroupDetailPage() {
 
   useEffect(() => {
     if (resolved?.type === "collection") {
-      router.replace(`/objects/${resolved.id}`);
+      replace(`/objects/${resolved.id}`);
     }
-  }, [resolved, router]);
+  }, [resolved, replace]);
 
   const groupId =
     resolved?.type === "collectionGroup"

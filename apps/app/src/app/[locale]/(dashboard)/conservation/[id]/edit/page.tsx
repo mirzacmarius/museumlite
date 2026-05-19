@@ -39,7 +39,7 @@ export default function EditTreatmentPage({
 }) {
   const t = useScopedI18n("conservation");
   const { id } = use(params);
-  const router = useRouter();
+  const { push } = useRouter();
   const treatment = useQuery(api.conservationTreatments.get, {
     id: id as Id<"conservationTreatments">,
   });
@@ -95,7 +95,7 @@ export default function EditTreatmentPage({
       });
 
       toast.success(t("form.updateSuccess"));
-      router.push(`/conservation/${id}`);
+      push(`/conservation/${id}`);
     } catch (error) {
       console.error(error);
       toast.error(t("form.updateError"));

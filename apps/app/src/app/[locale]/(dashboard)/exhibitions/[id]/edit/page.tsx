@@ -19,7 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function EditExhibitionPage() {
-  const router = useRouter();
+  const { push, back } = useRouter();
   const params = useParams();
   const exhibitionId = params.id as string;
   const locale = useCurrentLocale();
@@ -118,7 +118,7 @@ export default function EditExhibitionPage() {
         loanVenue: formData.isLoan ? formData.loanVenue : undefined,
         notes: formData.notes || undefined,
       });
-      router.push(`/exhibitions/${exhibitionId}`);
+      push(`/exhibitions/${exhibitionId}`);
     } catch (err) {
       console.error("Error updating exhibition:", err);
       setError(t("form.updateError"));
@@ -363,7 +363,7 @@ export default function EditExhibitionPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => back()}
                 className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 {t("actions.cancel")}

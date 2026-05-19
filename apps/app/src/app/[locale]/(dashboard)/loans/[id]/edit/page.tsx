@@ -31,7 +31,7 @@ export default function EditLoanPage() {
   const tLoans = useScopedI18n("loans");
   const tCommon = useScopedI18n("common");
   const params = useParams();
-  const router = useRouter();
+  const { push, back } = useRouter();
   const loanId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("loans.placeholders");
@@ -143,7 +143,7 @@ export default function EditLoanPage() {
           : undefined,
         notes: formData.notes || undefined,
       });
-      router.push(`/loans/${loanId}`);
+      push(`/loans/${loanId}`);
     } catch (err) {
       console.error("Error updating loan:", err);
       setError(
@@ -386,7 +386,7 @@ export default function EditLoanPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => back()}
                 className="w-24"
               >
                 Cancel

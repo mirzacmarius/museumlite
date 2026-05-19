@@ -52,7 +52,7 @@ type TargetAudience = (typeof TARGET_AUDIENCE_VALUES)[number];
 
 export default function EditCatalogItemPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const itemId = params.id as Id<"libraryItems">;
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
@@ -287,7 +287,7 @@ export default function EditCatalogItemPage() {
         internalNotes: formData.internalNotes || undefined,
       });
 
-      router.push(`/library/catalog/${itemId}`);
+      push(`/library/catalog/${itemId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : tEdit("updateFailed"));
     } finally {

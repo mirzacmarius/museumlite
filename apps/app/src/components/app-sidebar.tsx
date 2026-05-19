@@ -348,7 +348,8 @@ export function AppSidebar({
   const { signOut } = useAuthActions();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const getSearchParam = searchParams.get.bind(searchParams);
+  const { push, replace } = useRouter();
 
   const handleOrganizationChange = React.useCallback(
     (organizationId: Id<"organizations">) => {
@@ -357,9 +358,9 @@ export function AppSidebar({
       }
 
       setCurrentOrganizationId(organizationId);
-      router.replace("/");
+      replace("/");
     },
-    [currentOrganizationId, router, setCurrentOrganizationId],
+    [currentOrganizationId, push, replace, setCurrentOrganizationId],
   );
 
   const openCommandPalette = React.useCallback(() => {
@@ -610,8 +611,8 @@ export function AppSidebar({
 
         <CollectionGroupNav
           groups={collectionGroups}
-          activeCollectionGroupId={searchParams.get("collectionGroupId")}
-          onCreate={() => router.push("/collections/new")}
+          activeCollectionGroupId={getSearchParam("collectionGroupId")}
+          onCreate={() => push("/collections/new")}
         />
       </SidebarContent>
 

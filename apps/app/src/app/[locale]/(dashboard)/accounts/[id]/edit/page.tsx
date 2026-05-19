@@ -27,7 +27,7 @@ export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
   const params = useParams();
-  const router = useRouter();
+  const { push, back } = useRouter();
   const accountId = params.id as Id<"accounts">;
   const { currentOrganizationId } = useOrganization();
   const updateAccount = useMutation(api.accounts.update);
@@ -177,7 +177,7 @@ export default function EditAccountPage() {
             ? formData.selectedRoles
             : undefined,
       });
-      router.push(`/accounts/${accountId}`);
+      push(`/accounts/${accountId}`);
     } catch (err) {
       console.error("Error updating account:", err);
       setError(
@@ -549,11 +549,7 @@ export default function EditAccountPage() {
               )}
 
               <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
+                <Button type="button" variant="outline" onClick={() => back()}>
                   {tCommon("cancel")}
                 </Button>
                 <PermissionGate permission="loans.update">

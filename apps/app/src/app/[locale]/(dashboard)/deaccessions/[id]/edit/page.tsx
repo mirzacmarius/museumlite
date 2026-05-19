@@ -28,7 +28,7 @@ type DeaccessionTargetStatus = "deaccessioned" | "archived" | "deleted";
 
 export default function EditDeaccessionPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push, back } = useRouter();
   const t = useScopedI18n("deaccessions");
   const tCommon = useScopedI18n("common");
   const locale = useCurrentLocale();
@@ -151,7 +151,7 @@ export default function EditDeaccessionPage() {
           : undefined,
         proceedsNotes: formData.proceedsNotes || undefined,
       });
-      router.push(`/deaccessions/${deaccessionId}`);
+      push(`/deaccessions/${deaccessionId}`);
     } catch (err) {
       console.error("Error updating deaccession:", err);
       setError(
@@ -431,11 +431,7 @@ export default function EditDeaccessionPage() {
                 )}
 
               <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
+                <Button type="button" variant="outline" onClick={() => back()}>
                   {tCommon("cancel")}
                 </Button>
                 <PermissionGate permission="collections.update">

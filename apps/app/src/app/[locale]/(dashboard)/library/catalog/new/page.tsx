@@ -51,7 +51,7 @@ type ItemType = (typeof ITEM_TYPE_VALUES)[number];
 type TargetAudience = (typeof TARGET_AUDIENCE_VALUES)[number];
 
 export default function NewCatalogItemPage() {
-  const router = useRouter();
+  const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const t = useScopedI18n("library.placeholders");
@@ -236,7 +236,7 @@ export default function NewCatalogItemPage() {
         internalNotes: formData.internalNotes || undefined,
       });
 
-      router.push(`/library/catalog/${itemId}`);
+      push(`/library/catalog/${itemId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : tNew("createFailed"));
     } finally {

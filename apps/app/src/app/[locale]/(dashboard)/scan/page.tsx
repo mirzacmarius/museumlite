@@ -59,7 +59,7 @@ export default function ScanPage() {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const router = useRouter();
+  const { push } = useRouter();
 
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [currentScan, setCurrentScan] = useState<string | null>(null);
@@ -98,13 +98,13 @@ export default function ScanPage() {
       setScanHistory((prev) => [historyItem, ...prev.slice(0, 9)]);
 
       if (objectPath) {
-        router.push(objectPath);
+        push(objectPath);
         return;
       }
 
       setCurrentScan(decodedText);
     },
-    [currentOrganizationId, router],
+    [currentOrganizationId, push],
   );
 
   const handleScanError = useCallback((error: string) => {
@@ -129,7 +129,7 @@ export default function ScanPage() {
             : item,
         ),
       );
-      router.push(`/objects/${scannedObject._id}`);
+      push(`/objects/${scannedObject._id}`);
       setCurrentScan(null);
       return;
     }
@@ -141,7 +141,7 @@ export default function ScanPage() {
       ),
     );
     setCurrentScan(null);
-  }, [currentScan, scannedObject, router]);
+  }, [currentScan, scannedObject, push]);
 
   useEffect(() => {
     if (!currentScan) {

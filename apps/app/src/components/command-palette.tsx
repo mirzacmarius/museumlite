@@ -46,12 +46,12 @@ const CommandObjectItem = React.memo(
     runCommand: (command: () => unknown) => void;
     imageUrl: string | null | undefined;
   }) => {
-    const router = useRouter();
+    const { push } = useRouter();
 
     return (
       <CommandItem
         value={`${obj.title} ${obj.accessionNumber}`}
-        onSelect={() => runCommand(() => router.push(`/objects/${obj._id}`))}
+        onSelect={() => runCommand(() => push(`/objects/${obj._id}`))}
         className="flex items-center gap-2"
       >
         {imageUrl ? (
@@ -83,7 +83,7 @@ CommandObjectItem.displayName = "CommandObjectItem";
 export function CommandPalette() {
   const { open, setOpen } = useCommandPalette();
   const [search, setSearch] = React.useState("");
-  const router = useRouter();
+  const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
 
   const normalizedSearch = search.trim();
@@ -204,9 +204,7 @@ export function CommandPalette() {
                       key={group._id}
                       value={group.name}
                       onSelect={() =>
-                        runCommand(() =>
-                          router.push(`/collections/${group._id}`),
-                        )
+                        runCommand(() => push(`/collections/${group._id}`))
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
@@ -225,7 +223,7 @@ export function CommandPalette() {
                       key={loan._id}
                       value={`${loan.loanNumber} ${loan.lenderBorrowerName}`}
                       onSelect={() =>
-                        runCommand(() => router.push(`/loans/${loan._id}`))
+                        runCommand(() => push(`/loans/${loan._id}`))
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
@@ -251,7 +249,7 @@ export function CommandPalette() {
                       key={acc._id}
                       value={acc.accessionNumber}
                       onSelect={() =>
-                        runCommand(() => router.push(`/accessions/${acc._id}`))
+                        runCommand(() => push(`/accessions/${acc._id}`))
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
@@ -277,7 +275,7 @@ export function CommandPalette() {
                       key={loc._id}
                       value={loc.name}
                       onSelect={() =>
-                        runCommand(() => router.push(`/locations/${loc._id}`))
+                        runCommand(() => push(`/locations/${loc._id}`))
                       }
                     >
                       <div className="mr-2 flex size-7 items-center justify-center rounded-[4px] border border-border/50 bg-muted/20 shrink-0">
@@ -295,26 +293,24 @@ export function CommandPalette() {
 
           <CommandGroup heading="Create">
             <CommandItem
-              onSelect={() => runCommand(() => router.push("/objects/new"))}
+              onSelect={() => runCommand(() => push("/objects/new"))}
             >
               <FilePlus className="mr-2 size-4" />
               <span>New Object</span>
               <CommandShortcut>⌘N</CommandShortcut>
             </CommandItem>
             <CommandItem
-              onSelect={() => runCommand(() => router.push("/accessions/new"))}
+              onSelect={() => runCommand(() => push("/accessions/new"))}
             >
               <Plus className="mr-2 size-4" />
               <span>New Accession</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/loans/new"))}
-            >
+            <CommandItem onSelect={() => runCommand(() => push("/loans/new"))}>
               <Plus className="mr-2 size-4" />
               <span>New Loan</span>
             </CommandItem>
             <CommandItem
-              onSelect={() => runCommand(() => router.push("/collections/new"))}
+              onSelect={() => runCommand(() => push("/collections/new"))}
             >
               <Plus className="mr-2 size-4" />
               <span>New Collection Group</span>
@@ -322,50 +318,38 @@ export function CommandPalette() {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Navigation">
-            <CommandItem onSelect={() => runCommand(() => router.push("/"))}>
+            <CommandItem onSelect={() => runCommand(() => push("/"))}>
               <LayoutDashboard className="mr-2 size-4" />
               <span>Dashboard</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/objects"))}
-            >
+            <CommandItem onSelect={() => runCommand(() => push("/objects"))}>
               <Box className="mr-2 size-4" />
               <span>Objects</span>
             </CommandItem>
             <CommandItem
-              onSelect={() => runCommand(() => router.push("/collections"))}
+              onSelect={() => runCommand(() => push("/collections"))}
             >
               <Archive className="mr-2 size-4" />
               <span>Collection Groups</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/accessions"))}
-            >
+            <CommandItem onSelect={() => runCommand(() => push("/accessions"))}>
               <Building2 className="mr-2 size-4" />
               <span>Accessions</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/loans"))}
-            >
+            <CommandItem onSelect={() => runCommand(() => push("/loans"))}>
               <CreditCard className="mr-2 size-4" />
               <span>Loans</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/locations"))}
-            >
+            <CommandItem onSelect={() => runCommand(() => push("/locations"))}>
               <MapPin className="mr-2 size-4" />
               <span>Locations</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push("/library"))}
-            >
+            <CommandItem onSelect={() => runCommand(() => push("/library"))}>
               <Library className="mr-2 size-4" />
               <span>Library</span>
             </CommandItem>
             <CommandItem
-              onSelect={() =>
-                runCommand(() => router.push("/settings/organization"))
-              }
+              onSelect={() => runCommand(() => push("/settings/organization"))}
             >
               <Settings className="mr-2 size-4" />
               <span>Settings</span>

@@ -41,7 +41,7 @@ export default function EditCollectionPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const groupId = params.id as Id<"collectionGroups">;
   const { currentOrganizationId } = useOrganization();
   const updateGroup = useMutation(api.collectionGroups.update);
@@ -119,29 +119,29 @@ export default function EditCollectionPage() {
         setPendingNavigation(href);
         setShowUnsavedDialog(true);
       } else {
-        router.push(href);
+        push(href);
       }
     },
-    [isDirty, router],
+    [isDirty, push],
   );
 
   const handleDiscardAndNavigate = useCallback(() => {
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      push(pendingNavigation);
     }
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
-  }, [pendingNavigation, router]);
+  }, [pendingNavigation, push]);
 
   const handleSaveAndNavigate = useCallback(async () => {
     await save();
     if (pendingNavigation) {
-      router.push(pendingNavigation);
+      push(pendingNavigation);
     }
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
     return true;
-  }, [pendingNavigation, router, save]);
+  }, [pendingNavigation, push, save]);
 
   if (!currentOrganizationId) {
     return (
@@ -171,7 +171,7 @@ export default function EditCollectionPage() {
     setIsDeleting(true);
     try {
       await deleteGroup({ groupId });
-      router.push("/collections");
+      push("/collections");
     } catch (err) {
       console.error("Failed to delete collection:", err);
       setIsDeleting(false);
@@ -310,7 +310,7 @@ export default function EditCollectionPage() {
                     type="button"
                     onClick={async () => {
                       await save();
-                      router.push(`/collections/${groupId}`);
+                      push(`/collections/${groupId}`);
                     }}
                     disabled={status === "saving"}
                   >

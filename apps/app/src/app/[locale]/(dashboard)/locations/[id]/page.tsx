@@ -21,7 +21,7 @@ import { ObjectsAtLocation } from "./_components/objects-at-location";
 export default function LocationDetailPage() {
   const t = useScopedI18n("locations");
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const locationId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -186,7 +186,7 @@ export default function LocationDetailPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onDeleted={({ sentToDeaccessions }) => {
-          router.push(sentToDeaccessions ? "/deaccessions" : "/locations");
+          push(sentToDeaccessions ? "/deaccessions" : "/locations");
         }}
       />
     </div>

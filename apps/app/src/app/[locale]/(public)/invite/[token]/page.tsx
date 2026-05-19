@@ -5,10 +5,10 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Logo } from "@v1/ui/logo";
 import { Authenticated, Unauthenticated, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
-import { useMutation } from "convex/react";
 
 interface PageProps {
   params: Promise<{
@@ -21,7 +21,7 @@ export default function InvitePage({ params }: PageProps) {
   const { token } = use(params);
   const t = useScopedI18n("invitePage");
   const locale = useCurrentLocale();
-  const router = useRouter();
+  const { push } = useRouter();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export default function InvitePage({ params }: PageProps) {
         setSuccess(t("acceptSuccess"));
         // Redirect to the organization after a brief delay
         setTimeout(() => {
-          router.push(`/${locale}/`);
+          push(`/${locale}/`);
         }, 1500);
       } else if (!result.success && "error" in result) {
         setError(result.error ?? null);
@@ -62,7 +62,7 @@ export default function InvitePage({ params }: PageProps) {
         setSuccess(t("declineSuccess"));
         // Redirect after a brief delay
         setTimeout(() => {
-          router.push(`/${locale}/login`);
+          push(`/${locale}/login`);
         }, 1500);
       } else if (!result.success && "error" in result) {
         setError(result.error ?? null);
@@ -105,7 +105,7 @@ export default function InvitePage({ params }: PageProps) {
               {t("notFound")}
             </h1>
             <p className="text-muted-foreground">{t("notFoundDescription")}</p>
-            <Button onClick={() => router.push(`/${locale}/login`)}>
+            <Button onClick={() => push(`/${locale}/login`)}>
               {t("goToLogin")}
             </Button>
           </div>
@@ -150,7 +150,7 @@ export default function InvitePage({ params }: PageProps) {
               {t("expired")}
             </h1>
             <p className="text-muted-foreground">{t("expiredDescription")}</p>
-            <Button onClick={() => router.push(`/${locale}/login`)}>
+            <Button onClick={() => push(`/${locale}/login`)}>
               {t("goToLogin")}
             </Button>
           </div>
@@ -177,7 +177,7 @@ export default function InvitePage({ params }: PageProps) {
             <p className="text-muted-foreground">
               {t("alreadyAcceptedDescription")}
             </p>
-            <Button onClick={() => router.push(`/${locale}/login`)}>
+            <Button onClick={() => push(`/${locale}/login`)}>
               {t("goToLogin")}
             </Button>
           </div>
@@ -204,7 +204,7 @@ export default function InvitePage({ params }: PageProps) {
             <p className="text-muted-foreground">
               {t("alreadyDeclinedDescription")}
             </p>
-            <Button onClick={() => router.push(`/${locale}/login`)}>
+            <Button onClick={() => push(`/${locale}/login`)}>
               {t("goToLogin")}
             </Button>
           </div>
@@ -271,7 +271,7 @@ export default function InvitePage({ params }: PageProps) {
               size="lg"
               onClick={() => {
                 // Redirect to login with return URL
-                router.push(
+                push(
                   `/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/invite/${token}`)}`,
                 );
               }}

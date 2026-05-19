@@ -57,8 +57,9 @@ export default function AccountsPage() {
 function AccountsPageContent() {
   const t = useScopedI18n("accounts");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
-  const { get } = useSearchParams();
-  const typeParam = get("type") as AccountType | null;
+  const searchParams = useSearchParams();
+  const getSearchParam = searchParams.get.bind(searchParams);
+  const typeParam = getSearchParam("type") as AccountType | null;
   const [searchQuery, setSearchQuery] = useState("");
   const [accountTypeFilter, setAccountTypeFilter] = useState<
     AccountType | "all"

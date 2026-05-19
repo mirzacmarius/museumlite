@@ -52,7 +52,7 @@ import { useState } from "react";
 
 export default function ExhibitionDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const exhibitionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
@@ -157,7 +157,7 @@ export default function ExhibitionDetailPage() {
     setIsDeleting(true);
     try {
       await deleteExhibition({ id: exhibitionId as Id<"exhibitions"> });
-      router.push("/exhibitions");
+      push("/exhibitions");
     } catch (error) {
       console.error("Failed to delete exhibition:", error);
       setIsDeleting(false);

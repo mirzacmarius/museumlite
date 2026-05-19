@@ -30,7 +30,7 @@ import { useCallback, useState } from "react";
 
 export default function NewAccessionPage() {
   const t = useScopedI18n("accessions");
-  const router = useRouter();
+  const { push, back } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
@@ -172,7 +172,7 @@ export default function NewAccessionPage() {
         cost: formData.cost ? Number.parseFloat(formData.cost) : undefined,
         notes: formData.notes || undefined,
       });
-      router.push("/accessions");
+      push("/accessions");
     } catch (err) {
       console.error("Error creating accession:", err);
       setError(
@@ -380,11 +380,7 @@ export default function NewAccessionPage() {
               </div>
 
               <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
+                <Button type="button" variant="outline" onClick={() => back()}>
                   {t("form.cancel")}
                 </Button>
                 <PermissionGate permission="collections.create">

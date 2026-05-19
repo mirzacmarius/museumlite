@@ -57,7 +57,7 @@ type Condition = (typeof CONDITION_VALUES)[number];
 
 export default function CatalogItemDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push } = useRouter();
   const itemId = params.id as Id<"libraryItems">;
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("library.placeholders");
@@ -100,7 +100,7 @@ export default function CatalogItemDetailPage() {
 
   const handleDelete = async () => {
     await deleteItem({ itemId });
-    router.push("/library/catalog");
+    push("/library/catalog");
   };
 
   const handleAddCopy = async () => {

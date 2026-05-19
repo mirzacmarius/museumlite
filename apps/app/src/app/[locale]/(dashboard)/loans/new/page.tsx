@@ -116,7 +116,7 @@ function SelectedCollectionItem({
 
 export default function NewLoanPage() {
   const tActions = useScopedI18n("loans.actions");
-  const router = useRouter();
+  const { push, back } = useRouter();
   const locale = useCurrentLocale();
   const t = useScopedI18n("loans");
   const { currentOrganizationId } = useOrganization();
@@ -285,7 +285,7 @@ export default function NewLoanPage() {
               }))
             : undefined,
       });
-      router.push("/loans");
+      push("/loans");
     } catch (err) {
       console.error("Error creating loan:", err);
       let errorMessage = tActions("failedToCreateLoan");
@@ -695,7 +695,7 @@ export default function NewLoanPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.back()}
+                  onClick={() => back()}
                   className="w-24"
                 >
                   Cancel

@@ -17,7 +17,7 @@ export function SignInWithGoogle({
 }: SignInWithGoogleProps) {
   const { signIn } = useAuthActions();
   const locale = useCurrentLocale();
-  const router = useRouter();
+  const { push, refresh } = useRouter();
 
   return (
     <Button
@@ -30,8 +30,8 @@ export function SignInWithGoogle({
           );
 
           if (result.signingIn) {
-            router.push(redirectTo ?? `/${locale}`);
-            router.refresh();
+            push(redirectTo ?? `/${locale}`);
+            refresh();
           }
         } catch {
           toast.error("Could not start Google sign-in. Please try again.");

@@ -81,7 +81,7 @@ function LocationTreeInner({
   onMove: (location: { id: string; name: string; parentId?: string }) => void;
   onDelete: (location: { id: string; name: string; parentId?: string }) => void;
 }) {
-  const router = useRouter();
+  const { push } = useRouter();
   const t = useScopedI18n("locations.tree");
   const tCommon = useScopedI18n("common");
 
@@ -365,7 +365,7 @@ function LocationTreeInner({
                   if (target.closest("[data-action-button]")) {
                     return;
                   }
-                  router.push(`/locations/${itemData._id}`);
+                  push(`/locations/${itemData._id}`);
                 }}
               >
                 <TreeItemLabel className="relative flex items-center gap-2 before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background data-[drag-target=true]:ring-2 data-[drag-target=true]:ring-primary">
@@ -482,7 +482,7 @@ function LocationTreeInner({
 
 // Outer component that manages dialogs and state
 export function LocationTree({ organizationId }: LocationTreeProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const t = useScopedI18n("locations");
   const tCommon = useScopedI18n("common");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -611,7 +611,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
           setDeleteDialogOpen(false);
           setSelectedLocation(null);
           if (sentToDeaccessions) {
-            router.push("/deaccessions");
+            push("/deaccessions");
           }
         }}
       />

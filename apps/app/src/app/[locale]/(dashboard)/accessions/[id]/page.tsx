@@ -142,7 +142,7 @@ function StatusTile({
 
 export default function AccessionDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const { refresh } = useRouter();
   const accessionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
@@ -296,7 +296,7 @@ export default function AccessionDetailPage() {
       await submitForApproval({
         accessionId: accessionId as Id<"accessions">,
       });
-      router.refresh();
+      refresh();
     } catch (err) {
       setDraftActionError(
         err instanceof Error ? err.message : "Failed to submit draft",
@@ -313,7 +313,7 @@ export default function AccessionDetailPage() {
       await verifySource({
         accessionId: accessionId as Id<"accessions">,
       });
-      router.refresh();
+      refresh();
     } catch (err) {
       setDraftActionError(
         err instanceof Error ? err.message : "Failed to verify source",

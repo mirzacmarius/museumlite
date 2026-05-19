@@ -10,7 +10,7 @@ interface AccessionsErrorProps {
 }
 
 export function AccessionsError({ error, message }: AccessionsErrorProps) {
-  const router = useRouter();
+  const { refresh } = useRouter();
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
 
@@ -30,7 +30,7 @@ export function AccessionsError({ error, message }: AccessionsErrorProps) {
         </div>
         <button
           type="button"
-          onClick={() => router.refresh()}
+          onClick={() => refresh()}
           className="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-accent text-foreground rounded-md text-sm font-medium transition-all"
         >
           <RefreshCw className="size-4" />
