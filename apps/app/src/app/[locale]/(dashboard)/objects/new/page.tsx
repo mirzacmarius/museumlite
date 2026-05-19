@@ -645,79 +645,84 @@ export function ObjectRequestFormPage({
       return [];
     }
 
-    const uploadedFiles = await Promise.all(
-      selectedFiles.map(async (fileData) => {
-        const uploadUrlResult = await generateDraftUploadUrl({
-          organizationId: currentOrganizationId,
-          fileName: fileData.file.name,
-          fileSize: fileData.file.size,
-          mimeType: fileData.file.type,
-        });
+    const [uploadedFiles, uploadedDocuments] = await Promise.all([
+      Promise.all(
+        selectedFiles.map(async (fileData) => {
+          const uploadUrlResult = await generateDraftUploadUrl({
+            organizationId: currentOrganizationId,
+            fileName: fileData.file.name,
+            fileSize: fileData.file.size,
+            mimeType: fileData.file.type,
+          });
 
-        const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
-          method: "POST",
-          body: fileData.file,
-        });
+          const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+            method: "POST",
+            body: fileData.file,
+          });
 
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload ${fileData.file.name}`);
-        }
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${fileData.file.name}`);
+          }
 
-        const uploadResult = await uploadResponse.json();
-        const storageId = uploadResult.storageId as Id<"_storage"> | undefined;
+          const uploadResult = await uploadResponse.json();
+          const storageId = uploadResult.storageId as
+            | Id<"_storage">
+            | undefined;
 
-        if (!storageId) {
-          throw new Error(`No storage ID returned for ${fileData.file.name}`);
-        }
+          if (!storageId) {
+            throw new Error(`No storage ID returned for ${fileData.file.name}`);
+          }
 
-        return {
-          storageId,
-          fileName: fileData.file.name,
-          fileSize: fileData.file.size,
-          mimeType: fileData.file.type,
-          mediaCategory: "image",
-          isPrimary: fileData.isPrimary,
-        } as const;
-      }),
-    );
+          return {
+            storageId,
+            fileName: fileData.file.name,
+            fileSize: fileData.file.size,
+            mimeType: fileData.file.type,
+            mediaCategory: "image",
+            isPrimary: fileData.isPrimary,
+          } as const;
+        }),
+      ),
+      Promise.all(
+        selectedDocuments.map(async (documentData) => {
+          const uploadUrlResult = await generateDraftUploadUrl({
+            organizationId: currentOrganizationId,
+            fileName: documentData.file.name,
+            fileSize: documentData.file.size,
+            mimeType: documentData.file.type,
+          });
 
-    const uploadedDocuments = await Promise.all(
-      selectedDocuments.map(async (documentData) => {
-        const uploadUrlResult = await generateDraftUploadUrl({
-          organizationId: currentOrganizationId,
-          fileName: documentData.file.name,
-          fileSize: documentData.file.size,
-          mimeType: documentData.file.type,
-        });
+          const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
+            method: "POST",
+            body: documentData.file,
+          });
 
-        const uploadResponse = await fetch(uploadUrlResult.uploadUrl, {
-          method: "POST",
-          body: documentData.file,
-        });
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${documentData.file.name}`);
+          }
 
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload ${documentData.file.name}`);
-        }
+          const uploadResult = await uploadResponse.json();
+          const storageId = uploadResult.storageId as
+            | Id<"_storage">
+            | undefined;
 
-        const uploadResult = await uploadResponse.json();
-        const storageId = uploadResult.storageId as Id<"_storage"> | undefined;
+          if (!storageId) {
+            throw new Error(
+              `No storage ID returned for ${documentData.file.name}`,
+            );
+          }
 
-        if (!storageId) {
-          throw new Error(
-            `No storage ID returned for ${documentData.file.name}`,
-          );
-        }
-
-        return {
-          storageId,
-          fileName: documentData.file.name,
-          fileSize: documentData.file.size,
-          mimeType: documentData.file.type,
-          mediaCategory: "document",
-          isPrimary: false,
-        } as const;
-      }),
-    );
+          return {
+            storageId,
+            fileName: documentData.file.name,
+            fileSize: documentData.file.size,
+            mimeType: documentData.file.type,
+            mediaCategory: "document",
+            isPrimary: false,
+          } as const;
+        }),
+      ),
+    ]);
 
     return [...uploadedFiles, ...uploadedDocuments];
   }, [

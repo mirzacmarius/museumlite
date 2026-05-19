@@ -104,27 +104,30 @@ export const getAnalytics = query({
       "organization.view_analytics",
     );
 
-    // Query locations first as they're needed for filtering collections
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [locations, queriedCollectionGroups, queriedCollections] =
+      await Promise.all([
+        ctx.db
+          .query("locations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("collectionGroups")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("collections")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+      ]);
 
-    let collectionGroups = await ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    let collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    let collectionGroups = queriedCollectionGroups;
+    let collections = queriedCollections;
 
     // Filter collections by site if siteId is provided
     if (args.siteId !== undefined) {
@@ -148,33 +151,37 @@ export const getAnalytics = query({
       );
     }
 
-    let loans = await ctx.db
-      .query("loans")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [queriedLoans, queriedAccessions, queriedDeaccessions, transfers] =
+      await Promise.all([
+        ctx.db
+          .query("loans")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("accessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("deaccessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("organizationMoveRequests")
+          .withIndex("by_source_organization", (q) =>
+            q.eq("sourceOrganizationId", args.organizationId),
+          )
+          .collect(),
+      ]);
 
-    let accessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    let deaccessions = await ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const transfers = await ctx.db
-      .query("organizationMoveRequests")
-      .withIndex("by_source_organization", (q) =>
-        q.eq("sourceOrganizationId", args.organizationId),
-      )
-      .collect();
+    let loans = queriedLoans;
+    let accessions = queriedAccessions;
+    let deaccessions = queriedDeaccessions;
 
     // Filter accessions, deaccessions, and loans by site if siteId is provided
     if (args.siteId !== undefined) {

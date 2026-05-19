@@ -331,19 +331,18 @@ export const listNotifications = query({
       );
     }
 
-    // Get notifications ordered by creation time (newest first)
-    const notifications = await notificationQuery.order("desc").take(limit);
-
-    // Get unread count
-    const unreadNotifications = await ctx.db
-      .query("notifications")
-      .withIndex("by_user_and_organization_and_read", (q) =>
-        q
-          .eq("userId", userId)
-          .eq("organizationId", args.organizationId)
-          .eq("read", false),
-      )
-      .collect();
+    const [notifications, unreadNotifications] = await Promise.all([
+      notificationQuery.order("desc").take(limit),
+      ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_organization_and_read", (q) =>
+          q
+            .eq("userId", userId)
+            .eq("organizationId", args.organizationId)
+            .eq("read", false),
+        )
+        .collect(),
+    ]);
 
     return {
       notifications,

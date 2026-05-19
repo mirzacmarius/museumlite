@@ -683,28 +683,29 @@ export const getTransitRecord = query({
       )
       .collect();
 
-    const items = await Promise.all(
-      transitItems.map(async (item) => {
-        const collection = await ctx.db.get(item.collectionId);
-        return {
-          _id: item._id,
-          collectionId: item.collectionId,
-          accessionNumber: collection?.accessionNumber ?? "",
-          title: collection?.title ?? "",
-          conditionAtPickup: item.conditionAtPickup,
-          conditionAtDelivery: item.conditionAtDelivery,
-          status: item.status,
-          notes: item.notes,
-        };
-      }),
-    );
-
-    const statusUpdates = await ctx.db
-      .query("transitStatusUpdates")
-      .withIndex("by_transitRecord", (q) =>
-        q.eq("transitRecordId", args.transitRecordId),
-      )
-      .collect();
+    const [items, statusUpdates] = await Promise.all([
+      Promise.all(
+        transitItems.map(async (item) => {
+          const collection = await ctx.db.get(item.collectionId);
+          return {
+            _id: item._id,
+            collectionId: item.collectionId,
+            accessionNumber: collection?.accessionNumber ?? "",
+            title: collection?.title ?? "",
+            conditionAtPickup: item.conditionAtPickup,
+            conditionAtDelivery: item.conditionAtDelivery,
+            status: item.status,
+            notes: item.notes,
+          };
+        }),
+      ),
+      ctx.db
+        .query("transitStatusUpdates")
+        .withIndex("by_transitRecord", (q) =>
+          q.eq("transitRecordId", args.transitRecordId),
+        )
+        .collect(),
+    ]);
 
     const statusHistory = statusUpdates
       .sort((a, b) => b.reportedAt - a.reportedAt)

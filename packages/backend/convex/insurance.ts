@@ -480,37 +480,47 @@ export const getPolicy = query({
 
     await requirePermission(ctx, policy.organizationId, "loans.read");
 
-    const documentUrls = policy.documentIds
-      ? await Promise.all(
-          policy.documentIds.map((id) => ctx.storage.getUrl(id)),
-        )
-      : undefined;
-
-    const coverages = await ctx.db
-      .query("insuranceCoverages")
-      .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
-      .collect();
+    const [documentUrls, coverages, claims] = await Promise.all([
+      policy.documentIds
+        ? Promise.all(policy.documentIds.map((id) => ctx.storage.getUrl(id)))
+        : Promise.resolve(undefined),
+      ctx.db
+        .query("insuranceCoverages")
+        .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
+        .collect(),
+      ctx.db
+        .query("insuranceClaims")
+        .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
+        .collect(),
+    ]);
 
     const enrichedCoverages = await Promise.all(
       coverages.map(async (coverage) => {
+        const [collection, exhibition, loan] = await Promise.all([
+          coverage.collectionId
+            ? ctx.db.get(coverage.collectionId)
+            : Promise.resolve(null),
+          coverage.exhibitionId
+            ? ctx.db.get(coverage.exhibitionId)
+            : Promise.resolve(null),
+          coverage.loanId ? ctx.db.get(coverage.loanId) : Promise.resolve(null),
+        ]);
+
         let collectionTitle: string | undefined;
         let collectionAccessionNumber: string | undefined;
         let exhibitionTitle: string | undefined;
         let loanNumber: string | undefined;
 
-        if (coverage.collectionId) {
-          const collection = await ctx.db.get(coverage.collectionId);
+        if (collection) {
           collectionTitle = collection?.title;
           collectionAccessionNumber = collection?.accessionNumber;
         }
 
-        if (coverage.exhibitionId) {
-          const exhibition = await ctx.db.get(coverage.exhibitionId);
+        if (exhibition) {
           exhibitionTitle = exhibition?.title;
         }
 
-        if (coverage.loanId) {
-          const loan = await ctx.db.get(coverage.loanId);
+        if (loan) {
           loanNumber = loan?.loanNumber;
         }
 
@@ -528,11 +538,6 @@ export const getPolicy = query({
         };
       }),
     );
-
-    const claims = await ctx.db
-      .query("insuranceClaims")
-      .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
-      .collect();
 
     const enrichedClaims = claims.map((claim) => ({
       _id: claim._id,
@@ -2192,8 +2197,10 @@ export const getCoveragesWithStaleAppraisals = query({
       Array.from(coverages).map(async (coverage) => {
         if (!coverage.collectionId) return;
 
-        const policy = await ctx.db.get(coverage.policyId);
-        const collection = await ctx.db.get(coverage.collectionId);
+        const [policy, collection] = await Promise.all([
+          ctx.db.get(coverage.policyId),
+          ctx.db.get(coverage.collectionId),
+        ]);
 
         // Check for linked appraisal
         if (coverage.appraisalId) {

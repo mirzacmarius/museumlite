@@ -639,27 +639,32 @@ export const backfillLoanAdminPermissions = internalMutation({
 
     await Promise.all(
       Array.from(organizations).map(async (org) => {
-        const adminRole = await ctx.db
-          .query("roles")
-          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-          .filter((q) =>
-            q.and(
-              q.eq(q.field("name"), "admin"),
-              q.eq(q.field("isSystemRole"), true),
-            ),
-          )
-          .first();
-
-        const registrarRole = await ctx.db
-          .query("roles")
-          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-          .filter((q) =>
-            q.and(
-              q.eq(q.field("name"), "registrar"),
-              q.eq(q.field("isSystemRole"), true),
-            ),
-          )
-          .first();
+        const [adminRole, registrarRole] = await Promise.all([
+          ctx.db
+            .query("roles")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", org._id),
+            )
+            .filter((q) =>
+              q.and(
+                q.eq(q.field("name"), "admin"),
+                q.eq(q.field("isSystemRole"), true),
+              ),
+            )
+            .first(),
+          ctx.db
+            .query("roles")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", org._id),
+            )
+            .filter((q) =>
+              q.and(
+                q.eq(q.field("name"), "registrar"),
+                q.eq(q.field("isSystemRole"), true),
+              ),
+            )
+            .first(),
+        ]);
 
         const rolesToUpdate = [
           { role: adminRole, name: "admin" },
