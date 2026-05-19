@@ -220,8 +220,8 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
     <div className="p-6 border-b border-border/60">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-muted/30 border border-border/60 rounded-lg p-3 flex items-center gap-3">
-          <div className="p-2 bg-indigo-500/10 rounded-md border border-indigo-500/20">
-            <Package className="size-4 text-indigo-400" />
+          <div className="p-2 bg-primary/10 rounded-md border border-primary/20">
+            <Package className="size-4 text-primary" />
           </div>
           <div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">

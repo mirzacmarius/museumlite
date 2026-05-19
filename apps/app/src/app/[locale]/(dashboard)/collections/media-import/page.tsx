@@ -258,7 +258,7 @@ export default function MediaImportPage() {
                     className="rounded-lg border border-border bg-card text-card-foreground shadow-sm cursor-pointer p-6 transition-all hover:border-primary/50 hover:bg-muted/30 text-left"
                     onClick={() => handleMappingSelect("csv")}
                   >
-                    <FileSpreadsheet className="mb-4 size-10 text-indigo-500" />
+                    <FileSpreadsheet className="mb-4 size-10 text-primary" />
                     <h3 className="mb-2 font-medium">
                       {t("mediaImport.csvMapping")}
                     </h3>
@@ -272,7 +272,7 @@ export default function MediaImportPage() {
                     className="rounded-lg border border-border bg-card text-card-foreground shadow-sm cursor-pointer p-6 transition-all hover:border-primary/50 hover:bg-muted/30 text-left"
                     onClick={() => handleMappingSelect("filename")}
                   >
-                    <FileImage className="mb-4 size-10 text-indigo-500" />
+                    <FileImage className="mb-4 size-10 text-primary" />
                     <h3 className="mb-2 font-medium">
                       {t("mediaImport.filenameExtraction")}
                     </h3>
@@ -286,7 +286,7 @@ export default function MediaImportPage() {
                     className="rounded-lg border border-border bg-card text-card-foreground shadow-sm cursor-pointer p-6 transition-all hover:border-primary/50 hover:bg-muted/30 text-left"
                     onClick={() => handleMappingSelect("manual")}
                   >
-                    <LinkIcon className="mb-4 size-10 text-indigo-500" />
+                    <LinkIcon className="mb-4 size-10 text-primary" />
                     <h3 className="mb-2 font-medium">
                       {t("mediaImport.manualMapping")}
                     </h3>
@@ -446,7 +446,7 @@ export default function MediaImportPage() {
                         state.mediaFiles.length === 0 ||
                         (state.mappingType === "csv" && !state.csvFile)
                       }
-                      className="bg-indigo-600 hover:bg-indigo-500"
+                      className="bg-primary hover:bg-primary/90"
                     >
                       {t("mediaImport.startImport")}
                     </Button>
@@ -538,7 +538,7 @@ export default function MediaImportPage() {
                     </Button>
                     <Button
                       asChild
-                      className="bg-indigo-600 hover:bg-indigo-500"
+                      className="bg-primary hover:bg-primary/90"
                     >
                       <Link href="/collections">
                         {t("csvImport.viewCollections")}

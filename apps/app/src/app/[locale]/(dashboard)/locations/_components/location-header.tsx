@@ -149,7 +149,7 @@ export function LocationHeader({
             </div>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-indigo-500"
+                className="h-full bg-primary"
                 style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
               />
             </div>

@@ -56,7 +56,7 @@ function formatRelativeTime(timestamp: number): string {
 function getActivityBadgeColor(type: RecentActivityItem["type"]): string {
   switch (type) {
     case "collection":
-      return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+      return "bg-primary/10 text-primary border-primary/20";
     case "loan":
       return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
     case "accession":

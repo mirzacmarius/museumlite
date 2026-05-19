@@ -61,8 +61,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
           <div
             className={cn(
               "p-2 rounded-md border",
-              accentColor === "indigo" &&
-                "bg-indigo-500/10 border-indigo-500/20",
+              accentColor === "indigo" && "bg-primary/10 border-primary/20",
               accentColor === "emerald" &&
                 "bg-emerald-500/10 border-emerald-500/20",
               accentColor === "amber" && "bg-amber-500/10 border-amber-500/20",
@@ -73,7 +72,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
             <Icon
               className={cn(
                 "size-4",
-                accentColor === "indigo" && "text-indigo-400",
+                accentColor === "indigo" && "text-primary",
                 accentColor === "emerald" && "text-emerald-400",
                 accentColor === "amber" && "text-amber-400",
                 accentColor === "blue" && "text-blue-400",

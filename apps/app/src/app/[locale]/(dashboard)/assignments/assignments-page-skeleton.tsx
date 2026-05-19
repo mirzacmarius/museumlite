@@ -7,7 +7,7 @@ export function AssignmentsPageSkeleton() {
     <div className="flex size-full flex-col bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="size-5 rounded bg-indigo-400/30" />
+          <div className="size-5 rounded bg-primary/30" />
           <div className="h-5 w-32 rounded bg-muted/70" />
         </div>
         <div className="hidden items-center gap-6 sm:flex">

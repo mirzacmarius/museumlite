@@ -33,11 +33,11 @@ type KanbanColumnProps = {
 };
 
 const stepDotStyles: Record<number, string> = {
-  0: "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]",
+  0: "bg-zinc-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]",
   1: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]",
   2: "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]",
   3: "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]",
-  4: "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]",
+  4: "bg-primary shadow-[0_0_8px_rgba(99,102,241,0.5)]",
   [-1]: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]",
 };
 

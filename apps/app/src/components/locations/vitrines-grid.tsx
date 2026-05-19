@@ -63,7 +63,7 @@ function VitrineCard({ item }: VitrineCardProps) {
   };
 
   const borderColors = {
-    active: "hover:border-indigo-500/40",
+    active: "hover:border-primary/40",
     warning: "hover:border-amber-500/40",
     maintenance: "hover:border-zinc-600/40",
     empty: "hover:border-zinc-700/40",
@@ -107,7 +107,7 @@ function VitrineCard({ item }: VitrineCardProps) {
   }
 
   return (
-    <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-indigo-500/40 hover:shadow-indigo-500/10">
+    <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-primary/40 hover:shadow-primary/10">
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-black/20">
         <span className="text-[10px] font-mono text-zinc-400">

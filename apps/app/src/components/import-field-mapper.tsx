@@ -124,7 +124,7 @@ export function ImportFieldMapper({
             <Button
               onClick={handleSave}
               disabled={unmappedRequired.length > 0}
-              className="bg-indigo-600 hover:bg-indigo-500"
+              className="bg-primary hover:bg-primary/90"
             >
               <Save className="mr-2 size-4" />
               Save Mappings

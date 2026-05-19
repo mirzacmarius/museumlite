@@ -78,7 +78,7 @@ const statusColor: Record<string, string> = {
   delivered: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   delayed: "bg-rose-500/10 text-rose-400 border-rose-500/20",
   held: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  returned: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+  returned: "bg-primary/10 text-primary border-primary/20",
   cancelled: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
 };
 

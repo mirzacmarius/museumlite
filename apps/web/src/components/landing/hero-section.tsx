@@ -68,7 +68,7 @@ export function HeroSection() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-pointer group"
         >
           <Sparkles className="size-4 text-neon-blue group-hover:animate-spin" />
-          <span className="text-sm font-medium text-gray-300">
+          <span className="text-sm font-medium text-zinc-300">
             The Future of Collection Management
           </span>
         </motion.div>
@@ -120,7 +120,7 @@ export function HeroSection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link href="https://app.museumlite.com/register">
-            <Button className="relative overflow-hidden h-14 px-8 rounded-full bg-white text-black hover:bg-gray-200 text-lg font-semibold transition-all hover:scale-105 group">
+            <Button className="relative overflow-hidden h-14 px-8 rounded-full bg-white text-black hover:bg-zinc-200 text-lg font-semibold transition-all hover:scale-105 group">
               <span className="relative z-10 flex items-center">
                 Start Free Trial
                 <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />

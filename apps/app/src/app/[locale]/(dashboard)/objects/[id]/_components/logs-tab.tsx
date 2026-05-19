@@ -19,7 +19,7 @@ function getActionBadgeClasses(action: string): {
 
   // Movement actions - indigo
   if (lowerAction.includes("move") || lowerAction.includes("moved")) {
-    return { bg: "bg-indigo-500/10", text: "text-indigo-400" };
+    return { bg: "bg-primary/10", text: "text-primary" };
   }
 
   // Creation/addition actions - emerald

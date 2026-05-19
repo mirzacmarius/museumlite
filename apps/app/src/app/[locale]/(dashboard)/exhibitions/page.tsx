@@ -323,7 +323,7 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   return (
     <Link
       href={`/exhibitions/${exhibition._id}`}
-      className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10"
+      className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:border-primary/30 hover:ring-1 hover:ring-primary/30 hover:shadow-xl hover:shadow-primary/10"
     >
       <div className="space-y-4">
         <div className="flex items-start justify-between">

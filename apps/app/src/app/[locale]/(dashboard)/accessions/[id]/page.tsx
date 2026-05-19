@@ -262,7 +262,7 @@ export default function AccessionDetailPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "draft":
-        return <Archive className="size-5 text-slate-400" />;
+        return <Archive className="size-5 text-zinc-400" />;
       case "pending":
         return <Clock className="size-5 text-yellow-500" />;
       case "approved":
@@ -277,7 +277,7 @@ export default function AccessionDetailPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "draft":
-        return "bg-slate-500/10 text-slate-300";
+        return "bg-zinc-500/10 text-zinc-300";
       case "pending":
         return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400";
       case "approved":

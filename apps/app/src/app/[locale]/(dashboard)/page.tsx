@@ -177,7 +177,7 @@ export default function DashboardPage() {
               className="group inline-flex w-full rounded-lg border border-border bg-card px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40"
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-md border border-indigo-500/20 bg-indigo-500/10 p-2 text-indigo-400 transition-colors group-hover:border-indigo-500/30 group-hover:bg-indigo-500/15">
+                <div className="rounded-md border border-primary/20 bg-primary/10 p-2 text-primary transition-colors group-hover:border-primary/30 group-hover:bg-primary/15">
                   <action.icon className="size-4" />
                 </div>
                 <p className="text-sm font-semibold tracking-tight text-foreground">

@@ -480,7 +480,7 @@ export default function ImportAccessionsPage() {
                     {state.rows.length > 0 && (
                       <Button
                         onClick={handleContinueAfterValidation}
-                        className="bg-indigo-600 hover:bg-indigo-500"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         Continue with {state.rows.length} Valid Rows
                       </Button>
@@ -547,7 +547,7 @@ export default function ImportAccessionsPage() {
                       <Button
                         onClick={handleStartImport}
                         disabled={state.rows.length === 0}
-                        className="bg-indigo-600 hover:bg-indigo-500"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         <Upload className="mr-2 size-4" />
                         {t("import.importButton", { count: state.rows.length })}
@@ -697,7 +697,7 @@ export default function ImportAccessionsPage() {
                   <Button variant="outline" onClick={handleReset}>
                     {t("import.importMore")}
                   </Button>
-                  <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+                  <Button asChild className="bg-primary hover:bg-primary/90">
                     <Link href="/accessions">{t("import.viewAccessions")}</Link>
                   </Button>
                 </div>

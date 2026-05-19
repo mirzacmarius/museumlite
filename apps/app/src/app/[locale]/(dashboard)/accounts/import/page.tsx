@@ -423,7 +423,7 @@ export default function ImportAccountsPage() {
                       <Button
                         onClick={handleStartImport}
                         disabled={state.rows.length === 0}
-                        className="bg-indigo-600 hover:bg-indigo-500"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         <Upload className="mr-2 size-4" />
                         {t("importButton", {
@@ -550,7 +550,7 @@ export default function ImportAccountsPage() {
                   <Button variant="outline" onClick={handleReset}>
                     Import More
                   </Button>
-                  <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+                  <Button asChild className="bg-primary hover:bg-primary/90">
                     <Link href="/accounts">View Accounts</Link>
                   </Button>
                 </div>

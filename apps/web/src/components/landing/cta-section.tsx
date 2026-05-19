@@ -34,7 +34,7 @@ export function CTASection() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link href="https://app.museumlite.com/register">
-              <Button className="h-14 px-10 rounded-full bg-white text-black hover:bg-gray-200 text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+              <Button className="h-14 px-10 rounded-full bg-white text-black hover:bg-zinc-200 text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]">
                 Get Started Now
                 <ArrowRight className="ml-2 size-5" />
               </Button>

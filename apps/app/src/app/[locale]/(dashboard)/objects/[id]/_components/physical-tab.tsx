@@ -180,7 +180,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                         className={cn(
                           "absolute left-0 top-1 z-10 flex size-6 items-center justify-center rounded-full",
                           index === 0
-                            ? "border border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.3)]"
+                            ? "border border-primary bg-primary/20 text-primary shadow-[0_0_10px_rgba(99,102,241,0.3)]"
                             : "border border-zinc-700 bg-zinc-900",
                         )}
                       >
@@ -199,14 +199,14 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                             className={cn(
                               "text-sm font-medium",
                               index === 0
-                                ? "text-indigo-400"
+                                ? "text-primary"
                                 : "text-foreground",
                             )}
                           >
                             {entry.condition}
                           </h4>
                           {index === 0 ? (
-                            <span className="text-[9px] font-medium uppercase tracking-wider text-indigo-400">
+                            <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
                               Current
                             </span>
                           ) : null}

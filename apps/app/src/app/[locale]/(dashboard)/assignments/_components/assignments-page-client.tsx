@@ -82,7 +82,7 @@ export function AssignmentsPageClient({
     <div className="flex size-full flex-col bg-background">
       <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <ClipboardList className="size-5 text-indigo-400" />
+          <ClipboardList className="size-5 text-primary" />
           <h1 className="text-lg font-semibold text-white">
             {t("assignmentsPage.title")}
           </h1>
@@ -294,7 +294,7 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
             className={cn(
               "flex size-10 shrink-0 items-center justify-center rounded-lg border",
               item.type === "accession" &&
-                "bg-indigo-500/10 border-indigo-500/30 text-indigo-400",
+                "bg-primary/10 border-primary/30 text-primary",
               item.type === "loan" &&
                 "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
               item.type === "exhibition" &&

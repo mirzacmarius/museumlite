@@ -282,13 +282,13 @@ ${organizationName}`,
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="border border-black p-2 bg-gray-100 text-left">
+                  <th className="border border-black p-2 bg-zinc-100 text-left">
                     Accession No.
                   </th>
-                  <th className="border border-black p-2 bg-gray-100 text-left">
+                  <th className="border border-black p-2 bg-zinc-100 text-left">
                     Title/Description
                   </th>
-                  <th className="border border-black p-2 bg-gray-100 text-left">
+                  <th className="border border-black p-2 bg-zinc-100 text-left">
                     Condition
                   </th>
                 </tr>

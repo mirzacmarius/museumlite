@@ -306,13 +306,13 @@ export function RecordContextSidebar({
 
       <SidebarFooter className="border-t border-border/60 p-3">
         {verified && (
-          <div className="mb-3 flex items-center gap-3 rounded-lg border border-indigo-500/20 bg-indigo-500/10 p-2">
-            <ShieldCheck className="size-4 text-indigo-400" />
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/10 p-2">
+            <ShieldCheck className="size-4 text-primary" />
             <div className="flex-1">
-              <p className="text-[10px] font-medium text-indigo-200">
+              <p className="text-[10px] font-medium text-primary">
                 Record Verified
               </p>
-              <p className="text-[9px] text-indigo-300/60">
+              <p className="text-[9px] text-primary/60">
                 Approved by {verifiedByName || "Curator"}
               </p>
             </div>

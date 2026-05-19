@@ -97,7 +97,7 @@ export function QRLabelGenerator({
     <div
       ref={ref}
       className={cn(
-        "relative flex flex-col items-center justify-center bg-white text-black border border-gray-300 overflow-hidden break-inside-avoid",
+        "relative flex flex-col items-center justify-center bg-white text-black border border-zinc-300 overflow-hidden break-inside-avoid",
         "print:border-none print:break-inside-avoid print:page-break-inside-avoid",
         className,
       )}
@@ -161,7 +161,7 @@ export function QRLabelGenerator({
       {data.organizationName && (
         <div
           className={cn(
-            "w-full text-center text-gray-600 leading-tight mt-auto",
+            "w-full text-center text-zinc-600 leading-tight mt-auto",
             size === "2x2" ? "text-[6pt]" : "text-[5pt]",
           )}
           style={{

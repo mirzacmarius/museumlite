@@ -76,7 +76,7 @@ export function NewArrivalsFeed() {
                   href={`/accessions/${accession._id}`}
                   className="block"
                 >
-                  <div className="group relative bg-card/40 border border-border/60 rounded-lg p-3 hover:border-indigo-500/30 hover:bg-card/60 transition-all duration-200">
+                  <div className="group relative bg-card/40 border border-border/60 rounded-lg p-3 hover:border-primary/30 hover:bg-card/60 transition-all duration-200">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">

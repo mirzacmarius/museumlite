@@ -82,7 +82,7 @@ export function BulkPrintLabelsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex flex-col max-w-6xl w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
-        <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
+        <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
           <DialogTitle className="text-black">{t("title")}</DialogTitle>
           <DialogDescription>
             {t("description", {
@@ -94,7 +94,7 @@ export function BulkPrintLabelsDialog({
 
         <div className="flex-1 overflow-y-auto print:overflow-visible">
           {/* Label Size Selection */}
-          <div className="p-6 border-b border-gray-200 print:hidden">
+          <div className="p-6 border-b border-zinc-200 print:hidden">
             <Label className="text-sm font-medium text-black mb-3 block">
               {tQrLabel("labelSize")}
             </Label>
@@ -129,7 +129,7 @@ export function BulkPrintLabelsDialog({
             {isLoading ? (
               <div className="flex items-center justify-center p-12 print:hidden">
                 <div className="text-center">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-zinc-500">
                     {t("loadingLabels")}
                   </div>
                 </div>
@@ -141,14 +141,14 @@ export function BulkPrintLabelsDialog({
             ) : (
               <div className="flex items-center justify-center p-12 print:hidden">
                 <div className="text-center">
-                  <div className="text-sm text-gray-500">{t("noLabels")}</div>
+                  <div className="text-sm text-zinc-500">{t("noLabels")}</div>
                 </div>
               </div>
             )}
           </div>
 
           {/* Instructions */}
-          <div className="p-6 border-t border-gray-200 bg-blue-50 print:hidden">
+          <div className="p-6 border-t border-zinc-200 bg-blue-50 print:hidden">
             <h3 className="text-sm font-medium text-blue-900 mb-2">
               {tQrLabel("printInstructions")}
             </h3>
@@ -162,7 +162,7 @@ export function BulkPrintLabelsDialog({
         </div>
 
         {/* Footer Actions */}
-        <DialogFooter className="flex-shrink-0 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
+        <DialogFooter className="flex-shrink-0 p-6 pt-4 border-t border-zinc-200 bg-white print:hidden">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -173,7 +173,7 @@ export function BulkPrintLabelsDialog({
           <Button
             onClick={handlePrint}
             disabled={isLoading || labelData.length === 0}
-            className="bg-gray-900 text-white hover:bg-gray-800"
+            className="bg-zinc-900 text-white hover:bg-zinc-800"
           >
             <Printer className="mr-2 size-4" />
             {tQrLabel("print")}

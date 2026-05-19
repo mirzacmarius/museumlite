@@ -204,7 +204,7 @@ function CollectionGroupsList({
         <Link
           key={group._id}
           href={`/collections/${group._id}`}
-          className="group flex flex-col rounded-xl border border-border/60 bg-card p-4 transition-all duration-300 hover:border-indigo-500/30 hover:ring-1 hover:ring-indigo-500/30 hover:shadow-xl hover:shadow-indigo-900/10"
+          className="group flex flex-col rounded-xl border border-border/60 bg-card p-4 transition-all duration-300 hover:border-primary/30 hover:ring-1 hover:ring-primary/30 hover:shadow-xl hover:shadow-primary/10"
         >
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">

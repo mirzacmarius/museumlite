@@ -122,7 +122,7 @@ export function PricingSection() {
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
-                      className="flex items-start gap-3 text-gray-300"
+                      className="flex items-start gap-3 text-zinc-300"
                     >
                       <div
                         className={`mt-1 size-5 rounded-full flex items-center justify-center ${plan.popular ? "bg-neon-blue/20 text-neon-blue" : "bg-white/10 text-white"}`}
@@ -143,7 +143,7 @@ export function PricingSection() {
                       ${
                         plan.popular
                           ? "bg-neon-blue text-black hover:bg-neon-blue/90 hover:shadow-[0_0_20px_rgba(0,243,255,0.4)]"
-                          : "bg-white text-black hover:bg-gray-200"
+                          : "bg-white text-black hover:bg-zinc-200"
                       }`}
                   >
                     {plan.cta}

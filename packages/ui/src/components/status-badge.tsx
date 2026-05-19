@@ -34,10 +34,9 @@ const statusConfig: Record<
     dot: "bg-emerald-500",
   },
   completed: {
-    solid:
-      "bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border-indigo-500/20",
-    outline: "border-indigo-500 text-indigo-500 dark:text-indigo-400",
-    dot: "bg-indigo-500",
+    solid: "bg-primary/10 text-primary dark:text-primary border-primary/20",
+    outline: "border-primary text-primary dark:text-primary",
+    dot: "bg-primary",
   },
   overdue: {
     solid: "bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20",

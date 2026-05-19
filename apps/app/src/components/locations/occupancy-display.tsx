@@ -52,7 +52,7 @@ export function OccupancyDisplay({
       </div>
       {capacity && (
         <div className="px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-lg flex items-center gap-3">
-          <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400">
+          <div className="p-1.5 rounded bg-primary/10 text-primary">
             <Users className="size-4" />
           </div>
           <div>

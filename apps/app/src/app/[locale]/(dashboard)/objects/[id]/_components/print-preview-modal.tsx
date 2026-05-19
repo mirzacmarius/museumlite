@@ -64,19 +64,19 @@ export function PrintPreviewModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
-        <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
+        <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
           <DialogTitle className="text-black">{t("title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-5 bg-white text-black p-6 print:p-[15mm] print:space-y-4 print:break-inside-avoid-page">
             {/* Header */}
-            <div className="flex items-start gap-4 border-b border-gray-200 pb-4 print:gap-3 print:pb-3">
+            <div className="flex items-start gap-4 border-b border-zinc-200 pb-4 print:gap-3 print:pb-3">
               {heroImage?.url && (
                 <img
                   src={heroImage.thumbnailUrl || heroImage.url}
                   alt={collection.title}
-                  className="size-28 flex-shrink-0 rounded border border-gray-300 object-cover print:size-20"
+                  className="size-28 flex-shrink-0 rounded border border-zinc-300 object-cover print:size-20"
                 />
               )}
               <div className="flex-1 min-w-0">
@@ -84,22 +84,22 @@ export function PrintPreviewModal({
                   {collection.title}
                 </h1>
                 {collection.alternativeTitle && (
-                  <p className="text-sm text-gray-600 italic print:text-xs">
+                  <p className="text-sm text-zinc-600 italic print:text-xs">
                     {collection.alternativeTitle}
                   </p>
                 )}
-                <p className="mt-1 font-mono text-xs text-gray-600">
+                <p className="mt-1 font-mono text-xs text-zinc-600">
                   {collection.accessionNumber}
                 </p>
                 {collection.alternateAccessionNumbers &&
                   collection.alternateAccessionNumbers.length > 0 && (
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[10px] text-zinc-500">
                       Alt: {collection.alternateAccessionNumbers.join(", ")}
                     </p>
                   )}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {collection.displayStatus && (
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700">
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-700">
                       {collection.displayStatus}
                     </span>
                   )}
@@ -121,13 +121,13 @@ export function PrintPreviewModal({
 
             {/* Basic Information */}
             <div className="print:break-inside-avoid">
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                 {t("basicInformation")}
               </h2>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                 {collection.objectType && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("objectType")}
                     </p>
                     <p className="text-black">{collection.objectType}</p>
@@ -135,7 +135,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.objectName && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("objectName")}
                     </p>
                     <p className="text-black">{collection.objectName}</p>
@@ -143,7 +143,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.creator && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("creatorArtist")}
                     </p>
                     <p className="text-black">{collection.creator}</p>
@@ -151,7 +151,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.dateCreated && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("dateCreated")}
                     </p>
                     <p className="text-black">{collection.dateCreated}</p>
@@ -159,7 +159,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.culture && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("culture")}
                     </p>
                     <p className="text-black">{collection.culture}</p>
@@ -167,7 +167,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.period && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("period")}
                     </p>
                     <p className="text-black">{collection.period}</p>
@@ -178,13 +178,13 @@ export function PrintPreviewModal({
 
             {/* Physical Description */}
             <div className="print:break-inside-avoid">
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                 {t("physicalDescription")}
               </h2>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                 {materials && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("materials")}
                     </p>
                     <p className="text-black">{materials}</p>
@@ -192,7 +192,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.technique && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("technique")}
                     </p>
                     <p className="text-black">{collection.technique}</p>
@@ -200,7 +200,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.dimensions && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("dimensions")}
                     </p>
                     <p className="text-black">{collection.dimensions}</p>
@@ -208,7 +208,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.dimensionDiameter && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("diameter")}
                     </p>
                     <p className="text-black">{collection.dimensionDiameter}</p>
@@ -218,7 +218,7 @@ export function PrintPreviewModal({
                   collection.dimensionWidth ||
                   collection.dimensionDepth) && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("detailedDimensions")}
                     </p>
                     <p className="text-black">
@@ -238,7 +238,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.dimensionWeight !== undefined && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("weight")}
                     </p>
                     <p className="text-black">
@@ -249,7 +249,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.condition && (
                   <div className="col-span-2">
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("condition")}
                     </p>
                     <p className="text-black">{collection.condition}</p>
@@ -257,7 +257,7 @@ export function PrintPreviewModal({
                 )}
                 {collection.inscriptions && (
                   <div className="col-span-2">
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-zinc-500">
                       {t("inscriptions")}
                     </p>
                     <p className="text-black whitespace-pre-wrap">
@@ -271,7 +271,7 @@ export function PrintPreviewModal({
             {/* Description */}
             {collection.description && (
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                   {t("description")}
                 </h2>
                 <p className="text-sm text-black whitespace-pre-wrap print:text-xs">
@@ -286,13 +286,13 @@ export function PrintPreviewModal({
               collection.acquisitionMethod ||
               collection.donated_by) && (
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                   {t("provenanceAndAcquisition")}
                 </h2>
                 <div className="space-y-2 text-sm print:text-xs print:space-y-1">
                   {collection.creditLine && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500">
+                      <p className="text-xs font-medium text-zinc-500">
                         {t("creditLine")}
                       </p>
                       <p className="text-black">{collection.creditLine}</p>
@@ -300,7 +300,7 @@ export function PrintPreviewModal({
                   )}
                   {collection.acquisitionMethod && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500">
+                      <p className="text-xs font-medium text-zinc-500">
                         {t("acquisitionMethod")}
                       </p>
                       <p className="text-black">
@@ -311,7 +311,7 @@ export function PrintPreviewModal({
                   {collection.donated_by &&
                     collection.donated_by.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-gray-500">
+                        <p className="text-xs font-medium text-zinc-500">
                           {t("donatedBy")}
                         </p>
                         <p className="text-black">
@@ -321,7 +321,7 @@ export function PrintPreviewModal({
                     )}
                   {collection.donated_date && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500">
+                      <p className="text-xs font-medium text-zinc-500">
                         {t("donationDate")}
                       </p>
                       <p className="text-black">{collection.donated_date}</p>
@@ -329,7 +329,7 @@ export function PrintPreviewModal({
                   )}
                   {collection.provenance && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500">
+                      <p className="text-xs font-medium text-zinc-500">
                         {t("provenance")}
                       </p>
                       <p className="text-black whitespace-pre-wrap">
@@ -345,21 +345,21 @@ export function PrintPreviewModal({
             {collection.ownershipHistory &&
               collection.ownershipHistory.length > 0 && (
                 <div>
-                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                     {t("ownershipHistory")}
                   </h2>
                   <div className="space-y-2">
                     {collection.ownershipHistory.map((entry) => (
                       <div
                         key={`${entry.owner}-${entry.startYear || "unknown"}`}
-                        className="rounded border border-gray-200 p-2 text-sm"
+                        className="rounded border border-zinc-200 p-2 text-sm"
                       >
                         <p className="font-medium text-black">{entry.owner}</p>
                         {formatOwnershipDateRange(entry, {
                           presentLabel: t("present"),
                           separator: " – ",
                         }) ? (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-zinc-500">
                             {formatOwnershipDateRange(entry, {
                               presentLabel: t("present"),
                               separator: " – ",
@@ -367,7 +367,7 @@ export function PrintPreviewModal({
                           </p>
                         ) : null}
                         {entry.description && (
-                          <p className="mt-1 text-gray-600">
+                          <p className="mt-1 text-zinc-600">
                             {entry.description}
                           </p>
                         )}
@@ -380,7 +380,7 @@ export function PrintPreviewModal({
             {/* Exhibition History */}
             {collection.exhibitionHistory && (
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                   {t("exhibitionHistory")}
                 </h2>
                 <p className="text-sm text-black whitespace-pre-wrap print:text-xs">
@@ -392,7 +392,7 @@ export function PrintPreviewModal({
             {/* Location */}
             {locationPath && locationPath.length > 0 && (
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                   {t("currentLocation")}
                 </h2>
                 <p className="text-sm text-black print:text-xs">
@@ -404,14 +404,14 @@ export function PrintPreviewModal({
             {/* Tags */}
             {collection.tags && collection.tags.length > 0 && (
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                   {t("tags")}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {collection.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+                      className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700"
                     >
                       {tag}
                     </span>
@@ -422,12 +422,12 @@ export function PrintPreviewModal({
 
             {/* Legal & Visibility */}
             <div>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                 {t("legalAndVisibility")}
               </h2>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                  <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                     {t("publicVisibility")}
                   </p>
                   <p className="text-black">
@@ -435,7 +435,7 @@ export function PrintPreviewModal({
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                  <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                     {t("legalRestrictions")}
                   </p>
                   <p className="text-black">
@@ -446,7 +446,7 @@ export function PrintPreviewModal({
             </div>
 
             {/* Footer with print date */}
-            <div className="border-t border-gray-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
+            <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
               <p>
                 {t("printedOn")}{" "}
                 {formatDate(new Date(), locale, {
@@ -459,17 +459,17 @@ export function PrintPreviewModal({
           </div>
         </div>
 
-        <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
+        <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-zinc-200 bg-white print:hidden">
           <Button
             variant="outline"
             onClick={onClose}
-            className="bg-gray-900 text-white border-gray-300 hover:bg-gray-100 hover:text-black"
+            className="bg-zinc-900 text-white border-zinc-300 hover:bg-zinc-100 hover:text-black"
           >
             {tCommon("cancel")}
           </Button>
           <Button
             onClick={() => window.print()}
-            className="bg-gray-900 text-white hover:bg-gray-800"
+            className="bg-zinc-900 text-white hover:bg-zinc-800"
           >
             <Printer className="mr-2 size-4" />
             {t("print")}

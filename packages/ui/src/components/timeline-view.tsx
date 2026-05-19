@@ -48,7 +48,7 @@ export function TimelineView({
         case "amber":
           return "bg-amber-500 text-white border-amber-600";
         case "indigo":
-          return "bg-indigo-500 text-white border-indigo-600";
+          return "bg-primary text-white border-primary";
       }
     }
 

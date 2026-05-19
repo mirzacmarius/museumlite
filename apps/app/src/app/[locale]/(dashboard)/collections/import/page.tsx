@@ -752,7 +752,7 @@ export default function ImportObjectsPage() {
                     {state.rows.length > 0 && (
                       <Button
                         onClick={handleContinueAfterValidation}
-                        className="bg-indigo-600 hover:bg-indigo-500"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         Continue with {state.rows.length} Valid Rows
                       </Button>
@@ -817,7 +817,7 @@ export default function ImportObjectsPage() {
                       <Button
                         onClick={handleStartImport}
                         disabled={state.rows.length === 0}
-                        className="bg-indigo-600 hover:bg-indigo-500"
+                        className="bg-primary hover:bg-primary/90"
                       >
                         <Upload className="mr-2 size-4" />
                         Import {state.rows.length} Objects
@@ -952,7 +952,7 @@ export default function ImportObjectsPage() {
                   <Button variant="outline" onClick={handleReset}>
                     {t("csvImport.importMore")}
                   </Button>
-                  <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+                  <Button asChild className="bg-primary hover:bg-primary/90">
                     <Link href="/collections">
                       {t("csvImport.viewCollections")}
                     </Link>

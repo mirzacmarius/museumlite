@@ -26,7 +26,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
     {
       label: t("analytics.inventory.fineArt"),
       value: data.fineArt.totalValue,
-      color: "bg-indigo-500",
+      color: "bg-primary",
     },
     {
       label: t("analytics.inventory.wine"),
@@ -66,7 +66,7 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between group cursor-default">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-colors">
+              <div className="p-2 rounded-md bg-primary/10 text-primary border border-primary/20 group-hover:bg-primary/20 transition-colors">
                 <Palette className="size-4" />
               </div>
               <div>

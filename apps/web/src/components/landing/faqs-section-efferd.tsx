@@ -56,7 +56,7 @@ export function FaqsSectionEfferd() {
         </motion.div>
 
         <div className="mt-16 text-center">
-          <p className="text-gray-500">
+          <p className="text-zinc-500">
             Still have questions?{" "}
             <a
               className="text-neon-blue hover:underline font-medium"

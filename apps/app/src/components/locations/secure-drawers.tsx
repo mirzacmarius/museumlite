@@ -27,7 +27,7 @@ export function SecureDrawers({ title, drawers }: SecureDrawersProps) {
         <div className="bg-zinc-950 border-t border-zinc-800 p-2 text-center">
           <button
             type="button"
-            className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="text-[10px] text-primary hover:text-primary transition-colors"
           >
             View Manifest
           </button>

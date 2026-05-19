@@ -214,47 +214,47 @@ function DeaccessionsReportDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[90vh] w-full max-w-[210mm] flex-col overflow-hidden rounded-none border-none bg-white p-0 text-black print:h-auto print:max-h-none print:max-w-none print:w-full print:overflow-visible print:rounded-none print:border-none print:p-0 print:shadow-none">
-        <DialogHeader className="flex-shrink-0 border-b border-gray-200 p-6 pb-4 print:hidden">
+        <DialogHeader className="flex-shrink-0 border-b border-zinc-200 p-6 pb-4 print:hidden">
           <DialogTitle className="text-black">{t("report.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
           {exportData ? (
             <div className="space-y-5 bg-white p-6 text-black print:space-y-4 print:p-[15mm]">
-              <div className="border-b border-gray-200 pb-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              <div className="border-b border-zinc-200 pb-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                   {exportData.organization.name}
                 </p>
                 <h1 className="text-xl font-bold text-black">
                   {t("report.deaccessionReport")}
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-zinc-600">
                   {t("report.allDeaccessions")}
                 </p>
               </div>
 
               <div className="grid grid-cols-4 gap-4 print:gap-2">
-                <div className="rounded border border-gray-200 p-3 text-center">
+                <div className="rounded border border-zinc-200 p-3 text-center">
                   <p className="text-2xl font-bold text-black">
                     {exportData.totals.count}
                   </p>
-                  <p className="text-xs text-gray-500">{t("report.total")}</p>
+                  <p className="text-xs text-zinc-500">{t("report.total")}</p>
                 </div>
-                <div className="rounded border border-gray-200 p-3 text-center">
+                <div className="rounded border border-zinc-200 p-3 text-center">
                   <p className="text-2xl font-bold text-amber-600">
                     {exportData.totals.pendingCount}
                   </p>
-                  <p className="text-xs text-gray-500">{t("report.pending")}</p>
+                  <p className="text-xs text-zinc-500">{t("report.pending")}</p>
                 </div>
-                <div className="rounded border border-gray-200 p-3 text-center">
+                <div className="rounded border border-zinc-200 p-3 text-center">
                   <p className="text-2xl font-bold text-green-600">
                     {exportData.totals.approvedCount}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-zinc-500">
                     {t("report.approved")}
                   </p>
                 </div>
-                <div className="rounded border border-gray-200 p-3 text-center">
+                <div className="rounded border border-zinc-200 p-3 text-center">
                   <p className="text-2xl font-bold text-black">
                     {formatCurrency(
                       exportData.totals.totalProceeds,
@@ -262,58 +262,58 @@ function DeaccessionsReportDialog({
                       "USD",
                     ).replace(/\.\d+$/, "")}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-zinc-500">
                     {t("report.totalProceeds")}
                   </p>
                 </div>
               </div>
 
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500">
                   {t("report.records")}
                 </h2>
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="py-2 text-left font-medium text-gray-500">
+                    <tr className="border-b border-zinc-200">
+                      <th className="py-2 text-left font-medium text-zinc-500">
                         {t("table.object")}
                       </th>
-                      <th className="py-2 text-left font-medium text-gray-500">
+                      <th className="py-2 text-left font-medium text-zinc-500">
                         {t("report.date")}
                       </th>
-                      <th className="py-2 text-left font-medium text-gray-500">
+                      <th className="py-2 text-left font-medium text-zinc-500">
                         {t("report.method")}
                       </th>
-                      <th className="py-2 text-right font-medium text-gray-500">
+                      <th className="py-2 text-right font-medium text-zinc-500">
                         {t("report.proceeds")}
                       </th>
-                      <th className="py-2 text-right font-medium text-gray-500">
+                      <th className="py-2 text-right font-medium text-zinc-500">
                         {t("report.status")}
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-zinc-100">
                     {exportData.items.map((item: DeaccessionsExportItem) => (
                       <tr key={item.deaccessionNumber}>
                         <td className="py-2">
                           <p className="font-medium text-black">
                             {item.collectionTitle}
                           </p>
-                          <p className="text-gray-500">
+                          <p className="text-zinc-500">
                             {item.accessionNumber || item.deaccessionNumber}
                           </p>
                         </td>
-                        <td className="py-2 text-gray-600">
+                        <td className="py-2 text-zinc-600">
                           {formatDateFns(
                             new Date(item.dateDeaccessioned),
                             "MMM d, yyyy",
                             locale,
                           )}
                         </td>
-                        <td className="py-2 capitalize text-gray-600">
+                        <td className="py-2 capitalize text-zinc-600">
                           {t(`method.${item.method}`)}
                         </td>
-                        <td className="py-2 text-right text-gray-600">
+                        <td className="py-2 text-right text-zinc-600">
                           {item.proceedsAmount
                             ? formatCurrency(
                                 item.proceedsAmount,
@@ -341,7 +341,7 @@ function DeaccessionsReportDialog({
                 </table>
               </div>
 
-              <div className="border-t border-gray-200 pt-3 text-[10px] text-zinc-400">
+              <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400">
                 <p>
                   {t("report.generatedOn")}{" "}
                   {formatDateFns(
@@ -360,7 +360,7 @@ function DeaccessionsReportDialog({
           )}
         </div>
 
-        <div className="flex flex-shrink-0 justify-end gap-2 border-t border-gray-200 bg-white p-6 pt-4 print:hidden">
+        <div className="flex flex-shrink-0 justify-end gap-2 border-t border-zinc-200 bg-white p-6 pt-4 print:hidden">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("actions.close")}
           </Button>

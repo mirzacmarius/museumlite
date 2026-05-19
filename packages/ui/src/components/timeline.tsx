@@ -30,8 +30,7 @@ const Timeline = React.forwardRef<HTMLDivElement, TimelineProps>(
                     "bg-amber-500 border-amber-400": item.status === "pending",
                     "bg-emerald-500 border-emerald-400":
                       item.status === "active",
-                    "bg-indigo-500 border-indigo-400":
-                      item.status === "completed",
+                    "bg-primary border-primary": item.status === "completed",
                     "bg-rose-500 border-rose-400": item.status === "overdue",
                     "bg-zinc-700 border-zinc-600": !item.status,
                   },

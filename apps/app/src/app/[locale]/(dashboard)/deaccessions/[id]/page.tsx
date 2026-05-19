@@ -487,7 +487,7 @@ export default function DeaccessionDetailPage() {
 
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
         <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
-          <DialogHeader className="flex-shrink-0 print:hidden border-b border-gray-200 p-6 pb-4">
+          <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
             <DialogTitle className="text-black">
               {t("report.deaccessionBoardReport")}
             </DialogTitle>
@@ -496,22 +496,22 @@ export default function DeaccessionDetailPage() {
           <div className="flex-1 overflow-y-auto">
             {exportData ? (
               <div className="space-y-5 bg-white text-black p-6 print:p-[15mm] print:space-y-4 print:break-inside-avoid-page">
-                <div className="flex items-start gap-4 border-b border-gray-200 pb-4 print:gap-3 print:pb-3">
+                <div className="flex items-start gap-4 border-b border-zinc-200 pb-4 print:gap-3 print:pb-3">
                   {exportData.collection?.primaryImageUrl && (
                     <img
                       src={exportData.collection.primaryImageUrl}
                       alt={exportData.collection.title}
-                      className="size-24 flex-shrink-0 rounded border border-gray-300 object-cover print:size-20"
+                      className="size-24 flex-shrink-0 rounded border border-zinc-300 object-cover print:size-20"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 print:text-[10px]">
                       {exportData.organization.name}
                     </p>
                     <h1 className="text-xl font-bold text-black print:text-lg">
                       Deaccession Report
                     </h1>
-                    <p className="text-sm text-gray-600 print:text-xs">
+                    <p className="text-sm text-zinc-600 print:text-xs">
                       {exportData.deaccession.deaccessionNumber}
                     </p>
                   </div>
@@ -533,12 +533,12 @@ export default function DeaccessionDetailPage() {
 
                 {exportData.collection && (
                   <div className="print:break-inside-avoid">
-                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                       Object Information
                     </h2>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                       <div>
-                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                           Title
                         </p>
                         <p className="text-black">
@@ -546,7 +546,7 @@ export default function DeaccessionDetailPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                           Accession Number
                         </p>
                         <p className="text-black">
@@ -555,7 +555,7 @@ export default function DeaccessionDetailPage() {
                       </div>
                       {exportData.collection.description && (
                         <div className="col-span-2">
-                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                             Description
                           </p>
                           <p className="text-black">
@@ -568,12 +568,12 @@ export default function DeaccessionDetailPage() {
                 )}
 
                 <div className="print:break-inside-avoid">
-                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                     Deaccession Details
                   </h2>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                     <div>
-                      <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                      <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                         Date Deaccessioned
                       </p>
                       <p className="text-black">
@@ -585,7 +585,7 @@ export default function DeaccessionDetailPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                      <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                         Method
                       </p>
                       <p className="text-black capitalize">
@@ -593,7 +593,7 @@ export default function DeaccessionDetailPage() {
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                      <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                         Reason
                       </p>
                       <p className="text-black whitespace-pre-wrap">
@@ -602,7 +602,7 @@ export default function DeaccessionDetailPage() {
                     </div>
                     {exportData.deaccession.disposition && (
                       <div className="col-span-2">
-                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                           Disposition
                         </p>
                         <p className="text-black whitespace-pre-wrap">
@@ -612,7 +612,7 @@ export default function DeaccessionDetailPage() {
                     )}
                     {exportData.deaccession.notes && (
                       <div className="col-span-2">
-                        <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                        <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                           Notes
                         </p>
                         <p className="text-black whitespace-pre-wrap">
@@ -626,14 +626,14 @@ export default function DeaccessionDetailPage() {
                 {(exportData.deaccession.proceedsAmount ||
                   exportData.deaccession.proceedsRecipient) && (
                   <div className="print:break-inside-avoid">
-                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                       <DollarSign className="inline size-3 mr-1" />
                       Proceeds Information
                     </h2>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
                       {exportData.deaccession.proceedsAmount !== undefined && (
                         <div>
-                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                             Amount
                           </p>
                           <p className="text-black font-semibold">
@@ -647,7 +647,7 @@ export default function DeaccessionDetailPage() {
                       )}
                       {exportData.deaccession.proceedsRecipient && (
                         <div>
-                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                             Recipient
                           </p>
                           <p className="text-black">
@@ -657,7 +657,7 @@ export default function DeaccessionDetailPage() {
                       )}
                       {exportData.deaccession.proceedsDate && (
                         <div>
-                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                             Date Received
                           </p>
                           <p className="text-black">
@@ -671,7 +671,7 @@ export default function DeaccessionDetailPage() {
                       )}
                       {exportData.deaccession.proceedsNotes && (
                         <div className="col-span-2">
-                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                             Proceeds Notes
                           </p>
                           <p className="text-black whitespace-pre-wrap">
@@ -685,7 +685,7 @@ export default function DeaccessionDetailPage() {
 
                 {exportData.workflowHistory.length > 0 && (
                   <div className="print:break-inside-avoid">
-                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500 print:text-[10px]">
+                    <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                       Approval History
                     </h2>
                     <div className="space-y-2">
@@ -694,7 +694,7 @@ export default function DeaccessionDetailPage() {
                           key={`${entry.step}-${entry.approvedAt}`}
                           className="flex items-start gap-3 text-sm print:text-xs"
                         >
-                          <div className="flex size-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium flex-shrink-0">
+                          <div className="flex size-6 items-center justify-center rounded-full bg-zinc-100 text-xs font-medium flex-shrink-0">
                             {entry.step}
                           </div>
                           <div className="flex-1">
@@ -703,7 +703,7 @@ export default function DeaccessionDetailPage() {
                                 ? t("detail.created")
                                 : t("detail.step", { step: entry.step })}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-zinc-500">
                               {entry.approverName} •{" "}
                               {formatDateFns(
                                 new Date(entry.approvedAt),
@@ -712,7 +712,7 @@ export default function DeaccessionDetailPage() {
                               )}
                             </p>
                             {entry.comment && (
-                              <p className="mt-1 text-xs italic text-gray-600">
+                              <p className="mt-1 text-xs italic text-zinc-600">
                                 "{entry.comment}"
                               </p>
                             )}
@@ -725,16 +725,16 @@ export default function DeaccessionDetailPage() {
 
                 {exportData.deaccession.approvedAt &&
                   exportData.approverName && (
-                    <div className="print:break-inside-avoid border-t border-gray-200 pt-4">
+                    <div className="print:break-inside-avoid border-t border-zinc-200 pt-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-gray-500 print:text-[10px]">
+                          <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
                             Final Approval
                           </p>
                           <p className="text-sm font-medium text-black">
                             {exportData.approverName}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-zinc-500">
                             {formatDateFns(
                               new Date(exportData.deaccession.approvedAt),
                               "MMMM d, yyyy 'at' h:mm a",
@@ -747,7 +747,7 @@ export default function DeaccessionDetailPage() {
                     </div>
                   )}
 
-                <div className="border-t border-gray-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
+                <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
                   <p>
                     Generated on{" "}
                     {formatDateFns(
@@ -766,7 +766,7 @@ export default function DeaccessionDetailPage() {
             )}
           </div>
 
-          <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-gray-200 bg-white print:hidden">
+          <div className="flex-shrink-0 flex justify-end gap-2 p-6 pt-4 border-t border-zinc-200 bg-white print:hidden">
             <Button
               variant="outline"
               onClick={() => setIsPrintModalOpen(false)}
