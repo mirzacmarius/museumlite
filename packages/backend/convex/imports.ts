@@ -2112,9 +2112,11 @@ export const saveFieldMapping = mutation({
         .filter((q) => q.eq(q.field("isDefault"), true))
         .collect();
 
-      for (const existing of existingDefaults) {
-        await ctx.db.patch(existing._id, { isDefault: false });
-      }
+      await Promise.all(
+        Array.from(existingDefaults).map(async (existing) => {
+          await ctx.db.patch(existing._id, { isDefault: false });
+        }),
+      );
     }
 
     const mappingId = await ctx.db.insert("importFieldMappings", {
@@ -2186,11 +2188,13 @@ export const updateFieldMapping = mutation({
         .filter((q) => q.eq(q.field("isDefault"), true))
         .collect();
 
-      for (const existing of existingDefaults) {
-        if (existing._id !== args.mappingId) {
-          await ctx.db.patch(existing._id, { isDefault: false });
-        }
-      }
+      await Promise.all(
+        Array.from(existingDefaults).map(async (existing) => {
+          if (existing._id !== args.mappingId) {
+            await ctx.db.patch(existing._id, { isDefault: false });
+          }
+        }),
+      );
     }
 
     const updates: Record<string, unknown> = {

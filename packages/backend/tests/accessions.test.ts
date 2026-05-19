@@ -1009,23 +1009,25 @@ test("organization administrators can approve an accession even when the workflo
       isSystemRole: false,
     });
 
-    for (const permissionName of [
-      "organization.manage_settings",
-      "collections.create",
-      "collections.read",
-      "collections.update",
-      "collections.approve_accession",
-    ]) {
-      const permissionId = await ctx.db.insert("permissions", {
-        name: permissionName,
-        category: permissionName.split(".")[0] || "collections",
-      });
+    await Promise.all(
+      Array.from([
+        "organization.manage_settings",
+        "collections.create",
+        "collections.read",
+        "collections.update",
+        "collections.approve_accession",
+      ]).map(async (permissionName) => {
+        const permissionId = await ctx.db.insert("permissions", {
+          name: permissionName,
+          category: permissionName.split(".")[0] || "collections",
+        });
 
-      await ctx.db.insert("rolePermissions", {
-        roleId: adminRoleId,
-        permissionId,
-      });
-    }
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRoleId,
+          permissionId,
+        });
+      }),
+    );
 
     await ctx.db.insert("userOrganizations", {
       userId: adminUserId,

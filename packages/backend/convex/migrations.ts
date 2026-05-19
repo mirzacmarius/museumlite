@@ -54,30 +54,36 @@ export const backfillLocationSortOrder = internalMutation({
     let errorCount = 0;
 
     // Process each group
-    for (const [key, locations] of locationsByParent) {
-      try {
-        // Sort by creation time
-        const sortedLocations = locations.sort(
-          (a, b) => a._creationTime - b._creationTime,
-        );
+    await Promise.all(
+      Array.from(locationsByParent).map(async ([key, locations]) => {
+        try {
+          // Sort by creation time
+          const sortedLocations = locations.sort(
+            (a, b) => a._creationTime - b._creationTime,
+          );
 
-        // Assign sortOrder
-        for (let i = 0; i < sortedLocations.length; i++) {
-          const location = sortedLocations[i];
-          if (location) {
-            await ctx.db.patch(location._id, {
-              sortOrder: i,
-            });
-            updatedCount++;
-          }
+          // Assign sortOrder
+          await Promise.all(
+            Array.from({ length: sortedLocations.length }, async (_, i) => {
+              const location = sortedLocations[i];
+              if (location) {
+                await ctx.db.patch(location._id, {
+                  sortOrder: i,
+                });
+                updatedCount++;
+              }
+            }),
+          );
+
+          console.log(
+            `✓ Updated ${locations.length} locations in group ${key}`,
+          );
+        } catch (error) {
+          console.error(`Error processing group ${key}:`, error);
+          errorCount++;
         }
-
-        console.log(`✓ Updated ${locations.length} locations in group ${key}`);
-      } catch (error) {
-        console.error(`Error processing group ${key}:`, error);
-        errorCount++;
-      }
-    }
+      }),
+    );
 
     const result = {
       success: true,
@@ -112,22 +118,24 @@ export const backfillAccountType = internalMutation({
     let updatedCount = 0;
     let errorCount = 0;
 
-    for (const account of accountsWithoutType) {
-      try {
-        await ctx.db.patch(account._id, {
-          accountType: "institution",
-        });
+    await Promise.all(
+      Array.from(accountsWithoutType).map(async (account) => {
+        try {
+          await ctx.db.patch(account._id, {
+            accountType: "institution",
+          });
 
-        updatedCount++;
+          updatedCount++;
 
-        if (updatedCount % 100 === 0) {
-          console.log(`Progress: ${updatedCount} accounts updated...`);
+          if (updatedCount % 100 === 0) {
+            console.log(`Progress: ${updatedCount} accounts updated...`);
+          }
+        } catch (error) {
+          console.error(`Error updating account ${account._id}:`, error);
+          errorCount++;
         }
-      } catch (error) {
-        console.error(`Error updating account ${account._id}:`, error);
-        errorCount++;
-      }
-    }
+      }),
+    );
 
     const result = {
       success: true,
@@ -249,69 +257,77 @@ export const addDefaultWorkflowsToOrgs = internalMutation({
     let skippedCount = 0;
     let errorCount = 0;
 
-    for (const org of organizations) {
-      try {
-        // Check if workflows already exist
-        const existingWorkflows = await ctx.db
-          .query("workflowConfigs")
-          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-          .collect();
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        try {
+          // Check if workflows already exist
+          const existingWorkflows = await ctx.db
+            .query("workflowConfigs")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", org._id),
+            )
+            .collect();
 
-        if (existingWorkflows.length > 0) {
-          console.log(`Skipping ${org.name} - workflows already exist`);
-          skippedCount++;
-          continue;
-        }
+          if (existingWorkflows.length > 0) {
+            console.log(`Skipping ${org.name} - workflows already exist`);
+            skippedCount++;
+            return;
+          }
 
-        // Find admin role for this organization
-        const adminRole = await ctx.db
-          .query("roles")
-          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-          .filter((q) =>
-            q.and(
-              q.eq(q.field("name"), "admin"),
-              q.eq(q.field("isSystemRole"), true),
-            ),
-          )
-          .first();
+          // Find admin role for this organization
+          const adminRole = await ctx.db
+            .query("roles")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", org._id),
+            )
+            .filter((q) =>
+              q.and(
+                q.eq(q.field("name"), "admin"),
+                q.eq(q.field("isSystemRole"), true),
+              ),
+            )
+            .first();
 
-        if (!adminRole) {
-          console.warn(`No admin role found for ${org.name}`);
+          if (!adminRole) {
+            console.warn(`No admin role found for ${org.name}`);
+            errorCount++;
+            return;
+          }
+
+          const workflowTypes = [
+            "accession",
+            "deaccession",
+            "loan",
+            "acquisition",
+            "exhibition",
+            "conservation",
+          ] as const;
+
+          await Promise.all(
+            Array.from(workflowTypes).map(async (workflowType) => {
+              await ctx.db.insert("workflowConfigs", {
+                organizationId: org._id,
+                workflowType,
+                steps: [
+                  {
+                    stepNumber: 1,
+                    roleId: adminRole._id,
+                    name: "Administrator Approval",
+                  },
+                ],
+                canInitiateRoles: [adminRole._id],
+              });
+            }),
+          );
+
+          console.log(`✓ Added default workflows for ${org.name}`);
+          updatedCount++;
+        } catch (error) {
+          console.error(`Error processing ${org.name}:`, error);
           errorCount++;
-          continue;
         }
-
-        const workflowTypes = [
-          "accession",
-          "deaccession",
-          "loan",
-          "acquisition",
-          "exhibition",
-          "conservation",
-        ] as const;
-
-        for (const workflowType of workflowTypes) {
-          await ctx.db.insert("workflowConfigs", {
-            organizationId: org._id,
-            workflowType,
-            steps: [
-              {
-                stepNumber: 1,
-                roleId: adminRole._id,
-                name: "Administrator Approval",
-              },
-            ],
-            canInitiateRoles: [adminRole._id],
-          });
-        }
-
-        console.log(`✓ Added default workflows for ${org.name}`);
-        updatedCount++;
-      } catch (error) {
-        console.error(`Error processing ${org.name}:`, error);
-        errorCount++;
-      }
-    }
+      }),
+    );
 
     const result = {
       success: true,
@@ -367,74 +383,78 @@ export const backfillMediaCategory = internalMutation({
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
 
-    for (const media of mediaWithoutCategory) {
-      try {
-        let mediaCategory: "image" | "document";
+    await Promise.all(
+      Array.from(mediaWithoutCategory).map(async (media) => {
+        try {
+          let mediaCategory: "image" | "document";
 
-        // Determine category based on fileType
-        if (media.fileType === "document") {
-          mediaCategory = "document";
-        } else if (media.fileType === "image" || media.fileType === "video") {
-          mediaCategory = "image";
-        } else {
-          // For other types (3d, other), check mimeType to determine category
-          if (documentMimeTypes.includes(media.mimeType)) {
+          // Determine category based on fileType
+          if (media.fileType === "document") {
             mediaCategory = "document";
-          } else {
-            // Default to "image" for backwards compatibility
+          } else if (media.fileType === "image" || media.fileType === "video") {
             mediaCategory = "image";
+          } else {
+            // For other types (3d, other), check mimeType to determine category
+            if (documentMimeTypes.includes(media.mimeType)) {
+              mediaCategory = "document";
+            } else {
+              // Default to "image" for backwards compatibility
+              mediaCategory = "image";
+            }
           }
+
+          await ctx.db.patch(media._id, {
+            mediaCategory,
+          });
+
+          updatedCount++;
+
+          if (updatedCount % 100 === 0) {
+            console.log(`Progress: ${updatedCount} files updated...`);
+          }
+        } catch (error) {
+          console.error(`Error updating media ${media._id}:`, error);
+          errorCount++;
         }
-
-        await ctx.db.patch(media._id, {
-          mediaCategory,
-        });
-
-        updatedCount++;
-
-        if (updatedCount % 100 === 0) {
-          console.log(`Progress: ${updatedCount} files updated...`);
-        }
-      } catch (error) {
-        console.error(`Error updating media ${media._id}:`, error);
-        errorCount++;
-      }
-    }
+      }),
+    );
 
     // Also validate and fix files that might have incorrect category
     const mediaWithCategory = allMedia.filter(
       (m) => m.mediaCategory !== undefined && m.mediaCategory !== null,
     );
 
-    for (const media of mediaWithCategory) {
-      try {
-        // Check if the category matches the fileType/mimeType
-        const shouldBeDocument =
-          media.fileType === "document" ||
-          documentMimeTypes.includes(media.mimeType);
+    await Promise.all(
+      Array.from(mediaWithCategory).map(async (media) => {
+        try {
+          // Check if the category matches the fileType/mimeType
+          const shouldBeDocument =
+            media.fileType === "document" ||
+            documentMimeTypes.includes(media.mimeType);
 
-        const shouldBeImage =
-          media.fileType === "image" || media.fileType === "video";
+          const shouldBeImage =
+            media.fileType === "image" || media.fileType === "video";
 
-        // Only update if there's a mismatch
-        if (shouldBeDocument && media.mediaCategory !== "document") {
-          await ctx.db.patch(media._id, {
-            mediaCategory: "document",
-          });
-          updatedCount++;
-        } else if (shouldBeImage && media.mediaCategory !== "image") {
-          await ctx.db.patch(media._id, {
-            mediaCategory: "image",
-          });
-          updatedCount++;
-        } else {
-          skippedCount++;
+          // Only update if there's a mismatch
+          if (shouldBeDocument && media.mediaCategory !== "document") {
+            await ctx.db.patch(media._id, {
+              mediaCategory: "document",
+            });
+            updatedCount++;
+          } else if (shouldBeImage && media.mediaCategory !== "image") {
+            await ctx.db.patch(media._id, {
+              mediaCategory: "image",
+            });
+            updatedCount++;
+          } else {
+            skippedCount++;
+          }
+        } catch (error) {
+          console.error(`Error validating media ${media._id}:`, error);
+          errorCount++;
         }
-      } catch (error) {
-        console.error(`Error validating media ${media._id}:`, error);
-        errorCount++;
-      }
-    }
+      }),
+    );
 
     const result = {
       success: true,
@@ -486,25 +506,27 @@ export const addAccountsPermissions = internalMutation({
     const permissionIds: Id<"permissions">[] = [];
     let created = 0;
 
-    for (const perm of accountsPermissions) {
-      const existing = await ctx.db
-        .query("permissions")
-        .withIndex("by_category", (q) => q.eq("category", "accounts"))
-        .filter((q) => q.eq(q.field("name"), perm.name))
-        .first();
+    await Promise.all(
+      Array.from(accountsPermissions).map(async (perm) => {
+        const existing = await ctx.db
+          .query("permissions")
+          .withIndex("by_category", (q) => q.eq("category", "accounts"))
+          .filter((q) => q.eq(q.field("name"), perm.name))
+          .first();
 
-      if (existing) {
-        permissionIds.push(existing._id);
-      } else {
-        const id = await ctx.db.insert("permissions", {
-          name: perm.name,
-          description: perm.description,
-          category: "accounts",
-        });
-        permissionIds.push(id);
-        created++;
-      }
-    }
+        if (existing) {
+          permissionIds.push(existing._id);
+        } else {
+          const id = await ctx.db.insert("permissions", {
+            name: perm.name,
+            description: perm.description,
+            category: "accounts",
+          });
+          permissionIds.push(id);
+          created++;
+        }
+      }),
+    );
 
     // Assign all accounts permissions to admin roles
     const adminRoles = await ctx.db
@@ -513,23 +535,27 @@ export const addAccountsPermissions = internalMutation({
       .collect();
 
     let assigned = 0;
-    for (const role of adminRoles) {
-      for (const permId of permissionIds) {
-        const existing = await ctx.db
-          .query("rolePermissions")
-          .withIndex("by_role", (q) => q.eq("roleId", role._id))
-          .filter((q) => q.eq(q.field("permissionId"), permId))
-          .first();
+    await Promise.all(
+      Array.from(adminRoles).map(async (role) => {
+        await Promise.all(
+          Array.from(permissionIds).map(async (permId) => {
+            const existing = await ctx.db
+              .query("rolePermissions")
+              .withIndex("by_role", (q) => q.eq("roleId", role._id))
+              .filter((q) => q.eq(q.field("permissionId"), permId))
+              .first();
 
-        if (!existing) {
-          await ctx.db.insert("rolePermissions", {
-            roleId: role._id,
-            permissionId: permId,
-          });
-          assigned++;
-        }
-      }
-    }
+            if (!existing) {
+              await ctx.db.insert("rolePermissions", {
+                roleId: role._id,
+                permissionId: permId,
+              });
+              assigned++;
+            }
+          }),
+        );
+      }),
+    );
 
     console.log(
       `Created ${created} permissions, assigned ${assigned} role-permissions`,
@@ -572,27 +598,29 @@ export const backfillLoanAdminPermissions = internalMutation({
     const permissionIds: Map<string, Id<"permissions">> = new Map();
     let permissionsCreated = 0;
 
-    for (const perm of newPermissions) {
-      const existing = await ctx.db
-        .query("permissions")
-        .withIndex("by_category", (q) => q.eq("category", perm.category))
-        .filter((q) => q.eq(q.field("name"), perm.name))
-        .first();
+    await Promise.all(
+      Array.from(newPermissions).map(async (perm) => {
+        const existing = await ctx.db
+          .query("permissions")
+          .withIndex("by_category", (q) => q.eq("category", perm.category))
+          .filter((q) => q.eq(q.field("name"), perm.name))
+          .first();
 
-      if (existing) {
-        permissionIds.set(perm.name, existing._id);
-        console.log(`Permission ${perm.name} already exists`);
-      } else {
-        const id = await ctx.db.insert("permissions", {
-          name: perm.name,
-          description: perm.description,
-          category: perm.category,
-        });
-        permissionIds.set(perm.name, id);
-        permissionsCreated++;
-        console.log(`Created permission ${perm.name}`);
-      }
-    }
+        if (existing) {
+          permissionIds.set(perm.name, existing._id);
+          console.log(`Permission ${perm.name} already exists`);
+        } else {
+          const id = await ctx.db.insert("permissions", {
+            name: perm.name,
+            description: perm.description,
+            category: perm.category,
+          });
+          permissionIds.set(perm.name, id);
+          permissionsCreated++;
+          console.log(`Created permission ${perm.name}`);
+        }
+      }),
+    );
 
     const analyticsPermission = await ctx.db
       .query("permissions")
@@ -609,58 +637,64 @@ export const backfillLoanAdminPermissions = internalMutation({
 
     let rolePermissionsAdded = 0;
 
-    for (const org of organizations) {
-      const adminRole = await ctx.db
-        .query("roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("name"), "admin"),
-            q.eq(q.field("isSystemRole"), true),
-          ),
-        )
-        .first();
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const adminRole = await ctx.db
+          .query("roles")
+          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+          .filter((q) =>
+            q.and(
+              q.eq(q.field("name"), "admin"),
+              q.eq(q.field("isSystemRole"), true),
+            ),
+          )
+          .first();
 
-      const registrarRole = await ctx.db
-        .query("roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("name"), "registrar"),
-            q.eq(q.field("isSystemRole"), true),
-          ),
-        )
-        .first();
+        const registrarRole = await ctx.db
+          .query("roles")
+          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+          .filter((q) =>
+            q.and(
+              q.eq(q.field("name"), "registrar"),
+              q.eq(q.field("isSystemRole"), true),
+            ),
+          )
+          .first();
 
-      const rolesToUpdate = [
-        { role: adminRole, name: "admin" },
-        { role: registrarRole, name: "registrar" },
-      ];
+        const rolesToUpdate = [
+          { role: adminRole, name: "admin" },
+          { role: registrarRole, name: "registrar" },
+        ];
 
-      for (const { role, name } of rolesToUpdate) {
-        if (!role) {
-          console.warn(`No ${name} role found for organization ${org.name}`);
-          continue;
-        }
-
-        for (const [permName, permId] of permissionIds) {
-          const existing = await ctx.db
-            .query("rolePermissions")
-            .withIndex("by_role", (q) => q.eq("roleId", role._id))
-            .filter((q) => q.eq(q.field("permissionId"), permId))
-            .first();
-
-          if (!existing) {
-            await ctx.db.insert("rolePermissions", {
-              roleId: role._id,
-              permissionId: permId,
-            });
-            rolePermissionsAdded++;
-            console.log(`Added ${permName} to ${name} role for ${org.name}`);
+        for (const { role, name } of rolesToUpdate) {
+          if (!role) {
+            console.warn(`No ${name} role found for organization ${org.name}`);
+            return;
           }
+
+          await Promise.all(
+            Array.from(permissionIds).map(async ([permName, permId]) => {
+              const existing = await ctx.db
+                .query("rolePermissions")
+                .withIndex("by_role", (q) => q.eq("roleId", role._id))
+                .filter((q) => q.eq(q.field("permissionId"), permId))
+                .first();
+
+              if (!existing) {
+                await ctx.db.insert("rolePermissions", {
+                  roleId: role._id,
+                  permissionId: permId,
+                });
+                rolePermissionsAdded++;
+                console.log(
+                  `Added ${permName} to ${name} role for ${org.name}`,
+                );
+              }
+            }),
+          );
         }
-      }
-    }
+      }),
+    );
 
     console.log(
       `Created ${permissionsCreated} permissions, added ${rolePermissionsAdded} role-permissions`,
@@ -692,103 +726,111 @@ export const addSitesPermissions = internalMutation({
     const permissionIds: Map<string, Id<"permissions">> = new Map();
     let permissionsCreated = 0;
 
-    for (const perm of sitesPermissions) {
-      const existing = await ctx.db
-        .query("permissions")
-        .withIndex("by_category", (q) => q.eq("category", "sites"))
-        .filter((q) => q.eq(q.field("name"), perm.name))
-        .first();
+    await Promise.all(
+      Array.from(sitesPermissions).map(async (perm) => {
+        const existing = await ctx.db
+          .query("permissions")
+          .withIndex("by_category", (q) => q.eq("category", "sites"))
+          .filter((q) => q.eq(q.field("name"), perm.name))
+          .first();
 
-      if (existing) {
-        permissionIds.set(perm.name, existing._id);
-        console.log(`Permission ${perm.name} already exists`);
-      } else {
-        const id = await ctx.db.insert("permissions", {
-          name: perm.name,
-          description: perm.description,
-          category: "sites",
-        });
-        permissionIds.set(perm.name, id);
-        permissionsCreated++;
-        console.log(`Created permission ${perm.name}`);
-      }
-    }
+        if (existing) {
+          permissionIds.set(perm.name, existing._id);
+          console.log(`Permission ${perm.name} already exists`);
+        } else {
+          const id = await ctx.db.insert("permissions", {
+            name: perm.name,
+            description: perm.description,
+            category: "sites",
+          });
+          permissionIds.set(perm.name, id);
+          permissionsCreated++;
+          console.log(`Created permission ${perm.name}`);
+        }
+      }),
+    );
 
     const organizations = await ctx.db.query("organizations").collect();
     console.log(`Found ${organizations.length} organizations`);
 
     let rolePermissionsAdded = 0;
 
-    for (const org of organizations) {
-      const adminRole = await ctx.db
-        .query("roles")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("name"), "admin"),
-            q.eq(q.field("isSystemRole"), true),
-          ),
-        )
-        .first();
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const adminRole = await ctx.db
+          .query("roles")
+          .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+          .filter((q) =>
+            q.and(
+              q.eq(q.field("name"), "admin"),
+              q.eq(q.field("isSystemRole"), true),
+            ),
+          )
+          .first();
 
-      if (adminRole) {
-        for (const [permName, permId] of permissionIds) {
-          const existing = await ctx.db
-            .query("rolePermissions")
-            .withIndex("by_role", (q) => q.eq("roleId", adminRole._id))
-            .filter((q) => q.eq(q.field("permissionId"), permId))
-            .first();
+        if (adminRole) {
+          await Promise.all(
+            Array.from(permissionIds).map(async ([permName, permId]) => {
+              const existing = await ctx.db
+                .query("rolePermissions")
+                .withIndex("by_role", (q) => q.eq("roleId", adminRole._id))
+                .filter((q) => q.eq(q.field("permissionId"), permId))
+                .first();
 
-          if (!existing) {
-            await ctx.db.insert("rolePermissions", {
-              roleId: adminRole._id,
-              permissionId: permId,
-            });
-            rolePermissionsAdded++;
-            console.log(`Added ${permName} to admin role for ${org.name}`);
-          }
+              if (!existing) {
+                await ctx.db.insert("rolePermissions", {
+                  roleId: adminRole._id,
+                  permissionId: permId,
+                });
+                rolePermissionsAdded++;
+                console.log(`Added ${permName} to admin role for ${org.name}`);
+              }
+            }),
+          );
         }
-      }
 
-      const readOnlyRoles = ["curator", "registrar", "cataloger", "viewer"];
-      const sitesReadPermId = permissionIds.get("sites.read");
+        const readOnlyRoles = ["curator", "registrar", "cataloger", "viewer"];
+        const sitesReadPermId = permissionIds.get("sites.read");
 
-      if (sitesReadPermId) {
-        for (const roleName of readOnlyRoles) {
-          const role = await ctx.db
-            .query("roles")
-            .withIndex("by_organization", (q) =>
-              q.eq("organizationId", org._id),
-            )
-            .filter((q) =>
-              q.and(
-                q.eq(q.field("name"), roleName),
-                q.eq(q.field("isSystemRole"), true),
-              ),
-            )
-            .first();
+        if (sitesReadPermId) {
+          await Promise.all(
+            Array.from(readOnlyRoles).map(async (roleName) => {
+              const role = await ctx.db
+                .query("roles")
+                .withIndex("by_organization", (q) =>
+                  q.eq("organizationId", org._id),
+                )
+                .filter((q) =>
+                  q.and(
+                    q.eq(q.field("name"), roleName),
+                    q.eq(q.field("isSystemRole"), true),
+                  ),
+                )
+                .first();
 
-          if (role) {
-            const existing = await ctx.db
-              .query("rolePermissions")
-              .withIndex("by_role", (q) => q.eq("roleId", role._id))
-              .filter((q) => q.eq(q.field("permissionId"), sitesReadPermId))
-              .first();
+              if (role) {
+                const existing = await ctx.db
+                  .query("rolePermissions")
+                  .withIndex("by_role", (q) => q.eq("roleId", role._id))
+                  .filter((q) => q.eq(q.field("permissionId"), sitesReadPermId))
+                  .first();
 
-            if (!existing) {
-              await ctx.db.insert("rolePermissions", {
-                roleId: role._id,
-                permissionId: sitesReadPermId,
-              });
-              rolePermissionsAdded++;
-              console.log(
-                `Added sites.read to ${roleName} role for ${org.name}`,
-              );
-            }
-          }
+                if (!existing) {
+                  await ctx.db.insert("rolePermissions", {
+                    roleId: role._id,
+                    permissionId: sitesReadPermId,
+                  });
+                  rolePermissionsAdded++;
+                  console.log(
+                    `Added sites.read to ${roleName} role for ${org.name}`,
+                  );
+                }
+              }
+            }),
+          );
         }
-      }
-    }
+      }),
+    );
 
     console.log(
       `Created ${permissionsCreated} permissions, added ${rolePermissionsAdded} role-permissions`,
@@ -844,87 +886,91 @@ export const addCollectionWorkflowApprovalPermissions = internalMutation({
     const permissionIds = new Map<string, Id<"permissions">>();
     let permissionsCreated = 0;
 
-    for (const perm of approvalPermissions) {
-      const existing = await ctx.db
-        .query("permissions")
-        .withIndex("by_category", (q) => q.eq("category", "collections"))
-        .filter((q) => q.eq(q.field("name"), perm.name))
-        .first();
+    await Promise.all(
+      Array.from(approvalPermissions).map(async (perm) => {
+        const existing = await ctx.db
+          .query("permissions")
+          .withIndex("by_category", (q) => q.eq("category", "collections"))
+          .filter((q) => q.eq(q.field("name"), perm.name))
+          .first();
 
-      if (existing) {
-        permissionIds.set(perm.name, existing._id);
-      } else {
-        const id = await ctx.db.insert("permissions", {
-          name: perm.name,
-          description: perm.description,
-          category: "collections",
-        });
-        permissionIds.set(perm.name, id);
-        permissionsCreated++;
-      }
-    }
+        if (existing) {
+          permissionIds.set(perm.name, existing._id);
+        } else {
+          const id = await ctx.db.insert("permissions", {
+            name: perm.name,
+            description: perm.description,
+            category: "collections",
+          });
+          permissionIds.set(perm.name, id);
+          permissionsCreated++;
+        }
+      }),
+    );
 
     let rolePermissionsAdded = 0;
     const organizations = await ctx.db.query("organizations").collect();
 
-    for (const organization of organizations) {
-      const roles = await ctx.db
-        .query("roles")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organization._id),
-        )
-        .collect();
+    await Promise.all(
+      Array.from(organizations).map(async (organization) => {
+        const roles = await ctx.db
+          .query("roles")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organization._id),
+          )
+          .collect();
 
-      const adminRole = roles.find(
-        (role) => role.isSystemRole && role.name === "admin",
-      );
-      const curatorRole = roles.find(
-        (role) => role.isSystemRole && role.name === "curator",
-      );
+        const adminRole = roles.find(
+          (role) => role.isSystemRole && role.name === "admin",
+        );
+        const curatorRole = roles.find(
+          (role) => role.isSystemRole && role.name === "curator",
+        );
 
-      const assignments = [
-        {
-          role: adminRole,
-          permissionNames: [
-            "collections.approve_acquisition",
-            "collections.approve_exhibition",
-            "collections.approve_conservation",
-          ],
-        },
-        {
-          role: curatorRole,
-          permissionNames: ["collections.approve_conservation"],
-        },
-      ];
+        const assignments = [
+          {
+            role: adminRole,
+            permissionNames: [
+              "collections.approve_acquisition",
+              "collections.approve_exhibition",
+              "collections.approve_conservation",
+            ],
+          },
+          {
+            role: curatorRole,
+            permissionNames: ["collections.approve_conservation"],
+          },
+        ];
 
-      for (const assignment of assignments) {
-        const role = assignment.role;
-        if (!role) {
-          continue;
-        }
-
-        for (const permissionName of assignment.permissionNames) {
-          const permissionId = permissionIds.get(permissionName);
-          if (!permissionId) {
-            continue;
+        for (const assignment of assignments) {
+          const role = assignment.role;
+          if (!role) {
+            return;
           }
 
-          const existing = await ctx.db
-            .query("rolePermissions")
-            .withIndex("by_role", (q) => q.eq("roleId", role._id))
-            .filter((q) => q.eq(q.field("permissionId"), permissionId))
-            .first();
+          for (const permissionName of assignment.permissionNames) {
+            const permissionId = permissionIds.get(permissionName);
+            if (!permissionId) {
+              return;
+            }
 
-          if (!existing) {
-            await ctx.db.insert("rolePermissions", {
-              roleId: role._id,
-              permissionId,
-            });
-            rolePermissionsAdded++;
+            const existing = await ctx.db
+              .query("rolePermissions")
+              .withIndex("by_role", (q) => q.eq("roleId", role._id))
+              .filter((q) => q.eq(q.field("permissionId"), permissionId))
+              .first();
+
+            if (!existing) {
+              await ctx.db.insert("rolePermissions", {
+                roleId: role._id,
+                permissionId,
+              });
+              rolePermissionsAdded++;
+            }
           }
         }
-      }
-    }
+      }),
+    );
 
     console.log(
       `Created ${permissionsCreated} permissions, added ${rolePermissionsAdded} role-permissions`,

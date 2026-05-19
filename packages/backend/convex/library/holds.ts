@@ -452,25 +452,27 @@ export const expireOldHolds = mutation({
       )
       .collect();
 
-    for (const hold of expiredHolds) {
-      if (hold.copyId) {
-        const copy = await ctx.db.get(hold.copyId);
-        if (copy && copy.status === "on_hold") {
-          await ctx.db.patch(hold.copyId, { status: "available" });
+    await Promise.all(
+      Array.from(expiredHolds).map(async (hold) => {
+        if (hold.copyId) {
+          const copy = await ctx.db.get(hold.copyId);
+          if (copy && copy.status === "on_hold") {
+            await ctx.db.patch(hold.copyId, { status: "available" });
 
-          const item = await ctx.db.get(hold.itemId);
-          if (item) {
-            await ctx.db.patch(hold.itemId, {
-              availableCopies: item.availableCopies + 1,
-            });
+            const item = await ctx.db.get(hold.itemId);
+            if (item) {
+              await ctx.db.patch(hold.itemId, {
+                availableCopies: item.availableCopies + 1,
+              });
+            }
           }
         }
-      }
 
-      await ctx.db.patch(hold._id, { status: "expired" });
+        await ctx.db.patch(hold._id, { status: "expired" });
 
-      await notifyNextInQueue(ctx, hold.itemId);
-    }
+        await notifyNextInQueue(ctx, hold.itemId);
+      }),
+    );
 
     return expiredHolds.length;
   },
@@ -486,12 +488,14 @@ async function reorderHoldQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
 
   pendingHolds.sort((a, b) => a.holdDate - b.holdDate);
 
-  for (let i = 0; i < pendingHolds.length; i++) {
-    const hold = pendingHolds[i];
-    if (hold) {
-      await ctx.db.patch(hold._id, { queuePosition: i + 1 });
-    }
-  }
+  await Promise.all(
+    Array.from({ length: pendingHolds.length }, async (_, i) => {
+      const hold = pendingHolds[i];
+      if (hold) {
+        await ctx.db.patch(hold._id, { queuePosition: i + 1 });
+      }
+    }),
+  );
 }
 
 async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {

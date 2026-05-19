@@ -30,24 +30,36 @@ export function AnimatedText({ text }: AnimatedTextProps) {
 
     setAnimatedText(generateRandomText());
 
-    const endTime = Date.now() + initialRandomDuration;
-    while (Date.now() < endTime) {
+    const runInitialScramble = async (endTime: number): Promise<void> => {
+      if (Date.now() >= endTime) {
+        return;
+      }
       await new Promise((resolve) => setTimeout(resolve, duration));
       setAnimatedText(generateRandomText());
-    }
 
-    for (let i = 0; i < text.length; i++) {
+      await runInitialScramble(endTime);
+    };
+
+    const revealCharacter = async (index: number): Promise<void> => {
+      if (index >= text.length) {
+        return;
+      }
       await new Promise((resolve) => setTimeout(resolve, revealDuration));
       setAnimatedText(
         (prevText) =>
-          text.slice(0, i + 1) +
+          text.slice(0, index + 1) +
           prevText
-            .slice(i + 1)
+            .slice(index + 1)
             .split("")
             .map(() => getRandomChar())
             .join(""),
       );
-    }
+
+      await revealCharacter(index + 1);
+    };
+
+    await runInitialScramble(Date.now() + initialRandomDuration);
+    await revealCharacter(0);
   }, [text, getRandomChar]);
 
   useEffect(() => {

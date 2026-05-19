@@ -426,20 +426,22 @@ export const create = mutation({
       );
 
       // Create notifications for approvers
-      for (const approverId of usersToNotify) {
-        if (approverId !== userId) {
-          // Don't notify the creator
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "New Accession Requires Approval",
-            message: `Accession ${accessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-            relatedEntityType: "accession",
-            relatedEntityId: accessionId,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(usersToNotify).map(async (approverId) => {
+          if (approverId !== userId) {
+            // Don't notify the creator
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "New Accession Requires Approval",
+              message: `Accession ${accessionNumber} is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+              relatedEntityType: "accession",
+              relatedEntityId: accessionId,
+            });
+          }
+        }),
+      );
     }
 
     // If no workflow config, auto-create collection object
@@ -637,19 +639,21 @@ export const upsertObjectDraft = mutation({
           updatedWorkflowStep,
         );
 
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: args.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Object Request Requires Approval",
-              message: `Object request ${accessionNumber} is pending your approval.`,
-              relatedEntityType: "accession",
-              relatedEntityId: existing._id,
-            });
-          }
-        }
+        await Promise.all(
+          Array.from(usersToNotify).map(async (approverId) => {
+            if (approverId !== userId) {
+              await ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: args.organizationId,
+                userId: approverId,
+                type: "workflow_pending",
+                title: "Object Request Requires Approval",
+                message: `Object request ${accessionNumber} is pending your approval.`,
+                relatedEntityType: "accession",
+                relatedEntityId: existing._id,
+              });
+            }
+          }),
+        );
       }
 
       return existing._id;
@@ -726,19 +730,21 @@ export const upsertObjectDraft = mutation({
           nextWorkflowStep,
         );
 
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: args.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Object Request Requires Approval",
-              message: `Object request ${accessionNumber} is pending your approval.`,
-              relatedEntityType: "accession",
-              relatedEntityId: reusableDraft._id,
-            });
-          }
-        }
+        await Promise.all(
+          Array.from(usersToNotify).map(async (approverId) => {
+            if (approverId !== userId) {
+              await ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: args.organizationId,
+                userId: approverId,
+                type: "workflow_pending",
+                title: "Object Request Requires Approval",
+                message: `Object request ${accessionNumber} is pending your approval.`,
+                relatedEntityType: "accession",
+                relatedEntityId: reusableDraft._id,
+              });
+            }
+          }),
+        );
       }
 
       return reusableDraft._id;
@@ -830,19 +836,21 @@ export const upsertObjectDraft = mutation({
         nextWorkflowStep,
       );
 
-      for (const approverId of usersToNotify) {
-        if (approverId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "Object Request Requires Approval",
-            message: `Object request ${accessionNumber} is pending your approval.`,
-            relatedEntityType: "accession",
-            relatedEntityId: accessionId,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(usersToNotify).map(async (approverId) => {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "Object Request Requires Approval",
+              message: `Object request ${accessionNumber} is pending your approval.`,
+              relatedEntityType: "accession",
+              relatedEntityId: accessionId,
+            });
+          }
+        }),
+      );
     }
 
     return accessionId;
@@ -1094,9 +1102,11 @@ export const backfillSearchDocuments = mutation({
       )
       .collect();
 
-    for (const accession of accessions) {
-      await upsertAccessionSearchDocument(ctx, accession);
-    }
+    await Promise.all(
+      Array.from(accessions).map(async (accession) => {
+        await upsertAccessionSearchDocument(ctx, accession);
+      }),
+    );
 
     return { updatedCount: accessions.length };
   },
@@ -1634,19 +1644,21 @@ export const approve = mutation({
         )
         .collect();
 
-      for (const userOrg of userOrgs) {
-        if (userOrg.userId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: accession.organizationId,
-            userId: userOrg.userId,
-            type: "workflow_approved",
-            title: "Accession Approved",
-            message: `Accession ${accession.accessionNumber} has been approved and added to the collection.`,
-            relatedEntityType: "accession",
-            relatedEntityId: args.accessionId,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(userOrgs).map(async (userOrg) => {
+          if (userOrg.userId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: accession.organizationId,
+              userId: userOrg.userId,
+              type: "workflow_approved",
+              title: "Accession Approved",
+              message: `Accession ${accession.accessionNumber} has been approved and added to the collection.`,
+              relatedEntityType: "accession",
+              relatedEntityId: args.accessionId,
+            });
+          }
+        }),
+      );
 
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {
         accessionId: args.accessionId,
@@ -1770,35 +1782,39 @@ export const emptyRejected = mutation({
 
     let deletedCount = 0;
 
-    for (const accession of rejectedAccessions) {
-      if (accession.collectionId) {
-        continue;
-      }
-
-      const storageIds = new Set<Id<"_storage">>();
-
-      for (const storageId of accession.documents || []) {
-        storageIds.add(storageId);
-      }
-
-      for (const mediaItem of accession.draftMedia || []) {
-        storageIds.add(mediaItem.storageId);
-      }
-
-      for (const checklistItem of accession.documentChecklist || []) {
-        if (checklistItem.storageId) {
-          storageIds.add(checklistItem.storageId);
+    await Promise.all(
+      Array.from(rejectedAccessions).map(async (accession) => {
+        if (accession.collectionId) {
+          return;
         }
-      }
 
-      for (const storageId of storageIds) {
-        await ctx.storage.delete(storageId);
-      }
+        const storageIds = new Set<Id<"_storage">>();
 
-      await ctx.db.delete(accession._id);
-      await deleteAccessionSearchDocument(ctx, accession._id);
-      deletedCount += 1;
-    }
+        for (const storageId of accession.documents || []) {
+          storageIds.add(storageId);
+        }
+
+        for (const mediaItem of accession.draftMedia || []) {
+          storageIds.add(mediaItem.storageId);
+        }
+
+        for (const checklistItem of accession.documentChecklist || []) {
+          if (checklistItem.storageId) {
+            storageIds.add(checklistItem.storageId);
+          }
+        }
+
+        await Promise.all(
+          Array.from(storageIds).map(async (storageId) => {
+            await ctx.storage.delete(storageId);
+          }),
+        );
+
+        await ctx.db.delete(accession._id);
+        await deleteAccessionSearchDocument(ctx, accession._id);
+        deletedCount += 1;
+      }),
+    );
 
     return { deletedCount };
   },
@@ -2952,16 +2968,18 @@ export const bulkExport = query({
 
     // Filter out null accessions and check permissions
     const validAccessions: Doc<"accessions">[] = [];
-    for (const accession of accessions) {
-      if (accession) {
-        await requirePermission(
-          ctx,
-          accession.organizationId,
-          "collections.read",
-        );
-        validAccessions.push(accession);
-      }
-    }
+    await Promise.all(
+      Array.from(accessions).map(async (accession) => {
+        if (accession) {
+          await requirePermission(
+            ctx,
+            accession.organizationId,
+            "collections.read",
+          );
+          validAccessions.push(accession);
+        }
+      }),
+    );
 
     // Batch fetch collections to avoid N+1 queries
     const collectionIds = validAccessions.flatMap((accession) =>
@@ -2988,63 +3006,65 @@ export const bulkExport = query({
       sourceVerified?: boolean;
     }> = [];
 
-    for (const accession of validAccessions) {
-      // Get collection info using batch lookup map
-      let collectionTitle: string | undefined;
-      let collectionAccessionNumber: string | undefined;
-      if (accession.collectionId) {
-        const collection = collectionMap.get(accession.collectionId);
-        if (collection) {
-          collectionTitle = collection.title;
-          collectionAccessionNumber = collection.accessionNumber;
+    await Promise.all(
+      Array.from(validAccessions).map(async (accession) => {
+        // Get collection info using batch lookup map
+        let collectionTitle: string | undefined;
+        let collectionAccessionNumber: string | undefined;
+        if (accession.collectionId) {
+          const collection = collectionMap.get(accession.collectionId);
+          if (collection) {
+            collectionTitle = collection.title;
+            collectionAccessionNumber = collection.accessionNumber;
+          }
         }
-      }
 
-      // Get donor account name
-      let donorName: string | undefined;
-      if (accession.donorAccountId) {
-        const donor = await ctx.db.get(accession.donorAccountId);
-        if (donor) {
-          donorName =
-            donor.businessName ??
-            [donor.firstName, donor.lastName].filter(Boolean).join(" ") ??
-            undefined;
+        // Get donor account name
+        let donorName: string | undefined;
+        if (accession.donorAccountId) {
+          const donor = await ctx.db.get(accession.donorAccountId);
+          if (donor) {
+            donorName =
+              donor.businessName ??
+              [donor.firstName, donor.lastName].filter(Boolean).join(" ") ??
+              undefined;
+          }
         }
-      }
 
-      // Get assigned user name
-      let assignedToName: string | undefined;
-      if (accession.assignedTo) {
-        const assignee = await ctx.db.get(accession.assignedTo);
-        assignedToName = assignee?.name ?? assignee?.email;
-      }
+        // Get assigned user name
+        let assignedToName: string | undefined;
+        if (accession.assignedTo) {
+          const assignee = await ctx.db.get(accession.assignedTo);
+          assignedToName = assignee?.name ?? assignee?.email;
+        }
 
-      // Get approver name
-      let approvedByName: string | undefined;
-      if (accession.approvedBy) {
-        const approver = await ctx.db.get(accession.approvedBy);
-        approvedByName = approver?.name ?? approver?.email;
-      }
+        // Get approver name
+        let approvedByName: string | undefined;
+        if (accession.approvedBy) {
+          const approver = await ctx.db.get(accession.approvedBy);
+          approvedByName = approver?.name ?? approver?.email;
+        }
 
-      results.push({
-        _id: accession._id,
-        accessionNumber: accession.accessionNumber,
-        dateReceived: accession.dateReceived,
-        source: accession.source,
-        method: accession.method,
-        status: accession.status,
-        cost: accession.cost,
-        notes: accession.notes,
-        collectionTitle,
-        collectionAccessionNumber,
-        donorName,
-        assignedToName,
-        approvedByName,
-        approvedAt: accession.approvedAt,
-        workflowStep: accession.workflowStep,
-        sourceVerified: accession.sourceVerified,
-      });
-    }
+        results.push({
+          _id: accession._id,
+          accessionNumber: accession.accessionNumber,
+          dateReceived: accession.dateReceived,
+          source: accession.source,
+          method: accession.method,
+          status: accession.status,
+          cost: accession.cost,
+          notes: accession.notes,
+          collectionTitle,
+          collectionAccessionNumber,
+          donorName,
+          assignedToName,
+          approvedByName,
+          approvedAt: accession.approvedAt,
+          workflowStep: accession.workflowStep,
+          sourceVerified: accession.sourceVerified,
+        });
+      }),
+    );
 
     return results;
   },

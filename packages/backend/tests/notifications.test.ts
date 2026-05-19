@@ -500,9 +500,11 @@ describe("notification CRUD operations", () => {
 
     // Bulk mark as read
     await t.run(async (ctx) => {
-      for (const id of notificationIds) {
-        await ctx.db.patch(id, { read: true });
-      }
+      await Promise.all(
+        Array.from(notificationIds).map(async (id) => {
+          await ctx.db.patch(id, { read: true });
+        }),
+      );
     });
 
     const notifications = await t.run(async (ctx) => {
@@ -549,9 +551,11 @@ describe("notification CRUD operations", () => {
 
     // Bulk delete
     await t.run(async (ctx) => {
-      for (const id of notificationIds) {
-        await ctx.db.delete(id);
-      }
+      await Promise.all(
+        Array.from(notificationIds).map(async (id) => {
+          await ctx.db.delete(id);
+        }),
+      );
     });
 
     const notifications = await t.run(async (ctx) => {
@@ -1437,15 +1441,17 @@ describe("notification type validation", () => {
       "system_announcement",
     ];
 
-    for (const type of validTypes) {
-      await t.mutation(internal.notifications.sendNotification, {
-        organizationId: orgId,
-        userId,
-        type,
-        title: `Test ${type}`,
-        message: `Testing ${type}`,
-      });
-    }
+    await Promise.all(
+      Array.from(validTypes).map(async (type) => {
+        await t.mutation(internal.notifications.sendNotification, {
+          organizationId: orgId,
+          userId,
+          type,
+          title: `Test ${type}`,
+          message: `Testing ${type}`,
+        });
+      }),
+    );
 
     const notifications = await t.run(async (ctx) => {
       return await ctx.db
@@ -1907,9 +1913,11 @@ describe("notification read/unread state management", () => {
 
     // Bulk mark as read
     await t.run(async (ctx) => {
-      for (const id of notificationIds) {
-        await ctx.db.patch(id, { read: true });
-      }
+      await Promise.all(
+        Array.from(notificationIds).map(async (id) => {
+          await ctx.db.patch(id, { read: true });
+        }),
+      );
     });
 
     // Verify all are read
@@ -2120,17 +2128,19 @@ describe("notification read/unread state management", () => {
     ]);
     // Create multiple unread notifications
     await t.run(async (ctx) => {
-      for (let i = 0; i < 10; i++) {
-        await ctx.db.insert("notifications", {
-          organizationId: orgId,
-          userId,
-          type: "system_announcement",
-          title: `Notification ${i}`,
-          message: `Message ${i}`,
-          read: false,
-          createdAt: Date.now(),
-        });
-      }
+      await Promise.all(
+        Array.from({ length: 10 }, async (_, i) => {
+          await ctx.db.insert("notifications", {
+            organizationId: orgId,
+            userId,
+            type: "system_announcement",
+            title: `Notification ${i}`,
+            message: `Message ${i}`,
+            read: false,
+            createdAt: Date.now(),
+          });
+        }),
+      );
     });
 
     // Get all unread notifications
@@ -2147,9 +2157,11 @@ describe("notification read/unread state management", () => {
 
     // Mark all as read
     await t.run(async (ctx) => {
-      for (const notification of unreadNotifications) {
-        await ctx.db.patch(notification._id, { read: true });
-      }
+      await Promise.all(
+        Array.from(unreadNotifications).map(async (notification) => {
+          await ctx.db.patch(notification._id, { read: true });
+        }),
+      );
     });
 
     // Verify all are now read

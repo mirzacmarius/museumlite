@@ -870,12 +870,14 @@ describe("roles", () => {
           }),
         ];
 
-        for (const permId of permissionIds) {
-          await ctx.db.insert("rolePermissions", {
-            roleId,
-            permissionId: permId,
-          });
-        }
+        await Promise.all(
+          Array.from(permissionIds).map(async (permId) => {
+            await ctx.db.insert("rolePermissions", {
+              roleId,
+              permissionId: permId,
+            });
+          }),
+        );
 
         return { roleId, permissionIds };
       });
@@ -1131,12 +1133,14 @@ describe("roles", () => {
           }),
         ];
 
-        for (const permId of permIds) {
-          await ctx.db.insert("rolePermissions", {
-            roleId,
-            permissionId: permId,
-          });
-        }
+        await Promise.all(
+          Array.from(permIds).map(async (permId) => {
+            await ctx.db.insert("rolePermissions", {
+              roleId,
+              permissionId: permId,
+            });
+          }),
+        );
 
         await ctx.db.insert("userOrganizations", {
           userId,

@@ -451,63 +451,71 @@ async function syncCollectionGroupMemberships(
   );
   const nextGroupIds = new Set(uniqueGroupIds);
 
-  for (const groupId of uniqueGroupIds) {
-    const group = await ctx.db.get(groupId);
-    if (!group) {
-      throw new Error("Collection group not found");
-    }
-    if (group.organizationId !== organizationId) {
-      throw new Error("Collection group belongs to a different organization");
-    }
-  }
+  await Promise.all(
+    Array.from(uniqueGroupIds).map(async (groupId) => {
+      const group = await ctx.db.get(groupId);
+      if (!group) {
+        throw new Error("Collection group not found");
+      }
+      if (group.organizationId !== organizationId) {
+        throw new Error("Collection group belongs to a different organization");
+      }
+    }),
+  );
 
-  for (const groupId of uniqueGroupIds) {
-    if (existingGroupIds.has(groupId)) {
-      continue;
-    }
+  await Promise.all(
+    Array.from(uniqueGroupIds).map(async (groupId) => {
+      if (existingGroupIds.has(groupId)) {
+        return;
+      }
 
-    const group = await ctx.db.get(groupId);
-    await ctx.db.insert("collectionGroupItems", {
-      collectionGroupId: groupId,
-      collectionId,
-      addedAt: Date.now(),
-      addedBy: userId,
-    });
-    if (group) {
-      await ctx.db.patch(groupId, {
-        itemsCount: (group.itemsCount || 0) + 1,
-        lastModifiedAt: Date.now(),
-        lastModifiedBy: userId,
+      const group = await ctx.db.get(groupId);
+      await ctx.db.insert("collectionGroupItems", {
+        collectionGroupId: groupId,
+        collectionId,
+        addedAt: Date.now(),
+        addedBy: userId,
       });
-    }
-  }
+      if (group) {
+        await ctx.db.patch(groupId, {
+          itemsCount: (group.itemsCount || 0) + 1,
+          lastModifiedAt: Date.now(),
+          lastModifiedBy: userId,
+        });
+      }
+    }),
+  );
 
-  for (const membership of existingMemberships) {
-    if (nextGroupIds.has(membership.collectionGroupId)) {
-      continue;
-    }
+  await Promise.all(
+    Array.from(existingMemberships).map(async (membership) => {
+      if (nextGroupIds.has(membership.collectionGroupId)) {
+        return;
+      }
 
-    const group = await ctx.db.get(membership.collectionGroupId);
-    await ctx.db.delete(membership._id);
-    if (group) {
-      await ctx.db.patch(membership.collectionGroupId, {
-        itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
-        lastModifiedAt: Date.now(),
-        lastModifiedBy: userId,
-      });
-    }
-  }
+      const group = await ctx.db.get(membership.collectionGroupId);
+      await ctx.db.delete(membership._id);
+      if (group) {
+        await ctx.db.patch(membership.collectionGroupId, {
+          itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
+          lastModifiedAt: Date.now(),
+          lastModifiedBy: userId,
+        });
+      }
+    }),
+  );
 }
 
 async function deleteStorageIds(
   ctx: MutationCtx,
   storageIds: Iterable<Id<"_storage"> | undefined>,
 ) {
-  for (const storageId of storageIds) {
-    if (storageId) {
-      await ctx.storage.delete(storageId);
-    }
-  }
+  await Promise.all(
+    Array.from(storageIds).map(async (storageId) => {
+      if (storageId) {
+        await ctx.storage.delete(storageId);
+      }
+    }),
+  );
 }
 
 async function deleteCollectionMedia(
@@ -519,40 +527,50 @@ async function deleteCollectionMedia(
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
 
-  for (const media of mediaFiles) {
-    const mediaVersions = await ctx.db
-      .query("mediaVersions")
-      .withIndex("by_original_media", (q) => q.eq("originalMediaId", media._id))
-      .collect();
+  await Promise.all(
+    Array.from(mediaFiles).map(async (media) => {
+      const mediaVersions = await ctx.db
+        .query("mediaVersions")
+        .withIndex("by_original_media", (q) =>
+          q.eq("originalMediaId", media._id),
+        )
+        .collect();
 
-    await deleteStorageIds(
-      ctx,
-      mediaVersions.map((version) => version.storageId),
-    );
+      await deleteStorageIds(
+        ctx,
+        mediaVersions.map((version) => version.storageId),
+      );
 
-    for (const version of mediaVersions) {
-      await ctx.db.delete(version._id);
-    }
+      await Promise.all(
+        Array.from(mediaVersions).map(async (version) => {
+          await ctx.db.delete(version._id);
+        }),
+      );
 
-    const editHistory = await ctx.db
-      .query("mediaEditHistory")
-      .withIndex("by_media", (q) => q.eq("mediaId", media._id))
-      .collect();
-    for (const entry of editHistory) {
-      await ctx.db.delete(entry._id);
-    }
+      const editHistory = await ctx.db
+        .query("mediaEditHistory")
+        .withIndex("by_media", (q) => q.eq("mediaId", media._id))
+        .collect();
+      await Promise.all(
+        Array.from(editHistory).map(async (entry) => {
+          await ctx.db.delete(entry._id);
+        }),
+      );
 
-    const downloads = await ctx.db
-      .query("mediaDownloads")
-      .withIndex("by_media", (q) => q.eq("mediaId", media._id))
-      .collect();
-    for (const download of downloads) {
-      await ctx.db.delete(download._id);
-    }
+      const downloads = await ctx.db
+        .query("mediaDownloads")
+        .withIndex("by_media", (q) => q.eq("mediaId", media._id))
+        .collect();
+      await Promise.all(
+        Array.from(downloads).map(async (download) => {
+          await ctx.db.delete(download._id);
+        }),
+      );
 
-    await deleteStorageIds(ctx, [media.storageId, media.thumbnailStorageId]);
-    await ctx.db.delete(media._id);
-  }
+      await deleteStorageIds(ctx, [media.storageId, media.thumbnailStorageId]);
+      await ctx.db.delete(media._id);
+    }),
+  );
 }
 
 async function deleteCollectionDependents(
@@ -565,17 +583,21 @@ async function deleteCollectionDependents(
     .query("collectionGroupItems")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const item of collectionGroupItems) {
-    await ctx.db.delete(item._id);
-  }
+  await Promise.all(
+    Array.from(collectionGroupItems).map(async (item) => {
+      await ctx.db.delete(item._id);
+    }),
+  );
 
   const objectComments = await ctx.db
     .query("objectComments")
     .withIndex("by_object", (q) => q.eq("objectId", collectionId))
     .collect();
-  for (const comment of objectComments) {
-    await ctx.db.delete(comment._id);
-  }
+  await Promise.all(
+    Array.from(objectComments).map(async (comment) => {
+      await ctx.db.delete(comment._id);
+    }),
+  );
 
   await deleteCollectionDetailRecords(ctx, collectionId);
 
@@ -583,156 +605,192 @@ async function deleteCollectionDependents(
     .query("accessions")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const accession of accessions) {
-    await ctx.db.patch(accession._id, { collectionId: undefined });
-  }
+  await Promise.all(
+    Array.from(accessions).map(async (accession) => {
+      await ctx.db.patch(accession._id, { collectionId: undefined });
+    }),
+  );
 
   const deaccessions = await ctx.db
     .query("deaccessions")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const deaccession of deaccessions) {
-    await deleteStorageIds(ctx, [
-      deaccession.proceedsReceiptDocument,
-      ...(deaccession.regulatoryApprovalDocuments ?? []),
-    ]);
-    await ctx.db.delete(deaccession._id);
-  }
+  await Promise.all(
+    Array.from(deaccessions).map(async (deaccession) => {
+      await deleteStorageIds(ctx, [
+        deaccession.proceedsReceiptDocument,
+        ...(deaccession.regulatoryApprovalDocuments ?? []),
+      ]);
+      await ctx.db.delete(deaccession._id);
+    }),
+  );
 
   const appraisals = await ctx.db
     .query("appraisals")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const appraisal of appraisals) {
-    await deleteStorageIds(ctx, appraisal.documents ?? []);
-    await ctx.db.delete(appraisal._id);
-  }
+  await Promise.all(
+    Array.from(appraisals).map(async (appraisal) => {
+      await deleteStorageIds(ctx, appraisal.documents ?? []);
+      await ctx.db.delete(appraisal._id);
+    }),
+  );
 
   const locationHistory = await ctx.db
     .query("locationHistory")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const history of locationHistory) {
-    await ctx.db.delete(history._id);
-  }
+  await Promise.all(
+    Array.from(locationHistory).map(async (history) => {
+      await ctx.db.delete(history._id);
+    }),
+  );
 
   const locationMoveRequests = await ctx.db
     .query("locationMoveRequests")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const request of locationMoveRequests) {
-    await ctx.db.delete(request._id);
-  }
+  await Promise.all(
+    Array.from(locationMoveRequests).map(async (request) => {
+      await ctx.db.delete(request._id);
+    }),
+  );
 
   const organizationMoveRequests = await ctx.db
     .query("organizationMoveRequests")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const request of organizationMoveRequests) {
-    await ctx.db.delete(request._id);
-  }
+  await Promise.all(
+    Array.from(organizationMoveRequests).map(async (request) => {
+      await ctx.db.delete(request._id);
+    }),
+  );
 
   const loanItems = await ctx.db
     .query("loanItems")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const loanItem of loanItems) {
-    const conditionReports = await ctx.db
-      .query("conditionReports")
-      .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItem._id))
-      .collect();
-    for (const report of conditionReports) {
-      await deleteStorageIds(ctx, report.photos ?? []);
-      await ctx.db.delete(report._id);
-    }
-    await ctx.db.delete(loanItem._id);
-  }
+  await Promise.all(
+    Array.from(loanItems).map(async (loanItem) => {
+      const conditionReports = await ctx.db
+        .query("conditionReports")
+        .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItem._id))
+        .collect();
+      await Promise.all(
+        Array.from(conditionReports).map(async (report) => {
+          await deleteStorageIds(ctx, report.photos ?? []);
+          await ctx.db.delete(report._id);
+        }),
+      );
+      await ctx.db.delete(loanItem._id);
+    }),
+  );
 
   const conditionDisputes = await ctx.db
     .query("conditionDisputes")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const dispute of conditionDisputes) {
-    await deleteStorageIds(ctx, [
-      ...(dispute.conditionBeforePhotos ?? []),
-      ...(dispute.conditionAfterPhotos ?? []),
-      ...(dispute.investigationPhotos ?? []),
-    ]);
-    await ctx.db.delete(dispute._id);
-  }
+  await Promise.all(
+    Array.from(conditionDisputes).map(async (dispute) => {
+      await deleteStorageIds(ctx, [
+        ...(dispute.conditionBeforePhotos ?? []),
+        ...(dispute.conditionAfterPhotos ?? []),
+        ...(dispute.investigationPhotos ?? []),
+      ]);
+      await ctx.db.delete(dispute._id);
+    }),
+  );
 
   const conservationTreatments = await ctx.db
     .query("conservationTreatments")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const treatment of conservationTreatments) {
-    await ctx.db.delete(treatment._id);
-  }
+  await Promise.all(
+    Array.from(conservationTreatments).map(async (treatment) => {
+      await ctx.db.delete(treatment._id);
+    }),
+  );
 
   const assessmentSchedules = await ctx.db
     .query("assessmentSchedules")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const schedule of assessmentSchedules) {
-    await ctx.db.delete(schedule._id);
-  }
+  await Promise.all(
+    Array.from(assessmentSchedules).map(async (schedule) => {
+      await ctx.db.delete(schedule._id);
+    }),
+  );
 
   const exhibitions = await ctx.db
     .query("exhibitions")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const exhibition of exhibitions) {
-    const exhibitionObjects = await ctx.db
-      .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibition._id))
-      .collect();
-    for (const exhibitionObject of exhibitionObjects) {
-      await ctx.db.delete(exhibitionObject._id);
-    }
+  await Promise.all(
+    Array.from(exhibitions).map(async (exhibition) => {
+      const exhibitionObjects = await ctx.db
+        .query("exhibitionObjects")
+        .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibition._id))
+        .collect();
+      await Promise.all(
+        Array.from(exhibitionObjects).map(async (exhibitionObject) => {
+          await ctx.db.delete(exhibitionObject._id);
+        }),
+      );
 
-    const exhibitionDocuments = await ctx.db
-      .query("exhibitionDocuments")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibition._id))
-      .collect();
-    for (const document of exhibitionDocuments) {
-      await deleteStorageIds(ctx, [document.storageId]);
-      await ctx.db.delete(document._id);
-    }
+      const exhibitionDocuments = await ctx.db
+        .query("exhibitionDocuments")
+        .withIndex("by_exhibition", (q) => q.eq("exhibitionId", exhibition._id))
+        .collect();
+      await Promise.all(
+        Array.from(exhibitionDocuments).map(async (document) => {
+          await deleteStorageIds(ctx, [document.storageId]);
+          await ctx.db.delete(document._id);
+        }),
+      );
 
-    await ctx.db.delete(exhibition._id);
-  }
+      await ctx.db.delete(exhibition._id);
+    }),
+  );
 
   const exhibitionObjects = await ctx.db
     .query("exhibitionObjects")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const exhibitionObject of exhibitionObjects) {
-    await ctx.db.delete(exhibitionObject._id);
-  }
+  await Promise.all(
+    Array.from(exhibitionObjects).map(async (exhibitionObject) => {
+      await ctx.db.delete(exhibitionObject._id);
+    }),
+  );
 
   const transitItems = await ctx.db
     .query("transitItems")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const transitItem of transitItems) {
-    await ctx.db.delete(transitItem._id);
-  }
+  await Promise.all(
+    Array.from(transitItems).map(async (transitItem) => {
+      await ctx.db.delete(transitItem._id);
+    }),
+  );
 
   const libraryItems = await ctx.db
     .query("libraryItems")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const libraryItem of libraryItems) {
-    await ctx.db.patch(libraryItem._id, { collectionId: undefined });
-  }
+  await Promise.all(
+    Array.from(libraryItems).map(async (libraryItem) => {
+      await ctx.db.patch(libraryItem._id, { collectionId: undefined });
+    }),
+  );
 
   const insuranceCoverages = await ctx.db
     .query("insuranceCoverages")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  for (const coverage of insuranceCoverages) {
-    await ctx.db.patch(coverage._id, { collectionId: undefined });
-  }
+  await Promise.all(
+    Array.from(insuranceCoverages).map(async (coverage) => {
+      await ctx.db.patch(coverage._id, { collectionId: undefined });
+    }),
+  );
 }
 
 async function getCollectionsWithOpenDeaccessions(
@@ -2699,11 +2757,13 @@ export const emptyDeletedCollections = mutation({
 
     let deletedCount = 0;
 
-    for (const collection of deletedCollections) {
-      await deleteCollectionDependents(ctx, collection._id);
-      await ctx.db.delete(collection._id);
-      deletedCount += 1;
-    }
+    await Promise.all(
+      Array.from(deletedCollections).map(async (collection) => {
+        await deleteCollectionDependents(ctx, collection._id);
+        await ctx.db.delete(collection._id);
+        deletedCount += 1;
+      }),
+    );
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
@@ -3274,30 +3334,32 @@ export const bulkUpdateLocation = mutation({
     let updated = 0;
     let failed = 0;
 
-    for (const collectionId of args.collectionIds) {
-      const collection = await ctx.db.get(collectionId);
-      if (!collection) {
-        failed++;
-        continue;
-      }
+    await Promise.all(
+      Array.from(args.collectionIds).map(async (collectionId) => {
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          failed++;
+          return;
+        }
 
-      try {
-        await requirePermission(
-          ctx,
-          collection.organizationId,
-          "collections.update",
-        );
+        try {
+          await requirePermission(
+            ctx,
+            collection.organizationId,
+            "collections.update",
+          );
 
-        await ctx.db.patch(collectionId, {
-          currentLocationId: args.locationId,
-          lastModifiedBy: userId,
-          lastModifiedAt: Date.now(),
-        });
-        updated++;
-      } catch {
-        failed++;
-      }
-    }
+          await ctx.db.patch(collectionId, {
+            currentLocationId: args.locationId,
+            lastModifiedBy: userId,
+            lastModifiedAt: Date.now(),
+          });
+          updated++;
+        } catch {
+          failed++;
+        }
+      }),
+    );
 
     return { updated, failed };
   },
@@ -3323,50 +3385,52 @@ export const bulkDeaccession = mutation({
     let failed = 0;
     let skipped = 0;
 
-    for (const collectionId of args.collectionIds) {
-      const collection = await ctx.db.get(collectionId);
-      if (!collection) {
-        failed++;
-        continue;
-      }
+    await Promise.all(
+      Array.from(args.collectionIds).map(async (collectionId) => {
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          failed++;
+          return;
+        }
 
-      if (collection.status === "deaccessioned") {
-        skipped++;
-        continue;
-      }
+        if (collection.status === "deaccessioned") {
+          skipped++;
+          return;
+        }
 
-      if (collection.status === "loaned") {
-        failed++;
-        continue;
-      }
+        if (collection.status === "loaned") {
+          failed++;
+          return;
+        }
 
-      try {
-        await requirePermission(
-          ctx,
-          collection.organizationId,
-          "collections.delete",
-        );
+        try {
+          await requirePermission(
+            ctx,
+            collection.organizationId,
+            "collections.delete",
+          );
 
-        await markCollectionDeaccessioned(ctx, {
-          collectionId,
-          changedBy: userId,
-        });
+          await markCollectionDeaccessioned(ctx, {
+            collectionId,
+            changedBy: userId,
+          });
 
-        await ctx.db.insert("auditLog", {
-          organizationId: collection.organizationId,
-          userId,
-          action: "deaccessioned",
-          entityType: "collection",
-          entityId: collectionId,
-          changes: { reason: args.reason, bulk: true },
-          timestamp: Date.now(),
-        });
+          await ctx.db.insert("auditLog", {
+            organizationId: collection.organizationId,
+            userId,
+            action: "deaccessioned",
+            entityType: "collection",
+            entityId: collectionId,
+            changes: { reason: args.reason, bulk: true },
+            timestamp: Date.now(),
+          });
 
-        deaccessioned++;
-      } catch {
-        failed++;
-      }
-    }
+          deaccessioned++;
+        } catch {
+          failed++;
+        }
+      }),
+    );
 
     return { deaccessioned, failed, skipped };
   },
@@ -4034,27 +4098,32 @@ export const listPublicForSitemap = query({
       lastModifiedAt?: number;
     }[] = [];
 
-    for (const org of organizations) {
-      const hasPortal = await hasFeatureAccess(ctx, org._id, "public_portal");
-      if (!hasPortal) {
-        continue;
-      }
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const hasPortal = await hasFeatureAccess(ctx, org._id, "public_portal");
+        if (!hasPortal) {
+          return;
+        }
 
-      if (!org.settings?.portalSettings?.isEnabled) {
-        continue;
-      }
+        if (!org.settings?.portalSettings?.isEnabled) {
+          return;
+        }
 
-      const publicCollections = await getPublicCatalogCollections(ctx, org._id);
+        const publicCollections = await getPublicCatalogCollections(
+          ctx,
+          org._id,
+        );
 
-      for (const c of publicCollections) {
-        results.push({
-          organizationSlug: org.slug,
-          urlSlug: c.publicSlug || c.accessionNumber,
-          title: c.title,
-          lastModifiedAt: c.lastModifiedAt,
-        });
-      }
-    }
+        for (const c of publicCollections) {
+          results.push({
+            organizationSlug: org.slug,
+            urlSlug: c.publicSlug || c.accessionNumber,
+            title: c.title,
+            lastModifiedAt: c.lastModifiedAt,
+          });
+        }
+      }),
+    );
 
     return results;
   },

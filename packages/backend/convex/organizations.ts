@@ -1600,36 +1600,40 @@ export const createDefaultRoles = internalMutation({
 
     const permissionMap = new Map<string, Id<"permissions">>();
 
-    for (const permName of permissionNames) {
-      const [category, name] = permName.split(".");
-      const permissionCategory = category as PermissionCategory;
-      const existing = await ctx.db
-        .query("permissions")
-        .withIndex("by_category", (q) => q.eq("category", permissionCategory))
-        .filter((q) => q.eq(q.field("name"), permName))
-        .first();
+    await Promise.all(
+      Array.from(permissionNames).map(async (permName) => {
+        const [category, name] = permName.split(".");
+        const permissionCategory = category as PermissionCategory;
+        const existing = await ctx.db
+          .query("permissions")
+          .withIndex("by_category", (q) => q.eq("category", permissionCategory))
+          .filter((q) => q.eq(q.field("name"), permName))
+          .first();
 
-      let permId: Id<"permissions">;
-      if (existing) {
-        permId = existing._id;
-      } else {
-        permId = await ctx.db.insert("permissions", {
-          name: permName,
-          description: `Permission: ${permName}`,
-          category: permissionCategory,
-        });
-      }
-      permissionMap.set(permName, permId);
-    }
+        let permId: Id<"permissions">;
+        if (existing) {
+          permId = existing._id;
+        } else {
+          permId = await ctx.db.insert("permissions", {
+            name: permName,
+            description: `Permission: ${permName}`,
+            category: permissionCategory,
+          });
+        }
+        permissionMap.set(permName, permId);
+      }),
+    );
 
     // Assign permissions to roles
     // Admin: all permissions
-    for (const permId of permissionMap.values()) {
-      await ctx.db.insert("rolePermissions", {
-        roleId: adminRole,
-        permissionId: permId,
-      });
-    }
+    await Promise.all(
+      Array.from(permissionMap.values()).map(async (permId) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRole,
+          permissionId: permId,
+        });
+      }),
+    );
 
     // Curator: collections + media + locations + sites
     const curatorPerms = [
@@ -1649,15 +1653,17 @@ export const createDefaultRoles = internalMutation({
       "sites.read",
       "accounts.read",
     ];
-    for (const permName of curatorPerms) {
-      const permId = permissionMap.get(permName);
-      if (permId) {
-        await ctx.db.insert("rolePermissions", {
-          roleId: curatorRole,
-          permissionId: permId,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(curatorPerms).map(async (permName) => {
+        const permId = permissionMap.get(permName);
+        if (permId) {
+          await ctx.db.insert("rolePermissions", {
+            roleId: curatorRole,
+            permissionId: permId,
+          });
+        }
+      }),
+    );
 
     // Registrar: workflows + locations + loans + sites
     const registrarPerms = [
@@ -1683,15 +1689,17 @@ export const createDefaultRoles = internalMutation({
       "accounts.write",
       "organization.view_analytics",
     ];
-    for (const permName of registrarPerms) {
-      const permId = permissionMap.get(permName);
-      if (permId) {
-        await ctx.db.insert("rolePermissions", {
-          roleId: registrarRole,
-          permissionId: permId,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(registrarPerms).map(async (permName) => {
+        const permId = permissionMap.get(permName);
+        if (permId) {
+          await ctx.db.insert("rolePermissions", {
+            roleId: registrarRole,
+            permissionId: permId,
+          });
+        }
+      }),
+    );
 
     // Cataloger: collections + media + sites
     const catalogerPerms = [
@@ -1705,15 +1713,17 @@ export const createDefaultRoles = internalMutation({
       "sites.read",
       "accounts.read",
     ];
-    for (const permName of catalogerPerms) {
-      const permId = permissionMap.get(permName);
-      if (permId) {
-        await ctx.db.insert("rolePermissions", {
-          roleId: catalogerRole,
-          permissionId: permId,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(catalogerPerms).map(async (permName) => {
+        const permId = permissionMap.get(permName);
+        if (permId) {
+          await ctx.db.insert("rolePermissions", {
+            roleId: catalogerRole,
+            permissionId: permId,
+          });
+        }
+      }),
+    );
 
     // Viewer: read-only
     const viewerPerms = [
@@ -1724,15 +1734,17 @@ export const createDefaultRoles = internalMutation({
       "media.read",
       "accounts.read",
     ];
-    for (const permName of viewerPerms) {
-      const permId = permissionMap.get(permName);
-      if (permId) {
-        await ctx.db.insert("rolePermissions", {
-          roleId: viewerRole,
-          permissionId: permId,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(viewerPerms).map(async (permName) => {
+        const permId = permissionMap.get(permName);
+        if (permId) {
+          await ctx.db.insert("rolePermissions", {
+            roleId: viewerRole,
+            permissionId: permId,
+          });
+        }
+      }),
+    );
 
     return null;
   },

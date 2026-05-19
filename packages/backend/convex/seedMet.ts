@@ -91,9 +91,11 @@ export const clearTableBatch = internalMutation({
   handler: async (ctx, args) => {
     // biome-ignore lint/suspicious/noExplicitAny: required for dynamic table iteration
     const docs = await ctx.db.query(args.tableName as any).take(args.batchSize);
-    for (const doc of docs) {
-      await ctx.db.delete(doc._id);
-    }
+    await Promise.all(
+      Array.from(docs).map(async (doc) => {
+        await ctx.db.delete(doc._id);
+      }),
+    );
     return docs.length;
   },
 });
@@ -105,9 +107,11 @@ export const clearStorageBatch = internalMutation({
   returns: v.number(),
   handler: async (ctx, args) => {
     const files = await ctx.db.system.query("_storage").take(args.batchSize);
-    for (const file of files) {
-      await ctx.storage.delete(file._id);
-    }
+    await Promise.all(
+      Array.from(files).map(async (file) => {
+        await ctx.storage.delete(file._id);
+      }),
+    );
     return files.length;
   },
 });

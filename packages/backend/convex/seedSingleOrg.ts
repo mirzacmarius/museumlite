@@ -187,15 +187,20 @@ export const clearAllData = action({
       "serialIssues",
     ];
 
-    for (const tableName of tablesToClear) {
-      let batchDeleted: number;
-      do {
-        batchDeleted = await ctx.runMutation(internal.seedMet.clearTableBatch, {
-          tableName,
-          batchSize: 500,
-        });
-      } while (batchDeleted === 500);
-    }
+    await Promise.all(
+      Array.from(tablesToClear).map(async (tableName) => {
+        let batchDeleted: number;
+        do {
+          batchDeleted = await ctx.runMutation(
+            internal.seedMet.clearTableBatch,
+            {
+              tableName,
+              batchSize: 500,
+            },
+          );
+        } while (batchDeleted === 500);
+      }),
+    );
 
     // Clear storage
     let storageBatch: number;
@@ -254,39 +259,44 @@ export const seedOrganization = action({
     const rooms = ["Gallery A", "Gallery B", "Storage Room 1", "Archive Room"];
     const locationIds: Id<"locations">[] = [];
 
-    for (const building of buildings) {
-      const buildingId = await ctx.runMutation(
-        internal.seedMet.createLocation,
-        {
-          organizationId: orgId,
-          name: building,
-          type: "building",
-          sortOrder: 0,
-        },
-      );
-      for (const floor of floors) {
-        const floorId = await ctx.runMutation(internal.seedMet.createLocation, {
-          organizationId: orgId,
-          name: floor,
-          type: "floor",
-          parentLocationId: buildingId,
-          sortOrder: 0,
-        });
-        for (const room of rooms) {
-          const roomId = await ctx.runMutation(
+    await Promise.all(
+      Array.from(buildings).map(async (building) => {
+        const buildingId = await ctx.runMutation(
+          internal.seedMet.createLocation,
+          {
+            organizationId: orgId,
+            name: building,
+            type: "building",
+            sortOrder: 0,
+          },
+        );
+        for (const floor of floors) {
+          const floorId = await ctx.runMutation(
             internal.seedMet.createLocation,
             {
               organizationId: orgId,
-              name: room,
-              type: "room",
-              parentLocationId: floorId,
+              name: floor,
+              type: "floor",
+              parentLocationId: buildingId,
               sortOrder: 0,
             },
           );
-          locationIds.push(roomId);
+          for (const room of rooms) {
+            const roomId = await ctx.runMutation(
+              internal.seedMet.createLocation,
+              {
+                organizationId: orgId,
+                name: room,
+                type: "room",
+                parentLocationId: floorId,
+                sortOrder: 0,
+              },
+            );
+            locationIds.push(roomId);
+          }
         }
-      }
-    }
+      }),
+    );
 
     // Fetch real Met Museum objects
     console.log(`  Fetching Met Museum objects for "${org.query}"...`);
@@ -374,51 +384,61 @@ export const seedOrganization = action({
       { name: "British Museum", city: "London" },
       { name: "Louvre Museum", city: "Paris" },
     ];
-    for (let i = 0; i < lenders.length; i++) {
-      await ctx.runMutation(internal.seedMet.createAccount, {
-        organizationId: orgId,
-        userId,
-        accountNumber: `LEND-${String(i + 1).padStart(4, "0")}`,
-        accountType: "lender",
-        businessName: lenders[i]!.name,
-        contactPerson: `Contact ${i + 1}`,
-        contactEmail: `contact${i + 1}@museum.org`,
-        contactPhone: "+1-555-0100",
-        city: lenders[i]!.city,
-        country: "USA",
-        status: "active",
-      });
-    }
+    await Promise.all(
+      Array.from({ length: lenders.length }, async (_, i) => {
+        await ctx.runMutation(internal.seedMet.createAccount, {
+          organizationId: orgId,
+          userId,
+          accountNumber: `LEND-${String(i + 1).padStart(4, "0")}`,
+          accountType: "lender",
+          businessName: lenders[i]!.name,
+          contactPerson: `Contact ${i + 1}`,
+          contactEmail: `contact${i + 1}@museum.org`,
+          contactPhone: "+1-555-0100",
+          city: lenders[i]!.city,
+          country: "USA",
+          status: "active",
+        });
+      }),
+    );
 
     // Create options
-    for (const c of ["Excellent", "Good", "Fair", "Poor"]) {
-      await ctx.runMutation(internal.seedMet.createConditionOption, {
-        organizationId: orgId,
-        userId,
-        name: c,
-        description: `${c} condition`,
-      });
-    }
-    for (const m of ["Oil", "Acrylic", "Watercolor", "Bronze", "Marble"]) {
-      await ctx.runMutation(internal.seedMet.createMaterialOption, {
-        organizationId: orgId,
-        userId,
-        name: m,
-      });
-    }
-    for (const t of [
-      "Painting",
-      "Sculpture",
-      "Drawing",
-      "Print",
-      "Photograph",
-    ]) {
-      await ctx.runMutation(internal.seedMet.createTypeOption, {
-        organizationId: orgId,
-        userId,
-        name: t,
-      });
-    }
+    await Promise.all(
+      Array.from(["Excellent", "Good", "Fair", "Poor"]).map(async (c) => {
+        await ctx.runMutation(internal.seedMet.createConditionOption, {
+          organizationId: orgId,
+          userId,
+          name: c,
+          description: `${c} condition`,
+        });
+      }),
+    );
+    await Promise.all(
+      Array.from(["Oil", "Acrylic", "Watercolor", "Bronze", "Marble"]).map(
+        async (m) => {
+          await ctx.runMutation(internal.seedMet.createMaterialOption, {
+            organizationId: orgId,
+            userId,
+            name: m,
+          });
+        },
+      ),
+    );
+    await Promise.all(
+      Array.from([
+        "Painting",
+        "Sculpture",
+        "Drawing",
+        "Print",
+        "Photograph",
+      ]).map(async (t) => {
+        await ctx.runMutation(internal.seedMet.createTypeOption, {
+          organizationId: orgId,
+          userId,
+          name: t,
+        });
+      }),
+    );
 
     console.log(`  Done with ${org.name}!`);
     return null;

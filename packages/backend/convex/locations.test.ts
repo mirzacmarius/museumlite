@@ -173,12 +173,14 @@ async function createOrgUserWithLocationDeleteAndDeaccessionPermissions() {
       isSystemRole: false,
     });
 
-    for (const permissionId of permissionIds) {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
+    await Promise.all(
+      Array.from(permissionIds).map(async (permissionId) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
+      }),
+    );
 
     await ctx.db.insert("userOrganizations", {
       userId,

@@ -841,28 +841,30 @@ export const deleteLocation = mutation({
 
     const objectsRequiringDeaccession: typeof objects = [];
 
-    for (const object of objects) {
-      if (
-        object.status === "deaccessioned" ||
-        object.status === "archived" ||
-        object.status === "deleted"
-      ) {
-        continue;
-      }
+    await Promise.all(
+      Array.from(objects).map(async (object) => {
+        if (
+          object.status === "deaccessioned" ||
+          object.status === "archived" ||
+          object.status === "deleted"
+        ) {
+          return;
+        }
 
-      const existingDeaccessions = await ctx.db
-        .query("deaccessions")
-        .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
-        .collect();
+        const existingDeaccessions = await ctx.db
+          .query("deaccessions")
+          .withIndex("by_collection", (q) => q.eq("collectionId", object._id))
+          .collect();
 
-      const alreadyInFlow = existingDeaccessions.some(
-        (deaccession) => deaccession.status !== "rejected",
-      );
+        const alreadyInFlow = existingDeaccessions.some(
+          (deaccession) => deaccession.status !== "rejected",
+        );
 
-      if (!alreadyInFlow) {
-        objectsRequiringDeaccession.push(object);
-      }
-    }
+        if (!alreadyInFlow) {
+          objectsRequiringDeaccession.push(object);
+        }
+      }),
+    );
 
     if (objectsRequiringDeaccession.length > 0) {
       if (!args.deaccessionReason?.trim()) {
@@ -876,18 +878,22 @@ export const deleteLocation = mutation({
       }
 
       const dateDeaccessioned = args.dateDeaccessioned ?? Date.now();
+      const deaccessionReason = args.deaccessionReason.trim();
+      const deaccessionMethod = args.deaccessionMethod;
 
-      for (const object of objectsRequiringDeaccession) {
-        await ctx.runMutation(internal.deaccessions.createInternal, {
-          organizationId: location.organizationId,
-          collectionId: object._id,
-          createdByUserId: userId,
-          dateDeaccessioned,
-          reason: args.deaccessionReason.trim(),
-          method: args.deaccessionMethod,
-          notes: args.deaccessionNotes?.trim() || undefined,
-        });
-      }
+      await Promise.all(
+        Array.from(objectsRequiringDeaccession).map(async (object) => {
+          await ctx.runMutation(internal.deaccessions.createInternal, {
+            organizationId: location.organizationId,
+            collectionId: object._id,
+            createdByUserId: userId,
+            dateDeaccessioned,
+            reason: deaccessionReason,
+            method: deaccessionMethod,
+            notes: args.deaccessionNotes?.trim() || undefined,
+          });
+        }),
+      );
     }
 
     // Soft delete
@@ -1810,14 +1816,16 @@ export const reorder = mutation({
       );
 
       // Re-index old siblings
-      for (let i = 0; i < sortedOldSiblings.length; i++) {
-        const sibling = sortedOldSiblings[i];
-        if (sibling && sibling.sortOrder !== i) {
-          await ctx.db.patch(sibling._id, {
-            sortOrder: i,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from({ length: sortedOldSiblings.length }, async (_, i) => {
+          const sibling = sortedOldSiblings[i];
+          if (sibling && sibling.sortOrder !== i) {
+            await ctx.db.patch(sibling._id, {
+              sortOrder: i,
+            });
+          }
+        }),
+      );
     }
   },
 });
@@ -1900,24 +1908,26 @@ export const getObjectsAtLocation = query({
       }
     >();
 
-    for (const locationId of locationIds) {
-      const objects = await ctx.db
-        .query("collections")
-        .withIndex("by_currentLocation", (q) =>
-          q.eq("currentLocationId", locationId),
-        )
-        .collect();
+    await Promise.all(
+      Array.from(locationIds).map(async (locationId) => {
+        const objects = await ctx.db
+          .query("collections")
+          .withIndex("by_currentLocation", (q) =>
+            q.eq("currentLocationId", locationId),
+          )
+          .collect();
 
-      for (const object of objects) {
-        objectsById.set(object._id, {
-          _id: object._id,
-          currentLocationId: locationId,
-          accessionNumber: object.accessionNumber,
-          title: object.title,
-          status: object.status,
-        });
-      }
-    }
+        for (const object of objects) {
+          objectsById.set(object._id, {
+            _id: object._id,
+            currentLocationId: locationId,
+            accessionNumber: object.accessionNumber,
+            title: object.title,
+            status: object.status,
+          });
+        }
+      }),
+    );
 
     const sortedObjects = Array.from(objectsById.values()).sort(
       (left, right) => {
@@ -2571,38 +2581,44 @@ async function buildLocationHierarchy(
   const nameToId: Record<string, Id<"locations">> = {};
   let locationIndex = 1;
 
-  for (const loc of locations) {
-    const locationCode = `LOC-${String(locationIndex).padStart(3, "0")}`;
-    const locationId = await ctx.db.insert("locations", {
-      organizationId: orgId,
-      name: loc.name,
-      locationCode,
-      locationCodeNormalized: locationCode.toLowerCase(),
-      type: loc.type,
-      sortOrder: 0,
-      isActive: true,
-      notes: loc.notes,
-      customFields: loc.customFields ?? {
-        ...(loc.temperature !== undefined && { temperature: loc.temperature }),
-        ...(loc.humidity !== undefined && { humidity: loc.humidity }),
-        ...(loc.isSecure !== undefined && { isSecure: loc.isSecure }),
-      },
-    });
-    nameToId[loc.name] = locationId;
-    locationIndex++;
-  }
+  await Promise.all(
+    Array.from(locations).map(async (loc) => {
+      const locationCode = `LOC-${String(locationIndex).padStart(3, "0")}`;
+      const locationId = await ctx.db.insert("locations", {
+        organizationId: orgId,
+        name: loc.name,
+        locationCode,
+        locationCodeNormalized: locationCode.toLowerCase(),
+        type: loc.type,
+        sortOrder: 0,
+        isActive: true,
+        notes: loc.notes,
+        customFields: loc.customFields ?? {
+          ...(loc.temperature !== undefined && {
+            temperature: loc.temperature,
+          }),
+          ...(loc.humidity !== undefined && { humidity: loc.humidity }),
+          ...(loc.isSecure !== undefined && { isSecure: loc.isSecure }),
+        },
+      });
+      nameToId[loc.name] = locationId;
+      locationIndex++;
+    }),
+  );
 
-  for (const loc of locations) {
-    if (loc.parentLocationId) {
-      const parentId = nameToId[loc.parentLocationId];
-      const childId = nameToId[loc.name];
-      if (parentId && childId) {
-        await ctx.db.patch(childId, {
-          parentLocationId: parentId,
-        });
+  await Promise.all(
+    Array.from(locations).map(async (loc) => {
+      if (loc.parentLocationId) {
+        const parentId = nameToId[loc.parentLocationId];
+        const childId = nameToId[loc.name];
+        if (parentId && childId) {
+          await ctx.db.patch(childId, {
+            parentLocationId: parentId,
+          });
+        }
       }
-    }
-  }
+    }),
+  );
 
   return nameToId;
 }
@@ -2638,9 +2654,11 @@ export const seedLocationsForOrg = internalMutation({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    for (const loc of existingLocations) {
-      await ctx.db.patch(loc._id, { isActive: false });
-    }
+    await Promise.all(
+      Array.from(existingLocations).map(async (loc) => {
+        await ctx.db.patch(loc._id, { isActive: false });
+      }),
+    );
 
     await buildLocationHierarchy(ctx, org._id, locations);
 
@@ -2657,15 +2675,17 @@ export const seedAllLocations = internalMutation({
   handler: async (ctx) => {
     let totalLocations = 0;
 
-    for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
-      const count = await ctx.runMutation(
-        internal.locations.seedLocationsForOrg,
-        {
-          organizationSlug: orgSlug,
-        },
-      );
-      totalLocations += count;
-    }
+    await Promise.all(
+      Array.from(Object.keys(LOCATIONS_DATA)).map(async (orgSlug) => {
+        const count = await ctx.runMutation(
+          internal.locations.seedLocationsForOrg,
+          {
+            organizationSlug: orgSlug,
+          },
+        );
+        totalLocations += count;
+      }),
+    );
 
     return totalLocations;
   },
@@ -2711,15 +2731,17 @@ export const adminSeedAllLocations = internalMutation({
   returns: v.number(),
   handler: async (ctx): Promise<number> => {
     let totalLocations = 0;
-    for (const orgSlug of Object.keys(LOCATIONS_DATA)) {
-      const count = await ctx.runMutation(
-        internal.locations.seedLocationsForOrg,
-        {
-          organizationSlug: orgSlug,
-        },
-      );
-      totalLocations += count;
-    }
+    await Promise.all(
+      Array.from(Object.keys(LOCATIONS_DATA)).map(async (orgSlug) => {
+        const count = await ctx.runMutation(
+          internal.locations.seedLocationsForOrg,
+          {
+            organizationSlug: orgSlug,
+          },
+        );
+        totalLocations += count;
+      }),
+    );
     return totalLocations;
   },
 });

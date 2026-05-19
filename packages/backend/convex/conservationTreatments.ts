@@ -563,19 +563,21 @@ export const approve = mutation({
           nextStep,
         );
 
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: treatment.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Conservation Treatment Requires Your Approval",
-              message: `Conservation treatment "${treatment.title}" is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "conservationTreatment",
-              relatedEntityId: args.treatmentId,
-            });
-          }
-        }
+        await Promise.all(
+          Array.from(usersToNotify).map(async (approverId) => {
+            if (approverId !== userId) {
+              await ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: treatment.organizationId,
+                userId: approverId,
+                type: "workflow_pending",
+                title: "Conservation Treatment Requires Your Approval",
+                message: `Conservation treatment "${treatment.title}" is pending your approval at step ${nextStep}.`,
+                relatedEntityType: "conservationTreatment",
+                relatedEntityId: args.treatmentId,
+              });
+            }
+          }),
+        );
       }
     } else {
       await requirePermission(
@@ -1646,165 +1648,52 @@ export const checkOverdueTreatmentsInternal = internalMutation({
     const organizations = await ctx.db.query("organizations").collect();
     const now = Date.now();
 
-    for (const org of organizations) {
-      const rules = await ctx.db
-        .query("conservationAlertRules")
-        .withIndex("by_organization_and_active", (q) =>
-          q.eq("organizationId", org._id).eq("isActive", true),
-        )
-        .filter((q) => q.eq(q.field("triggerType"), "treatment_overdue"))
-        .collect();
-
-      for (const rule of rules) {
-        const daysOverdue = rule.daysOverdue ?? 7;
-        const threshold = now - daysOverdue * 24 * 60 * 60 * 1000;
-
-        const overdueTreatments = await ctx.db
-          .query("conservationTreatments")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id).eq("status", "approved"),
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const rules = await ctx.db
+          .query("conservationAlertRules")
+          .withIndex("by_organization_and_active", (q) =>
+            q.eq("organizationId", org._id).eq("isActive", true),
           )
-          .filter((q) => q.lt(q.field("performedAt"), threshold))
+          .filter((q) => q.eq(q.field("triggerType"), "treatment_overdue"))
           .collect();
 
-        for (const treatment of overdueTreatments) {
-          const existingAlert = await ctx.db
-            .query("conservationAlerts")
-            .withIndex("by_treatment", (q) =>
-              q.eq("treatmentId", treatment._id),
-            )
-            .filter((q) =>
-              q.and(
-                q.eq(q.field("alertType"), "treatment_overdue"),
-                q.eq(q.field("status"), "active"),
-              ),
-            )
-            .first();
+        for (const rule of rules) {
+          const daysOverdue = rule.daysOverdue ?? 7;
+          const threshold = now - daysOverdue * 24 * 60 * 60 * 1000;
 
-          if (existingAlert) continue;
-
-          const alertId = await ctx.db.insert("conservationAlerts", {
-            organizationId: org._id,
-            ruleId: rule._id,
-            treatmentId: treatment._id,
-            collectionId: treatment.collectionId,
-            alertType: "treatment_overdue",
-            title: `Overdue Treatment: ${treatment.title}`,
-            description: `Treatment "${treatment.title}" has been approved but not started for over ${daysOverdue} days.`,
-            priority: rule.priority,
-            status: "active",
-            createdAt: now,
-          });
-
-          if (rule.inAppNotification) {
-            const usersToNotify: string[] = [];
-
-            if (rule.notifyUsers?.length) {
-              usersToNotify.push(...rule.notifyUsers);
-            }
-
-            if (rule.notifyRoles?.length) {
-              for (const roleId of rule.notifyRoles) {
-                const userOrgs = await ctx.db
-                  .query("userOrganizations")
-                  .withIndex("by_organization", (q) =>
-                    q.eq("organizationId", org._id),
-                  )
-                  .filter((q) => q.eq(q.field("roleId"), roleId))
-                  .collect();
-                usersToNotify.push(...userOrgs.map((uo) => uo.userId));
-              }
-            }
-
-            const uniqueUsers = [...new Set(usersToNotify)];
-            for (const userId of uniqueUsers) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: org._id,
-                userId: userId as typeof treatment.performedBy,
-                type: "conservation_alert",
-                title: "Overdue Treatment Alert",
-                message: `Treatment "${treatment.title}" is overdue and requires attention.`,
-                relatedEntityType: "conservationAlert",
-                relatedEntityId: alertId,
-              });
-            }
-          }
-        }
-      }
-    }
-
-    return null;
-  },
-});
-
-export const checkAssessmentsDueInternal = internalMutation({
-  args: {},
-  returns: v.null(),
-  handler: async (ctx) => {
-    const organizations = await ctx.db.query("organizations").collect();
-    const now = Date.now();
-
-    for (const org of organizations) {
-      const rules = await ctx.db
-        .query("conservationAlertRules")
-        .withIndex("by_organization_and_active", (q) =>
-          q.eq("organizationId", org._id).eq("isActive", true),
-        )
-        .filter((q) => q.eq(q.field("triggerType"), "assessment_due"))
-        .collect();
-
-      for (const rule of rules) {
-        const intervalDays = rule.assessmentIntervalDays ?? 365;
-        const threshold = now - intervalDays * 24 * 60 * 60 * 1000;
-
-        const collections = await ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id).eq("status", "active"),
-          )
-          .collect();
-
-        for (const collection of collections) {
-          const lastAssessment = await ctx.db
+          const overdueTreatments = await ctx.db
             .query("conservationTreatments")
-            .withIndex("by_collection", (q) =>
-              q.eq("collectionId", collection._id),
+            .withIndex("by_organization_and_status", (q) =>
+              q.eq("organizationId", org._id).eq("status", "approved"),
             )
-            .filter((q) => q.eq(q.field("treatmentType"), "assessment"))
-            .order("desc")
-            .first();
+            .filter((q) => q.lt(q.field("performedAt"), threshold))
+            .collect();
 
-          const lastAssessmentTime = lastAssessment?.performedAt ?? 0;
-
-          if (lastAssessmentTime < threshold) {
+          for (const treatment of overdueTreatments) {
             const existingAlert = await ctx.db
               .query("conservationAlerts")
-              .withIndex("by_collection", (q) =>
-                q.eq("collectionId", collection._id),
+              .withIndex("by_treatment", (q) =>
+                q.eq("treatmentId", treatment._id),
               )
               .filter((q) =>
                 q.and(
-                  q.eq(q.field("alertType"), "assessment_due"),
+                  q.eq(q.field("alertType"), "treatment_overdue"),
                   q.eq(q.field("status"), "active"),
                 ),
               )
               .first();
 
-            if (existingAlert) continue;
-
-            const daysSinceAssessment = Math.floor(
-              (now - lastAssessmentTime) / (24 * 60 * 60 * 1000),
-            );
+            if (existingAlert) return;
 
             const alertId = await ctx.db.insert("conservationAlerts", {
               organizationId: org._id,
               ruleId: rule._id,
-              collectionId: collection._id,
-              alertType: "assessment_due",
-              title: `Assessment Due: ${collection.title}`,
-              description: lastAssessment
-                ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
-                : "No assessment record found. Initial assessment recommended.",
+              treatmentId: treatment._id,
+              collectionId: treatment.collectionId,
+              alertType: "treatment_overdue",
+              title: `Overdue Treatment: ${treatment.title}`,
+              description: `Treatment "${treatment.title}" has been approved but not started for over ${daysOverdue} days.`,
               priority: rule.priority,
               status: "active",
               createdAt: now,
@@ -1831,25 +1720,149 @@ export const checkAssessmentsDueInternal = internalMutation({
               }
 
               const uniqueUsers = [...new Set(usersToNotify)];
-              for (const notifyUserId of uniqueUsers) {
-                await ctx.runMutation(
-                  internal.audit.createNotificationInternal,
-                  {
-                    organizationId: org._id,
-                    userId: notifyUserId as typeof collection.catalogedBy,
-                    type: "conservation_alert",
-                    title: "Assessment Due Alert",
-                    message: `Object "${collection.title}" requires a conservation assessment.`,
-                    relatedEntityType: "conservationAlert",
-                    relatedEntityId: alertId,
-                  },
+              await Promise.all(
+                Array.from(uniqueUsers).map(async (userId) => {
+                  await ctx.runMutation(
+                    internal.audit.createNotificationInternal,
+                    {
+                      organizationId: org._id,
+                      userId: userId as typeof treatment.performedBy,
+                      type: "conservation_alert",
+                      title: "Overdue Treatment Alert",
+                      message: `Treatment "${treatment.title}" is overdue and requires attention.`,
+                      relatedEntityType: "conservationAlert",
+                      relatedEntityId: alertId,
+                    },
+                  );
+                }),
+              );
+            }
+          }
+        }
+      }),
+    );
+
+    return null;
+  },
+});
+
+export const checkAssessmentsDueInternal = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query("organizations").collect();
+    const now = Date.now();
+
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const rules = await ctx.db
+          .query("conservationAlertRules")
+          .withIndex("by_organization_and_active", (q) =>
+            q.eq("organizationId", org._id).eq("isActive", true),
+          )
+          .filter((q) => q.eq(q.field("triggerType"), "assessment_due"))
+          .collect();
+
+        for (const rule of rules) {
+          const intervalDays = rule.assessmentIntervalDays ?? 365;
+          const threshold = now - intervalDays * 24 * 60 * 60 * 1000;
+
+          const collections = await ctx.db
+            .query("collections")
+            .withIndex("by_organization_and_status", (q) =>
+              q.eq("organizationId", org._id).eq("status", "active"),
+            )
+            .collect();
+
+          for (const collection of collections) {
+            const lastAssessment = await ctx.db
+              .query("conservationTreatments")
+              .withIndex("by_collection", (q) =>
+                q.eq("collectionId", collection._id),
+              )
+              .filter((q) => q.eq(q.field("treatmentType"), "assessment"))
+              .order("desc")
+              .first();
+
+            const lastAssessmentTime = lastAssessment?.performedAt ?? 0;
+
+            if (lastAssessmentTime < threshold) {
+              const existingAlert = await ctx.db
+                .query("conservationAlerts")
+                .withIndex("by_collection", (q) =>
+                  q.eq("collectionId", collection._id),
+                )
+                .filter((q) =>
+                  q.and(
+                    q.eq(q.field("alertType"), "assessment_due"),
+                    q.eq(q.field("status"), "active"),
+                  ),
+                )
+                .first();
+
+              if (existingAlert) return;
+
+              const daysSinceAssessment = Math.floor(
+                (now - lastAssessmentTime) / (24 * 60 * 60 * 1000),
+              );
+
+              const alertId = await ctx.db.insert("conservationAlerts", {
+                organizationId: org._id,
+                ruleId: rule._id,
+                collectionId: collection._id,
+                alertType: "assessment_due",
+                title: `Assessment Due: ${collection.title}`,
+                description: lastAssessment
+                  ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
+                  : "No assessment record found. Initial assessment recommended.",
+                priority: rule.priority,
+                status: "active",
+                createdAt: now,
+              });
+
+              if (rule.inAppNotification) {
+                const usersToNotify: string[] = [];
+
+                if (rule.notifyUsers?.length) {
+                  usersToNotify.push(...rule.notifyUsers);
+                }
+
+                if (rule.notifyRoles?.length) {
+                  for (const roleId of rule.notifyRoles) {
+                    const userOrgs = await ctx.db
+                      .query("userOrganizations")
+                      .withIndex("by_organization", (q) =>
+                        q.eq("organizationId", org._id),
+                      )
+                      .filter((q) => q.eq(q.field("roleId"), roleId))
+                      .collect();
+                    usersToNotify.push(...userOrgs.map((uo) => uo.userId));
+                  }
+                }
+
+                const uniqueUsers = [...new Set(usersToNotify)];
+                await Promise.all(
+                  Array.from(uniqueUsers).map(async (notifyUserId) => {
+                    await ctx.runMutation(
+                      internal.audit.createNotificationInternal,
+                      {
+                        organizationId: org._id,
+                        userId: notifyUserId as typeof collection.catalogedBy,
+                        type: "conservation_alert",
+                        title: "Assessment Due Alert",
+                        message: `Object "${collection.title}" requires a conservation assessment.`,
+                        relatedEntityType: "conservationAlert",
+                        relatedEntityId: alertId,
+                      },
+                    );
+                  }),
                 );
               }
             }
           }
         }
-      }
-    }
+      }),
+    );
 
     return null;
   },

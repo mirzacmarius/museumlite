@@ -234,19 +234,21 @@ export const create = mutation({
         workflowState.firstStep ?? 1,
       );
 
-      for (const approverId of usersToNotify) {
-        if (approverId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "New Loan Requires Approval",
-            message: `Loan ${loanNumber} (${args.type}) is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-            relatedEntityType: "loan",
-            relatedEntityId: loanId,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(usersToNotify).map(async (approverId) => {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "New Loan Requires Approval",
+              message: `Loan ${loanNumber} (${args.type}) is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+              relatedEntityType: "loan",
+              relatedEntityId: loanId,
+            });
+          }
+        }),
+      );
     } else {
       const userOrgs = await ctx.db
         .query("userOrganizations")
@@ -255,38 +257,40 @@ export const create = mutation({
         )
         .collect();
 
-      for (const userOrg of userOrgs) {
-        const role = await ctx.db.get(userOrg.roleId);
-        if (!role) continue;
+      await Promise.all(
+        Array.from(userOrgs).map(async (userOrg) => {
+          const role = await ctx.db.get(userOrg.roleId);
+          if (!role) return;
 
-        const rolePermissions = await ctx.db
-          .query("rolePermissions")
-          .withIndex("by_role", (q) => q.eq("roleId", role._id))
-          .collect();
+          const rolePermissions = await ctx.db
+            .query("rolePermissions")
+            .withIndex("by_role", (q) => q.eq("roleId", role._id))
+            .collect();
 
-        const permissions = await Promise.all(
-          rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
-        );
+          const permissions = await Promise.all(
+            rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
+          );
 
-        const permissionNames = permissions.flatMap((permission) =>
-          permission === null ? [] : [permission.name],
-        );
+          const permissionNames = permissions.flatMap((permission) =>
+            permission === null ? [] : [permission.name],
+          );
 
-        if (
-          permissionNames.includes("loans.approve") &&
-          userOrg.userId !== userId
-        ) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: args.organizationId,
-            userId: userOrg.userId,
-            type: "workflow_pending",
-            title: "New Loan Requires Approval",
-            message: `Loan ${loanNumber} (${args.type}) is pending your approval.`,
-            relatedEntityType: "loan",
-            relatedEntityId: loanId,
-          });
-        }
-      }
+          if (
+            permissionNames.includes("loans.approve") &&
+            userOrg.userId !== userId
+          ) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: args.organizationId,
+              userId: userOrg.userId,
+              type: "workflow_pending",
+              title: "New Loan Requires Approval",
+              message: `Loan ${loanNumber} (${args.type}) is pending your approval.`,
+              relatedEntityType: "loan",
+              relatedEntityId: loanId,
+            });
+          }
+        }),
+      );
     }
 
     return loanId;
@@ -406,21 +410,23 @@ export const removeItems = mutation({
       throw new Error("Can only remove items from pending loans");
     }
 
-    for (const loanItemId of args.loanItemIds) {
-      const loanItem = await ctx.db.get(loanItemId);
-      if (!loanItem || loanItem.loanId !== args.loanId) {
-        throw new Error(`Loan item ${loanItemId} not found or invalid`);
-      }
+    await Promise.all(
+      Array.from(args.loanItemIds).map(async (loanItemId) => {
+        const loanItem = await ctx.db.get(loanItemId);
+        if (!loanItem || loanItem.loanId !== args.loanId) {
+          throw new Error(`Loan item ${loanItemId} not found or invalid`);
+        }
 
-      // Update collection status back to active
-      await markCollectionActive(ctx, {
-        collectionId: loanItem.collectionId,
-        changedBy: userId,
-      });
+        // Update collection status back to active
+        await markCollectionActive(ctx, {
+          collectionId: loanItem.collectionId,
+          changedBy: userId,
+        });
 
-      // Delete loan item
-      await ctx.db.delete(loanItemId);
-    }
+        // Delete loan item
+        await ctx.db.delete(loanItemId);
+      }),
+    );
 
     return null;
   },
@@ -1058,25 +1064,27 @@ export const approve = mutation({
       const siteUrl = process.env.SITE_URL;
       const loanUrl = siteUrl ? `${siteUrl}/loans/${args.loanId}` : undefined;
 
-      for (const recipientId of recipients) {
-        await ctx.runMutation(internal.notifications.sendNotification, {
-          organizationId: loan.organizationId,
-          userId: recipientId,
-          type: "loan_approved",
-          title: "Loan Approved",
-          message: `Loan ${loan.loanNumber} has been approved and is now active.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-          emailData: {
-            loanId: args.loanId,
-            itemName,
-            borrowerName: loan.lenderBorrowerName,
-            startDate,
-            endDate,
-            loanUrl,
-          },
-        });
-      }
+      await Promise.all(
+        Array.from(recipients).map(async (recipientId) => {
+          await ctx.runMutation(internal.notifications.sendNotification, {
+            organizationId: loan.organizationId,
+            userId: recipientId,
+            type: "loan_approved",
+            title: "Loan Approved",
+            message: `Loan ${loan.loanNumber} has been approved and is now active.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+            emailData: {
+              loanId: args.loanId,
+              itemName,
+              borrowerName: loan.lenderBorrowerName,
+              startDate,
+              endDate,
+              loanUrl,
+            },
+          });
+        }),
+      );
     }
 
     return null;
@@ -1267,17 +1275,19 @@ export const returnLoan = mutation({
         userId,
       );
 
-      for (const recipientId of recipients) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: recipientId,
-          type: "loan_returned",
-          title: "Loan Returned",
-          message: `Loan ${loan.loanNumber} has been returned.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }
+      await Promise.all(
+        Array.from(recipients).map(async (recipientId) => {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: recipientId,
+            type: "loan_returned",
+            title: "Loan Returned",
+            message: `Loan ${loan.loanNumber} has been returned.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }),
+      );
     } else {
       // Partial return - log action but don't change loan status
       await ctx.runMutation(internal.audit.logAction, {
@@ -1300,17 +1310,19 @@ export const returnLoan = mutation({
         userId,
       );
 
-      for (const recipientId of recipients) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: recipientId,
-          type: "loan_partial_return",
-          title: "Loan Items Returned",
-          message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }
+      await Promise.all(
+        Array.from(recipients).map(async (recipientId) => {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: recipientId,
+            type: "loan_partial_return",
+            title: "Loan Items Returned",
+            message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }),
+      );
     }
 
     return null;
@@ -1369,17 +1381,19 @@ export const dispatch = mutation({
       userId,
     );
 
-    for (const recipientId of recipients) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: loan.organizationId,
-        userId: recipientId,
-        type: "loan_dispatched",
-        title: "Loan Dispatched",
-        message: `Loan ${loan.loanNumber} has been dispatched.`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-      });
-    }
+    await Promise.all(
+      Array.from(recipients).map(async (recipientId) => {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: recipientId,
+          type: "loan_dispatched",
+          title: "Loan Dispatched",
+          message: `Loan ${loan.loanNumber} has been dispatched.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
+      }),
+    );
 
     return null;
   },
@@ -1442,17 +1456,19 @@ export const cancel = mutation({
       userId,
     );
 
-    for (const recipientId of recipients) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: loan.organizationId,
-        userId: recipientId,
-        type: "loan_cancelled",
-        title: "Loan Cancelled",
-        message: `Loan ${loan.loanNumber} has been cancelled.`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-      });
-    }
+    await Promise.all(
+      Array.from(recipients).map(async (recipientId) => {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: recipientId,
+          type: "loan_cancelled",
+          title: "Loan Cancelled",
+          message: `Loan ${loan.loanNumber} has been cancelled.`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
+      }),
+    );
 
     return null;
   },
@@ -1924,28 +1940,32 @@ export const deleteAllLoans = mutation({
     let updatedCollections = 0;
 
     // For each loan, delete loan items and update collection statuses
-    for (const loan of loans) {
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
-        .collect();
+    await Promise.all(
+      Array.from(loans).map(async (loan) => {
+        const loanItems = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+          .collect();
 
-      for (const item of loanItems) {
-        // Update collection status back to active
-        await markCollectionActive(ctx, {
-          collectionId: item.collectionId,
-          changedBy: userId,
-        });
-        updatedCollections++;
+        await Promise.all(
+          Array.from(loanItems).map(async (item) => {
+            // Update collection status back to active
+            await markCollectionActive(ctx, {
+              collectionId: item.collectionId,
+              changedBy: userId,
+            });
+            updatedCollections++;
 
-        // Delete loan item
-        await ctx.db.delete(item._id);
-        deletedLoanItems++;
-      }
+            // Delete loan item
+            await ctx.db.delete(item._id);
+            deletedLoanItems++;
+          }),
+        );
 
-      // Delete the loan
-      await ctx.db.delete(loan._id);
-    }
+        // Delete the loan
+        await ctx.db.delete(loan._id);
+      }),
+    );
 
     return {
       deletedLoans: loans.length,
@@ -2173,168 +2193,170 @@ export const bulkApprove = mutation({
     let skipped = 0;
     const errors: string[] = [];
 
-    for (const loanId of args.loanIds) {
-      const loan = await ctx.db.get(loanId);
-      if (!loan) {
-        errors.push(`Loan ${loanId} not found`);
-        skipped++;
-        continue;
-      }
-
-      // Check permission for each loan's organization
-      try {
-        await requirePermission(ctx, loan.organizationId, "loans.approve");
-      } catch {
-        errors.push(`No permission to approve loan ${loan.loanNumber}`);
-        skipped++;
-        continue;
-      }
-
-      // Only approve pending loans
-      if (loan.status !== "pending") {
-        errors.push(
-          `Loan ${loan.loanNumber} is not pending (status: ${loan.status})`,
-        );
-        skipped++;
-        continue;
-      }
-
-      // Check workflow config
-      const workflowConfig = await getWorkflowConfig(
-        ctx,
-        loan.organizationId,
-        "loan",
-      );
-
-      if (workflowConfig) {
-        const workflowState = resolveWorkflowStepState(
-          workflowConfig.steps,
-          loan.workflowStep,
-        );
-        const currentStep = workflowState.currentStep;
-
-        if (currentStep === undefined) {
-          errors.push(
-            `Loan ${loan.loanNumber} workflow has no approval steps configured`,
-          );
+    await Promise.all(
+      Array.from(args.loanIds).map(async (loanId) => {
+        const loan = await ctx.db.get(loanId);
+        if (!loan) {
+          errors.push(`Loan ${loanId} not found`);
           skipped++;
-          continue;
-        }
-        if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
-          errors.push(
-            `Loan ${loan.loanNumber} current workflow step is not configured`,
-          );
-          skipped++;
-          continue;
+          return;
         }
 
-        const canApprove = await canApproveAtStep(
+        // Check permission for each loan's organization
+        try {
+          await requirePermission(ctx, loan.organizationId, "loans.approve");
+        } catch {
+          errors.push(`No permission to approve loan ${loan.loanNumber}`);
+          skipped++;
+          return;
+        }
+
+        // Only approve pending loans
+        if (loan.status !== "pending") {
+          errors.push(
+            `Loan ${loan.loanNumber} is not pending (status: ${loan.status})`,
+          );
+          skipped++;
+          return;
+        }
+
+        // Check workflow config
+        const workflowConfig = await getWorkflowConfig(
           ctx,
           loan.organizationId,
           "loan",
-          currentStep,
         );
 
-        if (!canApprove) {
-          errors.push(
-            `Cannot approve loan ${loan.loanNumber} at current workflow step`,
+        if (workflowConfig) {
+          const workflowState = resolveWorkflowStepState(
+            workflowConfig.steps,
+            loan.workflowStep,
           );
-          skipped++;
-          continue;
-        }
+          const currentStep = workflowState.currentStep;
 
-        const currentStepConfig = workflowConfig.steps.find(
-          (step) => step.stepNumber === currentStep,
-        );
-        if (!currentStepConfig) {
-          errors.push(
-            `Loan ${loan.loanNumber} current workflow step is not configured`,
+          if (currentStep === undefined) {
+            errors.push(
+              `Loan ${loan.loanNumber} workflow has no approval steps configured`,
+            );
+            skipped++;
+            return;
+          }
+          if (!workflowState.hasCurrentStep && !workflowState.isPastLastStep) {
+            errors.push(
+              `Loan ${loan.loanNumber} current workflow step is not configured`,
+            );
+            skipped++;
+            return;
+          }
+
+          const canApprove = await canApproveAtStep(
+            ctx,
+            loan.organizationId,
+            "loan",
+            currentStep,
           );
-          skipped++;
-          continue;
-        }
 
-        const { approvalDecision, approvalMode } =
-          await recordWorkflowStepApproval(ctx, {
-            organizationId: loan.organizationId,
-            workflowType: "loan",
-            entityId: loanId,
-            stepNumber: currentStep,
-            step: currentStepConfig,
-            performedBy: userId,
-            comment: "Bulk approved",
-            isPastLastStep: workflowState.isPastLastStep,
-          });
+          if (!canApprove) {
+            errors.push(
+              `Cannot approve loan ${loan.loanNumber} at current workflow step`,
+            );
+            skipped++;
+            return;
+          }
 
-        if (!approvalDecision.shouldAdvance) {
-          approved++;
-          continue;
-        }
+          const currentStepConfig = workflowConfig.steps.find(
+            (step) => step.stepNumber === currentStep,
+          );
+          if (!currentStepConfig) {
+            errors.push(
+              `Loan ${loan.loanNumber} current workflow step is not configured`,
+            );
+            skipped++;
+            return;
+          }
 
-        const history = loan.workflowHistory ?? [];
-        if (!workflowState.isPastLastStep) {
-          history.push({
-            step: currentStep,
-            approvedBy: userId,
-            approvedAt: Date.now(),
-            comment: "Bulk approved",
-          });
-        }
+          const { approvalDecision, approvalMode } =
+            await recordWorkflowStepApproval(ctx, {
+              organizationId: loan.organizationId,
+              workflowType: "loan",
+              entityId: loanId,
+              stepNumber: currentStep,
+              step: currentStepConfig,
+              performedBy: userId,
+              comment: "Bulk approved",
+              isPastLastStep: workflowState.isPastLastStep,
+            });
 
-        const isLastStep =
-          workflowState.isPastLastStep || workflowState.isLastStep;
+          if (!approvalDecision.shouldAdvance) {
+            approved++;
+            return;
+          }
 
-        if (isLastStep) {
+          const history = loan.workflowHistory ?? [];
+          if (!workflowState.isPastLastStep) {
+            history.push({
+              step: currentStep,
+              approvedBy: userId,
+              approvedAt: Date.now(),
+              comment: "Bulk approved",
+            });
+          }
+
+          const isLastStep =
+            workflowState.isPastLastStep || workflowState.isLastStep;
+
+          if (isLastStep) {
+            await ctx.db.patch(loanId, {
+              status: "active",
+              approvedBy: userId,
+              approvedAt: Date.now(),
+              workflowHistory: history,
+            });
+          } else {
+            const nextStep = workflowState.nextStep;
+            if (nextStep === undefined) {
+              errors.push(
+                `Loan ${loan.loanNumber} next workflow step is not configured`,
+              );
+              skipped++;
+              return;
+            }
+
+            await ctx.db.patch(loanId, {
+              workflowStep: nextStep,
+              workflowHistory: history,
+            });
+
+            if (approvalMode !== "single") {
+              await ctx.runMutation(internal.workflows.clearStepApprovals, {
+                workflowType: "loan",
+                entityId: loanId,
+                stepNumber: currentStep,
+              });
+            }
+          }
+        } else {
+          // No workflow, direct approval
           await ctx.db.patch(loanId, {
             status: "active",
             approvedBy: userId,
             approvedAt: Date.now(),
-            workflowHistory: history,
           });
-        } else {
-          const nextStep = workflowState.nextStep;
-          if (nextStep === undefined) {
-            errors.push(
-              `Loan ${loan.loanNumber} next workflow step is not configured`,
-            );
-            skipped++;
-            continue;
-          }
-
-          await ctx.db.patch(loanId, {
-            workflowStep: nextStep,
-            workflowHistory: history,
-          });
-
-          if (approvalMode !== "single") {
-            await ctx.runMutation(internal.workflows.clearStepApprovals, {
-              workflowType: "loan",
-              entityId: loanId,
-              stepNumber: currentStep,
-            });
-          }
         }
-      } else {
-        // No workflow, direct approval
-        await ctx.db.patch(loanId, {
-          status: "active",
-          approvedBy: userId,
-          approvedAt: Date.now(),
+
+        // Log audit action
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "approved",
+          entityType: "loan",
+          entityId: loanId,
+          changes: { status: "active", bulkAction: true },
         });
-      }
 
-      // Log audit action
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "approved",
-        entityType: "loan",
-        entityId: loanId,
-        changes: { status: "active", bulkAction: true },
-      });
-
-      approved++;
-    }
+        approved++;
+      }),
+    );
 
     return { approved, skipped, errors };
   },
@@ -2366,66 +2388,70 @@ export const bulkCancel = mutation({
     let skipped = 0;
     const errors: string[] = [];
 
-    for (const loanId of args.loanIds) {
-      const loan = await ctx.db.get(loanId);
-      if (!loan) {
-        errors.push(`Loan ${loanId} not found`);
-        skipped++;
-        continue;
-      }
+    await Promise.all(
+      Array.from(args.loanIds).map(async (loanId) => {
+        const loan = await ctx.db.get(loanId);
+        if (!loan) {
+          errors.push(`Loan ${loanId} not found`);
+          skipped++;
+          return;
+        }
 
-      // Check permission
-      try {
-        await requirePermission(ctx, loan.organizationId, "loans.update");
-      } catch {
-        errors.push(`No permission to cancel loan ${loan.loanNumber}`);
-        skipped++;
-        continue;
-      }
+        // Check permission
+        try {
+          await requirePermission(ctx, loan.organizationId, "loans.update");
+        } catch {
+          errors.push(`No permission to cancel loan ${loan.loanNumber}`);
+          skipped++;
+          return;
+        }
 
-      // Only cancel pending, active, or dispatched loans
-      if (
-        loan.status !== "pending" &&
-        loan.status !== "active" &&
-        loan.status !== "dispatched"
-      ) {
-        errors.push(
-          `Loan ${loan.loanNumber} cannot be cancelled (status: ${loan.status})`,
-        );
-        skipped++;
-        continue;
-      }
+        // Only cancel pending, active, or dispatched loans
+        if (
+          loan.status !== "pending" &&
+          loan.status !== "active" &&
+          loan.status !== "dispatched"
+        ) {
+          errors.push(
+            `Loan ${loan.loanNumber} cannot be cancelled (status: ${loan.status})`,
+          );
+          skipped++;
+          return;
+        }
 
-      // Update loan status
-      await ctx.db.patch(loanId, {
-        status: "cancelled",
-      });
-
-      // Update collection statuses back to active
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-        .collect();
-
-      for (const item of loanItems) {
-        await markCollectionActive(ctx, {
-          collectionId: item.collectionId,
-          changedBy: userId,
+        // Update loan status
+        await ctx.db.patch(loanId, {
+          status: "cancelled",
         });
-      }
 
-      // Log audit action
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "cancelled",
-        entityType: "loan",
-        entityId: loanId,
-        changes: { status: "cancelled", bulkAction: true },
-      });
+        // Update collection statuses back to active
+        const loanItems = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+          .collect();
 
-      cancelled++;
-    }
+        await Promise.all(
+          Array.from(loanItems).map(async (item) => {
+            await markCollectionActive(ctx, {
+              collectionId: item.collectionId,
+              changedBy: userId,
+            });
+          }),
+        );
+
+        // Log audit action
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "cancelled",
+          entityType: "loan",
+          entityId: loanId,
+          changes: { status: "cancelled", bulkAction: true },
+        });
+
+        cancelled++;
+      }),
+    );
 
     return { cancelled, skipped, errors };
   },
@@ -2497,17 +2523,19 @@ export const requestExtension = mutation({
     ]);
 
     // Create notification for approvers
-    for (const approverId of approvers) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: loan.organizationId,
-        userId: approverId,
-        type: "loan_extension_requested",
-        title: "Loan Extension Requested",
-        message: `Extension requested for loan ${loan.loanNumber}`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-      });
-    }
+    await Promise.all(
+      Array.from(approvers).map(async (approverId) => {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: loan.organizationId,
+          userId: approverId,
+          type: "loan_extension_requested",
+          title: "Loan Extension Requested",
+          message: `Extension requested for loan ${loan.loanNumber}`,
+          relatedEntityType: "loan",
+          relatedEntityId: args.loanId,
+        });
+      }),
+    );
 
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {
@@ -2824,20 +2852,22 @@ export const checkLoanRemindersInternal = internalMutation({
             ? `Loan ${loan.loanNumber} is overdue for return`
             : `Loan ${loan.loanNumber} is due in ${threshold.days} ${threshold.days === 1 ? "day" : "days"}`;
 
-        for (const member of orgMembers) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: loan.organizationId,
-            userId: member.userId,
-            type:
-              threshold.type === "overdue"
-                ? "loan_overdue"
-                : "loan_return_due_soon",
-            title: notificationTitle,
-            message: notificationMessage,
-            relatedEntityType: "loan",
-            relatedEntityId: loan._id,
-          });
-        }
+        await Promise.all(
+          Array.from(orgMembers).map(async (member) => {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: loan.organizationId,
+              userId: member.userId,
+              type:
+                threshold.type === "overdue"
+                  ? "loan_overdue"
+                  : "loan_return_due_soon",
+              title: notificationTitle,
+              message: notificationMessage,
+              relatedEntityType: "loan",
+              relatedEntityId: loan._id,
+            });
+          }),
+        );
 
         remindersCreated++;
         break; // Only send one reminder type per loan per cron run
@@ -2934,19 +2964,21 @@ export const createConditionDispute = mutation({
       )
       .collect();
 
-    for (const member of orgMembers) {
-      if (member.userId !== userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: member.userId,
-          type: "condition_dispute_created",
-          title: "Condition Dispute Reported",
-          message: `A condition dispute has been reported for loan ${loan.loanNumber}`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(orgMembers).map(async (member) => {
+        if (member.userId !== userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: loan.organizationId,
+            userId: member.userId,
+            type: "condition_dispute_created",
+            title: "Condition Dispute Reported",
+            message: `A condition dispute has been reported for loan ${loan.loanNumber}`,
+            relatedEntityType: "loan",
+            relatedEntityId: args.loanId,
+          });
+        }
+      }),
+    );
 
     return disputeId;
   },
@@ -3553,66 +3585,68 @@ export const bulkExport = query({
       workflowStep?: number;
     }> = [];
 
-    for (const loanId of args.loanIds) {
-      const loan = await ctx.db.get(loanId);
-      if (!loan) continue;
+    await Promise.all(
+      Array.from(args.loanIds).map(async (loanId) => {
+        const loan = await ctx.db.get(loanId);
+        if (!loan) return;
 
-      await requirePermission(ctx, loan.organizationId, "loans.read");
+        await requirePermission(ctx, loan.organizationId, "loans.read");
 
-      // Get loan items
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-        .collect();
+        // Get loan items
+        const loanItems = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+          .collect();
 
-      // Get accession numbers for items
-      const accessionNumbers: string[] = [];
-      for (const item of loanItems) {
-        const collection = await ctx.db.get(item.collectionId);
-        if (collection) {
-          accessionNumbers.push(collection.accessionNumber);
+        // Get accession numbers for items
+        const accessionNumbers: string[] = [];
+        for (const item of loanItems) {
+          const collection = await ctx.db.get(item.collectionId);
+          if (collection) {
+            accessionNumbers.push(collection.accessionNumber);
+          }
         }
-      }
 
-      // Get approver name
-      let approvedByName: string | undefined;
-      if (loan.approvedBy) {
-        const approver = await ctx.db.get(loan.approvedBy);
-        approvedByName = approver?.name ?? approver?.username;
-      }
-
-      // Get account name
-      let accountName: string | undefined;
-      if (loan.accountId) {
-        const account = await ctx.db.get(loan.accountId);
-        if (account) {
-          accountName =
-            account.businessName ??
-            [account.firstName, account.lastName].filter(Boolean).join(" ") ??
-            undefined;
+        // Get approver name
+        let approvedByName: string | undefined;
+        if (loan.approvedBy) {
+          const approver = await ctx.db.get(loan.approvedBy);
+          approvedByName = approver?.name ?? approver?.username;
         }
-      }
 
-      results.push({
-        _id: loan._id,
-        loanNumber: loan.loanNumber,
-        type: loan.type,
-        status: loan.status,
-        lenderBorrowerName: loan.lenderBorrowerName,
-        lenderBorrowerContact: loan.lenderBorrowerContact,
-        startDate: loan.startDate,
-        endDate: loan.endDate,
-        insuranceValue: loan.insuranceValue,
-        terms: loan.terms,
-        notes: loan.notes,
-        itemCount: loanItems.length,
-        itemAccessionNumbers: accessionNumbers.join(", "),
-        approvedByName,
-        approvedAt: loan.approvedAt,
-        accountName,
-        workflowStep: loan.workflowStep,
-      });
-    }
+        // Get account name
+        let accountName: string | undefined;
+        if (loan.accountId) {
+          const account = await ctx.db.get(loan.accountId);
+          if (account) {
+            accountName =
+              account.businessName ??
+              [account.firstName, account.lastName].filter(Boolean).join(" ") ??
+              undefined;
+          }
+        }
+
+        results.push({
+          _id: loan._id,
+          loanNumber: loan.loanNumber,
+          type: loan.type,
+          status: loan.status,
+          lenderBorrowerName: loan.lenderBorrowerName,
+          lenderBorrowerContact: loan.lenderBorrowerContact,
+          startDate: loan.startDate,
+          endDate: loan.endDate,
+          insuranceValue: loan.insuranceValue,
+          terms: loan.terms,
+          notes: loan.notes,
+          itemCount: loanItems.length,
+          itemAccessionNumbers: accessionNumbers.join(", "),
+          approvedByName,
+          approvedAt: loan.approvedAt,
+          accountName,
+          workflowStep: loan.workflowStep,
+        });
+      }),
+    );
 
     return results;
   },

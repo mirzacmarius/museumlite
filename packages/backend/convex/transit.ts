@@ -120,17 +120,19 @@ export const createTransitRecord = mutation({
     }
 
     if (args.collectionIds && args.collectionIds.length > 0) {
-      for (const collectionId of args.collectionIds) {
-        const collection = await ctx.db.get(collectionId);
-        if (!collection) {
-          throw new Error(`Collection ${collectionId} not found`);
-        }
-        if (collection.organizationId !== args.organizationId) {
-          throw new Error(
-            `Collection ${collectionId} does not belong to organization`,
-          );
-        }
-      }
+      await Promise.all(
+        Array.from(args.collectionIds).map(async (collectionId) => {
+          const collection = await ctx.db.get(collectionId);
+          if (!collection) {
+            throw new Error(`Collection ${collectionId} not found`);
+          }
+          if (collection.organizationId !== args.organizationId) {
+            throw new Error(
+              `Collection ${collectionId} does not belong to organization`,
+            );
+          }
+        }),
+      );
     }
 
     const transitNumber = await generateNextTransitNumber(
@@ -184,14 +186,16 @@ export const createTransitRecord = mutation({
     });
 
     if (args.collectionIds && args.collectionIds.length > 0) {
-      for (const collectionId of args.collectionIds) {
-        await ctx.db.insert("transitItems", {
-          transitRecordId,
-          collectionId,
-          status: "pending",
-          createdAt: now,
-        });
-      }
+      await Promise.all(
+        Array.from(args.collectionIds).map(async (collectionId) => {
+          await ctx.db.insert("transitItems", {
+            transitRecordId,
+            collectionId,
+            status: "pending",
+            createdAt: now,
+          });
+        }),
+      );
     }
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -361,11 +365,13 @@ export const updateTransitStatus = mutation({
         )
         .collect();
 
-      for (const item of transitItems) {
-        if (item.status === "pending") {
-          await ctx.db.patch(item._id, { status: "in_transit" });
-        }
-      }
+      await Promise.all(
+        Array.from(transitItems).map(async (item) => {
+          if (item.status === "pending") {
+            await ctx.db.patch(item._id, { status: "in_transit" });
+          }
+        }),
+      );
     }
 
     if (args.status === "delivered") {
@@ -376,11 +382,13 @@ export const updateTransitStatus = mutation({
         )
         .collect();
 
-      for (const item of transitItems) {
-        if (item.status === "in_transit" || item.status === "pending") {
-          await ctx.db.patch(item._id, { status: "delivered" });
-        }
-      }
+      await Promise.all(
+        Array.from(transitItems).map(async (item) => {
+          if (item.status === "in_transit" || item.status === "pending") {
+            await ctx.db.patch(item._id, { status: "delivered" });
+          }
+        }),
+      );
     }
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -443,19 +451,21 @@ async function notifyTransitStatusChange(
   const title = `Transit ${statusLabels[status] ?? status}: ${transitNumber}`;
   const message = description;
 
-  for (const userOrg of userOrgs) {
-    if (userOrg.userId !== excludeUserId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId,
-        userId: userOrg.userId,
-        type: "transit_status_update",
-        title,
-        message,
-        relatedEntityType: "transitRecord",
-        relatedEntityId: transitRecordId,
-      });
-    }
-  }
+  await Promise.all(
+    Array.from(userOrgs).map(async (userOrg) => {
+      if (userOrg.userId !== excludeUserId) {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId,
+          userId: userOrg.userId,
+          type: "transit_status_update",
+          title,
+          message,
+          relatedEntityType: "transitRecord",
+          relatedEntityId: transitRecordId,
+        });
+      }
+    }),
+  );
 }
 
 export const deleteTransitRecord = mutation({
@@ -494,9 +504,11 @@ export const deleteTransitRecord = mutation({
       )
       .collect();
 
-    for (const item of transitItems) {
-      await ctx.db.delete(item._id);
-    }
+    await Promise.all(
+      Array.from(transitItems).map(async (item) => {
+        await ctx.db.delete(item._id);
+      }),
+    );
 
     const statusUpdates = await ctx.db
       .query("transitStatusUpdates")
@@ -505,9 +517,11 @@ export const deleteTransitRecord = mutation({
       )
       .collect();
 
-    for (const update of statusUpdates) {
-      await ctx.db.delete(update._id);
-    }
+    await Promise.all(
+      Array.from(statusUpdates).map(async (update) => {
+        await ctx.db.delete(update._id);
+      }),
+    );
 
     await ctx.db.delete(args.transitRecordId);
 
@@ -949,28 +963,30 @@ export const addItemsToTransit = mutation({
 
     const now = Date.now();
 
-    for (const collectionId of args.collectionIds) {
-      if (existingCollectionIds.has(collectionId)) {
-        continue;
-      }
+    await Promise.all(
+      Array.from(args.collectionIds).map(async (collectionId) => {
+        if (existingCollectionIds.has(collectionId)) {
+          return;
+        }
 
-      const collection = await ctx.db.get(collectionId);
-      if (!collection) {
-        throw new Error(`Collection ${collectionId} not found`);
-      }
-      if (collection.organizationId !== transitRecord.organizationId) {
-        throw new Error(
-          `Collection ${collectionId} does not belong to organization`,
-        );
-      }
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          throw new Error(`Collection ${collectionId} not found`);
+        }
+        if (collection.organizationId !== transitRecord.organizationId) {
+          throw new Error(
+            `Collection ${collectionId} does not belong to organization`,
+          );
+        }
 
-      await ctx.db.insert("transitItems", {
-        transitRecordId: args.transitRecordId,
-        collectionId,
-        status: "pending",
-        createdAt: now,
-      });
-    }
+        await ctx.db.insert("transitItems", {
+          transitRecordId: args.transitRecordId,
+          collectionId,
+          status: "pending",
+          createdAt: now,
+        });
+      }),
+    );
 
     const currentCollectionIds = transitRecord.collectionIds ?? [];
     const newCollectionIds = [...currentCollectionIds];
@@ -1457,41 +1473,50 @@ export const checkUpcomingDeliveriesInternal = internalMutation({
     const now = Date.now();
     const tomorrow = now + 24 * 60 * 60 * 1000;
 
-    for (const org of organizations) {
-      const transitRecords = await ctx.db
-        .query("transitRecords")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .collect();
-
-      const upcomingDeliveries = transitRecords.filter(
-        (r) =>
-          (r.status === "in_transit" || r.status === "out_for_delivery") &&
-          r.estimatedDeliveryDate &&
-          r.estimatedDeliveryDate >= now &&
-          r.estimatedDeliveryDate <= tomorrow,
-      );
-
-      if (upcomingDeliveries.length > 0) {
-        const userOrgs = await ctx.db
-          .query("userOrganizations")
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const transitRecords = await ctx.db
+          .query("transitRecords")
           .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
           .collect();
 
-        for (const userOrg of userOrgs) {
-          for (const transit of upcomingDeliveries) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: org._id,
-              userId: userOrg.userId,
-              type: "transit_delivery_reminder",
-              title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
-              message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
-              relatedEntityType: "transitRecord",
-              relatedEntityId: transit._id,
-            });
-          }
+        const upcomingDeliveries = transitRecords.filter(
+          (r) =>
+            (r.status === "in_transit" || r.status === "out_for_delivery") &&
+            r.estimatedDeliveryDate &&
+            r.estimatedDeliveryDate >= now &&
+            r.estimatedDeliveryDate <= tomorrow,
+        );
+
+        if (upcomingDeliveries.length > 0) {
+          const userOrgs = await ctx.db
+            .query("userOrganizations")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", org._id),
+            )
+            .collect();
+
+          await Promise.all(
+            Array.from(userOrgs).map(async (userOrg) => {
+              for (const transit of upcomingDeliveries) {
+                await ctx.runMutation(
+                  internal.audit.createNotificationInternal,
+                  {
+                    organizationId: org._id,
+                    userId: userOrg.userId,
+                    type: "transit_delivery_reminder",
+                    title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
+                    message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
+                    relatedEntityType: "transitRecord",
+                    relatedEntityId: transit._id,
+                  },
+                );
+              }
+            }),
+          );
         }
-      }
-    }
+      }),
+    );
 
     return null;
   },
@@ -1505,53 +1530,59 @@ export const checkDelayedTransitsInternal = internalMutation({
 
     const now = Date.now();
 
-    for (const org of organizations) {
-      const transitRecords = await ctx.db
-        .query("transitRecords")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
-        .collect();
-
-      const overdueDeliveries = transitRecords.filter(
-        (r) =>
-          (r.status === "in_transit" ||
-            r.status === "out_for_delivery" ||
-            r.status === "scheduled") &&
-          r.estimatedDeliveryDate &&
-          r.estimatedDeliveryDate < now,
-      );
-
-      for (const transit of overdueDeliveries) {
-        await ctx.db.patch(transit._id, {
-          status: "delayed",
-          lastModifiedAt: now,
-        });
-
-        await ctx.db.insert("transitStatusUpdates", {
-          transitRecordId: transit._id,
-          status: "delayed",
-          description:
-            "Automatically marked as delayed - past estimated delivery date",
-          reportedAt: now,
-        });
-
-        const userOrgs = await ctx.db
-          .query("userOrganizations")
+    await Promise.all(
+      Array.from(organizations).map(async (org) => {
+        const transitRecords = await ctx.db
+          .query("transitRecords")
           .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
           .collect();
 
-        for (const userOrg of userOrgs) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: org._id,
-            userId: userOrg.userId,
-            type: "transit_delayed",
-            title: `Transit Delayed: ${transit.transitNumber}`,
-            message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
-            relatedEntityType: "transitRecord",
-            relatedEntityId: transit._id,
-          });
-        }
-      }
-    }
+        const overdueDeliveries = transitRecords.filter(
+          (r) =>
+            (r.status === "in_transit" ||
+              r.status === "out_for_delivery" ||
+              r.status === "scheduled") &&
+            r.estimatedDeliveryDate &&
+            r.estimatedDeliveryDate < now,
+        );
+
+        await Promise.all(
+          Array.from(overdueDeliveries).map(async (transit) => {
+            await ctx.db.patch(transit._id, {
+              status: "delayed",
+              lastModifiedAt: now,
+            });
+
+            await ctx.db.insert("transitStatusUpdates", {
+              transitRecordId: transit._id,
+              status: "delayed",
+              description:
+                "Automatically marked as delayed - past estimated delivery date",
+              reportedAt: now,
+            });
+
+            const userOrgs = await ctx.db
+              .query("userOrganizations")
+              .withIndex("by_organization", (q) =>
+                q.eq("organizationId", org._id),
+              )
+              .collect();
+
+            for (const userOrg of userOrgs) {
+              await ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: org._id,
+                userId: userOrg.userId,
+                type: "transit_delayed",
+                title: `Transit Delayed: ${transit.transitNumber}`,
+                message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
+                relatedEntityType: "transitRecord",
+                relatedEntityId: transit._id,
+              });
+            }
+          }),
+        );
+      }),
+    );
 
     return null;
   },

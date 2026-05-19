@@ -376,9 +376,11 @@ export const deleteGroup = mutation({
       )
       .collect();
 
-    for (const item of groupItems) {
-      await ctx.db.delete(item._id);
-    }
+    await Promise.all(
+      Array.from(groupItems).map(async (item) => {
+        await ctx.db.delete(item._id);
+      }),
+    );
 
     // Also unset groupId on items using legacy one-to-many relationship
     const items = await ctx.db
@@ -388,9 +390,11 @@ export const deleteGroup = mutation({
       )
       .collect();
 
-    for (const item of items) {
-      await ctx.db.patch(item._id, { collectionGroupId: undefined });
-    }
+    await Promise.all(
+      Array.from(items).map(async (item) => {
+        await ctx.db.patch(item._id, { collectionGroupId: undefined });
+      }),
+    );
 
     await ctx.db.delete(args.groupId);
 
@@ -433,36 +437,38 @@ export const addItems = mutation({
 
     let addedCount = 0;
 
-    for (const collectionId of args.collectionIds) {
-      // Check if collection exists and belongs to same organization
-      const collection = await ctx.db.get(collectionId);
-      if (!collection) {
-        throw new Error(`Collection ${collectionId} not found`);
-      }
-      if (collection.organizationId !== group.organizationId) {
-        throw new Error("Collection belongs to a different organization");
-      }
+    await Promise.all(
+      Array.from(args.collectionIds).map(async (collectionId) => {
+        // Check if collection exists and belongs to same organization
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          throw new Error(`Collection ${collectionId} not found`);
+        }
+        if (collection.organizationId !== group.organizationId) {
+          throw new Error("Collection belongs to a different organization");
+        }
 
-      // Check if already in group
-      const existing = await ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collectionGroup_and_collection", (q) =>
-          q
-            .eq("collectionGroupId", args.groupId)
-            .eq("collectionId", collectionId),
-        )
-        .first();
+        // Check if already in group
+        const existing = await ctx.db
+          .query("collectionGroupItems")
+          .withIndex("by_collectionGroup_and_collection", (q) =>
+            q
+              .eq("collectionGroupId", args.groupId)
+              .eq("collectionId", collectionId),
+          )
+          .first();
 
-      if (!existing) {
-        await ctx.db.insert("collectionGroupItems", {
-          collectionGroupId: args.groupId,
-          collectionId,
-          addedAt: Date.now(),
-          addedBy: userId,
-        });
-        addedCount++;
-      }
-    }
+        if (!existing) {
+          await ctx.db.insert("collectionGroupItems", {
+            collectionGroupId: args.groupId,
+            collectionId,
+            addedAt: Date.now(),
+            addedBy: userId,
+          });
+          addedCount++;
+        }
+      }),
+    );
 
     // Update items count
     if (addedCount > 0) {
@@ -511,21 +517,23 @@ export const removeItems = mutation({
 
     let removedCount = 0;
 
-    for (const collectionId of args.collectionIds) {
-      const item = await ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collectionGroup_and_collection", (q) =>
-          q
-            .eq("collectionGroupId", args.groupId)
-            .eq("collectionId", collectionId),
-        )
-        .first();
+    await Promise.all(
+      Array.from(args.collectionIds).map(async (collectionId) => {
+        const item = await ctx.db
+          .query("collectionGroupItems")
+          .withIndex("by_collectionGroup_and_collection", (q) =>
+            q
+              .eq("collectionGroupId", args.groupId)
+              .eq("collectionId", collectionId),
+          )
+          .first();
 
-      if (item) {
-        await ctx.db.delete(item._id);
-        removedCount++;
-      }
-    }
+        if (item) {
+          await ctx.db.delete(item._id);
+          removedCount++;
+        }
+      }),
+    );
 
     // Update items count
     if (removedCount > 0) {
@@ -603,21 +611,23 @@ export const listItems = query({
       addedAt: number;
     }> = [];
 
-    for (const groupItem of groupItems) {
-      const collection = await ctx.db.get(groupItem.collectionId);
-      if (collection) {
-        items.push({
-          _id: groupItem._id,
-          collectionId: collection._id,
-          accessionNumber: collection.accessionNumber,
-          title: collection.title,
-          description: collection.description,
-          currentLocationId: collection.currentLocationId,
-          status: collection.status,
-          addedAt: groupItem.addedAt,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(groupItems).map(async (groupItem) => {
+        const collection = await ctx.db.get(groupItem.collectionId);
+        if (collection) {
+          items.push({
+            _id: groupItem._id,
+            collectionId: collection._id,
+            accessionNumber: collection.accessionNumber,
+            title: collection.title,
+            description: collection.description,
+            currentLocationId: collection.currentLocationId,
+            status: collection.status,
+            addedAt: groupItem.addedAt,
+          });
+        }
+      }),
+    );
 
     // Sort by addedAt descending (newest first)
     items.sort((a, b) => b.addedAt - a.addedAt);
@@ -664,18 +674,20 @@ export const getGroupsForCollection = query({
     }> = [];
     const groupIds = new Set<Id<"collectionGroups">>();
 
-    for (const groupItem of groupItems) {
-      const group = await ctx.db.get(groupItem.collectionGroupId);
-      if (group) {
-        groupIds.add(group._id);
-        groups.push({
-          _id: group._id,
-          name: group.name,
-          description: group.description,
-          itemsCount: group.itemsCount,
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(groupItems).map(async (groupItem) => {
+        const group = await ctx.db.get(groupItem.collectionGroupId);
+        if (group) {
+          groupIds.add(group._id);
+          groups.push({
+            _id: group._id,
+            name: group.name,
+            description: group.description,
+            itemsCount: group.itemsCount,
+          });
+        }
+      }),
+    );
 
     if (
       collection.collectionGroupId &&

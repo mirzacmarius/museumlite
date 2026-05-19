@@ -277,14 +277,16 @@ export const checkAllOrganizationsSla = internalMutation({
     let totalBreaches = 0;
     let totalWarnings = 0;
 
-    for (const orgId of orgIds) {
-      const result = await ctx.runMutation(
-        internal.workflowSla.checkSlaBreaches,
-        { organizationId: orgId },
-      );
-      totalBreaches += result.breachesFound;
-      totalWarnings += result.warningsSent;
-    }
+    await Promise.all(
+      Array.from(orgIds).map(async (orgId) => {
+        const result = await ctx.runMutation(
+          internal.workflowSla.checkSlaBreaches,
+          { organizationId: orgId },
+        );
+        totalBreaches += result.breachesFound;
+        totalWarnings += result.warningsSent;
+      }),
+    );
 
     return {
       organizationsChecked: orgIds.length,
@@ -325,97 +327,110 @@ export const checkSlaBreaches = internalMutation({
       items: Array<{ id: string; createdAt: number }>;
     }> = [];
 
-    for (const config of slaConfigs) {
-      const slaDueThreshold = now - config.slaDays * oneDayMs;
-      const warningThreshold = config.warningDays
-        ? now - (config.slaDays - config.warningDays) * oneDayMs
-        : null;
+    await Promise.all(
+      Array.from(slaConfigs).map(async (config) => {
+        const slaDueThreshold = now - config.slaDays * oneDayMs;
+        const warningThreshold = config.warningDays
+          ? now - (config.slaDays - config.warningDays) * oneDayMs
+          : null;
 
-      let items: Array<{ id: string; createdAt: number }> = [];
+        let items: Array<{ id: string; createdAt: number }> = [];
 
-      if (config.workflowType === "accession") {
-        const pending = await ctx.db
-          .query("accessions")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", args.organizationId).eq("status", "pending"),
-          )
-          .collect();
-        items = pending.map((p) => ({ id: p._id, createdAt: p.dateReceived }));
-      } else if (config.workflowType === "deaccession") {
-        const pending = await ctx.db
-          .query("deaccessions")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", args.organizationId).eq("status", "pending"),
-          )
-          .collect();
-        items = pending.map((p) => ({
-          id: p._id,
-          createdAt: p.dateDeaccessioned,
-        }));
-      } else if (config.workflowType === "loan") {
-        const pending = await ctx.db
-          .query("loans")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", args.organizationId).eq("status", "pending"),
-          )
-          .collect();
-        items = pending.map((p) => ({ id: p._id, createdAt: p.startDate }));
-      } else if (config.workflowType === "exhibition") {
-        const pending = await ctx.db
-          .query("exhibitions")
-          .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("status", "proposed"),
-          )
-          .collect();
-        items = pending.map((p) => ({ id: p._id, createdAt: p.startDate }));
-      } else if (config.workflowType === "conservation") {
-        const pending = await ctx.db
-          .query("conservationTreatments")
-          .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("status", "proposed"),
-          )
-          .collect();
-        items = pending.map((p) => ({ id: p._id, createdAt: p.performedAt }));
-      }
-
-      for (const item of items) {
-        if (item.createdAt < slaDueThreshold) {
-          breachesFound++;
-          if (config.escalateToRoleId) {
-            await ctx.runMutation(
-              internal.notifications.notifyUsersWithPermission,
-              {
-                organizationId: args.organizationId,
-                permission: `${config.workflowType}s.approve`,
-                type: `sla_breach_${config.workflowType}`,
-                title: `SLA Breach: ${config.workflowType} pending over ${config.slaDays} days`,
-                message: `A ${config.workflowType} has exceeded its SLA of ${config.slaDays} days and requires immediate attention.`,
-                relatedEntityType: config.workflowType,
-                relatedEntityId: item.id,
-              },
-            );
-          }
-        } else if (warningThreshold && item.createdAt < warningThreshold) {
-          warningsSent++;
-          await ctx.runMutation(
-            internal.notifications.notifyUsersWithPermission,
-            {
-              organizationId: args.organizationId,
-              permission: `${config.workflowType}s.approve`,
-              type: `sla_warning_${config.workflowType}`,
-              title: `SLA Warning: ${config.workflowType} due in ${config.warningDays} days`,
-              message: `A ${config.workflowType} is approaching its SLA deadline. Please review soon.`,
-              relatedEntityType: config.workflowType,
-              relatedEntityId: item.id,
-            },
-          );
+        if (config.workflowType === "accession") {
+          const pending = await ctx.db
+            .query("accessions")
+            .withIndex("by_organization_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", "pending"),
+            )
+            .collect();
+          items = pending.map((p) => ({
+            id: p._id,
+            createdAt: p.dateReceived,
+          }));
+        } else if (config.workflowType === "deaccession") {
+          const pending = await ctx.db
+            .query("deaccessions")
+            .withIndex("by_organization_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", "pending"),
+            )
+            .collect();
+          items = pending.map((p) => ({
+            id: p._id,
+            createdAt: p.dateDeaccessioned,
+          }));
+        } else if (config.workflowType === "loan") {
+          const pending = await ctx.db
+            .query("loans")
+            .withIndex("by_organization_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", "pending"),
+            )
+            .collect();
+          items = pending.map((p) => ({ id: p._id, createdAt: p.startDate }));
+        } else if (config.workflowType === "exhibition") {
+          const pending = await ctx.db
+            .query("exhibitions")
+            .withIndex("by_organization_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", "proposed"),
+            )
+            .collect();
+          items = pending.map((p) => ({ id: p._id, createdAt: p.startDate }));
+        } else if (config.workflowType === "conservation") {
+          const pending = await ctx.db
+            .query("conservationTreatments")
+            .withIndex("by_organization_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", "proposed"),
+            )
+            .collect();
+          items = pending.map((p) => ({ id: p._id, createdAt: p.performedAt }));
         }
-      }
-    }
+
+        await Promise.all(
+          Array.from(items).map(async (item) => {
+            if (item.createdAt < slaDueThreshold) {
+              breachesFound++;
+              if (config.escalateToRoleId) {
+                await ctx.runMutation(
+                  internal.notifications.notifyUsersWithPermission,
+                  {
+                    organizationId: args.organizationId,
+                    permission: `${config.workflowType}s.approve`,
+                    type: `sla_breach_${config.workflowType}`,
+                    title: `SLA Breach: ${config.workflowType} pending over ${config.slaDays} days`,
+                    message: `A ${config.workflowType} has exceeded its SLA of ${config.slaDays} days and requires immediate attention.`,
+                    relatedEntityType: config.workflowType,
+                    relatedEntityId: item.id,
+                  },
+                );
+              }
+            } else if (warningThreshold && item.createdAt < warningThreshold) {
+              warningsSent++;
+              await ctx.runMutation(
+                internal.notifications.notifyUsersWithPermission,
+                {
+                  organizationId: args.organizationId,
+                  permission: `${config.workflowType}s.approve`,
+                  type: `sla_warning_${config.workflowType}`,
+                  title: `SLA Warning: ${config.workflowType} due in ${config.warningDays} days`,
+                  message: `A ${config.workflowType} is approaching its SLA deadline. Please review soon.`,
+                  relatedEntityType: config.workflowType,
+                  relatedEntityId: item.id,
+                },
+              );
+            }
+          }),
+        );
+      }),
+    );
 
     return { breachesFound, warningsSent };
   },

@@ -580,17 +580,19 @@ describe("objectMoves", () => {
       "tgt-search-001",
     ];
 
-    for (const search of matchingSearches) {
-      const result = await fixture.admin.query(
-        api.objectMoves.listForOrganization,
-        {
-          organizationId: fixture.sourceOrganizationId,
-          search,
-        },
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0]?._id).toBe(requests[0]?._id);
-    }
+    await Promise.all(
+      Array.from(matchingSearches).map(async (search) => {
+        const result = await fixture.admin.query(
+          api.objectMoves.listForOrganization,
+          {
+            organizationId: fixture.sourceOrganizationId,
+            search,
+          },
+        );
+        expect(result).toHaveLength(1);
+        expect(result[0]?._id).toBe(requests[0]?._id);
+      }),
+    );
   });
 
   test("listForOrganization hides source-pending requests from the target organization", async () => {

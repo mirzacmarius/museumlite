@@ -770,16 +770,20 @@ export const getDependencyChain = query({
       result.push({ _id: t._id, title: t.title, status: t.status });
 
       if (t.dependsOnTaskIds) {
-        for (const depId of t.dependsOnTaskIds) {
-          await traverse(depId);
-        }
+        await Promise.all(
+          Array.from(t.dependsOnTaskIds).map(async (depId) => {
+            await traverse(depId);
+          }),
+        );
       }
     }
 
     if (task.dependsOnTaskIds) {
-      for (const depId of task.dependsOnTaskIds) {
-        await traverse(depId);
-      }
+      await Promise.all(
+        Array.from(task.dependsOnTaskIds).map(async (depId) => {
+          await traverse(depId);
+        }),
+      );
     }
 
     return result;
@@ -976,18 +980,21 @@ export const applyTemplate = mutation({
       createdAt: Date.now(),
     });
 
-    if (template.checklist && template.checklist.length > 0) {
-      for (let i = 0; i < template.checklist.length; i++) {
-        const checkItem = template.checklist[i];
-        if (checkItem) {
-          await ctx.db.insert("installationTaskChecklists", {
-            taskId,
-            item: checkItem.item,
-            completed: false,
-            sortOrder: i,
-          });
-        }
-      }
+    const checklist = template.checklist;
+    if (checklist && checklist.length > 0) {
+      await Promise.all(
+        Array.from({ length: checklist.length }, async (_, i) => {
+          const checkItem = checklist[i];
+          if (checkItem) {
+            await ctx.db.insert("installationTaskChecklists", {
+              taskId,
+              item: checkItem.item,
+              completed: false,
+              sortOrder: i,
+            });
+          }
+        }),
+      );
     }
 
     if (args.assigneeId && args.assigneeId !== userId) {
@@ -1193,12 +1200,14 @@ export const reorderChecklist = mutation({
     await requireInstallationAccess(ctx, task.organizationId);
     await requirePermission(ctx, task.organizationId, "collections.update");
 
-    for (let i = 0; i < args.itemIds.length; i++) {
-      const itemId = args.itemIds[i];
-      if (itemId) {
-        await ctx.db.patch(itemId, { sortOrder: i });
-      }
-    }
+    await Promise.all(
+      Array.from({ length: args.itemIds.length }, async (_, i) => {
+        const itemId = args.itemIds[i];
+        if (itemId) {
+          await ctx.db.patch(itemId, { sortOrder: i });
+        }
+      }),
+    );
 
     return null;
   },
@@ -1569,17 +1578,19 @@ export const notifyBlocked = internalMutation({
       )
       .collect();
 
-    for (const userOrg of userOrgs) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: task.organizationId,
-        userId: userOrg.userId,
-        type: "task_blocked",
-        title: "Task Blocked",
-        message: `Task "${task.title}" has been blocked: ${task.blockedReason ?? "No reason provided"}`,
-        relatedEntityType: "installationTask",
-        relatedEntityId: args.taskId,
-      });
-    }
+    await Promise.all(
+      Array.from(userOrgs).map(async (userOrg) => {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: task.organizationId,
+          userId: userOrg.userId,
+          type: "task_blocked",
+          title: "Task Blocked",
+          message: `Task "${task.title}" has been blocked: ${task.blockedReason ?? "No reason provided"}`,
+          relatedEntityType: "installationTask",
+          relatedEntityId: args.taskId,
+        });
+      }),
+    );
 
     return null;
   },

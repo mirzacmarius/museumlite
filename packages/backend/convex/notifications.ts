@@ -439,13 +439,15 @@ export const bulkDelete = mutation({
     }
 
     let count = 0;
-    for (const notificationId of args.notificationIds) {
-      const notification = await ctx.db.get(notificationId);
-      if (notification && notification.userId === userId) {
-        await ctx.db.delete(notificationId);
-        count++;
-      }
-    }
+    await Promise.all(
+      Array.from(args.notificationIds).map(async (notificationId) => {
+        const notification = await ctx.db.get(notificationId);
+        if (notification && notification.userId === userId) {
+          await ctx.db.delete(notificationId);
+          count++;
+        }
+      }),
+    );
 
     return count;
   },
@@ -480,9 +482,11 @@ export const cleanupOldNotifications = mutation({
       .filter((q) => q.lt(q.field("createdAt"), cutoff))
       .collect();
 
-    for (const notification of oldNotifications) {
-      await ctx.db.delete(notification._id);
-    }
+    await Promise.all(
+      Array.from(oldNotifications).map(async (notification) => {
+        await ctx.db.delete(notification._id);
+      }),
+    );
 
     return oldNotifications.length;
   },
@@ -569,30 +573,32 @@ export const sendNotificationToUsers = internalMutation({
     const now = Date.now();
     let count = 0;
 
-    for (const userId of args.userIds) {
-      await ctx.db.insert("notifications", {
-        organizationId: args.organizationId,
-        userId,
-        type: args.type,
-        title: args.title,
-        message: args.message,
-        read: false,
-        relatedEntityType: args.relatedEntityType,
-        relatedEntityId: args.relatedEntityId,
-        createdAt: now,
-      });
-      count++;
+    await Promise.all(
+      Array.from(args.userIds).map(async (userId) => {
+        await ctx.db.insert("notifications", {
+          organizationId: args.organizationId,
+          userId,
+          type: args.type,
+          title: args.title,
+          message: args.message,
+          read: false,
+          relatedEntityType: args.relatedEntityType,
+          relatedEntityId: args.relatedEntityId,
+          createdAt: now,
+        });
+        count++;
 
-      // Send email notification if user has instant email enabled
-      await ctx.runMutation(internal.notifications.sendEmailNotification, {
-        organizationId: args.organizationId,
-        userId,
-        type: args.type,
-        title: args.title,
-        message: args.message,
-        relatedEntityId: args.relatedEntityId,
-      });
-    }
+        // Send email notification if user has instant email enabled
+        await ctx.runMutation(internal.notifications.sendEmailNotification, {
+          organizationId: args.organizationId,
+          userId,
+          type: args.type,
+          title: args.title,
+          message: args.message,
+          relatedEntityId: args.relatedEntityId,
+        });
+      }),
+    );
 
     return count;
   },
@@ -656,20 +662,22 @@ export const notifyUsersWithPermission = internalMutation({
     const now = Date.now();
     let count = 0;
 
-    for (const userId of userIds) {
-      await ctx.db.insert("notifications", {
-        organizationId: args.organizationId,
-        userId,
-        type: args.type,
-        title: args.title,
-        message: args.message,
-        read: false,
-        relatedEntityType: args.relatedEntityType,
-        relatedEntityId: args.relatedEntityId,
-        createdAt: now,
-      });
-      count++;
-    }
+    await Promise.all(
+      Array.from(userIds).map(async (userId) => {
+        await ctx.db.insert("notifications", {
+          organizationId: args.organizationId,
+          userId,
+          type: args.type,
+          title: args.title,
+          message: args.message,
+          read: false,
+          relatedEntityType: args.relatedEntityType,
+          relatedEntityId: args.relatedEntityId,
+          createdAt: now,
+        });
+        count++;
+      }),
+    );
 
     return count;
   },

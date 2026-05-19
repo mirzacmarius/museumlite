@@ -647,9 +647,11 @@ async function deleteDocuments<TableName extends TableNames>(
   ctx: MutationCtx,
   docs: Array<Doc<TableName>>,
 ) {
-  for (const doc of docs) {
-    await ctx.db.delete(doc._id);
-  }
+  await Promise.all(
+    Array.from(docs).map(async (doc) => {
+      await ctx.db.delete(doc._id);
+    }),
+  );
 }
 
 export const getOrganizationFootprints = query({
@@ -724,76 +726,87 @@ export const purgeOrganizationsInternal = internalMutation({
   handler: async (ctx, args): Promise<Array<PurgeOrganizationResult>> => {
     const results: Array<PurgeOrganizationResult> = [];
 
-    for (const organizationId of args.organizationIds) {
-      const snapshot = await collectPurgeSnapshot(ctx, organizationId);
-      if (!snapshot) {
-        continue;
-      }
-
-      let storageBytes = 0;
-      for (const storageId of snapshot.storageIds) {
-        const storageDoc = await ctx.db.system.get(storageId);
-        storageBytes += storageDoc?.size ?? 0;
-      }
-
-      if (!args.dryRun) {
-        for (const storageId of snapshot.storageIds) {
-          await ctx.storage.delete(storageId);
+    await Promise.all(
+      Array.from(args.organizationIds).map(async (organizationId) => {
+        const snapshot = await collectPurgeSnapshot(ctx, organizationId);
+        if (!snapshot) {
+          return;
         }
 
-        await deleteDocuments(ctx, snapshot.childDocuments.rolePermissions);
-        await deleteDocuments(ctx, snapshot.childDocuments.userSites);
-        await deleteDocuments(
-          ctx,
-          snapshot.childDocuments.collectionGroupItems,
+        let storageBytes = 0;
+        await Promise.all(
+          Array.from(snapshot.storageIds).map(async (storageId) => {
+            const storageDoc = await ctx.db.system.get(storageId);
+            storageBytes += storageDoc?.size ?? 0;
+          }),
         );
-        await deleteDocuments(ctx, snapshot.childDocuments.locationHistory);
-        await deleteDocuments(
-          ctx,
-          snapshot.childDocuments.organizationMoveRequests,
-        );
-        await deleteDocuments(ctx, snapshot.childDocuments.accountRoles);
-        await deleteDocuments(ctx, snapshot.childDocuments.loanDocuments);
-        await deleteDocuments(ctx, snapshot.childDocuments.conditionReports);
-        await deleteDocuments(ctx, snapshot.childDocuments.loanItems);
-        await deleteDocuments(ctx, snapshot.childDocuments.exhibitionDocuments);
-        await deleteDocuments(ctx, snapshot.childDocuments.transitItems);
-        await deleteDocuments(
-          ctx,
-          snapshot.childDocuments.transitStatusUpdates,
-        );
-        await deleteDocuments(
-          ctx,
-          snapshot.childDocuments.installationTaskComments,
-        );
-        await deleteDocuments(
-          ctx,
-          snapshot.childDocuments.installationTaskChecklists,
-        );
-        await deleteDocuments(ctx, snapshot.childDocuments.userPreferences);
 
-        for (const entry of snapshot.organizationDocuments) {
-          for (const doc of entry.docs) {
-            await ctx.db.delete(doc._id);
-          }
+        if (!args.dryRun) {
+          await Promise.all(
+            Array.from(snapshot.storageIds).map(async (storageId) => {
+              await ctx.storage.delete(storageId);
+            }),
+          );
+
+          await deleteDocuments(ctx, snapshot.childDocuments.rolePermissions);
+          await deleteDocuments(ctx, snapshot.childDocuments.userSites);
+          await deleteDocuments(
+            ctx,
+            snapshot.childDocuments.collectionGroupItems,
+          );
+          await deleteDocuments(ctx, snapshot.childDocuments.locationHistory);
+          await deleteDocuments(
+            ctx,
+            snapshot.childDocuments.organizationMoveRequests,
+          );
+          await deleteDocuments(ctx, snapshot.childDocuments.accountRoles);
+          await deleteDocuments(ctx, snapshot.childDocuments.loanDocuments);
+          await deleteDocuments(ctx, snapshot.childDocuments.conditionReports);
+          await deleteDocuments(ctx, snapshot.childDocuments.loanItems);
+          await deleteDocuments(
+            ctx,
+            snapshot.childDocuments.exhibitionDocuments,
+          );
+          await deleteDocuments(ctx, snapshot.childDocuments.transitItems);
+          await deleteDocuments(
+            ctx,
+            snapshot.childDocuments.transitStatusUpdates,
+          );
+          await deleteDocuments(
+            ctx,
+            snapshot.childDocuments.installationTaskComments,
+          );
+          await deleteDocuments(
+            ctx,
+            snapshot.childDocuments.installationTaskChecklists,
+          );
+          await deleteDocuments(ctx, snapshot.childDocuments.userPreferences);
+
+          await Promise.all(
+            Array.from(snapshot.organizationDocuments).map(async (entry) => {
+              for (const doc of entry.docs) {
+                await ctx.db.delete(doc._id);
+              }
+            }),
+          );
+
+          await ctx.db.delete(snapshot.organization._id);
         }
 
-        await ctx.db.delete(snapshot.organization._id);
-      }
-
-      results.push({
-        organizationId,
-        organizationName: snapshot.organization.name,
-        dryRun: args.dryRun,
-        tableCounts: snapshot.tableCounts,
-        totalDocuments: snapshot.tableCounts.reduce(
-          (total, entry) => total + entry.count,
-          0,
-        ),
-        storageFiles: snapshot.storageIds.length,
-        storageBytes,
-      });
-    }
+        results.push({
+          organizationId,
+          organizationName: snapshot.organization.name,
+          dryRun: args.dryRun,
+          tableCounts: snapshot.tableCounts,
+          totalDocuments: snapshot.tableCounts.reduce(
+            (total, entry) => total + entry.count,
+            0,
+          ),
+          storageFiles: snapshot.storageIds.length,
+          storageBytes,
+        });
+      }),
+    );
 
     return results;
   },

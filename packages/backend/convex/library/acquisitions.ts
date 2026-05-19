@@ -761,19 +761,21 @@ export const approve = mutation({
           nextStep,
         );
 
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: request.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Acquisition Request Requires Your Approval",
-              message: `Acquisition request for "${request.title}" is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "libraryAcquisitionRequest",
-              relatedEntityId: args.requestId,
-            });
-          }
-        }
+        await Promise.all(
+          Array.from(usersToNotify).map(async (approverId) => {
+            if (approverId !== userId) {
+              await ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: request.organizationId,
+                userId: approverId,
+                type: "workflow_pending",
+                title: "Acquisition Request Requires Your Approval",
+                message: `Acquisition request for "${request.title}" is pending your approval at step ${nextStep}.`,
+                relatedEntityType: "libraryAcquisitionRequest",
+                relatedEntityId: args.requestId,
+              });
+            }
+          }),
+        );
       }
     } else {
       await ctx.db.patch(args.requestId, {

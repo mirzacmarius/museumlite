@@ -406,9 +406,11 @@ export const create = mutation({
         .filter((q) => q.eq(q.field("isCurrent"), true))
         .collect();
 
-      for (const exhibition of currentExhibitions) {
-        await ctx.db.patch(exhibition._id, { isCurrent: false });
-      }
+      await Promise.all(
+        Array.from(currentExhibitions).map(async (exhibition) => {
+          await ctx.db.patch(exhibition._id, { isCurrent: false });
+        }),
+      );
     }
 
     const workflowConfig = await getWorkflowConfig(
@@ -473,19 +475,21 @@ export const create = mutation({
         workflowState.firstStep ?? 1,
       );
 
-      for (const approverId of usersToNotify) {
-        if (approverId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: collection.organizationId,
-            userId: approverId,
-            type: "workflow_pending",
-            title: "New Exhibition Requires Approval",
-            message: `Exhibition "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
-            relatedEntityType: "exhibition",
-            relatedEntityId: exhibitionId,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(usersToNotify).map(async (approverId) => {
+          if (approverId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: collection.organizationId,
+              userId: approverId,
+              type: "workflow_pending",
+              title: "New Exhibition Requires Approval",
+              message: `Exhibition "${args.title}" is pending your approval at step ${workflowState.firstStep ?? 1}.`,
+              relatedEntityType: "exhibition",
+              relatedEntityId: exhibitionId,
+            });
+          }
+        }),
+      );
     }
 
     return exhibitionId;
@@ -616,19 +620,21 @@ export const approve = mutation({
           nextStep,
         );
 
-        for (const approverId of usersToNotify) {
-          if (approverId !== userId) {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
-              organizationId: exhibition.organizationId,
-              userId: approverId,
-              type: "workflow_pending",
-              title: "Exhibition Requires Your Approval",
-              message: `Exhibition "${exhibition.title}" is pending your approval at step ${nextStep}.`,
-              relatedEntityType: "exhibition",
-              relatedEntityId: args.exhibitionId,
-            });
-          }
-        }
+        await Promise.all(
+          Array.from(usersToNotify).map(async (approverId) => {
+            if (approverId !== userId) {
+              await ctx.runMutation(internal.audit.createNotificationInternal, {
+                organizationId: exhibition.organizationId,
+                userId: approverId,
+                type: "workflow_pending",
+                title: "Exhibition Requires Your Approval",
+                message: `Exhibition "${exhibition.title}" is pending your approval at step ${nextStep}.`,
+                relatedEntityType: "exhibition",
+                relatedEntityId: args.exhibitionId,
+              });
+            }
+          }),
+        );
       }
     } else {
       await requirePermission(
@@ -798,21 +804,23 @@ export const activate = mutation({
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
-    for (const obj of exhibitionObjects) {
-      const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
+    await Promise.all(
+      Array.from(exhibitionObjects).map(async (obj) => {
+        const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
 
-      await ctx.db.patch(obj._id, {
-        status: "installed",
-        installedAt: Date.now(),
-        installedBy: userId,
-      });
-
-      if (newLocationId) {
-        await ctx.db.patch(obj.collectionId, {
-          currentLocationId: newLocationId,
+        await ctx.db.patch(obj._id, {
+          status: "installed",
+          installedAt: Date.now(),
+          installedBy: userId,
         });
-      }
-    }
+
+        if (newLocationId) {
+          await ctx.db.patch(obj.collectionId, {
+            currentLocationId: newLocationId,
+          });
+        }
+      }),
+    );
 
     await ctx.db.patch(args.exhibitionId, {
       status: "active",
@@ -896,29 +904,31 @@ export const close = mutation({
 
     if (args.returnObjectsToOriginalLocations !== false) {
       // Return all objects that haven't been returned yet
-      for (const obj of notReturnedObjects) {
-        // Deinstall if still installed
-        if (obj.status === "installed") {
+      await Promise.all(
+        Array.from(notReturnedObjects).map(async (obj) => {
+          // Deinstall if still installed
+          if (obj.status === "installed") {
+            await ctx.db.patch(obj._id, {
+              status: "deinstalled",
+              deinstalledAt: Date.now(),
+              deinstalledBy: userId,
+            });
+          }
+
+          // Return to original location
+          if (obj.originalLocationId) {
+            await ctx.db.patch(obj.collectionId, {
+              currentLocationId: obj.originalLocationId,
+            });
+          }
+
           await ctx.db.patch(obj._id, {
-            status: "deinstalled",
-            deinstalledAt: Date.now(),
-            deinstalledBy: userId,
+            status: "returned",
+            returnedToOriginalLocation: true,
+            returnedAt: Date.now(),
           });
-        }
-
-        // Return to original location
-        if (obj.originalLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: obj.originalLocationId,
-          });
-        }
-
-        await ctx.db.patch(obj._id, {
-          status: "returned",
-          returnedToOriginalLocation: true,
-          returnedAt: Date.now(),
-        });
-      }
+        }),
+      );
     } else if (notReturnedObjects.length > 0 && !args.skipDeinstallationCheck) {
       throw new Error(
         `Cannot close: ${notReturnedObjects.length} objects have not been returned`,
@@ -1035,28 +1045,30 @@ export const checkScheduleConflicts = query({
       )
       .collect();
 
-    for (const item of loanItems) {
-      const loan = await ctx.db.get(item.loanId);
-      if (!loan) continue;
+    await Promise.all(
+      Array.from(loanItems).map(async (item) => {
+        const loan = await ctx.db.get(item.loanId);
+        if (!loan) return;
 
-      if (loan.status === "cancelled" || loan.status === "returned") {
-        continue;
-      }
+        if (loan.status === "cancelled" || loan.status === "returned") {
+          return;
+        }
 
-      const loanEnd = loan.endDate ?? Number.MAX_SAFE_INTEGER;
-      if (
-        dateRangesOverlap(proposedStart, proposedEnd, loan.startDate, loanEnd)
-      ) {
-        conflicts.push({
-          type: "loan",
-          id: loan._id,
-          title: `${loan.type === "incoming" ? "Incoming" : "Outgoing"} Loan: ${loan.loanNumber}`,
-          startDate: loan.startDate,
-          endDate: loan.endDate,
-          status: loan.status,
-        });
-      }
-    }
+        const loanEnd = loan.endDate ?? Number.MAX_SAFE_INTEGER;
+        if (
+          dateRangesOverlap(proposedStart, proposedEnd, loan.startDate, loanEnd)
+        ) {
+          conflicts.push({
+            type: "loan",
+            id: loan._id,
+            title: `${loan.type === "incoming" ? "Incoming" : "Outgoing"} Loan: ${loan.loanNumber}`,
+            startDate: loan.startDate,
+            endDate: loan.endDate,
+            status: loan.status,
+          });
+        }
+      }),
+    );
 
     return {
       hasConflicts: conflicts.length > 0,
@@ -2416,21 +2428,23 @@ export const bulkInstallObjects = mutation({
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
-    for (const obj of pendingObjects) {
-      const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
+    await Promise.all(
+      Array.from(pendingObjects).map(async (obj) => {
+        const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
 
-      await ctx.db.patch(obj._id, {
-        status: "installed",
-        installedAt: Date.now(),
-        installedBy: userId,
-      });
-
-      if (newLocationId) {
-        await ctx.db.patch(obj.collectionId, {
-          currentLocationId: newLocationId,
+        await ctx.db.patch(obj._id, {
+          status: "installed",
+          installedAt: Date.now(),
+          installedBy: userId,
         });
-      }
-    }
+
+        if (newLocationId) {
+          await ctx.db.patch(obj.collectionId, {
+            currentLocationId: newLocationId,
+          });
+        }
+      }),
+    );
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
@@ -2481,19 +2495,21 @@ export const bulkReturnObjects = mutation({
       .filter((q) => q.eq(q.field("status"), "deinstalled"))
       .collect();
 
-    for (const obj of deinstalledObjects) {
-      if (obj.originalLocationId) {
-        await ctx.db.patch(obj.collectionId, {
-          currentLocationId: obj.originalLocationId,
-        });
-      }
+    await Promise.all(
+      Array.from(deinstalledObjects).map(async (obj) => {
+        if (obj.originalLocationId) {
+          await ctx.db.patch(obj.collectionId, {
+            currentLocationId: obj.originalLocationId,
+          });
+        }
 
-      await ctx.db.patch(obj._id, {
-        status: "returned",
-        returnedToOriginalLocation: true,
-        returnedAt: Date.now(),
-      });
-    }
+        await ctx.db.patch(obj._id, {
+          status: "returned",
+          returnedToOriginalLocation: true,
+          returnedAt: Date.now(),
+        });
+      }),
+    );
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,

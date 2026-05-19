@@ -1273,13 +1273,15 @@ export const seedSystemTemplates = internalMutation({
       },
     ];
 
-    for (const template of systemTemplates) {
-      await ctx.db.insert("workflowTemplates", {
-        ...template,
-        isSystem: true,
-        createdAt: Date.now(),
-      });
-    }
+    await Promise.all(
+      Array.from(systemTemplates).map(async (template) => {
+        await ctx.db.insert("workflowTemplates", {
+          ...template,
+          isSystem: true,
+          createdAt: Date.now(),
+        });
+      }),
+    );
 
     return null;
   },

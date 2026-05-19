@@ -185,16 +185,18 @@ describe("savedViews schema", () => {
     ] as const;
 
     await t.run(async (ctx) => {
-      for (const module of moduleTypes) {
-        await ctx.db.insert("savedViews", {
-          organizationId: orgId,
-          userId,
-          name: `${module} View`,
-          module,
-          filters: "{}",
-          createdAt: Date.now(),
-        });
-      }
+      await Promise.all(
+        Array.from(moduleTypes).map(async (module) => {
+          await ctx.db.insert("savedViews", {
+            organizationId: orgId,
+            userId,
+            name: `${module} View`,
+            module,
+            filters: "{}",
+            createdAt: Date.now(),
+          });
+        }),
+      );
     });
 
     const allViews = await t.run(async (ctx) => {

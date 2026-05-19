@@ -78,32 +78,34 @@ export async function returnLoanItems(
   }
 
   const returnedItemIds: Id<"loanItems">[] = [];
-  for (const item of itemsToReturn) {
-    await markCollectionActive(ctx, {
-      collectionId: item.collectionId,
-      changedBy,
-    });
-
-    const conditionInValue = conditionIn || item.conditionIn || "Returned";
-    await ctx.db.patch(item._id, {
-      conditionIn: conditionInValue,
-    });
-
-    returnedItemIds.push(item._id);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId,
-      userId: changedBy,
-      action: "item_returned",
-      entityType: "loanItem",
-      entityId: item._id,
-      changes: {
-        loanId,
+  await Promise.all(
+    Array.from(itemsToReturn).map(async (item) => {
+      await markCollectionActive(ctx, {
         collectionId: item.collectionId,
+        changedBy,
+      });
+
+      const conditionInValue = conditionIn || item.conditionIn || "Returned";
+      await ctx.db.patch(item._id, {
         conditionIn: conditionInValue,
-      },
-    });
-  }
+      });
+
+      returnedItemIds.push(item._id);
+
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId,
+        userId: changedBy,
+        action: "item_returned",
+        entityType: "loanItem",
+        entityId: item._id,
+        changes: {
+          loanId,
+          collectionId: item.collectionId,
+          conditionIn: conditionInValue,
+        },
+      });
+    }),
+  );
 
   const updatedLoanItems = await getLoanItems(ctx, loanId);
   const allItemsNowReturned = updatedLoanItems.every(
@@ -131,12 +133,14 @@ export async function restoreLoanCollections(
 ) {
   const loanItems = await getLoanItems(ctx, loanId);
 
-  for (const item of loanItems) {
-    await markCollectionActive(ctx, {
-      collectionId: item.collectionId,
-      changedBy,
-    });
-  }
+  await Promise.all(
+    Array.from(loanItems).map(async (item) => {
+      await markCollectionActive(ctx, {
+        collectionId: item.collectionId,
+        changedBy,
+      });
+    }),
+  );
 
   return {
     restoredItemIds: loanItems.map((item) => item._id),

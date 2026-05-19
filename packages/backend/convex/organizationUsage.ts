@@ -126,12 +126,14 @@ export const recomputeAllOrganizationUsageCounters = internalAction({
       {},
     );
 
-    for (const organizationId of organizations) {
-      await ctx.runMutation(
-        internal.organizationUsage.recomputeOrganizationUsageCounter,
-        { organizationId },
-      );
-    }
+    await Promise.all(
+      Array.from(organizations).map(async (organizationId) => {
+        await ctx.runMutation(
+          internal.organizationUsage.recomputeOrganizationUsageCounter,
+          { organizationId },
+        );
+      }),
+    );
 
     return organizations.length;
   },

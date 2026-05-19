@@ -39,28 +39,30 @@ async function createOrgWithUser(
       isSystemRole: true,
     });
 
-    for (const permissionName of permissionNames) {
-      const category =
-        (permissionName.split(".")[0] as
-          | "collections"
-          | "loans"
-          | "locations"
-          | "sites"
-          | "media"
-          | "users"
-          | "organization"
-          | "accounts") ?? "collections";
+    await Promise.all(
+      Array.from(permissionNames).map(async (permissionName) => {
+        const category =
+          (permissionName.split(".")[0] as
+            | "collections"
+            | "loans"
+            | "locations"
+            | "sites"
+            | "media"
+            | "users"
+            | "organization"
+            | "accounts") ?? "collections";
 
-      const permissionId = await ctx.db.insert("permissions", {
-        name: permissionName,
-        category,
-      });
+        const permissionId = await ctx.db.insert("permissions", {
+          name: permissionName,
+          category,
+        });
 
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
-      });
-    }
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
+      }),
+    );
 
     await ctx.db.insert("userOrganizations", {
       userId,

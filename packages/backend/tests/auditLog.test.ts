@@ -530,21 +530,23 @@ describe("auditLog detailed logging", () => {
 
       await t.run(async (ctx) => {
         const timestamp = Date.now();
-        for (let i = 0; i < 10; i++) {
-          await ctx.db.insert("auditLog", {
-            organizationId: orgId,
-            userId,
-            action: "bulk_created",
-            entityType: "media",
-            entityId: `media_${i}`,
-            timestamp: timestamp + i,
-            changes: {
-              bulkOperation: true,
-              batchId: "batch_001",
-              itemIndex: i,
-            },
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 10 }, async (_, i) => {
+            await ctx.db.insert("auditLog", {
+              organizationId: orgId,
+              userId,
+              action: "bulk_created",
+              entityType: "media",
+              entityId: `media_${i}`,
+              timestamp: timestamp + i,
+              changes: {
+                bulkOperation: true,
+                batchId: "batch_001",
+                itemIndex: i,
+              },
+            });
+          }),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -1058,16 +1060,18 @@ describe("auditLog detailed logging", () => {
       );
 
       await t.run(async (ctx) => {
-        for (const timestamp of timestamps) {
-          await ctx.db.insert("auditLog", {
-            organizationId: orgId,
-            userId,
-            action: "integrity_test",
-            entityType: "test",
-            entityId: `test_${timestamp}`,
-            timestamp,
-          });
-        }
+        await Promise.all(
+          Array.from(timestamps).map(async (timestamp) => {
+            await ctx.db.insert("auditLog", {
+              organizationId: orgId,
+              userId,
+              action: "integrity_test",
+              entityType: "test",
+              entityId: `test_${timestamp}`,
+              timestamp,
+            });
+          }),
+        );
       });
 
       const authed = authedForUser(t, userId);

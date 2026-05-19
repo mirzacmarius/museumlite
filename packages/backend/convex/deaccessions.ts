@@ -747,9 +747,11 @@ export const backfillSearchDocuments = mutation({
       )
       .collect();
 
-    for (const deaccession of deaccessions) {
-      await upsertDeaccessionSearchDocument(ctx, deaccession);
-    }
+    await Promise.all(
+      Array.from(deaccessions).map(async (deaccession) => {
+        await upsertDeaccessionSearchDocument(ctx, deaccession);
+      }),
+    );
 
     return { updatedCount: deaccessions.length };
   },
@@ -1242,19 +1244,21 @@ export const approve = mutation({
         )
         .collect();
 
-      for (const userOrg of userOrgs) {
-        if (userOrg.userId !== userId) {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: deaccession.organizationId,
-            userId: userOrg.userId,
-            type: "workflow_approved",
-            title: "Deaccession Approved",
-            message: `Deaccession ${deaccession.deaccessionNumber} has been approved.`,
-            relatedEntityType: "deaccession",
-            relatedEntityId: args.deaccessionId,
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(userOrgs).map(async (userOrg) => {
+          if (userOrg.userId !== userId) {
+            await ctx.runMutation(internal.audit.createNotificationInternal, {
+              organizationId: deaccession.organizationId,
+              userId: userOrg.userId,
+              type: "workflow_approved",
+              title: "Deaccession Approved",
+              message: `Deaccession ${deaccession.deaccessionNumber} has been approved.`,
+              relatedEntityType: "deaccession",
+              relatedEntityId: args.deaccessionId,
+            });
+          }
+        }),
+      );
 
       await applyApprovedCollectionStatus(ctx, deaccession, userId);
     }
@@ -1893,21 +1897,23 @@ export const recordRegulatoryApproval = mutation({
       )
       .collect();
 
-    for (const userOrg of userOrgs) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: deaccession.organizationId,
-        userId: userOrg.userId,
-        type: args.approved
-          ? "regulatory_approval_granted"
-          : "regulatory_approval_denied",
-        title: args.approved
-          ? "Regulatory Approval Granted"
-          : "Regulatory Approval Denied",
-        message: `Regulatory approval for deaccession ${deaccession.deaccessionNumber} has been ${args.approved ? "granted" : "denied"}`,
-        relatedEntityType: "deaccession",
-        relatedEntityId: deaccession._id,
-      });
-    }
+    await Promise.all(
+      Array.from(userOrgs).map(async (userOrg) => {
+        await ctx.runMutation(internal.audit.createNotificationInternal, {
+          organizationId: deaccession.organizationId,
+          userId: userOrg.userId,
+          type: args.approved
+            ? "regulatory_approval_granted"
+            : "regulatory_approval_denied",
+          title: args.approved
+            ? "Regulatory Approval Granted"
+            : "Regulatory Approval Denied",
+          message: `Regulatory approval for deaccession ${deaccession.deaccessionNumber} has been ${args.approved ? "granted" : "denied"}`,
+          relatedEntityType: "deaccession",
+          relatedEntityId: deaccession._id,
+        });
+      }),
+    );
 
     return null;
   },
@@ -2223,54 +2229,56 @@ export const bulkExport = query({
       proceedsVerified?: boolean;
     }> = [];
 
-    for (const deaccessionId of args.deaccessionIds) {
-      const deaccession = await ctx.db.get(deaccessionId);
-      if (!deaccession) continue;
+    await Promise.all(
+      Array.from(args.deaccessionIds).map(async (deaccessionId) => {
+        const deaccession = await ctx.db.get(deaccessionId);
+        if (!deaccession) return;
 
-      await requirePermission(
-        ctx,
-        deaccession.organizationId,
-        "collections.read",
-      );
+        await requirePermission(
+          ctx,
+          deaccession.organizationId,
+          "collections.read",
+        );
 
-      // Get collection info
-      let collectionTitle: string | undefined;
-      let collectionAccessionNumber: string | undefined;
-      if (deaccession.collectionId) {
-        const collection = await ctx.db.get(deaccession.collectionId);
-        if (collection) {
-          collectionTitle = collection.title;
-          collectionAccessionNumber = collection.accessionNumber;
+        // Get collection info
+        let collectionTitle: string | undefined;
+        let collectionAccessionNumber: string | undefined;
+        if (deaccession.collectionId) {
+          const collection = await ctx.db.get(deaccession.collectionId);
+          if (collection) {
+            collectionTitle = collection.title;
+            collectionAccessionNumber = collection.accessionNumber;
+          }
         }
-      }
 
-      // Get approver name
-      let approvedByName: string | undefined;
-      if (deaccession.approvedBy) {
-        const approver = await ctx.db.get(deaccession.approvedBy);
-        approvedByName = approver?.name ?? approver?.username;
-      }
+        // Get approver name
+        let approvedByName: string | undefined;
+        if (deaccession.approvedBy) {
+          const approver = await ctx.db.get(deaccession.approvedBy);
+          approvedByName = approver?.name ?? approver?.username;
+        }
 
-      results.push({
-        _id: deaccession._id,
-        deaccessionNumber: deaccession.deaccessionNumber,
-        dateDeaccessioned: deaccession.dateDeaccessioned,
-        reason: deaccession.reason,
-        method: deaccession.method,
-        status: deaccession.status,
-        disposition: deaccession.disposition,
-        notes: deaccession.notes,
-        collectionTitle,
-        collectionAccessionNumber,
-        approvedByName,
-        approvedAt: deaccession.approvedAt,
-        workflowStep: deaccession.workflowStep,
-        proceedsAmount: deaccession.proceedsAmount,
-        proceedsCurrency: deaccession.proceedsCurrency,
-        proceedsRecipient: deaccession.proceedsRecipient,
-        proceedsVerified: deaccession.proceedsVerified,
-      });
-    }
+        results.push({
+          _id: deaccession._id,
+          deaccessionNumber: deaccession.deaccessionNumber,
+          dateDeaccessioned: deaccession.dateDeaccessioned,
+          reason: deaccession.reason,
+          method: deaccession.method,
+          status: deaccession.status,
+          disposition: deaccession.disposition,
+          notes: deaccession.notes,
+          collectionTitle,
+          collectionAccessionNumber,
+          approvedByName,
+          approvedAt: deaccession.approvedAt,
+          workflowStep: deaccession.workflowStep,
+          proceedsAmount: deaccession.proceedsAmount,
+          proceedsCurrency: deaccession.proceedsCurrency,
+          proceedsRecipient: deaccession.proceedsRecipient,
+          proceedsVerified: deaccession.proceedsVerified,
+        });
+      }),
+    );
 
     return results;
   },

@@ -552,21 +552,25 @@ async function moveCollectionGroupLinks(
     .collect();
 
   const affectedGroupIds = new Set<Id<"collectionGroups">>();
-  for (const item of collectionGroupItems) {
-    affectedGroupIds.add(item.collectionGroupId);
-    await ctx.db.delete(item._id);
-  }
+  await Promise.all(
+    Array.from(collectionGroupItems).map(async (item) => {
+      affectedGroupIds.add(item.collectionGroupId);
+      await ctx.db.delete(item._id);
+    }),
+  );
 
-  for (const groupId of affectedGroupIds) {
-    const group = await ctx.db.get(groupId);
-    if (!group) {
-      continue;
-    }
+  await Promise.all(
+    Array.from(affectedGroupIds).map(async (groupId) => {
+      const group = await ctx.db.get(groupId);
+      if (!group) {
+        return;
+      }
 
-    await ctx.db.patch(groupId, {
-      itemsCount: Math.max(0, (group.itemsCount ?? 0) - 1),
-    });
-  }
+      await ctx.db.patch(groupId, {
+        itemsCount: Math.max(0, (group.itemsCount ?? 0) - 1),
+      });
+    }),
+  );
 }
 
 async function moveMediaRecords(
@@ -579,46 +583,54 @@ async function moveMediaRecords(
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
 
-  for (const mediaFile of mediaFiles) {
-    await ctx.db.patch(mediaFile._id, {
-      organizationId: targetOrganizationId,
-    });
-
-    const mediaVersions = await ctx.db
-      .query("mediaVersions")
-      .withIndex("by_original_media", (q) =>
-        q.eq("originalMediaId", mediaFile._id),
-      )
-      .collect();
-
-    for (const version of mediaVersions) {
-      await ctx.db.patch(version._id, {
+  await Promise.all(
+    Array.from(mediaFiles).map(async (mediaFile) => {
+      await ctx.db.patch(mediaFile._id, {
         organizationId: targetOrganizationId,
       });
-    }
 
-    const editHistory = await ctx.db
-      .query("mediaEditHistory")
-      .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
-      .collect();
+      const mediaVersions = await ctx.db
+        .query("mediaVersions")
+        .withIndex("by_original_media", (q) =>
+          q.eq("originalMediaId", mediaFile._id),
+        )
+        .collect();
 
-    for (const historyEntry of editHistory) {
-      await ctx.db.patch(historyEntry._id, {
-        organizationId: targetOrganizationId,
-      });
-    }
+      await Promise.all(
+        Array.from(mediaVersions).map(async (version) => {
+          await ctx.db.patch(version._id, {
+            organizationId: targetOrganizationId,
+          });
+        }),
+      );
 
-    const downloads = await ctx.db
-      .query("mediaDownloads")
-      .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
-      .collect();
+      const editHistory = await ctx.db
+        .query("mediaEditHistory")
+        .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
+        .collect();
 
-    for (const download of downloads) {
-      await ctx.db.patch(download._id, {
-        organizationId: targetOrganizationId,
-      });
-    }
-  }
+      await Promise.all(
+        Array.from(editHistory).map(async (historyEntry) => {
+          await ctx.db.patch(historyEntry._id, {
+            organizationId: targetOrganizationId,
+          });
+        }),
+      );
+
+      const downloads = await ctx.db
+        .query("mediaDownloads")
+        .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
+        .collect();
+
+      await Promise.all(
+        Array.from(downloads).map(async (download) => {
+          await ctx.db.patch(download._id, {
+            organizationId: targetOrganizationId,
+          });
+        }),
+      );
+    }),
+  );
 }
 
 async function moveConservationRecords(
@@ -631,44 +643,52 @@ async function moveConservationRecords(
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
 
-  for (const treatment of treatments) {
-    await ctx.db.patch(treatment._id, {
-      organizationId: targetOrganizationId,
-    });
-
-    const attachments = await ctx.db
-      .query("conservationAttachments")
-      .withIndex("by_treatment", (q) => q.eq("treatmentId", treatment._id))
-      .collect();
-
-    for (const attachment of attachments) {
-      await ctx.db.patch(attachment._id, {
+  await Promise.all(
+    Array.from(treatments).map(async (treatment) => {
+      await ctx.db.patch(treatment._id, {
         organizationId: targetOrganizationId,
       });
-    }
-  }
+
+      const attachments = await ctx.db
+        .query("conservationAttachments")
+        .withIndex("by_treatment", (q) => q.eq("treatmentId", treatment._id))
+        .collect();
+
+      await Promise.all(
+        Array.from(attachments).map(async (attachment) => {
+          await ctx.db.patch(attachment._id, {
+            organizationId: targetOrganizationId,
+          });
+        }),
+      );
+    }),
+  );
 
   const schedules = await ctx.db
     .query("assessmentSchedules")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
 
-  for (const schedule of schedules) {
-    await ctx.db.patch(schedule._id, {
-      organizationId: targetOrganizationId,
-    });
-  }
+  await Promise.all(
+    Array.from(schedules).map(async (schedule) => {
+      await ctx.db.patch(schedule._id, {
+        organizationId: targetOrganizationId,
+      });
+    }),
+  );
 
   const alerts = await ctx.db
     .query("conservationAlerts")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
 
-  for (const alert of alerts) {
-    await ctx.db.patch(alert._id, {
-      organizationId: targetOrganizationId,
-    });
-  }
+  await Promise.all(
+    Array.from(alerts).map(async (alert) => {
+      await ctx.db.patch(alert._id, {
+        organizationId: targetOrganizationId,
+      });
+    }),
+  );
 }
 
 async function executeMove(
@@ -707,22 +727,26 @@ async function executeMove(
     .withIndex("by_object", (q) => q.eq("objectId", collection._id))
     .collect();
 
-  for (const comment of comments) {
-    await ctx.db.patch(comment._id, {
-      organizationId: targetOrganizationId,
-    });
-  }
+  await Promise.all(
+    Array.from(comments).map(async (comment) => {
+      await ctx.db.patch(comment._id, {
+        organizationId: targetOrganizationId,
+      });
+    }),
+  );
 
   const appraisals = await ctx.db
     .query("appraisals")
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  for (const appraisal of appraisals) {
-    await ctx.db.patch(appraisal._id, {
-      organizationId: targetOrganizationId,
-    });
-  }
+  await Promise.all(
+    Array.from(appraisals).map(async (appraisal) => {
+      await ctx.db.patch(appraisal._id, {
+        organizationId: targetOrganizationId,
+      });
+    }),
+  );
 
   await ctx.db.patch(collection._id, {
     organizationId: targetOrganizationId,

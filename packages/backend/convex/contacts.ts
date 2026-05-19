@@ -328,17 +328,19 @@ export const update = mutation({
         .withIndex("by_account", (q) => q.eq("accountId", contact.accountId))
         .collect();
 
-      for (const existingContact of existingPrimaryContacts) {
-        if (
-          existingContact._id !== args.contactId &&
-          existingContact.isPrimary
-        ) {
-          await ctx.db.patch(existingContact._id, {
-            isPrimary: false,
-            updatedAt: Date.now(),
-          });
-        }
-      }
+      await Promise.all(
+        Array.from(existingPrimaryContacts).map(async (existingContact) => {
+          if (
+            existingContact._id !== args.contactId &&
+            existingContact.isPrimary
+          ) {
+            await ctx.db.patch(existingContact._id, {
+              isPrimary: false,
+              updatedAt: Date.now(),
+            });
+          }
+        }),
+      );
     }
 
     const updates: Record<string, unknown> = {
@@ -456,14 +458,16 @@ export const setPrimary = mutation({
       .withIndex("by_account", (q) => q.eq("accountId", contact.accountId))
       .collect();
 
-    for (const existingContact of existingPrimaryContacts) {
-      if (existingContact.isPrimary) {
-        await ctx.db.patch(existingContact._id, {
-          isPrimary: false,
-          updatedAt: Date.now(),
-        });
-      }
-    }
+    await Promise.all(
+      Array.from(existingPrimaryContacts).map(async (existingContact) => {
+        if (existingContact.isPrimary) {
+          await ctx.db.patch(existingContact._id, {
+            isPrimary: false,
+            updatedAt: Date.now(),
+          });
+        }
+      }),
+    );
 
     // Set this contact as primary
     await ctx.db.patch(args.contactId, {
