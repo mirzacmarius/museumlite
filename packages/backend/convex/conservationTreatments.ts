@@ -56,9 +56,10 @@ export const listByOrganization = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const treatments = await ctx.db
       .query("conservationTreatments")
       .withIndex("by_organization", (q) =>
@@ -72,7 +73,7 @@ export const listByOrganization = query({
         const [collection, user] = await Promise.all([
           ctx.db.get(treatment.collectionId),
           ctx.db.get(treatment.performedBy),
-        ]);
+        ] as const);
         return {
           _id: treatment._id,
           _creationTime: treatment._creationTime,
@@ -126,7 +127,7 @@ export const get = query({
     const [collection, user] = await Promise.all([
       ctx.db.get(treatment.collectionId),
       ctx.db.get(treatment.performedBy),
-    ]);
+    ] as const);
     return {
       _id: treatment._id,
       _creationTime: treatment._creationTime,
@@ -363,7 +364,7 @@ export const create = mutation({
     const [user, workflowConfig] = await Promise.all([
       ctx.db.get(userId),
       getWorkflowConfig(ctx, collection.organizationId, "conservation"),
-    ]);
+    ] as const);
     const workflowState = resolveWorkflowStepState(
       workflowConfig?.steps,
       undefined,
@@ -541,21 +542,20 @@ export const approve = mutation({
         if (nextStep === undefined) {
           throw new Error("Next workflow step is not configured");
         }
-
-        await ctx.db.patch(args.treatmentId, {
-          workflowStep: nextStep,
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: treatment.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "conservationTreatment",
-          entityId: args.treatmentId,
-          changes: { step: currentStep, nextStep },
-        });
-
+        await Promise.all([
+          ctx.db.patch(args.treatmentId, {
+            workflowStep: nextStep,
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: treatment.organizationId,
+            userId,
+            action: "step_approved",
+            entityType: "conservationTreatment",
+            entityId: args.treatmentId,
+            changes: { step: currentStep, nextStep },
+          }),
+        ]);
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           treatment.organizationId,
@@ -580,26 +580,22 @@ export const approve = mutation({
         );
       }
     } else {
-      await requirePermission(
-        ctx,
-        treatment.organizationId,
-        "collections.update",
-      );
-
-      await ctx.db.patch(args.treatmentId, {
-        status: "approved",
-        approvedBy: userId,
-        approvedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: treatment.organizationId,
-        userId,
-        action: "approved",
-        entityType: "conservationTreatment",
-        entityId: args.treatmentId,
-        changes: { status: "approved" },
-      });
+      await Promise.all([
+        requirePermission(ctx, treatment.organizationId, "collections.update"),
+        ctx.db.patch(args.treatmentId, {
+          status: "approved",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: treatment.organizationId,
+          userId,
+          action: "approved",
+          entityType: "conservationTreatment",
+          entityId: args.treatmentId,
+          changes: { status: "approved" },
+        }),
+      ] as const);
     }
 
     return null;
@@ -712,25 +708,20 @@ export const startProgress = mutation({
     if (treatment.status !== "approved") {
       throw new Error("Treatment must be approved before starting");
     }
-
-    await requirePermission(
-      ctx,
-      treatment.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.treatmentId, {
-      status: "in_progress",
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "started",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { status: "in_progress" },
-    });
+    await Promise.all([
+      requirePermission(ctx, treatment.organizationId, "collections.update"),
+      ctx.db.patch(args.treatmentId, {
+        status: "in_progress",
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "started",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { status: "in_progress" },
+      }),
+    ] as const);
 
     return null;
   },
@@ -870,13 +861,11 @@ export const addAttachment = mutation({
     if (!treatment) {
       throw new Error("Treatment not found");
     }
-
     await requirePermission(
       ctx,
       treatment.organizationId,
       "collections.update",
     );
-
     const attachmentId = await ctx.db.insert("conservationAttachments", {
       organizationId: treatment.organizationId,
       treatmentId: args.treatmentId,
@@ -890,15 +879,6 @@ export const addAttachment = mutation({
       takenAt: args.takenAt,
       uploadedBy: userId,
       uploadedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "uploaded_attachment",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { fileName: args.fileName, attachmentType: args.attachmentType },
     });
 
     return attachmentId;
@@ -920,24 +900,19 @@ export const removeAttachment = mutation({
     if (!attachment) {
       throw new Error("Attachment not found");
     }
-
-    await requirePermission(
-      ctx,
-      attachment.organizationId,
-      "collections.update",
-    );
-
-    await ctx.storage.delete(attachment.storageId);
-    await ctx.db.delete(args.attachmentId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: attachment.organizationId,
-      userId,
-      action: "deleted_attachment",
-      entityType: "conservationTreatment",
-      entityId: attachment.treatmentId,
-      changes: { fileName: attachment.fileName },
-    });
+    await Promise.all([
+      requirePermission(ctx, attachment.organizationId, "collections.update"),
+      ctx.storage.delete(attachment.storageId),
+      ctx.db.delete(args.attachmentId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: attachment.organizationId,
+        userId,
+        action: "deleted_attachment",
+        entityType: "conservationTreatment",
+        entityId: attachment.treatmentId,
+        changes: { fileName: attachment.fileName },
+      }),
+    ] as const);
 
     return null;
   },
@@ -969,10 +944,10 @@ export const listAttachments = query({
     if (!treatment) {
       return [];
     }
-
-    await requireConservationAccess(ctx, treatment.organizationId);
-    await requirePermission(ctx, treatment.organizationId, "collections.read");
-
+    await Promise.all([
+      requireConservationAccess(ctx, treatment.organizationId),
+      requirePermission(ctx, treatment.organizationId, "collections.read"),
+    ]);
     const attachments = await ctx.db
       .query("conservationAttachments")
       .withIndex("by_treatment", (q) => q.eq("treatmentId", args.treatmentId))
@@ -983,7 +958,7 @@ export const listAttachments = query({
         const [url, user] = await Promise.all([
           ctx.storage.getUrl(attachment.storageId),
           ctx.db.get(attachment.uploadedBy),
-        ]);
+        ] as const);
         return {
           _id: attachment._id,
           storageId: attachment.storageId,
@@ -1024,10 +999,10 @@ export const getAttachmentsByType = query({
     if (!treatment) {
       return [];
     }
-
-    await requireConservationAccess(ctx, treatment.organizationId);
-    await requirePermission(ctx, treatment.organizationId, "collections.read");
-
+    await Promise.all([
+      requireConservationAccess(ctx, treatment.organizationId),
+      requirePermission(ctx, treatment.organizationId, "collections.read"),
+    ]);
     const attachments = await ctx.db
       .query("conservationAttachments")
       .withIndex("by_treatment_and_type", (q) =>
@@ -1093,14 +1068,14 @@ export const createAlertRule = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ]);
     const ruleId = await ctx.db.insert("conservationAlertRules", {
       organizationId: args.organizationId,
       name: args.name,
@@ -1205,24 +1180,23 @@ export const deleteAlertRule = mutation({
     if (!rule) {
       throw new Error("Alert rule not found");
     }
-
-    await requireConservationAccess(ctx, rule.organizationId);
-    await requirePermission(
-      ctx,
-      rule.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.patch(args.ruleId, { isActive: false });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: rule.organizationId,
-      userId,
-      action: "deactivated",
-      entityType: "conservationAlertRule",
-      entityId: args.ruleId,
-      changes: { name: rule.name },
-    });
+    await Promise.all([
+      requireConservationAccess(ctx, rule.organizationId),
+      requirePermission(
+        ctx,
+        rule.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.patch(args.ruleId, { isActive: false }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: rule.organizationId,
+        userId,
+        action: "deactivated",
+        entityType: "conservationAlertRule",
+        entityId: args.ruleId,
+        changes: { name: rule.name },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1307,10 +1281,10 @@ export const createAlert = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.update");
-
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.update"),
+    ]);
     const alertId = await ctx.db.insert("conservationAlerts", {
       organizationId: args.organizationId,
       collectionId: args.collectionId,
@@ -1356,24 +1330,23 @@ export const acknowledgeAlert = mutation({
     if (alert.status !== "active") {
       throw new Error("Alert is not active");
     }
-
-    await requireConservationAccess(ctx, alert.organizationId);
-    await requirePermission(ctx, alert.organizationId, "collections.update");
-
-    await ctx.db.patch(args.alertId, {
-      status: "acknowledged",
-      acknowledgedBy: userId,
-      acknowledgedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: alert.organizationId,
-      userId,
-      action: "acknowledged",
-      entityType: "conservationAlert",
-      entityId: args.alertId,
-      changes: { title: alert.title },
-    });
+    await Promise.all([
+      requireConservationAccess(ctx, alert.organizationId),
+      requirePermission(ctx, alert.organizationId, "collections.update"),
+      ctx.db.patch(args.alertId, {
+        status: "acknowledged",
+        acknowledgedBy: userId,
+        acknowledgedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: alert.organizationId,
+        userId,
+        action: "acknowledged",
+        entityType: "conservationAlert",
+        entityId: args.alertId,
+        changes: { title: alert.title },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1399,25 +1372,24 @@ export const resolveAlert = mutation({
     if (alert.status === "resolved" || alert.status === "dismissed") {
       throw new Error("Alert is already closed");
     }
-
-    await requireConservationAccess(ctx, alert.organizationId);
-    await requirePermission(ctx, alert.organizationId, "collections.update");
-
-    await ctx.db.patch(args.alertId, {
-      status: "resolved",
-      resolvedBy: userId,
-      resolvedAt: Date.now(),
-      resolutionNotes: args.resolutionNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: alert.organizationId,
-      userId,
-      action: "resolved",
-      entityType: "conservationAlert",
-      entityId: args.alertId,
-      changes: { title: alert.title, resolutionNotes: args.resolutionNotes },
-    });
+    await Promise.all([
+      requireConservationAccess(ctx, alert.organizationId),
+      requirePermission(ctx, alert.organizationId, "collections.update"),
+      ctx.db.patch(args.alertId, {
+        status: "resolved",
+        resolvedBy: userId,
+        resolvedAt: Date.now(),
+        resolutionNotes: args.resolutionNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: alert.organizationId,
+        userId,
+        action: "resolved",
+        entityType: "conservationAlert",
+        entityId: args.alertId,
+        changes: { title: alert.title, resolutionNotes: args.resolutionNotes },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1443,25 +1415,24 @@ export const dismissAlert = mutation({
     if (alert.status === "resolved" || alert.status === "dismissed") {
       throw new Error("Alert is already closed");
     }
-
-    await requireConservationAccess(ctx, alert.organizationId);
-    await requirePermission(ctx, alert.organizationId, "collections.update");
-
-    await ctx.db.patch(args.alertId, {
-      status: "dismissed",
-      resolvedBy: userId,
-      resolvedAt: Date.now(),
-      resolutionNotes: args.resolutionNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: alert.organizationId,
-      userId,
-      action: "dismissed",
-      entityType: "conservationAlert",
-      entityId: args.alertId,
-      changes: { title: alert.title },
-    });
+    await Promise.all([
+      requireConservationAccess(ctx, alert.organizationId),
+      requirePermission(ctx, alert.organizationId, "collections.update"),
+      ctx.db.patch(args.alertId, {
+        status: "dismissed",
+        resolvedBy: userId,
+        resolvedAt: Date.now(),
+        resolutionNotes: args.resolutionNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: alert.organizationId,
+        userId,
+        action: "dismissed",
+        entityType: "conservationAlert",
+        entityId: args.alertId,
+        changes: { title: alert.title },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1611,9 +1582,10 @@ export const getAlertsByPriority = query({
     total: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const activeAlerts = await ctx.db
       .query("conservationAlerts")
       .withIndex("by_organization_and_status", (q) =>

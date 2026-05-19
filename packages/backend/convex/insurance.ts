@@ -389,7 +389,7 @@ export const listPolicies = query({
             .query("insuranceClaims")
             .withIndex("by_policy", (q) => q.eq("policyId", policy._id))
             .collect(),
-        ]);
+        ] as const);
         return {
           _id: policy._id,
           policyNumber: policy.policyNumber,
@@ -492,7 +492,7 @@ export const getPolicy = query({
         .query("insuranceClaims")
         .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
         .collect(),
-    ]);
+    ] as const);
 
     const enrichedCoverages = await Promise.all(
       coverages.map(async (coverage) => {
@@ -504,7 +504,7 @@ export const getPolicy = query({
             ? ctx.db.get(coverage.exhibitionId)
             : Promise.resolve(null),
           coverage.loanId ? ctx.db.get(coverage.loanId) : Promise.resolve(null),
-        ]);
+        ] as const);
 
         let collectionTitle: string | undefined;
         let collectionAccessionNumber: string | undefined;
@@ -683,25 +683,24 @@ export const removeCoverage = mutation({
     if (!coverage) {
       throw new Error("Coverage not found");
     }
-
-    await requirePermission(
-      ctx,
-      coverage.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.patch(args.coverageId, {
-      status: "removed",
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: coverage.organizationId,
-      userId,
-      action: "removed",
-      entityType: "insuranceCoverage",
-      entityId: args.coverageId,
-      changes: { status: "removed" },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        coverage.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.patch(args.coverageId, {
+        status: "removed",
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: coverage.organizationId,
+        userId,
+        action: "removed",
+        entityType: "insuranceCoverage",
+        entityId: args.coverageId,
+        changes: { status: "removed" },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1976,7 +1975,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
           q.eq("organizationId", args.organizationId),
         )
         .collect(),
-    ]);
+    ] as const);
 
     // Notify insurance coordinators
     for (const userOrg of userOrgs) {
@@ -2200,7 +2199,7 @@ export const getCoveragesWithStaleAppraisals = query({
         const [policy, collection] = await Promise.all([
           ctx.db.get(coverage.policyId),
           ctx.db.get(coverage.collectionId),
-        ]);
+        ] as const);
 
         // Check for linked appraisal
         if (coverage.appraisalId) {
@@ -2489,7 +2488,7 @@ export const getCoverageAlerts = query({
             q.eq("organizationId", args.organizationId).eq("status", "active"),
           )
           .collect(),
-      ]);
+      ] as const);
     const coveredObjectIds = new Set<string>();
     for (const coverage of allCoverages) {
       if (coverage.collectionId) {
@@ -2524,7 +2523,7 @@ export const getCoverageAlerts = query({
           ),
         )
         .collect(),
-    ]);
+    ] as const);
     // Count stale appraisals (older than 3 years)
     const threeYearsAgo = now - 3 * 365 * 24 * 60 * 60 * 1000;
     const appraisals = await ctx.db

@@ -125,11 +125,10 @@ export const get = query({
     if (!account) {
       return null;
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
-
-    // Get associated roles
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.read"),
+    ]);
     const accountRoles = await ctx.db
       .query("accountRoles")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -393,11 +392,10 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.delete");
-
-    // Check if account is used in any loans
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.delete"),
+    ]);
     const loansUsingAccount = await ctx.db
       .query("loans")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -414,20 +412,19 @@ export const remove = mutation({
       .query("accountRoles")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .collect();
-
-    await Promise.all(
-      accountRoles.map((accountRole) => ctx.db.delete(accountRole._id)),
-    );
-
-    await ctx.db.delete(args.accountId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "deleted_account",
-      entityType: "account",
-      entityId: args.accountId,
-    });
+    await Promise.all([
+      Promise.all(
+        accountRoles.map((accountRole) => ctx.db.delete(accountRole._id)),
+      ),
+      ctx.db.delete(args.accountId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "deleted_account",
+        entityType: "account",
+        entityId: args.accountId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -443,9 +440,10 @@ export const getByCardNumber = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.read"),
+    ]);
     const account = await ctx.db
       .query("accounts")
       .withIndex("by_organization_and_cardNumber", (q) =>
@@ -504,9 +502,10 @@ export const getByName = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.read"),
+    ]);
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -543,24 +542,23 @@ export const archive = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.delete");
-
-    await ctx.db.patch(args.accountId, {
-      status: "archived",
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "archived_account",
-      entityType: "account",
-      entityId: args.accountId,
-      changes: { status: "archived" },
-    });
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.delete"),
+      ctx.db.patch(args.accountId, {
+        status: "archived",
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "archived_account",
+        entityType: "account",
+        entityId: args.accountId,
+        changes: { status: "archived" },
+      }),
+    ] as const);
 
     return null;
   },
@@ -627,24 +625,23 @@ export const updateStatus = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.manage");
-
-    await ctx.db.patch(args.accountId, {
-      status: args.status,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "updated_account_status",
-      entityType: "account",
-      entityId: args.accountId,
-      changes: { status: args.status },
-    });
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.manage"),
+      ctx.db.patch(args.accountId, {
+        status: args.status,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "updated_account_status",
+        entityType: "account",
+        entityId: args.accountId,
+        changes: { status: args.status },
+      }),
+    ] as const);
 
     return null;
   },
@@ -666,24 +663,23 @@ export const updateNotes = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
-
-    await ctx.db.patch(args.accountId, {
-      notes: args.notes.trim() || undefined,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "updated_account_notes",
-      entityType: "account",
-      entityId: args.accountId,
-      changes: { notes: args.notes.trim() || undefined },
-    });
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.write"),
+      ctx.db.patch(args.accountId, {
+        notes: args.notes.trim() || undefined,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "updated_account_notes",
+        entityType: "account",
+        entityId: args.accountId,
+        changes: { notes: args.notes.trim() || undefined },
+      }),
+    ] as const);
 
     return null;
   },

@@ -205,26 +205,25 @@ export const remove = mutation({
     if (!config) {
       throw new Error("SLA config not found");
     }
-
-    await requirePermission(
-      ctx,
-      config.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.id);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: config.organizationId,
-      userId,
-      action: "deleted_workflow_sla_config",
-      entityType: "workflowSlaConfig",
-      entityId: args.id,
-      changes: {
-        workflowType: config.workflowType,
-        slaDays: config.slaDays,
-      },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        config.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.id),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: config.organizationId,
+        userId,
+        action: "deleted_workflow_sla_config",
+        entityType: "workflowSlaConfig",
+        entityId: args.id,
+        changes: {
+          workflowType: config.workflowType,
+          slaDays: config.slaDays,
+        },
+      }),
+    ] as const);
 
     return null;
   },

@@ -173,23 +173,22 @@ export const remove = mutation({
     if (!type) {
       throw new Error("Type not found");
     }
-
-    await requirePermission(
-      ctx,
-      type.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.typeId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: type.organizationId,
-      userId,
-      action: "deleted_type_option",
-      entityType: "typeOption",
-      entityId: args.typeId,
-      changes: { name: type.name },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        type.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.typeId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: type.organizationId,
+        userId,
+        action: "deleted_type_option",
+        entityType: "typeOption",
+        entityId: args.typeId,
+        changes: { name: type.name },
+      }),
+    ] as const);
 
     return null;
   },

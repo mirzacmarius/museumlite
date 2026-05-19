@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -25,7 +30,7 @@ const sexValidator = v.union(
 );
 
 async function requireNaturalHistoryModule(
-  ctx: any,
+  ctx: MutationCtx | QueryCtx,
   organizationId: Id<"organizations">,
 ) {
   await requireModuleEnabled(ctx, organizationId, "natural_history");
@@ -83,10 +88,10 @@ export const get = query({
     if (!collection) {
       return null;
     }
-
-    await requireNaturalHistoryModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
+    await Promise.all([
+      requireNaturalHistoryModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+    ]);
     const details = await ctx.db
       .query("naturalHistoryDetails")
       .withIndex("by_collection", (q) =>
@@ -210,19 +215,18 @@ export const remove = mutation({
     if (!details) {
       throw new Error("Natural history details not found");
     }
-
-    await requireNaturalHistoryModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.delete");
-
-    await ctx.db.delete(args.naturalHistoryDetailsId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "naturalHistoryDetails",
-      entityId: args.naturalHistoryDetailsId,
-    });
+    await Promise.all([
+      requireNaturalHistoryModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.delete"),
+      ctx.db.delete(args.naturalHistoryDetailsId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "naturalHistoryDetails",
+        entityId: args.naturalHistoryDetailsId,
+      }),
+    ] as const);
 
     return null;
   },

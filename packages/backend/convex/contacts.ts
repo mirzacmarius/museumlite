@@ -213,7 +213,7 @@ export const create = mutation({
     const [userId, account] = await Promise.all([
       requireAuthenticatedUser(ctx),
       ctx.db.get(args.accountId),
-    ]);
+    ] as const);
 
     // Get account to check organization
     if (!account) {
@@ -304,7 +304,7 @@ export const update = mutation({
     const [userId, contact] = await Promise.all([
       requireAuthenticatedUser(ctx),
       ctx.db.get(args.contactId),
-    ]);
+    ] as const);
     if (!contact) {
       throw new Error("Contact not found");
     }
@@ -387,7 +387,7 @@ export const remove = mutation({
     const [userId, contact] = await Promise.all([
       requireAuthenticatedUser(ctx),
       ctx.db.get(args.contactId),
-    ]);
+    ] as const);
     if (!contact) {
       throw new Error("Contact not found");
     }
@@ -397,27 +397,26 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireAuthorizedOrganization(ctx, {
-      organizationId: account.organizationId,
-      moduleId: "accounts",
-      permission: "accounts.delete",
-    });
-
-    await ctx.db.delete(args.contactId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "deleted_contact",
-      entityType: "contact",
-      entityId: args.contactId,
-      changes: {
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        accountId: contact.accountId,
-      },
-    });
+    await Promise.all([
+      requireAuthorizedOrganization(ctx, {
+        organizationId: account.organizationId,
+        moduleId: "accounts",
+        permission: "accounts.delete",
+      }),
+      ctx.db.delete(args.contactId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "deleted_contact",
+        entityType: "contact",
+        entityId: args.contactId,
+        changes: {
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          accountId: contact.accountId,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -435,7 +434,7 @@ export const setPrimary = mutation({
     const [userId, contact] = await Promise.all([
       requireAuthenticatedUser(ctx),
       ctx.db.get(args.contactId),
-    ]);
+    ] as const);
     if (!contact) {
       throw new Error("Contact not found");
     }
@@ -457,35 +456,33 @@ export const setPrimary = mutation({
       .query("contacts")
       .withIndex("by_account", (q) => q.eq("accountId", contact.accountId))
       .collect();
-
-    await Promise.all(
-      Array.from(existingPrimaryContacts).map(async (existingContact) => {
-        if (existingContact.isPrimary) {
-          await ctx.db.patch(existingContact._id, {
-            isPrimary: false,
-            updatedAt: Date.now(),
-          });
-        }
-      }),
-    );
-
-    // Set this contact as primary
-    await ctx.db.patch(args.contactId, {
-      isPrimary: true,
-      updatedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "set_primary_contact",
-      entityType: "contact",
-      entityId: args.contactId,
-      changes: {
+    await Promise.all([
+      Promise.all(
+        Array.from(existingPrimaryContacts).map(async (existingContact) => {
+          if (existingContact.isPrimary) {
+            await ctx.db.patch(existingContact._id, {
+              isPrimary: false,
+              updatedAt: Date.now(),
+            });
+          }
+        }),
+      ),
+      ctx.db.patch(args.contactId, {
         isPrimary: true,
-        accountId: contact.accountId,
-      },
-    });
+        updatedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "set_primary_contact",
+        entityType: "contact",
+        entityId: args.contactId,
+        changes: {
+          isPrimary: true,
+          accountId: contact.accountId,
+        },
+      }),
+    ] as const);
 
     return null;
   },

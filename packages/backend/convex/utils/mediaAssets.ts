@@ -126,7 +126,7 @@ export async function insertCompletedMediaAsset(
       uploadStatus: "completed",
     }),
     getStorageBytes(ctx, storageId),
-  ]);
+  ] as const);
   await applyUsageCounterDelta(ctx, organizationId, {
     mediaFileCount: 1,
     mediaTypeDeltas: [
@@ -241,33 +241,32 @@ export async function deleteMediaAsset(
   if (media.thumbnailStorageId) {
     await ctx.storage.delete(media.thumbnailStorageId);
   }
-
-  await ctx.db.delete(media._id);
-
-  await applyUsageCounterDelta(ctx, media.organizationId, {
-    mediaFileCount: -1,
-    mediaTypeDeltas: [
-      {
-        type: media.fileType,
-        countDelta: -1,
-        bytesDelta: -storageBytes,
+  await Promise.all([
+    ctx.db.delete(media._id),
+    applyUsageCounterDelta(ctx, media.organizationId, {
+      mediaFileCount: -1,
+      mediaTypeDeltas: [
+        {
+          type: media.fileType,
+          countDelta: -1,
+          bytesDelta: -storageBytes,
+        },
+      ],
+      storageBytes: -storageBytes,
+    }),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: media.organizationId,
+      userId: deletedBy,
+      action: "deleted_media",
+      entityType: "media",
+      entityId: media._id,
+      changes: {
+        fileName: media.fileName,
+        fileType: media.fileType,
+        collectionId: media.collectionId,
       },
-    ],
-    storageBytes: -storageBytes,
-  });
-
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: media.organizationId,
-    userId: deletedBy,
-    action: "deleted_media",
-    entityType: "media",
-    entityId: media._id,
-    changes: {
-      fileName: media.fileName,
-      fileType: media.fileType,
-      collectionId: media.collectionId,
-    },
-  });
+    }),
+  ] as const);
 }
 
 export async function recordMediaVersionUsage(

@@ -42,10 +42,10 @@ export const list = query({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.read"),
+    ]);
     const documents = await ctx.db
       .query("accountDocuments")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -90,10 +90,10 @@ export const get = query({
     if (!account) {
       return null;
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.read"),
+    ]);
     const downloadUrl = await ctx.storage.getUrl(document.storageId);
 
     return {
@@ -127,10 +127,10 @@ export const create = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.write"),
+    ]);
     const documentId = await ctx.db.insert("accountDocuments", {
       organizationId: account.organizationId,
       accountId: args.accountId,
@@ -181,23 +181,22 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.delete");
-
-    await ctx.db.delete(args.documentId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "deleted_account_document",
-      entityType: "accountDocument",
-      entityId: args.documentId,
-      changes: {
-        filename: document.filename,
-        accountId: document.accountId,
-      },
-    });
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.delete"),
+      ctx.db.delete(args.documentId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "deleted_account_document",
+        entityType: "accountDocument",
+        entityId: args.documentId,
+        changes: {
+          filename: document.filename,
+          accountId: document.accountId,
+        },
+      }),
+    ] as const);
 
     return null;
   },

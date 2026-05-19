@@ -106,7 +106,7 @@ async function upsertAccessionSearchDocument(
       .query("accessionSearchDocuments")
       .withIndex("by_accession", (q) => q.eq("accessionId", accession._id))
       .first(),
-  ]);
+  ] as const);
   const fields = {
     organizationId: accession.organizationId,
     accessionId: accession._id,
@@ -581,39 +581,42 @@ export const upsertObjectDraft = mutation({
       );
 
       const submittedAt = Date.now();
-      await ctx.db.patch(existing._id, {
-        accessionNumber,
-        source,
-        notes: normalizedObjectData.description?.trim() || existing.notes,
-        status: shouldAutoApproveSubmit ? "approved" : existing.status,
-        approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
-        approvedAt: shouldAutoApproveSubmit ? submittedAt : existing.approvedAt,
-        workflowStep: updatedWorkflowStep,
-        draftObjectData: {
-          ...normalizedObjectData,
+      await Promise.all([
+        ctx.db.patch(existing._id, {
           accessionNumber,
-        },
-        draftMedia: args.draftMedia ?? existing.draftMedia,
-      });
-      await syncAccessionSearchDocument(ctx, existing._id);
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: args.organizationId,
-        userId,
-        action:
-          args.saveMode === "submit"
-            ? "submitted_object_accession"
-            : "saved_object_draft",
-        entityType: "accession",
-        entityId: existing._id,
-        changes: {
-          accessionNumber,
-          saveMode: args.saveMode,
-          workflowStep: updatedWorkflowStep,
+          source,
+          notes: normalizedObjectData.description?.trim() || existing.notes,
           status: shouldAutoApproveSubmit ? "approved" : existing.status,
-          title: normalizedObjectData.title,
-        },
-      });
+          approvedBy: shouldAutoApproveSubmit ? userId : existing.approvedBy,
+          approvedAt: shouldAutoApproveSubmit
+            ? submittedAt
+            : existing.approvedAt,
+          workflowStep: updatedWorkflowStep,
+          draftObjectData: {
+            ...normalizedObjectData,
+            accessionNumber,
+          },
+          draftMedia: args.draftMedia ?? existing.draftMedia,
+        }),
+        syncAccessionSearchDocument(ctx, existing._id),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: args.organizationId,
+          userId,
+          action:
+            args.saveMode === "submit"
+              ? "submitted_object_accession"
+              : "saved_object_draft",
+          entityType: "accession",
+          entityId: existing._id,
+          changes: {
+            accessionNumber,
+            saveMode: args.saveMode,
+            workflowStep: updatedWorkflowStep,
+            status: shouldAutoApproveSubmit ? "approved" : existing.status,
+            title: normalizedObjectData.title,
+          },
+        }),
+      ] as const);
 
       if (shouldAutoApproveSubmit) {
         await ctx.runMutation(
@@ -677,41 +680,47 @@ export const upsertObjectDraft = mutation({
 
     if (reusableDraft) {
       const submittedAt = Date.now();
-      await ctx.db.patch(reusableDraft._id, {
-        source,
-        notes: normalizedObjectData.description?.trim() || reusableDraft.notes,
-        status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
-        approvedBy: shouldAutoApproveSubmit ? userId : reusableDraft.approvedBy,
-        approvedAt: shouldAutoApproveSubmit
-          ? submittedAt
-          : reusableDraft.approvedAt,
-        workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
-        draftObjectData: {
-          ...normalizedObjectData,
-          accessionNumber,
-        },
-        draftMedia: args.draftMedia ?? reusableDraft.draftMedia,
-      });
-      await syncAccessionSearchDocument(ctx, reusableDraft._id);
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: args.organizationId,
-        userId,
-        action:
-          args.saveMode === "submit"
-            ? "submitted_object_accession"
-            : "saved_object_draft",
-        entityType: "accession",
-        entityId: reusableDraft._id,
-        changes: {
-          accessionNumber,
-          saveMode: args.saveMode,
-          workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+      await Promise.all([
+        ctx.db.patch(reusableDraft._id, {
+          source,
+          notes:
+            normalizedObjectData.description?.trim() || reusableDraft.notes,
           status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
-          title: normalizedObjectData.title,
-          recoveredDraft: true,
-        },
-      });
+          approvedBy: shouldAutoApproveSubmit
+            ? userId
+            : reusableDraft.approvedBy,
+          approvedAt: shouldAutoApproveSubmit
+            ? submittedAt
+            : reusableDraft.approvedAt,
+          workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+          draftObjectData: {
+            ...normalizedObjectData,
+            accessionNumber,
+          },
+          draftMedia: args.draftMedia ?? reusableDraft.draftMedia,
+        }),
+        syncAccessionSearchDocument(ctx, reusableDraft._id),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: args.organizationId,
+          userId,
+          action:
+            args.saveMode === "submit"
+              ? "submitted_object_accession"
+              : "saved_object_draft",
+          entityType: "accession",
+          entityId: reusableDraft._id,
+          changes: {
+            accessionNumber,
+            saveMode: args.saveMode,
+            workflowStep: shouldAutoApproveSubmit
+              ? undefined
+              : nextWorkflowStep,
+            status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
+            title: normalizedObjectData.title,
+            recoveredDraft: true,
+          },
+        }),
+      ] as const);
 
       if (shouldAutoApproveSubmit) {
         await ctx.runMutation(
@@ -1522,36 +1531,36 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        await ctx.db.patch(args.accessionId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        });
-        await syncAccessionSearchDocument(ctx, args.accessionId);
-
-        await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
-          organizationId: accession.organizationId,
-          workflowType: "accession",
-          entityId: args.accessionId,
-          fromStep: workflowState.requestedStep ?? currentStep,
-          toStep: -1,
-          action: "completed",
-          performedBy: userId,
-          comment: args.comment,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: accession.organizationId,
-          userId,
-          action: "approved",
-          entityType: "accession",
-          entityId: args.accessionId,
-          changes: {
+        await Promise.all([
+          ctx.db.patch(args.accessionId, {
             status: "approved",
-            step: workflowState.requestedStep ?? currentStep,
-          },
-        });
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          syncAccessionSearchDocument(ctx, args.accessionId),
+          ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+            organizationId: accession.organizationId,
+            workflowType: "accession",
+            entityId: args.accessionId,
+            fromStep: workflowState.requestedStep ?? currentStep,
+            toStep: -1,
+            action: "completed",
+            performedBy: userId,
+            comment: args.comment,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: accession.organizationId,
+            userId,
+            action: "approved",
+            entityType: "accession",
+            entityId: args.accessionId,
+            changes: {
+              status: "approved",
+              step: workflowState.requestedStep ?? currentStep,
+            },
+          }),
+        ] as const);
 
         const creatorId = getWorkflowCreatorRecipient(history, userId);
         if (creatorId && creatorId !== userId) {
@@ -1610,33 +1619,32 @@ export const approve = mutation({
         });
       }
     } else {
-      await ctx.db.patch(args.accessionId, {
-        status: "approved",
-        approvedBy: userId,
-        approvedAt: Date.now(),
-      });
-      await syncAccessionSearchDocument(ctx, args.accessionId);
-
-      await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
-        organizationId: accession.organizationId,
-        workflowType: "accession",
-        entityId: args.accessionId,
-        fromStep: 0,
-        toStep: -1,
-        action: "completed",
-        performedBy: userId,
-        comment: args.comment,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: accession.organizationId,
-        userId,
-        action: "approved",
-        entityType: "accession",
-        entityId: args.accessionId,
-        changes: { status: "approved" },
-      });
-
+      await Promise.all([
+        ctx.db.patch(args.accessionId, {
+          status: "approved",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+        }),
+        syncAccessionSearchDocument(ctx, args.accessionId),
+        ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+          organizationId: accession.organizationId,
+          workflowType: "accession",
+          entityId: args.accessionId,
+          fromStep: 0,
+          toStep: -1,
+          action: "completed",
+          performedBy: userId,
+          comment: args.comment,
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: accession.organizationId,
+          userId,
+          action: "approved",
+          entityType: "accession",
+          entityId: args.accessionId,
+          changes: { status: "approved" },
+        }),
+      ]);
       const userOrgs = await ctx.db
         .query("userOrganizations")
         .withIndex("by_organization", (q) =>
@@ -1699,18 +1707,18 @@ export const reject = mutation({
     if (accession.status !== "pending") {
       throw new Error("Accession is not pending");
     }
-
-    await ctx.db.patch(args.accessionId, {
-      status: "rejected",
-      workflowStep: -2,
-      approvedBy: userId,
-      approvedAt: Date.now(),
-      notes: args.comment
-        ? `${accession.notes || ""}\nRejected: ${args.comment}`.trim()
-        : accession.notes,
-    });
-    await syncAccessionSearchDocument(ctx, args.accessionId);
-
+    await Promise.all([
+      ctx.db.patch(args.accessionId, {
+        status: "rejected",
+        workflowStep: -2,
+        approvedBy: userId,
+        approvedAt: Date.now(),
+        notes: args.comment
+          ? `${accession.notes || ""}\nRejected: ${args.comment}`.trim()
+          : accession.notes,
+      }),
+      syncAccessionSearchDocument(ctx, args.accessionId),
+    ]);
     const collectionId = await ctx.runMutation(
       internal.accessions.createCollectionFromRejectedAccession,
       {
@@ -1803,15 +1811,15 @@ export const emptyRejected = mutation({
             storageIds.add(checklistItem.storageId);
           }
         }
-
-        await Promise.all(
-          Array.from(storageIds).map(async (storageId) => {
-            await ctx.storage.delete(storageId);
-          }),
-        );
-
-        await ctx.db.delete(accession._id);
-        await deleteAccessionSearchDocument(ctx, accession._id);
+        await Promise.all([
+          Promise.all(
+            Array.from(storageIds).map(async (storageId) => {
+              await ctx.storage.delete(storageId);
+            }),
+          ),
+          ctx.db.delete(accession._id),
+          deleteAccessionSearchDocument(ctx, accession._id),
+        ] as const);
         deletedCount += 1;
       }),
     );
@@ -2054,25 +2062,20 @@ export const assign = mutation({
     if (!accession) {
       throw new Error("Accession not found");
     }
-
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.accessionId, {
-      assignedTo: args.userId,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId: currentUserId,
-      action: "updated",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { assignedTo: args.userId },
-    });
+    await Promise.all([
+      requirePermission(ctx, accession.organizationId, "collections.update"),
+      ctx.db.patch(args.accessionId, {
+        assignedTo: args.userId,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId: currentUserId,
+        action: "updated",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { assignedTo: args.userId },
+      }),
+    ] as const);
 
     // Send notification to assignee if different from current user
     if (args.userId !== currentUserId) {
@@ -2127,25 +2130,20 @@ export const unassign = mutation({
     if (!accession) {
       throw new Error("Accession not found");
     }
-
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.accessionId, {
-      assignedTo: undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId: currentUserId,
-      action: "updated",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { assignedTo: null },
-    });
+    await Promise.all([
+      requirePermission(ctx, accession.organizationId, "collections.update"),
+      ctx.db.patch(args.accessionId, {
+        assignedTo: undefined,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId: currentUserId,
+        action: "updated",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { assignedTo: null },
+      }),
+    ] as const);
 
     return null;
   },
@@ -2223,28 +2221,23 @@ export const verifySource = mutation({
     if (!accession) {
       throw new Error("Accession not found");
     }
-
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.accessionId, {
-      sourceVerified: true,
-      sourceVerifiedBy: userId,
-      sourceVerifiedAt: Date.now(),
-      sourceVerificationNotes: args.verificationNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId,
-      action: "source_verified",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { sourceVerified: true },
-    });
+    await Promise.all([
+      requirePermission(ctx, accession.organizationId, "collections.update"),
+      ctx.db.patch(args.accessionId, {
+        sourceVerified: true,
+        sourceVerifiedBy: userId,
+        sourceVerifiedAt: Date.now(),
+        sourceVerificationNotes: args.verificationNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "source_verified",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { sourceVerified: true },
+      }),
+    ] as const);
 
     return null;
   },
@@ -2269,26 +2262,21 @@ export const unverifySource = mutation({
     if (!accession) {
       throw new Error("Accession not found");
     }
-
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.accessionId, {
-      sourceVerified: false,
-      sourceVerificationNotes: `Unverified: ${args.reason}`,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId,
-      action: "source_unverified",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { reason: args.reason },
-    });
+    await Promise.all([
+      requirePermission(ctx, accession.organizationId, "collections.update"),
+      ctx.db.patch(args.accessionId, {
+        sourceVerified: false,
+        sourceVerificationNotes: `Unverified: ${args.reason}`,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "source_unverified",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { reason: args.reason },
+      }),
+    ] as const);
 
     return null;
   },
@@ -2532,7 +2520,7 @@ export const getDocumentChecklist = query({
             : Promise.resolve(null),
         ),
       ),
-    ]);
+    ] as const);
 
     // Fetch storage URLs in parallel
     // Enrich with uploader names and URLs using batch lookup map

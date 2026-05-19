@@ -74,10 +74,10 @@ export const get = query({
     if (!collection) {
       return null;
     }
-
-    await requireArchiveModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
+    await Promise.all([
+      requireArchiveModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+    ]);
     const details = await ctx.db
       .query("archiveDetails")
       .withIndex("by_collection", (q) =>
@@ -128,14 +128,10 @@ export const upsert = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    await requireArchiveModule(ctx, collection.organizationId);
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireArchiveModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+    ]);
     const existing = await ctx.db
       .query("archiveDetails")
       .withIndex("by_collection", (q) =>
@@ -198,19 +194,18 @@ export const remove = mutation({
     if (!details) {
       throw new Error("Archive details not found");
     }
-
-    await requireArchiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.delete");
-
-    await ctx.db.delete(args.archiveDetailsId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "archiveDetails",
-      entityId: args.archiveDetailsId,
-    });
+    await Promise.all([
+      requireArchiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.delete"),
+      ctx.db.delete(args.archiveDetailsId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "archiveDetails",
+        entityId: args.archiveDetailsId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -284,10 +279,10 @@ export const listFlaggedForDestruction = query({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requireArchiveModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireArchiveModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const archives = await ctx.db
       .query("archiveDetails")
       .withIndex("by_organization_and_destruction_flag", (q) =>
@@ -330,30 +325,29 @@ export const setLegalHold = mutation({
     if (!details) {
       throw new Error("Archive details not found");
     }
-
-    await requireArchiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.update");
-
-    await ctx.db.patch(args.archiveDetailsId, {
-      legalHold: args.legalHold,
-      legalHoldReason: args.legalHold ? args.legalHoldReason : undefined,
-      flaggedForDestruction: args.legalHold
-        ? false
-        : details.flaggedForDestruction,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: args.legalHold ? "set_legal_hold" : "removed_legal_hold",
-      entityType: "archiveDetails",
-      entityId: args.archiveDetailsId,
-      changes: {
+    await Promise.all([
+      requireArchiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.update"),
+      ctx.db.patch(args.archiveDetailsId, {
         legalHold: args.legalHold,
-        legalHoldReason: args.legalHoldReason,
-      },
-    });
+        legalHoldReason: args.legalHold ? args.legalHoldReason : undefined,
+        flaggedForDestruction: args.legalHold
+          ? false
+          : details.flaggedForDestruction,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: args.legalHold ? "set_legal_hold" : "removed_legal_hold",
+        entityType: "archiveDetails",
+        entityId: args.archiveDetailsId,
+        changes: {
+          legalHold: args.legalHold,
+          legalHoldReason: args.legalHoldReason,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -379,24 +373,23 @@ export const flagForDestruction = mutation({
     if (details.legalHold) {
       throw new Error("Cannot flag for destruction: document is on legal hold");
     }
-
-    await requireArchiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.update");
-
-    await ctx.db.patch(args.archiveDetailsId, {
-      flaggedForDestruction: args.flagged,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: args.flagged
-        ? "flagged_for_destruction"
-        : "unflagged_for_destruction",
-      entityType: "archiveDetails",
-      entityId: args.archiveDetailsId,
-    });
+    await Promise.all([
+      requireArchiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.update"),
+      ctx.db.patch(args.archiveDetailsId, {
+        flaggedForDestruction: args.flagged,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: args.flagged
+          ? "flagged_for_destruction"
+          : "unflagged_for_destruction",
+        entityType: "archiveDetails",
+        entityId: args.archiveDetailsId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -423,28 +416,27 @@ export const recordDestruction = mutation({
     if (details.legalHold) {
       throw new Error("Cannot destroy: document is on legal hold");
     }
-
-    await requireArchiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.delete");
-
-    await ctx.db.patch(args.archiveDetailsId, {
-      destructionDate: Date.now(),
-      destructionMethod: args.destructionMethod,
-      destructionWitnessedBy: args.destructionWitnessedBy,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: "recorded_destruction",
-      entityType: "archiveDetails",
-      entityId: args.archiveDetailsId,
-      changes: {
+    await Promise.all([
+      requireArchiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.delete"),
+      ctx.db.patch(args.archiveDetailsId, {
+        destructionDate: Date.now(),
         destructionMethod: args.destructionMethod,
         destructionWitnessedBy: args.destructionWitnessedBy,
-      },
-    });
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: "recorded_destruction",
+        entityType: "archiveDetails",
+        entityId: args.archiveDetailsId,
+        changes: {
+          destructionMethod: args.destructionMethod,
+          destructionWitnessedBy: args.destructionWitnessedBy,
+        },
+      }),
+    ] as const);
 
     return null;
   },

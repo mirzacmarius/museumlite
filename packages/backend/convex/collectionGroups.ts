@@ -364,11 +364,10 @@ export const deleteGroup = mutation({
     if (!group) {
       throw new Error("Group not found");
     }
-
-    await requirePermission(ctx, group.organizationId, "collections.delete");
-    await checkGroupAccessControl(ctx, group, userId);
-
-    // Remove all collection group items (many-to-many relationships)
+    await Promise.all([
+      requirePermission(ctx, group.organizationId, "collections.delete"),
+      checkGroupAccessControl(ctx, group, userId),
+    ]);
     const groupItems = await ctx.db
       .query("collectionGroupItems")
       .withIndex("by_collectionGroup", (q) =>
@@ -389,27 +388,26 @@ export const deleteGroup = mutation({
         q.eq("collectionGroupId", args.groupId),
       )
       .collect();
-
-    await Promise.all(
-      Array.from(items).map(async (item) => {
-        await ctx.db.patch(item._id, { collectionGroupId: undefined });
+    await Promise.all([
+      Promise.all(
+        Array.from(items).map(async (item) => {
+          await ctx.db.patch(item._id, { collectionGroupId: undefined });
+        }),
+      ),
+      ctx.db.delete(args.groupId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: group.organizationId,
+        userId,
+        action: "deleted_collection_group",
+        entityType: "collectionGroup",
+        entityId: args.groupId,
+        changes: {
+          name: group.name,
+          itemsRemoved: groupItems.length,
+          collectionsUnlinked: items.length,
+        },
       }),
-    );
-
-    await ctx.db.delete(args.groupId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: group.organizationId,
-      userId,
-      action: "deleted_collection_group",
-      entityType: "collectionGroup",
-      entityId: args.groupId,
-      changes: {
-        name: group.name,
-        itemsRemoved: groupItems.length,
-        collectionsUnlinked: items.length,
-      },
-    });
+    ] as const);
 
     return null;
   },

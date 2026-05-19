@@ -353,7 +353,7 @@ async function getObjectDetailHeroImage(
     preferredMedia.thumbnailStorageId
       ? ctx.storage.getUrl(preferredMedia.thumbnailStorageId)
       : Promise.resolve(null),
-  ]);
+  ] as const);
 
   return {
     _id: preferredMedia._id,
@@ -450,59 +450,58 @@ async function syncCollectionGroupMemberships(
     existingMemberships.map((membership) => membership.collectionGroupId),
   );
   const nextGroupIds = new Set(uniqueGroupIds);
-
-  await Promise.all(
-    Array.from(uniqueGroupIds).map(async (groupId) => {
-      const group = await ctx.db.get(groupId);
-      if (!group) {
-        throw new Error("Collection group not found");
-      }
-      if (group.organizationId !== organizationId) {
-        throw new Error("Collection group belongs to a different organization");
-      }
-    }),
-  );
-
-  await Promise.all(
-    Array.from(uniqueGroupIds).map(async (groupId) => {
-      if (existingGroupIds.has(groupId)) {
-        return;
-      }
-
-      const group = await ctx.db.get(groupId);
-      await ctx.db.insert("collectionGroupItems", {
-        collectionGroupId: groupId,
-        collectionId,
-        addedAt: Date.now(),
-        addedBy: userId,
-      });
-      if (group) {
-        await ctx.db.patch(groupId, {
-          itemsCount: (group.itemsCount || 0) + 1,
-          lastModifiedAt: Date.now(),
-          lastModifiedBy: userId,
+  await Promise.all([
+    Promise.all(
+      Array.from(uniqueGroupIds).map(async (groupId) => {
+        const group = await ctx.db.get(groupId);
+        if (!group) {
+          throw new Error("Collection group not found");
+        }
+        if (group.organizationId !== organizationId) {
+          throw new Error(
+            "Collection group belongs to a different organization",
+          );
+        }
+      }),
+    ),
+    Promise.all(
+      Array.from(uniqueGroupIds).map(async (groupId) => {
+        if (existingGroupIds.has(groupId)) {
+          return;
+        }
+        const group = await ctx.db.get(groupId);
+        await ctx.db.insert("collectionGroupItems", {
+          collectionGroupId: groupId,
+          collectionId,
+          addedAt: Date.now(),
+          addedBy: userId,
         });
-      }
-    }),
-  );
-
-  await Promise.all(
-    Array.from(existingMemberships).map(async (membership) => {
-      if (nextGroupIds.has(membership.collectionGroupId)) {
-        return;
-      }
-
-      const group = await ctx.db.get(membership.collectionGroupId);
-      await ctx.db.delete(membership._id);
-      if (group) {
-        await ctx.db.patch(membership.collectionGroupId, {
-          itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
-          lastModifiedAt: Date.now(),
-          lastModifiedBy: userId,
-        });
-      }
-    }),
-  );
+        if (group) {
+          await ctx.db.patch(groupId, {
+            itemsCount: (group.itemsCount || 0) + 1,
+            lastModifiedAt: Date.now(),
+            lastModifiedBy: userId,
+          });
+        }
+      }),
+    ),
+    Promise.all(
+      Array.from(existingMemberships).map(async (membership) => {
+        if (nextGroupIds.has(membership.collectionGroupId)) {
+          return;
+        }
+        const group = await ctx.db.get(membership.collectionGroupId);
+        await ctx.db.delete(membership._id);
+        if (group) {
+          await ctx.db.patch(membership.collectionGroupId, {
+            itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
+            lastModifiedAt: Date.now(),
+            lastModifiedBy: userId,
+          });
+        }
+      }),
+    ),
+  ] as const);
 }
 
 async function deleteStorageIds(
@@ -535,18 +534,17 @@ async function deleteCollectionMedia(
           q.eq("originalMediaId", media._id),
         )
         .collect();
-
-      await deleteStorageIds(
-        ctx,
-        mediaVersions.map((version) => version.storageId),
-      );
-
-      await Promise.all(
-        Array.from(mediaVersions).map(async (version) => {
-          await ctx.db.delete(version._id);
-        }),
-      );
-
+      await Promise.all([
+        deleteStorageIds(
+          ctx,
+          mediaVersions.map((version) => version.storageId),
+        ),
+        Promise.all(
+          Array.from(mediaVersions).map(async (version) => {
+            await ctx.db.delete(version._id);
+          }),
+        ),
+      ]);
       const editHistory = await ctx.db
         .query("mediaEditHistory")
         .withIndex("by_media", (q) => q.eq("mediaId", media._id))
@@ -561,14 +559,15 @@ async function deleteCollectionMedia(
         .query("mediaDownloads")
         .withIndex("by_media", (q) => q.eq("mediaId", media._id))
         .collect();
-      await Promise.all(
-        Array.from(downloads).map(async (download) => {
-          await ctx.db.delete(download._id);
-        }),
-      );
-
-      await deleteStorageIds(ctx, [media.storageId, media.thumbnailStorageId]);
-      await ctx.db.delete(media._id);
+      await Promise.all([
+        Promise.all(
+          Array.from(downloads).map(async (download) => {
+            await ctx.db.delete(download._id);
+          }),
+        ),
+        deleteStorageIds(ctx, [media.storageId, media.thumbnailStorageId]),
+        ctx.db.delete(media._id),
+      ] as const);
     }),
   );
 }
@@ -593,14 +592,14 @@ async function deleteCollectionDependents(
     .query("objectComments")
     .withIndex("by_object", (q) => q.eq("objectId", collectionId))
     .collect();
-  await Promise.all(
-    Array.from(objectComments).map(async (comment) => {
-      await ctx.db.delete(comment._id);
-    }),
-  );
-
-  await deleteCollectionDetailRecords(ctx, collectionId);
-
+  await Promise.all([
+    Promise.all(
+      Array.from(objectComments).map(async (comment) => {
+        await ctx.db.delete(comment._id);
+      }),
+    ),
+    deleteCollectionDetailRecords(ctx, collectionId),
+  ]);
   const accessions = await ctx.db
     .query("accessions")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
@@ -810,7 +809,7 @@ async function getCollectionsWithOpenDeaccessions(
         q.eq("organizationId", organizationId).eq("status", "approved"),
       )
       .collect(),
-  ]);
+  ] as const);
 
   return new Set(
     [...pendingDeaccessions, ...approvedDeaccessions].map(
@@ -842,7 +841,7 @@ async function enrichCollectionListPage(
   const [locationPathById, primaryImageUrlByCollectionId] = await Promise.all([
     getLocationPathStrings(ctx, locationIds),
     getCollectionPrimaryImageUrls(ctx, collectionIds),
-  ]);
+  ] as const);
 
   return page.map((item) => ({
     _id: item._id,
@@ -1036,17 +1035,15 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.create");
-
-    await requireCollectionTypeModuleEnabled(
-      ctx,
-      args.organizationId,
-      args.collectionType,
-    );
-
-    await enforceObjectQuota(ctx, args.organizationId);
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.create"),
+      requireCollectionTypeModuleEnabled(
+        ctx,
+        args.organizationId,
+        args.collectionType,
+      ),
+      enforceObjectQuota(ctx, args.organizationId),
+    ] as const);
 
     // Generate or validate accession number
     let accessionNumber: string;
@@ -1386,7 +1383,7 @@ export const getObjectDetail = query({
         collection.verifiedBy
           ? ctx.db.get(collection.verifiedBy)
           : Promise.resolve(null),
-      ]);
+      ] as const);
 
     return {
       collection: {
@@ -2575,32 +2572,25 @@ export const deleteCollection = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    // Check permission
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.delete",
-    );
-
-    // Soft delete - mark as deaccessioned
-    await markCollectionDeaccessioned(ctx, {
-      collectionId: args.collectionId,
-      changedBy: userId,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "deaccessioned_collection",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-        previousStatus: collection.status,
-      },
-    });
+    await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.delete"),
+      markCollectionDeaccessioned(ctx, {
+        collectionId: args.collectionId,
+        changedBy: userId,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: collection.organizationId,
+        userId,
+        action: "deaccessioned_collection",
+        entityType: "collection",
+        entityId: args.collectionId,
+        changes: {
+          accessionNumber: collection.accessionNumber,
+          title: collection.title,
+          previousStatus: collection.status,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -3404,26 +3394,26 @@ export const bulkDeaccession = mutation({
         }
 
         try {
-          await requirePermission(
-            ctx,
-            collection.organizationId,
-            "collections.delete",
-          );
-
-          await markCollectionDeaccessioned(ctx, {
-            collectionId,
-            changedBy: userId,
-          });
-
-          await ctx.db.insert("auditLog", {
-            organizationId: collection.organizationId,
-            userId,
-            action: "deaccessioned",
-            entityType: "collection",
-            entityId: collectionId,
-            changes: { reason: args.reason, bulk: true },
-            timestamp: Date.now(),
-          });
+          await Promise.all([
+            requirePermission(
+              ctx,
+              collection.organizationId,
+              "collections.delete",
+            ),
+            markCollectionDeaccessioned(ctx, {
+              collectionId,
+              changedBy: userId,
+            }),
+            ctx.db.insert("auditLog", {
+              organizationId: collection.organizationId,
+              userId,
+              action: "deaccessioned",
+              entityType: "collection",
+              entityId: collectionId,
+              changes: { reason: args.reason, bulk: true },
+              timestamp: Date.now(),
+            }),
+          ] as const);
 
           deaccessioned++;
         } catch {
@@ -3647,7 +3637,7 @@ export const listPublic = query({
     const [allCollections, allLibraryItems] = await Promise.all([
       getPublicCatalogCollections(ctx, organization._id),
       getPublicLibraryCatalogItems(ctx, organization),
-    ]);
+    ] as const);
 
     const collectionEntries = allCollections.map((collection) => ({
       source: "collection" as const,
@@ -4040,7 +4030,7 @@ export const getPublicFilters = query({
     const [collections, libraryItems] = await Promise.all([
       getPublicCatalogCollections(ctx, organization._id),
       getPublicLibraryCatalogItems(ctx, organization),
-    ]);
+    ] as const);
 
     const objectTypes = [
       ...new Set([

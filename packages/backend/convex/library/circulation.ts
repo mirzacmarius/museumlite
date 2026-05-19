@@ -83,7 +83,12 @@ export const checkout = mutation({
       membershipType,
       settings,
     });
-
+    await Promise.all([
+      ctx.db.patch(args.copyId, { status: "checked_out" }),
+      ctx.db.patch(copy.itemId, {
+        availableCopies: Math.max(0, item.availableCopies - 1),
+      }),
+    ]);
     const circulationId = await ctx.db.insert("circulations", {
       organizationId: account.organizationId,
       accountId: args.accountId,
@@ -95,16 +100,6 @@ export const checkout = mutation({
       status: "active",
       fineStatus: "none",
       checkedOutBy: userId,
-    });
-
-    await ctx.db.patch(args.copyId, { status: "checked_out" });
-
-    await ctx.db.patch(copy.itemId, {
-      availableCopies: Math.max(0, item.availableCopies - 1),
-    });
-
-    await ctx.db.patch(args.accountId, {
-      totalCheckouts: (account.totalCheckouts || 0) + 1,
     });
 
     return circulationId;
@@ -179,20 +174,20 @@ export const checkin = mutation({
       finePerDay,
       gracePeriodDays,
     });
-
-    await ctx.db.patch(args.circulationId, {
-      status: "returned",
-      returnDate: now,
-      checkedInBy: userId,
-      notes: args.notes,
-      fineAmount: fineAmount ?? circulation.fineAmount,
-      fineStatus: fineAmount ? "billed" : "none",
-    });
-
-    await ctx.db.patch(copy._id, { status: "available" });
-    await ctx.db.patch(item._id, {
-      availableCopies: item.availableCopies + 1,
-    });
+    await Promise.all([
+      ctx.db.patch(args.circulationId, {
+        status: "returned",
+        returnDate: now,
+        checkedInBy: userId,
+        notes: args.notes,
+        fineAmount: fineAmount ?? circulation.fineAmount,
+        fineStatus: fineAmount ? "billed" : "none",
+      }),
+      ctx.db.patch(copy._id, { status: "available" }),
+      ctx.db.patch(item._id, {
+        availableCopies: item.availableCopies + 1,
+      }),
+    ] as const);
 
     let fineCreated = false;
     if (fineAmount && fineAmount > 0) {
@@ -250,7 +245,7 @@ export const markLost = mutation({
       ctx.db.get(circulation.copyId),
       ctx.db.get(circulation.itemId),
       ctx.db.get(circulation.accountId),
-    ]);
+    ] as const);
     const now = Date.now();
     const replacementCost = copy?.replacementCost || 25;
 
@@ -333,7 +328,7 @@ export const get = query({
       ctx.db.get(circulation.accountId),
       ctx.db.get(circulation.copyId),
       ctx.db.get(circulation.itemId),
-    ]);
+    ] as const);
     return {
       ...circulation,
       account,
@@ -380,7 +375,7 @@ export const getByBarcode = query({
     const [account, item] = await Promise.all([
       ctx.db.get(circulation.accountId),
       ctx.db.get(circulation.itemId),
-    ]);
+    ] as const);
     return {
       copy,
       circulation: {
@@ -413,7 +408,7 @@ export const listActive = query({
           ctx.db.get(circulation.accountId),
           ctx.db.get(circulation.copyId),
           ctx.db.get(circulation.itemId),
-        ]);
+        ] as const);
         return {
           ...circulation,
           account,
@@ -454,7 +449,7 @@ export const listOverdue = query({
           ctx.db.get(circulation.accountId),
           ctx.db.get(circulation.copyId),
           ctx.db.get(circulation.itemId),
-        ]);
+        ] as const);
         const daysOverdue = Math.ceil(
           (now - circulation.dueDate) / (24 * 60 * 60 * 1000),
         );
@@ -1030,7 +1025,12 @@ export const checkoutWithOverride = mutation({
         item.loanPeriodDays || settings?.defaultLoanPeriodDays || 14;
       dueDate = now + loanPeriodDays * 24 * 60 * 60 * 1000;
     }
-
+    await Promise.all([
+      ctx.db.patch(args.copyId, { status: "checked_out" }),
+      ctx.db.patch(copy.itemId, {
+        availableCopies: Math.max(0, item.availableCopies - 1),
+      }),
+    ]);
     const circulationId = await ctx.db.insert("circulations", {
       organizationId: account.organizationId,
       accountId: args.accountId,
@@ -1043,14 +1043,6 @@ export const checkoutWithOverride = mutation({
       fineStatus: "none",
       checkedOutBy: userId,
       notes: `Block override: ${args.overrideReason}`,
-    });
-
-    await ctx.db.patch(args.copyId, { status: "checked_out" });
-    await ctx.db.patch(copy.itemId, {
-      availableCopies: Math.max(0, item.availableCopies - 1),
-    });
-    await ctx.db.patch(args.accountId, {
-      totalCheckouts: (account.totalCheckouts || 0) + 1,
     });
 
     return circulationId;
@@ -1139,7 +1131,7 @@ export const createRecall = mutation({
     const [account, item] = await Promise.all([
       ctx.db.get(circulation.accountId),
       ctx.db.get(circulation.itemId),
-    ]);
+    ] as const);
     if (account?.userId) {
       await ctx.runMutation(internal.audit.createNotificationInternal, {
         organizationId: circulation.organizationId,
@@ -1254,7 +1246,7 @@ export const listRecalls = query({
         const [account, item] = await Promise.all([
           ctx.db.get(recall.accountId),
           ctx.db.get(recall.itemId),
-        ]);
+        ] as const);
         const requestingAccount = recall.recalledByAccountId
           ? await ctx.db.get(recall.recalledByAccountId)
           : null;
@@ -1368,7 +1360,7 @@ export const listPatronCheckouts = query({
         const [item, copy] = await Promise.all([
           ctx.db.get(circ.itemId),
           ctx.db.get(circ.copyId),
-        ]);
+        ] as const);
         return {
           ...circ,
           item,

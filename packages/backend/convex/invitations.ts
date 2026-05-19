@@ -76,7 +76,7 @@ export const listPendingInvitations = query({
         const [role, inviter] = await Promise.all([
           ctx.db.get(invitation.roleId),
           ctx.db.get(invitation.invitedBy),
-        ]);
+        ] as const);
         return {
           _id: invitation._id,
           _creationTime: invitation._creationTime,
@@ -138,7 +138,7 @@ export const getInvitationByToken = query({
       ctx.db.get(invitation.organizationId),
       ctx.db.get(invitation.roleId),
       ctx.db.get(invitation.invitedBy),
-    ]);
+    ] as const);
     return {
       _id: invitation._id,
       email: invitation.email,
@@ -234,34 +234,30 @@ export const acceptInvitation = mutation({
       });
       return { success: false, error: "Already a member of this organization" };
     }
-
-    // Add user to organization
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: invitation.organizationId,
-      roleId: invitation.roleId,
-      invitedBy: invitation.invitedBy,
-      joinedAt: Date.now(),
-    });
-
-    // Update invitation status
-    await ctx.db.patch(invitation._id, {
-      status: "accepted",
-      acceptedAt: Date.now(),
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: invitation.organizationId,
-      userId,
-      action: "accepted_invitation",
-      entityType: "invitation",
-      entityId: invitation._id,
-      changes: {
-        email: invitation.email,
+    await Promise.all([
+      ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId: invitation.organizationId,
         roleId: invitation.roleId,
-      },
-    });
+        invitedBy: invitation.invitedBy,
+        joinedAt: Date.now(),
+      }),
+      ctx.db.patch(invitation._id, {
+        status: "accepted",
+        acceptedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: invitation.organizationId,
+        userId,
+        action: "accepted_invitation",
+        entityType: "invitation",
+        entityId: invitation._id,
+        changes: {
+          email: invitation.email,
+          roleId: invitation.roleId,
+        },
+      }),
+    ] as const);
 
     return { success: true, organizationId: invitation.organizationId };
   },
@@ -291,7 +287,7 @@ export const declineInvitation = mutation({
         .query("organizationInvitations")
         .withIndex("by_token", (q) => q.eq("token", args.token))
         .first(),
-    ]);
+    ] as const);
 
     // Find invitation by token
     if (!invitation) {
@@ -401,7 +397,7 @@ export const resendInvitation = mutation({
       ctx.db.get(invitation.organizationId),
       ctx.db.get(invitation.roleId),
       ctx.db.get(invitation.invitedBy),
-    ]);
+    ] as const);
     const inviterName = inviter?.name ?? inviter?.email ?? "A team member";
 
     await ctx.scheduler.runAfter(

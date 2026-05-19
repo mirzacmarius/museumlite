@@ -27,9 +27,10 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.read"),
+    ]);
     const segments = await ctx.db
       .query("accountSegments")
       .withIndex("by_organization", (q) =>
@@ -137,10 +138,10 @@ export const apply = query({
     if (!segment) {
       throw new Error("Segment not found");
     }
-
-    await requireModuleEnabled(ctx, segment.organizationId, "accounts");
-    await requirePermission(ctx, segment.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, segment.organizationId, "accounts"),
+      requirePermission(ctx, segment.organizationId, "accounts.read"),
+    ]);
     const allAccounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -171,10 +172,10 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.write");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.write"),
+    ]);
     const segmentId = await ctx.db.insert("accountSegments", {
       organizationId: args.organizationId,
       name: args.name.trim(),
@@ -258,20 +259,19 @@ export const remove = mutation({
     if (!segment) {
       throw new Error("Segment not found");
     }
-
-    await requireModuleEnabled(ctx, segment.organizationId, "accounts");
-    await requirePermission(ctx, segment.organizationId, "accounts.manage");
-
-    await ctx.db.delete(args.segmentId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: segment.organizationId,
-      userId,
-      action: "deleted_account_segment",
-      entityType: "accountSegment",
-      entityId: args.segmentId,
-      changes: { name: segment.name },
-    });
+    await Promise.all([
+      requireModuleEnabled(ctx, segment.organizationId, "accounts"),
+      requirePermission(ctx, segment.organizationId, "accounts.manage"),
+      ctx.db.delete(args.segmentId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: segment.organizationId,
+        userId,
+        action: "deleted_account_segment",
+        entityType: "accountSegment",
+        entityId: args.segmentId,
+        changes: { name: segment.name },
+      }),
+    ] as const);
 
     return null;
   },

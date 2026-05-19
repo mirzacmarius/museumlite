@@ -81,7 +81,7 @@ async function upsertDeaccessionSearchDocument(
         q.eq("deaccessionId", deaccession._id),
       )
       .first(),
-  ]);
+  ] as const);
   const fields = {
     organizationId: deaccession.organizationId,
     deaccessionId: deaccession._id,
@@ -1149,24 +1149,23 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        // Approve and mark collection as deaccessioned
-        await ctx.db.patch(args.deaccessionId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        });
-        await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
-
-        // Log audit action
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: deaccession.organizationId,
-          userId,
-          action: "approved",
-          entityType: "deaccession",
-          entityId: args.deaccessionId,
-          changes: { status: "approved", step: currentStep },
-        });
+        await Promise.all([
+          ctx.db.patch(args.deaccessionId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          syncDeaccessionSearchDocument(ctx, args.deaccessionId),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: deaccession.organizationId,
+            userId,
+            action: "approved",
+            entityType: "deaccession",
+            entityId: args.deaccessionId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ] as const);
 
         // Notify users who were involved in the workflow (from history)
         const creatorId = getWorkflowCreatorRecipient(history, userId);
@@ -1218,25 +1217,22 @@ export const approve = mutation({
         });
       }
     } else {
-      // Single-step approval
-      await ctx.db.patch(args.deaccessionId, {
-        status: "approved",
-        approvedBy: userId,
-        approvedAt: Date.now(),
-      });
-      await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
-
-      // Log audit action
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: deaccession.organizationId,
-        userId,
-        action: "approved",
-        entityType: "deaccession",
-        entityId: args.deaccessionId,
-        changes: { status: "approved" },
-      });
-
-      // Notify all users with read access (optional - can be removed if too noisy)
+      await Promise.all([
+        ctx.db.patch(args.deaccessionId, {
+          status: "approved",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+        }),
+        syncDeaccessionSearchDocument(ctx, args.deaccessionId),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: deaccession.organizationId,
+          userId,
+          action: "approved",
+          entityType: "deaccession",
+          entityId: args.deaccessionId,
+          changes: { status: "approved" },
+        }),
+      ]);
       const userOrgs = await ctx.db
         .query("userOrganizations")
         .withIndex("by_organization", (q) =>
@@ -1297,28 +1293,26 @@ export const reject = mutation({
     if (deaccession.status !== "pending") {
       throw new Error("Deaccession is not pending");
     }
-
-    await ctx.db.patch(args.deaccessionId, {
-      status: "rejected",
-      approvedBy: userId,
-      approvedAt: Date.now(),
-      notes: args.comment
-        ? `${deaccession.notes || ""}\nRejected: ${args.comment}`.trim()
-        : deaccession.notes,
-    });
-    await syncDeaccessionSearchDocument(ctx, args.deaccessionId);
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: deaccession.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "deaccession",
-      entityId: args.deaccessionId,
-      changes: { status: "rejected", comment: args.comment },
-    });
-
-    await restoreRejectedCollectionStatus(ctx, deaccession, userId);
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
+        status: "rejected",
+        approvedBy: userId,
+        approvedAt: Date.now(),
+        notes: args.comment
+          ? `${deaccession.notes || ""}\nRejected: ${args.comment}`.trim()
+          : deaccession.notes,
+      }),
+      syncDeaccessionSearchDocument(ctx, args.deaccessionId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
+      restoreRejectedCollectionStatus(ctx, deaccession, userId),
+    ] as const);
 
     // Notify users who were involved in the workflow (from history)
     const history = deaccession.workflowHistory ?? [];
@@ -1448,7 +1442,7 @@ export const getExportData = query({
     const [collection, organization] = await Promise.all([
       ctx.db.get(deaccession.collectionId),
       ctx.db.get(deaccession.organizationId),
-    ]);
+    ] as const);
     if (!organization) {
       return null;
     }
@@ -1672,30 +1666,25 @@ export const recordProceeds = mutation({
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
-
-    await requirePermission(
-      ctx,
-      deaccession.organizationId,
-      "collections.update",
-    );
-
-    await ctx.db.patch(args.deaccessionId, {
-      proceedsAmount: args.amount,
-      proceedsCurrency: args.currency,
-      proceedsRecipient: args.recipient,
-      proceedsDate: args.date,
-      proceedsNotes: args.notes,
-      proceedsReceiptDocument: args.receiptDocument,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: deaccession.organizationId,
-      userId,
-      action: "proceeds_recorded",
-      entityType: "deaccession",
-      entityId: args.deaccessionId,
-      changes: { amount: args.amount, currency: args.currency },
-    });
+    await Promise.all([
+      requirePermission(ctx, deaccession.organizationId, "collections.update"),
+      ctx.db.patch(args.deaccessionId, {
+        proceedsAmount: args.amount,
+        proceedsCurrency: args.currency,
+        proceedsRecipient: args.recipient,
+        proceedsDate: args.date,
+        proceedsNotes: args.notes,
+        proceedsReceiptDocument: args.receiptDocument,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: "proceeds_recorded",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: { amount: args.amount, currency: args.currency },
+      }),
+    ] as const);
 
     return null;
   },

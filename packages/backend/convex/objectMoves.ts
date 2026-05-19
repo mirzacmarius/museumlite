@@ -132,7 +132,7 @@ async function getTransferHierarchy(
   const [sourceOrganization, targetOrganization] = await Promise.all([
     ctx.db.get(sourceOrganizationId),
     ctx.db.get(targetOrganizationId),
-  ]);
+  ] as const);
   if (!sourceOrganization || !targetOrganization) {
     throw new Error("Organization not found");
   }
@@ -716,12 +716,12 @@ async function executeMove(
     nextAccessionNumber,
     now,
   );
-
-  await moveCollectionGroupLinks(ctx, collection._id);
-  await moveMediaRecords(ctx, collection._id, targetOrganizationId);
-  await moveCollectionDetailRecords(ctx, collection._id, targetOrganizationId);
-  await moveConservationRecords(ctx, collection._id, targetOrganizationId);
-
+  await Promise.all([
+    moveCollectionGroupLinks(ctx, collection._id),
+    moveMediaRecords(ctx, collection._id, targetOrganizationId),
+    moveCollectionDetailRecords(ctx, collection._id, targetOrganizationId),
+    moveConservationRecords(ctx, collection._id, targetOrganizationId),
+  ]);
   const comments = await ctx.db
     .query("objectComments")
     .withIndex("by_object", (q) => q.eq("objectId", collection._id))
@@ -780,7 +780,7 @@ async function createApprovedTransferDeaccession(
   const [sourceOrganization, targetOrganization] = await Promise.all([
     ctx.db.get(request.sourceOrganizationId),
     ctx.db.get(request.targetOrganizationId),
-  ]);
+  ] as const);
   if (!sourceOrganization || !targetOrganization) {
     throw new Error("Organization not found");
   }
@@ -886,7 +886,7 @@ export const listEligibleTargetOrganizations = query({
         const [organization, role] = await Promise.all([
           ctx.db.get(membership.organizationId),
           ctx.db.get(membership.roleId),
-        ]);
+        ] as const);
         if (!organization) {
           return null;
         }
@@ -1026,7 +1026,6 @@ export const createRequest = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
     await requirePermission(
       ctx,
       collection.organizationId,
@@ -1042,7 +1041,6 @@ export const createRequest = mutation({
       collection.organizationId,
       args.targetOrganizationId,
     );
-
     const membership = await getCurrentUserOrganization(
       ctx,
       args.targetOrganizationId,
@@ -1155,7 +1153,7 @@ export const get = query({
     const [canReadSource, canReadTarget] = await Promise.all([
       hasPermission(ctx, request.sourceOrganizationId, "collections.read"),
       hasPermission(ctx, request.targetOrganizationId, "collections.read"),
-    ]);
+    ] as const);
     if (!canReadSource && !canReadTarget && request.requestedBy !== userId) {
       throw new Error("Permission denied: collections.read");
     }
@@ -1170,7 +1168,7 @@ export const get = query({
       ctx.db.get(request.sourceOrganizationId),
       ctx.db.get(request.targetOrganizationId),
       ctx.db.get(request.requestedBy),
-    ]);
+    ] as const);
     const reviewedByUser = request.reviewedBy
       ? await ctx.db.get(request.reviewedBy)
       : null;
@@ -1265,7 +1263,7 @@ export const listForOrganization = query({
             ctx.db.get(request.collectionId),
             ctx.db.get(request.targetOrganizationId),
             ctx.db.get(request.requestedBy),
-          ]);
+          ] as const);
         const reviewedByUser = request.reviewedBy
           ? await ctx.db.get(request.reviewedBy)
           : null;
@@ -1452,40 +1450,40 @@ export const approve = mutation({
     );
 
     const now = Date.now();
-    await ctx.db.patch(args.requestId, {
-      status: "awaiting_acceptance",
-      sourceReviewedBy: userId,
-      sourceReviewedAt: now,
-      sourceReviewNotes: args.reviewNotes?.trim() || undefined,
-      reviewedBy: userId,
-      reviewedAt: now,
-      reviewNotes: args.reviewNotes?.trim() || undefined,
-      deaccessionId,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.sourceOrganizationId,
-      userId,
-      action: "approved_organization_move_request_for_transfer",
-      entityType: "organizationMoveRequest",
-      entityId: args.requestId,
-      changes: {
-        collectionId: request.collectionId,
-        targetOrganizationId: request.targetOrganizationId,
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "awaiting_acceptance",
+        sourceReviewedBy: userId,
+        sourceReviewedAt: now,
+        sourceReviewNotes: args.reviewNotes?.trim() || undefined,
+        reviewedBy: userId,
+        reviewedAt: now,
+        reviewNotes: args.reviewNotes?.trim() || undefined,
         deaccessionId,
-      },
-    });
-
-    await ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
-      organizationId: request.targetOrganizationId,
-      permission: "organization.manage_settings",
-      type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
-      title: `Incoming Transfer Request: ${collection.accessionNumber}`,
-      message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
-      relatedEntityType: "move_request",
-      relatedEntityId: args.requestId,
-      excludeUserId: userId,
-    });
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.sourceOrganizationId,
+        userId,
+        action: "approved_organization_move_request_for_transfer",
+        entityType: "organizationMoveRequest",
+        entityId: args.requestId,
+        changes: {
+          collectionId: request.collectionId,
+          targetOrganizationId: request.targetOrganizationId,
+          deaccessionId,
+        },
+      }),
+      ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
+        organizationId: request.targetOrganizationId,
+        permission: "organization.manage_settings",
+        type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
+        title: `Incoming Transfer Request: ${collection.accessionNumber}`,
+        message: `${collection.title} is awaiting acceptance before the transfer is completed.`,
+        relatedEntityType: "move_request",
+        relatedEntityId: args.requestId,
+        excludeUserId: userId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -1578,41 +1576,41 @@ export const accept = mutation({
     );
 
     const now = Date.now();
-    await ctx.db.patch(args.requestId, {
-      status: "executed",
-      finalAccessionNumber,
-      targetReviewedBy: userId,
-      targetReviewedAt: now,
-      targetReviewNotes: args.reviewNotes?.trim() || undefined,
-      executedBy: userId,
-      executedAt: now,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.sourceOrganizationId,
-      userId,
-      action: "executed_organization_move_request",
-      entityType: "organizationMoveRequest",
-      entityId: args.requestId,
-      changes: {
-        collectionId: request.collectionId,
-        targetOrganizationId: request.targetOrganizationId,
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "executed",
         finalAccessionNumber,
-      },
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.targetOrganizationId,
-      userId,
-      action: "received_collection_from_organization_move",
-      entityType: "collection",
-      entityId: request.collectionId,
-      changes: {
-        requestId: args.requestId,
-        sourceOrganizationId: request.sourceOrganizationId,
-        finalAccessionNumber,
-      },
-    });
+        targetReviewedBy: userId,
+        targetReviewedAt: now,
+        targetReviewNotes: args.reviewNotes?.trim() || undefined,
+        executedBy: userId,
+        executedAt: now,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.sourceOrganizationId,
+        userId,
+        action: "executed_organization_move_request",
+        entityType: "organizationMoveRequest",
+        entityId: args.requestId,
+        changes: {
+          collectionId: request.collectionId,
+          targetOrganizationId: request.targetOrganizationId,
+          finalAccessionNumber,
+        },
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.targetOrganizationId,
+        userId,
+        action: "received_collection_from_organization_move",
+        entityType: "collection",
+        entityId: request.collectionId,
+        changes: {
+          requestId: args.requestId,
+          sourceOrganizationId: request.sourceOrganizationId,
+          finalAccessionNumber,
+        },
+      }),
+    ] as const);
 
     if (request.requestedBy !== userId) {
       await ctx.runMutation(internal.audit.createNotificationInternal, {

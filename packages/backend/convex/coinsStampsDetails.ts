@@ -110,14 +110,10 @@ export const upsert = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    await requireCoinsStampsModule(ctx, collection.organizationId);
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireCoinsStampsModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+    ]);
     const existing = await ctx.db
       .query("coinsStampsDetails")
       .withIndex("by_collection", (q) =>
@@ -180,19 +176,18 @@ export const remove = mutation({
     if (!details) {
       throw new Error("Coins and stamps details not found");
     }
-
-    await requireCoinsStampsModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.delete");
-
-    await ctx.db.delete(args.coinsStampsDetailsId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "coinsStampsDetails",
-      entityId: args.coinsStampsDetailsId,
-    });
+    await Promise.all([
+      requireCoinsStampsModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.delete"),
+      ctx.db.delete(args.coinsStampsDetailsId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "coinsStampsDetails",
+        entityId: args.coinsStampsDetailsId,
+      }),
+    ] as const);
 
     return null;
   },

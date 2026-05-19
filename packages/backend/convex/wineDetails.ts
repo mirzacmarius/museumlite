@@ -93,7 +93,7 @@ export const get = query({
     await Promise.all([
       requireWineModule(ctx, collection.organizationId),
       requirePermission(ctx, collection.organizationId, "collections.read"),
-    ]);
+    ] as const);
 
     const details = await ctx.db
       .query("wineDetails")
@@ -145,7 +145,7 @@ export const upsert = mutation({
     await Promise.all([
       requireWineModule(ctx, collection.organizationId),
       requirePermission(ctx, collection.organizationId, "collections.update"),
-    ]);
+    ] as const);
 
     const existing = await ctx.db
       .query("wineDetails")
@@ -209,21 +209,20 @@ export const remove = mutation({
     if (!details) {
       throw new Error("Wine details not found");
     }
-
     await Promise.all([
-      requireWineModule(ctx, details.organizationId),
-      requirePermission(ctx, details.organizationId, "collections.delete"),
-    ]);
-
-    await ctx.db.delete(args.wineDetailsId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "wineDetails",
-      entityId: args.wineDetailsId,
-    });
+      Promise.all([
+        requireWineModule(ctx, details.organizationId),
+        requirePermission(ctx, details.organizationId, "collections.delete"),
+      ] as const),
+      ctx.db.delete(args.wineDetailsId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "wineDetails",
+        entityId: args.wineDetailsId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -254,7 +253,7 @@ export const listByBin = query({
     await Promise.all([
       requireWineModule(ctx, args.organizationId),
       requirePermission(ctx, args.organizationId, "collections.read"),
-    ]);
+    ] as const);
 
     const wines = await ctx.db
       .query("wineDetails")
@@ -301,7 +300,7 @@ export const listDrinkingWindows = query({
     await Promise.all([
       requireWineModule(ctx, args.organizationId),
       requirePermission(ctx, args.organizationId, "collections.read"),
-    ]);
+    ] as const);
 
     const currentYear = new Date().getFullYear();
 

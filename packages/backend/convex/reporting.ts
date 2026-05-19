@@ -248,15 +248,15 @@ export const deleteScheduledReport = mutation({
     if (!report) {
       throw new Error("Report not found");
     }
-
-    await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(
-      ctx,
-      report.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.reportId);
+    await Promise.all([
+      requireFeatureAccess(ctx, report.organizationId, "reporting"),
+      requirePermission(
+        ctx,
+        report.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.reportId),
+    ] as const);
 
     return null;
   },
@@ -290,13 +290,14 @@ export const listScheduledReports = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
-
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+    ]);
     const reports = await ctx.db
       .query("scheduledReports")
       .withIndex("by_organization", (q) =>
@@ -365,14 +366,14 @@ export const getScheduledReport = query({
     if (!report) {
       return null;
     }
-
-    await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(
-      ctx,
-      report.organizationId,
-      "organization.view_analytics",
-    );
-
+    await Promise.all([
+      requireFeatureAccess(ctx, report.organizationId, "reporting"),
+      requirePermission(
+        ctx,
+        report.organizationId,
+        "organization.view_analytics",
+      ),
+    ]);
     const createdBy = await ctx.db.get(report.createdBy);
 
     return {
@@ -419,15 +420,14 @@ export const runReportManually = mutation({
     if (!report) {
       throw new Error("Report not found");
     }
-
-    await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(
-      ctx,
-      report.organizationId,
-      "organization.view_analytics",
-    );
-
-    // Create a run record
+    await Promise.all([
+      requireFeatureAccess(ctx, report.organizationId, "reporting"),
+      requirePermission(
+        ctx,
+        report.organizationId,
+        "organization.view_analytics",
+      ),
+    ]);
     const runId = await ctx.db.insert("reportRuns", {
       organizationId: report.organizationId,
       scheduledReportId: args.reportId,
@@ -684,7 +684,7 @@ export const getCollectionTrends = query({
         )
         .filter((q) => q.eq(q.field("status"), "approved"))
         .collect(),
-    ]);
+    ] as const);
     // Generate date buckets
     const buckets = generateDateBuckets(
       args.startDate,
@@ -817,13 +817,14 @@ export const getLoanTrends = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
-
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+    ]);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>
@@ -902,13 +903,14 @@ export const getConservationTrends = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
-
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+    ]);
     const treatments = await ctx.db
       .query("conservationTreatments")
       .withIndex("by_organization", (q) =>
@@ -1125,7 +1127,7 @@ export const getCollectionHealthDashboard = query({
           q.eq("organizationId", args.organizationId),
         )
         .collect(),
-    ]);
+    ] as const);
     const coveredCollectionIds = new Set(
       coverages.flatMap((coverage) =>
         coverage.collectionId ? [coverage.collectionId] : [],

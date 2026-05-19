@@ -1,7 +1,7 @@
 import { v } from "convex/values";
-import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { action, internalAction } from "./_generated/server";
 
 const SEED_USER_EMAIL = "mirzacmarius@gmail.com";
 
@@ -384,61 +384,61 @@ export const seedOrganization = action({
       { name: "British Museum", city: "London" },
       { name: "Louvre Museum", city: "Paris" },
     ];
-    await Promise.all(
-      Array.from({ length: lenders.length }, async (_, i) => {
-        await ctx.runMutation(internal.seedMet.createAccount, {
-          organizationId: orgId,
-          userId,
-          accountNumber: `LEND-${String(i + 1).padStart(4, "0")}`,
-          accountType: "lender",
-          businessName: lenders[i]!.name,
-          contactPerson: `Contact ${i + 1}`,
-          contactEmail: `contact${i + 1}@museum.org`,
-          contactPhone: "+1-555-0100",
-          city: lenders[i]!.city,
-          country: "USA",
-          status: "active",
-        });
-      }),
-    );
-
-    // Create options
-    await Promise.all(
-      Array.from(["Excellent", "Good", "Fair", "Poor"]).map(async (c) => {
-        await ctx.runMutation(internal.seedMet.createConditionOption, {
-          organizationId: orgId,
-          userId,
-          name: c,
-          description: `${c} condition`,
-        });
-      }),
-    );
-    await Promise.all(
-      Array.from(["Oil", "Acrylic", "Watercolor", "Bronze", "Marble"]).map(
-        async (m) => {
-          await ctx.runMutation(internal.seedMet.createMaterialOption, {
+    await Promise.all([
+      Promise.all(
+        Array.from({ length: lenders.length }, async (_, i) => {
+          await ctx.runMutation(internal.seedMet.createAccount, {
             organizationId: orgId,
             userId,
-            name: m,
+            accountNumber: `LEND-${String(i + 1).padStart(4, "0")}`,
+            accountType: "lender",
+            businessName: lenders[i]!.name,
+            contactPerson: `Contact ${i + 1}`,
+            contactEmail: `contact${i + 1}@museum.org`,
+            contactPhone: "+1-555-0100",
+            city: lenders[i]!.city,
+            country: "USA",
+            status: "active",
           });
-        },
+        }),
       ),
-    );
-    await Promise.all(
-      Array.from([
-        "Painting",
-        "Sculpture",
-        "Drawing",
-        "Print",
-        "Photograph",
-      ]).map(async (t) => {
-        await ctx.runMutation(internal.seedMet.createTypeOption, {
-          organizationId: orgId,
-          userId,
-          name: t,
-        });
-      }),
-    );
+      Promise.all(
+        Array.from(["Excellent", "Good", "Fair", "Poor"]).map(async (c) => {
+          await ctx.runMutation(internal.seedMet.createConditionOption, {
+            organizationId: orgId,
+            userId,
+            name: c,
+            description: `${c} condition`,
+          });
+        }),
+      ),
+      Promise.all(
+        Array.from(["Oil", "Acrylic", "Watercolor", "Bronze", "Marble"]).map(
+          async (m) => {
+            await ctx.runMutation(internal.seedMet.createMaterialOption, {
+              organizationId: orgId,
+              userId,
+              name: m,
+            });
+          },
+        ),
+      ),
+      Promise.all(
+        Array.from([
+          "Painting",
+          "Sculpture",
+          "Drawing",
+          "Print",
+          "Photograph",
+        ]).map(async (t) => {
+          await ctx.runMutation(internal.seedMet.createTypeOption, {
+            organizationId: orgId,
+            userId,
+            name: t,
+          });
+        }),
+      ),
+    ] as const);
 
     console.log(`  Done with ${org.name}!`);
     return null;

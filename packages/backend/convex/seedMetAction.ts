@@ -1855,110 +1855,105 @@ async function seedFoundationData(
   const locationIds: Map<string, Id<"locations">> = new Map();
 
   let sortOrder = 0;
-  await Promise.all(
-    Array.from(BUILDINGS).map(async (building) => {
-      const buildingId = await ctx.runMutation(
-        internal.seedMet.createLocation,
-        {
-          organizationId: orgId,
-          name: building,
-          type: "building",
-          sortOrder: sortOrder++,
-          address:
-            building === "Main Building"
-              ? "123 Museum Way, New York, NY 10001"
-              : undefined,
-        },
-      );
-      locationIds.set(`building:${building}`, buildingId);
-
-      await Promise.all(
-        Array.from(FLOORS.slice(0, 3)).map(async (floor) => {
-          const floorId = await ctx.runMutation(
-            internal.seedMet.createLocation,
-            {
-              organizationId: orgId,
-              name: floor,
-              type: "floor",
-              parentLocationId: buildingId,
-              sortOrder: sortOrder++,
-            },
-          );
-          locationIds.set(`floor:${building}:${floor}`, floorId);
-
-          const roomsForFloor = ROOMS.slice(0, 4);
-          for (const room of roomsForFloor) {
-            const roomId = await ctx.runMutation(
+  await Promise.all([
+    Promise.all(
+      Array.from(BUILDINGS).map(async (building) => {
+        const buildingId = await ctx.runMutation(
+          internal.seedMet.createLocation,
+          {
+            organizationId: orgId,
+            name: building,
+            type: "building",
+            sortOrder: sortOrder++,
+            address:
+              building === "Main Building"
+                ? "123 Museum Way, New York, NY 10001"
+                : undefined,
+          },
+        );
+        locationIds.set(`building:${building}`, buildingId);
+        await Promise.all(
+          Array.from(FLOORS.slice(0, 3)).map(async (floor) => {
+            const floorId = await ctx.runMutation(
               internal.seedMet.createLocation,
               {
                 organizationId: orgId,
-                name: room,
-                type: "room",
-                parentLocationId: floorId,
+                name: floor,
+                type: "floor",
+                parentLocationId: buildingId,
                 sortOrder: sortOrder++,
               },
             );
-            locationIds.set(`room:${building}:${floor}:${room}`, roomId);
-
-            if (room.includes("Storage") || room.includes("Gallery")) {
-              const cabinetsForRoom = CABINETS.slice(0, 2);
-              for (const cabinet of cabinetsForRoom) {
-                await ctx.runMutation(internal.seedMet.createLocation, {
+            locationIds.set(`floor:${building}:${floor}`, floorId);
+            const roomsForFloor = ROOMS.slice(0, 4);
+            for (const room of roomsForFloor) {
+              const roomId = await ctx.runMutation(
+                internal.seedMet.createLocation,
+                {
                   organizationId: orgId,
-                  name: cabinet,
-                  type: "cabinet",
-                  parentLocationId: roomId,
+                  name: room,
+                  type: "room",
+                  parentLocationId: floorId,
                   sortOrder: sortOrder++,
-                });
+                },
+              );
+              locationIds.set(`room:${building}:${floor}:${room}`, roomId);
+              if (room.includes("Storage") || room.includes("Gallery")) {
+                const cabinetsForRoom = CABINETS.slice(0, 2);
+                for (const cabinet of cabinetsForRoom) {
+                  await ctx.runMutation(internal.seedMet.createLocation, {
+                    organizationId: orgId,
+                    name: cabinet,
+                    type: "cabinet",
+                    parentLocationId: roomId,
+                    sortOrder: sortOrder++,
+                  });
+                }
               }
             }
-          }
-        }),
-      );
-    }),
-  );
-
-  await Promise.all(
-    Array.from(CONDITION_OPTIONS).map(async (condition) => {
-      await ctx.runMutation(internal.seedMet.createConditionOption, {
-        organizationId: orgId,
-        userId,
-        name: condition.name,
-        description: condition.description,
-      });
-    }),
-  );
-
-  await Promise.all(
-    Array.from(MATERIAL_OPTIONS).map(async (material) => {
-      await ctx.runMutation(internal.seedMet.createMaterialOption, {
-        organizationId: orgId,
-        userId,
-        name: material,
-      });
-    }),
-  );
-
-  await Promise.all(
-    Array.from(TYPE_OPTIONS).map(async (type) => {
-      await ctx.runMutation(internal.seedMet.createTypeOption, {
-        organizationId: orgId,
-        userId,
-        name: type,
-      });
-    }),
-  );
-
-  await Promise.all(
-    Array.from(DONOR_DATA).map(async (donor) => {
-      await ctx.runMutation(internal.seedMet.createDonor, {
-        organizationId: orgId,
-        userId,
-        name: donor.name,
-        email: donor.email,
-      });
-    }),
-  );
+          }),
+        );
+      }),
+    ),
+    Promise.all(
+      Array.from(CONDITION_OPTIONS).map(async (condition) => {
+        await ctx.runMutation(internal.seedMet.createConditionOption, {
+          organizationId: orgId,
+          userId,
+          name: condition.name,
+          description: condition.description,
+        });
+      }),
+    ),
+    Promise.all(
+      Array.from(MATERIAL_OPTIONS).map(async (material) => {
+        await ctx.runMutation(internal.seedMet.createMaterialOption, {
+          organizationId: orgId,
+          userId,
+          name: material,
+        });
+      }),
+    ),
+    Promise.all(
+      Array.from(TYPE_OPTIONS).map(async (type) => {
+        await ctx.runMutation(internal.seedMet.createTypeOption, {
+          organizationId: orgId,
+          userId,
+          name: type,
+        });
+      }),
+    ),
+    Promise.all(
+      Array.from(DONOR_DATA).map(async (donor) => {
+        await ctx.runMutation(internal.seedMet.createDonor, {
+          organizationId: orgId,
+          userId,
+          name: donor.name,
+          email: donor.email,
+        });
+      }),
+    ),
+  ] as const);
 
   console.log("  Created foundation data for organization");
 }
@@ -2255,7 +2250,7 @@ async function seedWorkflowData(
       organizationId: orgId,
       name: "curator",
     }),
-  ]);
+  ] as const);
   if (!adminRoleId) {
     console.log("  Warning: Admin role not found, skipping workflow configs");
     return;
@@ -2363,7 +2358,7 @@ async function seedLoansData(
       organizationId: orgId,
       accountType: "borrower",
     }),
-  ]);
+  ] as const);
   if (lenderAccounts.length === 0 || borrowerAccounts.length === 0) {
     console.log("  No accounts found, skipping loans seeding");
     return;
@@ -2766,7 +2761,7 @@ async function seedAccessionsData(
     ctx.runQuery(internal.seedMet.getAccounts, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   const donorAccounts = accounts.filter(
     (a) =>
       a.accountType === "lender" ||
@@ -3033,7 +3028,7 @@ async function seedInsuranceData(
     ctx.runQuery(internal.seedMet.getExhibitions, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   if (collections.length === 0) {
     console.log("  No collections found, skipping insurance seeding");
     return;
@@ -3154,65 +3149,58 @@ async function seedInsuranceData(
   const exhibitionPolicy = policyIds[2]!;
   const transitPolicy = policyIds[3]!;
   const loanPolicy = policyIds[4]!;
-
-  await Promise.all(
-    Array.from(collectionsToAppraise.slice(0, 20)).map(async (collection) => {
-      const appraisalId = appraisalIds.get(collection._id);
-      const coveredValue = randomInt(10000, 2000000);
-
-      await ctx.runMutation(internal.seedMet.createInsuranceCoverage, {
-        organizationId: orgId,
-        policyId: scheduledPolicy,
-        collectionId: collection._id,
-        coveredValue,
-        status: "active",
-        verified: true,
-        appraisalId,
-        notes: "Scheduled item coverage",
-        createdBy: userId,
-      });
-
-      totalCoverages++;
-    }),
-  );
-
-  await Promise.all(
-    Array.from(loans.slice(0, 10)).map(async (loan) => {
-      const coveredValue = loan.insuranceValue ?? randomInt(50000, 1000000);
-
-      await ctx.runMutation(internal.seedMet.createInsuranceCoverage, {
-        organizationId: orgId,
-        policyId: loanPolicy,
-        loanId: loan._id,
-        coveredValue,
-        status: loan.status === "returned" ? "expired" : "active",
-        verified: true,
-        notes: `Coverage for ${loan.type} loan ${loan.loanNumber}`,
-        createdBy: userId,
-      });
-
-      totalCoverages++;
-    }),
-  );
-
-  await Promise.all(
-    Array.from(exhibitions.slice(0, 5)).map(async (exhibition) => {
-      const coveredValue = randomInt(500000, 10000000);
-
-      await ctx.runMutation(internal.seedMet.createInsuranceCoverage, {
-        organizationId: orgId,
-        policyId: exhibitionPolicy,
-        exhibitionId: exhibition._id,
-        coveredValue,
-        status: exhibition.status === "closed" ? "expired" : "active",
-        verified: true,
-        notes: `Exhibition coverage for "${exhibition.title}"`,
-        createdBy: userId,
-      });
-
-      totalCoverages++;
-    }),
-  );
+  await Promise.all([
+    Promise.all(
+      Array.from(collectionsToAppraise.slice(0, 20)).map(async (collection) => {
+        const appraisalId = appraisalIds.get(collection._id);
+        const coveredValue = randomInt(10000, 2000000);
+        await ctx.runMutation(internal.seedMet.createInsuranceCoverage, {
+          organizationId: orgId,
+          policyId: scheduledPolicy,
+          collectionId: collection._id,
+          coveredValue,
+          status: "active",
+          verified: true,
+          appraisalId,
+          notes: "Scheduled item coverage",
+          createdBy: userId,
+        });
+        totalCoverages++;
+      }),
+    ),
+    Promise.all(
+      Array.from(loans.slice(0, 10)).map(async (loan) => {
+        const coveredValue = loan.insuranceValue ?? randomInt(50000, 1000000);
+        await ctx.runMutation(internal.seedMet.createInsuranceCoverage, {
+          organizationId: orgId,
+          policyId: loanPolicy,
+          loanId: loan._id,
+          coveredValue,
+          status: loan.status === "returned" ? "expired" : "active",
+          verified: true,
+          notes: `Coverage for ${loan.type} loan ${loan.loanNumber}`,
+          createdBy: userId,
+        });
+        totalCoverages++;
+      }),
+    ),
+    Promise.all(
+      Array.from(exhibitions.slice(0, 5)).map(async (exhibition) => {
+        const coveredValue = randomInt(500000, 10000000);
+        await ctx.runMutation(internal.seedMet.createInsuranceCoverage, {
+          organizationId: orgId,
+          policyId: exhibitionPolicy,
+          exhibitionId: exhibition._id,
+          coveredValue,
+          status: exhibition.status === "closed" ? "expired" : "active",
+          verified: true,
+          notes: `Exhibition coverage for "${exhibition.title}"`,
+          createdBy: userId,
+        });
+        totalCoverages++;
+      }),
+    ),
+  ] as const);
 
   console.log(`  Created ${totalCoverages} insurance coverages`);
 
@@ -3367,7 +3355,7 @@ async function seedExhibitionsData(
     ctx.runQuery(internal.seedMet.getLocations, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   if (collections.length === 0) {
     console.log("  No collections found, skipping exhibitions seeding");
     return;
@@ -3555,7 +3543,7 @@ async function seedConservationData(
     ctx.runQuery(internal.seedMet.getLocations, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   if (collections.length === 0) {
     console.log("  No collections found, skipping conservation seeding");
     return;
@@ -3765,7 +3753,7 @@ async function seedTransitData(
     ctx.runQuery(internal.seedMet.getLoans, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   if (collections.length === 0) {
     console.log("  No collections found, skipping transit seeding");
     return;
@@ -4733,7 +4721,7 @@ async function seedAuditData(
     ctx.runQuery(internal.seedMet.getLocations, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   let totalAuditLogs = 0;
   let totalNotifications = 0;
   let totalLocationHistory = 0;
@@ -5168,7 +5156,7 @@ async function seedRelationshipsAndDocuments(
     ctx.runQuery(internal.seedMet.getLoans, {
       organizationId: orgId,
     }),
-  ]);
+  ] as const);
   // Get loans to link accounts to
   let relationshipCount = 0;
   await Promise.all(
@@ -5845,18 +5833,15 @@ export const resetAndSeed = internalAction({
         type: org.type,
         subscriptionTier: org.subscriptionTier,
       });
-
-      await ctx.runMutation(internal.seedMet.assignUserToOrg, {
-        userId,
-        organizationId: orgId,
-      });
-
-      await seedFoundationData(ctx, orgId, userId);
-
-      await seedAccountsData(ctx, orgId, userId);
-
-      await seedWorkflowData(ctx, orgId, userId);
-
+      await Promise.all([
+        ctx.runMutation(internal.seedMet.assignUserToOrg, {
+          userId,
+          organizationId: orgId,
+        }),
+        seedFoundationData(ctx, orgId, userId),
+        seedAccountsData(ctx, orgId, userId),
+        seedWorkflowData(ctx, orgId, userId),
+      ]);
       const objectIds = await fetchMetSearch(org.metQuery);
       console.log(
         `Found ${objectIds.length} Met objects for "${org.metQuery}"`,
@@ -5924,34 +5909,22 @@ export const resetAndSeed = internalAction({
         console.warn(`WARNING: ${org.name} has <10 objects`);
       }
       totalCollections += successCount;
-
-      await seedLocationAssignments(ctx, orgId, userId);
-
-      await seedModuleDetails(ctx, orgId, userId, org.type);
-
-      await seedRelationshipsAndDocuments(ctx, orgId, userId);
-
-      await seedAdminData(ctx, orgId, userId);
-
-      await seedLibraryExtensions(ctx, orgId, userId, org.type);
-
-      await seedCollectionDetailsData(ctx, orgId, userId);
-
-      await seedLoansData(ctx, orgId, userId);
-
-      await seedAccessionsData(ctx, orgId, userId);
-
-      await seedExhibitionsData(ctx, orgId, userId);
-
-      await seedConservationData(ctx, orgId, userId);
-
-      await seedTransitData(ctx, orgId, userId);
-
-      await seedLibraryData(ctx, orgId, userId);
-
-      await seedInsuranceData(ctx, orgId, userId);
-
-      await seedAuditData(ctx, orgId, userId);
+      await Promise.all([
+        seedLocationAssignments(ctx, orgId, userId),
+        seedModuleDetails(ctx, orgId, userId, org.type),
+        seedRelationshipsAndDocuments(ctx, orgId, userId),
+        seedAdminData(ctx, orgId, userId),
+        seedLibraryExtensions(ctx, orgId, userId, org.type),
+        seedCollectionDetailsData(ctx, orgId, userId),
+        seedLoansData(ctx, orgId, userId),
+        seedAccessionsData(ctx, orgId, userId),
+        seedExhibitionsData(ctx, orgId, userId),
+        seedConservationData(ctx, orgId, userId),
+        seedTransitData(ctx, orgId, userId),
+        seedLibraryData(ctx, orgId, userId),
+        seedInsuranceData(ctx, orgId, userId),
+        seedAuditData(ctx, orgId, userId),
+      ] as const);
     }
 
     console.log(`\nSeed completed! Total collections: ${totalCollections}`);

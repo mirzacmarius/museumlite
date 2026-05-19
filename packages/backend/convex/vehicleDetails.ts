@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import {
+  type MutationCtx,
+  type QueryCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -44,7 +49,7 @@ const eventHistoryEntryValidator = v.object({
 });
 
 async function requireAutomotiveModule(
-  ctx: any,
+  ctx: MutationCtx | QueryCtx,
   organizationId: Id<"organizations">,
 ) {
   await requireModuleEnabled(ctx, organizationId, "automotive");
@@ -93,10 +98,10 @@ export const get = query({
     if (!collection) {
       return null;
     }
-
-    await requireAutomotiveModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
+    await Promise.all([
+      requireAutomotiveModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+    ]);
     const details = await ctx.db
       .query("vehicleDetails")
       .withIndex("by_collection", (q) =>
@@ -188,14 +193,10 @@ export const upsert = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    await requireAutomotiveModule(ctx, collection.organizationId);
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireAutomotiveModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+    ]);
     const existing = await ctx.db
       .query("vehicleDetails")
       .withIndex("by_collection", (q) =>
@@ -258,19 +259,18 @@ export const remove = mutation({
     if (!details) {
       throw new Error("Vehicle details not found");
     }
-
-    await requireAutomotiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.delete");
-
-    await ctx.db.delete(args.vehicleDetailsId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: details.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "vehicleDetails",
-      entityId: args.vehicleDetailsId,
-    });
+    await Promise.all([
+      requireAutomotiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.delete"),
+      ctx.db.delete(args.vehicleDetailsId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: details.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "vehicleDetails",
+        entityId: args.vehicleDetailsId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -292,14 +292,10 @@ export const addServiceLogEntry = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    await requireAutomotiveModule(ctx, collection.organizationId);
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireAutomotiveModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+    ]);
     const existing = await ctx.db
       .query("vehicleDetails")
       .withIndex("by_collection", (q) =>
@@ -362,14 +358,10 @@ export const addEventHistoryEntry = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    await requireAutomotiveModule(ctx, collection.organizationId);
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireAutomotiveModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+    ]);
     const existing = await ctx.db
       .query("vehicleDetails")
       .withIndex("by_collection", (q) =>

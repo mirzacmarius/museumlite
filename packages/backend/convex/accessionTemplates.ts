@@ -210,26 +210,25 @@ export const remove = mutation({
     if (!template) {
       throw new Error("Template not found");
     }
-
-    await requirePermission(
-      ctx,
-      template.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.templateId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: template.organizationId,
-      userId,
-      action: "deleted_accession_template",
-      entityType: "accessionTemplate",
-      entityId: args.templateId,
-      changes: {
-        name: template.name,
-        template: template.template,
-      },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        template.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.templateId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: template.organizationId,
+        userId,
+        action: "deleted_accession_template",
+        entityType: "accessionTemplate",
+        entityId: args.templateId,
+        changes: {
+          name: template.name,
+          template: template.template,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -267,25 +266,23 @@ export const setDefault = mutation({
         q.eq("organizationId", template.organizationId).eq("isDefault", true),
       )
       .collect();
-
-    await Promise.all(
-      allTemplates.map((t) => ctx.db.patch(t._id, { isDefault: false })),
-    );
-
-    // Set this template as default
-    await ctx.db.patch(args.templateId, { isDefault: true });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: template.organizationId,
-      userId,
-      action: "set_default_accession_template",
-      entityType: "accessionTemplate",
-      entityId: args.templateId,
-      changes: {
-        name: template.name,
-        template: template.template,
-      },
-    });
+    await Promise.all([
+      Promise.all(
+        allTemplates.map((t) => ctx.db.patch(t._id, { isDefault: false })),
+      ),
+      ctx.db.patch(args.templateId, { isDefault: true }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: template.organizationId,
+        userId,
+        action: "set_default_accession_template",
+        entityType: "accessionTemplate",
+        entityId: args.templateId,
+        changes: {
+          name: template.name,
+          template: template.template,
+        },
+      }),
+    ] as const);
 
     return null;
   },

@@ -59,10 +59,10 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requireModuleEnabled(ctx, args.organizationId, "library");
-    await requirePermission(ctx, args.organizationId, "collections.create");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "library"),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ]);
     const canInitiate = await canInitiateWorkflow(
       ctx,
       args.organizationId,
@@ -567,9 +567,10 @@ export const getStatistics = query({
     thisMonth: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "library"),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const requests = await ctx.db
       .query("libraryAcquisitionRequests")
       .withIndex("by_organization", (q) =>
@@ -738,22 +739,21 @@ export const approve = mutation({
         if (nextStep === undefined) {
           throw new Error("Next workflow step is not configured");
         }
-
-        await ctx.db.patch(args.requestId, {
-          status: "under_review",
-          workflowStep: nextStep,
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: request.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "libraryAcquisitionRequest",
-          entityId: args.requestId,
-          changes: { step: currentStep, nextStep },
-        });
-
+        await Promise.all([
+          ctx.db.patch(args.requestId, {
+            status: "under_review",
+            workflowStep: nextStep,
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: request.organizationId,
+            userId,
+            action: "step_approved",
+            entityType: "libraryAcquisitionRequest",
+            entityId: args.requestId,
+            changes: { step: currentStep, nextStep },
+          }),
+        ]);
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           request.organizationId,

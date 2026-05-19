@@ -186,23 +186,18 @@ export const remove = mutation({
     if (!appraisal) {
       throw new Error("Appraisal not found");
     }
-
-    await requirePermission(
-      ctx,
-      appraisal.organizationId,
-      "collections.delete",
-    );
-
-    await ctx.db.delete(args.appraisalId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: appraisal.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "appraisal",
-      entityId: args.appraisalId,
-      changes: {},
-    });
+    await Promise.all([
+      requirePermission(ctx, appraisal.organizationId, "collections.delete"),
+      ctx.db.delete(args.appraisalId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: appraisal.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "appraisal",
+        entityId: args.appraisalId,
+        changes: {},
+      }),
+    ] as const);
 
     return null;
   },

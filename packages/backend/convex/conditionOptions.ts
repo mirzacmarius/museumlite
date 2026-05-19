@@ -221,23 +221,22 @@ export const remove = mutation({
     if (!condition) {
       throw new Error("Condition not found");
     }
-
-    await requirePermission(
-      ctx,
-      condition.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.conditionId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: condition.organizationId,
-      userId,
-      action: "deleted_condition_option",
-      entityType: "conditionOption",
-      entityId: args.conditionId,
-      changes: { name: condition.name },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        condition.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.conditionId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: condition.organizationId,
+        userId,
+        action: "deleted_condition_option",
+        entityType: "conditionOption",
+        entityId: args.conditionId,
+        changes: { name: condition.name },
+      }),
+    ] as const);
 
     return null;
   },

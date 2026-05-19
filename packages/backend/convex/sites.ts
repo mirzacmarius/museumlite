@@ -22,13 +22,10 @@ export const create = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "sites.create");
-
-    // Validate organization exists
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "public_portal"),
+      requirePermission(ctx, args.organizationId, "sites.create"),
+    ]);
     const organization = await ctx.db.get(args.organizationId);
     if (!organization) {
       throw new Error("Organization not found");
@@ -267,13 +264,10 @@ export const grantUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
-
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, site.organizationId, "sites.update");
-
-    // Verify the target user exists
+    await Promise.all([
+      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
+      requirePermission(ctx, site.organizationId, "sites.update"),
+    ]);
     const user = await ctx.db.get(args.userId);
     if (!user) {
       throw new Error("User not found");
@@ -336,13 +330,10 @@ export const revokeUserSiteAccess = mutation({
     if (!site) {
       throw new Error("Site not found");
     }
-
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-
-    // Check permission
-    await requirePermission(ctx, site.organizationId, "sites.update");
-
-    // Find the user-site assignment
+    await Promise.all([
+      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
+      requirePermission(ctx, site.organizationId, "sites.update"),
+    ]);
     const userSite = await ctx.db
       .query("userSites")
       .withIndex("by_user_and_site", (q) =>

@@ -906,23 +906,22 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        await ctx.db.patch(args.loanId, {
-          status: "active",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: loan.organizationId,
-          userId,
-          action: "approved",
-          entityType: "loan",
-          entityId: args.loanId,
-          changes: { status: "active", step: currentStep },
-        });
-
-        // Get loan items to include in email
+        await Promise.all([
+          ctx.db.patch(args.loanId, {
+            status: "active",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: loan.organizationId,
+            userId,
+            action: "approved",
+            entityType: "loan",
+            entityId: args.loanId,
+            changes: { status: "active", step: currentStep },
+          }),
+        ]);
         const loanItems = await ctx.db
           .query("loanItems")
           .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -1010,28 +1009,26 @@ export const approve = mutation({
         });
       }
     } else {
-      await ctx.db.patch(args.loanId, {
-        status: "active",
-        approvedBy: userId,
-        approvedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "approved",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: { status: "active" },
-      });
-
+      await Promise.all([
+        ctx.db.patch(args.loanId, {
+          status: "active",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "approved",
+          entityType: "loan",
+          entityId: args.loanId,
+          changes: { status: "active" },
+        }),
+      ]);
       const recipients = await getOrganizationNotificationRecipients(
         ctx,
         loan.organizationId,
         userId,
       );
-
-      // Get loan items to include in email
       const loanItems = await ctx.db
         .query("loanItems")
         .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -1142,22 +1139,20 @@ export const reject = mutation({
       approvedAt: Date.now(),
       comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
     });
-
-    await ctx.db.patch(args.loanId, {
-      status: "cancelled",
-      workflowHistory: history,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { status: "cancelled", comment: args.comment },
-    });
-
-    // Get loan items to include in email
+    await Promise.all([
+      ctx.db.patch(args.loanId, {
+        status: "cancelled",
+        workflowHistory: history,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { status: "cancelled", comment: args.comment },
+      }),
+    ]);
     const loanItems = await ctx.db
       .query("loanItems")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -1250,25 +1245,23 @@ export const returnLoan = mutation({
 
     // Update loan status only if all items are now returned (either in this operation or after it)
     if (movement.allItemsNowReturned) {
-      await ctx.db.patch(args.loanId, {
-        status: "returned",
-      });
-
-      // Log audit action for full return
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "returned",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: {
+      await Promise.all([
+        ctx.db.patch(args.loanId, {
           status: "returned",
-          itemsReturned: movement.returnedItemCount,
-          returnedItemIds: movement.returnedItemIds,
-        },
-      });
-
-      // Notify all users about full loan return
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "returned",
+          entityType: "loan",
+          entityId: args.loanId,
+          changes: {
+            status: "returned",
+            itemsReturned: movement.returnedItemCount,
+            returnedItemIds: movement.returnedItemIds,
+          },
+        }),
+      ]);
       const recipients = await getOrganizationNotificationRecipients(
         ctx,
         loan.organizationId,
@@ -1354,27 +1347,23 @@ export const dispatch = mutation({
     if (loan.status !== "active") {
       throw new Error("Loan must be active to dispatch");
     }
-
-    await dispatchLoanItems(ctx, {
-      loanId: args.loanId,
-      changedBy: userId,
-    });
-
-    await ctx.db.patch(args.loanId, {
-      status: "dispatched",
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "dispatched",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { status: "dispatched" },
-    });
-
-    // Notify all users in organization about loan dispatch (except the dispatcher)
+    await Promise.all([
+      dispatchLoanItems(ctx, {
+        loanId: args.loanId,
+        changedBy: userId,
+      }),
+      ctx.db.patch(args.loanId, {
+        status: "dispatched",
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "dispatched",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { status: "dispatched" },
+      }),
+    ]);
     const recipients = await getOrganizationNotificationRecipients(
       ctx,
       loan.organizationId,
@@ -1428,28 +1417,23 @@ export const cancel = mutation({
     ) {
       throw new Error("Can only cancel pending, active, or dispatched loans");
     }
-
-    // Update loan status
-    await ctx.db.patch(args.loanId, {
-      status: "cancelled",
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "cancelled",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { status: "cancelled" },
-    });
-
-    await restoreLoanCollections(ctx, {
-      loanId: args.loanId,
-      changedBy: userId,
-    });
-
-    // Notify all users in organization about loan cancellation (except the user who cancelled it)
+    await Promise.all([
+      ctx.db.patch(args.loanId, {
+        status: "cancelled",
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "cancelled",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { status: "cancelled" },
+      }),
+      restoreLoanCollections(ctx, {
+        loanId: args.loanId,
+        changedBy: userId,
+      }),
+    ]);
     const recipients = await getOrganizationNotificationRecipients(
       ctx,
       loan.organizationId,
@@ -1795,10 +1779,10 @@ export const uploadLoanDocument = mutation({
     if (!loan) {
       throw new Error("Loan not found");
     }
-
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
     const documentId = await ctx.db.insert("loanDocuments", {
       loanId: args.loanId,
       storageId: args.storageId,
@@ -1837,10 +1821,10 @@ export const listLoanDocuments = query({
     if (!loan) {
       throw new Error("Loan not found");
     }
-
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.read");
-
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+    ]);
     const documents = await ctx.db
       .query("loanDocuments")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
@@ -1851,7 +1835,7 @@ export const listLoanDocuments = query({
         const [url, uploader] = await Promise.all([
           ctx.storage.getUrl(doc.storageId),
           ctx.db.get(doc.uploadedBy),
-        ]);
+        ] as const);
         return {
           _id: doc._id,
           storageId: doc.storageId,
@@ -1892,15 +1876,11 @@ export const deleteLoanDocument = mutation({
     if (!loan) {
       throw new Error("Loan not found");
     }
-
-    // Check permission
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
-    // Delete from storage
-    await ctx.storage.delete(document.storageId);
-
-    // Delete record
-    await ctx.db.delete(args.documentId);
+    await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+      ctx.storage.delete(document.storageId),
+      ctx.db.delete(args.documentId),
+    ] as const);
 
     return null;
   },
@@ -2520,7 +2500,7 @@ export const requestExtension = mutation({
         status: "pending",
       }),
       getUsersToNotifyForWorkflowStep(ctx, loan.organizationId, "loan", 1),
-    ]);
+    ] as const);
 
     // Create notification for approvers
     await Promise.all(
@@ -2586,43 +2566,37 @@ export const approveExtension = mutation({
     if (!loan) {
       throw new Error("Loan not found");
     }
-
-    // Update the request
-    await ctx.db.patch(args.requestId, {
-      status: "approved",
-      approvedBy: userId,
-      approvedAt: Date.now(),
-      approvalComment: args.comment,
-    });
-
-    // Update the loan end date
-    await ctx.db.patch(request.loanId, {
-      endDate: request.newRequestedEndDate,
-    });
-
-    // Notify the requester
-    await ctx.runMutation(internal.audit.createNotificationInternal, {
-      organizationId: request.organizationId,
-      userId: request.requestedBy,
-      type: "loan_extension_approved",
-      title: "Loan Extension Approved",
-      message: `Extension approved for loan ${loan.loanNumber}`,
-      relatedEntityType: "loan",
-      relatedEntityId: request.loanId,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "extension_approved",
-      entityType: "loan",
-      entityId: request.loanId,
-      changes: {
-        previousEndDate: request.originalEndDate,
-        newEndDate: request.newRequestedEndDate,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "approved",
+        approvedBy: userId,
+        approvedAt: Date.now(),
+        approvalComment: args.comment,
+      }),
+      ctx.db.patch(request.loanId, {
+        endDate: request.newRequestedEndDate,
+      }),
+      ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: request.organizationId,
+        userId: request.requestedBy,
+        type: "loan_extension_approved",
+        title: "Loan Extension Approved",
+        message: `Extension approved for loan ${loan.loanNumber}`,
+        relatedEntityType: "loan",
+        relatedEntityId: request.loanId,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "extension_approved",
+        entityType: "loan",
+        entityId: request.loanId,
+        changes: {
+          previousEndDate: request.originalEndDate,
+          newEndDate: request.newRequestedEndDate,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -2659,33 +2633,29 @@ export const rejectExtension = mutation({
     if (!loan) {
       throw new Error("Loan not found");
     }
-
-    // Update the request
-    await ctx.db.patch(args.requestId, {
-      status: "rejected",
-      rejectionReason: args.reason,
-    });
-
-    // Notify the requester
-    await ctx.runMutation(internal.audit.createNotificationInternal, {
-      organizationId: request.organizationId,
-      userId: request.requestedBy,
-      type: "loan_extension_rejected",
-      title: "Loan Extension Rejected",
-      message: `Extension rejected for loan ${loan.loanNumber}: ${args.reason}`,
-      relatedEntityType: "loan",
-      relatedEntityId: request.loanId,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "extension_rejected",
-      entityType: "loan",
-      entityId: request.loanId,
-      changes: { rejectionReason: args.reason },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "rejected",
+        rejectionReason: args.reason,
+      }),
+      ctx.runMutation(internal.audit.createNotificationInternal, {
+        organizationId: request.organizationId,
+        userId: request.requestedBy,
+        type: "loan_extension_rejected",
+        title: "Loan Extension Rejected",
+        message: `Extension rejected for loan ${loan.loanNumber}: ${args.reason}`,
+        relatedEntityType: "loan",
+        relatedEntityId: request.loanId,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "extension_rejected",
+        entityType: "loan",
+        entityId: request.loanId,
+        changes: { rejectionReason: args.reason },
+      }),
+    ] as const);
 
     return null;
   },
@@ -3332,7 +3302,7 @@ export const listConditionDisputes = query({
           ctx.db.get(dispute.loanId),
           ctx.db.get(dispute.collectionId),
           ctx.db.get(dispute.reportedBy),
-        ]);
+        ] as const);
         return {
           _id: dispute._id,
           _creationTime: dispute._creationTime,
@@ -3451,7 +3421,7 @@ export const getConditionDispute = query({
       ctx.db.get(dispute.loanId),
       ctx.db.get(dispute.collectionId),
       ctx.db.get(dispute.reportedBy),
-    ]);
+    ] as const);
     const investigator = dispute.investigatorId
       ? await ctx.db.get(dispute.investigatorId)
       : null;
@@ -3663,9 +3633,10 @@ export const getStatusDistribution = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireLoansAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "loans.read");
-
+    await Promise.all([
+      requireLoansAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "loans.read"),
+    ]);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>

@@ -204,23 +204,22 @@ export const remove = mutation({
     if (!donor) {
       throw new Error("Donor not found");
     }
-
-    await requirePermission(
-      ctx,
-      donor.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.donorId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: donor.organizationId,
-      userId,
-      action: "deleted_donor",
-      entityType: "donor",
-      entityId: args.donorId,
-      changes: { name: donor.name },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        donor.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.donorId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: donor.organizationId,
+        userId,
+        action: "deleted_donor",
+        entityType: "donor",
+        entityId: args.donorId,
+        changes: { name: donor.name },
+      }),
+    ] as const);
 
     return null;
   },

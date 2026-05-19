@@ -173,23 +173,22 @@ export const remove = mutation({
     if (!material) {
       throw new Error("Material not found");
     }
-
-    await requirePermission(
-      ctx,
-      material.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.materialId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: material.organizationId,
-      userId,
-      action: "deleted_material_option",
-      entityType: "materialOption",
-      entityId: args.materialId,
-      changes: { name: material.name },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        material.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.materialId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: material.organizationId,
+        userId,
+        action: "deleted_material_option",
+        entityType: "materialOption",
+        entityId: args.materialId,
+        changes: { name: material.name },
+      }),
+    ] as const);
 
     return null;
   },

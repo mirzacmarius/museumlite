@@ -417,11 +417,10 @@ export const exportLocations = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "locations.read");
-
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
@@ -496,11 +495,10 @@ export const exportAccounts = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "loans.read");
-
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -585,11 +583,10 @@ export const exportObjects = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const objects = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -958,11 +955,10 @@ export const exportLoans = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "loans.read");
-
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>
@@ -1410,10 +1406,10 @@ export const exportObjectsWithFormat = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.read");
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const objects = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -1562,10 +1558,10 @@ export const exportLocationsWithFormat = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "locations.read");
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
@@ -1654,10 +1650,10 @@ export const exportAccountsWithFormat = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "loans.read");
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -1766,10 +1762,10 @@ export const exportLoansWithFormat = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "loans.read");
-    await enforceExportQuota(ctx, args.organizationId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ]);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>

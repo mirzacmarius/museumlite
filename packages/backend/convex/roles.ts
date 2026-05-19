@@ -219,22 +219,20 @@ export const deleteRole = mutation({
       .query("rolePermissions")
       .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
       .collect();
-
-    await Promise.all(rolePermissions.map((rp) => ctx.db.delete(rp._id)));
-
-    // Delete role
-    await ctx.db.delete(args.roleId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: role.organizationId,
-      userId,
-      action: "deleted_role",
-      entityType: "role",
-      entityId: args.roleId,
-      changes: {
-        name: role.name,
-      },
-    });
+    await Promise.all([
+      Promise.all(rolePermissions.map((rp) => ctx.db.delete(rp._id))),
+      ctx.db.delete(args.roleId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: role.organizationId,
+        userId,
+        action: "deleted_role",
+        entityType: "role",
+        entityId: args.roleId,
+        changes: {
+          name: role.name,
+        },
+      }),
+    ] as const);
 
     return null;
   },

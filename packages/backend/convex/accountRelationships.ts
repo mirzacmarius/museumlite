@@ -47,10 +47,10 @@ export const list = query({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.read"),
+    ]);
     const relationships = await ctx.db
       .query("accountRelationships")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -242,10 +242,10 @@ export const create = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
-
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.write"),
+    ]);
     const relationshipId = await ctx.db.insert("accountRelationships", {
       organizationId: account.organizationId,
       accountId: args.accountId,
@@ -339,27 +339,22 @@ export const remove = mutation({
     if (!relationship) {
       throw new Error("Relationship not found");
     }
-
-    await requireModuleEnabled(ctx, relationship.organizationId, "accounts");
-    await requirePermission(
-      ctx,
-      relationship.organizationId,
-      "accounts.delete",
-    );
-
-    await ctx.db.delete(args.relationshipId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: relationship.organizationId,
-      userId,
-      action: "deleted_account_relationship",
-      entityType: "accountRelationship",
-      entityId: args.relationshipId,
-      changes: {
-        relatedEntityType: relationship.relatedEntityType,
-        relatedEntityId: relationship.relatedEntityId,
-      },
-    });
+    await Promise.all([
+      requireModuleEnabled(ctx, relationship.organizationId, "accounts"),
+      requirePermission(ctx, relationship.organizationId, "accounts.delete"),
+      ctx.db.delete(args.relationshipId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: relationship.organizationId,
+        userId,
+        action: "deleted_account_relationship",
+        entityType: "accountRelationship",
+        entityId: args.relationshipId,
+        changes: {
+          relatedEntityType: relationship.relatedEntityType,
+          relatedEntityId: relationship.relatedEntityId,
+        },
+      }),
+    ] as const);
 
     return null;
   },

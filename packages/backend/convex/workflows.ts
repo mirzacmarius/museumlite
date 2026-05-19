@@ -236,25 +236,24 @@ export const remove = mutation({
     if (!config) {
       throw new Error("Workflow config not found");
     }
-
-    await requirePermission(
-      ctx,
-      config.organizationId,
-      "organization.manage_settings",
-    );
-
-    await ctx.db.delete(args.id);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: config.organizationId,
-      userId,
-      action: "deleted_workflow_config",
-      entityType: "workflowConfig",
-      entityId: args.id,
-      changes: {
-        workflowType: config.workflowType,
-      },
-    });
+    await Promise.all([
+      requirePermission(
+        ctx,
+        config.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.delete(args.id),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: config.organizationId,
+        userId,
+        action: "deleted_workflow_config",
+        entityType: "workflowConfig",
+        entityId: args.id,
+        changes: {
+          workflowType: config.workflowType,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -682,31 +681,30 @@ export const assignDeaccession = mutation({
     );
 
     const previousAssignee = deaccession.assignedTo;
-
-    await ctx.db.patch(args.deaccessionId, {
-      assignedTo: args.userId,
-    });
-
-    await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
-      organizationId: deaccession.organizationId,
-      workflowType: "deaccession",
-      entityId: args.deaccessionId,
-      fromStep: deaccession.workflowStep ?? 0,
-      toStep: deaccession.workflowStep ?? 0,
-      action: "reassigned",
-      performedBy: currentUserId,
-      assignedTo: args.userId,
-      previousAssignee,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: deaccession.organizationId,
-      userId: currentUserId,
-      action: "assigned_deaccession",
-      entityType: "deaccession",
-      entityId: args.deaccessionId,
-      changes: { assignedTo: args.userId },
-    });
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
+        assignedTo: args.userId,
+      }),
+      ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+        organizationId: deaccession.organizationId,
+        workflowType: "deaccession",
+        entityId: args.deaccessionId,
+        fromStep: deaccession.workflowStep ?? 0,
+        toStep: deaccession.workflowStep ?? 0,
+        action: "reassigned",
+        performedBy: currentUserId,
+        assignedTo: args.userId,
+        previousAssignee,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId: currentUserId,
+        action: "assigned_deaccession",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: { assignedTo: args.userId },
+      }),
+    ] as const);
 
     if (args.userId !== currentUserId) {
       // Get user who is assigning
@@ -803,31 +801,30 @@ export const assignLoan = mutation({
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const previousAssignee = loan.assignedTo;
-
-    await ctx.db.patch(args.loanId, {
-      assignedTo: args.userId,
-    });
-
-    await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
-      organizationId: loan.organizationId,
-      workflowType: "loan",
-      entityId: args.loanId,
-      fromStep: loan.workflowStep ?? 0,
-      toStep: loan.workflowStep ?? 0,
-      action: "reassigned",
-      performedBy: currentUserId,
-      assignedTo: args.userId,
-      previousAssignee,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId: currentUserId,
-      action: "assigned_loan",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { assignedTo: args.userId },
-    });
+    await Promise.all([
+      ctx.db.patch(args.loanId, {
+        assignedTo: args.userId,
+      }),
+      ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+        organizationId: loan.organizationId,
+        workflowType: "loan",
+        entityId: args.loanId,
+        fromStep: loan.workflowStep ?? 0,
+        toStep: loan.workflowStep ?? 0,
+        action: "reassigned",
+        performedBy: currentUserId,
+        assignedTo: args.userId,
+        previousAssignee,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId: currentUserId,
+        action: "assigned_loan",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { assignedTo: args.userId },
+      }),
+    ] as const);
 
     if (args.userId !== currentUserId) {
       // Get user who is assigning

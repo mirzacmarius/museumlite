@@ -68,10 +68,10 @@ export const createTask = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.create");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ]);
     const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) throw new Error("Exhibition not found");
     if (exhibition.organizationId !== args.organizationId) {
@@ -182,10 +182,10 @@ export const deleteTask = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.delete");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.delete"),
+    ]);
     const comments = await ctx.db
       .query("installationTaskComments")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
@@ -196,18 +196,18 @@ export const deleteTask = mutation({
       .query("installationTaskChecklists")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
       .collect();
-    await Promise.all(checklists.map((item) => ctx.db.delete(item._id)));
-
-    await ctx.db.delete(args.taskId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "installationTask",
-      entityId: args.taskId,
-      changes: { title: task.title },
-    });
+    await Promise.all([
+      Promise.all(checklists.map((item) => ctx.db.delete(item._id))),
+      ctx.db.delete(args.taskId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "installationTask",
+        entityId: args.taskId,
+        changes: { title: task.title },
+      }),
+    ] as const);
 
     return null;
   },
@@ -454,27 +454,26 @@ export const completeTask = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
-    await ctx.db.patch(args.taskId, {
-      status: "completed",
-      completedAt: Date.now(),
-      completedBy: userId,
-      actualHours: args.actualHours ?? task.actualHours,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "completed",
-      entityType: "installationTask",
-      entityId: args.taskId,
-      changes: { title: task.title },
-    });
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+      ctx.db.patch(args.taskId, {
+        status: "completed",
+        completedAt: Date.now(),
+        completedBy: userId,
+        actualHours: args.actualHours ?? task.actualHours,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "completed",
+        entityType: "installationTask",
+        entityId: args.taskId,
+        changes: { title: task.title },
+      }),
+    ] as const);
 
     return null;
   },
@@ -492,25 +491,24 @@ export const blockTask = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
-    await ctx.db.patch(args.taskId, {
-      status: "blocked",
-      blockedReason: args.reason,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "blocked",
-      entityType: "installationTask",
-      entityId: args.taskId,
-      changes: { reason: args.reason },
-    });
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+      ctx.db.patch(args.taskId, {
+        status: "blocked",
+        blockedReason: args.reason,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "blocked",
+        entityType: "installationTask",
+        entityId: args.taskId,
+        changes: { reason: args.reason },
+      }),
+    ] as const);
 
     return null;
   },
@@ -571,25 +569,27 @@ export const assignTask = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
-    await ctx.db.patch(args.taskId, {
-      assigneeId: args.assigneeId,
-      assigneeName: args.assigneeName,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "assigned",
-      entityType: "installationTask",
-      entityId: args.taskId,
-      changes: { assigneeId: args.assigneeId, assigneeName: args.assigneeName },
-    });
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+      ctx.db.patch(args.taskId, {
+        assigneeId: args.assigneeId,
+        assigneeName: args.assigneeName,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "assigned",
+        entityType: "installationTask",
+        entityId: args.taskId,
+        changes: {
+          assigneeId: args.assigneeId,
+          assigneeName: args.assigneeName,
+        },
+      }),
+    ] as const);
 
     if (args.assigneeId && args.assigneeId !== userId) {
       // Get user who is assigning the task
@@ -637,24 +637,23 @@ export const unassignTask = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
-    await ctx.db.patch(args.taskId, {
-      assigneeId: undefined,
-      assigneeName: undefined,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "unassigned",
-      entityType: "installationTask",
-      entityId: args.taskId,
-    });
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+      ctx.db.patch(args.taskId, {
+        assigneeId: undefined,
+        assigneeName: undefined,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "unassigned",
+        entityType: "installationTask",
+        entityId: args.taskId,
+      }),
+    ] as const);
 
     return null;
   },
@@ -810,10 +809,10 @@ export const createTemplate = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.create");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ]);
     const templateId = await ctx.db.insert("installationTaskTemplates", {
       organizationId: args.organizationId,
       name: args.name,
@@ -877,11 +876,11 @@ export const deleteTemplate = mutation({
 
     const template = await ctx.db.get(args.templateId);
     if (!template) throw new Error("Template not found");
-
-    await requireInstallationAccess(ctx, template.organizationId);
-    await requirePermission(ctx, template.organizationId, "collections.delete");
-
-    await ctx.db.patch(args.templateId, { isActive: false });
+    await Promise.all([
+      requireInstallationAccess(ctx, template.organizationId),
+      requirePermission(ctx, template.organizationId, "collections.delete"),
+      ctx.db.patch(args.templateId, { isActive: false }),
+    ] as const);
 
     return null;
   },
@@ -960,10 +959,10 @@ export const applyTemplate = mutation({
     if (exhibition.organizationId !== template.organizationId) {
       throw new Error("Exhibition does not belong to this organization");
     }
-
-    await requireInstallationAccess(ctx, template.organizationId);
-    await requirePermission(ctx, template.organizationId, "collections.create");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, template.organizationId),
+      requirePermission(ctx, template.organizationId, "collections.create"),
+    ]);
     const taskId = await ctx.db.insert("installationTasks", {
       organizationId: template.organizationId,
       exhibitionId: args.exhibitionId,
@@ -1030,10 +1029,10 @@ export const addComment = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
     const commentId = await ctx.db.insert("installationTaskComments", {
       taskId: args.taskId,
       authorId: userId,
@@ -1063,10 +1062,10 @@ export const listComments = query({
   handler: async (ctx, args) => {
     const task = await ctx.db.get(args.taskId);
     if (!task) return [];
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.read");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.read"),
+    ]);
     const comments = await ctx.db
       .query("installationTaskComments")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
@@ -1106,10 +1105,10 @@ export const addChecklistItem = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
     const existingItems = await ctx.db
       .query("installationTaskChecklists")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
@@ -1146,15 +1145,15 @@ export const updateChecklistItem = mutation({
 
     const task = await ctx.db.get(checklistItem.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
-    await ctx.db.patch(args.checklistItemId, {
-      completed: args.completed,
-      completedBy: args.completed ? userId : undefined,
-      completedAt: args.completed ? Date.now() : undefined,
-    });
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+      ctx.db.patch(args.checklistItemId, {
+        completed: args.completed,
+        completedBy: args.completed ? userId : undefined,
+        completedAt: args.completed ? Date.now() : undefined,
+      }),
+    ] as const);
 
     return null;
   },
@@ -1174,11 +1173,11 @@ export const removeChecklistItem = mutation({
 
     const task = await ctx.db.get(checklistItem.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.delete");
-
-    await ctx.db.delete(args.checklistItemId);
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.delete"),
+      ctx.db.delete(args.checklistItemId),
+    ] as const);
 
     return null;
   },
@@ -1196,18 +1195,18 @@ export const reorderChecklist = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
-
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
-    await Promise.all(
-      Array.from({ length: args.itemIds.length }, async (_, i) => {
-        const itemId = args.itemIds[i];
-        if (itemId) {
-          await ctx.db.patch(itemId, { sortOrder: i });
-        }
-      }),
-    );
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+      Promise.all(
+        Array.from({ length: args.itemIds.length }, async (_, i) => {
+          const itemId = args.itemIds[i];
+          if (itemId) {
+            await ctx.db.patch(itemId, { sortOrder: i });
+          }
+        }),
+      ),
+    ] as const);
 
     return null;
   },
@@ -1275,9 +1274,10 @@ export const getTasksForBoard = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const tasks = await ctx.db
       .query("installationTasks")
       .withIndex("by_organization_and_exhibition", (q) =>
@@ -1406,9 +1406,10 @@ export const getTaskStats = query({
     completionRate: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const tasks = await ctx.db
       .query("installationTasks")
       .withIndex("by_organization_and_exhibition", (q) =>
@@ -1472,10 +1473,10 @@ export const getMyTasks = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const tasks = await ctx.db
       .query("installationTasks")
       .withIndex("by_assignee", (q) => q.eq("assigneeId", userId))

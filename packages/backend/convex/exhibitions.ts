@@ -47,9 +47,10 @@ export const listByOrganization = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireExhibitionAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
     const exhibitions = await ctx.db
       .query("exhibitions")
       .withIndex("by_organization", (q) =>
@@ -135,7 +136,7 @@ export const get = query({
     const [collection, workflowConfig] = await Promise.all([
       ctx.db.get(exhibition.collectionId),
       getWorkflowConfig(ctx, exhibition.organizationId, "exhibition"),
-    ]);
+    ] as const);
     const approver = exhibition.approvedBy
       ? await ctx.db.get(exhibition.approvedBy)
       : null;
@@ -598,21 +599,20 @@ export const approve = mutation({
         if (nextStep === undefined) {
           throw new Error("Next workflow step is not configured");
         }
-
-        await ctx.db.patch(args.exhibitionId, {
-          workflowStep: nextStep,
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: exhibition.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "exhibition",
-          entityId: args.exhibitionId,
-          changes: { step: currentStep, nextStep },
-        });
-
+        await Promise.all([
+          ctx.db.patch(args.exhibitionId, {
+            workflowStep: nextStep,
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: exhibition.organizationId,
+            userId,
+            action: "step_approved",
+            entityType: "exhibition",
+            entityId: args.exhibitionId,
+            changes: { step: currentStep, nextStep },
+          }),
+        ]);
         const usersToNotify = await getUsersToNotifyForWorkflowStep(
           ctx,
           exhibition.organizationId,
@@ -637,26 +637,22 @@ export const approve = mutation({
         );
       }
     } else {
-      await requirePermission(
-        ctx,
-        exhibition.organizationId,
-        "collections.update",
-      );
-
-      await ctx.db.patch(args.exhibitionId, {
-        status: "approved",
-        approvedBy: userId,
-        approvedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "approved",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { status: "approved" },
-      });
+      await Promise.all([
+        requirePermission(ctx, exhibition.organizationId, "collections.update"),
+        ctx.db.patch(args.exhibitionId, {
+          status: "approved",
+          approvedBy: userId,
+          approvedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: exhibition.organizationId,
+          userId,
+          action: "approved",
+          entityType: "exhibition",
+          entityId: args.exhibitionId,
+          changes: { status: "approved" },
+        }),
+      ] as const);
     }
 
     return null;
@@ -803,41 +799,43 @@ export const activate = mutation({
       )
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
-
-    await Promise.all(
-      Array.from(exhibitionObjects).map(async (obj) => {
-        const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
-
-        await ctx.db.patch(obj._id, {
-          status: "installed",
-          installedAt: Date.now(),
-          installedBy: userId,
-        });
-
-        if (newLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: newLocationId,
+    await Promise.all([
+      Promise.all(
+        Array.from(exhibitionObjects).map(async (obj) => {
+          const newLocationId =
+            obj.exhibitionLocationId ?? exhibition.locationId;
+          await ctx.db.patch(obj._id, {
+            status: "installed",
+            installedAt: Date.now(),
+            installedBy: userId,
           });
-        }
+          if (newLocationId) {
+            await ctx.db.patch(obj.collectionId, {
+              currentLocationId: newLocationId,
+            });
+          }
+        }),
+      ),
+      ctx.db.patch(args.exhibitionId, {
+        status: "active",
+        isCurrent: true,
+        activatedAt: Date.now(),
+        activatedBy: userId,
+        installationCompletedAt:
+          exhibition.installationCompletedAt ?? Date.now(),
       }),
-    );
-
-    await ctx.db.patch(args.exhibitionId, {
-      status: "active",
-      isCurrent: true,
-      activatedAt: Date.now(),
-      activatedBy: userId,
-      installationCompletedAt: exhibition.installationCompletedAt ?? Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "activated",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "active", objectsInstalled: exhibitionObjects.length },
-    });
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "activated",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: {
+          status: "active",
+          objectsInstalled: exhibitionObjects.length,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1143,11 +1141,10 @@ export const listDocuments = query({
     if (!exhibition) {
       return [];
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(ctx, exhibition.organizationId, "collections.read");
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.read"),
+    ]);
     const documents = await ctx.db
       .query("exhibitionDocuments")
       .withIndex("by_exhibition", (q) =>
@@ -1160,7 +1157,7 @@ export const listDocuments = query({
         const [uploader, url] = await Promise.all([
           ctx.db.get(doc.uploadedBy),
           ctx.storage.getUrl(doc.storageId),
-        ]);
+        ] as const);
         return {
           _id: doc._id,
           storageId: doc.storageId,
@@ -1202,15 +1199,10 @@ export const uploadDocument = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
+    ]);
     const documentId = await ctx.db.insert("exhibitionDocuments", {
       exhibitionId: args.exhibitionId,
       storageId: args.storageId,
@@ -1218,15 +1210,6 @@ export const uploadDocument = mutation({
       fileName: args.fileName,
       uploadedBy: userId,
       uploadedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "uploaded_document",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { fileName: args.fileName, documentType: args.documentType },
     });
 
     return documentId;
@@ -1253,26 +1236,20 @@ export const deleteDocument = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.delete",
-    );
-
-    await ctx.storage.delete(document.storageId);
-    await ctx.db.delete(args.documentId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deleted_document",
-      entityType: "exhibition",
-      entityId: document.exhibitionId,
-      changes: { fileName: document.fileName },
-    });
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.delete"),
+      ctx.storage.delete(document.storageId),
+      ctx.db.delete(args.documentId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "deleted_document",
+        entityType: "exhibition",
+        entityId: document.exhibitionId,
+        changes: { fileName: document.fileName },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1987,14 +1964,10 @@ export const addExhibitionObject = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
+    ]);
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection object not found");
@@ -2339,10 +2312,10 @@ export const listExhibitionObjects = query({
     if (!exhibition) {
       return [];
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(ctx, exhibition.organizationId, "collections.read");
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.read"),
+    ]);
     const exhibitionObjects = await ctx.db
       .query("exhibitionObjects")
       .withIndex("by_exhibition", (q) =>
@@ -2412,14 +2385,10 @@ export const bulkInstallObjects = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
+    ]);
     const pendingObjects = await ctx.db
       .query("exhibitionObjects")
       .withIndex("by_exhibition", (q) =>
@@ -2479,14 +2448,10 @@ export const bulkReturnObjects = mutation({
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
-
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
+    ]);
     const deinstalledObjects = await ctx.db
       .query("exhibitionObjects")
       .withIndex("by_exhibition", (q) =>

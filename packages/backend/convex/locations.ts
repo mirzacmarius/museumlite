@@ -284,10 +284,10 @@ export const listBySite = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "locations.read");
-
-    await validateSite(ctx, args.organizationId, args.siteId);
-
+    await Promise.all([
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      validateSite(ctx, args.organizationId, args.siteId),
+    ]);
     const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization_and_site", (q) =>
@@ -491,7 +491,7 @@ export const get = query({
           q.eq("currentLocationId", args.locationId),
         )
         .collect(),
-    ]);
+    ] as const);
 
     // Count objects at this location
     return {
@@ -1369,42 +1369,40 @@ export const executeMoveRequest = mutation({
 
     // Execute the move
     const now = Date.now();
-
-    await ctx.db.insert("locationHistory", {
-      collectionId: request.collectionId,
-      fromLocationId: request.fromLocationId,
-      toLocationId: request.toLocationId,
-      movedBy: userId,
-      movedAt: now,
-      reason: request.reason,
-      notes: args.executionNotes,
-    });
-
-    await ctx.db.patch(request.collectionId, {
-      currentLocationId: request.toLocationId,
-      lastModifiedBy: userId,
-      lastModifiedAt: now,
-    });
-
-    await ctx.db.patch(args.requestId, {
-      status: "executed",
-      executedBy: userId,
-      executedAt: now,
-      executionNotes: args.executionNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "executed_move_request",
-      entityType: "collection",
-      entityId: request.collectionId,
-      changes: {
-        requestId: args.requestId,
+    await Promise.all([
+      ctx.db.insert("locationHistory", {
+        collectionId: request.collectionId,
         fromLocationId: request.fromLocationId,
         toLocationId: request.toLocationId,
-      },
-    });
+        movedBy: userId,
+        movedAt: now,
+        reason: request.reason,
+        notes: args.executionNotes,
+      }),
+      ctx.db.patch(request.collectionId, {
+        currentLocationId: request.toLocationId,
+        lastModifiedBy: userId,
+        lastModifiedAt: now,
+      }),
+      ctx.db.patch(args.requestId, {
+        status: "executed",
+        executedBy: userId,
+        executedAt: now,
+        executionNotes: args.executionNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "executed_move_request",
+        entityType: "collection",
+        entityId: request.collectionId,
+        changes: {
+          requestId: args.requestId,
+          fromLocationId: request.fromLocationId,
+          toLocationId: request.toLocationId,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1513,7 +1511,7 @@ export const listMoveRequests = query({
         const [toLocation, requestedBy] = await Promise.all([
           ctx.db.get(req.toLocationId),
           ctx.db.get(req.requestedBy),
-        ]);
+        ] as const);
         const reviewedBy = req.reviewedBy
           ? await ctx.db.get(req.reviewedBy)
           : null;
@@ -1568,7 +1566,7 @@ export const getMoveRequest = query({
     const [toLocation, requestedBy] = await Promise.all([
       ctx.db.get(request.toLocationId),
       ctx.db.get(request.requestedBy),
-    ]);
+    ] as const);
     const reviewedBy = request.reviewedBy
       ? await ctx.db.get(request.reviewedBy)
       : null;
@@ -2144,7 +2142,7 @@ export const getLocationHistory = query({
         )
         .order("desc")
         .take(limit),
-    ]);
+    ] as const);
     const allEvents = [...movedIn, ...movedOut];
 
     const enrichedEvents = await Promise.all(
@@ -2230,7 +2228,7 @@ export const getCollectionLocationHistory = query({
         const [toLocation, movedBy] = await Promise.all([
           ctx.db.get(entry.toLocationId),
           ctx.db.get(entry.movedBy),
-        ]);
+        ] as const);
         return {
           ...entry,
           fromLocationName: fromLocation?.name || undefined,

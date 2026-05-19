@@ -176,18 +176,15 @@ export const create = mutation({
       parentOrganizationId: args.parentOrganizationId,
       rootOrganizationId: hierarchy?.rootOrganizationId,
     });
-
-    await ctx.db.insert(
-      "organizationUsageCounters",
-      createEmptyUsageCounter(organizationId),
-    );
-
-    // Create default roles for the organization
-    await ctx.runMutation(internal.organizations.createDefaultRoles, {
-      organizationId,
-    });
-
-    // Add creator as admin
+    await Promise.all([
+      ctx.db.insert(
+        "organizationUsageCounters",
+        createEmptyUsageCounter(organizationId),
+      ),
+      ctx.runMutation(internal.organizations.createDefaultRoles, {
+        organizationId,
+      }),
+    ]);
     const roles = await ctx.db
       .query("roles")
       .withIndex("by_organization", (q) =>
@@ -204,124 +201,120 @@ export const create = mutation({
     );
 
     if (adminRole) {
-      await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId,
-        roleId: adminRole._id,
-        joinedAt: Date.now(),
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "accession",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: registrarRole?._id ?? adminRole._id,
-            name: "Registrar Review",
-          },
-          {
-            stepNumber: 2,
-            roleId: curatorRole?._id ?? adminRole._id,
-            name: "Curator Approval",
-          },
-        ],
-        canInitiateRoles: [
-          adminRole._id,
-          ...(registrarRole ? [registrarRole._id] : []),
-        ],
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "deaccession",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: curatorRole?._id ?? adminRole._id,
-            name: "Curator Review",
-          },
-          {
-            stepNumber: 2,
-            roleId: adminRole._id,
-            name: "Director Approval",
-          },
-        ],
-        canInitiateRoles: [
-          adminRole._id,
-          ...(curatorRole ? [curatorRole._id] : []),
-        ],
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "loan",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: registrarRole?._id ?? adminRole._id,
-            name: "Registrar Review",
-          },
-          {
-            stepNumber: 2,
-            roleId: curatorRole?._id ?? adminRole._id,
-            name: "Curator Approval",
-          },
-        ],
-        canInitiateRoles: [
-          adminRole._id,
-          ...(registrarRole ? [registrarRole._id] : []),
-        ],
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "acquisition",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: adminRole._id,
-            name: "Director Approval",
-          },
-        ],
-        canInitiateRoles: [
-          adminRole._id,
-          ...(curatorRole ? [curatorRole._id] : []),
-        ],
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "exhibition",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: adminRole._id,
-            name: "Director Approval",
-          },
-        ],
-        canInitiateRoles: [
-          adminRole._id,
-          ...(curatorRole ? [curatorRole._id] : []),
-        ],
-      });
-
-      await ctx.db.insert("workflowConfigs", {
-        organizationId,
-        workflowType: "conservation",
-        steps: [
-          {
-            stepNumber: 1,
-            roleId: curatorRole?._id ?? adminRole._id,
-            name: "Curator Approval",
-          },
-        ],
-        canInitiateRoles: [
-          adminRole._id,
-          ...(registrarRole ? [registrarRole._id] : []),
-          ...(curatorRole ? [curatorRole._id] : []),
-        ],
-      });
+      await Promise.all([
+        ctx.db.insert("userOrganizations", {
+          userId,
+          organizationId,
+          roleId: adminRole._id,
+          joinedAt: Date.now(),
+        }),
+        ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "accession",
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: registrarRole?._id ?? adminRole._id,
+              name: "Registrar Review",
+            },
+            {
+              stepNumber: 2,
+              roleId: curatorRole?._id ?? adminRole._id,
+              name: "Curator Approval",
+            },
+          ],
+          canInitiateRoles: [
+            adminRole._id,
+            ...(registrarRole ? [registrarRole._id] : []),
+          ],
+        }),
+        ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "deaccession",
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: curatorRole?._id ?? adminRole._id,
+              name: "Curator Review",
+            },
+            {
+              stepNumber: 2,
+              roleId: adminRole._id,
+              name: "Director Approval",
+            },
+          ],
+          canInitiateRoles: [
+            adminRole._id,
+            ...(curatorRole ? [curatorRole._id] : []),
+          ],
+        }),
+        ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "loan",
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: registrarRole?._id ?? adminRole._id,
+              name: "Registrar Review",
+            },
+            {
+              stepNumber: 2,
+              roleId: curatorRole?._id ?? adminRole._id,
+              name: "Curator Approval",
+            },
+          ],
+          canInitiateRoles: [
+            adminRole._id,
+            ...(registrarRole ? [registrarRole._id] : []),
+          ],
+        }),
+        ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "acquisition",
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: adminRole._id,
+              name: "Director Approval",
+            },
+          ],
+          canInitiateRoles: [
+            adminRole._id,
+            ...(curatorRole ? [curatorRole._id] : []),
+          ],
+        }),
+        ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "exhibition",
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: adminRole._id,
+              name: "Director Approval",
+            },
+          ],
+          canInitiateRoles: [
+            adminRole._id,
+            ...(curatorRole ? [curatorRole._id] : []),
+          ],
+        }),
+        ctx.db.insert("workflowConfigs", {
+          organizationId,
+          workflowType: "conservation",
+          steps: [
+            {
+              stepNumber: 1,
+              roleId: curatorRole?._id ?? adminRole._id,
+              name: "Curator Approval",
+            },
+          ],
+          canInitiateRoles: [
+            adminRole._id,
+            ...(registrarRole ? [registrarRole._id] : []),
+            ...(curatorRole ? [curatorRole._id] : []),
+          ],
+        }),
+      ] as const);
     }
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -936,17 +929,14 @@ export const updatePortalSettings = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    // Permission check
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    // Feature gate check - requires Pro tier
-    await requireFeatureAccess(ctx, args.organizationId, "public_portal");
-
+    await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      requireFeatureAccess(ctx, args.organizationId, "public_portal"),
+    ]);
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       throw new Error("Organization not found");
@@ -1129,7 +1119,7 @@ export const listUserOrganizations = query({
         const [org, role] = await Promise.all([
           ctx.db.get(uo.organizationId),
           ctx.db.get(uo.roleId),
-        ]);
+        ] as const);
         if (!org || !role) {
           return null;
         }
@@ -1283,7 +1273,7 @@ export const inviteUser = mutation({
         invitedBy: userId,
       }),
       ctx.db.get(args.organizationId),
-    ]);
+    ] as const);
     if (!organization) {
       throw new ConvexError("Organization not found");
     }
@@ -1442,7 +1432,7 @@ export const listOrganizationUsers = query({
         const [user, role] = await Promise.all([
           ctx.db.get(uo.userId),
           ctx.db.get(uo.roleId),
-        ]);
+        ] as const);
         if (!user || !role) {
           return null;
         }
@@ -1549,7 +1539,7 @@ export const createDefaultRoles = internalMutation({
           description: "Read-only access",
           isSystemRole: true,
         }),
-      ]);
+      ] as const);
     // Create default permissions (if they don't exist)
     const permissionNames = [
       // Collections
