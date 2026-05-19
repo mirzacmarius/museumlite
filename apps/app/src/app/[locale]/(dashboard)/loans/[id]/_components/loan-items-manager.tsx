@@ -248,10 +248,8 @@ export function LoanItemsManager({
                               type="button"
                               onClick={() => {
                                 if (isSelected) {
-                                  setSelectedCollectionIds(
-                                    selectedCollectionIds.filter(
-                                      (id) => id !== collection._id,
-                                    ),
+                                  setSelectedCollectionIds((prev) =>
+                                    prev.filter((id) => id !== collection._id),
                                   );
                                 } else {
                                   setSelectedCollectionIds((prev) => [

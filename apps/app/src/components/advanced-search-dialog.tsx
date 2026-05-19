@@ -107,9 +107,11 @@ export function AdvancedSearchDialog({
   };
 
   const removeFilterGroup = (groupIndex: number) => {
-    if (filterGroups.length > 1) {
-      setFilterGroups(filterGroups.filter((_, i) => i !== groupIndex));
-    }
+    setFilterGroups((previousGroups) =>
+      previousGroups.length > 1
+        ? previousGroups.filter((_, i) => i !== groupIndex)
+        : previousGroups,
+    );
   };
 
   const addFilter = (groupIndex: number) => {
