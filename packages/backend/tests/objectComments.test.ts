@@ -18,20 +18,21 @@ async function createTestOrg(
   userEmail = "user@test.dev",
   username = "testuser",
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Comments Org",
-      slug: `comments-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-  });
+  const { organizationId, userId } = await t.run(async (ctx) => {
+    const [organizationId, userId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Comments Org",
+        slug: `comments-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      }),
+      ctx.db.insert("users", {
+        name: userName,
+        email: userEmail,
+        username,
+      }),
+    ]);
 
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: userName,
-      email: userEmail,
-      username,
-    });
+    return { organizationId, userId };
   });
 
   const roleId = await t.run(async (ctx) => {
@@ -42,20 +43,20 @@ async function createTestOrg(
     });
   });
 
-  const permissionReadId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-    });
-  });
-
-  const permissionUpdateId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "collections.update",
-      category: "collections",
-    });
-  });
-
+  const [permissionReadId, permissionUpdateId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "collections.read",
+        category: "collections",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "collections.update",
+        category: "collections",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -183,17 +184,17 @@ describe("objectComments", () => {
       "author@test.dev",
       "author",
     );
-    const mentionedUserId = await createUserInOrg(
-      t,
-      organizationId,
-      roleId,
-      "Jane Doe",
-      "jane@test.dev",
-      "jane",
-    );
-
-    const collectionId = await createCollection(t, organizationId, userId);
-
+    const [mentionedUserId, collectionId] = await Promise.all([
+      createUserInOrg(
+        t,
+        organizationId,
+        roleId,
+        "Jane Doe",
+        "jane@test.dev",
+        "jane",
+      ),
+      createCollection(t, organizationId, userId),
+    ]);
     const authed = t.withIdentity({
       subject: `${userId}|comment-mention`,
       issuer: "https://example.test",

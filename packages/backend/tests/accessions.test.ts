@@ -986,29 +986,29 @@ test("organization administrators can approve an accession even when the workflo
   const t = createConvexTest();
 
   const { organizationId, adminUserId } = await t.run(async (ctx) => {
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Admin Approval Museum",
-      slug: `admin-approval-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const adminUserId = await ctx.db.insert("users", {
-      email: `admin-${Math.random().toString(36).slice(2, 8)}@example.com`,
-      name: "Administrator",
-    });
-
-    const adminRoleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "admin",
-      isSystemRole: true,
-    });
-
-    const reviewerRoleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Registrar",
-      isSystemRole: false,
-    });
-
+    const [organizationId, adminUserId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Admin Approval Museum",
+        slug: `admin-approval-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      }),
+      ctx.db.insert("users", {
+        email: `admin-${Math.random().toString(36).slice(2, 8)}@example.com`,
+        name: "Administrator",
+      }),
+    ]);
+    const [adminRoleId, reviewerRoleId] = await Promise.all([
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "Registrar",
+        isSystemRole: false,
+      }),
+    ]);
     await Promise.all(
       Array.from([
         "organization.manage_settings",
@@ -1107,28 +1107,28 @@ test("should batch lookup collections and assignees for list query", async () =>
   const t = createConvexTest();
 
   const { orgId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum",
-      type: "museum",
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-      name: "Test User",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-    });
-
+    const [orgId, userId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum",
+        type: "museum",
+      }),
+      ctx.db.insert("users", {
+        email: "test@example.com",
+        name: "Test User",
+      }),
+    ]);
+    const [roleId, permissionId] = await Promise.all([
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.read",
+        category: "collections",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -1145,36 +1145,37 @@ test("should batch lookup collections and assignees for list query", async () =>
   });
 
   // Create multiple collections (simulate realistic scenario)
-  const collectionIds = await t.run(async (ctx) => {
-    const ids: Id<"collections">[] = [];
-    for (let i = 1; i <= 5; i++) {
-      const id = await ctx.db.insert("collections", {
-        organizationId: orgId,
-        accessionNumber: `COLL-${String(i).padStart(3, "0")}`,
-        status: "active",
-        catalogedBy: userId,
-        catalogedAt: Date.now(),
-        title: `Collection ${i}`,
-        description: `Test collection ${i}`,
-      });
-      ids.push(id);
-    }
-    return ids;
-  });
+  const [collectionIds, assigneeIds] = await Promise.all([
+    t.run(async (ctx) => {
+      const ids: Id<"collections">[] = [];
+      for (let i = 1; i <= 5; i++) {
+        const id = await ctx.db.insert("collections", {
+          organizationId: orgId,
+          accessionNumber: `COLL-${String(i).padStart(3, "0")}`,
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: Date.now(),
+          title: `Collection ${i}`,
+          description: `Test collection ${i}`,
+        });
+        ids.push(id);
+      }
+      return ids;
+    }),
+    t.run(async (ctx) => {
+      const ids: Id<"users">[] = [];
+      for (let i = 1; i <= 3; i++) {
+        const id = await ctx.db.insert("users", {
+          email: `curator${i}@museum.test`,
+          name: `Curator ${i}`,
+        });
+        ids.push(id);
+      }
+      return ids;
+    }),
+  ]);
 
   // Create multiple user accounts (assignees)
-  const assigneeIds = await t.run(async (ctx) => {
-    const ids: Id<"users">[] = [];
-    for (let i = 1; i <= 3; i++) {
-      const id = await ctx.db.insert("users", {
-        email: `curator${i}@museum.test`,
-        name: `Curator ${i}`,
-      });
-      ids.push(id);
-    }
-    return ids;
-  });
-
   // Create 30 accessions with various collections and assignees
   // This is more than a typical page size (25) to test pagination edge cases
   await t.run(async (ctx) => {

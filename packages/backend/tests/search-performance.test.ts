@@ -15,21 +15,21 @@ async function createTestOrg(
   t: ReturnType<typeof convexTest>,
   permissions: string[] = [],
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Performance Test Org",
-      slug: `perf-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Performance User",
-      email: `perf-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Performance Test Org",
+        slug: `perf-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Performance User",
+        email: `perf-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
   const roleId = await t.run(async (ctx) => {
     return await ctx.db.insert("roles", {
       organizationId,
@@ -280,9 +280,7 @@ describe("Search Performance with Large Dataset", () => {
     expect(Array.isArray(result.page)).toBe(true);
   }, 20000);
 
-  test(
-    "collections list with multiple filters performs under 500ms",
-    async () => {
+  test("collections list with multiple filters performs under 500ms", async () => {
     // #given - org with 800 collections
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestOrg(t, [
@@ -312,9 +310,7 @@ describe("Search Performance with Large Dataset", () => {
     expect(result).toBeDefined();
     expect(result).toHaveProperty("page");
     expect(Array.isArray(result.page)).toBe(true);
-    },
-    25000,
-  );
+  }, 25000);
 
   test("searchSuggestions returns quickly with large dataset", async () => {
     // #given - org with 1000 collections

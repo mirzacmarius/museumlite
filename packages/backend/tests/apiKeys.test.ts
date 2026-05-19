@@ -15,28 +15,28 @@ type TestSetup = {
 async function createTestSetup(
   t: ReturnType<typeof convexTest>,
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
-    });
-  });
-
-  const manageSettingsPermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "organization.manage_settings",
-      category: "organization",
-    });
-  });
-
+  const [organizationId, userId, manageSettingsPermissionId] =
+    await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+      }),
+    ]);
   const roleId = await t.run(async (ctx) => {
     const roleId = await ctx.db.insert("roles", {
       organizationId,
@@ -350,21 +350,21 @@ describe("API Key Generation Security", () => {
     const { organizationId: org1Id, userId } = await createTestSetup(t);
 
     // Create second organization
-    const org2Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum 2",
-        slug: `test-museum-2-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-    });
-
-    const manageSettingsPermissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: "organization.manage_settings",
-        category: "organization",
-      });
-    });
-
+    const [org2Id, manageSettingsPermissionId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum 2",
+          slug: `test-museum-2-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+      }),
+    ]);
     const role2Id = await t.run(async (ctx) => {
       const roleId = await ctx.db.insert("roles", {
         organizationId: org2Id,

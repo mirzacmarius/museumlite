@@ -8,18 +8,18 @@ describe("savedViews schema", () => {
   test("should create savedViews table entries directly", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     const viewId = await t.run(async (ctx) => {
       return await ctx.db.insert("savedViews", {
         organizationId: orgId,

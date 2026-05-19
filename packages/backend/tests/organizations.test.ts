@@ -83,16 +83,14 @@ describe("organization hierarchy", () => {
       },
     );
 
-    const childOrganization = await t.run(async (ctx) => {
-      return await ctx.db.get(childOrganizationId);
-    });
-    const children = await authed.query(
-      api.organizations.listChildOrganizations,
-      {
+    const [childOrganization, children] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.get(childOrganizationId);
+      }),
+      authed.query(api.organizations.listChildOrganizations, {
         organizationId: parentOrganizationId,
-      },
-    );
-
+      }),
+    ]);
     expect(childOrganization?.parentOrganizationId).toBe(parentOrganizationId);
     expect(childOrganization?.rootOrganizationId).toBe(parentOrganizationId);
     expect(children.some((child) => child._id === childOrganizationId)).toBe(
@@ -261,37 +259,37 @@ describe("watermark settings", () => {
   test("should update watermark settings", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-watermark-org",
-        type: "museum",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Admin User",
-        email: "admin@test.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-watermark-org",
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Admin User",
+          email: "admin@test.com",
+        });
+      }),
+    ]);
     // Create admin role with permission
-    const roleId = await t.run(async (ctx) => {
-      return await ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-    });
-
-    const permissionId = await t.run(async (ctx) => {
-      return await ctx.db.insert("permissions", {
-        name: "organization.manage_settings",
-        category: "organization",
-      });
-    });
-
+    const [roleId, permissionId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Admin",
+          isSystemRole: true,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("rolePermissions", {
         roleId,

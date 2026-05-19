@@ -212,21 +212,21 @@ describe("collections publishing", () => {
 
     const [{ itemId }, listResult] = await Promise.all([
       t.run(async (ctx) => {
-        const organizationId = await ctx.db.insert("organizations", {
-          name: "Library Org",
-          slug: "library-org",
-          type: "library",
-          subscriptionTier: "pro",
-          settings: {
-            enabledModules: ["library"],
-            portalSettings: { isEnabled: true, portalSlug: "catalog" },
-          },
-        });
-
-        const userId = await ctx.db.insert("users", {
-          email: "u6@example.com",
-        });
-
+        const [organizationId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Library Org",
+            slug: "library-org",
+            type: "library",
+            subscriptionTier: "pro",
+            settings: {
+              enabledModules: ["library"],
+              portalSettings: { isEnabled: true, portalSlug: "catalog" },
+            },
+          }),
+          ctx.db.insert("users", {
+            email: "u6@example.com",
+          }),
+        ]);
         const itemId = await ctx.db.insert("libraryItems", {
           organizationId,
           itemType: "book",

@@ -39,18 +39,20 @@ async function createOrgUserWithLocationsReadPermission() {
   const t = convexTest(schema, modules);
 
   const context = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Location Reader" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Location Test Org",
-      slug: `location-test-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const locationsReadPermissionId = await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-      description: "Read locations",
-    });
+    const [userId, organizationId, locationsReadPermissionId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Location Reader" }),
+        ctx.db.insert("organizations", {
+          name: "Location Test Org",
+          slug: `location-test-org-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        }),
+        ctx.db.insert("permissions", {
+          name: "locations.read",
+          category: "locations",
+          description: "Read locations",
+        }),
+      ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Location Reader",
@@ -83,29 +85,35 @@ async function createOrgUserWithLocationPermissions() {
   const t = convexTest(schema, modules);
 
   const context = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Location Manager" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Location Admin Org",
-      slug: `location-admin-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const readPermissionId = await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-      description: "Read locations",
-    });
-    const createPermissionId = await ctx.db.insert("permissions", {
-      name: "locations.create",
-      category: "locations",
-      description: "Create locations",
-    });
-    const updatePermissionId = await ctx.db.insert("permissions", {
-      name: "locations.update",
-      category: "locations",
-      description: "Update locations",
-    });
-
+    const [
+      userId,
+      organizationId,
+      readPermissionId,
+      createPermissionId,
+      updatePermissionId,
+    ] = await Promise.all([
+      ctx.db.insert("users", { name: "Location Manager" }),
+      ctx.db.insert("organizations", {
+        name: "Location Admin Org",
+        slug: `location-admin-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+        description: "Read locations",
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.create",
+        category: "locations",
+        description: "Create locations",
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.update",
+        category: "locations",
+        description: "Update locations",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Location Manager",
@@ -144,28 +152,28 @@ async function createOrgUserWithLocationDeleteAndDeaccessionPermissions() {
   const t = convexTest(schema, modules);
 
   const context = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Location Deleter" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Location Delete Org",
-      slug: `location-delete-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const permissionIds = await Promise.all(
-      [
-        { name: "locations.delete", category: "locations" as const },
-        { name: "collections.create", category: "collections" as const },
-        { name: "collections.delete", category: "collections" as const },
-        { name: "locations.read", category: "locations" as const },
-      ].map(({ name, category }) =>
-        ctx.db.insert("permissions", {
-          name,
-          category,
-          description: name,
-        }),
+    const [userId, organizationId, permissionIds] = await Promise.all([
+      ctx.db.insert("users", { name: "Location Deleter" }),
+      ctx.db.insert("organizations", {
+        name: "Location Delete Org",
+        slug: `location-delete-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      }),
+      Promise.all(
+        [
+          { name: "locations.delete", category: "locations" as const },
+          { name: "collections.create", category: "collections" as const },
+          { name: "collections.delete", category: "collections" as const },
+          { name: "locations.read", category: "locations" as const },
+        ].map(({ name, category }) =>
+          ctx.db.insert("permissions", {
+            name,
+            category,
+            description: name,
+          }),
+        ),
       ),
-    );
-
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Location Deleter",
@@ -434,15 +442,17 @@ test("locations.getObjectsAtLocation requires locations.read permission in desce
   const t = convexTest(schema, modules);
 
   const { locationId, unauthorizedUserId } = await t.run(async (ctx) => {
-    const ownerId = await ctx.db.insert("users", { name: "Owner" });
-    const unauthorizedUserId = await ctx.db.insert("users", {
-      name: "Unauthorized",
-    });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Restricted Org",
-      slug: `restricted-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
+    const [ownerId, unauthorizedUserId, organizationId] = await Promise.all([
+      ctx.db.insert("users", { name: "Owner" }),
+      ctx.db.insert("users", {
+        name: "Unauthorized",
+      }),
+      ctx.db.insert("organizations", {
+        name: "Restricted Org",
+        slug: `restricted-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "No Access",
@@ -594,19 +604,20 @@ test("locations.create allows the same location ID under different parents", asy
   const { asUser, organizationId } =
     await createOrgUserWithLocationPermissions();
 
-  const storageOneId = await asUser.mutation(api.locations.create, {
-    organizationId,
-    name: "Storage One",
-    locationCode: "ST-001",
-    type: "storage",
-  });
-  const storageTwoId = await asUser.mutation(api.locations.create, {
-    organizationId,
-    name: "Storage Two",
-    locationCode: "ST-002",
-    type: "storage",
-  });
-
+  const [storageOneId, storageTwoId] = await Promise.all([
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Storage One",
+      locationCode: "ST-001",
+      type: "storage",
+    }),
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Storage Two",
+      locationCode: "ST-002",
+      type: "storage",
+    }),
+  ]);
   await asUser.mutation(api.locations.create, {
     organizationId,
     name: "Cabinet A",
@@ -637,21 +648,22 @@ test("locations.update blocks changing a location ID to a sibling duplicate", as
     type: "storage",
   });
 
-  const cabinetId = await asUser.mutation(api.locations.create, {
-    organizationId,
-    name: "Cabinet A",
-    locationCode: "A",
-    type: "cabinet",
-    parentLocationId,
-  });
-  const shelfId = await asUser.mutation(api.locations.create, {
-    organizationId,
-    name: "Shelf A",
-    locationCode: "B",
-    type: "shelf",
-    parentLocationId,
-  });
-
+  const [cabinetId, shelfId] = await Promise.all([
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Cabinet A",
+      locationCode: "A",
+      type: "cabinet",
+      parentLocationId,
+    }),
+    asUser.mutation(api.locations.create, {
+      organizationId,
+      name: "Shelf A",
+      locationCode: "B",
+      type: "shelf",
+      parentLocationId,
+    }),
+  ]);
   await expect(
     asUser.mutation(api.locations.update, {
       locationId: shelfId,
@@ -675,27 +687,29 @@ test("location queries include locationCode in returned data", async () => {
     locationCode: "ST-001",
     type: "storage",
   });
-  const childLocationId = await asUser.mutation(api.locations.create, {
-    organizationId,
-    name: "Shelf A",
-    locationCode: "SH-001",
-    type: "shelf",
-    parentLocationId,
-  });
-
-  const location = await asUser.query(api.locations.get, {
-    locationId: parentLocationId,
-  });
-  const allLocations = await asUser.query(api.locations.listAll, {
-    organizationId,
-  });
-  const locationTree = await asUser.query(api.locations.list, {
-    organizationId,
-    parentLocationId: "root",
-  });
-  const pathLocations = await asUser.query(api.locations.listAllWithPaths, {
-    organizationId,
-  });
+  const [childLocationId, location, allLocations, locationTree, pathLocations] =
+    await Promise.all([
+      asUser.mutation(api.locations.create, {
+        organizationId,
+        name: "Shelf A",
+        locationCode: "SH-001",
+        type: "shelf",
+        parentLocationId,
+      }),
+      asUser.query(api.locations.get, {
+        locationId: parentLocationId,
+      }),
+      asUser.query(api.locations.listAll, {
+        organizationId,
+      }),
+      asUser.query(api.locations.list, {
+        organizationId,
+        parentLocationId: "root",
+      }),
+      asUser.query(api.locations.listAllWithPaths, {
+        organizationId,
+      }),
+    ]);
   const locationPath = await asUser.query(api.locations.getLocationPath, {
     locationId: childLocationId,
   });

@@ -14,11 +14,7 @@ vi.mock("convex-test", async (importOriginal) => {
     const t = actual.convexTest(schema, modules);
 
     const wrapAs =
-      <
-        TRef,
-        TArgs extends unknown[],
-        TResult,
-      >(
+      <TRef, TArgs extends unknown[], TResult>(
         base: typeof t,
         call: (bound: typeof t, ref: TRef, args: TArgs) => Promise<TResult>,
       ) =>
@@ -55,4 +51,3 @@ vi.mock("convex-test", async (importOriginal) => {
 
   return { ...actual, convexTest };
 });
-

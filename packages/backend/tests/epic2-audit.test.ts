@@ -15,43 +15,43 @@ async function createOrgWithRole(
   t: ReturnType<typeof convexTest>,
   permissionNames: string[],
 ): Promise<OrgSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Accounts Org",
-      slug: `accounts-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Accounts User",
-      email: `accounts-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId,
-      name: "Accounts Role",
-      isSystemRole: true,
-    });
-  });
-
-  const permissionIds = await Promise.all(
-    permissionNames.map((permissionName) =>
-      t.run(async (ctx) => {
-        return await ctx.db.insert("permissions", {
-          name: permissionName,
-          category: "accounts",
-        });
-      }),
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Accounts Org",
+        slug: `accounts-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Accounts User",
+        email: `accounts-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
+  const [roleId, permissionIds] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: "Accounts Role",
+        isSystemRole: true,
+      });
+    }),
+    Promise.all(
+      permissionNames.map((permissionName) =>
+        t.run(async (ctx) => {
+          return await ctx.db.insert("permissions", {
+            name: permissionName,
+            category: "accounts",
+          });
+        }),
+      ),
     ),
-  );
-
+  ]);
   await Promise.all(
     permissionIds.map((permissionId) =>
       t.run(async (ctx) => {

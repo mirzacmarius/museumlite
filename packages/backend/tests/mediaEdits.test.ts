@@ -6,10 +6,7 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -28,28 +25,27 @@ type TestSetup = {
 async function createTestSetup(
   t: ReturnType<typeof convexTest>,
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
-    });
-  });
-
-  const mediaUploadPermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "media.upload",
-      category: "media",
-    });
-  });
-
+  const [organizationId, userId, mediaUploadPermissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "media.upload",
+        category: "media",
+      });
+    }),
+  ]);
   const roleId = await t.run(async (ctx) => {
     const roleId = await ctx.db.insert("roles", {
       organizationId,
@@ -74,21 +70,23 @@ async function createTestSetup(
     });
   });
 
-  const collectionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("collections", {
-      organizationId,
-      accessionNumber: "TEST-001",
-      title: "Test Collection",
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    });
-  });
-
-  const storageId = await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }));
-  });
-
+  const [collectionId, storageId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "TEST-001",
+        title: "Test Collection",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.storage.store(
+        new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+      );
+    }),
+  ]);
   const mediaFileId = await t.run(async (ctx) => {
     return await ctx.db.insert("mediaFiles", {
       organizationId,
@@ -222,16 +220,17 @@ describe("mediaEdits", () => {
 
   test("should require media.upload permission", async () => {
     const t = convexTest(schema, modules);
-    const setup = await createTestSetup(t);
+    const [setup, unauthorizedUserId] = await Promise.all([
+      createTestSetup(t),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Unauthorized User",
+          email: "unauthorized@example.com",
+        });
+      }),
+    ]);
 
     // Create user without media.upload permission
-    const unauthorizedUserId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Unauthorized User",
-        email: "unauthorized@example.com",
-      });
-    });
-
     const noPermRoleId = await t.run(async (ctx) => {
       return await ctx.db.insert("roles", {
         organizationId: setup.organizationId,

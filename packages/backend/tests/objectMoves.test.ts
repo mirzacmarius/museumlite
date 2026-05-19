@@ -73,25 +73,25 @@ async function createRoleWithPermissions(
   permissionNames: string[],
   roleName: string,
 ) {
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId,
-      name: roleName,
-      isSystemRole: false,
-    });
-  });
-
-  const permissionIds = await Promise.all(
-    [...new Set(permissionNames)].map((permissionName) =>
-      t.run(async (ctx) => {
-        return await ctx.db.insert("permissions", {
-          name: permissionName,
-          category: getPermissionCategory(permissionName),
-        });
-      }),
+  const [roleId, permissionIds] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: roleName,
+        isSystemRole: false,
+      });
+    }),
+    Promise.all(
+      [...new Set(permissionNames)].map((permissionName) =>
+        t.run(async (ctx) => {
+          return await ctx.db.insert("permissions", {
+            name: permissionName,
+            category: getPermissionCategory(permissionName),
+          });
+        }),
+      ),
     ),
-  );
-
+  ]);
   await Promise.all(
     permissionIds.map((permissionId) =>
       t.run(async (ctx) => {
@@ -196,65 +196,74 @@ async function createMoveFixture(
     };
   },
 ) {
-  const requesterId = await createUser(
-    t,
-    "Requester",
-    `requester-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-  );
-  const adminId = await createUser(
-    t,
-    "Admin",
-    `admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-  );
-  const targetAdminId = await createUser(
-    t,
-    "Target Admin",
-    `target-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-  );
-
-  const sourceOrganizationId = await createOrganization(
-    t,
-    "Source Museum",
-    `source-${Math.random().toString(36).slice(2, 8)}`,
-    undefined,
-    { subscriptionTier: "pro" },
-  );
-  const targetOrganizationId = await createOrganization(
-    t,
-    "Target Museum",
-    `target-${Math.random().toString(36).slice(2, 8)}`,
-    options?.targetSettings,
-    {
-      parentOrganizationId: sourceOrganizationId,
-      rootOrganizationId: sourceOrganizationId,
-    },
-  );
-
-  const requesterSourceRoleId = await createRoleWithPermissions(
-    t,
-    sourceOrganizationId,
-    ["collections.create", "collections.update", "collections.read"],
-    "Requester Source Role",
-  );
-  const requesterTargetRoleId = await createRoleWithPermissions(
-    t,
-    targetOrganizationId,
-    ["collections.create", "collections.read"],
-    "Requester Target Role",
-  );
-  const adminRoleId = await createRoleWithPermissions(
-    t,
-    sourceOrganizationId,
-    ["organization.manage_settings", "collections.read"],
-    "Source Admin Role",
-  );
-  const targetAdminRoleId = await createRoleWithPermissions(
-    t,
-    targetOrganizationId,
-    ["organization.manage_settings", "collections.read", "collections.create"],
-    "Target Admin Role",
-  );
-
+  const [requesterId, adminId, targetAdminId, sourceOrganizationId] =
+    await Promise.all([
+      createUser(
+        t,
+        "Requester",
+        `requester-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      ),
+      createUser(
+        t,
+        "Admin",
+        `admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      ),
+      createUser(
+        t,
+        "Target Admin",
+        `target-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      ),
+      createOrganization(
+        t,
+        "Source Museum",
+        `source-${Math.random().toString(36).slice(2, 8)}`,
+        undefined,
+        { subscriptionTier: "pro" },
+      ),
+    ]);
+  const [targetOrganizationId, requesterSourceRoleId] = await Promise.all([
+    createOrganization(
+      t,
+      "Target Museum",
+      `target-${Math.random().toString(36).slice(2, 8)}`,
+      options?.targetSettings,
+      {
+        parentOrganizationId: sourceOrganizationId,
+        rootOrganizationId: sourceOrganizationId,
+      },
+    ),
+    createRoleWithPermissions(
+      t,
+      sourceOrganizationId,
+      ["collections.create", "collections.update", "collections.read"],
+      "Requester Source Role",
+    ),
+  ]);
+  const [requesterTargetRoleId, adminRoleId, targetAdminRoleId] =
+    await Promise.all([
+      createRoleWithPermissions(
+        t,
+        targetOrganizationId,
+        ["collections.create", "collections.read"],
+        "Requester Target Role",
+      ),
+      createRoleWithPermissions(
+        t,
+        sourceOrganizationId,
+        ["organization.manage_settings", "collections.read"],
+        "Source Admin Role",
+      ),
+      createRoleWithPermissions(
+        t,
+        targetOrganizationId,
+        [
+          "organization.manage_settings",
+          "collections.read",
+          "collections.create",
+        ],
+        "Target Admin Role",
+      ),
+    ]);
   await addMembership(
     t,
     requesterId,
@@ -275,12 +284,10 @@ async function createMoveFixture(
     targetAdminRoleId,
   );
 
-  const collectionGroupId = await createCollectionGroup(
-    t,
-    sourceOrganizationId,
-    requesterId,
-  );
-  const locationId = await createLocation(t, sourceOrganizationId);
+  const [collectionGroupId, locationId] = await Promise.all([
+    createCollectionGroup(t, sourceOrganizationId, requesterId),
+    createLocation(t, sourceOrganizationId),
+  ]);
   const collectionId = await createCollection(t, {
     organizationId: sourceOrganizationId,
     userId: requesterId,
@@ -408,14 +415,16 @@ describe("objectMoves", () => {
 
   test("fails when target organization is outside the source hierarchy", async () => {
     const t = convexTest(schema, modules);
-    const fixture = await createMoveFixture(t);
-    const externalOrganizationId = await createOrganization(
-      t,
-      "External Museum",
-      `external-${Math.random().toString(36).slice(2, 8)}`,
-      undefined,
-      { subscriptionTier: "pro" },
-    );
+    const [fixture, externalOrganizationId] = await Promise.all([
+      createMoveFixture(t),
+      createOrganization(
+        t,
+        "External Museum",
+        `external-${Math.random().toString(36).slice(2, 8)}`,
+        undefined,
+        { subscriptionTier: "pro" },
+      ),
+    ]);
     const externalRoleId = await createRoleWithPermissions(
       t,
       externalOrganizationId,
@@ -441,22 +450,24 @@ describe("objectMoves", () => {
 
   test("fails when the requester is not a member of the target organization", async () => {
     const t = convexTest(schema, modules);
-    const requesterId = await createUser(
-      t,
-      "Requester",
-      `solo-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    );
-    const sourceOrganizationId = await createOrganization(
-      t,
-      "Source Museum",
-      `source-${Math.random().toString(36).slice(2, 8)}`,
-    );
-    const targetOrganizationId = await createOrganization(
-      t,
-      "Target Museum",
-      `target-${Math.random().toString(36).slice(2, 8)}`,
-    );
-
+    const [requesterId, sourceOrganizationId, targetOrganizationId] =
+      await Promise.all([
+        createUser(
+          t,
+          "Requester",
+          `solo-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        ),
+        createOrganization(
+          t,
+          "Source Museum",
+          `source-${Math.random().toString(36).slice(2, 8)}`,
+        ),
+        createOrganization(
+          t,
+          "Target Museum",
+          `target-${Math.random().toString(36).slice(2, 8)}`,
+        ),
+      ]);
     const sourceRoleId = await createRoleWithPermissions(
       t,
       sourceOrganizationId,
@@ -878,23 +889,18 @@ describe("objectMoves", () => {
     const t = convexTest(schema, modules);
     const fixture = await createMoveFixture(t);
 
-    const requestId = await fixture.requester.mutation(
-      api.objectMoves.createRequest,
-      {
+    const [requestId, pendingRequests] = await Promise.all([
+      fixture.requester.mutation(api.objectMoves.createRequest, {
         collectionId: fixture.collectionId,
         targetOrganizationId: fixture.targetOrganizationId,
         accessionMode: "keep",
         reason: "Lifecycle approval test",
-      },
-    );
-
-    const pendingRequests = await fixture.admin.query(
-      api.objectMoves.listForOrganization,
-      {
+      }),
+      fixture.admin.query(api.objectMoves.listForOrganization, {
         organizationId: fixture.sourceOrganizationId,
         status: "pending_source_approval",
-      },
-    );
+      }),
+    ]);
     expect(pendingRequests.some((request) => request._id === requestId)).toBe(
       true,
     );

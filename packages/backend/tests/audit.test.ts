@@ -20,18 +20,19 @@ describe("auditLog", () => {
 
       const { orgId, userId, roleId } = await t.run(async (ctx) => {
         // Create organization
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
 
         // Create user
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
         // Create role with permissions
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
@@ -99,17 +100,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -170,22 +171,21 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, user1Id, user2Id } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const user1Id = await ctx.db.insert("users", {
-          name: "User 1",
-          email: "user1@example.com",
-        });
-
-        const user2Id = await ctx.db.insert("users", {
-          name: "User 2",
-          email: "user2@example.com",
-        });
-
+        const [orgId, user1Id, user2Id] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "User 1",
+            email: "user1@example.com",
+          }),
+          ctx.db.insert("users", {
+            name: "User 2",
+            email: "user2@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -246,17 +246,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -322,17 +322,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -396,17 +396,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "John Doe",
-          email: "john@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "John Doe",
+            email: "john@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -473,17 +473,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -555,22 +555,21 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, user1Id, user2Id } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const user1Id = await ctx.db.insert("users", {
-          name: "User 1",
-          email: "user1@example.com",
-        });
-
-        const user2Id = await ctx.db.insert("users", {
-          name: "User 2",
-          email: "user2@example.com",
-        });
-
+        const [orgId, user1Id, user2Id] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "User 1",
+            email: "user1@example.com",
+          }),
+          ctx.db.insert("users", {
+            name: "User 2",
+            email: "user2@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -634,17 +633,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -716,17 +715,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -783,17 +782,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -846,17 +845,17 @@ describe("auditLog", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -913,17 +912,17 @@ describe("audit (notifications & activity)", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -975,17 +974,17 @@ describe("audit (notifications & activity)", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",
@@ -1046,17 +1045,17 @@ describe("audit (notifications & activity)", () => {
       const t = convexTest(schema, modules);
 
       const { orgId, userId } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
-
-        const userId = await ctx.db.insert("users", {
-          name: "Test User",
-          email: "test@example.com",
-        });
-
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
         const roleId = await ctx.db.insert("roles", {
           organizationId: orgId,
           name: "Admin",

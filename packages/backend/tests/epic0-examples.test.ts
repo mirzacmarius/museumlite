@@ -15,43 +15,43 @@ async function createOrgWithRole(
   t: ReturnType<typeof convexTest>,
   permissionNames: string[],
 ): Promise<OrgSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Example Org",
-      slug: `example-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Example User",
-      email: `example-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId,
-      name: "Example Role",
-      isSystemRole: true,
-    });
-  });
-
-  const permissionIds = await Promise.all(
-    permissionNames.map((permissionName) =>
-      t.run(async (ctx) => {
-        return await ctx.db.insert("permissions", {
-          name: permissionName,
-          category: permissionName.split(".")[0] ?? "general",
-        });
-      }),
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Example Org",
+        slug: `example-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Example User",
+        email: `example-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
+  const [roleId, permissionIds] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: "Example Role",
+        isSystemRole: true,
+      });
+    }),
+    Promise.all(
+      permissionNames.map((permissionName) =>
+        t.run(async (ctx) => {
+          return await ctx.db.insert("permissions", {
+            name: permissionName,
+            category: permissionName.split(".")[0] ?? "general",
+          });
+        }),
+      ),
     ),
-  );
-
+  ]);
   await Promise.all(
     permissionIds.map((permissionId) =>
       t.run(async (ctx) => {
@@ -113,32 +113,32 @@ describe("Epic 0 examples", () => {
       "locations.update",
     ]);
 
-    const fromLocationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("locations", {
-        organizationId,
-        name: "Vault",
-        locationCode: "V-001",
-        locationCodeNormalized: "v-001",
-        type: "room",
-        parentLocationId: undefined,
-        sortOrder: 1,
-        isActive: true,
-      });
-    });
-
-    const toLocationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("locations", {
-        organizationId,
-        name: "Gallery",
-        locationCode: "G-001",
-        locationCodeNormalized: "g-001",
-        type: "room",
-        parentLocationId: undefined,
-        sortOrder: 2,
-        isActive: true,
-      });
-    });
-
+    const [fromLocationId, toLocationId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("locations", {
+          organizationId,
+          name: "Vault",
+          locationCode: "V-001",
+          locationCodeNormalized: "v-001",
+          type: "room",
+          parentLocationId: undefined,
+          sortOrder: 1,
+          isActive: true,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("locations", {
+          organizationId,
+          name: "Gallery",
+          locationCode: "G-001",
+          locationCodeNormalized: "g-001",
+          type: "room",
+          parentLocationId: undefined,
+          sortOrder: 2,
+          isActive: true,
+        });
+      }),
+    ]);
     const collectionId = await t.run(async (ctx) => {
       return await ctx.db.insert("collections", {
         organizationId,

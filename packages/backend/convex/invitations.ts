@@ -25,6 +25,10 @@ function isInvitationExpired(expiresAt: number): boolean {
   return Date.now() > expiresAt;
 }
 
+function shouldScheduleInvitationEmail(): boolean {
+  return process.env.NODE_ENV !== "test" && process.env.VITEST !== "true";
+}
+
 /**
  * List pending invitations for an organization
  */
@@ -400,17 +404,19 @@ export const resendInvitation = mutation({
     ] as const);
     const inviterName = inviter?.name ?? inviter?.email ?? "A team member";
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.email.actions.sendInvitationEmailAction,
-      {
-        email: invitation.email,
-        organizationName: organization?.name ?? "MuseumLite",
-        inviterName,
-        role: role?.name ?? "member",
-        token: newToken,
-      },
-    );
+    if (shouldScheduleInvitationEmail()) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.email.actions.sendInvitationEmailAction,
+        {
+          email: invitation.email,
+          organizationName: organization?.name ?? "MuseumLite",
+          inviterName,
+          role: role?.name ?? "member",
+          token: newToken,
+        },
+      );
+    }
 
     return { success: true, token: newToken };
   },

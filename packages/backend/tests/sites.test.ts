@@ -16,22 +16,22 @@ async function createOrgWithRole(
   t: ReturnType<typeof convexTest>,
   permissionNames: string[],
 ): Promise<OrgSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      subscriptionTier: "pro",
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
-    });
-  });
-
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        subscriptionTier: "pro",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      });
+    }),
+  ]);
   const roleId = await t.run(async (ctx) => {
     return await ctx.db.insert("roles", {
       organizationId,
@@ -127,18 +127,18 @@ describe("sites CRUD operations", () => {
     ]);
     const authed = authedForUser(t, userId);
 
-    const site1Id = await authed.mutation(api.sites.create, {
-      organizationId,
-      name: "Site 1",
-      isPrimary: true,
-    });
-
-    const site2Id = await authed.mutation(api.sites.create, {
-      organizationId,
-      name: "Site 2",
-      isPrimary: true,
-    });
-
+    const [site1Id, site2Id] = await Promise.all([
+      authed.mutation(api.sites.create, {
+        organizationId,
+        name: "Site 1",
+        isPrimary: true,
+      }),
+      authed.mutation(api.sites.create, {
+        organizationId,
+        name: "Site 2",
+        isPrimary: true,
+      }),
+    ]);
     const site1 = await t.run(async (ctx) => await ctx.db.get(site1Id));
     expect(site1?.isPrimary).toBe(false);
 

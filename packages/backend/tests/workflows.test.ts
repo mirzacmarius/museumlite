@@ -40,24 +40,24 @@ async function createOrgWithRole(
   permissionNames: string[],
   roleName = "Test Role",
 ): Promise<OrgSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Workflow Test Org",
-      slug: `workflow-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      settings: {
-        enabledModules: ["fine_art", "accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Workflow User",
-      email: `workflow-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Workflow Test Org",
+        slug: `workflow-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        settings: {
+          enabledModules: ["fine_art", "accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Workflow User",
+        email: `workflow-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
   const roleId = await t.run(async (ctx) => {
     return await ctx.db.insert("roles", {
       organizationId,
@@ -906,38 +906,38 @@ describe("Workflow Approval Modes", () => {
       "settings.read",
     ]);
 
-    const userId2 = await t.run(async (ctx) => {
-      const newUserId = await ctx.db.insert("users", {
-        name: "Second Reviewer",
-        email: `reviewer2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
+    const [userId2, userId3] = await Promise.all([
+      t.run(async (ctx) => {
+        const newUserId = await ctx.db.insert("users", {
+          name: "Second Reviewer",
+          email: `reviewer2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
 
-      await ctx.db.insert("userOrganizations", {
-        userId: newUserId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
+        await ctx.db.insert("userOrganizations", {
+          userId: newUserId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        });
 
-      return newUserId;
-    });
+        return newUserId;
+      }),
+      t.run(async (ctx) => {
+        const newUserId = await ctx.db.insert("users", {
+          name: "Third Reviewer",
+          email: `reviewer3-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
 
-    const userId3 = await t.run(async (ctx) => {
-      const newUserId = await ctx.db.insert("users", {
-        name: "Third Reviewer",
-        email: `reviewer3-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
+        await ctx.db.insert("userOrganizations", {
+          userId: newUserId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        });
 
-      await ctx.db.insert("userOrganizations", {
-        userId: newUserId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
-
-      return newUserId;
-    });
-
+        return newUserId;
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowConfigs", {
         organizationId,
@@ -999,38 +999,38 @@ describe("Workflow Approval Modes", () => {
       "settings.read",
     ]);
 
-    const userId2 = await t.run(async (ctx) => {
-      const newUserId = await ctx.db.insert("users", {
-        name: "Second Board Member",
-        email: `board2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
+    const [userId2, userId3] = await Promise.all([
+      t.run(async (ctx) => {
+        const newUserId = await ctx.db.insert("users", {
+          name: "Second Board Member",
+          email: `board2-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
 
-      await ctx.db.insert("userOrganizations", {
-        userId: newUserId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
+        await ctx.db.insert("userOrganizations", {
+          userId: newUserId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        });
 
-      return newUserId;
-    });
+        return newUserId;
+      }),
+      t.run(async (ctx) => {
+        const newUserId = await ctx.db.insert("users", {
+          name: "Third Board Member",
+          email: `board3-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+        });
 
-    const userId3 = await t.run(async (ctx) => {
-      const newUserId = await ctx.db.insert("users", {
-        name: "Third Board Member",
-        email: `board3-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-      });
+        await ctx.db.insert("userOrganizations", {
+          userId: newUserId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        });
 
-      await ctx.db.insert("userOrganizations", {
-        userId: newUserId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
-
-      return newUserId;
-    });
-
+        return newUserId;
+      }),
+    ]);
     await t.run(async (ctx) => {
       await ctx.db.insert("workflowConfigs", {
         organizationId,

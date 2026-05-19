@@ -13,32 +13,34 @@ async function createCollectionsCreatorContext(settings: {
   const t = convexTest(schema, modules);
 
   const context = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Workflow User" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Workflow Preference Org",
-      slug: `workflow-preference-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      settings,
-    });
-
-    const createPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.create",
-      category: "collections",
-      description: "Create collections",
-    });
-    const userRoleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Cataloger",
-      description: "Creates collection records",
-      isSystemRole: false,
-    });
-    const approvalRoleId = await ctx.db.insert("roles", {
-      organizationId,
-      name: "Approver",
-      description: "Approves workflow records",
-      isSystemRole: false,
-    });
-
+    const [userId, organizationId, createPermissionId] = await Promise.all([
+      ctx.db.insert("users", { name: "Workflow User" }),
+      ctx.db.insert("organizations", {
+        name: "Workflow Preference Org",
+        slug: `workflow-preference-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        settings,
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+        description: "Create collections",
+      }),
+    ]);
+    const [userRoleId, approvalRoleId] = await Promise.all([
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "Cataloger",
+        description: "Creates collection records",
+        isSystemRole: false,
+      }),
+      ctx.db.insert("roles", {
+        organizationId,
+        name: "Approver",
+        description: "Approves workflow records",
+        isSystemRole: false,
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId: userRoleId,
       permissionId: createPermissionId,

@@ -15,21 +15,21 @@ async function createTestOrg(
   t: ReturnType<typeof convexTest>,
   permissions: string[] = [],
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Search Test Org",
-      slug: `search-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Search User",
-      email: `search-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Search Test Org",
+        slug: `search-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Search User",
+        email: `search-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
   const roleId = await t.run(async (ctx) => {
     return await ctx.db.insert("roles", {
       organizationId,

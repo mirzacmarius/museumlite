@@ -8,43 +8,42 @@ import { modules } from "./testSetup";
 test("accountRelationships: create and list", async () => {
   const t = convexTest(schema, modules);
 
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {});
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const readPermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.read",
-      category: "accounts",
-    });
-  });
-
-  const writePermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.write",
-      category: "accounts",
-    });
-  });
-
+  const [orgId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {});
+    }),
+  ]);
+  const [roleId, readPermissionId, writePermissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.read",
+        category: "accounts",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.write",
+        category: "accounts",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -107,36 +106,36 @@ test("accountRelationships: create and list", async () => {
 test("accountRelationships: listByEntity", async () => {
   const t = convexTest(schema, modules);
 
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {});
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const readPermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.read",
-      category: "accounts",
-    });
-  });
-
+  const [orgId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {});
+    }),
+  ]);
+  const [roleId, readPermissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.read",
+        category: "accounts",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -196,36 +195,36 @@ test("accountRelationships: listByEntity", async () => {
 test("accountRelationships: timeline", async () => {
   const t = convexTest(schema, modules);
 
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {});
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const readPermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.read",
-      category: "accounts",
-    });
-  });
-
+  const [orgId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {});
+    }),
+  ]);
+  const [roleId, readPermissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.read",
+        category: "accounts",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -281,43 +280,42 @@ test("accountRelationships: timeline", async () => {
 test("accountRelationships: update and remove", async () => {
   const t = convexTest(schema, modules);
 
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {});
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const writePermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.write",
-      category: "accounts",
-    });
-  });
-
-  const deletePermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.delete",
-      category: "accounts",
-    });
-  });
-
+  const [orgId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org",
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {});
+    }),
+  ]);
+  const [roleId, writePermissionId, deletePermissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.write",
+        category: "accounts",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.delete",
+        category: "accounts",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,

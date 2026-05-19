@@ -15,52 +15,55 @@ type TestSetup = {
 async function createTestSetup(
   t: ReturnType<typeof convexTest>,
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      settings: {
-        enabledModules: ["accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Test User",
-      email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
-    });
-  });
-
-  const accountsReadPermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.read",
-      category: "accounts",
-    });
-  });
-
-  const accountsWritePermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.write",
-      category: "accounts",
-    });
-  });
-
-  const accountsDeletePermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.delete",
-      category: "accounts",
-    });
-  });
-
-  const accountsManagePermissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "accounts.manage",
-      category: "accounts",
-    });
-  });
-
+  const [
+    organizationId,
+    userId,
+    accountsReadPermissionId,
+    accountsWritePermissionId,
+    accountsDeletePermissionId,
+    accountsManagePermissionId,
+  ] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        settings: {
+          enabledModules: ["accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Test User",
+        email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.read",
+        category: "accounts",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.write",
+        category: "accounts",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.delete",
+        category: "accounts",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "accounts.manage",
+        category: "accounts",
+      });
+    }),
+  ]);
   const roleId = await t.run(async (ctx) => {
     const roleId = await ctx.db.insert("roles", {
       organizationId,
@@ -425,23 +428,23 @@ describe("Accounts CRUD", () => {
       issuer: "https://example.test",
     });
 
-    const org2Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Other Museum",
-        slug: `other-museum-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-        settings: {
-          enabledModules: ["accounts"],
-        },
-      });
-    });
-
-    const accountId = await authed.mutation(api.accounts.create, {
-      organizationId,
-      accountType: "lender",
-      businessName: "Org 1 Account",
-    });
-
+    const [org2Id, accountId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Other Museum",
+          slug: `other-museum-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+          settings: {
+            enabledModules: ["accounts"],
+          },
+        });
+      }),
+      authed.mutation(api.accounts.create, {
+        organizationId,
+        accountType: "lender",
+        businessName: "Org 1 Account",
+      }),
+    ]);
     const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.organizationId).toBe(organizationId);
     expect(account?.organizationId).not.toBe(org2Id);

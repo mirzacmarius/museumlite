@@ -15,34 +15,37 @@ describe("usersMutations", () => {
       targetUserId,
       userOrganizationId,
     } = await t.run(async (ctx) => {
-      const sourceUserId = await ctx.db.insert("users", {
-        email: "orphan-source@test.com",
-      });
-      const targetUserId = await ctx.db.insert("users", {
-        email: "orphan-target@test.com",
-      });
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Relink Test Org",
-        slug: "relink-test-org",
-        type: "museum",
-      });
+      const [sourceUserId, targetUserId, organizationId] = await Promise.all([
+        ctx.db.insert("users", {
+          email: "orphan-source@test.com",
+        }),
+        ctx.db.insert("users", {
+          email: "orphan-target@test.com",
+        }),
+        ctx.db.insert("organizations", {
+          name: "Relink Test Org",
+          slug: "relink-test-org",
+          type: "museum",
+        }),
+      ]);
       const roleId = await ctx.db.insert("roles", {
         organizationId,
         name: "member",
         isSystemRole: true,
       });
-      const userOrganizationId = await ctx.db.insert("userOrganizations", {
-        userId: sourceUserId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
-      const accountId = await ctx.db.insert("authAccounts", {
-        userId: sourceUserId,
-        provider: "resend-otp",
-        providerAccountId: "orphan-target@test.com",
-      });
-
+      const [userOrganizationId, accountId] = await Promise.all([
+        ctx.db.insert("userOrganizations", {
+          userId: sourceUserId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        }),
+        ctx.db.insert("authAccounts", {
+          userId: sourceUserId,
+          provider: "resend-otp",
+          providerAccountId: "orphan-target@test.com",
+        }),
+      ]);
       return {
         accountId,
         organizationId,
@@ -95,38 +98,44 @@ describe("usersMutations", () => {
       userOrganizationId,
       verificationCodeId,
     } = await t.run(async (ctx) => {
-      const userId = await ctx.db.insert("users", {
-        email: "deleted-user@test.com",
-      });
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Delete Test Org",
-        slug: "delete-test-org",
-        type: "museum",
-      });
+      const [userId, organizationId] = await Promise.all([
+        ctx.db.insert("users", {
+          email: "deleted-user@test.com",
+        }),
+        ctx.db.insert("organizations", {
+          name: "Delete Test Org",
+          slug: "delete-test-org",
+          type: "museum",
+        }),
+      ]);
       const roleId = await ctx.db.insert("roles", {
         organizationId,
         name: "member",
         isSystemRole: true,
       });
-      const userOrganizationId = await ctx.db.insert("userOrganizations", {
-        userId,
-        organizationId,
-        roleId,
-        joinedAt: Date.now(),
-      });
-      const sessionId = await ctx.db.insert("authSessions", {
-        userId,
-        expirationTime: Date.now() + 60_000,
-      });
-      const refreshTokenId = await ctx.db.insert("authRefreshTokens", {
-        sessionId,
-        expirationTime: Date.now() + 60_000,
-      });
-      const accountId = await ctx.db.insert("authAccounts", {
-        userId,
-        provider: "resend-otp",
-        providerAccountId: "deleted-user@test.com",
-      });
+      const [userOrganizationId, sessionId] = await Promise.all([
+        ctx.db.insert("userOrganizations", {
+          userId,
+          organizationId,
+          roleId,
+          joinedAt: Date.now(),
+        }),
+        ctx.db.insert("authSessions", {
+          userId,
+          expirationTime: Date.now() + 60_000,
+        }),
+      ]);
+      const [refreshTokenId, accountId] = await Promise.all([
+        ctx.db.insert("authRefreshTokens", {
+          sessionId,
+          expirationTime: Date.now() + 60_000,
+        }),
+        ctx.db.insert("authAccounts", {
+          userId,
+          provider: "resend-otp",
+          providerAccountId: "deleted-user@test.com",
+        }),
+      ]);
       const verificationCodeId = await ctx.db.insert("authVerificationCodes", {
         accountId,
         provider: "resend-otp",

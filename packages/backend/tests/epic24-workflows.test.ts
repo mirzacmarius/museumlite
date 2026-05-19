@@ -33,43 +33,43 @@ async function createOrgWithRole(
   permissionNames: string[],
   roleName = "Test Role",
 ): Promise<OrgSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Workflow Test Org",
-      slug: `workflow-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-      settings: {
-        enabledModules: ["fine_art", "accounts"],
-      },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Workflow User",
-      email: `workflow-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId,
-      name: roleName,
-      isSystemRole: true,
-    });
-  });
-
-  const permissionIds = await Promise.all(
-    [...new Set(permissionNames)].map((permissionName) =>
-      t.run(async (ctx) => {
-        return await ctx.db.insert("permissions", {
-          name: permissionName,
-          category: getPermissionCategory(permissionName),
-        });
-      }),
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Workflow Test Org",
+        slug: `workflow-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        settings: {
+          enabledModules: ["fine_art", "accounts"],
+        },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Workflow User",
+        email: `workflow-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
+  const [roleId, permissionIds] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: roleName,
+        isSystemRole: true,
+      });
+    }),
+    Promise.all(
+      [...new Set(permissionNames)].map((permissionName) =>
+        t.run(async (ctx) => {
+          return await ctx.db.insert("permissions", {
+            name: permissionName,
+            category: getPermissionCategory(permissionName),
+          });
+        }),
+      ),
     ),
-  );
-
+  ]);
   await Promise.all(
     permissionIds.map((permissionId) =>
       t.run(async (ctx) => {
@@ -518,27 +518,27 @@ describe("Epic 24: Workflow Templates", () => {
       "Admin",
     );
 
-    const curatorRoleId = await t.run(async (ctx) => {
-      return await ctx.db.insert("roles", {
-        organizationId,
-        name: "Curator",
-        isSystemRole: false,
-      });
-    });
-
-    const templateId = await t.run(async (ctx) => {
-      return await ctx.db.insert("workflowTemplates", {
-        name: "Two-Step Template",
-        workflowType: "accession",
-        isSystem: true,
-        steps: [
-          { stepNumber: 1, name: "Curator Review", roleName: "Curator" },
-          { stepNumber: 2, name: "Director Approval", roleName: "Admin" },
-        ],
-        createdAt: Date.now(),
-      });
-    });
-
+    const [curatorRoleId, templateId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("roles", {
+          organizationId,
+          name: "Curator",
+          isSystemRole: false,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("workflowTemplates", {
+          name: "Two-Step Template",
+          workflowType: "accession",
+          isSystem: true,
+          steps: [
+            { stepNumber: 1, name: "Curator Review", roleName: "Curator" },
+            { stepNumber: 2, name: "Director Approval", roleName: "Admin" },
+          ],
+          createdAt: Date.now(),
+        });
+      }),
+    ]);
     // #when
     const authed = t.withIdentity({
       subject: `${userId}|session-template`,

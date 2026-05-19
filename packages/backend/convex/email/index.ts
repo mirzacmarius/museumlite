@@ -31,6 +31,16 @@ export async function sendEmail(options: SendEmailOptions) {
     env.RESEND_SENDER_EMAIL_AUTH ?? "Convex SaaS <onboarding@resend.dev>";
   const email = { from, ...options };
 
+  if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") {
+    return {
+      status: "success",
+      data: {
+        success: true,
+        data: { id: "test-email-id" },
+      },
+    } as const;
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

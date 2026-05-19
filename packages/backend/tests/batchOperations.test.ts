@@ -9,18 +9,18 @@ describe("batchOperations schema", () => {
   test("should create batch job with correct structure", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     const collectionId = await t.run(async (ctx) => {
       return await ctx.db.insert("collections", {
         organizationId: orgId,
@@ -65,18 +65,18 @@ describe("batchOperations schema", () => {
   test("should track job progress", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     const collectionIds = await t.run(async (ctx) => {
       const ids: Id<"collections">[] = [];
       for (let i = 0; i < 5; i++) {
@@ -134,18 +134,18 @@ describe("batchOperations schema", () => {
   test("should support bulk status change job", async () => {
     const t = convexTest(schema, modules);
 
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", { email: "test@example.com" });
-    });
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
+    const [userId, orgId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", { email: "test@example.com" });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        });
+      }),
+    ]);
     const collectionId = await t.run(async (ctx) => {
       return await ctx.db.insert("collections", {
         organizationId: orgId,

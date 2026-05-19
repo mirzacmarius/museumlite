@@ -6,10 +6,7 @@ import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -33,9 +30,10 @@ describe("Import Validation - Accessions", () => {
     const t = convexTest(schema, modules);
 
     const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
+      const [orgId, userId] = await Promise.all([
+        ctx.db.insert("organizations", createOrg()),
+        ctx.db.insert("users", createUser()),
+      ]);
       const adminRole = await ctx.db.insert("roles", {
         organizationId: orgId,
         name: "Admin",
@@ -90,9 +88,10 @@ describe("Import Validation - Accessions", () => {
     const t = convexTest(schema, modules);
 
     const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
+      const [orgId, userId] = await Promise.all([
+        ctx.db.insert("organizations", createOrg()),
+        ctx.db.insert("users", createUser()),
+      ]);
       const adminRole = await ctx.db.insert("roles", {
         organizationId: orgId,
         name: "Admin",
@@ -144,9 +143,10 @@ describe("Import Validation - Accessions", () => {
     const t = convexTest(schema, modules);
 
     const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
+      const [orgId, userId] = await Promise.all([
+        ctx.db.insert("organizations", createOrg()),
+        ctx.db.insert("users", createUser()),
+      ]);
       const adminRole = await ctx.db.insert("roles", {
         organizationId: orgId,
         name: "Admin",
@@ -200,9 +200,10 @@ describe("Import Validation - Accessions", () => {
     const t = convexTest(schema, modules);
 
     const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
+      const [orgId, userId] = await Promise.all([
+        ctx.db.insert("organizations", createOrg()),
+        ctx.db.insert("users", createUser()),
+      ]);
       const adminRole = await ctx.db.insert("roles", {
         organizationId: orgId,
         name: "Admin",
@@ -255,9 +256,10 @@ describe("Import Validation - Accessions", () => {
     const t = convexTest(schema, modules);
 
     const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
+      const [orgId, userId] = await Promise.all([
+        ctx.db.insert("organizations", createOrg()),
+        ctx.db.insert("users", createUser()),
+      ]);
       const adminRole = await ctx.db.insert("roles", {
         organizationId: orgId,
         name: "Admin",
@@ -310,9 +312,10 @@ describe("Import Validation - Accessions", () => {
     const t = convexTest(schema, modules);
 
     const { orgId, userId } = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", createOrg());
-      const userId = await ctx.db.insert("users", createUser());
-
+      const [orgId, userId] = await Promise.all([
+        ctx.db.insert("organizations", createOrg()),
+        ctx.db.insert("users", createUser()),
+      ]);
       const adminRole = await ctx.db.insert("roles", {
         organizationId: orgId,
         name: "Admin",

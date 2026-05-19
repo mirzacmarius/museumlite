@@ -51,15 +51,15 @@ test("seedMet.getUserOrganizationsByEmail resolves the user's organizations", as
     });
   });
 
-  const organizationA = await createOrganizationMembership(t, userId, "Org A");
-  const organizationB = await createOrganizationMembership(t, userId, "Org B");
-
-  const result = await t.run(async (ctx) => {
-    return await ctx.runQuery(internal.seedMet.getUserOrganizationsByEmail, {
-      email: "mirzacmarius@gmail.com",
-    });
-  });
-
+  const [organizationA, organizationB, result] = await Promise.all([
+    createOrganizationMembership(t, userId, "Org A"),
+    createOrganizationMembership(t, userId, "Org B"),
+    t.run(async (ctx) => {
+      return await ctx.runQuery(internal.seedMet.getUserOrganizationsByEmail, {
+        email: "mirzacmarius@gmail.com",
+      });
+    }),
+  ]);
   expect(result).toEqual({
     userId,
     organizationIds: [organizationA, organizationB],
@@ -70,15 +70,17 @@ test("seedMet.getEligibleDeepLocations prefers shelf and vitrine leaves", async 
   const t = convexTest(schema, modules);
 
   const { organizationId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", {
-      email: "locations@example.com",
-      name: "Location Tester",
-    });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Deep Locations Org",
-      slug: "deep-locations-org",
-      type: "museum",
-    });
+    const [userId, organizationId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "locations@example.com",
+        name: "Location Tester",
+      }),
+      ctx.db.insert("organizations", {
+        name: "Deep Locations Org",
+        slug: "deep-locations-org",
+        type: "museum",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Admin",
@@ -267,16 +269,17 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
   const t = convexTest(schema, modules);
 
   const setup = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", {
-      email: "mirzacmarius@gmail.com",
-      name: "Mirza",
-    });
-
-    const preferredOrganizationId = await ctx.db.insert("organizations", {
-      name: "Preferred Leaves Org",
-      slug: "preferred-leaves-org",
-      type: "museum",
-    });
+    const [userId, preferredOrganizationId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "mirzacmarius@gmail.com",
+        name: "Mirza",
+      }),
+      ctx.db.insert("organizations", {
+        name: "Preferred Leaves Org",
+        slug: "preferred-leaves-org",
+        type: "museum",
+      }),
+    ]);
     const preferredRoleId = await ctx.db.insert("roles", {
       organizationId: preferredOrganizationId,
       name: "Admin",
@@ -297,79 +300,87 @@ test("seedMet.reassignObjectsToDeepLocationsForUser reassigns deterministically 
       sortOrder: 0,
       isActive: true,
     });
-    const shelfId = await ctx.db.insert("locations", {
-      organizationId: preferredOrganizationId,
-      name: "Shelf A",
-      ...buildLocationCode("SH-010"),
-      type: "shelf",
-      parentLocationId: roomId,
-      sortOrder: 0,
-      isActive: true,
-      capacity: 1,
-    });
-    const vitrineId = await ctx.db.insert("locations", {
-      organizationId: preferredOrganizationId,
-      name: "Vitrine 1",
-      ...buildLocationCode("V-010"),
-      type: "vitrine",
-      parentLocationId: roomId,
-      sortOrder: 1,
-      isActive: true,
-      capacity: 1,
-    });
-    const cabinetId = await ctx.db.insert("locations", {
-      organizationId: preferredOrganizationId,
-      name: "Cabinet Fallback",
-      ...buildLocationCode("C-010"),
-      type: "cabinet",
-      parentLocationId: roomId,
-      sortOrder: 2,
-      isActive: true,
-      capacity: 5,
-    });
-
-    const unchangedCollectionId = await ctx.db.insert("collections", {
-      organizationId: preferredOrganizationId,
-      accessionNumber: "A-001",
-      title: "Already on Shelf",
-      currentLocationId: shelfId,
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    });
-    const movedCollectionId = await ctx.db.insert("collections", {
-      organizationId: preferredOrganizationId,
-      accessionNumber: "A-002",
-      title: "Move to Vitrine",
-      currentLocationId: roomId,
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    });
-    const skippedCollectionId = await ctx.db.insert("collections", {
-      organizationId: preferredOrganizationId,
-      accessionNumber: "A-003",
-      title: "Skip for Capacity",
-      currentLocationId: cabinetId,
-      status: "active",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    });
-    const loanedCollectionId = await ctx.db.insert("collections", {
-      organizationId: preferredOrganizationId,
-      accessionNumber: "A-004",
-      title: "Loaned Object",
-      currentLocationId: roomId,
-      status: "loaned",
-      catalogedBy: userId,
-      catalogedAt: Date.now(),
-    });
-
-    const noLocationOrganizationId = await ctx.db.insert("organizations", {
-      name: "No Deep Locations Org",
-      slug: "no-deep-locations-org",
-      type: "museum",
-    });
+    const [shelfId, vitrineId, cabinetId] = await Promise.all([
+      ctx.db.insert("locations", {
+        organizationId: preferredOrganizationId,
+        name: "Shelf A",
+        ...buildLocationCode("SH-010"),
+        type: "shelf",
+        parentLocationId: roomId,
+        sortOrder: 0,
+        isActive: true,
+        capacity: 1,
+      }),
+      ctx.db.insert("locations", {
+        organizationId: preferredOrganizationId,
+        name: "Vitrine 1",
+        ...buildLocationCode("V-010"),
+        type: "vitrine",
+        parentLocationId: roomId,
+        sortOrder: 1,
+        isActive: true,
+        capacity: 1,
+      }),
+      ctx.db.insert("locations", {
+        organizationId: preferredOrganizationId,
+        name: "Cabinet Fallback",
+        ...buildLocationCode("C-010"),
+        type: "cabinet",
+        parentLocationId: roomId,
+        sortOrder: 2,
+        isActive: true,
+        capacity: 5,
+      }),
+    ]);
+    const [
+      unchangedCollectionId,
+      movedCollectionId,
+      skippedCollectionId,
+      loanedCollectionId,
+      noLocationOrganizationId,
+    ] = await Promise.all([
+      ctx.db.insert("collections", {
+        organizationId: preferredOrganizationId,
+        accessionNumber: "A-001",
+        title: "Already on Shelf",
+        currentLocationId: shelfId,
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("collections", {
+        organizationId: preferredOrganizationId,
+        accessionNumber: "A-002",
+        title: "Move to Vitrine",
+        currentLocationId: roomId,
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("collections", {
+        organizationId: preferredOrganizationId,
+        accessionNumber: "A-003",
+        title: "Skip for Capacity",
+        currentLocationId: cabinetId,
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("collections", {
+        organizationId: preferredOrganizationId,
+        accessionNumber: "A-004",
+        title: "Loaned Object",
+        currentLocationId: roomId,
+        status: "loaned",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("organizations", {
+        name: "No Deep Locations Org",
+        slug: "no-deep-locations-org",
+        type: "museum",
+      }),
+    ]);
     const noLocationRoleId = await ctx.db.insert("roles", {
       organizationId: noLocationOrganizationId,
       name: "Admin",

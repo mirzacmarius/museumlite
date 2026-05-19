@@ -63,13 +63,14 @@ describe("Domain number interface", () => {
       });
     });
 
-    const first = await t.run(async (ctx) => {
-      return await generateNextAccountNumber(ctx, orgId);
-    });
-    const second = await t.run(async (ctx) => {
-      return await generateNextAccountNumber(ctx, orgId);
-    });
-
+    const [first, second] = await Promise.all([
+      t.run(async (ctx) => {
+        return await generateNextAccountNumber(ctx, orgId);
+      }),
+      t.run(async (ctx) => {
+        return await generateNextAccountNumber(ctx, orgId);
+      }),
+    ]);
     expect(first).toBe("ACC-00001");
     expect(second).toBe("ACC-00002");
   });
@@ -519,55 +520,55 @@ describe("Organization isolation", () => {
     const t = convexTest(schema, modules);
 
     // Create two organizations
-    const org1Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Org 1",
-        slug: "org-1",
-        type: "museum",
-        settings: {},
-      });
-    });
-
-    const org2Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Org 2",
-        slug: "org-2",
-        type: "museum",
-        settings: {},
-      });
-    });
-
+    const [org1Id, org2Id] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Org 1",
+          slug: "org-1",
+          type: "museum",
+          settings: {},
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Org 2",
+          slug: "org-2",
+          type: "museum",
+          settings: {},
+        });
+      }),
+    ]);
     // Get values for both organizations
-    const value1 = await t.run(async (ctx) => {
-      const counter = await ctx.db
-        .query("loanCounters")
-        .withIndex("by_organization_and_year", (q) =>
-          q.eq("organizationId", org1Id).eq("year", 2026),
-        )
-        .first();
+    const [value1, value2] = await Promise.all([
+      t.run(async (ctx) => {
+        const counter = await ctx.db
+          .query("loanCounters")
+          .withIndex("by_organization_and_year", (q) =>
+            q.eq("organizationId", org1Id).eq("year", 2026),
+          )
+          .first();
 
-      return await getNextYearBasedValue(ctx, counter, {
-        tableName: "loanCounters",
-        organizationId: org1Id,
-        year: 2026,
-      });
-    });
+        return await getNextYearBasedValue(ctx, counter, {
+          tableName: "loanCounters",
+          organizationId: org1Id,
+          year: 2026,
+        });
+      }),
+      t.run(async (ctx) => {
+        const counter = await ctx.db
+          .query("loanCounters")
+          .withIndex("by_organization_and_year", (q) =>
+            q.eq("organizationId", org2Id).eq("year", 2026),
+          )
+          .first();
 
-    const value2 = await t.run(async (ctx) => {
-      const counter = await ctx.db
-        .query("loanCounters")
-        .withIndex("by_organization_and_year", (q) =>
-          q.eq("organizationId", org2Id).eq("year", 2026),
-        )
-        .first();
-
-      return await getNextYearBasedValue(ctx, counter, {
-        tableName: "loanCounters",
-        organizationId: org2Id,
-        year: 2026,
-      });
-    });
-
+        return await getNextYearBasedValue(ctx, counter, {
+          tableName: "loanCounters",
+          organizationId: org2Id,
+          year: 2026,
+        });
+      }),
+    ]);
     // Both should start at 1 independently
     expect(value1).toBe(1);
     expect(value2).toBe(1);
@@ -577,49 +578,49 @@ describe("Organization isolation", () => {
     const t = convexTest(schema, modules);
 
     // Create two organizations
-    const org1Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Org 1",
-        slug: "org-1",
-        type: "museum",
-        settings: {},
-      });
-    });
-
-    const org2Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Org 2",
-        slug: "org-2",
-        type: "museum",
-        settings: {},
-      });
-    });
-
+    const [org1Id, org2Id] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Org 1",
+          slug: "org-1",
+          type: "museum",
+          settings: {},
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Org 2",
+          slug: "org-2",
+          type: "museum",
+          settings: {},
+        });
+      }),
+    ]);
     // Get values for both organizations
-    const value1 = await t.run(async (ctx) => {
-      const counter = await ctx.db
-        .query("accountCounters")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org1Id))
-        .first();
+    const [value1, value2] = await Promise.all([
+      t.run(async (ctx) => {
+        const counter = await ctx.db
+          .query("accountCounters")
+          .withIndex("by_organization", (q) => q.eq("organizationId", org1Id))
+          .first();
 
-      return await getNextGlobalValue(ctx, counter, {
-        tableName: "accountCounters",
-        organizationId: org1Id,
-      });
-    });
+        return await getNextGlobalValue(ctx, counter, {
+          tableName: "accountCounters",
+          organizationId: org1Id,
+        });
+      }),
+      t.run(async (ctx) => {
+        const counter = await ctx.db
+          .query("accountCounters")
+          .withIndex("by_organization", (q) => q.eq("organizationId", org2Id))
+          .first();
 
-    const value2 = await t.run(async (ctx) => {
-      const counter = await ctx.db
-        .query("accountCounters")
-        .withIndex("by_organization", (q) => q.eq("organizationId", org2Id))
-        .first();
-
-      return await getNextGlobalValue(ctx, counter, {
-        tableName: "accountCounters",
-        organizationId: org2Id,
-      });
-    });
-
+        return await getNextGlobalValue(ctx, counter, {
+          tableName: "accountCounters",
+          organizationId: org2Id,
+        });
+      }),
+    ]);
     // Both should start at 1 independently
     expect(value1).toBe(1);
     expect(value2).toBe(1);

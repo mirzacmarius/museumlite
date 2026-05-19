@@ -22,17 +22,17 @@ async function createOrgWithUser(
   permissionNames: string[],
 ): Promise<OrgSetup> {
   return await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-      name: "Test User",
-    });
-
+    const [orgId, userId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      }),
+      ctx.db.insert("users", {
+        email: "test@example.com",
+        name: "Test User",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId: orgId,
       name: "Admin",

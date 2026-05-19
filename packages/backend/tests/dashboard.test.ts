@@ -14,36 +14,36 @@ type TestSetup = {
 async function createTestOrg(
   t: ReturnType<typeof convexTest>,
 ): Promise<TestSetup> {
-  const organizationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Dashboard Test Org",
-      slug: `dashboard-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      name: "Dashboard User",
-      email: `dashboard-${Math.random().toString(36).slice(2, 8)}@test.dev`,
-    });
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const permissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "organization.view_analytics",
-      category: "organization",
-    });
-  });
-
+  const [organizationId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Dashboard Test Org",
+        slug: `dashboard-org-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Dashboard User",
+        email: `dashboard-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    }),
+  ]);
+  const [roleId, permissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "organization.view_analytics",
+        category: "organization",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -295,35 +295,35 @@ describe("Dashboard: getAnalytics", () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestOrg(t);
 
-    const targetOrganizationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Transfer Target Org",
-        slug: `transfer-target-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-    });
-
-    const otherSourceOrganizationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Other Source Org",
-        slug: `transfer-source-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
-      });
-    });
-
-    const collectionId = await t.run(async (ctx) => {
-      return await ctx.db.insert(
-        "collections",
-        createCollection(
-          organizationId,
-          userId,
-          "Transfer Source Object",
-          "TR-001",
-          "active",
-        ),
-      );
-    });
-
+    const [targetOrganizationId, otherSourceOrganizationId, collectionId] =
+      await Promise.all([
+        t.run(async (ctx) => {
+          return await ctx.db.insert("organizations", {
+            name: "Transfer Target Org",
+            slug: `transfer-target-${Math.random().toString(36).slice(2, 8)}`,
+            type: "museum",
+          });
+        }),
+        t.run(async (ctx) => {
+          return await ctx.db.insert("organizations", {
+            name: "Other Source Org",
+            slug: `transfer-source-${Math.random().toString(36).slice(2, 8)}`,
+            type: "museum",
+          });
+        }),
+        t.run(async (ctx) => {
+          return await ctx.db.insert(
+            "collections",
+            createCollection(
+              organizationId,
+              userId,
+              "Transfer Source Object",
+              "TR-001",
+              "active",
+            ),
+          );
+        }),
+      ]);
     const otherCollectionId = await t.run(async (ctx) => {
       return await ctx.db.insert(
         "collections",

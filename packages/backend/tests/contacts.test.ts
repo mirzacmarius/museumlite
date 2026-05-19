@@ -250,31 +250,32 @@ describe("contacts", () => {
       issuer: "https://example.test",
     });
 
-    const contact1Id = await authed.mutation(api.contacts.create, {
-      accountId,
-      firstName: "John",
-      lastName: "Doe",
-      role: "primary",
-      isPrimary: true,
-      isActive: true,
-    });
-
-    const contact2Id = await authed.mutation(api.contacts.create, {
-      accountId,
-      firstName: "Jane",
-      lastName: "Smith",
-      role: "billing",
-      isPrimary: true,
-      isActive: true,
-    });
-
-    const contact1 = await authed.query(api.contacts.get, {
-      contactId: contact1Id,
-    });
-    const contact2 = await authed.query(api.contacts.get, {
-      contactId: contact2Id,
-    });
-
+    const [contact1Id, contact2Id] = await Promise.all([
+      authed.mutation(api.contacts.create, {
+        accountId,
+        firstName: "John",
+        lastName: "Doe",
+        role: "primary",
+        isPrimary: true,
+        isActive: true,
+      }),
+      authed.mutation(api.contacts.create, {
+        accountId,
+        firstName: "Jane",
+        lastName: "Smith",
+        role: "billing",
+        isPrimary: true,
+        isActive: true,
+      }),
+    ]);
+    const [contact1, contact2] = await Promise.all([
+      authed.query(api.contacts.get, {
+        contactId: contact1Id,
+      }),
+      authed.query(api.contacts.get, {
+        contactId: contact2Id,
+      }),
+    ]);
     expect(contact1?.isPrimary).toBe(false);
     expect(contact2?.isPrimary).toBe(true);
   });
@@ -425,24 +426,24 @@ describe("contacts", () => {
   });
 
   test("should enforce multi-tenant isolation", async () => {
-    const org2Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum 2",
-        slug: "test-museum-2",
-        type: "museum",
-        settings: {
-          enabledModules: ["accounts"],
-        },
-      });
-    });
-
-    const user2Id = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User 2",
-        email: "test2@example.com",
-      });
-    });
-
+    const [org2Id, user2Id] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum 2",
+          slug: "test-museum-2",
+          type: "museum",
+          settings: {
+            enabledModules: ["accounts"],
+          },
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User 2",
+          email: "test2@example.com",
+        });
+      }),
+    ]);
     const role2Id = await t.run(async (ctx) => {
       const [role, readPermission] = await Promise.all([
         ctx.db.insert("roles", {

@@ -34,6 +34,10 @@ type EnabledModule = ModuleId;
 type OrganizationSettings = Doc<"organizations">["settings"];
 type PermissionCategory = Doc<"permissions">["category"];
 
+function shouldScheduleInvitationEmail(): boolean {
+  return process.env.NODE_ENV !== "test" && process.env.VITEST !== "true";
+}
+
 function getEffectiveRootOrganizationId(
   organization: Doc<"organizations">,
 ): Id<"organizations"> {
@@ -1280,17 +1284,19 @@ export const inviteUser = mutation({
     const inviter = await ctx.db.get(userId);
     const inviterName = inviter?.name ?? inviter?.email ?? "A team member";
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.email.actions.sendInvitationEmailAction,
-      {
-        email: normalizedEmail,
-        organizationName: organization.name,
-        inviterName,
-        role: role.name,
-        token: invitation.token,
-      },
-    );
+    if (shouldScheduleInvitationEmail()) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.email.actions.sendInvitationEmailAction,
+        {
+          email: normalizedEmail,
+          organizationName: organization.name,
+          inviterName,
+          role: role.name,
+          token: invitation.token,
+        },
+      );
+    }
 
     return null;
   },

@@ -5,10 +5,7 @@ import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-) {
+function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   return t.withIdentity({
     subject: `${userId}|session-1`,
     issuer: "https://example.test",
@@ -20,17 +17,19 @@ async function createAdminOrganization(
   name: string,
 ) {
   return await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", {
-      name: `${name} Admin`,
-      email: `${name.toLowerCase().replace(/\s+/g, "-")}@example.com`,
-    });
-    const organizationId = await ctx.db.insert("organizations", {
-      name,
-      slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}`,
-      type: "museum",
-    });
+    const [userId, organizationId] = await Promise.all([
+      ctx.db.insert("users", {
+        name: `${name} Admin`,
+        email: `${name.toLowerCase().replace(/\s+/g, "-")}@example.com`,
+      }),
+      ctx.db.insert("organizations", {
+        name,
+        slug: `${name.toLowerCase().replace(/\s+/g, "-")}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`,
+        type: "museum",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "admin",
@@ -102,9 +101,12 @@ describe("organizationCleanup", () => {
     });
 
     const authed = authedForUser(t, userId);
-    const report = await authed.query(api.organizationCleanup.getOrganizationFootprints, {
-      organizationIds: [organizationId],
-    });
+    const report = await authed.query(
+      api.organizationCleanup.getOrganizationFootprints,
+      {
+        organizationIds: [organizationId],
+      },
+    );
 
     expect(report).toHaveLength(1);
     expect(report[0].organizationId).toBe(organizationId);
@@ -188,22 +190,27 @@ describe("organizationCleanup", () => {
 
     const authed = authedForUser(t, userId);
 
-    const dryRun = await authed.mutation(api.organizationCleanup.purgeOrganizations, {
-      organizationIds: [organizationId],
-      dryRun: true,
-    });
+    const dryRun = await authed.mutation(
+      api.organizationCleanup.purgeOrganizations,
+      {
+        organizationIds: [organizationId],
+        dryRun: true,
+      },
+    );
 
     expect(dryRun).toHaveLength(1);
     expect(dryRun[0].dryRun).toBe(true);
     expect(dryRun[0].storageFiles).toBe(1);
-    expect(dryRun[0].tableCounts.some((entry) => entry.table === "organizations")).toBe(
-      true,
-    );
-    expect(dryRun[0].tableCounts.some((entry) => entry.table === "collections")).toBe(
-      true,
-    );
+    expect(
+      dryRun[0].tableCounts.some((entry) => entry.table === "organizations"),
+    ).toBe(true);
+    expect(
+      dryRun[0].tableCounts.some((entry) => entry.table === "collections"),
+    ).toBe(true);
 
-    const orgStillExists = await t.run(async (ctx) => ctx.db.get(organizationId));
+    const orgStillExists = await t.run(async (ctx) =>
+      ctx.db.get(organizationId),
+    );
     expect(orgStillExists).not.toBeNull();
 
     await authed.mutation(api.organizationCleanup.purgeOrganizations, {
@@ -211,12 +218,13 @@ describe("organizationCleanup", () => {
       dryRun: false,
     });
 
-    const [organization, workflowConfig, storageDoc, orgsWithSla] = await Promise.all([
-      t.run(async (ctx) => ctx.db.get(organizationId)),
-      t.run(async (ctx) => ctx.db.get(workflowConfigId)),
-      t.run(async (ctx) => ctx.db.system.get(storageId)),
-      t.query(internal.workflowSla.getOrganizationsWithSlaConfigs, {}),
-    ]);
+    const [organization, workflowConfig, storageDoc, orgsWithSla] =
+      await Promise.all([
+        t.run(async (ctx) => ctx.db.get(organizationId)),
+        t.run(async (ctx) => ctx.db.get(workflowConfigId)),
+        t.run(async (ctx) => ctx.db.system.get(storageId)),
+        t.query(internal.workflowSla.getOrganizationsWithSlaConfigs, {}),
+      ]);
 
     expect(organization).toBeNull();
     expect(workflowConfig).toBeNull();

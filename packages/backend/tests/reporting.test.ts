@@ -15,22 +15,22 @@ describe("scheduledReports CRUD", () => {
   test("createScheduledReport - should create report with valid config", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum",
-        type: "museum",
-        subscriptionTier: "pro", // Required for reporting feature
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum",
+          type: "museum",
+          subscriptionTier: "pro", // Required for reporting feature
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create report directly via database
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
@@ -242,22 +242,22 @@ describe("scheduledReports CRUD", () => {
   test("getScheduledReport - should retrieve specific report by id", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-get",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-get",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -286,22 +286,22 @@ describe("scheduledReports CRUD", () => {
   test("getScheduledReport - should return null for non-existent report", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-nonexist",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-nonexist",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create a report to get a valid ID format
     const realReportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
@@ -331,22 +331,22 @@ describe("scheduledReports CRUD", () => {
   test("updateScheduledReport - should update report configuration", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-update",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-update",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -438,22 +438,22 @@ describe("scheduledReports CRUD", () => {
   test("deleteScheduledReport - should delete report successfully", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-delete",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-delete",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -487,22 +487,22 @@ describe("scheduledReports CRUD", () => {
   test("createScheduledReport - should handle report config with filters", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -540,22 +540,22 @@ describe("scheduledReports CRUD", () => {
   test("updateScheduledReport - should toggle isActive status", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-active",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-active",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -593,22 +593,22 @@ describe("report schedules", () => {
   test("should create daily scheduled report", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-daily-schedule",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-daily-schedule",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -635,22 +635,22 @@ describe("report schedules", () => {
   test("should create weekly scheduled report with day", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-weekly-schedule",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-weekly-schedule",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -678,22 +678,22 @@ describe("report schedules", () => {
   test("should create monthly scheduled report with day of month", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-monthly-schedule",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-monthly-schedule",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -722,22 +722,22 @@ describe("report schedules", () => {
   test("should create quarterly scheduled report", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-quarterly-schedule",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-quarterly-schedule",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -765,22 +765,22 @@ describe("report schedules", () => {
   test("should create on-demand report without next run time", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-ondemand-schedule",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-ondemand-schedule",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -856,22 +856,22 @@ describe("report date ranges", () => {
   test("should create report with last_7_days date range", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-7days",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-7days",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -897,22 +897,22 @@ describe("report date ranges", () => {
   test("should create report with last_30_days date range", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-30days",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-30days",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -938,22 +938,22 @@ describe("report date ranges", () => {
   test("should create report with last_90_days date range", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-90days",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-90days",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -979,22 +979,22 @@ describe("report date ranges", () => {
   test("should create report with last_year date range", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-lastyear",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-lastyear",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1020,22 +1020,22 @@ describe("report date ranges", () => {
   test("should create report with year_to_date date range", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-ytd",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-ytd",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1109,22 +1109,22 @@ describe("report date ranges", () => {
   test("should create report with comparison period - previous_period", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-comparison-previous",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-comparison-previous",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1153,22 +1153,22 @@ describe("report date ranges", () => {
   test("should create report with comparison period - same_period_last_year", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-comparison-lastyear",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-comparison-lastyear",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1199,22 +1199,22 @@ describe("report date ranges", () => {
   test("should update report date range configuration", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-update-daterange",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-update-daterange",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1258,47 +1258,47 @@ describe("report filters", () => {
   test("should create report with location filters", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-location-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-location-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create test locations
-    const location1 = await t.run(async (ctx) => {
-      return await ctx.db.insert("locations", {
-        organizationId: orgId,
-        name: "Gallery 1",
-        locationCode: "G-001",
-        locationCodeNormalized: "g-001",
-        type: "gallery",
-        sortOrder: 1,
-        isActive: true,
-      });
-    });
-
-    const location2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("locations", {
-        organizationId: orgId,
-        name: "Storage Room A",
-        locationCode: "ST-001",
-        locationCodeNormalized: "st-001",
-        type: "storage",
-        sortOrder: 2,
-        isActive: true,
-      });
-    });
-
+    const [location1, location2] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Gallery 1",
+          locationCode: "G-001",
+          locationCodeNormalized: "g-001",
+          type: "gallery",
+          sortOrder: 1,
+          isActive: true,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Storage Room A",
+          locationCode: "ST-001",
+          locationCodeNormalized: "st-001",
+          type: "storage",
+          sortOrder: 2,
+          isActive: true,
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1330,43 +1330,43 @@ describe("report filters", () => {
   test("should create report with collection group filters", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-collection-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-collection-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     // Create test collection groups
-    const group1 = await t.run(async (ctx) => {
-      return await ctx.db.insert("collectionGroups", {
-        organizationId: orgId,
-        name: "Impressionist Paintings",
-        description: "19th century impressionist works",
-        createdAt: Date.now(),
-        createdBy: userId,
-      });
-    });
-
-    const group2 = await t.run(async (ctx) => {
-      return await ctx.db.insert("collectionGroups", {
-        organizationId: orgId,
-        name: "Modern Sculpture",
-        description: "20th century sculptures",
-        createdAt: Date.now(),
-        createdBy: userId,
-      });
-    });
-
+    const [group1, group2] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("collectionGroups", {
+          organizationId: orgId,
+          name: "Impressionist Paintings",
+          description: "19th century impressionist works",
+          createdAt: Date.now(),
+          createdBy: userId,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("collectionGroups", {
+          organizationId: orgId,
+          name: "Modern Sculpture",
+          description: "20th century sculptures",
+          createdAt: Date.now(),
+          createdBy: userId,
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1398,22 +1398,22 @@ describe("report filters", () => {
   test("should create report with object type filters", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-objecttype-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-objecttype-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1448,44 +1448,44 @@ describe("report filters", () => {
   test("should create report with multiple filter types combined", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-combined-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
-    const locationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("locations", {
-        organizationId: orgId,
-        name: "Main Gallery",
-        locationCode: "G-010",
-        locationCodeNormalized: "g-010",
-        type: "gallery",
-        sortOrder: 1,
-        isActive: true,
-      });
-    });
-
-    const groupId = await t.run(async (ctx) => {
-      return await ctx.db.insert("collectionGroups", {
-        organizationId: orgId,
-        name: "Renaissance Art",
-        description: "Renaissance period artworks",
-        createdAt: Date.now(),
-        createdBy: userId,
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-combined-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
+    const [locationId, groupId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Main Gallery",
+          locationCode: "G-010",
+          locationCodeNormalized: "g-010",
+          type: "gallery",
+          sortOrder: 1,
+          isActive: true,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("collectionGroups", {
+          organizationId: orgId,
+          name: "Renaissance Art",
+          description: "Renaissance period artworks",
+          createdAt: Date.now(),
+          createdBy: userId,
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1527,22 +1527,22 @@ describe("report filters", () => {
   test("should update report filters", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-update-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-update-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1598,22 +1598,22 @@ describe("report filters", () => {
   test("should remove filters from report", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-remove-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-remove-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const locationId = await t.run(async (ctx) => {
       return await ctx.db.insert("locations", {
         organizationId: orgId,
@@ -1665,22 +1665,22 @@ describe("report filters", () => {
   test("should create report with empty filters object", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-empty-filters",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-empty-filters",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1712,22 +1712,22 @@ describe("email recipient management", () => {
   test("should create report with single email recipient", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-single-recipient",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-single-recipient",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1801,22 +1801,22 @@ describe("email recipient management", () => {
   test("should create report without email recipients", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-no-recipients",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-no-recipients",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1839,22 +1839,22 @@ describe("email recipient management", () => {
   test("should add email recipients to existing report", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-add-recipients",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-add-recipients",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1900,22 +1900,22 @@ describe("email recipient management", () => {
   test("should remove email recipient from report", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-remove-recipient",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-remove-recipient",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -1954,22 +1954,22 @@ describe("email recipient management", () => {
   test("should replace all email recipients", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-replace-recipients",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-replace-recipients",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -2010,22 +2010,22 @@ describe("email recipient management", () => {
   test("should clear all email recipients", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-clear-recipients",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-clear-recipients",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,
@@ -2058,22 +2058,22 @@ describe("email recipient management", () => {
   test("should handle email recipients with custom subject", async () => {
     const t = convexTest(schema, modules);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-email-subject",
-        type: "museum",
-        subscriptionTier: "pro",
-      });
-    });
-
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        name: "Test User",
-        email: "test@example.com",
-      });
-    });
-
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: "test-museum-email-subject",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "test@example.com",
+        });
+      }),
+    ]);
     const reportId = await t.run(async (ctx) => {
       return await ctx.db.insert("scheduledReports", {
         organizationId: orgId,

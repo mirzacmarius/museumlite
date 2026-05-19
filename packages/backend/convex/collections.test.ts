@@ -9,18 +9,20 @@ test("collections.list hides deleted and deaccession workflow objects by default
   const t = convexTest(schema, modules);
 
   const { organizationId, userId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Test User" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org",
-      type: "museum",
-    });
-
-    const collectionsReadPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-      description: "Read collections",
-    });
+    const [userId, organizationId, collectionsReadPermissionId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Test User" }),
+        ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org",
+          type: "museum",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+          description: "Read collections",
+        }),
+      ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Reader",
@@ -134,18 +136,20 @@ test("collections.list paginates newest objects and enriches visible rows", asyn
   const t = convexTest(schema, modules);
 
   const { organizationId, userId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Test User" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Paged Org",
-      slug: "paged-org",
-      type: "museum",
-    });
-
-    const collectionsReadPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-      description: "Read collections",
-    });
+    const [userId, organizationId, collectionsReadPermissionId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Test User" }),
+        ctx.db.insert("organizations", {
+          name: "Paged Org",
+          slug: "paged-org",
+          type: "museum",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+          description: "Read collections",
+        }),
+      ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Reader",
@@ -283,23 +287,25 @@ test("collections.emptyDeletedCollections permanently deletes deleted objects", 
 
   const { organizationId, userId, activeCollectionId, deletedCollectionId } =
     await t.run(async (ctx) => {
-      const userId = await ctx.db.insert("users", { name: "Test User" });
-      const organizationId = await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org-empty-trash",
-        type: "museum",
-      });
-
-      const readPermissionId = await ctx.db.insert("permissions", {
-        name: "collections.read",
-        category: "collections",
-        description: "Read collections",
-      });
-      const deletePermissionId = await ctx.db.insert("permissions", {
-        name: "collections.delete",
-        category: "collections",
-        description: "Delete collections",
-      });
+      const [userId, organizationId, readPermissionId, deletePermissionId] =
+        await Promise.all([
+          ctx.db.insert("users", { name: "Test User" }),
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org-empty-trash",
+            type: "museum",
+          }),
+          ctx.db.insert("permissions", {
+            name: "collections.read",
+            category: "collections",
+            description: "Read collections",
+          }),
+          ctx.db.insert("permissions", {
+            name: "collections.delete",
+            category: "collections",
+            description: "Delete collections",
+          }),
+        ]);
       const roleId = await ctx.db.insert("roles", {
         organizationId,
         name: "Collection Manager",
@@ -419,26 +425,28 @@ test("collections.create rejects module collection types when module is disabled
   const t = convexTest(schema, modules);
 
   const { organizationId, userId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Test User" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org-create",
-      type: "museum",
-      settings: {
-        enabledModules: [],
-      },
-    });
-
-    const createPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.create",
-      category: "collections",
-      description: "Create collections",
-    });
-    const readPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-      description: "Read collections",
-    });
+    const [userId, organizationId, createPermissionId, readPermissionId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Test User" }),
+        ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org-create",
+          type: "museum",
+          settings: {
+            enabledModules: [],
+          },
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.create",
+          category: "collections",
+          description: "Create collections",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+          description: "Read collections",
+        }),
+      ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Manager",
@@ -480,31 +488,38 @@ test("coins and stamps details require enabled module and surface in module deta
   const t = convexTest(schema, modules);
 
   const { organizationId, userId, collectionId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Test User" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org-coins-stamps",
-      type: "museum",
-      settings: {
-        enabledModules: ["coins_stamps"],
-      },
-    });
-
-    const createPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.create",
-      category: "collections",
-      description: "Create collections",
-    });
-    const readPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-      description: "Read collections",
-    });
-    const updatePermissionId = await ctx.db.insert("permissions", {
-      name: "collections.update",
-      category: "collections",
-      description: "Update collections",
-    });
+    const [
+      userId,
+      organizationId,
+      createPermissionId,
+      readPermissionId,
+      updatePermissionId,
+    ] = await Promise.all([
+      ctx.db.insert("users", { name: "Test User" }),
+      ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org-coins-stamps",
+        type: "museum",
+        settings: {
+          enabledModules: ["coins_stamps"],
+        },
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+        description: "Create collections",
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.read",
+        category: "collections",
+        description: "Read collections",
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.update",
+        category: "collections",
+        description: "Update collections",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Manager",
@@ -580,18 +595,19 @@ test("collections.getWithModuleDetails allows collections.read", async () => {
   const t = convexTest(schema, modules);
 
   const { organizationId, userId, collectionId } = await t.run(async (ctx) => {
-    const userId = await ctx.db.insert("users", { name: "Test User" });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org-read-view-alias",
-      type: "museum",
-    });
-
-    const readPermissionId = await ctx.db.insert("permissions", {
-      name: "collections.read",
-      category: "collections",
-      description: "Read collections",
-    });
+    const [userId, organizationId, readPermissionId] = await Promise.all([
+      ctx.db.insert("users", { name: "Test User" }),
+      ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org-read-view-alias",
+        type: "museum",
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.read",
+        category: "collections",
+        description: "Read collections",
+      }),
+    ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Reader",
@@ -635,16 +651,18 @@ test("collections.get requires collections.read permission", async () => {
   const t = convexTest(schema, modules);
 
   const { collectionId, userWithoutPermissionId } = await t.run(async (ctx) => {
-    const ownerId = await ctx.db.insert("users", { name: "Owner User" });
-    const userWithoutPermissionId = await ctx.db.insert("users", {
-      name: "No Permission User",
-    });
-    const organizationId = await ctx.db.insert("organizations", {
-      name: "Test Org",
-      slug: "test-org-no-read",
-      type: "museum",
-    });
-
+    const [ownerId, userWithoutPermissionId, organizationId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Owner User" }),
+        ctx.db.insert("users", {
+          name: "No Permission User",
+        }),
+        ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org-no-read",
+          type: "museum",
+        }),
+      ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "NoReadRole",

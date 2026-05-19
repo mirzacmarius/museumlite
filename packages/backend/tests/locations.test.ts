@@ -85,36 +85,36 @@ test("should return location history with enriched data", async () => {
 test("should return latest environmental reading for location", async () => {
   const t = convexTest(schema, modules);
 
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const permissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-    });
-  });
-
+  const [orgId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum",
+        type: "museum",
+        settings: { enabledModules: [] },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        email: "test@example.com",
+      });
+    }),
+  ]);
+  const [roleId, permissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -178,36 +178,36 @@ test("should return latest environmental reading for location", async () => {
 test("should return null when no environmental readings exist", async () => {
   const t = convexTest(schema, modules);
 
-  const orgId = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-2",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-  });
-
-  const userId = await t.run(async (ctx) => {
-    return await ctx.db.insert("users", {
-      email: "test2@example.com",
-    });
-  });
-
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-  });
-
-  const permissionId = await t.run(async (ctx) => {
-    return await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-    });
-  });
-
+  const [orgId, userId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-2",
+        type: "museum",
+        settings: { enabledModules: [] },
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        email: "test2@example.com",
+      });
+    }),
+  ]);
+  const [roleId, permissionId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      });
+    }),
+  ]);
   await t.run(async (ctx) => {
     await ctx.db.insert("rolePermissions", {
       roleId,
@@ -259,28 +259,26 @@ test("should create location with siteId", async () => {
       settings: { enabledModules: [] },
     });
 
-    const siteId = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Main Building",
-      isActive: true,
-      isPrimary: true,
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.create",
-      category: "locations",
-    });
-
+    const [siteId, userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: orgId,
+        name: "Main Building",
+        isActive: true,
+        isPrimary: true,
+      }),
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.create",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -324,20 +322,20 @@ test("should reject location creation with invalid siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, userId, invalidSiteId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-invalid-site",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const otherOrgId = await ctx.db.insert("organizations", {
-      name: "Other Museum",
-      slug: "other-museum",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
+    const [orgId, otherOrgId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-invalid-site",
+        type: "museum",
+        settings: { enabledModules: [] },
+      }),
+      ctx.db.insert("organizations", {
+        name: "Other Museum",
+        slug: "other-museum",
+        type: "museum",
+        settings: { enabledModules: [] },
+      }),
+    ]);
     // Create site in different organization
     const invalidSiteId = await ctx.db.insert("sites", {
       organizationId: otherOrgId,
@@ -346,21 +344,20 @@ test("should reject location creation with invalid siteId", async () => {
       isPrimary: true,
     });
 
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.create",
-      category: "locations",
-    });
-
+    const [userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.create",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -403,28 +400,26 @@ test("should reject location creation with inactive siteId", async () => {
       settings: { enabledModules: [] },
     });
 
-    const siteId = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Closed Building",
-      isActive: false,
-      isPrimary: false,
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.create",
-      category: "locations",
-    });
-
+    const [siteId, userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: orgId,
+        name: "Closed Building",
+        isActive: false,
+        isPrimary: false,
+      }),
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.create",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -467,20 +462,20 @@ test("should filter locations by siteId in listAll", async () => {
       settings: { enabledModules: [] },
     });
 
-    const site1Id = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Building A",
-      isActive: true,
-      isPrimary: true,
-    });
-
-    const site2Id = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Building B",
-      isActive: true,
-      isPrimary: false,
-    });
-
+    const [site1Id, site2Id] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: orgId,
+        name: "Building A",
+        isActive: true,
+        isPrimary: true,
+      }),
+      ctx.db.insert("sites", {
+        organizationId: orgId,
+        name: "Building B",
+        isActive: true,
+        isPrimary: false,
+      }),
+    ]);
     // Create locations in site1
     await ctx.db.insert("locations", {
       organizationId: orgId,
@@ -586,20 +581,20 @@ test("should filter locations by siteId in list", async () => {
       settings: { enabledModules: [] },
     });
 
-    const site1Id = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Building A",
-      isActive: true,
-      isPrimary: true,
-    });
-
-    const site2Id = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Building B",
-      isActive: true,
-      isPrimary: false,
-    });
-
+    const [site1Id, site2Id] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: orgId,
+        name: "Building A",
+        isActive: true,
+        isPrimary: true,
+      }),
+      ctx.db.insert("sites", {
+        organizationId: orgId,
+        name: "Building B",
+        isActive: true,
+        isPrimary: false,
+      }),
+    ]);
     await ctx.db.insert("locations", {
       organizationId: orgId,
       siteId: site1Id,
@@ -771,42 +766,40 @@ test("should reject listBySite with invalid site", async () => {
   const t = convexTest(schema, modules);
 
   const { orgId, invalidSiteId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-invalid-list",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const otherOrgId = await ctx.db.insert("organizations", {
-      name: "Other Museum",
-      slug: "other-museum-list",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const invalidSiteId = await ctx.db.insert("sites", {
-      organizationId: otherOrgId,
-      name: "Other Site",
-      isActive: true,
-      isPrimary: true,
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.read",
-      category: "locations",
-    });
-
+    const [orgId, otherOrgId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-invalid-list",
+        type: "museum",
+        settings: { enabledModules: [] },
+      }),
+      ctx.db.insert("organizations", {
+        name: "Other Museum",
+        slug: "other-museum-list",
+        type: "museum",
+        settings: { enabledModules: [] },
+      }),
+    ]);
+    const [invalidSiteId, userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: otherOrgId,
+        name: "Other Site",
+        isActive: true,
+        isPrimary: true,
+      }),
+      ctx.db.insert("users", {
+        email: "test@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      }),
+    ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -847,45 +840,43 @@ test("should update location siteId", async () => {
         settings: { enabledModules: [] },
       });
 
-      const site1Id = await ctx.db.insert("sites", {
-        organizationId: orgId,
-        name: "Building A",
-        isActive: true,
-        isPrimary: true,
-      });
-
-      const site2Id = await ctx.db.insert("sites", {
-        organizationId: orgId,
-        name: "Building B",
-        isActive: true,
-        isPrimary: false,
-      });
-
-      const locationId = await ctx.db.insert("locations", {
-        organizationId: orgId,
-        siteId: site1Id,
-        name: "Mobile Gallery",
-        ...buildLocationCode("MG-1"),
-        type: "gallery",
-        sortOrder: 1,
-        isActive: true,
-      });
-
-      const userId = await ctx.db.insert("users", {
-        email: "test@example.com",
-      });
-
-      const roleId = await ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      });
-
-      const permissionId = await ctx.db.insert("permissions", {
-        name: "locations.update",
-        category: "locations",
-      });
-
+      const [site1Id, site2Id] = await Promise.all([
+        ctx.db.insert("sites", {
+          organizationId: orgId,
+          name: "Building A",
+          isActive: true,
+          isPrimary: true,
+        }),
+        ctx.db.insert("sites", {
+          organizationId: orgId,
+          name: "Building B",
+          isActive: true,
+          isPrimary: false,
+        }),
+      ]);
+      const [locationId, userId, roleId, permissionId] = await Promise.all([
+        ctx.db.insert("locations", {
+          organizationId: orgId,
+          siteId: site1Id,
+          name: "Mobile Gallery",
+          ...buildLocationCode("MG-1"),
+          type: "gallery",
+          sortOrder: 1,
+          isActive: true,
+        }),
+        ctx.db.insert("users", {
+          email: "test@example.com",
+        }),
+        ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Admin",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("permissions", {
+          name: "locations.update",
+          category: "locations",
+        }),
+      ]);
       await ctx.db.insert("rolePermissions", {
         roleId,
         permissionId,
@@ -923,51 +914,49 @@ test("should reject update with invalid siteId", async () => {
   const t = convexTest(schema, modules);
 
   const { locationId, invalidSiteId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-update-invalid",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const otherOrgId = await ctx.db.insert("organizations", {
-      name: "Other Museum",
-      slug: "other-museum-update",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const invalidSiteId = await ctx.db.insert("sites", {
-      organizationId: otherOrgId,
-      name: "Other Site",
-      isActive: true,
-      isPrimary: true,
-    });
-
-    const locationId = await ctx.db.insert("locations", {
-      organizationId: orgId,
-      name: "Test Location",
-      ...buildLocationCode("T-1"),
-      type: "room",
-      sortOrder: 1,
-      isActive: true,
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.update",
-      category: "locations",
-    });
-
+    const [orgId, otherOrgId] = await Promise.all([
+      ctx.db.insert("organizations", {
+        name: "Test Museum",
+        slug: "test-museum-update-invalid",
+        type: "museum",
+        settings: { enabledModules: [] },
+      }),
+      ctx.db.insert("organizations", {
+        name: "Other Museum",
+        slug: "other-museum-update",
+        type: "museum",
+        settings: { enabledModules: [] },
+      }),
+    ]);
+    const [invalidSiteId, locationId, userId, roleId, permissionId] =
+      await Promise.all([
+        ctx.db.insert("sites", {
+          organizationId: otherOrgId,
+          name: "Other Site",
+          isActive: true,
+          isPrimary: true,
+        }),
+        ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Test Location",
+          ...buildLocationCode("T-1"),
+          type: "room",
+          sortOrder: 1,
+          isActive: true,
+        }),
+        ctx.db.insert("users", {
+          email: "test@example.com",
+        }),
+        ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Admin",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("permissions", {
+          name: "locations.update",
+          category: "locations",
+        }),
+      ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
@@ -1007,37 +996,35 @@ test("should reject update with inactive siteId", async () => {
       settings: { enabledModules: [] },
     });
 
-    const inactiveSiteId = await ctx.db.insert("sites", {
-      organizationId: orgId,
-      name: "Closed Site",
-      isActive: false,
-      isPrimary: false,
-    });
-
-    const locationId = await ctx.db.insert("locations", {
-      organizationId: orgId,
-      name: "Test Location",
-      ...buildLocationCode("T-2"),
-      type: "room",
-      sortOrder: 1,
-      isActive: true,
-    });
-
-    const userId = await ctx.db.insert("users", {
-      email: "test@example.com",
-    });
-
-    const roleId = await ctx.db.insert("roles", {
-      organizationId: orgId,
-      name: "Admin",
-      isSystemRole: true,
-    });
-
-    const permissionId = await ctx.db.insert("permissions", {
-      name: "locations.update",
-      category: "locations",
-    });
-
+    const [inactiveSiteId, locationId, userId, roleId, permissionId] =
+      await Promise.all([
+        ctx.db.insert("sites", {
+          organizationId: orgId,
+          name: "Closed Site",
+          isActive: false,
+          isPrimary: false,
+        }),
+        ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Test Location",
+          ...buildLocationCode("T-2"),
+          type: "room",
+          sortOrder: 1,
+          isActive: true,
+        }),
+        ctx.db.insert("users", {
+          email: "test@example.com",
+        }),
+        ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Admin",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("permissions", {
+          name: "locations.update",
+          category: "locations",
+        }),
+      ]);
     await ctx.db.insert("rolePermissions", {
       roleId,
       permissionId,
