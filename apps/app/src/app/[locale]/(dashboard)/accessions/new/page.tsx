@@ -210,10 +210,10 @@ export default function NewAccessionPage() {
                   id="accessionNumber"
                   value={formData.accessionNumber}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       accessionNumber: e.target.value,
-                    })
+                    }))
                   }
                   placeholder={t("form.accessionNumberPlaceholder")}
                 />
@@ -231,10 +231,10 @@ export default function NewAccessionPage() {
                     id="dateReceived"
                     date={formData.dateReceived}
                     onSelect={(date: Date | undefined) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         dateReceived: date || new Date(),
-                      })
+                      }))
                     }
                     placeholder={t("form.dateReceivedPlaceholder")}
                   />
@@ -255,7 +255,7 @@ export default function NewAccessionPage() {
                         | "donation"
                         | "other"
                         | "bequest",
-                    ) => setFormData({ ...formData, method: value })}
+                    ) => setFormData((prev) => ({ ...prev, method: value }))}
                   >
                     <SelectTrigger id="method">
                       <SelectValue />
@@ -284,7 +284,10 @@ export default function NewAccessionPage() {
                   organizationId={currentOrganizationId}
                   value={formData.donorAccountId}
                   onValueChange={(accountId) =>
-                    setFormData({ ...formData, donorAccountId: accountId })
+                    setFormData((prev) => ({
+                      ...prev,
+                      donorAccountId: accountId,
+                    }))
                   }
                   placeholder={t("form.donorAccountPlaceholder")}
                 />
@@ -302,7 +305,7 @@ export default function NewAccessionPage() {
                   id="source"
                   value={formData.source}
                   onChange={(e) =>
-                    setFormData({ ...formData, source: e.target.value })
+                    setFormData((prev) => ({ ...prev, source: e.target.value }))
                   }
                   placeholder={t("form.sourcePlaceholder")}
                   required={!formData.donorAccountId}
@@ -322,7 +325,7 @@ export default function NewAccessionPage() {
                   step="0.01"
                   value={formData.cost}
                   onChange={(e) =>
-                    setFormData({ ...formData, cost: e.target.value })
+                    setFormData((prev) => ({ ...prev, cost: e.target.value }))
                   }
                   placeholder={t("form.costPlaceholder")}
                 />
@@ -334,7 +337,7 @@ export default function NewAccessionPage() {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
                   placeholder={t("form.notesPlaceholder")}
                   rows={4}

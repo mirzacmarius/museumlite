@@ -172,10 +172,10 @@ export default function LibrarySettingsPage() {
               min={1}
               value={formData.defaultLoanPeriodDays}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   defaultLoanPeriodDays: Number.parseInt(e.target.value) || 14,
-                })
+                }))
               }
             />
           </div>
@@ -186,10 +186,10 @@ export default function LibrarySettingsPage() {
               min={1}
               value={formData.renewalPeriodDays}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   renewalPeriodDays: Number.parseInt(e.target.value) || 14,
-                })
+                }))
               }
             />
           </div>
@@ -200,10 +200,10 @@ export default function LibrarySettingsPage() {
               min={0}
               value={formData.defaultRenewalLimit}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   defaultRenewalLimit: Number.parseInt(e.target.value) || 0,
-                })
+                }))
               }
             />
           </div>
@@ -214,10 +214,10 @@ export default function LibrarySettingsPage() {
               min={0}
               value={formData.maxRenewalsAllowed}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   maxRenewalsAllowed: Number.parseInt(e.target.value) || 0,
-                })
+                }))
               }
             />
           </div>
@@ -241,10 +241,10 @@ export default function LibrarySettingsPage() {
               step={0.01}
               value={formData.finePerDayDefault}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   finePerDayDefault: Number.parseFloat(e.target.value) || 0,
-                })
+                }))
               }
             />
           </div>
@@ -256,10 +256,10 @@ export default function LibrarySettingsPage() {
               step={0.01}
               value={formData.maxFinePerItem}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   maxFinePerItem: Number.parseFloat(e.target.value) || 0,
-                })
+                }))
               }
             />
           </div>
@@ -270,10 +270,10 @@ export default function LibrarySettingsPage() {
               min={0}
               value={formData.gracePeriodDays}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   gracePeriodDays: Number.parseInt(e.target.value) || 0,
-                })
+                }))
               }
             />
           </div>
@@ -285,10 +285,10 @@ export default function LibrarySettingsPage() {
               step={0.01}
               value={formData.fineThresholdForBlock}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   fineThresholdForBlock: Number.parseFloat(e.target.value) || 0,
-                })
+                }))
               }
             />
           </div>
@@ -311,10 +311,10 @@ export default function LibrarySettingsPage() {
               min={1}
               value={formData.holdExpirationDays}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   holdExpirationDays: Number.parseInt(e.target.value) || 7,
-                })
+                }))
               }
             />
           </div>
@@ -325,10 +325,10 @@ export default function LibrarySettingsPage() {
               min={1}
               value={formData.maxHoldsPerPatron}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   maxHoldsPerPatron: Number.parseInt(e.target.value) || 10,
-                })
+                }))
               }
             />
           </div>
@@ -349,10 +349,10 @@ export default function LibrarySettingsPage() {
             <Input
               value={formData.cardNumberPrefix}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   cardNumberPrefix: e.target.value,
-                })
+                }))
               }
               placeholder="e.g., LIB"
             />
@@ -365,10 +365,10 @@ export default function LibrarySettingsPage() {
               max={20}
               value={formData.cardNumberLength}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   cardNumberLength: Number.parseInt(e.target.value) || 10,
-                })
+                }))
               }
             />
           </div>
@@ -382,10 +382,10 @@ export default function LibrarySettingsPage() {
             <Switch
               checked={formData.autoGenerateCardNumbers}
               onCheckedChange={(checked) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   autoGenerateCardNumbers: checked,
-                })
+                }))
               }
             />
           </div>
@@ -406,10 +406,10 @@ export default function LibrarySettingsPage() {
             <Select
               value={formData.classificationSystem}
               onValueChange={(value: "dewey" | "lc" | "custom") =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   classificationSystem: value,
-                })
+                }))
               }
             >
               <SelectTrigger>
@@ -429,10 +429,10 @@ export default function LibrarySettingsPage() {
               min={0}
               value={formData.dueDateReminderDays}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
+                setFormData((prev) => ({
+                  ...prev,
                   dueDateReminderDays: Number.parseInt(e.target.value) || 3,
-                })
+                }))
               }
             />
           </div>

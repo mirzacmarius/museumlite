@@ -454,8 +454,8 @@ function CollectionObjectsList({
                               ),
                             );
                           } else {
-                            setSelectedCollectionIds([
-                              ...selectedCollectionIds,
+                            setSelectedCollectionIds((prev) => [
+                              ...prev,
                               collection._id,
                             ]);
                           }

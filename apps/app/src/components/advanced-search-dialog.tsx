@@ -100,8 +100,8 @@ export function AdvancedSearchDialog({
   );
 
   const addFilterGroup = () => {
-    setFilterGroups([
-      ...filterGroups,
+    setFilterGroups((prev) => [
+      ...prev,
       { id: createId(), filters: [], operator: "AND" },
     ]);
   };

@@ -424,7 +424,9 @@ function TaskForm({
         <Input
           id="title"
           value={form.title}
-          onChange={(event) => setForm({ ...form, title: event.target.value })}
+          onChange={(event) =>
+            setForm((prev) => ({ ...prev, title: event.target.value }))
+          }
           placeholder="Install lighting fixtures"
           required
         />
@@ -436,7 +438,7 @@ function TaskForm({
           <Select
             value={form.taskType}
             onValueChange={(value) =>
-              setForm({ ...form, taskType: value as TaskType })
+              setForm((prev) => ({ ...prev, taskType: value as TaskType }))
             }
           >
             <SelectTrigger>
@@ -459,7 +461,7 @@ function TaskForm({
           <Select
             value={form.priority}
             onValueChange={(value) =>
-              setForm({ ...form, priority: value as TaskPriority })
+              setForm((prev) => ({ ...prev, priority: value as TaskPriority }))
             }
           >
             <SelectTrigger>
@@ -482,7 +484,7 @@ function TaskForm({
             id="assigneeName"
             value={form.assigneeName}
             onChange={(event) =>
-              setForm({ ...form, assigneeName: event.target.value })
+              setForm((prev) => ({ ...prev, assigneeName: event.target.value }))
             }
             placeholder="Team member name"
           />
@@ -494,7 +496,7 @@ function TaskForm({
             type="date"
             value={form.dueDate}
             onChange={(event) =>
-              setForm({ ...form, dueDate: event.target.value })
+              setForm((prev) => ({ ...prev, dueDate: event.target.value }))
             }
           />
         </div>

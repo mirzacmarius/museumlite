@@ -663,7 +663,7 @@ function MediaEditDialog({
                 id="caption"
                 value={formData.caption}
                 onChange={(e) =>
-                  setFormData({ ...formData, caption: e.target.value })
+                  setFormData((prev) => ({ ...prev, caption: e.target.value }))
                 }
                 placeholder={placeholders("caption")}
                 rows={3}
@@ -675,7 +675,10 @@ function MediaEditDialog({
                 id="photographer"
                 value={formData.photographer}
                 onChange={(e) =>
-                  setFormData({ ...formData, photographer: e.target.value })
+                  setFormData((prev) => ({
+                    ...prev,
+                    photographer: e.target.value,
+                  }))
                 }
                 placeholder={placeholders("photographer")}
               />
@@ -686,7 +689,10 @@ function MediaEditDialog({
                 id="copyright"
                 value={formData.copyright}
                 onChange={(e) =>
-                  setFormData({ ...formData, copyright: e.target.value })
+                  setFormData((prev) => ({
+                    ...prev,
+                    copyright: e.target.value,
+                  }))
                 }
                 placeholder={placeholders("copyright")}
               />

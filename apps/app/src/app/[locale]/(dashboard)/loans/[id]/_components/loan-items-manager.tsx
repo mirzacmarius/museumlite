@@ -254,8 +254,8 @@ export function LoanItemsManager({
                                     ),
                                   );
                                 } else {
-                                  setSelectedCollectionIds([
-                                    ...selectedCollectionIds,
+                                  setSelectedCollectionIds((prev) => [
+                                    ...prev,
                                     collection._id,
                                   ]);
                                 }

@@ -245,10 +245,10 @@ export default function EditLoanPage() {
                       id="lenderBorrowerName"
                       value={formData.lenderBorrowerName}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           lenderBorrowerName: e.target.value,
-                        })
+                        }))
                       }
                       placeholder="e.g. Museum of Modern Art"
                       required
@@ -264,10 +264,10 @@ export default function EditLoanPage() {
                       id="lenderBorrowerContact"
                       value={formData.lenderBorrowerContact}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           lenderBorrowerContact: e.target.value,
-                        })
+                        }))
                       }
                       placeholder={t("contactDetails")}
                       className="bg-background"
@@ -293,10 +293,10 @@ export default function EditLoanPage() {
                     id="startDate"
                     date={formData.startDate}
                     onSelect={(date: Date | undefined) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         startDate: date || new Date(),
-                      })
+                      }))
                     }
                     placeholder={t("selectStartDate")}
                   />
@@ -308,7 +308,7 @@ export default function EditLoanPage() {
                     id="endDate"
                     date={formData.endDate}
                     onSelect={(date: Date | undefined) =>
-                      setFormData({ ...formData, endDate: date })
+                      setFormData((prev) => ({ ...prev, endDate: date }))
                     }
                     placeholder={t("selectEndDate")}
                   />
@@ -324,10 +324,10 @@ export default function EditLoanPage() {
                       step="0.01"
                       value={formData.insuranceValue}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           insuranceValue: e.target.value,
-                        })
+                        }))
                       }
                       placeholder="0.00"
                       className="pl-9 bg-background"
@@ -351,7 +351,10 @@ export default function EditLoanPage() {
                     id="terms"
                     value={formData.terms}
                     onChange={(e) =>
-                      setFormData({ ...formData, terms: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        terms: e.target.value,
+                      }))
                     }
                     placeholder={t("termsEdit")}
                     rows={4}
@@ -365,7 +368,10 @@ export default function EditLoanPage() {
                     id="notes"
                     value={formData.notes}
                     onChange={(e) =>
-                      setFormData({ ...formData, notes: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        notes: e.target.value,
+                      }))
                     }
                     placeholder={t("notesEdit")}
                     rows={3}

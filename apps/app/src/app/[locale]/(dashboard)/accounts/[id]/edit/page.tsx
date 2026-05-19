@@ -222,10 +222,10 @@ export default function EditAccountPage() {
                       id="businessName"
                       value={formData.businessName}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           businessName: e.target.value,
-                        })
+                        }))
                       }
                       placeholder={t("form.placeholders.businessName")}
                       required
@@ -239,7 +239,10 @@ export default function EditAccountPage() {
                         id="phone"
                         value={formData.phone}
                         onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
                         }
                         placeholder={t("form.placeholders.phone")}
                       />
@@ -251,7 +254,10 @@ export default function EditAccountPage() {
                         type="email"
                         value={formData.email}
                         onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
                         }
                         placeholder={t("form.placeholders.email")}
                       />
@@ -272,7 +278,10 @@ export default function EditAccountPage() {
                       id="address"
                       value={formData.address}
                       onChange={(e) =>
-                        setFormData({ ...formData, address: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          address: e.target.value,
+                        }))
                       }
                       placeholder={t("form.placeholders.streetAddress")}
                     />
@@ -283,7 +292,10 @@ export default function EditAccountPage() {
                       id="address2"
                       value={formData.address2}
                       onChange={(e) =>
-                        setFormData({ ...formData, address2: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          address2: e.target.value,
+                        }))
                       }
                       placeholder={t("form.placeholders.addressLine2")}
                     />
@@ -295,7 +307,10 @@ export default function EditAccountPage() {
                         id="city"
                         value={formData.city}
                         onChange={(e) =>
-                          setFormData({ ...formData, city: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
                         }
                         placeholder={t("form.placeholders.city")}
                       />
@@ -306,7 +321,10 @@ export default function EditAccountPage() {
                         id="zipCode"
                         value={formData.zipCode}
                         onChange={(e) =>
-                          setFormData({ ...formData, zipCode: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            zipCode: e.target.value,
+                          }))
                         }
                         placeholder={t("form.placeholders.zipCode")}
                       />
@@ -317,7 +335,10 @@ export default function EditAccountPage() {
                         id="country"
                         value={formData.country}
                         onChange={(e) =>
-                          setFormData({ ...formData, country: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            country: e.target.value,
+                          }))
                         }
                         placeholder={t("form.placeholders.country")}
                       />
@@ -340,10 +361,10 @@ export default function EditAccountPage() {
                       id="contactPerson"
                       value={formData.contactPerson}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           contactPerson: e.target.value,
-                        })
+                        }))
                       }
                       placeholder={t("form.placeholders.contactName")}
                     />
@@ -357,10 +378,10 @@ export default function EditAccountPage() {
                         id="contactPhone"
                         value={formData.contactPhone}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             contactPhone: e.target.value,
-                          })
+                          }))
                         }
                         placeholder={t("form.placeholders.phone")}
                       />
@@ -374,10 +395,10 @@ export default function EditAccountPage() {
                         type="email"
                         value={formData.contactEmail}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             contactEmail: e.target.value,
-                          })
+                          }))
                         }
                         placeholder={t("form.placeholders.contactEmail")}
                       />
@@ -393,7 +414,7 @@ export default function EditAccountPage() {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
                   placeholder={t("form.placeholders.notes")}
                   rows={4}
@@ -418,7 +439,9 @@ export default function EditAccountPage() {
                           | "both"
                           | "institution"
                           | "",
-                      ) => setFormData({ ...formData, accountType: value })}
+                      ) =>
+                        setFormData((prev) => ({ ...prev, accountType: value }))
+                      }
                     >
                       <SelectTrigger id="accountType">
                         <SelectValue

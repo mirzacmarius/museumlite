@@ -254,7 +254,7 @@ export default function OnboardingPage() {
                 type="text"
                 value={orgFormData.name}
                 onChange={(e) =>
-                  setOrgFormData({ ...orgFormData, name: e.target.value })
+                  setOrgFormData((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder={t("organizationsNew.namePlaceholder")}
                 required
@@ -270,7 +270,7 @@ export default function OnboardingPage() {
                 type="text"
                 value={orgFormData.slug}
                 onChange={(e) =>
-                  setOrgFormData({ ...orgFormData, slug: e.target.value })
+                  setOrgFormData((prev) => ({ ...prev, slug: e.target.value }))
                 }
                 placeholder={t("organizationsNew.slugPlaceholder")}
               />
@@ -286,10 +286,10 @@ export default function OnboardingPage() {
               <Select
                 value={orgFormData.type}
                 onValueChange={(value) =>
-                  setOrgFormData({
-                    ...orgFormData,
+                  setOrgFormData((prev) => ({
+                    ...prev,
                     type: value as typeof orgFormData.type,
-                  })
+                  }))
                 }
               >
                 <SelectTrigger id="type">

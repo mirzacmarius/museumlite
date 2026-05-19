@@ -108,7 +108,7 @@ export default function NewDeaccessionPage() {
                 organizationId={currentOrganizationId}
                 value={formData.collectionId}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, collectionId: value })
+                  setFormData((prev) => ({ ...prev, collectionId: value }))
                 }
                 placeholder={t("form.collectionPlaceholder")}
                 label={t("form.collectionLabel")}
@@ -124,10 +124,10 @@ export default function NewDeaccessionPage() {
                   id="deaccessionNumber"
                   value={formData.deaccessionNumber}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       deaccessionNumber: e.target.value,
-                    })
+                    }))
                   }
                   placeholder={t("form.deaccessionNumberPlaceholder")}
                 />
@@ -145,10 +145,10 @@ export default function NewDeaccessionPage() {
                     id="dateDeaccessioned"
                     date={formData.dateDeaccessioned}
                     onSelect={(date: Date | undefined) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         dateDeaccessioned: date || new Date(),
-                      })
+                      }))
                     }
                     placeholder={t("form.dateDeaccessionedPlaceholder")}
                   />
@@ -160,7 +160,7 @@ export default function NewDeaccessionPage() {
                     value={formData.method}
                     onValueChange={(
                       value: "sale" | "donation" | "destruction" | "transfer",
-                    ) => setFormData({ ...formData, method: value })}
+                    ) => setFormData((prev) => ({ ...prev, method: value }))}
                   >
                     <SelectTrigger id="method">
                       <SelectValue />
@@ -189,7 +189,7 @@ export default function NewDeaccessionPage() {
                   id="reason"
                   value={formData.reason}
                   onChange={(e) =>
-                    setFormData({ ...formData, reason: e.target.value })
+                    setFormData((prev) => ({ ...prev, reason: e.target.value }))
                   }
                   placeholder={t("form.reasonPlaceholder")}
                   required
@@ -204,10 +204,10 @@ export default function NewDeaccessionPage() {
                   id="disposition"
                   value={formData.disposition}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       disposition: e.target.value,
-                    })
+                    }))
                   }
                   placeholder={t("form.dispositionPlaceholder")}
                 />
@@ -219,7 +219,7 @@ export default function NewDeaccessionPage() {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
                   placeholder={t("form.notesPlaceholder")}
                   rows={4}

@@ -213,7 +213,10 @@ export default function EditExhibitionPage() {
                     id="title"
                     value={formData.title}
                     onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        title: e.target.value,
+                      }))
                     }
                     placeholder={t("placeholders.enterTitle")}
                     className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
@@ -228,7 +231,10 @@ export default function EditExhibitionPage() {
                     id="location"
                     value={formData.location}
                     onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        location: e.target.value,
+                      }))
                     }
                     placeholder={t("placeholders.selectLocation")}
                     className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
@@ -244,10 +250,10 @@ export default function EditExhibitionPage() {
                     <DatePicker
                       date={formData.startDate}
                       onSelect={(date) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           startDate: date || new Date(),
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -258,7 +264,7 @@ export default function EditExhibitionPage() {
                     <DatePicker
                       date={formData.endDate}
                       onSelect={(date) =>
-                        setFormData({ ...formData, endDate: date })
+                        setFormData((prev) => ({ ...prev, endDate: date }))
                       }
                     />
                   </div>
@@ -269,10 +275,10 @@ export default function EditExhibitionPage() {
                     id="isCurrent"
                     checked={formData.isCurrent}
                     onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         isCurrent: checked as boolean,
-                      })
+                      }))
                     }
                   />
                   <div className="grid gap-1.5 leading-none">
@@ -301,7 +307,10 @@ export default function EditExhibitionPage() {
                     id="isLoan"
                     checked={formData.isLoan}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isLoan: checked as boolean })
+                      setFormData((prev) => ({
+                        ...prev,
+                        isLoan: checked as boolean,
+                      }))
                     }
                   />
                   <Label htmlFor="isLoan" className="text-foreground">
@@ -321,7 +330,10 @@ export default function EditExhibitionPage() {
                       id="loanVenue"
                       value={formData.loanVenue}
                       onChange={(e) =>
-                        setFormData({ ...formData, loanVenue: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          loanVenue: e.target.value,
+                        }))
                       }
                       placeholder={t("placeholders.selectLoanVenue")}
                       className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
@@ -339,7 +351,7 @@ export default function EditExhibitionPage() {
                 <Textarea
                   value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
                   placeholder={t("placeholders.addNotes")}
                   className="min-h-[100px] bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring resize-none"

@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  DEFAULT_ACCOUNT_HOLDER_TYPE,
   type AccountHolderType,
+  DEFAULT_ACCOUNT_HOLDER_TYPE,
   parseDateInputValue,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
@@ -380,10 +380,10 @@ export function AccountCombobox({
                     className="grid gap-3 sm:grid-cols-2"
                     value={formData.holderType}
                     onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         holderType: value as AccountHolderType,
-                      })
+                      }))
                     }
                   >
                     <Label
@@ -441,7 +441,10 @@ export function AccountCombobox({
                     id="businessName"
                     value={formData.businessName}
                     onChange={(e) =>
-                      setFormData({ ...formData, businessName: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        businessName: e.target.value,
+                      }))
                     }
                     placeholder={
                       formData.holderType === "organization"
@@ -457,7 +460,10 @@ export function AccountCombobox({
                       id="taxId"
                       value={formData.taxId}
                       onChange={(e) =>
-                        setFormData({ ...formData, taxId: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          taxId: e.target.value,
+                        }))
                       }
                       placeholder="Enter organization number"
                     />
@@ -470,10 +476,10 @@ export function AccountCombobox({
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           dateOfBirth: e.target.value,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -485,7 +491,10 @@ export function AccountCombobox({
                       id="phone"
                       value={formData.phone}
                       onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
                       }
                       placeholder="+47 123 45 678"
                     />
@@ -497,7 +506,10 @@ export function AccountCombobox({
                       type="email"
                       value={formData.email}
                       onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
                       }
                       placeholder="contact@company.com"
                     />
@@ -515,7 +527,10 @@ export function AccountCombobox({
                     id="address"
                     value={formData.address}
                     onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        address: e.target.value,
+                      }))
                     }
                     placeholder="Street address"
                   />
@@ -526,7 +541,10 @@ export function AccountCombobox({
                     id="address2"
                     value={formData.address2}
                     onChange={(e) =>
-                      setFormData({ ...formData, address2: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        address2: e.target.value,
+                      }))
                     }
                     placeholder="Apartment, suite, unit, etc."
                   />
@@ -538,7 +556,10 @@ export function AccountCombobox({
                       id="zipCode"
                       value={formData.zipCode}
                       onChange={(e) =>
-                        setFormData({ ...formData, zipCode: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          zipCode: e.target.value,
+                        }))
                       }
                       placeholder="0000"
                     />
@@ -549,7 +570,10 @@ export function AccountCombobox({
                       id="city"
                       value={formData.city}
                       onChange={(e) =>
-                        setFormData({ ...formData, city: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          city: e.target.value,
+                        }))
                       }
                       placeholder="City"
                     />
@@ -560,7 +584,10 @@ export function AccountCombobox({
                       id="country"
                       value={formData.country}
                       onChange={(e) =>
-                        setFormData({ ...formData, country: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          country: e.target.value,
+                        }))
                       }
                       placeholder="Norway"
                     />
@@ -579,10 +606,10 @@ export function AccountCombobox({
                       id="contactPerson"
                       value={formData.contactPerson}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           contactPerson: e.target.value,
-                        })
+                        }))
                       }
                       placeholder="Contact person name"
                     />
@@ -594,10 +621,10 @@ export function AccountCombobox({
                         id="contactPhone"
                         value={formData.contactPhone}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             contactPhone: e.target.value,
-                          })
+                          }))
                         }
                         placeholder="+47 123 45 678"
                       />
@@ -609,10 +636,10 @@ export function AccountCombobox({
                         type="email"
                         value={formData.contactEmail}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             contactEmail: e.target.value,
-                          })
+                          }))
                         }
                         placeholder="person@company.com"
                       />
@@ -628,7 +655,7 @@ export function AccountCombobox({
                 id="notes"
                 value={formData.notes}
                 onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
+                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
                 }
                 placeholder="Anything else that should be stored with this account"
                 rows={4}

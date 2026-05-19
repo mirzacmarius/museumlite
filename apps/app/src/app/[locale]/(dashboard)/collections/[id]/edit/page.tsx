@@ -215,7 +215,7 @@ export default function EditCollectionPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
                   placeholder={t("form.namePlaceholder")}
                   required
@@ -230,7 +230,10 @@ export default function EditCollectionPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   placeholder={t("form.descriptionPlaceholder")}
                   rows={4}
@@ -242,10 +245,10 @@ export default function EditCollectionPage() {
                 <Select
                   value={formData.curatorId}
                   onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       curatorId: value === "none" ? "" : value,
-                    })
+                    }))
                   }
                 >
                   <SelectTrigger id="curator">
@@ -269,10 +272,10 @@ export default function EditCollectionPage() {
                 <Select
                   value={formData.managedByRoleId}
                   onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       managedByRoleId: value === "none" ? "" : value,
-                    })
+                    }))
                   }
                 >
                   <SelectTrigger id="managedByRole">

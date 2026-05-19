@@ -123,7 +123,7 @@ export default function NewCollectionPage() {
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder={t("form.namePlaceholder")}
                 required
@@ -136,7 +136,10 @@ export default function NewCollectionPage() {
                 id="description"
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 placeholder={t("form.descriptionPlaceholder")}
                 rows={4}
@@ -148,7 +151,7 @@ export default function NewCollectionPage() {
               <Select
                 value={formData.curatorId}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, curatorId: value })
+                  setFormData((prev) => ({ ...prev, curatorId: value }))
                 }
               >
                 <SelectTrigger id="curator">
@@ -171,7 +174,7 @@ export default function NewCollectionPage() {
               <Select
                 value={formData.managedByRoleId}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, managedByRoleId: value })
+                  setFormData((prev) => ({ ...prev, managedByRoleId: value }))
                 }
               >
                 <SelectTrigger id="managedByRole">

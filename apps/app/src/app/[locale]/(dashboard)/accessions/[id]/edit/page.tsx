@@ -329,7 +329,10 @@ export default function EditAccessionPage() {
                         id="source"
                         value={formData.source}
                         onChange={(e) =>
-                          setFormData({ ...formData, source: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            source: e.target.value,
+                          }))
                         }
                         placeholder={t("form.sourcePlaceholder")}
                         required
@@ -355,7 +358,9 @@ export default function EditAccessionPage() {
                             | "donation"
                             | "other"
                             | "bequest",
-                        ) => setFormData({ ...formData, method: value })}
+                        ) =>
+                          setFormData((prev) => ({ ...prev, method: value }))
+                        }
                       >
                         <SelectTrigger id="method">
                           <SelectValue />
@@ -398,7 +403,10 @@ export default function EditAccessionPage() {
                         step="0.01"
                         value={formData.cost}
                         onChange={(e) =>
-                          setFormData({ ...formData, cost: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            cost: e.target.value,
+                          }))
                         }
                         placeholder={t("form.costPlaceholder")}
                       />
@@ -413,7 +421,10 @@ export default function EditAccessionPage() {
                         id="notes"
                         value={formData.notes}
                         onChange={(e) =>
-                          setFormData({ ...formData, notes: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            notes: e.target.value,
+                          }))
                         }
                         placeholder={t("form.notesPlaceholder")}
                         rows={4}

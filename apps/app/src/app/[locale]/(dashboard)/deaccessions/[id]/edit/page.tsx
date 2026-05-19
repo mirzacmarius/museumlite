@@ -214,7 +214,7 @@ export default function EditDeaccessionPage() {
                   id="reason"
                   value={formData.reason}
                   onChange={(e) =>
-                    setFormData({ ...formData, reason: e.target.value })
+                    setFormData((prev) => ({ ...prev, reason: e.target.value }))
                   }
                   placeholder={t("form.reasonPlaceholder")}
                   required
@@ -228,14 +228,14 @@ export default function EditDeaccessionPage() {
                   onValueChange={(value) => {
                     const nextTargetCollectionStatus =
                       value as DeaccessionTargetStatus;
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       targetCollectionStatus: nextTargetCollectionStatus,
                       method:
                         nextTargetCollectionStatus === "deaccessioned"
                           ? formData.method
                           : "destruction",
-                    });
+                    }));
                   }}
                 >
                   <SelectTrigger id="targetCollectionStatus">
@@ -254,10 +254,10 @@ export default function EditDeaccessionPage() {
                 <Select
                   value={formData.method}
                   onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       method: value as DeaccessionMethod,
-                    })
+                    }))
                   }
                 >
                   <SelectTrigger
@@ -297,10 +297,10 @@ export default function EditDeaccessionPage() {
                   id="disposition"
                   value={formData.disposition}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
+                    setFormData((prev) => ({
+                      ...prev,
                       disposition: e.target.value,
-                    })
+                    }))
                   }
                   placeholder={t("form.dispositionPlaceholder")}
                 />
@@ -312,7 +312,7 @@ export default function EditDeaccessionPage() {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
+                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
                   }
                   placeholder={t("form.notesPlaceholder")}
                   rows={4}
@@ -337,10 +337,10 @@ export default function EditDeaccessionPage() {
                             step="0.01"
                             value={formData.proceedsAmount}
                             onChange={(e) =>
-                              setFormData({
-                                ...formData,
+                              setFormData((prev) => ({
+                                ...prev,
                                 proceedsAmount: e.target.value,
-                              })
+                              }))
                             }
                             placeholder={t("form.proceedsAmountPlaceholder")}
                           />
@@ -352,10 +352,10 @@ export default function EditDeaccessionPage() {
                           <Select
                             value={formData.proceedsCurrency}
                             onValueChange={(value) =>
-                              setFormData({
-                                ...formData,
+                              setFormData((prev) => ({
+                                ...prev,
                                 proceedsCurrency: value,
-                              })
+                              }))
                             }
                           >
                             <SelectTrigger id="proceedsCurrency">
@@ -383,10 +383,10 @@ export default function EditDeaccessionPage() {
                             id="proceedsRecipient"
                             value={formData.proceedsRecipient}
                             onChange={(e) =>
-                              setFormData({
-                                ...formData,
+                              setFormData((prev) => ({
+                                ...prev,
                                 proceedsRecipient: e.target.value,
-                              })
+                              }))
                             }
                             placeholder={t("form.proceedsRecipientPlaceholder")}
                           />
@@ -400,10 +400,10 @@ export default function EditDeaccessionPage() {
                             type="date"
                             value={formData.proceedsDate}
                             onChange={(e) =>
-                              setFormData({
-                                ...formData,
+                              setFormData((prev) => ({
+                                ...prev,
                                 proceedsDate: e.target.value,
-                              })
+                              }))
                             }
                           />
                         </div>
@@ -417,10 +417,10 @@ export default function EditDeaccessionPage() {
                           id="proceedsNotes"
                           value={formData.proceedsNotes}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
+                            setFormData((prev) => ({
+                              ...prev,
                               proceedsNotes: e.target.value,
-                            })
+                            }))
                           }
                           placeholder={t("form.proceedsNotesPlaceholder")}
                           rows={2}

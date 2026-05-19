@@ -431,7 +431,10 @@ function TransitForm({
         <Select
           value={form.transitType}
           onValueChange={(value) =>
-            setForm({ ...form, transitType: value as typeof form.transitType })
+            setForm((prev) => ({
+              ...prev,
+              transitType: value as typeof form.transitType,
+            }))
           }
         >
           <SelectTrigger>
@@ -453,7 +456,7 @@ function TransitForm({
             id="originName"
             value={form.originName}
             onChange={(event) =>
-              setForm({ ...form, originName: event.target.value })
+              setForm((prev) => ({ ...prev, originName: event.target.value }))
             }
             placeholder="Main Museum"
             required
@@ -465,7 +468,10 @@ function TransitForm({
             id="destinationName"
             value={form.destinationName}
             onChange={(event) =>
-              setForm({ ...form, destinationName: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                destinationName: event.target.value,
+              }))
             }
             placeholder="Storage Facility"
             required
@@ -479,7 +485,7 @@ function TransitForm({
           id="carrier"
           value={form.carrier}
           onChange={(event) =>
-            setForm({ ...form, carrier: event.target.value })
+            setForm((prev) => ({ ...prev, carrier: event.target.value }))
           }
           placeholder="FedEx, DHL, Internal Courier"
           required
@@ -494,7 +500,10 @@ function TransitForm({
             type="date"
             value={form.scheduledPickupDate}
             onChange={(event) =>
-              setForm({ ...form, scheduledPickupDate: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                scheduledPickupDate: event.target.value,
+              }))
             }
           />
         </div>
@@ -505,7 +514,10 @@ function TransitForm({
             type="date"
             value={form.estimatedDeliveryDate}
             onChange={(event) =>
-              setForm({ ...form, estimatedDeliveryDate: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                estimatedDeliveryDate: event.target.value,
+              }))
             }
           />
         </div>
@@ -517,7 +529,7 @@ function TransitForm({
           id="trackingNumber"
           value={form.trackingNumber}
           onChange={(event) =>
-            setForm({ ...form, trackingNumber: event.target.value })
+            setForm((prev) => ({ ...prev, trackingNumber: event.target.value }))
           }
           placeholder="1Z999AA10123456784"
         />

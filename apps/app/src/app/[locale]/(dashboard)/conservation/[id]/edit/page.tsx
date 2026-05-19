@@ -170,7 +170,7 @@ export default function EditTreatmentPage({
                 <Select
                   value={formData.treatmentType}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, treatmentType: value })
+                    setFormData((prev) => ({ ...prev, treatmentType: value }))
                   }
                 >
                   <SelectTrigger className="bg-muted/50 border-border text-foreground/80">
@@ -194,7 +194,8 @@ export default function EditTreatmentPage({
                 <DatePicker
                   date={formData.performedAt}
                   onSelect={(date) =>
-                    date && setFormData({ ...formData, performedAt: date })
+                    date &&
+                    setFormData((prev) => ({ ...prev, performedAt: date }))
                   }
                   className="w-full bg-muted/50 border-border text-foreground/80"
                 />
@@ -209,7 +210,7 @@ export default function EditTreatmentPage({
                 placeholder={t("form.titlePlaceholder")}
                 value={formData.title}
                 onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
                 }
                 className="bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground"
                 required
@@ -224,7 +225,10 @@ export default function EditTreatmentPage({
                 placeholder={t("form.descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 className="min-h-[120px] bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground"
                 required
@@ -239,7 +243,7 @@ export default function EditTreatmentPage({
                 placeholder={t("form.notesPlaceholder")}
                 value={formData.notes}
                 onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
+                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
                 }
                 className="min-h-[100px] bg-muted/50 border-border text-foreground/80 placeholder:text-muted-foreground"
               />

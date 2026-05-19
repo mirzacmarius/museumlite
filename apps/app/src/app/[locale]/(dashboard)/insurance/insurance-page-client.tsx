@@ -649,7 +649,7 @@ function PolicyForm({
             id="policyNumber"
             value={form.policyNumber}
             onChange={(event) =>
-              setForm({ ...form, policyNumber: event.target.value })
+              setForm((prev) => ({ ...prev, policyNumber: event.target.value }))
             }
             placeholder="POL-2024-001"
             required
@@ -661,7 +661,7 @@ function PolicyForm({
             id="carrier"
             value={form.carrier}
             onChange={(event) =>
-              setForm({ ...form, carrier: event.target.value })
+              setForm((prev) => ({ ...prev, carrier: event.target.value }))
             }
             placeholder="Chubb Insurance"
             required
@@ -675,7 +675,10 @@ function PolicyForm({
           <Select
             value={form.policyType}
             onValueChange={(value) =>
-              setForm({ ...form, policyType: value as typeof form.policyType })
+              setForm((prev) => ({
+                ...prev,
+                policyType: value as typeof form.policyType,
+              }))
             }
           >
             <SelectTrigger>
@@ -698,7 +701,10 @@ function PolicyForm({
             min="0"
             value={form.coverageAmount}
             onChange={(event) =>
-              setForm({ ...form, coverageAmount: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                coverageAmount: event.target.value,
+              }))
             }
             placeholder="500000"
             required
@@ -714,7 +720,10 @@ function PolicyForm({
             type="date"
             value={form.effectiveDate}
             onChange={(event) =>
-              setForm({ ...form, effectiveDate: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                effectiveDate: event.target.value,
+              }))
             }
             required
           />
@@ -726,7 +735,10 @@ function PolicyForm({
             type="date"
             value={form.expirationDate}
             onChange={(event) =>
-              setForm({ ...form, expirationDate: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                expirationDate: event.target.value,
+              }))
             }
             required
           />
@@ -742,7 +754,7 @@ function PolicyForm({
             min="0"
             value={form.deductible}
             onChange={(event) =>
-              setForm({ ...form, deductible: event.target.value })
+              setForm((prev) => ({ ...prev, deductible: event.target.value }))
             }
             placeholder="500"
           />
@@ -755,7 +767,10 @@ function PolicyForm({
             min="0"
             value={form.premiumAmount}
             onChange={(event) =>
-              setForm({ ...form, premiumAmount: event.target.value })
+              setForm((prev) => ({
+                ...prev,
+                premiumAmount: event.target.value,
+              }))
             }
             placeholder="1500"
           />
@@ -864,7 +879,9 @@ function ClaimForm({
         <Label>Policy *</Label>
         <Select
           value={form.policyId}
-          onValueChange={(value) => setForm({ ...form, policyId: value })}
+          onValueChange={(value) =>
+            setForm((prev) => ({ ...prev, policyId: value }))
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Select policy" />
@@ -892,7 +909,7 @@ function ClaimForm({
             type="date"
             value={form.incidentDate}
             onChange={(event) =>
-              setForm({ ...form, incidentDate: event.target.value })
+              setForm((prev) => ({ ...prev, incidentDate: event.target.value }))
             }
             required
           />
@@ -902,10 +919,10 @@ function ClaimForm({
           <Select
             value={form.incidentType}
             onValueChange={(value) =>
-              setForm({
-                ...form,
+              setForm((prev) => ({
+                ...prev,
                 incidentType: value as typeof form.incidentType,
-              })
+              }))
             }
           >
             <SelectTrigger>
@@ -932,7 +949,10 @@ function ClaimForm({
           id="incidentLocation"
           value={form.incidentLocation}
           onChange={(event) =>
-            setForm({ ...form, incidentLocation: event.target.value })
+            setForm((prev) => ({
+              ...prev,
+              incidentLocation: event.target.value,
+            }))
           }
           placeholder="Gallery A, Storage, etc."
         />
@@ -944,7 +964,10 @@ function ClaimForm({
           id="incidentDescription"
           value={form.incidentDescription}
           onChange={(event) =>
-            setForm({ ...form, incidentDescription: event.target.value })
+            setForm((prev) => ({
+              ...prev,
+              incidentDescription: event.target.value,
+            }))
           }
           placeholder="Describe the incident..."
           required
@@ -959,7 +982,7 @@ function ClaimForm({
           min="0"
           value={form.claimedAmount}
           onChange={(event) =>
-            setForm({ ...form, claimedAmount: event.target.value })
+            setForm((prev) => ({ ...prev, claimedAmount: event.target.value }))
           }
           placeholder="25000"
           required

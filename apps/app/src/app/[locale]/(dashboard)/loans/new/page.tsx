@@ -357,7 +357,7 @@ export default function NewLoanPage() {
                       <Select
                         value={formData.type}
                         onValueChange={(value: "incoming" | "outgoing") =>
-                          setFormData({ ...formData, type: value })
+                          setFormData((prev) => ({ ...prev, type: value }))
                         }
                       >
                         <SelectTrigger id="type" className="bg-background">
@@ -391,10 +391,10 @@ export default function NewLoanPage() {
                         id="loanNumber"
                         value={formData.loanNumber}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             loanNumber: e.target.value,
-                          })
+                          }))
                         }
                         placeholder={t("placeholders.loanNumber")}
                         className="bg-background font-mono placeholder:text-muted-foreground/50"
@@ -413,12 +413,12 @@ export default function NewLoanPage() {
                         organizationId={currentOrganizationId}
                         value={formData.accountId}
                         onValueChange={(accountId) =>
-                          setFormData({ ...formData, accountId })
+                          setFormData((prev) => ({ ...prev, accountId }))
                         }
                         onAccountSelect={(account) => {
                           if (account) {
-                            setFormData({
-                              ...formData,
+                            setFormData((prev) => ({
+                              ...prev,
                               accountId: account._id,
                               lenderBorrowerName: account.businessName ?? "",
                               lenderBorrowerContact: [
@@ -428,7 +428,7 @@ export default function NewLoanPage() {
                               ]
                                 .filter(Boolean)
                                 .join(", "),
-                            });
+                            }));
                           }
                         }}
                         placeholder={t("placeholders.lenderBorrower")}
@@ -447,10 +447,10 @@ export default function NewLoanPage() {
                           id="lenderBorrowerName"
                           value={formData.lenderBorrowerName}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
+                            setFormData((prev) => ({
+                              ...prev,
                               lenderBorrowerName: e.target.value,
-                            })
+                            }))
                           }
                           placeholder={t("placeholders.institutionName")}
                           required
@@ -468,10 +468,10 @@ export default function NewLoanPage() {
                           id="lenderBorrowerContact"
                           value={formData.lenderBorrowerContact}
                           onChange={(e) =>
-                            setFormData({
-                              ...formData,
+                            setFormData((prev) => ({
+                              ...prev,
                               lenderBorrowerContact: e.target.value,
-                            })
+                            }))
                           }
                           placeholder={t("placeholders.contactDetails")}
                           className="bg-background"
@@ -501,10 +501,10 @@ export default function NewLoanPage() {
                         id="startDate"
                         date={formData.startDate}
                         onSelect={(date: Date | undefined) =>
-                          setFormData({
-                            ...formData,
+                          setFormData((prev) => ({
+                            ...prev,
                             startDate: date || new Date(),
-                          })
+                          }))
                         }
                         placeholder={t("placeholders.selectDate")}
                       />
@@ -515,7 +515,7 @@ export default function NewLoanPage() {
                         id="endDate"
                         date={formData.endDate}
                         onSelect={(date: Date | undefined) =>
-                          setFormData({ ...formData, endDate: date })
+                          setFormData((prev) => ({ ...prev, endDate: date }))
                         }
                         placeholder={t("placeholders.selectDate")}
                       />
@@ -532,10 +532,10 @@ export default function NewLoanPage() {
                       step="0.01"
                       value={formData.insuranceValue}
                       onChange={(e) =>
-                        setFormData({
-                          ...formData,
+                        setFormData((prev) => ({
+                          ...prev,
                           insuranceValue: e.target.value,
-                        })
+                        }))
                       }
                       placeholder={t("placeholders.insuranceValue")}
                       className="bg-background"
@@ -548,7 +548,10 @@ export default function NewLoanPage() {
                       id="terms"
                       value={formData.terms}
                       onChange={(e) =>
-                        setFormData({ ...formData, terms: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          terms: e.target.value,
+                        }))
                       }
                       placeholder={t("placeholders.terms")}
                       rows={3}
@@ -562,7 +565,10 @@ export default function NewLoanPage() {
                       id="notes"
                       value={formData.notes}
                       onChange={(e) =>
-                        setFormData({ ...formData, notes: e.target.value })
+                        setFormData((prev) => ({
+                          ...prev,
+                          notes: e.target.value,
+                        }))
                       }
                       placeholder={t("placeholders.notes")}
                       rows={2}
