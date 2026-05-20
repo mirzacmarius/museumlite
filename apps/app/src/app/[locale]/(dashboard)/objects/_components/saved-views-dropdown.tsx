@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDistanceLocale } from "@/lib/format-date";
+import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -210,10 +210,12 @@ export function SavedViewsDropdown({
                   {view.lastUsedAt && (
                     <span className="text-xs text-muted-foreground">
                       Used{" "}
-                      {formatDistanceLocale(
-                        new Date(view.lastUsedAt),
-                        locale,
-                      ).toLowerCase()}
+                      <span className="lowercase">
+                        <ClientRelativeTime
+                          timestamp={view.lastUsedAt}
+                          locale={locale}
+                        />
+                      </span>
                     </span>
                   )}
                 </div>

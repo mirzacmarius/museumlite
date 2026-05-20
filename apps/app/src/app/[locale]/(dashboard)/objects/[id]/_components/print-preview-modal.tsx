@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientCurrentDate } from "@/components/client-date";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
@@ -449,11 +449,10 @@ export function PrintPreviewModal({
             <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
               <p>
                 {t("printedOn")}{" "}
-                {formatDate(new Date(), locale, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                <ClientCurrentDate
+                  locale={locale}
+                  options={{ year: "numeric", month: "long", day: "numeric" }}
+                />
               </p>
             </div>
           </div>

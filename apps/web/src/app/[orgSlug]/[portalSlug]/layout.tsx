@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientCurrentYear } from "@/components/client-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { Building2 } from "lucide-react";
@@ -80,7 +81,7 @@ export default function PortalLayout({
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex items-center justify-between text-sm text-white/40">
             <p>
-              © {new Date().getFullYear()} {organization?.name ?? orgSlug}
+              © <ClientCurrentYear /> {organization?.name ?? orgSlug}
             </p>
             <a
               href="https://museumlite.com"

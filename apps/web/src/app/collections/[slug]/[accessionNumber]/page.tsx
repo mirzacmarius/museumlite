@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
@@ -314,9 +315,9 @@ export default function PublicObjectPage() {
                         Last Appraisal
                       </dt>
                       <dd className="text-white">
-                        {new Date(
-                          object.valuation.lastAppraisalDate,
-                        ).toLocaleDateString()}
+                        <ClientDate
+                          timestamp={object.valuation.lastAppraisalDate}
+                        />
                       </dd>
                     </div>
                   )}

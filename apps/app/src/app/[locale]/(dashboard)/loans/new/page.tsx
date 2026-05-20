@@ -503,7 +503,7 @@ export default function NewLoanPage() {
                         onSelect={(date: Date | undefined) =>
                           setFormData((prev) => ({
                             ...prev,
-                            startDate: date || new Date(),
+                            startDate: date ?? prev.startDate,
                           }))
                         }
                         placeholder={t("placeholders.selectDate")}

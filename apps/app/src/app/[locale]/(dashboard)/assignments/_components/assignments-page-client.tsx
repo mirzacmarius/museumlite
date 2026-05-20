@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDistanceLocale } from "@/lib/format-date";
+import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,12 +23,13 @@ import {
   Truck,
 } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 interface PendingApproval {
   _id: string;
   type: "accession" | "deaccession" | "loan" | "exhibition" | "conservation";
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   status: string;
   workflowStep?: number;
   createdAt: number;
@@ -167,7 +168,16 @@ export function AssignmentsPageClient({
                   <CollectionCard
                     key={item._id}
                     item={item}
-                    subtitle={`Modified ${formatDistanceLocale(new Date(item.lastModifiedAt), locale, { addSuffix: true })}`}
+                    subtitle={
+                      <>
+                        Modified{" "}
+                        <ClientRelativeTime
+                          timestamp={item.lastModifiedAt}
+                          locale={locale}
+                          options={{ addSuffix: true }}
+                        />
+                      </>
+                    }
                   />
                 ))}
               </div>
@@ -207,7 +217,16 @@ export function AssignmentsPageClient({
                       thumbnailUrl: item.thumbnailUrl,
                       lastModifiedAt: item.catalogedAt,
                     }}
-                    subtitle={`Cataloged ${formatDistanceLocale(new Date(item.catalogedAt), locale, { addSuffix: true })}`}
+                    subtitle={
+                      <>
+                        Cataloged{" "}
+                        <ClientRelativeTime
+                          timestamp={item.catalogedAt}
+                          locale={locale}
+                          options={{ addSuffix: true }}
+                        />
+                      </>
+                    }
                     status={item.status}
                   />
                 ))}
@@ -332,9 +351,11 @@ function PendingApprovalCard({ item }: { item: PendingApproval }) {
 
         <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/50 pt-3">
           <span>
-            {formatDistanceLocale(new Date(item.createdAt), locale, {
-              addSuffix: true,
-            })}
+            <ClientRelativeTime
+              timestamp={item.createdAt}
+              locale={locale}
+              options={{ addSuffix: true }}
+            />
           </span>
           {item.workflowStep !== undefined && (
             <span className="text-muted-foreground">
@@ -353,7 +374,7 @@ function CollectionCard({
   status,
 }: {
   item: RecentlyModified;
-  subtitle?: string;
+  subtitle?: ReactNode;
   status?: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
 }) {
   const t = useI18n();

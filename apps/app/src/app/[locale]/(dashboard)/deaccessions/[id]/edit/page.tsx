@@ -2,7 +2,7 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
+import { useClientDate } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -57,6 +57,10 @@ export default function EditDeaccessionPage() {
     proceedsDate: "",
     proceedsNotes: "",
   });
+  const dateDeaccessionedLabel = useClientDate(
+    deaccession?.dateDeaccessioned,
+    locale,
+  );
 
   useEffect(() => {
     if (deaccession) {
@@ -196,10 +200,7 @@ export default function EditDeaccessionPage() {
               <div className="space-y-2">
                 <Label>{t("form.dateDeaccessioned")}</Label>
                 <Input
-                  value={formatDate(
-                    new Date(deaccession.dateDeaccessioned),
-                    locale,
-                  )}
+                  value={dateDeaccessionedLabel}
                   disabled
                   className="bg-muted"
                 />

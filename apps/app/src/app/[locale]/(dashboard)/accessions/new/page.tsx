@@ -233,7 +233,7 @@ export default function NewAccessionPage() {
                     onSelect={(date: Date | undefined) =>
                       setFormData((prev) => ({
                         ...prev,
-                        dateReceived: date || new Date(),
+                        dateReceived: date ?? prev.dateReceived,
                       }))
                     }
                     placeholder={t("form.dateReceivedPlaceholder")}

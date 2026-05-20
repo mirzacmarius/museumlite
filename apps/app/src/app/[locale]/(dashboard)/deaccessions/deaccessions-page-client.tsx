@@ -1,7 +1,7 @@
 "use client";
 
+import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -304,11 +304,11 @@ function DeaccessionsReportDialog({
                           </p>
                         </td>
                         <td className="py-2 text-zinc-600">
-                          {formatDateFns(
-                            new Date(item.dateDeaccessioned),
-                            "MMM d, yyyy",
-                            locale,
-                          )}
+                          <ClientDateFns
+                            timestamp={item.dateDeaccessioned}
+                            format="MMM d, yyyy"
+                            locale={locale}
+                          />
                         </td>
                         <td className="py-2 capitalize text-zinc-600">
                           {t(`method.${item.method}`)}
@@ -344,11 +344,10 @@ function DeaccessionsReportDialog({
               <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400">
                 <p>
                   {t("report.generatedOn")}{" "}
-                  {formatDateFns(
-                    new Date(),
-                    "MMMM d, yyyy 'at' h:mm a",
-                    locale,
-                  )}{" "}
+                  <ClientCurrentDateFns
+                    format="MMMM d, yyyy 'at' h:mm a"
+                    locale={locale}
+                  />{" "}
                   • {exportData.organization.name}
                 </p>
               </div>

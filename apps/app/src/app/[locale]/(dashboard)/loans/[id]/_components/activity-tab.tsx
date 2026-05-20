@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate, ClientTime } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { WorkflowHistoryEntry } from "./types";
 
@@ -54,15 +54,16 @@ export function ActivityTab({ workflowHistory }: ActivityTabProps) {
             }`}
           />
           <p className="text-xs text-muted-foreground mb-1">
-            {formatDate(new Date(entry.approvedAt), locale, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}{" "}
-            {new Date(entry.approvedAt).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            <ClientDate
+              timestamp={entry.approvedAt}
+              locale={locale}
+              options={{ month: "short", day: "numeric", year: "numeric" }}
+            />{" "}
+            <ClientTime
+              timestamp={entry.approvedAt}
+              locale="en-US"
+              options={{ hour: "2-digit", minute: "2-digit" }}
+            />
           </p>
           <p className="text-sm text-foreground">
             {getStepLabel(entry.step, entry.comment)}

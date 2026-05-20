@@ -1,8 +1,9 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
+import { useClientDate } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -98,6 +99,7 @@ export default function EditAccessionPage() {
     cost: "",
     notes: "",
   });
+  const dateReceivedLabel = useClientDate(accession?.dateReceived, locale);
 
   useEffect(() => {
     if (accession) {
@@ -252,7 +254,10 @@ export default function EditAccessionPage() {
                   <Calendar className="size-4" />
                   <span>
                     Received{" "}
-                    {formatDate(new Date(accession.dateReceived), locale)}
+                    <ClientDate
+                      timestamp={accession.dateReceived}
+                      locale={locale}
+                    />
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -302,10 +307,7 @@ export default function EditAccessionPage() {
                     <div className="space-y-2">
                       <Label>{t("form.dateReceived")}</Label>
                       <Input
-                        value={formatDate(
-                          new Date(accession.dateReceived),
-                          locale,
-                        )}
+                        value={dateReceivedLabel}
                         disabled
                         className="bg-muted"
                       />

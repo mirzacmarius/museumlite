@@ -1,7 +1,7 @@
 "use client";
 
+import { ClientDateFns } from "@/components/client-date";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -247,11 +247,11 @@ export function VehicleDetailsTab({
                     </span>
                   </div>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {formatDateFns(
-                      new Date(entry.serviceDate),
-                      "MMM d, yyyy",
-                      locale,
-                    )}
+                    <ClientDateFns
+                      timestamp={entry.serviceDate}
+                      format="MMM d, yyyy"
+                      locale={locale}
+                    />
                   </span>
                 </div>
                 <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
@@ -309,11 +309,11 @@ export function VehicleDetailsTab({
                     </span>
                   </div>
                   <span className="font-mono text-xs text-muted-foreground">
-                    {formatDateFns(
-                      new Date(event.eventDate),
-                      "MMM d, yyyy",
-                      locale,
-                    )}
+                    <ClientDateFns
+                      timestamp={event.eventDate}
+                      format="MMM d, yyyy"
+                      locale={locale}
+                    />
                   </span>
                 </div>
                 {event.location && (

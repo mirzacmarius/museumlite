@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import {
   DashboardListPageSkeleton,
   GridCardsSkeleton,
@@ -7,7 +8,6 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -290,7 +290,11 @@ export function InstallationsPageClient() {
                             )}
                             {task.dueDate && (
                               <span>
-                                Due {formatDate(new Date(task.dueDate), locale)}
+                                Due{" "}
+                                <ClientDate
+                                  timestamp={task.dueDate}
+                                  locale={locale}
+                                />
                               </span>
                             )}
                           </div>

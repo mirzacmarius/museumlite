@@ -295,7 +295,7 @@ export default function EditLoanPage() {
                     onSelect={(date: Date | undefined) =>
                       setFormData((prev) => ({
                         ...prev,
-                        startDate: date || new Date(),
+                        startDate: date ?? prev.startDate,
                       }))
                     }
                     placeholder={t("selectStartDate")}

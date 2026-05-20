@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatDate } from "@/lib/format-date";
@@ -419,7 +420,10 @@ export default function AccessionDetailPage() {
                   <Calendar className="size-4" />
                   <span>
                     Received{" "}
-                    {formatDate(new Date(accession.dateReceived), locale)}
+                    <ClientDate
+                      timestamp={accession.dateReceived}
+                      locale={locale}
+                    />
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -760,7 +764,10 @@ export default function AccessionDetailPage() {
                             <div>
                               <p className="font-medium">Step {entry.step}</p>
                               <p className="text-sm text-muted-foreground">
-                                {formatDate(new Date(entry.approvedAt), locale)}
+                                <ClientDate
+                                  timestamp={entry.approvedAt}
+                                  locale={locale}
+                                />
                               </p>
                               {entry.comment ? (
                                 <p className="mt-1 text-sm">{entry.comment}</p>

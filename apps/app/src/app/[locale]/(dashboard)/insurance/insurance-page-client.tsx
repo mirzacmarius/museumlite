@@ -1,10 +1,10 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -390,15 +390,23 @@ export function InsurancePageClient() {
                       key: "effectiveDate",
                       label: "Effective",
                       className: "w-28 flex-none",
-                      render: (policy) =>
-                        formatDate(new Date(policy.effectiveDate), locale),
+                      render: (policy) => (
+                        <ClientDate
+                          timestamp={policy.effectiveDate}
+                          locale={locale}
+                        />
+                      ),
                     },
                     {
                       key: "expirationDate",
                       label: "Expires",
                       className: "w-28 flex-none",
-                      render: (policy) =>
-                        formatDate(new Date(policy.expirationDate), locale),
+                      render: (policy) => (
+                        <ClientDate
+                          timestamp={policy.expirationDate}
+                          locale={locale}
+                        />
+                      ),
                     },
                     {
                       key: "status",
@@ -510,8 +518,12 @@ export function InsurancePageClient() {
                       key: "incidentDate",
                       label: "Date",
                       className: "w-32 flex-none",
-                      render: (claim) =>
-                        formatDate(new Date(claim.incidentDate), locale),
+                      render: (claim) => (
+                        <ClientDate
+                          timestamp={claim.incidentDate}
+                          locale={locale}
+                        />
+                      ),
                     },
                     {
                       key: "claimedAmount",

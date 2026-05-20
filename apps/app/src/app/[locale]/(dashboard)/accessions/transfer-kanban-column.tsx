@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateFns } from "@/lib/format-date";
+import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale } from "@/locales/client";
 import type { api } from "@v1/backend/convex/_generated/api";
 import { ScrollArea } from "@v1/ui/scroll-area";
@@ -204,11 +204,11 @@ export function TransferKanbanColumn({
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-zinc-500">Requested</span>
                       <span className="text-right">
-                        {formatDateFns(
-                          new Date(request.requestedAt),
-                          "MMM d, yyyy",
-                          locale,
-                        )}
+                        <ClientDateFns
+                          timestamp={request.requestedAt}
+                          format="MMM d, yyyy"
+                          locale={locale}
+                        />
                       </span>
                     </div>
                   </div>

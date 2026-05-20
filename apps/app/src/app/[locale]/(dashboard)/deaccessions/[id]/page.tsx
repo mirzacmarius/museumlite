@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -198,11 +198,6 @@ export default function DeaccessionDetailPage() {
     }
   };
 
-  const formattedDeaccessionedDate = formatDateFns(
-    new Date(deaccession.dateDeaccessioned),
-    "MMMM d, yyyy",
-    locale,
-  );
   const collectionStatusLabel = collection
     ? formatStatusLabel(collection.status)
     : null;
@@ -252,7 +247,11 @@ export default function DeaccessionDetailPage() {
                         {getStatusBadge(deaccession.status)}
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                        <span>{formattedDeaccessionedDate}</span>
+                        <ClientDateFns
+                          timestamp={deaccession.dateDeaccessioned}
+                          format="MMMM d, yyyy"
+                          locale={locale}
+                        />
                         <span className="size-1 rounded-full bg-muted-foreground/50" />
                         <span>{actionLabel}</span>
                         <span className="size-1 rounded-full bg-muted-foreground/50" />
@@ -462,11 +461,11 @@ export default function DeaccessionDetailPage() {
                               {entry.approverName || t("detail.unknown")}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {formatDateFns(
-                                new Date(entry.approvedAt),
-                                "MMM d, yyyy 'at' h:mm a",
-                                locale,
-                              )}
+                              <ClientDateFns
+                                timestamp={entry.approvedAt}
+                                format="MMM d, yyyy 'at' h:mm a"
+                                locale={locale}
+                              />
                             </span>
                           </div>
                           {entry.comment && (
@@ -577,11 +576,11 @@ export default function DeaccessionDetailPage() {
                         Date Deaccessioned
                       </p>
                       <p className="text-black">
-                        {formatDateFns(
-                          new Date(exportData.deaccession.dateDeaccessioned),
-                          "MMMM d, yyyy",
-                          locale,
-                        )}
+                        <ClientDateFns
+                          timestamp={exportData.deaccession.dateDeaccessioned}
+                          format="MMMM d, yyyy"
+                          locale={locale}
+                        />
                       </p>
                     </div>
                     <div>
@@ -661,11 +660,11 @@ export default function DeaccessionDetailPage() {
                             Date Received
                           </p>
                           <p className="text-black">
-                            {formatDateFns(
-                              new Date(exportData.deaccession.proceedsDate),
-                              "MMMM d, yyyy",
-                              locale,
-                            )}
+                            <ClientDateFns
+                              timestamp={exportData.deaccession.proceedsDate}
+                              format="MMMM d, yyyy"
+                              locale={locale}
+                            />
                           </p>
                         </div>
                       )}
@@ -705,11 +704,11 @@ export default function DeaccessionDetailPage() {
                             </p>
                             <p className="text-xs text-zinc-500">
                               {entry.approverName} •{" "}
-                              {formatDateFns(
-                                new Date(entry.approvedAt),
-                                "MMM d, yyyy 'at' h:mm a",
-                                locale,
-                              )}
+                              <ClientDateFns
+                                timestamp={entry.approvedAt}
+                                format="MMM d, yyyy 'at' h:mm a"
+                                locale={locale}
+                              />
                             </p>
                             {entry.comment && (
                               <p className="mt-1 text-xs italic text-zinc-600">
@@ -735,11 +734,11 @@ export default function DeaccessionDetailPage() {
                             {exportData.approverName}
                           </p>
                           <p className="text-xs text-zinc-500">
-                            {formatDateFns(
-                              new Date(exportData.deaccession.approvedAt),
-                              "MMMM d, yyyy 'at' h:mm a",
-                              locale,
-                            )}
+                            <ClientDateFns
+                              timestamp={exportData.deaccession.approvedAt}
+                              format="MMMM d, yyyy 'at' h:mm a"
+                              locale={locale}
+                            />
                           </p>
                         </div>
                         <CheckCircle className="size-8 text-green-600" />
@@ -750,11 +749,10 @@ export default function DeaccessionDetailPage() {
                 <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
                   <p>
                     Generated on{" "}
-                    {formatDateFns(
-                      new Date(),
-                      "MMMM d, yyyy 'at' h:mm a",
-                      locale,
-                    )}{" "}
+                    <ClientCurrentDateFns
+                      format="MMMM d, yyyy 'at' h:mm a"
+                      locale={locale}
+                    />{" "}
                     • {exportData.organization.name}
                   </p>
                 </div>

@@ -1,13 +1,14 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import {
   DashboardListPageSkeleton,
   GridCardsSkeleton,
 } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -230,6 +231,7 @@ function ExhibitionList({
   viewMode: ExhibitionViewMode;
 }) {
   const t = useScopedI18n("exhibitions");
+  const now = useClientNow();
   const exhibitions = useQuery(api.exhibitions.listByOrganization, {
     organizationId: organizationId as Id<"organizations">,
   });
@@ -250,9 +252,8 @@ function ExhibitionList({
 
     if (statusFilter === "all") return true;
 
-    const now = Date.now();
-    const isPast = ex.endDate && ex.endDate < now;
-    const isUpcoming = ex.startDate > now;
+    const isPast = now !== undefined && ex.endDate && ex.endDate < now;
+    const isUpcoming = now !== undefined && ex.startDate > now;
 
     if (statusFilter === "past") return isPast;
     if (statusFilter === "upcoming") return isUpcoming;
@@ -306,8 +307,10 @@ interface Exhibition {
 function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
   const t = useScopedI18n("exhibitions");
   const locale = useCurrentLocale();
-  const isPast = exhibition.endDate && exhibition.endDate < Date.now();
-  const isUpcoming = exhibition.startDate > Date.now();
+  const now = useClientNow();
+  const isPast =
+    now !== undefined && exhibition.endDate && exhibition.endDate < now;
+  const isUpcoming = now !== undefined && exhibition.startDate > now;
 
   let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
   let statusText = t("status.current");
@@ -355,10 +358,15 @@ function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
           <div className="flex items-center gap-1.5">
             <Calendar className="size-3.5 text-muted-foreground" />
             <span>
-              {formatDate(new Date(exhibition.startDate), locale)}
-              {exhibition.endDate
-                ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
-                : ` ${t("card.ongoing")}`}
+              <ClientDate timestamp={exhibition.startDate} locale={locale} />
+              {exhibition.endDate ? (
+                <>
+                  {" — "}
+                  <ClientDate timestamp={exhibition.endDate} locale={locale} />
+                </>
+              ) : (
+                ` ${t("card.ongoing")}`
+              )}
             </span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -72,9 +72,15 @@ export function ExhibitionsTab({
             >
               <div className="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border/60 bg-secondary text-center">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground">
-                  {exhibition.isCurrent
-                    ? t("status.now")
-                    : new Date(exhibition.startDate).getFullYear()}
+                  {exhibition.isCurrent ? (
+                    t("status.now")
+                  ) : (
+                    <ClientDate
+                      timestamp={exhibition.startDate}
+                      locale={locale}
+                      options={{ year: "numeric" }}
+                    />
+                  )}
                 </span>
                 <span
                   className={cn(
@@ -98,9 +104,19 @@ export function ExhibitionsTab({
                 )}
                 <div className="mt-2 flex gap-2">
                   <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    {formatDate(new Date(exhibition.startDate), locale)}
-                    {exhibition.endDate &&
-                      ` - ${formatDate(new Date(exhibition.endDate), locale)}`}
+                    <ClientDate
+                      timestamp={exhibition.startDate}
+                      locale={locale}
+                    />
+                    {exhibition.endDate && (
+                      <>
+                        {" - "}
+                        <ClientDate
+                          timestamp={exhibition.endDate}
+                          locale={locale}
+                        />
+                      </>
+                    )}
                   </span>
                   {exhibition.isLoan && exhibition.loanVenue && (
                     <span className="rounded border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">

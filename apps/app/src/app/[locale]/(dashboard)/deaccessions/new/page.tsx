@@ -147,7 +147,7 @@ export default function NewDeaccessionPage() {
                     onSelect={(date: Date | undefined) =>
                       setFormData((prev) => ({
                         ...prev,
-                        dateDeaccessioned: date || new Date(),
+                        dateDeaccessioned: date ?? prev.dateDeaccessioned,
                       }))
                     }
                     placeholder={t("form.dateDeaccessionedPlaceholder")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateFns } from "@/lib/format-date";
+import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { Archive, CheckCircle, Clock, ShieldCheck } from "lucide-react";
@@ -159,11 +159,11 @@ export function DeaccessionKanbanColumn({
                         : t(`method.${item.method}`)}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
-                      {formatDateFns(
-                        new Date(item.dateDeaccessioned),
-                        "MMM d, yyyy",
-                        locale,
-                      )}
+                      <ClientDateFns
+                        timestamp={item.dateDeaccessioned}
+                        format="MMM d, yyyy"
+                        locale={locale}
+                      />
                     </span>
                   </div>
                 </Link>

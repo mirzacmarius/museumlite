@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -117,7 +117,10 @@ export default function TreatmentDetailPage({
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {t("detail.created")}{" "}
-                  {formatDate(new Date(treatment._creationTime), locale)}
+                  <ClientDate
+                    timestamp={treatment._creationTime}
+                    locale={locale}
+                  />
                 </span>
               </div>
               <h1 className="text-3xl font-semibold text-foreground">
@@ -227,7 +230,10 @@ export default function TreatmentDetailPage({
                       {t("detail.datePerformed")}
                     </p>
                     <p className="text-sm text-foreground/80">
-                      {formatDate(new Date(treatment.performedAt), locale)}
+                      <ClientDate
+                        timestamp={treatment.performedAt}
+                        locale={locale}
+                      />
                     </p>
                   </div>
                 </div>

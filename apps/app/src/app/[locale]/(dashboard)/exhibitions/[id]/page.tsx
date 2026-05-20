@@ -1,8 +1,9 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
+import { useClientNow } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -57,6 +58,7 @@ export default function ExhibitionDetailPage() {
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
   const t = useScopedI18n("exhibitions");
+  const now = useClientNow();
   const deleteExhibition = useMutation(api.exhibitions.remove);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -164,8 +166,9 @@ export default function ExhibitionDetailPage() {
     }
   };
 
-  const isPast = exhibition.endDate && exhibition.endDate < Date.now();
-  const isUpcoming = exhibition.startDate > Date.now();
+  const isPast =
+    now !== undefined && exhibition.endDate && exhibition.endDate < now;
+  const isUpcoming = now !== undefined && exhibition.startDate > now;
 
   let timeStatusColor =
     "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
@@ -225,22 +228,27 @@ export default function ExhibitionDetailPage() {
   const WorkflowIcon = workflowInfo.icon;
 
   const calculateDuration = () => {
-    const now = Date.now();
     const start = exhibition.startDate;
     const end = exhibition.endDate;
 
-    if (isUpcoming) {
+    if (isUpcoming && now !== undefined) {
       const daysUntilStart = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
       return {
         label: t("detail.startsIn"),
         value: `${daysUntilStart} ${t("detail.days")}`,
       };
     }
-    if (isPast && end) {
+    if (isPast && end && now !== undefined) {
       const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
       return {
         label: t("detail.duration"),
         value: `${totalDays} ${t("detail.days")}`,
+      };
+    }
+    if (now === undefined) {
+      return {
+        label: t("detail.activeFor"),
+        value: "",
       };
     }
     const daysActive = Math.ceil((now - start) / (1000 * 60 * 60 * 24));
@@ -402,7 +410,10 @@ export default function ExhibitionDetailPage() {
                   {exhibition.creatorName}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(new Date(exhibition._creationTime), locale)}
+                  <ClientDate
+                    timestamp={exhibition._creationTime}
+                    locale={locale}
+                  />
                 </p>
               </div>
             )}
@@ -419,7 +430,10 @@ export default function ExhibitionDetailPage() {
                   {exhibition.approverName}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(new Date(exhibition.approvedAt), locale)}
+                  <ClientDate
+                    timestamp={exhibition.approvedAt}
+                    locale={locale}
+                  />
                 </p>
               </div>
             )}
@@ -449,10 +463,21 @@ export default function ExhibitionDetailPage() {
                     </label>
                     <p className="text-sm text-foreground mt-1 flex items-center gap-2">
                       <Calendar className="size-3.5 text-muted-foreground" />
-                      {formatDate(new Date(exhibition.startDate), locale)}
-                      {exhibition.endDate
-                        ? ` — ${formatDate(new Date(exhibition.endDate), locale)}`
-                        : ` ${t("card.ongoing")}`}
+                      <ClientDate
+                        timestamp={exhibition.startDate}
+                        locale={locale}
+                      />
+                      {exhibition.endDate ? (
+                        <>
+                          {" — "}
+                          <ClientDate
+                            timestamp={exhibition.endDate}
+                            locale={locale}
+                          />
+                        </>
+                      ) : (
+                        ` ${t("card.ongoing")}`
+                      )}
                     </p>
                   </div>
 
@@ -588,7 +613,10 @@ export default function ExhibitionDetailPage() {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {doc.documentType.replace("_", " ")} •{" "}
-                              {formatDate(new Date(doc.uploadedAt), locale)}
+                              <ClientDate
+                                timestamp={doc.uploadedAt}
+                                locale={locale}
+                              />
                             </p>
                           </div>
                         </div>
@@ -682,7 +710,10 @@ export default function ExhibitionDetailPage() {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {item.approverName ?? t("detail.unknownUser")} •{" "}
-                            {formatDate(new Date(item.approvedAt), locale)}
+                            <ClientDate
+                              timestamp={item.approvedAt}
+                              locale={locale}
+                            />
                           </p>
                           {item.comment &&
                             !item.comment.startsWith("Rejected") && (

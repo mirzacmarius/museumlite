@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientCurrentDate, ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -255,19 +255,29 @@ export default function LoanDetailPage() {
                     <div className="flex items-center gap-2 text-xs">
                       <CalendarRange className="size-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
-                        {formatDate(new Date(loan.startDate), locale, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}{" "}
+                        <ClientDate
+                          timestamp={loan.startDate}
+                          locale={locale}
+                          options={{
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          }}
+                        />{" "}
                         —{" "}
-                        {loan.endDate
-                          ? formatDate(new Date(loan.endDate), locale, {
+                        {loan.endDate ? (
+                          <ClientDate
+                            timestamp={loan.endDate}
+                            locale={locale}
+                            options={{
                               month: "short",
                               day: "numeric",
                               year: "numeric",
-                            })
-                          : tActions("indefinite")}
+                            }}
+                          />
+                        ) : (
+                          tActions("indefinite")
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
@@ -413,7 +423,9 @@ export default function LoanDetailPage() {
                   </p>
                 </div>
                 <div className="text-right text-xs text-muted-foreground">
-                  <p>Date: {formatDate(new Date(), locale)}</p>
+                  <p>
+                    Date: <ClientCurrentDate locale={locale} />
+                  </p>
                   <p>Page 1 of 4</p>
                 </div>
               </div>

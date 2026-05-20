@@ -1,10 +1,10 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -296,21 +296,28 @@ export function TransitPageClient() {
                   label: "Pickup",
                   className: "w-28 flex-none",
                   render: (record) =>
-                    record.scheduledPickupDate
-                      ? formatDate(new Date(record.scheduledPickupDate), locale)
-                      : "—",
+                    record.scheduledPickupDate ? (
+                      <ClientDate
+                        timestamp={record.scheduledPickupDate}
+                        locale={locale}
+                      />
+                    ) : (
+                      "—"
+                    ),
                 },
                 {
                   key: "estimatedDeliveryDate",
                   label: "ETA",
                   className: "w-28 flex-none",
                   render: (record) =>
-                    record.estimatedDeliveryDate
-                      ? formatDate(
-                          new Date(record.estimatedDeliveryDate),
-                          locale,
-                        )
-                      : "—",
+                    record.estimatedDeliveryDate ? (
+                      <ClientDate
+                        timestamp={record.estimatedDeliveryDate}
+                        locale={locale}
+                      />
+                    ) : (
+                      "—"
+                    ),
                 },
                 {
                   key: "itemCount",

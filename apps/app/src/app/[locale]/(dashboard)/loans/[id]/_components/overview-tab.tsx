@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Check, FileText, Shield, Upload } from "lucide-react";
 import { LoanApprovalWorkflow } from "./loan-approval-workflow";
@@ -44,10 +44,11 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     Rec:{" "}
-                    {formatDate(new Date(loan.startDate), locale, {
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    <ClientDate
+                      timestamp={loan.startDate}
+                      locale={locale}
+                      options={{ month: "short", day: "numeric" }}
+                    />
                   </p>
                 </div>
               </div>
@@ -62,10 +63,11 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     App:{" "}
-                    {formatDate(new Date(loan.startDate), locale, {
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    <ClientDate
+                      timestamp={loan.startDate}
+                      locale={locale}
+                      options={{ month: "short", day: "numeric" }}
+                    />
                   </p>
                 </div>
               </div>
@@ -151,7 +153,7 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                   Countersigned
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  on {formatDate(new Date(loan.startDate), locale)}
+                  on <ClientDate timestamp={loan.startDate} locale={locale} />
                 </span>
               </div>
             </div>
@@ -207,9 +209,14 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
                       {doc.documentType.charAt(0).toUpperCase() +
                         doc.documentType.slice(1)}{" "}
                       •{" "}
-                      {doc.uploaderName
-                        ? `Uploaded by ${doc.uploaderName}`
-                        : formatDate(new Date(doc.uploadedAt), locale)}
+                      {doc.uploaderName ? (
+                        `Uploaded by ${doc.uploaderName}`
+                      ) : (
+                        <ClientDate
+                          timestamp={doc.uploadedAt}
+                          locale={locale}
+                        />
+                      )}
                     </p>
                   </div>
                 </a>

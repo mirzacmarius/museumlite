@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import {
   DashboardListPageSkeleton,
   GridCardsSkeleton,
@@ -10,7 +11,6 @@ import {
 } from "@/components/export-button-with-format";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -222,7 +222,8 @@ function CollectionGroupsList({
           )}
           <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              {t("created")} {formatDate(new Date(group.createdAt), locale)}
+              {t("created")}{" "}
+              <ClientDate timestamp={group.createdAt} locale={locale} />
             </span>
             {group.curatorName && (
               <span className="flex items-center gap-1">

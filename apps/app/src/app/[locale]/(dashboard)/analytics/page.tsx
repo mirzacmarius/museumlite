@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientTime } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useI18n } from "@/locales/client";
@@ -169,7 +170,7 @@ export default function AnalyticsPage() {
           </div>
           <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded border border-border">
             {t("analytics.updatedAt")}{" "}
-            {new Date(kpis.generatedAt).toLocaleTimeString()}
+            <ClientTime timestamp={kpis.generatedAt} />
           </div>
         </div>
 

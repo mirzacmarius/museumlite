@@ -5,7 +5,7 @@ import { cn } from "../utils";
 interface TimelineItem {
   title: string;
   description?: string;
-  date: string;
+  date: React.ReactNode;
   status?: "pending" | "active" | "completed" | "overdue";
   icon?: LucideIcon;
 }
@@ -21,8 +21,8 @@ const Timeline = React.forwardRef<HTMLDivElement, TimelineProps>(
         <div className="absolute left-1.5 w-px bg-zinc-800 top-2 bottom-2" />
 
         <div className="space-y-6">
-          {items.map((item) => (
-            <div key={`${item.title}-${item.date}`} className="relative pl-4">
+          {items.map((item, index) => (
+            <div key={`${item.title}-${index}`} className="relative pl-4">
               <div
                 className={cn(
                   "absolute -left-4 top-1 size-3 rounded-full border-2 border-zinc-950",

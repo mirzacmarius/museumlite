@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientDateFns } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
-import { formatDateFns } from "@/lib/format-date";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -318,11 +318,11 @@ export default function MoveRequestDetailPage() {
                 <div>
                   <Label className="text-muted-foreground">Requested at</Label>
                   <p className="mt-1">
-                    {formatDateFns(
-                      new Date(request.requestedAt),
-                      "MMMM d, yyyy 'at' p",
-                      locale,
-                    )}
+                    <ClientDateFns
+                      timestamp={request.requestedAt}
+                      format="MMMM d, yyyy 'at' p"
+                      locale={locale}
+                    />
                   </p>
                 </div>
                 {request.sourceReviewedAt && (
@@ -331,11 +331,11 @@ export default function MoveRequestDetailPage() {
                       Source approved at
                     </Label>
                     <p className="mt-1">
-                      {formatDateFns(
-                        new Date(request.sourceReviewedAt),
-                        "MMMM d, yyyy 'at' p",
-                        locale,
-                      )}
+                      <ClientDateFns
+                        timestamp={request.sourceReviewedAt}
+                        format="MMMM d, yyyy 'at' p"
+                        locale={locale}
+                      />
                     </p>
                   </div>
                 )}
@@ -345,11 +345,11 @@ export default function MoveRequestDetailPage() {
                       Target reviewed at
                     </Label>
                     <p className="mt-1">
-                      {formatDateFns(
-                        new Date(request.targetReviewedAt),
-                        "MMMM d, yyyy 'at' p",
-                        locale,
-                      )}
+                      <ClientDateFns
+                        timestamp={request.targetReviewedAt}
+                        format="MMMM d, yyyy 'at' p"
+                        locale={locale}
+                      />
                     </p>
                   </div>
                 )}
@@ -357,11 +357,11 @@ export default function MoveRequestDetailPage() {
                   <div>
                     <Label className="text-muted-foreground">Executed at</Label>
                     <p className="mt-1">
-                      {formatDateFns(
-                        new Date(request.executedAt),
-                        "MMMM d, yyyy 'at' p",
-                        locale,
-                      )}
+                      <ClientDateFns
+                        timestamp={request.executedAt}
+                        format="MMMM d, yyyy 'at' p"
+                        locale={locale}
+                      />
                     </p>
                   </div>
                 )}

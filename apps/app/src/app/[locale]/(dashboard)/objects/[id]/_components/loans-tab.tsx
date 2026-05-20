@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -91,9 +91,13 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-xs text-muted-foreground">
-                    {formatDate(new Date(loan.startDate), locale)}
-                    {loan.endDate &&
-                      ` - ${formatDate(new Date(loan.endDate), locale)}`}
+                    <ClientDate timestamp={loan.startDate} locale={locale} />
+                    {loan.endDate && (
+                      <>
+                        {" - "}
+                        <ClientDate timestamp={loan.endDate} locale={locale} />
+                      </>
+                    )}
                   </p>
                 </div>
               </div>

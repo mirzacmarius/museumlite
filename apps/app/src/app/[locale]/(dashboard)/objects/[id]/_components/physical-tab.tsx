@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
 import { cn } from "@v1/ui/utils";
@@ -198,9 +199,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                           <h4
                             className={cn(
                               "text-sm font-medium",
-                              index === 0
-                                ? "text-primary"
-                                : "text-foreground",
+                              index === 0 ? "text-primary" : "text-foreground",
                             )}
                           >
                             {entry.condition}
@@ -212,8 +211,15 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                           ) : null}
                         </div>
                         <p className="text-[10px] text-zinc-500">
-                          {new Date(entry.changedAt).toLocaleString()} • By{" "}
-                          {entry.changedByName || "Unknown"}
+                          <ClientDate
+                            timestamp={entry.changedAt}
+                            locale="en-US"
+                            options={{
+                              dateStyle: "short",
+                              timeStyle: "medium",
+                            }}
+                          />{" "}
+                          • By {entry.changedByName || "Unknown"}
                         </p>
                         {entry.note ? (
                           <p className="pt-1 text-xs leading-relaxed text-muted-foreground">

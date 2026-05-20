@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useObjectFilters } from "@/hooks/use-url-filters";
@@ -889,7 +890,7 @@ function CollectionTableRow({
           )}
         </td>
         <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
-          {new Date(item._creationTime).toLocaleDateString()}
+          <ClientDate timestamp={item._creationTime} locale="en-US" />
         </td>
         <td className="px-4 py-3 text-right">{getStatusBadge(item.status)}</td>
         <td className="px-4 py-3 text-right">

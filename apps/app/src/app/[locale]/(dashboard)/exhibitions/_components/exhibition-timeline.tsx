@@ -1,6 +1,7 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
+import { useClientNow } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Box, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +26,7 @@ interface ExhibitionTimelineProps {
 export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("exhibitions");
+  const now = useClientNow();
 
   const groupedByYear = useMemo(() => {
     const groups: Record<string, Exhibition[]> = {};
@@ -50,15 +52,14 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
   }, [exhibitions]);
 
   const getExhibitionStatus = (ex: Exhibition) => {
-    const now = Date.now();
-    if (ex.endDate && ex.endDate < now) {
+    if (now !== undefined && ex.endDate && ex.endDate < now) {
       return {
         status: t("status.past"),
         color: "bg-muted",
         textColor: "text-muted-foreground",
       };
     }
-    if (ex.startDate > now) {
+    if (now !== undefined && ex.startDate > now) {
       return {
         status: t("status.upcoming"),
         color: "bg-blue-500/20",
@@ -128,19 +129,21 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="size-3.5" />
                         <span>
-                          {formatDate(new Date(ex.startDate), locale, {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          <ClientDate
+                            timestamp={ex.startDate}
+                            locale={locale}
+                            options={{ month: "short", day: "numeric" }}
+                          />
                         </span>
                       </div>
                       {ex.endDate && (
                         <div className="mt-0.5 text-xs text-muted-foreground">
                           —{" "}
-                          {formatDate(new Date(ex.endDate), locale, {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          <ClientDate
+                            timestamp={ex.endDate}
+                            locale={locale}
+                            options={{ month: "short", day: "numeric" }}
+                          />
                         </div>
                       )}
                     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDistanceLocale } from "@/lib/format-date";
+import { ClientRelativeTime } from "@/components/client-date";
 import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -199,12 +199,6 @@ export function ObjectComments({
                   .slice(0, 2)
                   .join("")
               : "?";
-            const timestamp = formatDistanceLocale(
-              new Date(comment.createdAt),
-              locale,
-              { addSuffix: true },
-            );
-
             return (
               <div
                 key={comment._id}
@@ -223,7 +217,11 @@ export function ObjectComments({
                         {comment.userName ?? "Unknown"}
                       </p>
                       <span className="text-xs text-muted-foreground">
-                        {timestamp}
+                        <ClientRelativeTime
+                          timestamp={comment.createdAt}
+                          locale={locale}
+                          options={{ addSuffix: true }}
+                        />
                       </span>
                     </div>
                     {currentUser?._id === comment.userId && (

@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -183,9 +183,16 @@ export default function EditExhibitionPage() {
                         <li key={c.id}>
                           <span className="font-medium">{c.title}</span>
                           {" — "}
-                          {formatDate(new Date(c.startDate), locale)}
-                          {c.endDate &&
-                            ` — ${formatDate(new Date(c.endDate), locale)}`}{" "}
+                          <ClientDate timestamp={c.startDate} locale={locale} />
+                          {c.endDate && (
+                            <>
+                              {" — "}
+                              <ClientDate
+                                timestamp={c.endDate}
+                                locale={locale}
+                              />
+                            </>
+                          )}{" "}
                           <span className="capitalize">({c.status})</span>
                         </li>
                       ))}
@@ -252,7 +259,7 @@ export default function EditExhibitionPage() {
                       onSelect={(date) =>
                         setFormData((prev) => ({
                           ...prev,
-                          startDate: date || new Date(),
+                          startDate: date ?? prev.startDate,
                         }))
                       }
                     />

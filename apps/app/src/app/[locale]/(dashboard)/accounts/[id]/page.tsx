@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -1065,9 +1065,13 @@ function RelationshipsTab({
                   <p className="font-medium">{rel.relationshipType}</p>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatDate(new Date(rel.startDate), locale)}
-                  {rel.endDate &&
-                    ` - ${formatDate(new Date(rel.endDate), locale)}`}
+                  <ClientDate timestamp={rel.startDate} locale={locale} />
+                  {rel.endDate && (
+                    <>
+                      {" - "}
+                      <ClientDate timestamp={rel.endDate} locale={locale} />
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -1104,7 +1108,7 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
               <div className="flex-1 pb-8">
                 <p className="font-medium">{event.type}</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatDate(new Date(event.timestamp), locale)}
+                  <ClientDate timestamp={event.timestamp} locale={locale} />
                 </p>
                 {event.description && (
                   <p className="mt-1 text-sm">{event.description}</p>

@@ -1,7 +1,7 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -74,7 +74,9 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
                 items={record.statusHistory.map((update) => ({
                   title: transitT(update.status as TransitStatus),
                   description: update.description,
-                  date: formatDate(new Date(update.reportedAt), locale),
+                  date: (
+                    <ClientDate timestamp={update.reportedAt} locale={locale} />
+                  ),
                   status: mapStatusToTimelineStatus(update.status),
                 }))}
               />

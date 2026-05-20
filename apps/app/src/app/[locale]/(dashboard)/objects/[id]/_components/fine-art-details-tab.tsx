@@ -1,7 +1,7 @@
 "use client";
 
+import { ClientDateFns } from "@/components/client-date";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDateFns } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
@@ -158,11 +158,11 @@ export function FineArtDetailsTab({
             <FileCheck className="size-4 text-amber-500" />
             <span className="text-sm font-medium text-amber-500">
               {t("reappraisalDue")}:{" "}
-              {formatDateFns(
-                new Date(details.reappraisalDate),
-                "MMMM d, yyyy",
-                locale,
-              )}
+              <ClientDateFns
+                timestamp={details.reappraisalDate}
+                format="MMMM d, yyyy"
+                locale={locale}
+              />
             </span>
           </div>
         </div>
@@ -289,11 +289,11 @@ export function FineArtDetailsTab({
                   </div>
                   {log.arrivedAt && (
                     <span className="font-mono text-xs text-muted-foreground">
-                      {formatDateFns(
-                        new Date(log.arrivedAt),
-                        "MMM d, yyyy",
-                        locale,
-                      )}
+                      <ClientDateFns
+                        timestamp={log.arrivedAt}
+                        format="MMM d, yyyy"
+                        locale={locale}
+                      />
                     </span>
                   )}
                 </div>

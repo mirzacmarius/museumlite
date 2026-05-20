@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -176,12 +176,16 @@ export function LogsTab({
                 >
                   <td className="px-4 py-3 align-top">
                     <span className="font-mono text-xs text-muted-foreground">
-                      {formatDate(new Date(log.timestamp), locale, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      <ClientDate
+                        timestamp={log.timestamp}
+                        locale={locale}
+                        options={{
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }}
+                      />
                     </span>
                   </td>
                   <td className="px-4 py-3 align-top">

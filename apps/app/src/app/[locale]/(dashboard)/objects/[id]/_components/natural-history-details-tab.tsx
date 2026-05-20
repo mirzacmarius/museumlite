@@ -1,7 +1,7 @@
 "use client";
 
+import { ClientDateFns } from "@/components/client-date";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDateFns } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -118,13 +118,15 @@ export function NaturalHistoryDetailsTab({
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
-            {details.collectionDate
-              ? formatDateFns(
-                  new Date(details.collectionDate),
-                  "MMM yyyy",
-                  locale,
-                )
-              : "—"}
+            {details.collectionDate ? (
+              <ClientDateFns
+                timestamp={details.collectionDate}
+                format="MMM yyyy"
+                locale={locale}
+              />
+            ) : (
+              "—"
+            )}
           </span>
           {details.collectorName && (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -292,13 +294,15 @@ export function NaturalHistoryDetailsTab({
                 {t("collectionDate")}
               </div>
               <div className="text-sm font-medium text-foreground">
-                {details.collectionDate
-                  ? formatDateFns(
-                      new Date(details.collectionDate),
-                      "MMM d, yyyy",
-                      locale,
-                    )
-                  : "—"}
+                {details.collectionDate ? (
+                  <ClientDateFns
+                    timestamp={details.collectionDate}
+                    format="MMM d, yyyy"
+                    locale={locale}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
             <div>

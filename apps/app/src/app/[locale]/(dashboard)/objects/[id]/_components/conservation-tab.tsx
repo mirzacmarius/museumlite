@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -76,7 +76,10 @@ export function ConservationTab({
                   </span>
                 </div>
                 <span className="font-mono text-xs text-muted-foreground">
-                  {formatDate(new Date(treatment.performedAt), locale)}
+                  <ClientDate
+                    timestamp={treatment.performedAt}
+                    locale={locale}
+                  />
                 </span>
               </div>
               <div className="p-4">

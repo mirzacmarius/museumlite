@@ -1,8 +1,8 @@
 "use client";
 
+import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -91,7 +91,10 @@ export function NewArrivalsFeed() {
                           {accession.source}
                         </p>
                         <p className="text-[10px] text-muted-foreground/60 mt-1">
-                          {formatDate(new Date(accession.dateReceived), locale)}
+                          <ClientDate
+                            timestamp={accession.dateReceived}
+                            locale={locale}
+                          />
                         </p>
                       </div>
                     </div>

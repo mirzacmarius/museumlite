@@ -1,7 +1,7 @@
 "use client";
 
+import { ClientDateFns } from "@/components/client-date";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDateFns } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -19,10 +19,23 @@ import {
   Shield,
   Trash2,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ArchiveDetailsTabProps {
   collectionId: string;
   organizationId: Id<"organizations">;
+}
+
+function ClientDaysUntilExpiry({ timestamp }: { timestamp: number }) {
+  const [days, setDays] = useState<string>("");
+
+  useEffect(() => {
+    setDays(
+      String(Math.ceil((timestamp - Date.now()) / (1000 * 60 * 60 * 24))),
+    );
+  }, [timestamp]);
+
+  return days;
 }
 
 export function ArchiveDetailsTab({
@@ -143,11 +156,11 @@ export function ArchiveDetailsTab({
           {details.retentionExpiresAt && (
             <p className="mt-1 text-xs text-muted-foreground">
               {t("expires")}:{" "}
-              {formatDateFns(
-                new Date(details.retentionExpiresAt),
-                "MMM d, yyyy",
-                locale,
-              )}
+              <ClientDateFns
+                timestamp={details.retentionExpiresAt}
+                format="MMM d, yyyy"
+                locale={locale}
+              />
             </p>
           )}
         </div>
@@ -206,11 +219,11 @@ export function ArchiveDetailsTab({
           {details.destructionDate && (
             <p className="mt-1 text-sm text-orange-500/80">
               {t("scheduled")}:{" "}
-              {formatDateFns(
-                new Date(details.destructionDate),
-                "MMMM d, yyyy",
-                locale,
-              )}
+              <ClientDateFns
+                timestamp={details.destructionDate}
+                format="MMMM d, yyyy"
+                locale={locale}
+              />
             </p>
           )}
           {details.destructionMethod && (
@@ -288,13 +301,15 @@ export function ArchiveDetailsTab({
                 Retention Start Date
               </div>
               <div className="text-sm font-medium text-foreground">
-                {details.retentionStartDate
-                  ? formatDateFns(
-                      new Date(details.retentionStartDate),
-                      "MMM d, yyyy",
-                      locale,
-                    )
-                  : "—"}
+                {details.retentionStartDate ? (
+                  <ClientDateFns
+                    timestamp={details.retentionStartDate}
+                    format="MMM d, yyyy"
+                    locale={locale}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
             <div>
@@ -302,13 +317,15 @@ export function ArchiveDetailsTab({
                 Retention Expires
               </div>
               <div className="text-sm font-medium text-foreground">
-                {details.retentionExpiresAt
-                  ? formatDateFns(
-                      new Date(details.retentionExpiresAt),
-                      "MMM d, yyyy",
-                      locale,
-                    )
-                  : "—"}
+                {details.retentionExpiresAt ? (
+                  <ClientDateFns
+                    timestamp={details.retentionExpiresAt}
+                    format="MMM d, yyyy"
+                    locale={locale}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
             <div>
@@ -316,12 +333,13 @@ export function ArchiveDetailsTab({
                 Days Until Expiry
               </div>
               <div className="text-sm font-medium text-foreground">
-                {details.retentionExpiresAt
-                  ? Math.ceil(
-                      (details.retentionExpiresAt - Date.now()) /
-                        (1000 * 60 * 60 * 24),
-                    )
-                  : "—"}
+                {details.retentionExpiresAt ? (
+                  <ClientDaysUntilExpiry
+                    timestamp={details.retentionExpiresAt}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
           </div>
@@ -486,13 +504,15 @@ export function ArchiveDetailsTab({
                   Destruction Date
                 </div>
                 <div className="text-sm font-medium text-foreground">
-                  {details.destructionDate
-                    ? formatDateFns(
-                        new Date(details.destructionDate),
-                        "MMM d, yyyy",
-                        locale,
-                      )
-                    : "—"}
+                  {details.destructionDate ? (
+                    <ClientDateFns
+                      timestamp={details.destructionDate}
+                      format="MMM d, yyyy"
+                      locale={locale}
+                    />
+                  ) : (
+                    "—"
+                  )}
                 </div>
               </div>
               <div>

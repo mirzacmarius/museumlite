@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
+import { ClientDate } from "@/components/client-date";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
@@ -146,7 +146,7 @@ export function ExhibitionPipelineCard({ data }: ExhibitionPipelineCardProps) {
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                       <span className="flex items-center gap-1">
                         <Calendar className="size-3" />{" "}
-                        {formatDate(new Date(exh.startDate), locale)}
+                        <ClientDate timestamp={exh.startDate} locale={locale} />
                       </span>
                       {exh.location && <span>• {exh.location}</span>}
                     </div>
