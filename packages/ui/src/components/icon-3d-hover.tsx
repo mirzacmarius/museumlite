@@ -38,7 +38,7 @@ const Transition: React.FC<{ value: unknown; children: React.ReactNode }> = ({
   value,
   children,
 }) => {
-  const config = React.useContext(MotionConfigContext);
+  const config = React.use(MotionConfigContext);
   const transition = value ?? config.transition;
   const contextValue = React.useMemo(
     () => ({ ...config, transition }),

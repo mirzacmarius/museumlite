@@ -24,7 +24,7 @@ const InspectorPanelContext =
   React.createContext<InspectorPanelContextValue | null>(null);
 
 export function useInspectorPanel() {
-  const context = React.useContext(InspectorPanelContext);
+  const context = React.use(InspectorPanelContext);
   if (!context) {
     throw new Error(
       "useInspectorPanel must be used within an InspectorPanelProvider",

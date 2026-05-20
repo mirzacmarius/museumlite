@@ -12,7 +12,7 @@ const CommandPaletteContext = React.createContext<
 >(undefined);
 
 export function useCommandPalette() {
-  const context = React.useContext(CommandPaletteContext);
+  const context = React.use(CommandPaletteContext);
   if (!context) {
     throw new Error(
       "useCommandPalette must be used within a CommandPaletteProvider",

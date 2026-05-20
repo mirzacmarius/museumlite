@@ -15,7 +15,7 @@ const FormFieldContext = React.createContext<FormFieldContextValue | null>(
 );
 
 function useFormField() {
-  const context = React.useContext(FormFieldContext);
+  const context = React.use(FormFieldContext);
   if (!context) {
     throw new Error("useFormField must be used within a FormField");
   }

@@ -1,4 +1,4 @@
-import * as React from "react";
+import type * as React from "react";
 import { cn } from "../utils";
 
 export type Status = "pending" | "active" | "completed" | "overdue" | "draft";
@@ -55,41 +55,35 @@ const sizeConfig: Record<StatusSize, string> = {
   md: "text-xs px-2 py-1",
 };
 
-const StatusBadge = React.forwardRef<HTMLSpanElement, StatusBadgeProps>(
-  (
-    {
-      status,
-      size = "md",
-      variant = "solid",
-      showDot = false,
-      className,
-      children,
-      ...props
-    },
-    ref,
-  ) => {
-    const config = statusConfig[status];
+const StatusBadge = ({
+  status,
+  size = "md",
+  variant = "solid",
+  showDot = false,
+  className,
+  children,
+  ref,
+  ...props
+}: StatusBadgeProps & React.RefAttributes<HTMLSpanElement>) => {
+  const config = statusConfig[status];
 
-    return (
-      <span
-        ref={ref}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full font-medium border transition-colors",
-          sizeConfig[size],
-          variant === "solid" && config.solid,
-          variant === "outline" && cn("bg-transparent", config.outline),
-          className,
-        )}
-        {...props}
-      >
-        {showDot && (
-          <span className={cn("size-1.5 rounded-full", config.dot)} />
-        )}
-        {children}
-      </span>
-    );
-  },
-);
+  return (
+    <span
+      ref={ref}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full font-medium border transition-colors",
+        sizeConfig[size],
+        variant === "solid" && config.solid,
+        variant === "outline" && cn("bg-transparent", config.outline),
+        className,
+      )}
+      {...props}
+    >
+      {showDot && <span className={cn("size-1.5 rounded-full", config.dot)} />}
+      {children}
+    </span>
+  );
+};
 
 StatusBadge.displayName = "StatusBadge";
 

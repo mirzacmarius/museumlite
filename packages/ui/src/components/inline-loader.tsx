@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import * as React from "react";
+import type * as React from "react";
 
 import { cn } from "@v1/ui/utils";
 
@@ -14,49 +14,51 @@ const sizeClasses = {
   lg: "size-8",
 };
 
-const InlineLoader = React.forwardRef<HTMLDivElement, InlineLoaderProps>(
-  ({ className, size = "md", text, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn("flex items-center justify-center gap-2", className)}
-        {...props}
-      >
-        <Loader2
-          className={cn(
-            "animate-spin text-muted-foreground",
-            sizeClasses[size],
-          )}
-        />
-        {text && <span className="text-sm text-muted-foreground">{text}</span>}
-      </div>
-    );
-  },
-);
+const InlineLoader = ({
+  className,
+  size = "md",
+  text,
+  ref,
+  ...props
+}: InlineLoaderProps & React.RefAttributes<HTMLDivElement>) => {
+  return (
+    <div
+      ref={ref}
+      className={cn("flex items-center justify-center gap-2", className)}
+      {...props}
+    >
+      <Loader2
+        className={cn("animate-spin text-muted-foreground", sizeClasses[size])}
+      />
+      {text && <span className="text-sm text-muted-foreground">{text}</span>}
+    </div>
+  );
+};
 InlineLoader.displayName = "InlineLoader";
 
 interface PageLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
   text?: string;
 }
 
-const PageLoader = React.forwardRef<HTMLDivElement, PageLoaderProps>(
-  ({ className, text, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn("flex size-full items-center justify-center", className)}
-        {...props}
-      >
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          {text && (
-            <span className="text-sm text-muted-foreground">{text}</span>
-          )}
-        </div>
+const PageLoader = ({
+  className,
+  text,
+  ref,
+  ...props
+}: PageLoaderProps & React.RefAttributes<HTMLDivElement>) => {
+  return (
+    <div
+      ref={ref}
+      className={cn("flex size-full items-center justify-center", className)}
+      {...props}
+    >
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        {text && <span className="text-sm text-muted-foreground">{text}</span>}
       </div>
-    );
-  },
-);
+    </div>
+  );
+};
 PageLoader.displayName = "PageLoader";
 
 export { InlineLoader, PageLoader };

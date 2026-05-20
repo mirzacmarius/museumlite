@@ -1,17 +1,21 @@
 "use client";
 
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
-import * as React from "react";
+import type * as React from "react";
 import { cn } from "../utils";
 
 const HoverCard = HoverCardPrimitive.Root;
 
 const HoverCardTrigger = HoverCardPrimitive.Trigger;
 
-const HoverCardContent = React.forwardRef<
-  React.ElementRef<typeof HoverCardPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+const HoverCardContent = ({
+  className,
+  align = "center",
+  sideOffset = 4,
+  ref,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content> &
+  React.RefAttributes<React.ElementRef<typeof HoverCardPrimitive.Content>>) => (
   <HoverCardPrimitive.Portal>
     <HoverCardPrimitive.Content
       ref={ref}
@@ -29,7 +33,7 @@ const HoverCardContent = React.forwardRef<
       {...props}
     />
   </HoverCardPrimitive.Portal>
-));
+);
 HoverCardContent.displayName = HoverCardPrimitive.Content.displayName;
 
 interface EntityPreviewProps {
