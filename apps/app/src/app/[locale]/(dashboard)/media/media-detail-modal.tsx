@@ -8,6 +8,7 @@ import { Button } from "@v1/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
@@ -83,6 +84,9 @@ export function MediaDetailModal({
           <DialogTitle className="text-zinc-200">
             {t("mediaPage.details.title")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            View media metadata, file details, and available versions.
+          </DialogDescription>
         </DialogHeader>
 
         {item === undefined && (

@@ -15,6 +15,7 @@ import { DataTable } from "@v1/ui/data-table";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -226,6 +227,9 @@ export function InsurancePageClient() {
                   <DialogContent className="sm:max-w-[540px]">
                     <DialogHeader>
                       <DialogTitle>New Insurance Policy</DialogTitle>
+                      <DialogDescription className="sr-only">
+                        Add an insurance policy for this organization.
+                      </DialogDescription>
                     </DialogHeader>
                     <PolicyForm
                       organizationId={
@@ -262,6 +266,9 @@ export function InsurancePageClient() {
                   <DialogContent className="sm:max-w-[540px]">
                     <DialogHeader>
                       <DialogTitle>New Insurance Claim</DialogTitle>
+                      <DialogDescription className="sr-only">
+                        Record a new insurance claim for this organization.
+                      </DialogDescription>
                     </DialogHeader>
                     <ClaimForm
                       organizationId={

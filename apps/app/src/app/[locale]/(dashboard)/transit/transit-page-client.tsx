@@ -14,6 +14,7 @@ import { DataTable } from "@v1/ui/data-table";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -165,6 +166,10 @@ export function TransitPageClient() {
                   <DialogContent className="sm:max-w-[520px]">
                     <DialogHeader>
                       <DialogTitle>New Transit Record</DialogTitle>
+                      <DialogDescription className="sr-only">
+                        Log a new transit record for an object movement or
+                        shipment.
+                      </DialogDescription>
                     </DialogHeader>
                     <TransitForm
                       organizationId={

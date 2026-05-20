@@ -4,6 +4,7 @@ import { KEYBOARD_SHORTCUTS } from "@/hooks/use-keyboard-shortcuts";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
@@ -22,6 +23,9 @@ export function KeyboardShortcutsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogDescription className="sr-only">
+            Review available navigation, action, and help keyboard shortcuts.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

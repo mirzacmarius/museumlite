@@ -9,6 +9,7 @@ import { Checkbox } from "@v1/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -258,6 +259,9 @@ export function SavedViewsDropdown({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Save Current View</DialogTitle>
+            <DialogDescription className="sr-only">
+              Name and save the current object filters as a reusable view.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -300,6 +304,9 @@ export function SavedViewsDropdown({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit View</DialogTitle>
+            <DialogDescription className="sr-only">
+              Rename the selected saved object view.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

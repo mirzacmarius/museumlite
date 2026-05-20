@@ -213,7 +213,10 @@ function DeaccessionsReportDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] w-full max-w-[210mm] flex-col overflow-hidden rounded-none border-none bg-white p-0 text-black print:h-auto print:max-h-none print:max-w-none print:w-full print:overflow-visible print:rounded-none print:border-none print:p-0 print:shadow-none">
+      <DialogContent
+        aria-describedby={undefined}
+        className="flex h-[90vh] w-full max-w-[210mm] flex-col overflow-hidden rounded-none border-none bg-white p-0 text-black print:h-auto print:max-h-none print:max-w-none print:w-full print:overflow-visible print:rounded-none print:border-none print:p-0 print:shadow-none"
+      >
         <DialogHeader className="flex-shrink-0 border-b border-zinc-200 p-6 pb-4 print:hidden">
           <DialogTitle className="text-black">{t("report.title")}</DialogTitle>
         </DialogHeader>

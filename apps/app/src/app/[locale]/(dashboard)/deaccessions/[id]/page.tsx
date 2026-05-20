@@ -485,7 +485,10 @@ export default function DeaccessionDetailPage() {
       </main>
 
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
-        <DialogContent className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="flex flex-col max-w-[210mm] w-full h-[90vh] bg-white text-black p-0 print:max-w-none print:max-h-none print:h-auto print:w-full print:overflow-visible print:shadow-none print:border-none print:rounded-none print:p-0"
+        >
           <DialogHeader className="flex-shrink-0 print:hidden border-b border-zinc-200 p-6 pb-4">
             <DialogTitle className="text-black">
               {t("report.deaccessionBoardReport")}

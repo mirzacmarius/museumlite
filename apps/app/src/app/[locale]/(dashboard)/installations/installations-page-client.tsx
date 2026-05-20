@@ -16,6 +16,7 @@ import { Button } from "@v1/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -176,6 +177,9 @@ export function InstallationsPageClient() {
                   <DialogContent className="sm:max-w-[520px]">
                     <DialogHeader>
                       <DialogTitle>New Installation Task</DialogTitle>
+                      <DialogDescription className="sr-only">
+                        Create an installation task for the selected exhibition.
+                      </DialogDescription>
                     </DialogHeader>
                     <TaskForm
                       organizationId={

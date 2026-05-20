@@ -389,7 +389,10 @@ export default function LoanDetailPage() {
       {/* Print Modal */}
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
         {/* [PRINT-EXEMPT] Light zinc colors intentionally used for PDF/print output */}
-        <DialogContent className="max-w-[210mm] w-full h-[90vh] p-0 gap-0 overflow-hidden bg-zinc-50 dark:bg-background flex flex-col">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-w-[210mm] w-full h-[90vh] p-0 gap-0 overflow-hidden bg-zinc-50 dark:bg-background flex flex-col"
+        >
           <DialogHeader className="px-6 py-4 border-b border-border bg-background flex-shrink-0 flex-row items-center justify-between space-y-0">
             <DialogTitle>Print Dispatch Manifest</DialogTitle>
             <div className="flex items-center gap-3">
