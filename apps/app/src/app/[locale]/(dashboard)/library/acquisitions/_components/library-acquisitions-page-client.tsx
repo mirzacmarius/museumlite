@@ -9,7 +9,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useReducer } from "react";
 import {
   AcquisitionsLibraryDisabledState,
   AcquisitionsNoOrganizationState,
@@ -26,16 +26,75 @@ import {
   type RequestStatus,
 } from "./types";
 
+interface AcquisitionsPageState {
+  statusFilter: string;
+  priorityFilter: string;
+  isNewRequestOpen: boolean;
+  isProcessing: boolean;
+  newRequest: NewAcquisitionRequestForm;
+}
+
+type AcquisitionsPageAction =
+  | { type: "setStatusFilter"; value: string }
+  | { type: "setPriorityFilter"; value: string }
+  | { type: "setNewRequestOpen"; value: boolean }
+  | { type: "setProcessing"; value: boolean }
+  | { type: "setNewRequest"; value: NewAcquisitionRequestForm }
+  | { type: "closeNewRequestDialog" };
+
+const initialAcquisitionsPageState: AcquisitionsPageState = {
+  statusFilter: "all",
+  priorityFilter: "all",
+  isNewRequestOpen: false,
+  isProcessing: false,
+  newRequest: EMPTY_NEW_REQUEST,
+};
+
+function acquisitionsPageReducer(
+  state: AcquisitionsPageState,
+  action: AcquisitionsPageAction,
+): AcquisitionsPageState {
+  switch (action.type) {
+    case "setStatusFilter":
+      return { ...state, statusFilter: action.value };
+    case "setPriorityFilter":
+      return { ...state, priorityFilter: action.value };
+    case "setNewRequestOpen":
+      return { ...state, isNewRequestOpen: action.value };
+    case "setProcessing":
+      return { ...state, isProcessing: action.value };
+    case "setNewRequest":
+      return { ...state, newRequest: action.value };
+    case "closeNewRequestDialog":
+      return {
+        ...state,
+        isNewRequestOpen: false,
+        newRequest: EMPTY_NEW_REQUEST,
+      };
+  }
+}
+
 export function LibraryAcquisitionsPageClient() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const tAcq = useScopedI18n("library.acquisitions");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [newRequest, setNewRequest] =
-    useState<NewAcquisitionRequestForm>(EMPTY_NEW_REQUEST);
+  const [state, dispatch] = useReducer(
+    acquisitionsPageReducer,
+    initialAcquisitionsPageState,
+  );
+
+  const onNewRequestChange: Dispatch<
+    SetStateAction<NewAcquisitionRequestForm>
+  > = useCallback(
+    (value) => {
+      dispatch({
+        type: "setNewRequest",
+        value:
+          typeof value === "function" ? value(state.newRequest) : value,
+      });
+    },
+    [state.newRequest],
+  );
 
   const isLibraryEnabled = hasModule("library");
 
@@ -53,11 +112,13 @@ export function LibraryAcquisitionsPageClient() {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
           status:
-            statusFilter !== "all"
-              ? (statusFilter as RequestStatus)
+            state.statusFilter !== "all"
+              ? (state.statusFilter as RequestStatus)
               : undefined,
           priority:
-            priorityFilter !== "all" ? (priorityFilter as Priority) : undefined,
+            state.priorityFilter !== "all"
+              ? (state.priorityFilter as Priority)
+              : undefined,
         }
       : "skip",
   );
@@ -68,30 +129,29 @@ export function LibraryAcquisitionsPageClient() {
   const rejectRequest = useMutation(api.library.acquisitions.reject);
 
   const handleCreateRequest = async () => {
-    if (!currentOrganizationId || !newRequest.title.trim()) return;
-    setIsProcessing(true);
+    if (!currentOrganizationId || !state.newRequest.title.trim()) return;
+    dispatch({ type: "setProcessing", value: true });
     try {
       await createRequest({
         organizationId: currentOrganizationId as Id<"organizations">,
-        title: newRequest.title,
-        authors: newRequest.authors
-          ? newRequest.authors.split(",").map((a) => a.trim())
+        title: state.newRequest.title,
+        authors: state.newRequest.authors
+          ? state.newRequest.authors.split(",").map((a) => a.trim())
           : undefined,
-        isbn: newRequest.isbn || undefined,
-        publisher: newRequest.publisher || undefined,
-        reason: newRequest.reason || undefined,
-        priority: newRequest.priority,
-        quantity: Number.parseInt(newRequest.quantity, 10) || 1,
-        estimatedPrice: newRequest.estimatedPrice
-          ? Number.parseFloat(newRequest.estimatedPrice)
+        isbn: state.newRequest.isbn || undefined,
+        publisher: state.newRequest.publisher || undefined,
+        reason: state.newRequest.reason || undefined,
+        priority: state.newRequest.priority,
+        quantity: Number.parseInt(state.newRequest.quantity, 10) || 1,
+        estimatedPrice: state.newRequest.estimatedPrice
+          ? Number.parseFloat(state.newRequest.estimatedPrice)
           : undefined,
       });
-      setIsNewRequestOpen(false);
-      setNewRequest(EMPTY_NEW_REQUEST);
+      dispatch({ type: "closeNewRequestDialog" });
     } catch (error) {
       console.error("Failed to create request:", error);
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: "setProcessing", value: false });
     }
   };
 
@@ -99,35 +159,35 @@ export function LibraryAcquisitionsPageClient() {
     requestId: Id<"libraryAcquisitionRequests">,
     newStatus: "ordered" | "received" | "cataloged" | "cancelled",
   ) => {
-    setIsProcessing(true);
+    dispatch({ type: "setProcessing", value: true });
     try {
       await updateStatus({ requestId, status: newStatus });
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: "setProcessing", value: false });
     }
   };
 
   const handleApprove = async (requestId: Id<"libraryAcquisitionRequests">) => {
-    setIsProcessing(true);
+    dispatch({ type: "setProcessing", value: true });
     try {
       await approveRequest({ requestId });
     } catch (error) {
       console.error("Failed to approve request:", error);
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: "setProcessing", value: false });
     }
   };
 
   const handleReject = async (requestId: Id<"libraryAcquisitionRequests">) => {
-    setIsProcessing(true);
+    dispatch({ type: "setProcessing", value: true });
     try {
       await rejectRequest({ requestId });
     } catch (error) {
       console.error("Failed to reject request:", error);
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: "setProcessing", value: false });
     }
   };
 
@@ -164,7 +224,11 @@ export function LibraryAcquisitionsPageClient() {
                 {tAcq("description")}
               </p>
             </div>
-            <Button onClick={() => setIsNewRequestOpen(true)}>
+            <Button
+              onClick={() =>
+                dispatch({ type: "setNewRequestOpen", value: true })
+              }
+            >
               <Plus className="mr-2 size-4" />
               {tAcq("newRequest")}
             </Button>
@@ -174,18 +238,24 @@ export function LibraryAcquisitionsPageClient() {
           </div>
 
           <AcquisitionsFilters
-            statusFilter={statusFilter}
-            priorityFilter={priorityFilter}
-            onStatusFilterChange={setStatusFilter}
-            onPriorityFilterChange={setPriorityFilter}
+            statusFilter={state.statusFilter}
+            priorityFilter={state.priorityFilter}
+            onStatusFilterChange={(value) =>
+              dispatch({ type: "setStatusFilter", value })
+            }
+            onPriorityFilterChange={(value) =>
+              dispatch({ type: "setPriorityFilter", value })
+            }
           />
 
           <AcquisitionsRequestsList
             requests={requests}
-            statusFilter={statusFilter}
-            priorityFilter={priorityFilter}
-            isProcessing={isProcessing}
-            onNewRequest={() => setIsNewRequestOpen(true)}
+            statusFilter={state.statusFilter}
+            priorityFilter={state.priorityFilter}
+            isProcessing={state.isProcessing}
+            onNewRequest={() =>
+              dispatch({ type: "setNewRequestOpen", value: true })
+            }
             onApprove={handleApprove}
             onReject={handleReject}
             onStatusChange={handleStatusChange}
@@ -193,11 +263,13 @@ export function LibraryAcquisitionsPageClient() {
         </div>
 
         <NewAcquisitionRequestDialog
-          open={isNewRequestOpen}
-          onOpenChange={setIsNewRequestOpen}
-          newRequest={newRequest}
-          onNewRequestChange={setNewRequest}
-          isProcessing={isProcessing}
+          open={state.isNewRequestOpen}
+          onOpenChange={(value) =>
+            dispatch({ type: "setNewRequestOpen", value })
+          }
+          newRequest={state.newRequest}
+          onNewRequestChange={onNewRequestChange}
+          isProcessing={state.isProcessing}
           onSubmit={handleCreateRequest}
         />
       </div>

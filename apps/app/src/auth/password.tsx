@@ -6,7 +6,7 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Eye, EyeOff, XCircle } from "lucide-react";
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
 
 interface AuthPasswordFormProps {
@@ -21,6 +21,47 @@ interface AuthPasswordFormProps {
   onSignedIn: () => void;
 }
 
+interface PasswordFormState {
+  password: string;
+  confirmPassword: string;
+  showPassword: boolean;
+  showRetypePassword: boolean;
+  isSubmitting: boolean;
+}
+
+type PasswordFormAction =
+  | { type: "setPassword"; value: string }
+  | { type: "setConfirmPassword"; value: string }
+  | { type: "toggleShowPassword" }
+  | { type: "toggleShowRetypePassword" }
+  | { type: "setIsSubmitting"; value: boolean };
+
+const initialPasswordFormState: PasswordFormState = {
+  password: "",
+  confirmPassword: "",
+  showPassword: false,
+  showRetypePassword: false,
+  isSubmitting: false,
+};
+
+function passwordFormReducer(
+  state: PasswordFormState,
+  action: PasswordFormAction,
+): PasswordFormState {
+  switch (action.type) {
+    case "setPassword":
+      return { ...state, password: action.value };
+    case "setConfirmPassword":
+      return { ...state, confirmPassword: action.value };
+    case "toggleShowPassword":
+      return { ...state, showPassword: !state.showPassword };
+    case "toggleShowRetypePassword":
+      return { ...state, showRetypePassword: !state.showRetypePassword };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+  }
+}
+
 export function AuthPasswordForm({
   canSignInWithPassword,
   email,
@@ -33,16 +74,15 @@ export function AuthPasswordForm({
   onSignedIn,
 }: AuthPasswordFormProps) {
   const { signIn } = useAuthActions();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showRetypePassword, setShowRetypePassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, dispatch] = useReducer(
+    passwordFormReducer,
+    initialPasswordFormState,
+  );
 
   const isSignUp = mode === "signUp";
 
   const isButtonDisabled = useMemo(() => {
-    if (isSubmitting || password.length === 0) {
+    if (state.isSubmitting || state.password.length === 0) {
       return true;
     }
 
@@ -50,8 +90,11 @@ export function AuthPasswordForm({
       return false;
     }
 
-    return confirmPassword.length === 0 || password !== confirmPassword;
-  }, [confirmPassword, isSignUp, isSubmitting, password]);
+    return (
+      state.confirmPassword.length === 0 ||
+      state.password !== state.confirmPassword
+    );
+  }, [isSignUp, state.confirmPassword, state.isSubmitting, state.password]);
 
   const getErrorMessage = (error: unknown) => {
     if (error instanceof Error && error.message) {
@@ -79,13 +122,13 @@ export function AuthPasswordForm({
       return;
     }
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", value: true });
 
     try {
       const result = await signIn("password-with-reset", {
         email,
         flow: mode,
-        password,
+        password: state.password,
       });
 
       if (result.signingIn) {
@@ -110,7 +153,7 @@ export function AuthPasswordForm({
         );
       }
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
@@ -154,18 +197,20 @@ export function AuthPasswordForm({
             autoComplete={isSignUp ? "new-password" : "current-password"}
             className="h-10 border-white/10 bg-background pr-10"
             id="auth-password"
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) =>
+              dispatch({ type: "setPassword", value: event.target.value })
+            }
             placeholder="Enter your password"
-            type={showPassword ? "text" : "password"}
-            value={password}
+            type={state.showPassword ? "text" : "password"}
+            value={state.password}
           />
           <button
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={state.showPassword ? "Hide password" : "Show password"}
             className="absolute right-3"
-            onClick={() => setShowPassword((value) => !value)}
+            onClick={() => dispatch({ type: "toggleShowPassword" })}
             type="button"
           >
-            {showPassword ? (
+            {state.showPassword ? (
               <EyeOff className="size-4 text-white/40" />
             ) : (
               <Eye className="size-4 text-white/40" />
@@ -198,27 +243,33 @@ export function AuthPasswordForm({
               autoComplete="new-password"
               className="h-10 border-white/10 bg-background pr-10"
               id="auth-confirm-password"
-              onChange={(event) => setConfirmPassword(event.target.value)}
+              onChange={(event) =>
+                dispatch({
+                  type: "setConfirmPassword",
+                  value: event.target.value,
+                })
+              }
               placeholder="Retype your password"
-              type={showRetypePassword ? "text" : "password"}
-              value={confirmPassword}
+              type={state.showRetypePassword ? "text" : "password"}
+              value={state.confirmPassword}
             />
             <button
               aria-label={
-                showRetypePassword ? "Hide password" : "Show password"
+                state.showRetypePassword ? "Hide password" : "Show password"
               }
               className="absolute right-3"
-              onClick={() => setShowRetypePassword((value) => !value)}
+              onClick={() => dispatch({ type: "toggleShowRetypePassword" })}
               type="button"
             >
-              {showRetypePassword ? (
+              {state.showRetypePassword ? (
                 <EyeOff className="size-4 text-white/40" />
               ) : (
                 <Eye className="size-4 text-white/40" />
               )}
             </button>
           </div>
-          {confirmPassword.length > 0 && confirmPassword !== password ? (
+          {state.confirmPassword.length > 0 &&
+          state.confirmPassword !== state.password ? (
             <p className="px-0.5 text-xs text-red-400">
               Passwords do not match.
             </p>
@@ -232,7 +283,7 @@ export function AuthPasswordForm({
           disabled={isButtonDisabled}
           type="submit"
         >
-          {isSubmitting
+          {state.isSubmitting
             ? "Continuing..."
             : mode === "signIn"
               ? "Continue"

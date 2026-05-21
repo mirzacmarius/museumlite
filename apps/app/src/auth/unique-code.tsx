@@ -7,7 +7,7 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { CircleCheck, XCircle } from "lucide-react";
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { toast } from "sonner";
 
 interface AuthUniqueCodeFormProps {
@@ -18,6 +18,53 @@ interface AuthUniqueCodeFormProps {
   onRequestCode: (flow: UniqueCodeFlow) => Promise<void>;
 }
 
+interface UniqueCodeFormState {
+  code: string;
+  newPassword: string;
+  isSubmitting: boolean;
+  isRequestingNewCode: boolean;
+  resendTimer: number;
+}
+
+type UniqueCodeFormAction =
+  | { type: "setCode"; value: string }
+  | { type: "setNewPassword"; value: string }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "setIsRequestingNewCode"; value: boolean }
+  | { type: "setResendTimer"; value: number }
+  | { type: "decrementResendTimer" }
+  | { type: "resetAfterResend" };
+
+const initialUniqueCodeFormState: UniqueCodeFormState = {
+  code: "",
+  newPassword: "",
+  isSubmitting: false,
+  isRequestingNewCode: false,
+  resendTimer: 0,
+};
+
+function uniqueCodeFormReducer(
+  state: UniqueCodeFormState,
+  action: UniqueCodeFormAction,
+): UniqueCodeFormState {
+  switch (action.type) {
+    case "setCode":
+      return { ...state, code: action.value };
+    case "setNewPassword":
+      return { ...state, newPassword: action.value };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "setIsRequestingNewCode":
+      return { ...state, isRequestingNewCode: action.value };
+    case "setResendTimer":
+      return { ...state, resendTimer: action.value };
+    case "decrementResendTimer":
+      return { ...state, resendTimer: Math.max(0, state.resendTimer - 1) };
+    case "resetAfterResend":
+      return { ...state, resendTimer: 30, code: "" };
+  }
+}
+
 export function AuthUniqueCodeForm({
   email,
   flow,
@@ -26,49 +73,49 @@ export function AuthUniqueCodeForm({
   onRequestCode,
 }: AuthUniqueCodeFormProps) {
   const { signIn } = useAuthActions();
-  const [code, setCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRequestingNewCode, setIsRequestingNewCode] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
+  const [state, dispatch] = useReducer(
+    uniqueCodeFormReducer,
+    initialUniqueCodeFormState,
+  );
 
   useEffect(() => {
-    if (resendTimer <= 0) {
+    if (state.resendTimer <= 0) {
       return;
     }
 
     const timeout = window.setTimeout(() => {
-      setResendTimer((value) => Math.max(0, value - 1));
+      dispatch({ type: "decrementResendTimer" });
     }, 1000);
 
     return () => window.clearTimeout(timeout);
-  }, [resendTimer]);
+  }, [state.resendTimer]);
 
-  const isRequestNewCodeDisabled = isRequestingNewCode || resendTimer > 0;
+  const isRequestNewCodeDisabled =
+    state.isRequestingNewCode || state.resendTimer > 0;
 
   const isButtonDisabled = useMemo(() => {
-    if (isSubmitting || code.length === 0) {
+    if (state.isSubmitting || state.code.length === 0) {
       return true;
     }
 
     if (flow === "reset") {
-      return newPassword.length < 8;
+      return state.newPassword.length < 8;
     }
 
     return false;
-  }, [code, flow, isSubmitting, newPassword.length]);
+  }, [flow, state.code, state.isSubmitting, state.newPassword.length]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", value: true });
 
     try {
       if (flow === "reset") {
         const result = await signIn("password-with-reset", {
-          code,
+          code: state.code,
           email,
           flow: "reset-verification",
-          newPassword,
+          newPassword: state.newPassword,
         });
 
         if (result.signingIn) {
@@ -82,7 +129,7 @@ export function AuthUniqueCodeForm({
 
       if (flow === "passwordVerify") {
         const result = await signIn("password-with-reset", {
-          code,
+          code: state.code,
           email,
           flow: "email-verification",
         });
@@ -96,7 +143,7 @@ export function AuthUniqueCodeForm({
         return;
       }
 
-      const result = await signIn("resend-otp", { code, email });
+      const result = await signIn("resend-otp", { code: state.code, email });
 
       if (result.signingIn) {
         onSignedIn();
@@ -107,20 +154,19 @@ export function AuthUniqueCodeForm({
     } catch {
       toast.error("Could not verify code.");
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
   const generateNewCode = async () => {
-    setIsRequestingNewCode(true);
+    dispatch({ type: "setIsRequestingNewCode", value: true });
     try {
       await onRequestCode(flow);
-      setResendTimer(30);
-      setCode("");
+      dispatch({ type: "resetAfterResend" });
     } catch {
       // Toast is already handled in the caller.
     } finally {
-      setIsRequestingNewCode(false);
+      dispatch({ type: "setIsRequestingNewCode", value: false });
     }
   };
 
@@ -159,7 +205,11 @@ export function AuthUniqueCodeForm({
         >
           Unique code
         </label>
-        <CodeInput id="unique-code" onChange={setCode} value={code} />
+        <CodeInput
+          id="unique-code"
+          onChange={(value) => dispatch({ type: "setCode", value })}
+          value={state.code}
+        />
         <div className="flex items-center justify-between px-0.5 pt-1">
           <p className="flex items-center gap-1 text-xs font-medium text-emerald-300">
             <CircleCheck className="size-3" />
@@ -175,9 +225,9 @@ export function AuthUniqueCodeForm({
             onClick={generateNewCode}
             type="button"
           >
-            {resendTimer > 0
-              ? `Resend in ${resendTimer}s`
-              : isRequestingNewCode
+            {state.resendTimer > 0
+              ? `Resend in ${state.resendTimer}s`
+              : state.isRequestingNewCode
                 ? "Sending..."
                 : "Resend"}
           </button>
@@ -197,16 +247,18 @@ export function AuthUniqueCodeForm({
             className="h-10 border-white/10 bg-background"
             id="reset-password"
             minLength={8}
-            onChange={(event) => setNewPassword(event.target.value)}
+            onChange={(event) =>
+              dispatch({ type: "setNewPassword", value: event.target.value })
+            }
             placeholder="Set a new password"
             type="password"
-            value={newPassword}
+            value={state.newPassword}
           />
         </div>
       ) : null}
 
       <Button className="h-10 w-full" disabled={isButtonDisabled} type="submit">
-        {isSubmitting
+        {state.isSubmitting
           ? "Continuing..."
           : flow === "reset"
             ? "Reset password"

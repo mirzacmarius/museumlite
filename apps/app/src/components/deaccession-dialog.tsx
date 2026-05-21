@@ -14,7 +14,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { DeaccessionArchiveDeleteForm } from "./deaccession-archive-delete-form";
 import {
   getDeaccessionDialogCopy,
@@ -31,6 +31,86 @@ import { DeaccessionTypePicker } from "./deaccession-type-picker";
 
 export type { RemovalType } from "./deaccession-dialog-types";
 
+interface DeaccessionDialogState {
+  removalType: RemovalType | null;
+  date: Date;
+  reason: string;
+  method: "sale" | "donation" | "transfer" | "destruction";
+  disposition: string;
+  notes: string;
+  accessionMode: AccessionMode;
+  targetOrganizationId: Id<"organizations"> | "";
+  manualAccessionNumber: string;
+  isSubmitting: boolean;
+  error: string | null;
+}
+
+type DeaccessionDialogAction =
+  | { type: "setRemovalType"; value: RemovalType | null }
+  | { type: "setDate"; value: Date }
+  | { type: "setReason"; value: string }
+  | {
+      type: "setMethod";
+      value: "sale" | "donation" | "transfer" | "destruction";
+    }
+  | { type: "setDisposition"; value: string }
+  | { type: "setNotes"; value: string }
+  | { type: "setAccessionMode"; value: AccessionMode }
+  | { type: "setTargetOrganizationId"; value: Id<"organizations"> | "" }
+  | { type: "setManualAccessionNumber"; value: string }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "setError"; value: string | null }
+  | { type: "reset" };
+
+const initialDeaccessionDialogState: DeaccessionDialogState = {
+  removalType: null,
+  date: new Date(),
+  reason: "",
+  method: "sale",
+  disposition: "",
+  notes: "",
+  accessionMode: "keep",
+  targetOrganizationId: "",
+  manualAccessionNumber: "",
+  isSubmitting: false,
+  error: null,
+};
+
+function deaccessionDialogReducer(
+  state: DeaccessionDialogState,
+  action: DeaccessionDialogAction,
+): DeaccessionDialogState {
+  switch (action.type) {
+    case "setRemovalType":
+      return { ...state, removalType: action.value };
+    case "setDate":
+      return { ...state, date: action.value };
+    case "setReason":
+      return { ...state, reason: action.value };
+    case "setMethod":
+      return { ...state, method: action.value };
+    case "setDisposition":
+      return { ...state, disposition: action.value };
+    case "setNotes":
+      return { ...state, notes: action.value };
+    case "setAccessionMode":
+      return { ...state, accessionMode: action.value };
+    case "setTargetOrganizationId":
+      return { ...state, targetOrganizationId: action.value };
+    case "setManualAccessionNumber":
+      return { ...state, manualAccessionNumber: action.value };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "setError":
+      return { ...state, error: action.value };
+    case "reset":
+      return {
+        ...initialDeaccessionDialogState,
+        date: new Date(),
+      };
+  }
+}
+
 export function DeaccessionDialog({
   open,
   onOpenChange,
@@ -39,21 +119,10 @@ export function DeaccessionDialog({
   organizationId,
   initialRemovalType = null,
 }: DeaccessionDialogProps) {
-  const [removalType, setRemovalType] = useState<RemovalType | null>(null);
-  const [date, setDate] = useState<Date>(new Date());
-  const [reason, setReason] = useState("");
-  const [method, setMethod] = useState<
-    "sale" | "donation" | "transfer" | "destruction"
-  >("sale");
-  const [disposition, setDisposition] = useState("");
-  const [notes, setNotes] = useState("");
-  const [accessionMode, setAccessionMode] = useState<AccessionMode>("keep");
-  const [targetOrganizationId, setTargetOrganizationId] = useState<
-    Id<"organizations"> | ""
-  >("");
-  const [manualAccessionNumber, setManualAccessionNumber] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(
+    deaccessionDialogReducer,
+    initialDeaccessionDialogState,
+  );
 
   const { push } = useRouter();
   const createDeaccession = useMutation(api.deaccessions.create);
@@ -61,7 +130,7 @@ export function DeaccessionDialog({
 
   useEffect(() => {
     if (open) {
-      setRemovalType(initialRemovalType);
+      dispatch({ type: "setRemovalType", value: initialRemovalType });
     }
   }, [initialRemovalType, open]);
 
@@ -75,10 +144,11 @@ export function DeaccessionDialog({
   );
   const moveEligibility = useQuery(
     api.objectMoves.getEligibility,
-    removalType === "move" && targetOrganizationId
+    state.removalType === "move" && state.targetOrganizationId
       ? {
           collectionId,
-          targetOrganizationId: targetOrganizationId as Id<"organizations">,
+          targetOrganizationId:
+            state.targetOrganizationId as Id<"organizations">,
         }
       : open
         ? { collectionId }
@@ -90,37 +160,28 @@ export function DeaccessionDialog({
   );
 
   const resetForm = () => {
-    setRemovalType(null);
-    setReason("");
-    setDisposition("");
-    setNotes("");
-    setDate(new Date());
-    setMethod("sale");
-    setAccessionMode("keep");
-    setTargetOrganizationId("");
-    setManualAccessionNumber("");
-    setError(null);
+    dispatch({ type: "reset" });
   };
 
   const handleSubmit = async () => {
-    if (!removalType) return;
+    if (!state.removalType) return;
 
-    setIsSubmitting(true);
-    setError(null);
+    dispatch({ type: "setIsSubmitting", value: true });
+    dispatch({ type: "setError", value: null });
 
     try {
       const result = await submitDeaccession({
-        removalType,
-        reason,
+        removalType: state.removalType,
+        reason: state.reason,
         organizationId,
         collectionId,
-        date,
-        method,
-        disposition,
-        notes,
-        targetOrganizationId,
-        accessionMode,
-        manualAccessionNumber,
+        date: state.date,
+        method: state.method,
+        disposition: state.disposition,
+        notes: state.notes,
+        targetOrganizationId: state.targetOrganizationId,
+        accessionMode: state.accessionMode,
+        manualAccessionNumber: state.manualAccessionNumber,
         moveEligibility,
         createDeaccession,
         createMoveRequest,
@@ -136,13 +197,15 @@ export function DeaccessionDialog({
       }
     } catch (err) {
       console.error("Failed to process object removal or transfer:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to process object removal or transfer",
-      );
+      dispatch({
+        type: "setError",
+        value:
+          err instanceof Error
+            ? err.message
+            : "Failed to process object removal or transfer",
+      });
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
@@ -154,7 +217,7 @@ export function DeaccessionDialog({
   const blockers = moveEligibility?.blockers ?? [];
   const isDirectRemovalFlow = initialRemovalType !== null;
   const { dialogTitle, dialogDescription } = getDeaccessionDialogCopy(
-    removalType,
+    state.removalType,
     collectionTitle,
   );
 
@@ -166,105 +229,129 @@ export function DeaccessionDialog({
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
-        {!removalType && (
+        {!state.removalType && (
           <DeaccessionTypePicker
             deaccessionWorkflow={deaccessionWorkflow}
-            onSelect={setRemovalType}
+            onSelect={(value) =>
+              dispatch({ type: "setRemovalType", value })
+            }
           />
         )}
 
-        {removalType === "sold" && (
+        {state.removalType === "sold" && (
           <DeaccessionSoldForm
             isDirectRemovalFlow={isDirectRemovalFlow}
             deaccessionWorkflow={deaccessionWorkflow}
             workflowConfigsLoaded={workflowConfigs !== undefined}
-            date={date}
-            reason={reason}
-            method={method}
-            disposition={disposition}
-            notes={notes}
-            onBack={() => setRemovalType(null)}
-            onDateChange={setDate}
-            onReasonChange={setReason}
-            onMethodChange={setMethod}
-            onDispositionChange={setDisposition}
-            onNotesChange={setNotes}
+            date={state.date}
+            reason={state.reason}
+            method={state.method}
+            disposition={state.disposition}
+            notes={state.notes}
+            onBack={() => dispatch({ type: "setRemovalType", value: null })}
+            onDateChange={(value) => dispatch({ type: "setDate", value })}
+            onReasonChange={(value) =>
+              dispatch({ type: "setReason", value })
+            }
+            onMethodChange={(value) =>
+              dispatch({ type: "setMethod", value })
+            }
+            onDispositionChange={(value) =>
+              dispatch({ type: "setDisposition", value })
+            }
+            onNotesChange={(value) => dispatch({ type: "setNotes", value })}
           />
         )}
 
-        {removalType === "move" && (
+        {state.removalType === "move" && (
           <DeaccessionMoveForm
             isDirectRemovalFlow={isDirectRemovalFlow}
             targetOrganizations={targetOrganizations ?? undefined}
             blockers={blockers}
-            targetOrganizationId={targetOrganizationId}
-            accessionMode={accessionMode}
-            manualAccessionNumber={manualAccessionNumber}
-            reason={reason}
-            notes={notes}
-            onBack={() => setRemovalType(null)}
-            onTargetOrganizationChange={setTargetOrganizationId}
-            onAccessionModeChange={setAccessionMode}
-            onManualAccessionNumberChange={setManualAccessionNumber}
-            onReasonChange={setReason}
-            onNotesChange={setNotes}
+            targetOrganizationId={state.targetOrganizationId}
+            accessionMode={state.accessionMode}
+            manualAccessionNumber={state.manualAccessionNumber}
+            reason={state.reason}
+            notes={state.notes}
+            onBack={() => dispatch({ type: "setRemovalType", value: null })}
+            onTargetOrganizationChange={(value) =>
+              dispatch({ type: "setTargetOrganizationId", value })
+            }
+            onAccessionModeChange={(value) =>
+              dispatch({ type: "setAccessionMode", value })
+            }
+            onManualAccessionNumberChange={(value) =>
+              dispatch({ type: "setManualAccessionNumber", value })
+            }
+            onReasonChange={(value) =>
+              dispatch({ type: "setReason", value })
+            }
+            onNotesChange={(value) => dispatch({ type: "setNotes", value })}
           />
         )}
 
-        {removalType === "archived" && (
+        {state.removalType === "archived" && (
           <DeaccessionArchiveDeleteForm
             variant="archived"
             isDirectRemovalFlow={isDirectRemovalFlow}
-            reason={reason}
-            onBack={() => setRemovalType(null)}
-            onReasonChange={setReason}
+            reason={state.reason}
+            onBack={() => dispatch({ type: "setRemovalType", value: null })}
+            onReasonChange={(value) =>
+              dispatch({ type: "setReason", value })
+            }
           />
         )}
 
-        {removalType === "deleted" && (
+        {state.removalType === "deleted" && (
           <DeaccessionArchiveDeleteForm
             variant="deleted"
             isDirectRemovalFlow={isDirectRemovalFlow}
-            reason={reason}
-            onBack={() => setRemovalType(null)}
-            onReasonChange={setReason}
+            reason={state.reason}
+            onBack={() => dispatch({ type: "setRemovalType", value: null })}
+            onReasonChange={(value) =>
+              dispatch({ type: "setReason", value })
+            }
           />
         )}
 
-        {error && (
+        {state.error && (
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+            {state.error}
           </div>
         )}
 
-        {removalType && (
+        {state.removalType && (
           <DialogFooter>
             <Button
               variant="outline"
               onClick={handleClose}
-              disabled={isSubmitting}
+              disabled={state.isSubmitting}
             >
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={
-                isSubmitting ||
-                !reason.trim() ||
-                (removalType === "move" &&
-                  (!targetOrganizationId ||
+                state.isSubmitting ||
+                !state.reason.trim() ||
+                (state.removalType === "move" &&
+                  (!state.targetOrganizationId ||
                     (moveEligibility !== undefined &&
                       !moveEligibility.isEligible) ||
-                    (accessionMode === "manual" &&
-                      !manualAccessionNumber.trim())))
+                    (state.accessionMode === "manual" &&
+                      !state.manualAccessionNumber.trim())))
               }
-              variant={removalType === "deleted" ? "destructive" : "default"}
+              variant={
+                state.removalType === "deleted" ? "destructive" : "default"
+              }
             >
-              {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {removalType === "sold" && "Submit for Approval"}
-              {removalType === "move" && "Submit Move Request"}
-              {removalType === "archived" && "Submit Archive Request"}
-              {removalType === "deleted" && "Submit Delete Request"}
+              {state.isSubmitting && (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              )}
+              {state.removalType === "sold" && "Submit for Approval"}
+              {state.removalType === "move" && "Submit Move Request"}
+              {state.removalType === "archived" && "Submit Archive Request"}
+              {state.removalType === "deleted" && "Submit Delete Request"}
             </Button>
           </DialogFooter>
         )}

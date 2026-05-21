@@ -7,7 +7,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useReducer } from "react";
 import { ExhibitionDetailBody } from "./exhibition-detail-body";
 import { ExhibitionDetailHeader } from "./exhibition-detail-header";
 import {
@@ -16,6 +16,55 @@ import {
   getWorkflowStatusInfo,
 } from "./exhibition-detail-helpers";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
+
+interface ExhibitionDetailPageState {
+  isDeleting: boolean;
+  isUploadDialogOpen: boolean;
+  isUploading: boolean;
+  uploadDocType: string;
+  selectedFile: File | null;
+}
+
+type ExhibitionDetailPageAction =
+  | { type: "setDeleting"; value: boolean }
+  | { type: "setUploadDialogOpen"; value: boolean }
+  | { type: "setUploading"; value: boolean }
+  | { type: "setUploadDocType"; value: string }
+  | { type: "setSelectedFile"; value: File | null }
+  | { type: "closeUploadDialog" };
+
+const initialExhibitionDetailPageState: ExhibitionDetailPageState = {
+  isDeleting: false,
+  isUploadDialogOpen: false,
+  isUploading: false,
+  uploadDocType: "other",
+  selectedFile: null,
+};
+
+function exhibitionDetailPageReducer(
+  state: ExhibitionDetailPageState,
+  action: ExhibitionDetailPageAction,
+): ExhibitionDetailPageState {
+  switch (action.type) {
+    case "setDeleting":
+      return { ...state, isDeleting: action.value };
+    case "setUploadDialogOpen":
+      return { ...state, isUploadDialogOpen: action.value };
+    case "setUploading":
+      return { ...state, isUploading: action.value };
+    case "setUploadDocType":
+      return { ...state, uploadDocType: action.value };
+    case "setSelectedFile":
+      return { ...state, selectedFile: action.value };
+    case "closeUploadDialog":
+      return {
+        ...state,
+        isUploadDialogOpen: false,
+        selectedFile: null,
+        uploadDocType: "other",
+      };
+  }
+}
 
 export function ExhibitionDetailPageClient() {
   const params = useParams();
@@ -26,7 +75,10 @@ export function ExhibitionDetailPageClient() {
   const t = useScopedI18n("exhibitions");
   const now = useClientNow();
   const deleteExhibition = useMutation(api.exhibitions.remove);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [state, dispatch] = useReducer(
+    exhibitionDetailPageReducer,
+    initialExhibitionDetailPageState,
+  );
 
   const exhibition = useQuery(api.exhibitions.get, {
     id: exhibitionId as Id<"exhibitions">,
@@ -47,43 +99,36 @@ export function ExhibitionDetailPageClient() {
   const uploadDocument = useMutation(api.exhibitions.uploadDocument);
   const deleteDocument = useMutation(api.exhibitions.deleteDocument);
 
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadDocType, setUploadDocType] = useState("other");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const handleFileUpload = async () => {
-    if (!selectedFile) return;
+    if (!state.selectedFile) return;
 
-    setIsUploading(true);
+    dispatch({ type: "setUploading", value: true });
     try {
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": selectedFile.type },
-        body: selectedFile,
+        headers: { "Content-Type": state.selectedFile.type },
+        body: state.selectedFile,
       });
       const { storageId } = await result.json();
 
       await uploadDocument({
         exhibitionId: exhibitionId as Id<"exhibitions">,
         storageId,
-        documentType: uploadDocType as
+        documentType: state.uploadDocType as
           | "floor_plan"
           | "label"
           | "press_release"
           | "checklist"
           | "other",
-        fileName: selectedFile.name,
+        fileName: state.selectedFile.name,
       });
 
-      setIsUploadDialogOpen(false);
-      setSelectedFile(null);
-      setUploadDocType("other");
+      dispatch({ type: "closeUploadDialog" });
     } catch (error) {
       console.error("Upload failed:", error);
     } finally {
-      setIsUploading(false);
+      dispatch({ type: "setUploading", value: false });
     }
   };
 
@@ -122,13 +167,13 @@ export function ExhibitionDetailPageClient() {
   }
 
   const handleDelete = async () => {
-    setIsDeleting(true);
+    dispatch({ type: "setDeleting", value: true });
     try {
       await deleteExhibition({ id: exhibitionId as Id<"exhibitions"> });
       push("/exhibitions");
     } catch (error) {
       console.error("Failed to delete exhibition:", error);
-      setIsDeleting(false);
+      dispatch({ type: "setDeleting", value: false });
     }
   };
 
@@ -141,15 +186,18 @@ export function ExhibitionDetailPageClient() {
     duration: calculateDuration(exhibition, now, t),
     workflowHistory,
     documents,
-    isDeleting,
+    isDeleting: state.isDeleting,
     handleDelete,
-    isUploadDialogOpen,
-    setIsUploadDialogOpen,
-    isUploading,
-    uploadDocType,
-    setUploadDocType,
-    selectedFile,
-    setSelectedFile,
+    isUploadDialogOpen: state.isUploadDialogOpen,
+    setIsUploadDialogOpen: (value) =>
+      dispatch({ type: "setUploadDialogOpen", value }),
+    isUploading: state.isUploading,
+    uploadDocType: state.uploadDocType,
+    setUploadDocType: (value) =>
+      dispatch({ type: "setUploadDocType", value }),
+    selectedFile: state.selectedFile,
+    setSelectedFile: (value) =>
+      dispatch({ type: "setSelectedFile", value }),
     handleFileUpload,
     handleDeleteDocument,
   };

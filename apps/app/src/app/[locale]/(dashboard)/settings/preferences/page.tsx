@@ -5,7 +5,139 @@ import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
+
+interface PreferencesPageState {
+  error: string | null;
+  isSubmitting: boolean;
+  showSaveModal: boolean;
+  saveTemplateName: string;
+  saveTemplateDesc: string;
+  deleteTemplateId: Id<"accessionTemplates"> | null;
+  formData: PreferencesFormData;
+}
+
+type PreferencesPageAction =
+  | { type: "setError"; value: string | null }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "setShowSaveModal"; value: boolean }
+  | { type: "setSaveTemplateName"; value: string }
+  | { type: "setSaveTemplateDesc"; value: string }
+  | { type: "setDeleteTemplateId"; value: Id<"accessionTemplates"> | null }
+  | { type: "setFormData"; value: PreferencesFormData }
+  | {
+      type: "updateFormData";
+      updater: (current: PreferencesFormData) => PreferencesFormData;
+    }
+  | {
+      type: "syncFromOrganization";
+      organization: {
+        settings?: {
+          accessionNumberFormat?: string;
+          accessionCounterScope?: PreferencesFormData["accessionCounterScope"];
+          autoGenerateAccessionNumbers?: boolean;
+          accessionWorkflowEnabled?: boolean;
+          deaccessionWorkflowEnabled?: boolean;
+          locationTrackingEnabled?: boolean;
+          locationTypes?: string[];
+          enableDetailedConditionReports?: boolean;
+        };
+      };
+    }
+  | {
+      type: "openSaveTemplateModal";
+      isUpdate: boolean;
+      template?: { name: string; description?: string };
+    }
+  | { type: "closeSaveTemplateModal" }
+  | { type: "clearDeleteTemplateId" };
+
+const initialPreferencesFormData: PreferencesFormData = {
+  accessionNumberFormat: "",
+  accessionCounterScope: "year",
+  autoGenerateAccessionNumbers: true,
+  accessionWorkflowEnabled: true,
+  deaccessionWorkflowEnabled: true,
+  locationTrackingEnabled: true,
+  locationTypes: [],
+  enableDetailedConditionReports: false,
+};
+
+const initialPreferencesPageState: PreferencesPageState = {
+  error: null,
+  isSubmitting: false,
+  showSaveModal: false,
+  saveTemplateName: "",
+  saveTemplateDesc: "",
+  deleteTemplateId: null,
+  formData: initialPreferencesFormData,
+};
+
+function preferencesPageReducer(
+  state: PreferencesPageState,
+  action: PreferencesPageAction,
+): PreferencesPageState {
+  switch (action.type) {
+    case "setError":
+      return { ...state, error: action.value };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "setShowSaveModal":
+      return { ...state, showSaveModal: action.value };
+    case "setSaveTemplateName":
+      return { ...state, saveTemplateName: action.value };
+    case "setSaveTemplateDesc":
+      return { ...state, saveTemplateDesc: action.value };
+    case "setDeleteTemplateId":
+      return { ...state, deleteTemplateId: action.value };
+    case "setFormData":
+      return { ...state, formData: action.value };
+    case "updateFormData":
+      return { ...state, formData: action.updater(state.formData) };
+    case "syncFromOrganization":
+      return {
+        ...state,
+        formData: {
+          accessionNumberFormat:
+            action.organization.settings?.accessionNumberFormat || "",
+          accessionCounterScope:
+            action.organization.settings?.accessionCounterScope || "year",
+          autoGenerateAccessionNumbers:
+            action.organization.settings?.autoGenerateAccessionNumbers ?? true,
+          accessionWorkflowEnabled:
+            action.organization.settings?.accessionWorkflowEnabled ?? true,
+          deaccessionWorkflowEnabled:
+            action.organization.settings?.deaccessionWorkflowEnabled ?? true,
+          locationTrackingEnabled:
+            action.organization.settings?.locationTrackingEnabled ?? true,
+          locationTypes: action.organization.settings?.locationTypes || [],
+          enableDetailedConditionReports:
+            action.organization.settings?.enableDetailedConditionReports ??
+            false,
+        },
+      };
+    case "openSaveTemplateModal":
+      return {
+        ...state,
+        saveTemplateName:
+          action.isUpdate && action.template ? action.template.name : "",
+        saveTemplateDesc:
+          action.isUpdate && action.template
+            ? action.template.description || ""
+            : "",
+        showSaveModal: true,
+      };
+    case "closeSaveTemplateModal":
+      return {
+        ...state,
+        showSaveModal: false,
+        saveTemplateName: "",
+        saveTemplateDesc: "",
+      };
+    case "clearDeleteTemplateId":
+      return { ...state, deleteTemplateId: null };
+  }
+}
 import {
   type PreferencesFormData,
   PreferencesSettingsForm,
@@ -21,23 +153,10 @@ export default function PreferencesSettingsPage() {
   const t = useScopedI18n("settings");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveTemplateName, setSaveTemplateName] = useState("");
-  const [saveTemplateDesc, setSaveTemplateDesc] = useState("");
-  const [deleteTemplateId, setDeleteTemplateId] =
-    useState<Id<"accessionTemplates"> | null>(null);
-  const [formData, setFormData] = useState<PreferencesFormData>({
-    accessionNumberFormat: "",
-    accessionCounterScope: "year",
-    autoGenerateAccessionNumbers: true,
-    accessionWorkflowEnabled: true,
-    deaccessionWorkflowEnabled: true,
-    locationTrackingEnabled: true,
-    locationTypes: [],
-    enableDetailedConditionReports: false,
-  });
+  const [state, dispatch] = useReducer(
+    preferencesPageReducer,
+    initialPreferencesPageState,
+  );
 
   const organization = useQuery(
     api.organizations.get,
@@ -47,9 +166,9 @@ export default function PreferencesSettingsPage() {
   );
   const validation = useQuery(
     api.organizations.validateAccessionFormat,
-    formData.accessionNumberFormat && organization
+    state.formData.accessionNumberFormat && organization
       ? {
-          template: formData.accessionNumberFormat,
+          template: state.formData.accessionNumberFormat,
           organizationSlug: organization.slug,
         }
       : "skip",
@@ -68,22 +187,7 @@ export default function PreferencesSettingsPage() {
 
   useEffect(() => {
     if (!organization) return;
-    setFormData({
-      accessionNumberFormat: organization.settings?.accessionNumberFormat || "",
-      accessionCounterScope:
-        organization.settings?.accessionCounterScope || "year",
-      autoGenerateAccessionNumbers:
-        organization.settings?.autoGenerateAccessionNumbers ?? true,
-      accessionWorkflowEnabled:
-        organization.settings?.accessionWorkflowEnabled ?? true,
-      deaccessionWorkflowEnabled:
-        organization.settings?.deaccessionWorkflowEnabled ?? true,
-      locationTrackingEnabled:
-        organization.settings?.locationTrackingEnabled ?? true,
-      locationTypes: organization.settings?.locationTypes || [],
-      enableDetailedConditionReports:
-        organization.settings?.enableDetailedConditionReports ?? false,
-    });
+    dispatch({ type: "syncFromOrganization", organization });
   }, [organization]);
 
   const systemPresets = useMemo(
@@ -110,32 +214,37 @@ export default function PreferencesSettingsPage() {
   const selectedCustomTemplate = useMemo(
     () =>
       customTemplates?.find(
-        (template) => template.template === formData.accessionNumberFormat,
+        (template) =>
+          template.template === state.formData.accessionNumberFormat,
       ),
-    [customTemplates, formData.accessionNumberFormat],
+    [customTemplates, state.formData.accessionNumberFormat],
   );
 
   const selectedCustomTemplateId = selectedCustomTemplate?._id ?? null;
 
   const openSaveTemplateModal = (isUpdate = false) => {
-    if (!formData.accessionNumberFormat || !validation?.isValid) {
-      setError(t("organization.templateDialog.validTemplateRequired"));
+    if (!state.formData.accessionNumberFormat || !validation?.isValid) {
+      dispatch({
+        type: "setError",
+        value: t("organization.templateDialog.validTemplateRequired"),
+      });
       return;
     }
 
-    if (isUpdate && selectedCustomTemplate) {
-      setSaveTemplateName(selectedCustomTemplate.name);
-      setSaveTemplateDesc(selectedCustomTemplate.description || "");
-    } else {
-      setSaveTemplateName("");
-      setSaveTemplateDesc("");
-    }
-    setShowSaveModal(true);
+    dispatch({
+      type: "openSaveTemplateModal",
+      isUpdate,
+      template:
+        isUpdate && selectedCustomTemplate ? selectedCustomTemplate : undefined,
+    });
   };
 
   const handleSaveTemplate = async () => {
-    if (!currentOrganizationId || !saveTemplateName.trim()) {
-      setError(t("organization.templateDialog.templateNameRequired"));
+    if (!currentOrganizationId || !state.saveTemplateName.trim()) {
+      dispatch({
+        type: "setError",
+        value: t("organization.templateDialog.templateNameRequired"),
+      });
       return;
     }
 
@@ -143,86 +252,101 @@ export default function PreferencesSettingsPage() {
       if (selectedCustomTemplateId) {
         await updateTemplate({
           templateId: selectedCustomTemplateId,
-          name: saveTemplateName.trim(),
-          description: saveTemplateDesc.trim() || undefined,
-          template: formData.accessionNumberFormat,
+          name: state.saveTemplateName.trim(),
+          description: state.saveTemplateDesc.trim() || undefined,
+          template: state.formData.accessionNumberFormat,
         });
       } else {
         await createTemplate({
           organizationId: currentOrganizationId as Id<"organizations">,
-          name: saveTemplateName.trim(),
-          template: formData.accessionNumberFormat,
-          description: saveTemplateDesc.trim() || undefined,
+          name: state.saveTemplateName.trim(),
+          template: state.formData.accessionNumberFormat,
+          description: state.saveTemplateDesc.trim() || undefined,
         });
       }
-      setShowSaveModal(false);
-      setSaveTemplateName("");
-      setSaveTemplateDesc("");
+      dispatch({ type: "closeSaveTemplateModal" });
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("organization.templateDialog.saveError"),
-      );
+      dispatch({
+        type: "setError",
+        value:
+          err instanceof Error
+            ? err.message
+            : t("organization.templateDialog.saveError"),
+      });
     }
   };
 
   const handleDeleteTemplate = async () => {
-    if (!deleteTemplateId) return;
+    if (!state.deleteTemplateId) return;
 
     try {
-      await removeTemplate({ templateId: deleteTemplateId });
-      if (deleteTemplateId === selectedCustomTemplateId) {
-        setFormData((current) => ({
-          ...current,
-          accessionNumberFormat: "",
-        }));
+      await removeTemplate({ templateId: state.deleteTemplateId });
+      if (state.deleteTemplateId === selectedCustomTemplateId) {
+        dispatch({
+          type: "updateFormData",
+          updater: (current) => ({
+            ...current,
+            accessionNumberFormat: "",
+          }),
+        });
       }
-      setDeleteTemplateId(null);
+      dispatch({ type: "clearDeleteTemplateId" });
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("organization.templateDialog.deleteError"),
-      );
+      dispatch({
+        type: "setError",
+        value:
+          err instanceof Error
+            ? err.message
+            : t("organization.templateDialog.deleteError"),
+      });
     }
   };
 
   const handleSavePreferences = async () => {
     if (!currentOrganizationId) return;
-    setError(null);
+    dispatch({ type: "setError", value: null });
 
-    if (formData.accessionNumberFormat && validation && !validation.isValid) {
-      setError(`Invalid accession format: ${validation.error}`);
+    if (
+      state.formData.accessionNumberFormat &&
+      validation &&
+      !validation.isValid
+    ) {
+      dispatch({
+        type: "setError",
+        value: `Invalid accession format: ${validation.error}`,
+      });
       return;
     }
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", value: true });
     try {
       await updateOrganization({
         organizationId: currentOrganizationId as Id<"organizations">,
         settings: {
           accessionNumberFormat:
-            formData.accessionNumberFormat.trim() || undefined,
-          accessionCounterScope: formData.accessionCounterScope,
-          autoGenerateAccessionNumbers: formData.autoGenerateAccessionNumbers,
-          accessionWorkflowEnabled: formData.accessionWorkflowEnabled,
-          deaccessionWorkflowEnabled: formData.deaccessionWorkflowEnabled,
-          locationTrackingEnabled: formData.locationTrackingEnabled,
+            state.formData.accessionNumberFormat.trim() || undefined,
+          accessionCounterScope: state.formData.accessionCounterScope,
+          autoGenerateAccessionNumbers:
+            state.formData.autoGenerateAccessionNumbers,
+          accessionWorkflowEnabled: state.formData.accessionWorkflowEnabled,
+          deaccessionWorkflowEnabled: state.formData.deaccessionWorkflowEnabled,
+          locationTrackingEnabled: state.formData.locationTrackingEnabled,
           locationTypes:
-            formData.locationTypes.length > 0
-              ? formData.locationTypes
+            state.formData.locationTypes.length > 0
+              ? state.formData.locationTypes
               : undefined,
           enableDetailedConditionReports:
-            formData.enableDetailedConditionReports,
+            state.formData.enableDetailedConditionReports,
         },
       });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update preferences",
-      );
+      dispatch({
+        type: "setError",
+        value:
+          err instanceof Error ? err.message : "Failed to update preferences",
+      });
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
@@ -252,44 +376,58 @@ export default function PreferencesSettingsPage() {
 
   return (
     <PreferencesPageShell>
-      {error ? (
+      {state.error ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+          {state.error}
         </div>
       ) : null}
 
       <PreferencesSettingsForm
         currentOrganizationId={currentOrganizationId}
-        formData={formData}
-        setFormData={setFormData}
+        formData={state.formData}
+        setFormData={(value) =>
+          dispatch(
+            typeof value === "function"
+              ? { type: "updateFormData", updater: value }
+              : { type: "setFormData", value },
+          )
+        }
         t={t}
         systemPresets={systemPresets}
         customTemplateOptions={customTemplateOptions}
         validation={validation}
         selectedCustomTemplateId={selectedCustomTemplateId}
         onOpenSaveTemplateModal={openSaveTemplateModal}
-        onDeleteTemplate={setDeleteTemplateId}
-        isSubmitting={isSubmitting}
+        onDeleteTemplate={(id) =>
+          dispatch({ type: "setDeleteTemplateId", value: id })
+        }
+        isSubmitting={state.isSubmitting}
         onSavePreferences={handleSavePreferences}
       />
 
       <PreferencesSaveTemplateDialog
-        accessionNumberFormat={formData.accessionNumberFormat}
-        isOpen={showSaveModal}
+        accessionNumberFormat={state.formData.accessionNumberFormat}
+        isOpen={state.showSaveModal}
         isUpdate={!!selectedCustomTemplateId}
-        onOpenChange={setShowSaveModal}
+        onOpenChange={(open) =>
+          dispatch({ type: "setShowSaveModal", value: open })
+        }
         onSave={handleSaveTemplate}
         preview={validation?.preview}
-        saveTemplateDesc={saveTemplateDesc}
-        saveTemplateName={saveTemplateName}
-        setSaveTemplateDesc={setSaveTemplateDesc}
-        setSaveTemplateName={setSaveTemplateName}
+        saveTemplateDesc={state.saveTemplateDesc}
+        saveTemplateName={state.saveTemplateName}
+        setSaveTemplateDesc={(value) =>
+          dispatch({ type: "setSaveTemplateDesc", value })
+        }
+        setSaveTemplateName={(value) =>
+          dispatch({ type: "setSaveTemplateName", value })
+        }
         t={t}
       />
 
       <PreferencesDeleteTemplateDialog
-        deleteTemplateId={deleteTemplateId}
-        onClose={() => setDeleteTemplateId(null)}
+        deleteTemplateId={state.deleteTemplateId}
+        onClose={() => dispatch({ type: "clearDeleteTemplateId" })}
         onConfirm={handleDeleteTemplate}
         t={t}
       />

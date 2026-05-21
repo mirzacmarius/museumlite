@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import type { Crop, PixelCrop } from "react-image-crop";
 import { toast } from "sonner";
 import { applyMediaEditsToCanvas } from "./media-editor-canvas-utils";
@@ -21,6 +21,94 @@ export type {
   WatermarkSettings,
 } from "./media-editor-types";
 
+interface MediaEditorState {
+  crop: Crop | undefined;
+  completedCrop: PixelCrop | undefined;
+  rotation: number;
+  brightness: number;
+  contrast: number;
+  isSaving: boolean;
+  watermarkEnabled: boolean;
+  watermarkPosition: WatermarkPosition;
+}
+
+type MediaEditorAction =
+  | { type: "setCrop"; value: Crop | undefined }
+  | { type: "setCompletedCrop"; value: PixelCrop | undefined }
+  | { type: "setRotation"; value: number }
+  | { type: "rotateLeft" }
+  | { type: "rotateRight" }
+  | { type: "setBrightness"; value: number }
+  | { type: "setContrast"; value: number }
+  | { type: "setIsSaving"; value: boolean }
+  | { type: "setWatermarkEnabled"; value: boolean }
+  | { type: "setWatermarkPosition"; value: WatermarkPosition }
+  | {
+      type: "reset";
+      watermarkEnabled: boolean;
+      watermarkPosition: WatermarkPosition;
+    }
+  | { type: "applyCrop"; pixelCrop: PixelCrop };
+
+interface MediaEditorInitialState {
+  watermarkEnabled: boolean;
+  watermarkPosition: WatermarkPosition;
+}
+
+function createInitialMediaEditorState(
+  defaults: MediaEditorInitialState,
+): MediaEditorState {
+  return {
+    crop: undefined,
+    completedCrop: undefined,
+    rotation: 0,
+    brightness: 100,
+    contrast: 100,
+    isSaving: false,
+    watermarkEnabled: defaults.watermarkEnabled,
+    watermarkPosition: defaults.watermarkPosition,
+  };
+}
+
+function mediaEditorReducer(
+  state: MediaEditorState,
+  action: MediaEditorAction,
+): MediaEditorState {
+  switch (action.type) {
+    case "setCrop":
+      return { ...state, crop: action.value };
+    case "setCompletedCrop":
+      return { ...state, completedCrop: action.value };
+    case "setRotation":
+      return { ...state, rotation: action.value };
+    case "rotateLeft":
+      return { ...state, rotation: (state.rotation - 90) % 360 };
+    case "rotateRight":
+      return { ...state, rotation: (state.rotation + 90) % 360 };
+    case "setBrightness":
+      return { ...state, brightness: action.value };
+    case "setContrast":
+      return { ...state, contrast: action.value };
+    case "setIsSaving":
+      return { ...state, isSaving: action.value };
+    case "setWatermarkEnabled":
+      return { ...state, watermarkEnabled: action.value };
+    case "setWatermarkPosition":
+      return { ...state, watermarkPosition: action.value };
+    case "reset":
+      return createInitialMediaEditorState({
+        watermarkEnabled: action.watermarkEnabled,
+        watermarkPosition: action.watermarkPosition,
+      });
+    case "applyCrop":
+      return {
+        ...state,
+        completedCrop: action.pixelCrop,
+        crop: undefined,
+      };
+  }
+}
+
 export function MediaEditor({
   image,
   isOpen,
@@ -28,17 +116,11 @@ export function MediaEditor({
   onSave,
   watermarkSettings,
 }: MediaEditorProps) {
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
-  const [rotation, setRotation] = useState(0);
-  const [brightness, setBrightness] = useState(100);
-  const [contrast, setContrast] = useState(100);
-  const [isSaving, setIsSaving] = useState(false);
-  const [watermarkEnabled, setWatermarkEnabled] = useState(
-    watermarkSettings?.isEnabled ?? false,
-  );
-  const [watermarkPosition, setWatermarkPosition] = useState<WatermarkPosition>(
-    watermarkSettings?.position ?? "bottom-right",
+  const [state, dispatch] = useReducer(mediaEditorReducer, undefined, () =>
+    createInitialMediaEditorState({
+      watermarkEnabled: watermarkSettings?.isEnabled ?? false,
+      watermarkPosition: watermarkSettings?.position ?? "bottom-right",
+    }),
   );
 
   const imageRef = useRef<HTMLImageElement>(null);
@@ -46,14 +128,11 @@ export function MediaEditor({
 
   useEffect(() => {
     if (isOpen) {
-      setCrop(undefined);
-      setCompletedCrop(undefined);
-      setRotation(0);
-      setBrightness(100);
-      setContrast(100);
-      setIsSaving(false);
-      setWatermarkEnabled(watermarkSettings?.isEnabled ?? false);
-      setWatermarkPosition(watermarkSettings?.position ?? "bottom-right");
+      dispatch({
+        type: "reset",
+        watermarkEnabled: watermarkSettings?.isEnabled ?? false,
+        watermarkPosition: watermarkSettings?.position ?? "bottom-right",
+      });
     }
   }, [isOpen, image.id, watermarkSettings]);
 
@@ -87,28 +166,28 @@ export function MediaEditor({
     await applyMediaEditsToCanvas({
       canvas: canvasRef.current,
       sourceImage: imageRef.current,
-      completedCrop,
-      rotation,
-      brightness,
-      contrast,
-      watermarkEnabled,
+      completedCrop: state.completedCrop,
+      rotation: state.rotation,
+      brightness: state.brightness,
+      contrast: state.contrast,
+      watermarkEnabled: state.watermarkEnabled,
       watermarkSettings,
-      watermarkPosition,
+      watermarkPosition: state.watermarkPosition,
     });
   }, [
-    completedCrop,
-    rotation,
-    brightness,
-    contrast,
-    watermarkEnabled,
+    state.completedCrop,
+    state.rotation,
+    state.brightness,
+    state.contrast,
+    state.watermarkEnabled,
     watermarkSettings,
-    watermarkPosition,
+    state.watermarkPosition,
   ]);
 
   const handleSave = useCallback(async () => {
     if (!canvasRef.current || !onSave) return;
 
-    setIsSaving(true);
+    dispatch({ type: "setIsSaving", value: true });
 
     try {
       await applyEdits();
@@ -125,15 +204,15 @@ export function MediaEditor({
       });
 
       const editMetadata: EditMetadata = {
-        crop: completedCrop,
-        rotation: rotation !== 0 ? rotation : undefined,
-        brightness: brightness !== 100 ? brightness : undefined,
-        contrast: contrast !== 100 ? contrast : undefined,
+        crop: state.completedCrop,
+        rotation: state.rotation !== 0 ? state.rotation : undefined,
+        brightness: state.brightness !== 100 ? state.brightness : undefined,
+        contrast: state.contrast !== 100 ? state.contrast : undefined,
         watermark:
-          watermarkEnabled && watermarkSettings?.text
+          state.watermarkEnabled && watermarkSettings?.text
             ? {
                 enabled: true,
-                position: watermarkPosition,
+                position: state.watermarkPosition,
               }
             : undefined,
       };
@@ -147,34 +226,33 @@ export function MediaEditor({
         error instanceof Error ? error.message : "Failed to save edited image",
       );
     } finally {
-      setIsSaving(false);
+      dispatch({ type: "setIsSaving", value: false });
     }
   }, [
     applyEdits,
-    completedCrop,
-    rotation,
-    brightness,
-    contrast,
-    watermarkEnabled,
+    state.completedCrop,
+    state.rotation,
+    state.brightness,
+    state.contrast,
+    state.watermarkEnabled,
     watermarkSettings,
-    watermarkPosition,
+    state.watermarkPosition,
     onSave,
     onClose,
   ]);
 
   const handleApplyCrop = useCallback(() => {
-    if (crop && imageRef.current) {
+    if (state.crop && imageRef.current) {
       const pixelCrop: PixelCrop = {
-        x: (crop.x * imageRef.current.naturalWidth) / 100,
-        y: (crop.y * imageRef.current.naturalHeight) / 100,
-        width: (crop.width! * imageRef.current.naturalWidth) / 100,
-        height: (crop.height! * imageRef.current.naturalHeight) / 100,
+        x: (state.crop.x * imageRef.current.naturalWidth) / 100,
+        y: (state.crop.y * imageRef.current.naturalHeight) / 100,
+        width: (state.crop.width! * imageRef.current.naturalWidth) / 100,
+        height: (state.crop.height! * imageRef.current.naturalHeight) / 100,
         unit: "px",
       };
-      setCompletedCrop(pixelCrop);
-      setCrop(undefined);
+      dispatch({ type: "applyCrop", pixelCrop });
     }
-  }, [crop]);
+  }, [state.crop]);
 
   return (
     <AnimatePresence>
@@ -189,10 +267,10 @@ export function MediaEditor({
         >
           <MediaEditorToolbar
             image={image}
-            hasCrop={Boolean(crop)}
-            isSaving={isSaving}
-            onRotateLeft={() => setRotation((prev) => (prev - 90) % 360)}
-            onRotateRight={() => setRotation((prev) => (prev + 90) % 360)}
+            hasCrop={Boolean(state.crop)}
+            isSaving={state.isSaving}
+            onRotateLeft={() => dispatch({ type: "rotateLeft" })}
+            onRotateRight={() => dispatch({ type: "rotateRight" })}
             onApplyCrop={handleApplyCrop}
             onSave={handleSave}
             onClose={onClose}
@@ -201,27 +279,35 @@ export function MediaEditor({
           <MediaEditorViewport
             imageUrl={image.url}
             imageTitle={image.title}
-            crop={crop}
-            rotation={rotation}
-            brightness={brightness}
-            contrast={contrast}
-            watermarkEnabled={watermarkEnabled}
+            crop={state.crop}
+            rotation={state.rotation}
+            brightness={state.brightness}
+            contrast={state.contrast}
+            watermarkEnabled={state.watermarkEnabled}
             watermarkSettings={watermarkSettings}
-            watermarkPosition={watermarkPosition}
+            watermarkPosition={state.watermarkPosition}
             imageRef={imageRef}
-            onCropChange={setCrop}
+            onCropChange={(value) => dispatch({ type: "setCrop", value })}
           />
 
           <MediaEditorControls
-            brightness={brightness}
-            contrast={contrast}
-            watermarkEnabled={watermarkEnabled}
+            brightness={state.brightness}
+            contrast={state.contrast}
+            watermarkEnabled={state.watermarkEnabled}
             watermarkText={watermarkSettings?.text}
-            watermarkPosition={watermarkPosition}
-            onBrightnessChange={setBrightness}
-            onContrastChange={setContrast}
-            onWatermarkEnabledChange={setWatermarkEnabled}
-            onWatermarkPositionChange={setWatermarkPosition}
+            watermarkPosition={state.watermarkPosition}
+            onBrightnessChange={(value) =>
+              dispatch({ type: "setBrightness", value })
+            }
+            onContrastChange={(value) =>
+              dispatch({ type: "setContrast", value })
+            }
+            onWatermarkEnabledChange={(value) =>
+              dispatch({ type: "setWatermarkEnabled", value })
+            }
+            onWatermarkPositionChange={(value) =>
+              dispatch({ type: "setWatermarkPosition", value })
+            }
           />
 
           <canvas ref={canvasRef} className="hidden" />

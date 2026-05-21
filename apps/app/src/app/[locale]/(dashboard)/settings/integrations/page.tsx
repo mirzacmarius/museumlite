@@ -28,7 +28,77 @@ import { useMutation, useQuery } from "convex/react";
 import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, Suspense, useEffect, useState } from "react";
+import { type ReactNode, Suspense, useEffect, useReducer } from "react";
+
+interface IntegrationsSettingsState {
+  disableDialogOpen: boolean;
+  subscribeDialogOpen: boolean;
+  selectedIntegration: string | null;
+  isToggling: string | null;
+  isCreatingCheckout: boolean;
+  pendingEnableIntegration: string | null;
+}
+
+type IntegrationsSettingsAction =
+  | { type: "setDisableDialogOpen"; value: boolean }
+  | { type: "setSubscribeDialogOpen"; value: boolean }
+  | { type: "setSelectedIntegration"; value: string | null }
+  | { type: "setIsToggling"; value: string | null }
+  | { type: "setIsCreatingCheckout"; value: boolean }
+  | { type: "setPendingEnableIntegration"; value: string | null }
+  | {
+      type: "openDisableDialog";
+      integrationId: string;
+    }
+  | { type: "closeSubscribeDialog" }
+  | { type: "finishDisable" };
+
+const initialIntegrationsSettingsState: IntegrationsSettingsState = {
+  disableDialogOpen: false,
+  subscribeDialogOpen: false,
+  selectedIntegration: null,
+  isToggling: null,
+  isCreatingCheckout: false,
+  pendingEnableIntegration: null,
+};
+
+function integrationsSettingsReducer(
+  state: IntegrationsSettingsState,
+  action: IntegrationsSettingsAction,
+): IntegrationsSettingsState {
+  switch (action.type) {
+    case "setDisableDialogOpen":
+      return { ...state, disableDialogOpen: action.value };
+    case "setSubscribeDialogOpen":
+      return { ...state, subscribeDialogOpen: action.value };
+    case "setSelectedIntegration":
+      return { ...state, selectedIntegration: action.value };
+    case "setIsToggling":
+      return { ...state, isToggling: action.value };
+    case "setIsCreatingCheckout":
+      return { ...state, isCreatingCheckout: action.value };
+    case "setPendingEnableIntegration":
+      return { ...state, pendingEnableIntegration: action.value };
+    case "openDisableDialog":
+      return {
+        ...state,
+        selectedIntegration: action.integrationId,
+        disableDialogOpen: true,
+      };
+    case "closeSubscribeDialog":
+      return {
+        ...state,
+        subscribeDialogOpen: false,
+        selectedIntegration: null,
+      };
+    case "finishDisable":
+      return {
+        ...state,
+        isToggling: null,
+        selectedIntegration: null,
+      };
+  }
+}
 import { toast } from "sonner";
 
 const INTEGRATION_ICONS: Record<string, ReactNode> = {
@@ -251,16 +321,10 @@ function IntegrationsSettingsContent() {
   const getSearchParam = searchParams.get.bind(searchParams);
   const stringifySearchParams = searchParams.toString.bind(searchParams);
   const { replace } = useRouter();
-  const [disableDialogOpen, setDisableDialogOpen] = useState(false);
-  const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
-  const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
-    null,
+  const [state, dispatch] = useReducer(
+    integrationsSettingsReducer,
+    initialIntegrationsSettingsState,
   );
-  const [isToggling, setIsToggling] = useState<string | null>(null);
-  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
-  const [pendingEnableIntegration, setPendingEnableIntegration] = useState<
-    string | null
-  >(null);
 
   const availableIntegrations = useQuery(api.integrations.listAvailable);
   const enabledIntegrations = useQuery(
@@ -283,7 +347,10 @@ function IntegrationsSettingsContent() {
       const newParams = new URLSearchParams(stringifySearchParams());
       newParams.delete("subscribed");
       replace(`?${newParams.toString()}`);
-      setPendingEnableIntegration(subscribedIntegrationId);
+      dispatch({
+        type: "setPendingEnableIntegration",
+        value: subscribedIntegrationId,
+      });
       toast.info(tToast("waitingSubscription"));
     }
   }, [
@@ -296,14 +363,14 @@ function IntegrationsSettingsContent() {
 
   useEffect(() => {
     const tryEnablePendingIntegration = async () => {
-      if (!pendingEnableIntegration || !currentOrganizationId) {
+      if (!state.pendingEnableIntegration || !currentOrganizationId) {
         return;
       }
 
       try {
         const result = await enableIntegration({
           organizationId: currentOrganizationId as Id<"organizations">,
-          integrationId: pendingEnableIntegration,
+          integrationId: state.pendingEnableIntegration,
         });
 
         if (result.ok) {
@@ -312,7 +379,7 @@ function IntegrationsSettingsContent() {
           toast.info(tToast("integrationAlreadyEnabled"));
         }
 
-        setPendingEnableIntegration(null);
+        dispatch({ type: "setPendingEnableIntegration", value: null });
       } catch (error) {
         console.error("Failed to auto-enable integration:", error);
         toast.error(tToast("integrationEnableFailed"));
@@ -320,7 +387,11 @@ function IntegrationsSettingsContent() {
     };
 
     tryEnablePendingIntegration();
-  }, [pendingEnableIntegration, currentOrganizationId, enableIntegration]);
+  }, [
+    state.pendingEnableIntegration,
+    currentOrganizationId,
+    enableIntegration,
+  ]);
 
   const handleToggle = async (
     integrationId: string,
@@ -329,10 +400,9 @@ function IntegrationsSettingsContent() {
     if (!currentOrganizationId) return;
 
     if (currentlyEnabled) {
-      setSelectedIntegration(integrationId);
-      setDisableDialogOpen(true);
+      dispatch({ type: "openDisableDialog", integrationId });
     } else {
-      setIsToggling(integrationId);
+      dispatch({ type: "setIsToggling", value: integrationId });
       try {
         const result = await enableIntegration({
           organizationId: currentOrganizationId as Id<"organizations">,
@@ -345,19 +415,19 @@ function IntegrationsSettingsContent() {
           toast.info(tToast("integrationAlreadyEnabled"));
         }
       } finally {
-        setIsToggling(null);
+        dispatch({ type: "setIsToggling", value: null });
       }
     }
   };
 
   const handleSubscribe = async () => {
-    if (!currentOrganizationId || !selectedIntegration) return;
+    if (!currentOrganizationId || !state.selectedIntegration) return;
 
-    setIsCreatingCheckout(true);
+    dispatch({ type: "setIsCreatingCheckout", value: true });
     try {
       const result = await enableIntegration({
         organizationId: currentOrganizationId as Id<"organizations">,
-        integrationId: selectedIntegration,
+        integrationId: state.selectedIntegration,
       });
 
       if (result.ok) {
@@ -368,29 +438,27 @@ function IntegrationsSettingsContent() {
         toast.error(tToast("integrationEnableFailed"));
       }
 
-      setSubscribeDialogOpen(false);
-      setSelectedIntegration(null);
+      dispatch({ type: "closeSubscribeDialog" });
     } catch (error) {
       console.error("Failed to enable integration:", error);
       toast.error(tToast("integrationEnableFailed"));
     } finally {
-      setIsCreatingCheckout(false);
+      dispatch({ type: "setIsCreatingCheckout", value: false });
     }
   };
 
   const handleConfirmDisable = async () => {
-    if (!currentOrganizationId || !selectedIntegration) return;
+    if (!currentOrganizationId || !state.selectedIntegration) return;
 
-    setIsToggling(selectedIntegration);
-    setDisableDialogOpen(false);
+    dispatch({ type: "setIsToggling", value: state.selectedIntegration });
+    dispatch({ type: "setDisableDialogOpen", value: false });
     try {
       await disableIntegration({
         organizationId: currentOrganizationId as Id<"organizations">,
-        integrationId: selectedIntegration,
+        integrationId: state.selectedIntegration,
       });
     } finally {
-      setIsToggling(null);
-      setSelectedIntegration(null);
+      dispatch({ type: "finishDisable" });
     }
   };
 
@@ -418,7 +486,7 @@ function IntegrationsSettingsContent() {
             key={integration.id}
             integration={integration}
             isEnabled={enabledIntegrations.includes(integration.id)}
-            isLoading={isToggling === integration.id}
+            isLoading={state.isToggling === integration.id}
             labels={{
               configureSettings: t("configureSettings", {
                 name: integration.name.toLowerCase(),
@@ -443,18 +511,22 @@ function IntegrationsSettingsContent() {
         description={t("disableDescription")}
         disableLabel={t("disable")}
         onConfirm={handleConfirmDisable}
-        onOpenChange={setDisableDialogOpen}
-        open={disableDialogOpen}
+        onOpenChange={(open) =>
+          dispatch({ type: "setDisableDialogOpen", value: open })
+        }
+        open={state.disableDialogOpen}
         title={t("disableIntegration")}
       />
 
       <SubscribeIntegrationDialog
         cancelLabel={tCommon("cancel")}
         description={t("subscribeDescription")}
-        isCreatingCheckout={isCreatingCheckout}
-        onOpenChange={setSubscribeDialogOpen}
+        isCreatingCheckout={state.isCreatingCheckout}
+        onOpenChange={(open) =>
+          dispatch({ type: "setSubscribeDialogOpen", value: open })
+        }
         onSubscribe={handleSubscribe}
-        open={subscribeDialogOpen}
+        open={state.subscribeDialogOpen}
         redirectingLabel={t("redirecting")}
         redirectInfo={t("redirectInfo")}
         subscribeLabel={t("subscribe")}

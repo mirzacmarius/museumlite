@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Plus, Shield } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
 import { ClaimForm } from "./claim-form";
 import { InsuranceClaimsTab } from "./insurance-claims-tab";
@@ -29,18 +29,70 @@ import { InsurancePoliciesTab } from "./insurance-policies-tab";
 import { PolicyForm } from "./policy-form";
 import type { ClaimStatus, PolicyStatus, PolicyType } from "./types";
 
+interface InsurancePageState {
+  searchPolicies: string;
+  searchClaims: string;
+  policyStatus: PolicyStatus;
+  policyType: PolicyType;
+  claimStatus: ClaimStatus;
+  activeTab: "policies" | "claims";
+  policyDialogOpen: boolean;
+  claimDialogOpen: boolean;
+}
+
+type InsurancePageAction =
+  | { type: "setSearchPolicies"; value: string }
+  | { type: "setSearchClaims"; value: string }
+  | { type: "setPolicyStatus"; value: PolicyStatus }
+  | { type: "setPolicyType"; value: PolicyType }
+  | { type: "setClaimStatus"; value: ClaimStatus }
+  | { type: "setActiveTab"; value: "policies" | "claims" }
+  | { type: "setPolicyDialogOpen"; value: boolean }
+  | { type: "setClaimDialogOpen"; value: boolean };
+
+const initialInsurancePageState: InsurancePageState = {
+  searchPolicies: "",
+  searchClaims: "",
+  policyStatus: "all",
+  policyType: "all",
+  claimStatus: "all",
+  activeTab: "policies",
+  policyDialogOpen: false,
+  claimDialogOpen: false,
+};
+
+function insurancePageReducer(
+  state: InsurancePageState,
+  action: InsurancePageAction,
+): InsurancePageState {
+  switch (action.type) {
+    case "setSearchPolicies":
+      return { ...state, searchPolicies: action.value };
+    case "setSearchClaims":
+      return { ...state, searchClaims: action.value };
+    case "setPolicyStatus":
+      return { ...state, policyStatus: action.value };
+    case "setPolicyType":
+      return { ...state, policyType: action.value };
+    case "setClaimStatus":
+      return { ...state, claimStatus: action.value };
+    case "setActiveTab":
+      return { ...state, activeTab: action.value };
+    case "setPolicyDialogOpen":
+      return { ...state, policyDialogOpen: action.value };
+    case "setClaimDialogOpen":
+      return { ...state, claimDialogOpen: action.value };
+  }
+}
+
 export function InsurancePageClient() {
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
-  const [searchPolicies, setSearchPolicies] = useState("");
-  const [searchClaims, setSearchClaims] = useState("");
-  const [policyStatus, setPolicyStatus] = useState<PolicyStatus>("all");
-  const [policyType, setPolicyType] = useState<PolicyType>("all");
-  const [claimStatus, setClaimStatus] = useState<ClaimStatus>("all");
-  const [activeTab, setActiveTab] = useState<"policies" | "claims">("policies");
-  const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
-  const [claimDialogOpen, setClaimDialogOpen] = useState(false);
+  const [state, dispatch] = useReducer(
+    insurancePageReducer,
+    initialInsurancePageState,
+  );
 
   const listPolicies = useQuery(
     api.insurance.listPolicies,
@@ -48,9 +100,9 @@ export function InsurancePageClient() {
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
-          status: policyStatus === "all" ? undefined : policyStatus,
-          policyType: policyType === "all" ? undefined : policyType,
-          search: searchPolicies || undefined,
+          status: state.policyStatus === "all" ? undefined : state.policyStatus,
+          policyType: state.policyType === "all" ? undefined : state.policyType,
+          search: state.searchPolicies || undefined,
         }
       : "skip",
   );
@@ -61,8 +113,8 @@ export function InsurancePageClient() {
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
           paginationOpts: { numItems: 50, cursor: null },
-          status: claimStatus === "all" ? undefined : claimStatus,
-          search: searchClaims || undefined,
+          status: state.claimStatus === "all" ? undefined : state.claimStatus,
+          search: state.searchClaims || undefined,
         }
       : "skip",
   );
@@ -132,8 +184,10 @@ export function InsurancePageClient() {
             <div className="flex flex-shrink-0 items-center gap-2">
               <PermissionGate permission="organization.manage_settings">
                 <Dialog
-                  open={policyDialogOpen}
-                  onOpenChange={setPolicyDialogOpen}
+                  open={state.policyDialogOpen}
+                  onOpenChange={(value) =>
+                    dispatch({ type: "setPolicyDialogOpen", value })
+                  }
                 >
                   <DialogTrigger asChild>
                     <Button variant="outline">
@@ -156,7 +210,7 @@ export function InsurancePageClient() {
                         try {
                           await createPolicy(payload);
                           toast.success("Policy created");
-                          setPolicyDialogOpen(false);
+                          dispatch({ type: "setPolicyDialogOpen", value: false });
                         } catch (err) {
                           toast.error(
                             err instanceof Error
@@ -171,8 +225,10 @@ export function InsurancePageClient() {
               </PermissionGate>
               <PermissionGate permission="organization.manage_settings">
                 <Dialog
-                  open={claimDialogOpen}
-                  onOpenChange={setClaimDialogOpen}
+                  open={state.claimDialogOpen}
+                  onOpenChange={(value) =>
+                    dispatch({ type: "setClaimDialogOpen", value })
+                  }
                 >
                   <DialogTrigger asChild>
                     <Button>
@@ -196,7 +252,7 @@ export function InsurancePageClient() {
                         try {
                           await createClaim(payload);
                           toast.success("Claim created");
-                          setClaimDialogOpen(false);
+                          dispatch({ type: "setClaimDialogOpen", value: false });
                         } catch (err) {
                           toast.error(
                             err instanceof Error
@@ -214,9 +270,12 @@ export function InsurancePageClient() {
 
           <div>
             <Tabs
-              value={activeTab}
+              value={state.activeTab}
               onValueChange={(value) =>
-                setActiveTab(value as "policies" | "claims")
+                dispatch({
+                  type: "setActiveTab",
+                  value: value as "policies" | "claims",
+                })
               }
             >
               <TabsList className="mb-6 rounded-lg bg-muted p-1">
@@ -229,12 +288,18 @@ export function InsurancePageClient() {
                   locale={locale}
                   policies={policies}
                   loading={listPolicies === undefined}
-                  searchPolicies={searchPolicies}
-                  onSearchPoliciesChange={setSearchPolicies}
-                  policyStatus={policyStatus}
-                  onPolicyStatusChange={setPolicyStatus}
-                  policyType={policyType}
-                  onPolicyTypeChange={setPolicyType}
+                  searchPolicies={state.searchPolicies}
+                  onSearchPoliciesChange={(value) =>
+                    dispatch({ type: "setSearchPolicies", value })
+                  }
+                  policyStatus={state.policyStatus}
+                  onPolicyStatusChange={(value) =>
+                    dispatch({ type: "setPolicyStatus", value })
+                  }
+                  policyType={state.policyType}
+                  onPolicyTypeChange={(value) =>
+                    dispatch({ type: "setPolicyType", value })
+                  }
                 />
               </TabsContent>
 
@@ -243,10 +308,14 @@ export function InsurancePageClient() {
                   locale={locale}
                   claims={claims}
                   loading={listClaims === undefined}
-                  searchClaims={searchClaims}
-                  onSearchClaimsChange={setSearchClaims}
-                  claimStatus={claimStatus}
-                  onClaimStatusChange={setClaimStatus}
+                  searchClaims={state.searchClaims}
+                  onSearchClaimsChange={(value) =>
+                    dispatch({ type: "setSearchClaims", value })
+                  }
+                  claimStatus={state.claimStatus}
+                  onClaimStatusChange={(value) =>
+                    dispatch({ type: "setClaimStatus", value })
+                  }
                 />
               </TabsContent>
             </Tabs>

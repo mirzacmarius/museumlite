@@ -21,6 +21,58 @@ import {
 
 export type { AccountComboboxProps } from "./account-combobox-types";
 
+interface AccountComboboxState {
+  open: boolean;
+  searchQuery: string;
+  dialogOpen: boolean;
+  formData: NewAccountForm;
+  isSubmitting: boolean;
+}
+
+type AccountComboboxAction =
+  | { type: "setOpen"; value: boolean }
+  | { type: "setSearchQuery"; value: string }
+  | { type: "setDialogOpen"; value: boolean }
+  | { type: "setFormData"; value: NewAccountForm }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "openCreateDialog"; prefillName: string };
+
+const initialAccountComboboxState: AccountComboboxState = {
+  open: false,
+  searchQuery: "",
+  dialogOpen: false,
+  formData: initialAccountFormState,
+  isSubmitting: false,
+};
+
+function accountComboboxReducer(
+  state: AccountComboboxState,
+  action: AccountComboboxAction,
+): AccountComboboxState {
+  switch (action.type) {
+    case "setOpen":
+      return { ...state, open: action.value };
+    case "setSearchQuery":
+      return { ...state, searchQuery: action.value };
+    case "setDialogOpen":
+      return { ...state, dialogOpen: action.value };
+    case "setFormData":
+      return { ...state, formData: action.value };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "openCreateDialog":
+      return {
+        ...state,
+        open: false,
+        dialogOpen: true,
+        formData: {
+          ...initialAccountFormState,
+          businessName: action.prefillName,
+        },
+      };
+  }
+}
+
 export function AccountCombobox({
   organizationId,
   value,
@@ -30,21 +82,28 @@ export function AccountCombobox({
   disabled = false,
 }: AccountComboboxProps) {
   const tToast = useScopedI18n("common.toast");
-  const [open, setOpen] = React.useState(false);
-  const listId = React.useId();
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [formData, setFormData] = React.useState<NewAccountForm>(
-    initialAccountFormState,
+  const [state, dispatch] = React.useReducer(
+    accountComboboxReducer,
+    initialAccountComboboxState,
   );
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const setFormData = React.useCallback(
+    (value: React.SetStateAction<NewAccountForm>) => {
+      dispatch({
+        type: "setFormData",
+        value:
+          typeof value === "function" ? value(state.formData) : value,
+      });
+    },
+    [state.formData],
+  );
+  const listId = React.useId();
 
   const accounts = useQuery(
     api.accounts.list,
     organizationId
       ? {
           organizationId: organizationId as Id<"organizations">,
-          search: searchQuery || undefined,
+          search: state.searchQuery || undefined,
         }
       : "skip",
   );
@@ -70,7 +129,7 @@ export function AccountCombobox({
           }
         : undefined,
     );
-    setOpen(false);
+    dispatch({ type: "setOpen", value: false });
   };
 
   const handleClear = () => {
@@ -79,80 +138,80 @@ export function AccountCombobox({
   };
 
   const openCreateDialog = (prefillName: string) => {
-    setOpen(false);
-    setFormData({
-      ...initialAccountFormState,
-      businessName: prefillName,
-    });
-    setDialogOpen(true);
+    dispatch({ type: "openCreateDialog", prefillName });
   };
 
   const handleCreateAccount = async () => {
-    if (!organizationId || !formData.businessName.trim()) {
+    if (!organizationId || !state.formData.businessName.trim()) {
       toast.error(tToast("businessNameRequired"));
       return;
     }
 
-    const isOrganization = formData.holderType === "organization";
+    const isOrganization = state.formData.holderType === "organization";
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", value: true });
     try {
       const accountId = await createAccount({
         organizationId: organizationId as Id<"organizations">,
         accountType: "institution",
-        holderType: formData.holderType,
-        businessName: formData.businessName.trim(),
-        taxId: isOrganization ? formData.taxId.trim() || undefined : undefined,
+        holderType: state.formData.holderType,
+        businessName: state.formData.businessName.trim(),
+        taxId: isOrganization
+          ? state.formData.taxId.trim() || undefined
+          : undefined,
         dateOfBirth: isOrganization
           ? undefined
-          : parseDateInputValue(formData.dateOfBirth),
-        phone: formData.phone.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        address: formData.address.trim() || undefined,
-        address2: formData.address2.trim() || undefined,
-        zipCode: formData.zipCode.trim() || undefined,
-        city: formData.city.trim() || undefined,
-        country: formData.country.trim() || undefined,
+          : parseDateInputValue(state.formData.dateOfBirth),
+        phone: state.formData.phone.trim() || undefined,
+        email: state.formData.email.trim() || undefined,
+        address: state.formData.address.trim() || undefined,
+        address2: state.formData.address2.trim() || undefined,
+        zipCode: state.formData.zipCode.trim() || undefined,
+        city: state.formData.city.trim() || undefined,
+        country: state.formData.country.trim() || undefined,
         contactPerson: isOrganization
-          ? formData.contactPerson.trim() || undefined
+          ? state.formData.contactPerson.trim() || undefined
           : undefined,
         contactPhone: isOrganization
-          ? formData.contactPhone.trim() || undefined
+          ? state.formData.contactPhone.trim() || undefined
           : undefined,
         contactEmail: isOrganization
-          ? formData.contactEmail.trim() || undefined
+          ? state.formData.contactEmail.trim() || undefined
           : undefined,
-        notes: formData.notes.trim() || undefined,
+        notes: state.formData.notes.trim() || undefined,
       });
 
       toast.success(tToast("accountCreated"));
-      setDialogOpen(false);
-      setFormData(initialAccountFormState);
+      dispatch({ type: "setDialogOpen", value: false });
+      dispatch({ type: "setFormData", value: initialAccountFormState });
 
       onValueChange?.(accountId);
       onAccountSelect?.({
         _id: accountId,
-        businessName: formData.businessName.trim(),
-        contactPerson: formData.contactPerson.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        phone: formData.phone.trim() || undefined,
+        businessName: state.formData.businessName.trim(),
+        contactPerson: state.formData.contactPerson.trim() || undefined,
+        email: state.formData.email.trim() || undefined,
+        phone: state.formData.phone.trim() || undefined,
       });
     } catch (err) {
       console.error("Error creating account:", err);
       toast.error(err instanceof Error ? err.message : tToast("createFailed"));
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={state.open}
+        onOpenChange={(value) => dispatch({ type: "setOpen", value })}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
-            aria-expanded={open}
+            aria-expanded={state.open}
             aria-controls={listId}
             className="w-full justify-between"
             disabled={disabled}
@@ -175,8 +234,10 @@ export function AccountCombobox({
           <Command shouldFilter={false}>
             <AccountComboboxListContent
               listId={listId}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
+              searchQuery={state.searchQuery}
+              onSearchQueryChange={(value) =>
+                dispatch({ type: "setSearchQuery", value })
+              }
               organizationId={organizationId}
               accounts={accounts?.accounts}
               value={value}
@@ -200,11 +261,13 @@ export function AccountCombobox({
       )}
 
       <AccountComboboxCreateDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        formData={formData}
+        open={state.dialogOpen}
+        onOpenChange={(value) =>
+          dispatch({ type: "setDialogOpen", value })
+        }
+        formData={state.formData}
         setFormData={setFormData}
-        isSubmitting={isSubmitting}
+        isSubmitting={state.isSubmitting}
         onCreate={handleCreateAccount}
       />
     </>

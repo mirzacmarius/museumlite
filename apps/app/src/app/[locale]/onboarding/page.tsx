@@ -6,7 +6,13 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useReducer,
+} from "react";
 import { FirstDataStep } from "./first-data-step";
 import {
   type OnboardingStep,
@@ -17,6 +23,51 @@ import { OrganizationStep } from "./organization-step";
 import { StepIndicator } from "./step-indicator";
 import { UsernameStep } from "./username-step";
 
+interface OnboardingPageState {
+  currentStep: OnboardingStep;
+  isSubmitting: boolean;
+  orgError: string | null;
+  createdOrgId: Id<"organizations"> | null;
+  orgFormData: OrganizationFormData;
+}
+
+type OnboardingPageAction =
+  | { type: "setCurrentStep"; value: OnboardingStep }
+  | { type: "setSubmitting"; value: boolean }
+  | { type: "setOrgError"; value: string | null }
+  | { type: "setCreatedOrgId"; value: Id<"organizations"> | null }
+  | { type: "setOrgFormData"; value: OrganizationFormData };
+
+const initialOnboardingPageState: OnboardingPageState = {
+  currentStep: "username",
+  isSubmitting: false,
+  orgError: null,
+  createdOrgId: null,
+  orgFormData: {
+    name: "",
+    slug: "",
+    type: "museum",
+  },
+};
+
+function onboardingPageReducer(
+  state: OnboardingPageState,
+  action: OnboardingPageAction,
+): OnboardingPageState {
+  switch (action.type) {
+    case "setCurrentStep":
+      return { ...state, currentStep: action.value };
+    case "setSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "setOrgError":
+      return { ...state, orgError: action.value };
+    case "setCreatedOrgId":
+      return { ...state, createdOrgId: action.value };
+    case "setOrgFormData":
+      return { ...state, orgFormData: action.value };
+  }
+}
+
 export default function OnboardingPage() {
   const t = useI18n();
   const { push } = useRouter();
@@ -25,24 +76,30 @@ export default function OnboardingPage() {
   const updateUsername = useMutation(api.users.updateUsername);
   const createOrganization = useMutation(api.organizations.create);
 
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>("username");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orgError, setOrgError] = useState<string | null>(null);
-  const [createdOrgId, setCreatedOrgId] = useState<Id<"organizations"> | null>(
-    null,
+  const [state, dispatch] = useReducer(
+    onboardingPageReducer,
+    initialOnboardingPageState,
   );
-  const [orgFormData, setOrgFormData] = useState<OrganizationFormData>({
-    name: "",
-    slug: "",
-    type: "museum",
-  });
+
+  const setOrgFormData: Dispatch<SetStateAction<OrganizationFormData>> =
+    useCallback(
+      (value) => {
+        dispatch({
+          type: "setOrgFormData",
+          value:
+            typeof value === "function" ? value(state.orgFormData) : value,
+        });
+      },
+      [state.orgFormData],
+    );
 
   const handleUsernameContinue = async (username: string) => {
     await updateUsername({ username });
-    setCurrentStep("organization");
+    dispatch({ type: "setCurrentStep", value: "organization" });
   };
 
-  const firstOrganizationId = createdOrgId ?? organizations?.[0]?._id ?? null;
+  const firstOrganizationId =
+    state.createdOrgId ?? organizations?.[0]?._id ?? null;
 
   const collectionsPreview = useQuery(
     api.collections.list,
@@ -57,7 +114,8 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!user || organizations === undefined) return;
 
-    const hasOrganization = organizations.length > 0 || createdOrgId !== null;
+    const hasOrganization =
+      organizations.length > 0 || state.createdOrgId !== null;
     if (user.username && hasOrganization) {
       if (collectionsPreview === undefined) return;
 
@@ -66,44 +124,50 @@ export default function OnboardingPage() {
         return;
       }
 
-      setCurrentStep("firstData");
+      dispatch({ type: "setCurrentStep", value: "firstData" });
       return;
     }
 
     if (user.username) {
-      setCurrentStep("organization");
+      dispatch({ type: "setCurrentStep", value: "organization" });
     }
-  }, [user, organizations, push, collectionsPreview, createdOrgId]);
+  }, [user, organizations, push, collectionsPreview, state.createdOrgId]);
 
   const handleOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setOrgError(null);
-    setIsSubmitting(true);
+    dispatch({ type: "setOrgError", value: null });
+    dispatch({ type: "setSubmitting", value: true });
 
     try {
       const slug =
-        orgFormData.slug ||
-        orgFormData.name
+        state.orgFormData.slug ||
+        state.orgFormData.name
           .toLowerCase()
           .replace(/\s+/g, "-")
           .replace(/[^a-z0-9-]/g, "");
 
       const organizationId = await createOrganization({
-        name: orgFormData.name,
+        name: state.orgFormData.name,
         slug,
-        type: orgFormData.type,
+        type: state.orgFormData.type,
       });
 
-      setCreatedOrgId(organizationId);
-      setCurrentStep("firstData");
+      dispatch({ type: "setCreatedOrgId", value: organizationId });
+      dispatch({ type: "setCurrentStep", value: "firstData" });
     } catch (err) {
       if (isOrganizationSlugTakenError(err)) {
-        setOrgError(t("organizationsNew.slugTaken"));
+        dispatch({
+          type: "setOrgError",
+          value: t("organizationsNew.slugTaken"),
+        });
       } else {
-        setOrgError(t("organizationsNew.createFailed"));
+        dispatch({
+          type: "setOrgError",
+          value: t("organizationsNew.createFailed"),
+        });
       }
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setSubmitting", value: false });
     }
   };
 
@@ -117,23 +181,23 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto flex size-full max-w-md flex-col items-center justify-center gap-8 px-4">
-      <StepIndicator currentStep={currentStep} />
+      <StepIndicator currentStep={state.currentStep} />
 
-      {currentStep === "username" && (
+      {state.currentStep === "username" && (
         <UsernameStep onContinue={handleUsernameContinue} />
       )}
 
-      {currentStep === "organization" && (
+      {state.currentStep === "organization" && (
         <OrganizationStep
-          orgFormData={orgFormData}
+          orgFormData={state.orgFormData}
           setOrgFormData={setOrgFormData}
-          orgError={orgError}
-          isSubmitting={isSubmitting}
+          orgError={state.orgError}
+          isSubmitting={state.isSubmitting}
           onSubmit={handleOrgSubmit}
         />
       )}
 
-      {currentStep === "firstData" && (
+      {state.currentStep === "firstData" && (
         <FirstDataStep onSkip={() => push("/")} />
       )}
     </div>

@@ -27,6 +27,75 @@ interface CollectionMultiSelectComboboxProps {
   disabled?: boolean;
 }
 
+interface CollectionListItem {
+  _id: Id<"collections">;
+  title: string;
+  accessionNumber: string;
+  status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
+}
+
+interface CollectionMultiSelectState {
+  open: boolean;
+  searchQuery: string;
+  cursor: string | null;
+  allCollections: CollectionListItem[];
+  isLoadingMore: boolean;
+}
+
+type CollectionMultiSelectAction =
+  | { type: "setOpen"; value: boolean }
+  | { type: "setSearchQuery"; value: string }
+  | { type: "resetSearch" }
+  | { type: "setCursor"; value: string | null }
+  | { type: "setAllCollections"; value: CollectionListItem[] }
+  | { type: "appendCollections"; value: CollectionListItem[] }
+  | { type: "setIsLoadingMore"; value: boolean }
+  | { type: "startLoadMore"; cursor: string };
+
+const initialCollectionMultiSelectState: CollectionMultiSelectState = {
+  open: false,
+  searchQuery: "",
+  cursor: null,
+  allCollections: [],
+  isLoadingMore: false,
+};
+
+function collectionMultiSelectReducer(
+  state: CollectionMultiSelectState,
+  action: CollectionMultiSelectAction,
+): CollectionMultiSelectState {
+  switch (action.type) {
+    case "setOpen":
+      return { ...state, open: action.value };
+    case "setSearchQuery":
+      return { ...state, searchQuery: action.value };
+    case "resetSearch":
+      return {
+        ...state,
+        cursor: null,
+        allCollections: [],
+        isLoadingMore: false,
+      };
+    case "setCursor":
+      return { ...state, cursor: action.value };
+    case "setAllCollections":
+      return { ...state, allCollections: action.value };
+    case "appendCollections":
+      return {
+        ...state,
+        allCollections: [...state.allCollections, ...action.value],
+      };
+    case "setIsLoadingMore":
+      return { ...state, isLoadingMore: action.value };
+    case "startLoadMore":
+      return {
+        ...state,
+        isLoadingMore: true,
+        cursor: action.cursor,
+      };
+  }
+}
+
 export function CollectionMultiSelectCombobox({
   organizationId,
   selectedIds,
@@ -34,58 +103,49 @@ export function CollectionMultiSelectCombobox({
   placeholder = "Search and select collections...",
   disabled = false,
 }: CollectionMultiSelectComboboxProps) {
-  const [open, setOpen] = React.useState(false);
+  const [state, dispatch] = React.useReducer(
+    collectionMultiSelectReducer,
+    initialCollectionMultiSelectState,
+  );
   const listId = React.useId();
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [cursor, setCursor] = React.useState<string | null>(null);
-  const [allCollections, setAllCollections] = React.useState<
-    Array<{
-      _id: Id<"collections">;
-      title: string;
-      accessionNumber: string;
-      status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
-    }>
-  >([]);
-  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
   const listRef = React.useRef<HTMLDivElement>(null);
 
-  // Fetch collections with pagination
   const collectionsResult = useQuery(
     api.collections.list,
     organizationId
       ? {
           organizationId,
-          paginationOpts: { numItems: 50, cursor },
+          paginationOpts: { numItems: 50, cursor: state.cursor },
           status: "active",
-          search: searchQuery || undefined,
+          search: state.searchQuery || undefined,
         }
       : "skip",
   );
 
-  // Reset cursor and collections when search changes
   React.useEffect(() => {
-    setCursor(null);
-    setAllCollections([]);
-    setIsLoadingMore(false);
-  }, [searchQuery]);
+    dispatch({ type: "resetSearch" });
+  }, [state.searchQuery]);
 
-  // Load collections when result changes
   React.useEffect(() => {
     if (collectionsResult) {
-      if (cursor === null) {
-        // Initial load or search change - replace all
-        setAllCollections(collectionsResult.page);
+      if (state.cursor === null) {
+        dispatch({
+          type: "setAllCollections",
+          value: collectionsResult.page,
+        });
       } else {
-        // Append new results for pagination
-        setAllCollections((prev) => [...prev, ...collectionsResult.page]);
+        dispatch({
+          type: "appendCollections",
+          value: collectionsResult.page,
+        });
       }
-      setIsLoadingMore(false);
+      dispatch({ type: "setIsLoadingMore", value: false });
     }
-  }, [collectionsResult, cursor]);
+  }, [collectionsResult, state.cursor]);
 
   const collectionIds = React.useMemo(
-    () => allCollections.map((collection) => collection._id),
-    [allCollections],
+    () => state.allCollections.map((collection) => collection._id),
+    [state.allCollections],
   );
 
   const batchImageUrls = useQuery(
@@ -101,7 +161,6 @@ export function CollectionMultiSelectCombobox({
     return new Map(batchImageUrls.map((item) => [item.collectionId, item.url]));
   }, [batchImageUrls]);
 
-  // Handle scroll to load more
   const handleScroll = React.useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const target = e.currentTarget;
@@ -113,14 +172,16 @@ export function CollectionMultiSelectCombobox({
         collectionsResult &&
         !collectionsResult.isDone &&
         collectionsResult.continueCursor &&
-        collectionsResult.continueCursor !== cursor &&
-        !isLoadingMore
+        collectionsResult.continueCursor !== state.cursor &&
+        !state.isLoadingMore
       ) {
-        setIsLoadingMore(true);
-        setCursor(collectionsResult.continueCursor);
+        dispatch({
+          type: "startLoadMore",
+          cursor: collectionsResult.continueCursor,
+        });
       }
     },
-    [collectionsResult, cursor, isLoadingMore],
+    [collectionsResult, state.cursor, state.isLoadingMore],
   );
 
   const handleToggle = (collectionId: string) => {
@@ -132,12 +193,15 @@ export function CollectionMultiSelectCombobox({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={state.open}
+      onOpenChange={(value) => dispatch({ type: "setOpen", value })}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
-          aria-expanded={open}
+          aria-expanded={state.open}
           aria-controls={listId}
           className="w-full justify-between"
           disabled={disabled}
@@ -157,8 +221,10 @@ export function CollectionMultiSelectCombobox({
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search by accession number or title..."
-            value={searchQuery}
-            onValueChange={setSearchQuery}
+            value={state.searchQuery}
+            onValueChange={(value) =>
+              dispatch({ type: "setSearchQuery", value })
+            }
           />
           <CommandList
             id={listId}
@@ -174,9 +240,9 @@ export function CollectionMultiSelectCombobox({
               </div>
             </CommandEmpty>
 
-            {allCollections.length > 0 && (
+            {state.allCollections.length > 0 && (
               <CommandGroup>
-                {allCollections.map((collection) => {
+                {state.allCollections.map((collection) => {
                   const isSelected = selectedIds.includes(collection._id);
                   return (
                     <CollectionItem
@@ -203,7 +269,6 @@ export function CollectionMultiSelectCombobox({
   );
 }
 
-// Component for individual collection item with thumbnail
 function CollectionItem({
   collection,
   imageUrl,
