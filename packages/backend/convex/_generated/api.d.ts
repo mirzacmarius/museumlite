@@ -109,6 +109,7 @@ import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_dublinCore from "../utils/dublinCore.js";
 import type * as utils_exhibitionAccess from "../utils/exhibitionAccess.js";
 import type * as utils_exhibitionContext from "../utils/exhibitionContext.js";
+import type * as utils_exhibitionCrud from "../utils/exhibitionCrud.js";
 import type * as utils_exhibitionDocuments from "../utils/exhibitionDocuments.js";
 import type * as utils_exhibitionInstallation from "../utils/exhibitionInstallation.js";
 import type * as utils_exhibitionObjectLocation from "../utils/exhibitionObjectLocation.js";
@@ -256,6 +257,7 @@ declare const fullApi: ApiFromModules<{
   "utils/dublinCore": typeof utils_dublinCore;
   "utils/exhibitionAccess": typeof utils_exhibitionAccess;
   "utils/exhibitionContext": typeof utils_exhibitionContext;
+  "utils/exhibitionCrud": typeof utils_exhibitionCrud;
   "utils/exhibitionDocuments": typeof utils_exhibitionDocuments;
   "utils/exhibitionInstallation": typeof utils_exhibitionInstallation;
   "utils/exhibitionObjectLocation": typeof utils_exhibitionObjectLocation;
