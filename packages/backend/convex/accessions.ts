@@ -1351,12 +1351,6 @@ export const updateWorkflowStep = mutation({
       throw new Error("Accession not found");
     }
 
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.update",
-    );
-
     if (accession.status !== "pending") {
       throw new Error("Can only update workflow step for pending accessions");
     }
@@ -1364,6 +1358,12 @@ export const updateWorkflowStep = mutation({
     if (args.workflowStep < 0 || args.workflowStep > 2) {
       throw new Error("Invalid workflow step");
     }
+
+    await requirePermission(
+      ctx,
+      accession.organizationId,
+      "collections.update",
+    );
 
     await ctx.db.patch(args.accessionId, {
       workflowStep: args.workflowStep,
@@ -1392,16 +1392,15 @@ export const submitForApproval = mutation({
       throw new Error("Accession not found");
     }
 
-    // Check permission
+    if (accession.status !== "pending") {
+      throw new Error("Accession is not pending");
+    }
+
     await requirePermission(
       ctx,
       accession.organizationId,
       "collections.update",
     );
-
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
-    }
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1445,15 +1444,15 @@ export const approve = mutation({
       throw new Error("Accession not found");
     }
 
+    if (accession.status !== "pending") {
+      throw new Error("Accession is not pending");
+    }
+
     await requirePermission(
       ctx,
       accession.organizationId,
       "collections.approve_accession",
     );
-
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
-    }
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1697,16 +1696,16 @@ export const reject = mutation({
       throw new Error("Accession not found");
     }
 
-    // Check permission
+    if (accession.status !== "pending") {
+      throw new Error("Accession is not pending");
+    }
+
     await requirePermission(
       ctx,
       accession.organizationId,
       "collections.approve_accession",
     );
 
-    if (accession.status !== "pending") {
-      throw new Error("Accession is not pending");
-    }
     await Promise.all([
       ctx.db.patch(args.accessionId, {
         status: "rejected",

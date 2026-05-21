@@ -166,15 +166,15 @@ export const update = mutation({
       throw new Error("Treatment not found");
     }
 
+    if (treatment.status === "completed" || treatment.status === "rejected") {
+      throw new Error("Cannot update completed or rejected treatment");
+    }
+
     await requirePermission(
       ctx,
       treatment.organizationId,
       "collections.update",
     );
-
-    if (treatment.status === "completed" || treatment.status === "rejected") {
-      throw new Error("Cannot update completed or rejected treatment");
-    }
 
     const { id, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -212,15 +212,15 @@ export const remove = mutation({
       throw new Error("Treatment not found");
     }
 
+    if (treatment.status === "in_progress") {
+      throw new Error("Cannot delete treatment in progress");
+    }
+
     await requirePermission(
       ctx,
       treatment.organizationId,
       "collections.delete",
     );
-
-    if (treatment.status === "in_progress") {
-      throw new Error("Cannot delete treatment in progress");
-    }
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: treatment.organizationId,
@@ -1227,21 +1227,19 @@ export const listAlertRules = query({
     await requireConservationAccess(ctx, args.organizationId);
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    if (args.activeOnly) {
-      return ctx.db
-        .query("conservationAlertRules")
-        .withIndex("by_organization_and_active", (q) =>
-          q.eq("organizationId", args.organizationId).eq("isActive", true),
-        )
-        .collect();
-    }
-
-    return ctx.db
-      .query("conservationAlertRules")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    return args.activeOnly
+      ? ctx.db
+          .query("conservationAlertRules")
+          .withIndex("by_organization_and_active", (q) =>
+            q.eq("organizationId", args.organizationId).eq("isActive", true),
+          )
+          .collect()
+      : ctx.db
+          .query("conservationAlertRules")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect();
   },
 });
 

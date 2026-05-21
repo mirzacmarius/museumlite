@@ -596,11 +596,11 @@ export const publish = mutation({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
-
     if (item.catalogStatus === "published") {
       return null;
     }
+
+    await requireModuleEnabled(ctx, item.organizationId, "library");
 
     await ctx.db.patch(args.itemId, {
       catalogStatus: "published",

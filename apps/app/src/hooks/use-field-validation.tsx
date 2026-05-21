@@ -45,20 +45,21 @@ export function useFieldValidation<T>({
       try {
         await schema.parseAsync(value);
 
-        if (latestValueRef.current !== value) return false;
-
-        setStatus("valid");
-        setError(null);
-        onValidationComplete?.(true);
-        return true;
+        if (latestValueRef.current === value) {
+          setStatus("valid");
+          setError(null);
+          onValidationComplete?.(true);
+          return true;
+        }
+        return false;
       } catch (err) {
-        if (latestValueRef.current !== value) return false;
-
-        const zodError = err as ZodError;
-        const message = zodError.errors[0]?.message || "Invalid value";
-        setStatus("invalid");
-        setError(message);
-        onValidationComplete?.(false, message);
+        if (latestValueRef.current === value) {
+          const zodError = err as ZodError;
+          const message = zodError.errors[0]?.message || "Invalid value";
+          setStatus("invalid");
+          setError(message);
+          onValidationComplete?.(false, message);
+        }
         return false;
       }
     },

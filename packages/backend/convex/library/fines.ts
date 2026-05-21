@@ -99,11 +99,11 @@ export const recordPayment = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
-
     if (args.amount <= 0) {
       throw new Error("Payment amount must be positive");
     }
+
+    await requireModuleEnabled(ctx, account.organizationId, "library");
 
     const now = Date.now();
     let remainingPayment = args.amount;
@@ -196,11 +196,11 @@ export const waive = mutation({
       throw new Error("Fine not found");
     }
 
-    await requireModuleEnabled(ctx, fine.organizationId, "library");
-
     if (fine.status !== "outstanding") {
       throw new Error("Can only waive outstanding fines");
     }
+
+    await requireModuleEnabled(ctx, fine.organizationId, "library");
 
     await ctx.db.patch(args.fineId, {
       status: "waived",
@@ -236,11 +236,11 @@ export const forgive = mutation({
       throw new Error("Fine not found");
     }
 
-    await requireModuleEnabled(ctx, fine.organizationId, "library");
-
     if (fine.status !== "outstanding") {
       throw new Error("Can only forgive outstanding fines");
     }
+
+    await requireModuleEnabled(ctx, fine.organizationId, "library");
 
     await ctx.db.patch(args.fineId, {
       status: "forgiven",

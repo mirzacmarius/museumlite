@@ -130,11 +130,11 @@ export const checkin = mutation({
       throw new Error("Circulation record not found");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
-
     if (circulation.status === "returned") {
       throw new Error("Item is already checked in");
     }
+
+    await requireModuleEnabled(ctx, circulation.organizationId, "library");
 
     const account = await ctx.db.get(circulation.accountId);
     if (!account) {
@@ -235,11 +235,11 @@ export const markLost = mutation({
       throw new Error("Circulation record not found");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
-
     if (circulation.status === "returned" || circulation.status === "lost") {
       throw new Error("Invalid status for marking as lost");
     }
+
+    await requireModuleEnabled(ctx, circulation.organizationId, "library");
 
     const [copy, item, account] = await Promise.all([
       ctx.db.get(circulation.copyId),
@@ -618,19 +618,18 @@ export const renew = mutation({
       return { success: false, error: "Circulation not found" };
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
-
     if (circulation.status !== "active") {
       return { success: false, error: "Item is not currently checked out" };
     }
 
-    // Check if item is recalled
     if (circulation.isRecalled) {
       return {
         success: false,
         error: "Item has been recalled and cannot be renewed",
       };
     }
+
+    await requireModuleEnabled(ctx, circulation.organizationId, "library");
 
     const account = await ctx.db.get(circulation.accountId);
     if (!account) {
@@ -983,14 +982,11 @@ export const checkoutWithOverride = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
-
-    // Note: In a real implementation, you'd check for override permission here
-    // For now, we allow any authenticated staff to override
-
     if (account.status === "blocked" || account.status === "suspended") {
       throw new Error("Cannot override hard blocks (blocked/suspended status)");
     }
+
+    await requireModuleEnabled(ctx, account.organizationId, "library");
 
     const copy = await ctx.db.get(args.copyId);
     if (!copy) {
@@ -1075,8 +1071,6 @@ export const createRecall = mutation({
       throw new Error("Circulation not found");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
-
     if (circulation.status !== "active") {
       throw new Error("Item is not currently checked out");
     }
@@ -1084,6 +1078,8 @@ export const createRecall = mutation({
     if (circulation.isRecalled) {
       throw new Error("Item is already recalled");
     }
+
+    await requireModuleEnabled(ctx, circulation.organizationId, "library");
 
     // Get settings for recall shortened due date
     const settings = await ctx.db
@@ -1174,11 +1170,11 @@ export const cancelRecall = mutation({
       throw new Error("Recall not found");
     }
 
-    await requireModuleEnabled(ctx, recall.organizationId, "library");
-
     if (recall.status === "returned" || recall.status === "cancelled") {
       throw new Error("Recall cannot be cancelled");
     }
+
+    await requireModuleEnabled(ctx, recall.organizationId, "library");
 
     // Restore original due date
     const circulation = await ctx.db.get(recall.circulationId);

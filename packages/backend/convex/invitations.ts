@@ -365,16 +365,14 @@ export const resendInvitation = mutation({
       return { success: false, error: "Invitation not found" };
     }
 
-    // Check permission
-    await requirePermission(ctx, invitation.organizationId, "users.invite");
-
-    // Can only resend pending invitations
     if (invitation.status !== "pending") {
       return {
         success: false,
         error: `Cannot resend ${invitation.status} invitation`,
       };
     }
+
+    await requirePermission(ctx, invitation.organizationId, "users.invite");
 
     // Generate new token and extend expiration
     const newToken = generateInvitationToken();
@@ -441,13 +439,11 @@ export const cancelInvitation = mutation({
       throw new Error("Invitation not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, invitation.organizationId, "users.invite");
-
-    // Can only cancel pending invitations
     if (invitation.status !== "pending") {
       throw new Error(`Cannot cancel ${invitation.status} invitation`);
     }
+
+    await requirePermission(ctx, invitation.organizationId, "users.invite");
 
     // Delete the invitation
     await ctx.db.delete(args.invitationId);

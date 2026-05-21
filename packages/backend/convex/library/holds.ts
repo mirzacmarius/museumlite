@@ -135,11 +135,11 @@ export const cancel = mutation({
       throw new Error("Hold not found");
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
-
     if (hold.status === "fulfilled" || hold.status === "cancelled") {
       throw new Error(`Cannot cancel hold with status: ${hold.status}`);
     }
+
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
 
     if (hold.status === "available" && hold.copyId) {
       const copy = await ctx.db.get(hold.copyId);
@@ -179,11 +179,11 @@ export const fulfill = mutation({
       throw new Error("Hold not found");
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
-
     if (hold.status !== "available") {
       throw new Error("Hold is not ready for pickup");
     }
+
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
 
     await ctx.db.patch(args.holdId, { status: "fulfilled" });
 
@@ -210,11 +210,11 @@ export const updatePickupLocation = mutation({
       throw new Error("Hold not found");
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
-
     if (hold.status !== "pending") {
       throw new Error("Can only update pickup location for pending holds");
     }
+
+    await requireModuleEnabled(ctx, hold.organizationId, "library");
 
     await ctx.db.patch(args.holdId, {
       pickupLocationId: args.pickupLocationId,

@@ -155,17 +155,17 @@ export const upsert = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
     if (getPositiveWorkflowSteps(args.steps).length === 0) {
       throw new Error(
         "Workflow must include at least one approval step with stepNumber greater than 0",
       );
     }
+
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const existing = await ctx.db
       .query("workflowConfigs")

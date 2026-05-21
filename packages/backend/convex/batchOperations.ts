@@ -41,8 +41,6 @@ export const createBulkEditJob = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.update");
-
     if (args.collectionIds.length === 0) {
       throw new Error("No collections selected");
     }
@@ -50,6 +48,8 @@ export const createBulkEditJob = mutation({
     if (args.collectionIds.length > 1000) {
       throw new Error("Maximum 1000 items per batch operation");
     }
+
+    await requirePermission(ctx, args.organizationId, "collections.update");
 
     // Validate all collections belong to organization
     const collections = await Promise.all(
@@ -103,8 +103,6 @@ export const createBulkMoveJob = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "locations.update");
-
     if (args.collectionIds.length === 0) {
       throw new Error("No collections selected");
     }
@@ -112,6 +110,8 @@ export const createBulkMoveJob = mutation({
     if (args.collectionIds.length > 1000) {
       throw new Error("Maximum 1000 items per batch operation");
     }
+
+    await requirePermission(ctx, args.organizationId, "locations.update");
 
     // Validate target location
     const toLocation = await ctx.db.get(args.toLocationId);
@@ -168,19 +168,18 @@ export const createBulkStatusChangeJob = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Require delete permission for delete status
-    if (args.newStatus === "deleted") {
-      await requirePermission(ctx, args.organizationId, "collections.delete");
-    } else {
-      await requirePermission(ctx, args.organizationId, "collections.update");
-    }
-
     if (args.collectionIds.length === 0) {
       throw new Error("No collections selected");
     }
 
     if (args.collectionIds.length > 1000) {
       throw new Error("Maximum 1000 items per batch operation");
+    }
+
+    if (args.newStatus === "deleted") {
+      await requirePermission(ctx, args.organizationId, "collections.delete");
+    } else {
+      await requirePermission(ctx, args.organizationId, "collections.update");
     }
 
     const jobId = await ctx.db.insert("batchJobs", {
@@ -228,11 +227,11 @@ export const cancelBatchJob = mutation({
       throw new Error("Job not found");
     }
 
-    await requirePermission(ctx, job.organizationId, "collections.update");
-
     if (job.status === "completed" || job.status === "failed") {
       throw new Error("Cannot cancel completed or failed job");
     }
+
+    await requirePermission(ctx, job.organizationId, "collections.update");
 
     await ctx.db.patch(args.jobId, {
       status: "cancelled",
@@ -739,8 +738,6 @@ export const quickBulkEdit = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.update");
-
     if (args.collectionIds.length === 0) {
       return { successCount: 0, failureCount: 0, errors: [] };
     }
@@ -748,6 +745,8 @@ export const quickBulkEdit = mutation({
     if (args.collectionIds.length > 20) {
       throw new Error("Use createBulkEditJob for batches larger than 20 items");
     }
+
+    await requirePermission(ctx, args.organizationId, "collections.update");
 
     let successCount = 0;
     let failureCount = 0;
@@ -842,12 +841,6 @@ export const quickBulkStatusChange = mutation({
       throw new Error("Not authenticated");
     }
 
-    if (args.newStatus === "deleted") {
-      await requirePermission(ctx, args.organizationId, "collections.delete");
-    } else {
-      await requirePermission(ctx, args.organizationId, "collections.update");
-    }
-
     if (args.collectionIds.length === 0) {
       return { successCount: 0, failureCount: 0, errors: [] };
     }
@@ -856,6 +849,12 @@ export const quickBulkStatusChange = mutation({
       throw new Error(
         "Use createBulkStatusChangeJob for batches larger than 20 items",
       );
+    }
+
+    if (args.newStatus === "deleted") {
+      await requirePermission(ctx, args.organizationId, "collections.delete");
+    } else {
+      await requirePermission(ctx, args.organizationId, "collections.update");
     }
 
     let successCount = 0;
@@ -937,11 +936,11 @@ export const bulkAddTags = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.update");
-
     if (args.collectionIds.length > 100) {
       throw new Error("Maximum 100 items for bulk tag operation");
     }
+
+    await requirePermission(ctx, args.organizationId, "collections.update");
 
     let successCount = 0;
     let failureCount = 0;
@@ -991,11 +990,11 @@ export const bulkRemoveTags = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.update");
-
     if (args.collectionIds.length > 100) {
       throw new Error("Maximum 100 items for bulk tag operation");
     }
+
+    await requirePermission(ctx, args.organizationId, "collections.update");
 
     let successCount = 0;
     let failureCount = 0;

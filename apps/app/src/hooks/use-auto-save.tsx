@@ -85,28 +85,28 @@ export function useAutoSave<T>({
     try {
       await onSave(data);
 
-      if (!isMountedRef.current) return;
+      if (isMountedRef.current) {
+        lastSavedDataRef.current = data;
+        setLastSaved(new Date());
+        setStatus("saved");
+        setIsDirty(false);
+        onSuccess?.();
 
-      lastSavedDataRef.current = data;
-      setLastSaved(new Date());
-      setStatus("saved");
-      setIsDirty(false);
-      onSuccess?.();
-
-      // Reset status to idle after showing "saved" briefly
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          setStatus("idle");
-        }
-      }, 2000);
+        // Reset status to idle after showing "saved" briefly
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setStatus("idle");
+          }
+        }, 2000);
+      }
     } catch (err) {
-      if (!isMountedRef.current) return;
-
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save";
-      setError(errorMessage);
-      setStatus("error");
-      onError?.(err instanceof Error ? err : new Error(errorMessage));
+      if (isMountedRef.current) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to save";
+        setError(errorMessage);
+        setStatus("error");
+        onError?.(err instanceof Error ? err : new Error(errorMessage));
+      }
     }
   }, [data, onSave, onSuccess, onError]);
 

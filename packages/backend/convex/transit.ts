@@ -260,14 +260,14 @@ export const updateTransitRecord = mutation({
       throw new Error("Transit record not found");
     }
 
-    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
-
     if (
       transitRecord.status === "delivered" ||
       transitRecord.status === "cancelled"
     ) {
       throw new Error("Cannot update delivered or cancelled transit records");
     }
+
+    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
     const { transitRecordId, ...updates } = args;
 
@@ -484,18 +484,18 @@ export const deleteTransitRecord = mutation({
       throw new Error("Transit record not found");
     }
 
-    await requirePermission(
-      ctx,
-      transitRecord.organizationId,
-      "organization.manage_settings",
-    );
-
     if (
       transitRecord.status !== "draft" &&
       transitRecord.status !== "cancelled"
     ) {
       throw new Error("Can only delete draft or cancelled transit records");
     }
+
+    await requirePermission(
+      ctx,
+      transitRecord.organizationId,
+      "organization.manage_settings",
+    );
 
     const transitItems = await ctx.db
       .query("transitItems")
@@ -940,8 +940,6 @@ export const addItemsToTransit = mutation({
       throw new Error("Transit record not found");
     }
 
-    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
-
     if (
       transitRecord.status !== "draft" &&
       transitRecord.status !== "scheduled"
@@ -950,6 +948,8 @@ export const addItemsToTransit = mutation({
         "Can only add items to draft or scheduled transit records",
       );
     }
+
+    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
     const existingItems = await ctx.db
       .query("transitItems")
@@ -1027,8 +1027,6 @@ export const removeItemFromTransit = mutation({
       throw new Error("Transit record not found");
     }
 
-    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
-
     if (
       transitRecord.status !== "draft" &&
       transitRecord.status !== "scheduled"
@@ -1037,6 +1035,8 @@ export const removeItemFromTransit = mutation({
         "Can only remove items from draft or scheduled transit records",
       );
     }
+
+    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
     await ctx.db.delete(args.transitItemId);
 

@@ -1012,16 +1012,15 @@ export const submitForApproval = mutation({
       throw new Error("Deaccession not found");
     }
 
-    // Check permission
+    if (deaccession.status !== "pending") {
+      throw new Error("Deaccession is not pending");
+    }
+
     await requirePermission(
       ctx,
       deaccession.organizationId,
       "collections.update",
     );
-
-    if (deaccession.status !== "pending") {
-      throw new Error("Deaccession is not pending");
-    }
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1067,18 +1066,16 @@ export const approve = mutation({
       throw new Error("Deaccession not found");
     }
 
-    // Check permission
+    if (deaccession.status !== "pending") {
+      throw new Error("Deaccession is not pending");
+    }
+
     await requirePermission(
       ctx,
       deaccession.organizationId,
       "collections.approve_deaccession",
     );
 
-    if (deaccession.status !== "pending") {
-      throw new Error("Deaccession is not pending");
-    }
-
-    // Get workflow config
     const workflowConfig = await getWorkflowConfig(
       ctx,
       deaccession.organizationId,
@@ -1283,16 +1280,16 @@ export const reject = mutation({
       throw new Error("Deaccession not found");
     }
 
-    // Check permission
+    if (deaccession.status !== "pending") {
+      throw new Error("Deaccession is not pending");
+    }
+
     await requirePermission(
       ctx,
       deaccession.organizationId,
       "collections.approve_deaccession",
     );
 
-    if (deaccession.status !== "pending") {
-      throw new Error("Deaccession is not pending");
-    }
     await Promise.all([
       ctx.db.patch(args.deaccessionId, {
         status: "rejected",

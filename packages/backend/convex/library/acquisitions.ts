@@ -305,15 +305,15 @@ export const updateOrderInfo = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
-
     if (!["approved", "ordered"].includes(request.status)) {
       throw new Error(
         "Can only update order info for approved or ordered requests",
       );
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
+    await requirePermission(ctx, request.organizationId, "collections.update");
 
     const updates: Record<string, unknown> = {};
 
@@ -363,13 +363,13 @@ export const linkToItem = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
-
     if (request.status !== "received") {
       throw new Error("Can only link items to received requests");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
+    await requirePermission(ctx, request.organizationId, "collections.update");
 
     await ctx.db.patch(args.requestId, {
       libraryItemId: args.libraryItemId,
@@ -420,13 +420,13 @@ export const update = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
-
     if (!["submitted", "under_review"].includes(request.status)) {
       throw new Error("Cannot update request in current status");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
+    await requirePermission(ctx, request.organizationId, "collections.update");
 
     const updates: Record<string, unknown> = {};
 
@@ -478,13 +478,13 @@ export const cancel = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
-
     if (["received", "cataloged"].includes(request.status)) {
       throw new Error("Cannot cancel request that has been received");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
+    await requirePermission(ctx, request.organizationId, "collections.update");
 
     await ctx.db.patch(args.requestId, { status: "cancelled" });
 
@@ -517,13 +517,13 @@ export const remove = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.delete");
-
     if (!["submitted", "rejected", "cancelled"].includes(request.status)) {
       throw new Error("Cannot delete request in current status");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
+
+    await requirePermission(ctx, request.organizationId, "collections.delete");
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: request.organizationId,
@@ -651,11 +651,11 @@ export const approve = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
     if (!["submitted", "under_review"].includes(request.status)) {
       throw new Error("Request is not pending approval");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -816,11 +816,11 @@ export const reject = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
     if (!["submitted", "under_review"].includes(request.status)) {
       throw new Error("Request is not pending approval");
     }
+
+    await requireModuleEnabled(ctx, request.organizationId, "library");
 
     const workflowConfig = await getWorkflowConfig(
       ctx,

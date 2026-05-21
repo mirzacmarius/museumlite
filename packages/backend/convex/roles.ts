@@ -97,14 +97,11 @@ export const updateRole = mutation({
       throw new Error("Role not found");
     }
 
-    // Check permission
-    const { requirePermission } = await import("./utils/permissions");
-    await requirePermission(ctx, role.organizationId, "users.manage_roles");
-
-    // Cannot modify system roles
     if (role.isSystemRole) {
       throw new Error("Cannot modify system roles");
     }
+
+    await requirePermission(ctx, role.organizationId, "users.manage_roles");
 
     // Update role details
     const updates: {
@@ -192,14 +189,11 @@ export const deleteRole = mutation({
       throw new Error("Role not found");
     }
 
-    // Check permission
-    const { requirePermission } = await import("./utils/permissions");
-    await requirePermission(ctx, role.organizationId, "users.manage_roles");
-
-    // Cannot delete system roles
     if (role.isSystemRole) {
       throw new Error("Cannot delete system roles");
     }
+
+    await requirePermission(ctx, role.organizationId, "users.manage_roles");
 
     // Check if role is in use
     const usersWithRole = await ctx.db
