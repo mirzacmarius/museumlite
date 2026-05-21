@@ -215,7 +215,7 @@ export default function EditAccessionPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
+        <div className="border-b border-border/60 bg-secondary/10 p-8">
           <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
             <div className="flex size-48 shrink-0 flex-col items-center justify-center rounded-xl border border-border/60 bg-secondary text-center shadow-2xl">
               <Save className="size-10 text-muted-foreground" />

@@ -15,9 +15,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { Box } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
-import { Box } from "lucide-react";
 
 interface CollectionMultiSelectComboboxProps {
   organizationId: Id<"organizations">;
@@ -223,7 +223,7 @@ function CollectionItem({
     <CommandItem
       value={collection._id}
       onSelect={onToggle}
-      className="px-2 py-2 cursor-pointer"
+      className="p-2 cursor-pointer"
     >
       <div className="flex w-full items-center gap-3">
         <Check

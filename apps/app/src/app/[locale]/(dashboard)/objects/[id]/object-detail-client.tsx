@@ -420,7 +420,7 @@ function ObjectDetailView({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
           {/* Hero Section */}
-          <div className="border-b border-border/60 bg-secondary/10 px-8 py-8">
+          <div className="border-b border-border/60 bg-secondary/10 p-8">
             <div className="mx-auto flex max-w-5xl items-start gap-8">
               {/* Hero Image */}
               <button

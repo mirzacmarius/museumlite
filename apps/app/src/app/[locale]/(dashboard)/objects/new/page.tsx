@@ -1719,7 +1719,7 @@ export function ObjectRequestFormPage({
                       </div>
 
                       <div className="md:col-span-2 xl:col-span-3">
-                        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
                           <div className="space-y-0.5">
                             <Label htmlFor="placementDisplayStatus">
                               On display
@@ -2112,7 +2112,7 @@ export function ObjectRequestFormPage({
                     description="Control how this object appears and behaves in public experiences."
                   >
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
                         <div className="space-y-0.5">
                           <Label htmlFor="isPubliclyVisible">
                             Public Visibility
@@ -2130,7 +2130,7 @@ export function ObjectRequestFormPage({
                         />
                       </div>
 
-                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
                         <div className="space-y-0.5">
                           <Label htmlFor="isHighResDownloadable">
                             High-Resolution Downloads
@@ -2149,7 +2149,7 @@ export function ObjectRequestFormPage({
                         />
                       </div>
 
-                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
                         <div className="space-y-0.5">
                           <Label htmlFor="isSearchable">Searchable</Label>
                           <p className="text-xs text-muted-foreground">
@@ -2165,7 +2165,7 @@ export function ObjectRequestFormPage({
                         />
                       </div>
 
-                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 px-4 py-4">
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
                         <div className="space-y-0.5">
                           <Label htmlFor="isValuationVisible">
                             Valuation Visibility

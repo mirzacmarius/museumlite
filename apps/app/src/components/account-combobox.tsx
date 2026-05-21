@@ -281,7 +281,7 @@ export function AccountCombobox({
                       key={account._id}
                       value={account._id}
                       onSelect={() => handleSelect(account._id)}
-                      className="px-2 py-2"
+                      className="p-2"
                     >
                       <div className="flex w-full items-start gap-2">
                         <Check

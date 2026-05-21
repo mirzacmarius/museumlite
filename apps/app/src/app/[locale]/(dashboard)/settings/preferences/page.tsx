@@ -89,7 +89,7 @@ function PreferenceSwitch({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-6 rounded-lg border border-border/70 bg-secondary/20 px-4 py-4">
+    <div className="flex items-center justify-between gap-6 rounded-lg border border-border/70 bg-secondary/20 p-4">
       <div className="space-y-1">
         <Label htmlFor={id}>{label}</Label>
         <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
