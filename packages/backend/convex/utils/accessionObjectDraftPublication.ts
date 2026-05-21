@@ -1,7 +1,10 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { insertCompletedMediaAsset } from "./mediaAssets";
-import { applyUsageCounterDelta } from "./organizationUsageCounters";
+import {
+  applyUsageCounterDelta,
+  ensureUsageCounter,
+} from "./organizationUsageCounters";
 
 function serializeStringList(values?: string[]) {
   return values && values.length > 0 ? JSON.stringify(values) : undefined;
@@ -76,6 +79,8 @@ export async function publishAccessionObjectDraft(
     lastModifiedAt: catalogedAt,
   });
 
+  await ensureUsageCounter(ctx, accession.organizationId);
+
   await Promise.all([
     ...[...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
       const group = await ctx.db.get(collectionGroupId);
@@ -109,10 +114,11 @@ export async function publishAccessionObjectDraft(
         uploadedAt: catalogedAt,
       }),
     ),
-    applyUsageCounterDelta(ctx, accession.organizationId, {
-      objectCount: 1,
-    }),
   ]);
+
+  await applyUsageCounterDelta(ctx, accession.organizationId, {
+    objectCount: 1,
+  });
 
   return collectionId;
 }

@@ -20,8 +20,14 @@ import {
   markCollectionDeaccessioned,
 } from "./utils/collectionLifecycle";
 import {
+  getLocationPathStrings,
+  isImageMedia,
+} from "./utils/collectionDisplayHelpers";
+import {
+  enrichCollectionListPage,
   getCollectionsWithOpenDeaccessions,
   shouldUseIndexedCollectionsPagination,
+  toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
 import {
   enforceObjectQuota,
@@ -181,18 +187,6 @@ const objectDetailLocationPathItemValidator = v.object({
   name: v.string(),
 });
 
-function isImageMedia(media: {
-  fileType?: string;
-  mediaCategory?: "image" | "document";
-  mimeType?: string;
-}) {
-  return (
-    media.fileType === "image" ||
-    media.mediaCategory === "image" ||
-    media.mimeType?.startsWith("image/") === true
-  );
-}
-
 /**
  * Generate accession number based on organization format template
  */
@@ -247,100 +241,6 @@ async function generateAccessionNumber(
   });
 
   return accessionNumber;
-}
-
-async function getCollectionPrimaryImageUrls(
-  ctx: QueryCtx,
-  collectionIds: Id<"collections">[],
-) {
-  const entries = await Promise.all(
-    collectionIds.map(async (collectionId) => {
-      const mediaFiles = await ctx.db
-        .query("mediaFiles")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-
-      const imageMedia = mediaFiles.filter((media) => isImageMedia(media));
-      const preferredMedia =
-        imageMedia.find((media) => media.isPrimary) ?? imageMedia[0];
-
-      if (!preferredMedia) {
-        return [collectionId, undefined] as const;
-      }
-
-      const storageId =
-        preferredMedia.thumbnailStorageId ??
-        (isImageMedia(preferredMedia) ? preferredMedia.storageId : undefined);
-      const url = storageId
-        ? ((await ctx.storage.getUrl(storageId)) ?? undefined)
-        : undefined;
-
-      return [collectionId, url] as const;
-    }),
-  );
-
-  return new Map(entries);
-}
-
-async function loadLocationAncestors(
-  ctx: QueryCtx,
-  pendingIds: Set<Id<"locations">>,
-  locationMap: Map<Id<"locations">, Doc<"locations">>,
-) {
-  const ids = [...pendingIds];
-  pendingIds.clear();
-
-  const locations = await Promise.all(ids.map((id) => ctx.db.get(id)));
-  for (const location of locations) {
-    if (!location || locationMap.has(location._id)) {
-      continue;
-    }
-
-    locationMap.set(location._id, location);
-    if (
-      location.parentLocationId &&
-      !locationMap.has(location.parentLocationId)
-    ) {
-      pendingIds.add(location.parentLocationId);
-    }
-  }
-}
-
-async function getLocationPathStrings(
-  ctx: QueryCtx,
-  locationIds: Id<"locations">[],
-) {
-  const uniqueLocationIds = [...new Set(locationIds)];
-  const locationMap = new Map<Id<"locations">, Doc<"locations">>();
-  const pendingIds = new Set(uniqueLocationIds);
-
-  while (pendingIds.size > 0) {
-    await loadLocationAncestors(ctx, pendingIds, locationMap);
-  }
-
-  const pathMap = new Map<Id<"locations">, string | undefined>();
-
-  for (const locationId of uniqueLocationIds) {
-    const pathSegments: string[] = [];
-    let currentId: Id<"locations"> | undefined = locationId;
-
-    while (currentId) {
-      const location = locationMap.get(currentId);
-      if (!location) {
-        break;
-      }
-
-      pathSegments.unshift(location.name);
-      currentId = location.parentLocationId;
-    }
-
-    pathMap.set(
-      locationId,
-      pathSegments.length > 0 ? pathSegments.join(" > ") : undefined,
-    );
-  }
-
-  return pathMap;
 }
 
 async function getObjectDetailHeroImage(
@@ -834,62 +734,6 @@ async function deleteCollectionDependents(
       );
     })(),
   ] as const);
-}
-
-type CollectionListPageItem = {
-  _id: Id<"collections">;
-  accessionNumber: string;
-  title: string;
-  collectionGroupId?: Id<"collectionGroups">;
-  objectType?: string;
-  currentLocationId?: Id<"locations">;
-  status: Doc<"collections">["status"];
-  _creationTime: number;
-};
-
-async function enrichCollectionListPage(
-  ctx: QueryCtx,
-  page: CollectionListPageItem[],
-) {
-  const collectionIds = page.map((item) => item._id);
-  const locationIds = page.flatMap((item) =>
-    item.currentLocationId === undefined ? [] : [item.currentLocationId],
-  );
-
-  const [locationPathById, primaryImageUrlByCollectionId] = await Promise.all([
-    getLocationPathStrings(ctx, locationIds),
-    getCollectionPrimaryImageUrls(ctx, collectionIds),
-  ] as const);
-
-  return page.map((item) => ({
-    _id: item._id,
-    accessionNumber: item.accessionNumber,
-    title: item.title,
-    collectionGroupId: item.collectionGroupId,
-    objectType: item.objectType,
-    currentLocationId: item.currentLocationId,
-    locationPath: item.currentLocationId
-      ? locationPathById.get(item.currentLocationId)
-      : undefined,
-    primaryImageUrl: primaryImageUrlByCollectionId.get(item._id),
-    status: item.status,
-    _creationTime: item._creationTime,
-  }));
-}
-
-async function toCollectionListPaginationResult(
-  ctx: QueryCtx,
-  paginationResult: {
-    page: CollectionListPageItem[];
-    isDone: boolean;
-    continueCursor: string;
-  },
-) {
-  return {
-    page: await enrichCollectionListPage(ctx, paginationResult.page),
-    isDone: paginationResult.isDone,
-    continueCursor: paginationResult.continueCursor,
-  };
 }
 
 async function getPublicCatalogCollections(
