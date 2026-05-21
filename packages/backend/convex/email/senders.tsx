@@ -14,6 +14,18 @@ import {
 import { render } from "@react-email/render";
 import { env } from "../env";
 import { sendEmail } from "./index";
+import {
+  emailBodyStyle,
+  emailButtonSectionStyle,
+  emailContainerStyle,
+  emailFooterTextStyle,
+  emailHrStyle,
+  emailInvitationButtonStyle,
+  emailLinkStyle,
+  emailMutedTextStyle,
+  emailMutedTextWithMarginStyle,
+  emailTextStyle,
+} from "./styles";
 
 // ============================================
 // Invitation Email
@@ -41,78 +53,46 @@ function InvitationEmail({
     <Html>
       <Head />
       <Preview>You've been invited to join {organizationName}</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
+      <Body style={emailBodyStyle}>
+        <Container style={emailContainerStyle}>
           <Img
             src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
             width="40"
             height="37"
             alt=""
           />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}!
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
+          <Text style={emailTextStyle}>Hello {email}!</Text>
+          <Text style={emailTextStyle}>
             <strong>{inviterName}</strong> has invited you to join{" "}
             <strong>{organizationName}</strong> as a <strong>{role}</strong>.
           </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
+          <Text style={emailTextStyle}>
             Click the button below to accept the invitation and get started.
           </Text>
-          <Section style={{ textAlign: "center", margin: "32px 0" }}>
-            <Button
-              href={acceptUrl}
-              style={{
-                backgroundColor: "#0a0a0f",
-                borderRadius: "5px",
-                color: "#ffffff",
-                fontSize: "16px",
-                fontWeight: "bold",
-                textDecoration: "none",
-                textAlign: "center",
-                display: "inline-block",
-                padding: "12px 24px",
-              }}
-            >
+          <Section style={emailButtonSectionStyle}>
+            <Button href={acceptUrl} style={emailInvitationButtonStyle}>
               Accept Invitation
             </Button>
           </Section>
-          <Text
-            style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}
-          >
+          <Text style={emailMutedTextStyle}>
             Or copy and paste this URL into your browser:
             <br />
-            <Link href={acceptUrl} style={{ color: "#067df7" }}>
+            <Link href={acceptUrl} style={emailLinkStyle}>
               {acceptUrl}
             </Link>
           </Text>
-          <Text
-            style={{
-              fontSize: "14px",
-              lineHeight: "24px",
-              color: "#666666",
-              marginTop: "20px",
-            }}
-          >
+          <Text style={emailMutedTextWithMarginStyle}>
             <strong>Important:</strong> This invitation will expire in 7 days.
           </Text>
-          <Text
-            style={{ fontSize: "14px", lineHeight: "24px", color: "#666666" }}
-          >
+          <Text style={emailMutedTextStyle}>
             If you don't want to join this organization, you can{" "}
-            <Link href={declineUrl} style={{ color: "#067df7" }}>
+            <Link href={declineUrl} style={emailLinkStyle}>
               decline this invitation
             </Link>
             .
           </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>
+          <Hr style={emailHrStyle} />
+          <Text style={emailFooterTextStyle}>
             This invitation was sent to {email}. If you weren't expecting this
             invitation, you can safely ignore this email.
           </Text>

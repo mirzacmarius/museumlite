@@ -4,6 +4,7 @@ import { LayoutGroup, motion } from "framer-motion";
 import React, { useRef, useState } from "react";
 import { Icon3DHoverContent } from "./icon-3d-hover-content";
 import { Icon3DHoverCube } from "./icon-3d-hover-cube";
+import "./icon-3d-hover.css";
 import { Transition, Variants } from "./icon-3d-hover-motion";
 import { transition1 } from "./icon-3d-hover-variants";
 
@@ -56,7 +57,7 @@ export const IconHover3D: React.FC<Props> = ({
           <Transition value={transition1}>
             <motion.div
               {...restProps}
-              className={`icon-hover-3d ${className}`}
+              className={`icon-hover-3d icon-hover-3d-card ${className}`}
               data-framer-name="Default"
               data-highlight={true}
               ref={refBinding}
@@ -64,24 +65,7 @@ export const IconHover3D: React.FC<Props> = ({
               onMouseLeave={
                 currentVariant === "Hover" ? handleMouseLeave : undefined
               }
-              style={{
-                backgroundColor: "hsl(var(--background))",
-                alignContent: "center",
-                alignItems: "center",
-                display: "flex",
-                flexDirection: "column",
-                flexWrap: "nowrap",
-                gap: "24px",
-                height: "100%",
-                justifyContent: "flex-start",
-                overflow: "visible",
-                padding: "24px",
-                position: "relative",
-                width: "100%",
-                borderRadius: "12px",
-                border: "1px solid hsl(var(--border))",
-                ...style,
-              }}
+              style={style}
             >
               <Icon3DHoverCube isHoverVariant={isHoverVariant} icon={icon} />
               <Icon3DHoverContent

@@ -18,15 +18,7 @@ function Icon3DHoverCubeIconOverlay({
 }) {
   return (
     <motion.div
-      style={{
-        position: "absolute",
-        zIndex: 10,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "hsl(var(--foreground))",
-        fontSize: "32px",
-      }}
+      className="icon-3d-icon-overlay"
       animate={{
         scale: isHoverVariant ? 1.1 : 1,
         rotate: isHoverVariant ? 5 : 0,
@@ -44,26 +36,8 @@ export function Icon3DHoverCube({
 }: Icon3DHoverCubeProps) {
   return (
     <motion.div
-      className="icon-container"
+      className="icon-container icon-3d-icon-container"
       data-framer-name="Icon"
-      style={{
-        alignContent: "center",
-        alignItems: "center",
-        display: "flex",
-        flex: "none",
-        flexDirection: "row",
-        flexWrap: "nowrap",
-        gap: "10px",
-        height: "80px",
-        justifyContent: "center",
-        overflow: "visible",
-        padding: "0px",
-        position: "relative",
-        width: "80px",
-        zIndex: 1,
-        border: "1px solid hsl(var(--border))",
-        borderRadius: "12px",
-      }}
     >
       {icon ? (
         <Icon3DHoverCubeIconOverlay
