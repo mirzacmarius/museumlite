@@ -1,0 +1,284 @@
+"use client";
+
+import { MediaEditorDialog } from "@/components/media-editor-dialog";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
+import { Button } from "@v1/ui/button";
+import { ImageLightbox } from "@v1/ui/image-lightbox";
+import { cn } from "@v1/ui/utils";
+import {
+  Edit,
+  GripVertical,
+  Image as ImageIcon,
+  Maximize2,
+  Star,
+  Trash2,
+} from "lucide-react";
+import { MediaEditDialog } from "./media-edit-dialog";
+import type { useMediaGallery } from "./use-media-gallery";
+
+interface MediaGalleryImageGridProps {
+  gallery: ReturnType<typeof useMediaGallery>;
+  editable: boolean;
+  onOpenLightbox?: (index: number) => void;
+}
+
+export function MediaGalleryImageGrid({
+  gallery,
+  editable,
+  onOpenLightbox,
+}: MediaGalleryImageGridProps) {
+  const tMedia = useScopedI18n("objects.form.media");
+  const {
+    common,
+    images,
+    lightboxImages,
+    isLightboxOpen,
+    lightboxIndex,
+    closeLightbox,
+    editingMedia,
+    setEditingMedia,
+    editingImageId,
+    setEditingImageId,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    draggedId,
+    dragOverId,
+    handleSetPrimary,
+    handleDelete,
+    handleUpdateMedia,
+    handleDragStart,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleDragEnd,
+    openImageLightbox,
+  } = gallery;
+
+  if (images.length === 0) {
+    return (
+      <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
+        <ImageIcon className="mb-2 size-8 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">
+          No images or videos uploaded
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {images.map((file) => {
+          const mediaId = file._id as Id<"mediaFiles">;
+          const lightboxIdx = lightboxImages.findIndex(
+            (img) => img.id === file._id,
+          );
+          const isDragging = draggedId === mediaId;
+          const isDragOver = dragOverId === mediaId;
+
+          return (
+            <div
+              key={file._id}
+              draggable={editable && !file.isPrimary}
+              onDragStart={
+                editable
+                  ? (event) => handleDragStart(event, mediaId)
+                  : undefined
+              }
+              onDragOver={
+                editable ? (event) => handleDragOver(event, mediaId) : undefined
+              }
+              onDragLeave={editable ? handleDragLeave : undefined}
+              onDrop={
+                editable ? (event) => handleDrop(event, mediaId) : undefined
+              }
+              onDragEnd={editable ? handleDragEnd : undefined}
+              className={cn(
+                "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-secondary transition-all",
+                isDragging && "opacity-50 scale-95",
+                isDragOver && "border-primary border-2 ring-2 ring-primary/20",
+                !isDragging && !isDragOver && "border-border",
+              )}
+            >
+              {file.url && (
+                <>
+                  {file.fileType === "image" ? (
+                    <button
+                      type="button"
+                      className="size-full cursor-pointer"
+                      onClick={() => openImageLightbox(lightboxIdx)}
+                      aria-label={`View ${file.caption || file.fileName}`}
+                    >
+                      <img
+                        src={file.thumbnailUrl || file.url}
+                        alt={file.caption || file.fileName}
+                        className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
+                    </button>
+                  ) : file.fileType === "video" ? (
+                    <video
+                      src={file.url}
+                      className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      controls={false}
+                      aria-label={file.caption || file.fileName}
+                    >
+                      <track kind="captions" />
+                    </video>
+                  ) : (
+                    <div className="flex size-full items-center justify-center bg-muted">
+                      <ImageIcon className="size-12 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
+                    <p className="truncate font-medium">{file.fileName}</p>
+                    {file.caption && (
+                      <p className="truncate text-[10px] text-white/70">
+                        {file.caption}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Maximize2 className="size-6 text-white" />
+                  </div>
+
+                  {editable && !file.isPrimary && (
+                    <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <div className="flex size-7 items-center justify-center rounded bg-black/50 cursor-grab active:cursor-grabbing">
+                        <GripVertical className="size-3.5 text-white" />
+                      </div>
+                    </div>
+                  )}
+
+                  {editable && (
+                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <PermissionGate permission="media.upload">
+                        {!file.isPrimary && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleSetPrimary(file._id);
+                            }}
+                            title={common("setAsPrimary")}
+                            className="size-7 p-0"
+                          >
+                            <Star className="size-3.5" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setEditingImageId(file._id as Id<"mediaFiles">);
+                          }}
+                          title={common("edit")}
+                          className="size-7 p-0"
+                        >
+                          <Edit className="size-3.5" />
+                        </Button>
+                        <MediaEditDialog
+                          media={file}
+                          onUpdate={(updates) =>
+                            handleUpdateMedia(
+                              file._id as Id<"mediaFiles">,
+                              updates,
+                            )
+                          }
+                          open={editingMedia === file._id}
+                          onOpenChange={(open) =>
+                            setEditingMedia(open ? file._id : null)
+                          }
+                        />
+                        <AlertDialog
+                          open={deleteConfirmOpen === file._id}
+                          onOpenChange={(open) =>
+                            setDeleteConfirmOpen(open ? file._id : null)
+                          }
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={(event) => event.stopPropagation()}
+                              title={common("delete")}
+                              className="size-7 p-0"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {tMedia("deleteMedia")}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {tMedia("deleteMediaConfirm")}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>
+                                {common("cancel")}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(file._id)}
+                              >
+                                {common("delete")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </PermissionGate>
+                    </div>
+                  )}
+
+                  {file.isPrimary && (
+                    <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+                      {tMedia("primary")}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {!onOpenLightbox && (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          isOpen={isLightboxOpen}
+          onClose={closeLightbox}
+        />
+      )}
+
+      {editable && (
+        <MediaEditorDialog
+          mediaId={editingImageId}
+          isOpen={!!editingImageId}
+          onClose={() => setEditingImageId(null)}
+        />
+      )}
+    </>
+  );
+}

@@ -276,9 +276,7 @@ function LocationNavItem({
         ) : isSecure ? (
           <Lock className="size-3 shrink-0 text-muted-foreground" />
         ) : (
-          <span
-            className={`size-1.5 shrink-0 rounded-full ${statusColor}`}
-          />
+          <span className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
         )}
       </button>
     </div>

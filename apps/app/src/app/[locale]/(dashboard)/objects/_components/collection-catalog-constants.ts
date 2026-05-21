@@ -1,0 +1,3 @@
+export const INITIAL_OBJECTS_PAGE_SIZE = 20;
+export const NEXT_OBJECTS_PAGE_SIZE = 40;
+export const OBJECTS_SCROLL_PRELOAD_MARGIN = "400px 0px";
