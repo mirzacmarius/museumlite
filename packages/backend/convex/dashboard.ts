@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import { buildOrganizationAnalytics } from "./utils/dashboardAnalytics";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -104,447 +105,11 @@ export const getAnalytics = query({
       "organization.view_analytics",
     );
 
-    const [locations, queriedCollectionGroups, queriedCollections] =
-      await Promise.all([
-        ctx.db
-          .query("locations")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-        ctx.db
-          .query("collectionGroups")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-        ctx.db
-          .query("collections")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-      ]);
-
-    let collectionGroups = queriedCollectionGroups;
-    let collections = queriedCollections;
-
-    // Filter collections by site if siteId is provided
-    if (args.siteId !== undefined) {
-      const locationIds = new Set(locations.map((loc) => loc._id));
-      collections = collections.filter(
-        (c) => c.currentLocationId && locationIds.has(c.currentLocationId),
-      );
-
-      // Filter collectionGroups to only those with items from filtered collections
-      const collectionIds = new Set(collections.map((c) => c._id));
-      const collectionGroupItems = await ctx.db
-        .query("collectionGroupItems")
-        .collect();
-      const groupIdsForSite = new Set(
-        collectionGroupItems.flatMap((item) =>
-          collectionIds.has(item.collectionId) ? [item.collectionGroupId] : [],
-        ),
-      );
-      collectionGroups = collectionGroups.filter((g) =>
-        groupIdsForSite.has(g._id),
-      );
-    }
-
-    const [queriedLoans, queriedAccessions, queriedDeaccessions, transfers] =
-      await Promise.all([
-        ctx.db
-          .query("loans")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-        ctx.db
-          .query("accessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-        ctx.db
-          .query("deaccessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-        ctx.db
-          .query("organizationMoveRequests")
-          .withIndex("by_source_organization", (q) =>
-            q.eq("sourceOrganizationId", args.organizationId),
-          )
-          .collect(),
-      ]);
-
-    let loans = queriedLoans;
-    let accessions = queriedAccessions;
-    let deaccessions = queriedDeaccessions;
-
-    // Filter accessions, deaccessions, and loans by site if siteId is provided
-    if (args.siteId !== undefined) {
-      const collectionIds = new Set(collections.map((c) => c._id));
-
-      // Filter accessions by collectionId
-      accessions = accessions.filter(
-        (a) => a.collectionId && collectionIds.has(a.collectionId),
-      );
-
-      // Filter deaccessions by collectionId
-      deaccessions = deaccessions.filter((d) =>
-        collectionIds.has(d.collectionId),
-      );
-
-      // Filter loans by checking loanItems
-      const loanItems = await ctx.db.query("loanItems").collect();
-      const loanIdsForSite = new Set(
-        loanItems.flatMap((item) =>
-          collectionIds.has(item.collectionId) ? [item.loanId] : [],
-        ),
-      );
-      loans = loans.filter((l) => loanIdsForSite.has(l._id));
-    }
-
-    const [recentCollectionGroups, recentObjects, auditLogEntriesRaw] =
-      await Promise.all([
-        Promise.all(
-          collectionGroups
-            .toSorted((a, b) => b._creationTime - a._creationTime)
-            .slice(0, 4)
-            .map(async (group) => {
-              let imageUrl: string | undefined;
-
-              // 1. Try group's own image first
-              if (group.imageId) {
-                imageUrl =
-                  (await ctx.storage.getUrl(group.imageId)) ?? undefined;
-              }
-
-              // 2. Fallback to item images if no group image
-              if (!imageUrl) {
-                // Find items in this group
-                const groupItems = await ctx.db
-                  .query("collectionGroupItems")
-                  .withIndex("by_collectionGroup", (q) =>
-                    q.eq("collectionGroupId", group._id),
-                  )
-                  .take(20);
-
-                const primaryImageUrls = await Promise.all(
-                  groupItems.map(async (groupItem) => {
-                    const primaryMedia = await ctx.db
-                      .query("mediaFiles")
-                      .withIndex("by_collection", (q) =>
-                        q.eq("collectionId", groupItem.collectionId),
-                      )
-                      .filter((q) =>
-                        q.and(
-                          q.eq(q.field("isPrimary"), true),
-                          q.eq(q.field("fileType"), "image"),
-                        ),
-                      )
-                      .first();
-
-                    if (!primaryMedia) {
-                      return undefined;
-                    }
-
-                    if (primaryMedia.thumbnailStorageId) {
-                      return (
-                        (await ctx.storage.getUrl(
-                          primaryMedia.thumbnailStorageId,
-                        )) ?? undefined
-                      );
-                    }
-
-                    return (
-                      (await ctx.storage.getUrl(primaryMedia.storageId)) ??
-                      undefined
-                    );
-                  }),
-                );
-
-                imageUrl = primaryImageUrls.find(
-                  (url): url is string => url !== undefined,
-                );
-
-                if (!imageUrl) {
-                  const anyImageUrls = await Promise.all(
-                    groupItems.map(async (groupItem) => {
-                      const anyMedia = await ctx.db
-                        .query("mediaFiles")
-                        .withIndex("by_collection", (q) =>
-                          q.eq("collectionId", groupItem.collectionId),
-                        )
-                        .filter((q) => q.eq(q.field("fileType"), "image"))
-                        .first();
-
-                      if (!anyMedia) {
-                        return undefined;
-                      }
-
-                      if (anyMedia.thumbnailStorageId) {
-                        return (
-                          (await ctx.storage.getUrl(
-                            anyMedia.thumbnailStorageId,
-                          )) ?? undefined
-                        );
-                      }
-
-                      return (
-                        (await ctx.storage.getUrl(anyMedia.storageId)) ??
-                        undefined
-                      );
-                    }),
-                  );
-
-                  imageUrl = anyImageUrls.find(
-                    (url): url is string => url !== undefined,
-                  );
-                }
-              }
-
-              return {
-                id: group._id,
-                name: group.name,
-                description: group.description,
-                itemsCount: group.itemsCount ?? 0,
-                imageUrl,
-                storageLocation: group.storageLocation,
-                valuation: group.valuation,
-              };
-            }),
-        ),
-        Promise.all(
-          collections
-            .toSorted((a, b) => b._creationTime - a._creationTime)
-            .slice(0, 6)
-            .map(async (collection) => {
-              const primaryMedia = await ctx.db
-                .query("mediaFiles")
-                .withIndex("by_collection", (q) =>
-                  q.eq("collectionId", collection._id),
-                )
-                .filter((q) => q.eq(q.field("isPrimary"), true))
-                .first();
-
-              const imageUrl = primaryMedia?.storageId
-                ? ((await ctx.storage.getUrl(primaryMedia.storageId)) ??
-                  undefined)
-                : undefined;
-
-              return {
-                id: collection._id,
-                title: collection.title,
-                accessionNumber: collection.accessionNumber,
-                objectType: collection.objectType,
-                status: collection.status,
-                imageUrl,
-              };
-            }),
-        ),
-        ctx.db
-          .query("auditLog")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .collect(),
-      ]);
-    let auditLogEntries = auditLogEntriesRaw;
-
-    // Filter audit log by site if siteId is provided
-    if (args.siteId !== undefined) {
-      const collectionIds = new Set(collections.map((c) => c._id));
-      const loanIds = new Set(loans.map((l) => l._id));
-      const accessionIds = new Set(accessions.map((a) => a._id));
-      const deaccessionIds = new Set(deaccessions.map((d) => d._id));
-      const collectionGroupIds = new Set(collectionGroups.map((g) => g._id));
-
-      auditLogEntries = auditLogEntries.filter((event) => {
-        if (event.entityType.includes("collection")) {
-          return (
-            collectionIds.has(event.entityId as unknown as Id<"collections">) ||
-            collectionGroupIds.has(
-              event.entityId as unknown as Id<"collectionGroups">,
-            )
-          );
-        }
-        if (event.entityType.includes("loan")) {
-          const entityId = event.entityId as unknown as Id<"loans">;
-          return loanIds.has(entityId);
-        }
-        if (event.entityType.includes("accession")) {
-          const entityId = event.entityId as unknown as Id<"accessions">;
-          return accessionIds.has(entityId);
-        }
-        if (event.entityType.includes("deaccession")) {
-          const entityId = event.entityId as unknown as Id<"deaccessions">;
-          return deaccessionIds.has(entityId);
-        }
-        return false;
-      });
-    }
-
-    const recentActivity = await Promise.all(
-      auditLogEntries
-        .toSorted((a, b) => b.timestamp - a.timestamp)
-        .slice(0, 12)
-        .map(async (event) => {
-          let type: "collection" | "loan" | "accession" | "deaccession" =
-            "collection";
-
-          if (event.entityType.includes("loan")) {
-            type = "loan";
-          } else if (event.entityType.includes("accession")) {
-            type = "accession";
-          } else if (event.entityType.includes("deaccession")) {
-            type = "deaccession";
-          } else if (event.entityType.includes("collection")) {
-            type = "collection";
-          }
-
-          let title = event.entityType;
-          let subtitle: string | undefined = event.action;
-          let status: string | undefined;
-
-          // Helper to validate if a string looks like a valid Convex ID
-          const isValidConvexId = (id: string): boolean => {
-            // Convex IDs are base64url encoded, typically 32+ characters
-            // and contain only alphanumeric, underscore, and hyphen
-            return id != null && id.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(id);
-          };
-
-          if (type === "collection") {
-            if (isValidConvexId(event.entityId)) {
-              try {
-                const collectionId =
-                  event.entityId as unknown as Id<"collections">;
-                const collection = await ctx.db.get(collectionId);
-                title = collection?.title ?? event.entityType;
-                subtitle = collection?.accessionNumber ?? event.action;
-                status = collection?.status;
-              } catch {
-                // Invalid ID or entity not found, use defaults
-              }
-            }
-          } else if (type === "loan") {
-            if (isValidConvexId(event.entityId)) {
-              try {
-                const loanId = event.entityId as unknown as Id<"loans">;
-                const loan = await ctx.db.get(loanId);
-                title = loan?.loanNumber ?? event.entityType;
-                subtitle = loan?.lenderBorrowerName ?? event.action;
-                status = loan?.status;
-              } catch {
-                // Invalid ID or entity not found, use defaults
-              }
-            }
-          } else if (type === "accession") {
-            if (isValidConvexId(event.entityId)) {
-              try {
-                const accessionId =
-                  event.entityId as unknown as Id<"accessions">;
-                const accession = await ctx.db.get(accessionId);
-                title = accession?.accessionNumber ?? event.entityType;
-                subtitle = accession?.source ?? event.action;
-                status = accession?.status;
-              } catch {
-                // Invalid ID or entity not found, use defaults
-              }
-            }
-          } else if (type === "deaccession") {
-            if (isValidConvexId(event.entityId)) {
-              try {
-                const deaccessionId =
-                  event.entityId as unknown as Id<"deaccessions">;
-                const deaccession = await ctx.db.get(deaccessionId);
-                title = deaccession?.deaccessionNumber ?? event.entityType;
-                subtitle = deaccession?.reason ?? event.action;
-                status = deaccession?.status;
-              } catch {
-                // Invalid ID or entity not found, use defaults
-              }
-            }
-          }
-
-          return {
-            type,
-            id: event._id,
-            entityId: event.entityId,
-            title,
-            subtitle,
-            timestamp: event.timestamp,
-            status,
-          };
-        }),
+    return await buildOrganizationAnalytics(
+      ctx,
+      args.organizationId,
+      args.siteId,
     );
-
-    const collectionIdsWithOpenDeaccessions = new Set(
-      deaccessions.flatMap((deaccession) =>
-        deaccession.status === "pending" || deaccession.status === "approved"
-          ? [deaccession.collectionId]
-          : [],
-      ),
-    );
-    const catalogObjects = collections.filter(
-      (collection) =>
-        collection.status !== "deleted" &&
-        collection.status !== "deaccessioned" &&
-        !collectionIdsWithOpenDeaccessions.has(collection._id),
-    );
-
-    return {
-      collections: {
-        total: collectionGroups.length,
-      },
-      objects: {
-        total: catalogObjects.length,
-        active: catalogObjects.filter((c) => c.status === "active").length,
-        loaned: catalogObjects.filter((c) => c.status === "loaned").length,
-        deaccessioned: collections.filter((c) => c.status === "deaccessioned")
-          .length,
-        onDisplay: catalogObjects.filter(
-          (c) => c.displayStatus === "on_display",
-        ).length,
-      },
-      loans: {
-        total: loans.length,
-        pending: loans.filter((l) => l.status === "pending").length,
-        active: loans.filter((l) => l.status === "active").length,
-        returned: loans.filter((l) => l.status === "returned").length,
-        incoming: loans.filter((l) => l.type === "incoming").length,
-        outgoing: loans.filter((l) => l.type === "outgoing").length,
-      },
-      accessions: {
-        pending: accessions.filter((a) => a.status === "pending").length,
-        approved: accessions.filter((a) => a.status === "approved").length,
-        rejected: accessions.filter((a) => a.status === "rejected").length,
-      },
-      deaccessions: {
-        pending: deaccessions.filter((d) => d.status === "pending").length,
-        approved: deaccessions.filter((d) => d.status === "approved").length,
-        rejected: deaccessions.filter((d) => d.status === "rejected").length,
-      },
-      transfers: {
-        pending: transfers.filter((transfer) => transfer.status === "pending")
-          .length,
-        executed: transfers.filter((transfer) => transfer.status === "executed")
-          .length,
-        rejected: transfers.filter((transfer) => transfer.status === "rejected")
-          .length,
-        cancelled: transfers.filter(
-          (transfer) => transfer.status === "cancelled",
-        ).length,
-      },
-      locations: {
-        total: locations.length,
-      },
-      recentCollectionGroups,
-      recentObjects,
-      recentActivity,
-    };
   },
 });
 
@@ -640,7 +205,9 @@ export const getComplianceReport = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "compliance"),
-      requirePermission(ctx, args.organizationId, "collections.read"),
+      requirePermission(
+ctx, args.organizationId, "collections.read"
+    ),
     ]);
 
     const now = Date.now();
@@ -923,7 +490,9 @@ export const getLocationUtilization = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(ctx, args.organizationId, "locations.read"),
+      requirePermission(
+ctx, args.organizationId, "locations.read"
+    ),
     ]);
 
     const now = Date.now();
@@ -1091,19 +660,18 @@ export const getCollectionGrowth = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const [, collections] = await Promise.all([
-      requirePermission(
-        ctx,
-        args.organizationId,
-        "organization.view_analytics",
-      ),
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.view_analytics",
+    );
+
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
 
     const now = new Date();
     const months: { month: string; count: number }[] = [];
@@ -1280,7 +848,9 @@ export const getOperationalKpis = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(ctx, args.organizationId, "collections.read"),
+      requirePermission(
+ctx, args.organizationId, "collections.read"
+    ),
     ]);
 
     const now = Date.now();

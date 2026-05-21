@@ -2278,6 +2278,7 @@ export default defineSchema({
     timestamp: v.number(),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_timestamp", ["organizationId", "timestamp"])
     .index("by_user", ["userId"])
     .index("by_entity", ["entityType", "entityId"])
     .index("by_timestamp", ["timestamp"]),

@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { computeInsuranceStats } from "./utils/insuranceStats";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
@@ -1321,83 +1322,8 @@ export const getInsuranceStats = query({
     expiringIn30Days: v.number(),
   }),
   handler: async (ctx, args) => {
-    const [, allPolicies] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.read"),
-      ctx.db
-        .query("insurancePolicies")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
-
-    const activePolicies = allPolicies.filter((p) => p.status === "active");
-
-    const allCoverages = await ctx.db
-      .query("insuranceCoverages")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
-      )
-      .collect();
-
-    const totalCoverageValue = allCoverages.reduce(
-      (sum, c) => sum + c.coveredValue,
-      0,
-    );
-
-    const coveredObjectIds = new Set<string>();
-    for (const coverage of allCoverages) {
-      if (coverage.collectionId) {
-        coveredObjectIds.add(coverage.collectionId);
-      }
-    }
-
-    const allActiveObjects = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
-      )
-      .collect();
-
-    const uncoveredItemsCount = allActiveObjects.filter(
-      (obj) => !coveredObjectIds.has(obj._id),
-    ).length;
-
-    const openClaims = await ctx.db
-      .query("insuranceClaims")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "draft"),
-          q.eq(q.field("status"), "submitted"),
-          q.eq(q.field("status"), "under_review"),
-        ),
-      )
-      .collect();
-
-    const totalClaimedAmount = openClaims.reduce(
-      (sum, c) => sum + c.claimedAmount,
-      0,
-    );
-
-    const now = Date.now();
-    const in30Days = now + 30 * 24 * 60 * 60 * 1000;
-    const expiringIn30Days = activePolicies.filter(
-      (p) => p.expirationDate >= now && p.expirationDate <= in30Days,
-    ).length;
-
-    return {
-      totalPolicies: allPolicies.length,
-      activePolicies: activePolicies.length,
-      totalCoverageValue,
-      totalCoveredItems: coveredObjectIds.size,
-      uncoveredItemsCount,
-      openClaimsCount: openClaims.length,
-      totalClaimedAmount,
-      expiringIn30Days,
-    };
+        await requirePermission(ctx, args.organizationId, "loans.read");
+    return await computeInsuranceStats(ctx, args.organizationId);
   },
 });
 
