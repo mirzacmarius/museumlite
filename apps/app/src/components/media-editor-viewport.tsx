@@ -1,7 +1,9 @@
 "use client";
 
 import { m } from "framer-motion";
+import Image from "next/image";
 import type { RefObject } from "react";
+import { useEffect, useState } from "react";
 import ReactCrop, { type Crop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import type {
@@ -36,6 +38,15 @@ export function MediaEditorViewport({
   imageRef,
   onCropChange,
 }: MediaEditorViewportProps) {
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 1200,
+    height: 800,
+  });
+
+  useEffect(() => {
+    setImageDimensions({ width: 1200, height: 800 });
+  }, [imageUrl]);
+
   return (
     <m.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -47,13 +58,24 @@ export function MediaEditorViewport({
     >
       <div className="relative">
         <ReactCrop crop={crop} onChange={onCropChange} aspect={undefined}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- react-image-crop requires a native img ref */}
-          {/* biome-ignore lint/performance/noImgElement: react-image-crop requires a native img ref */}
-          <img
+          <Image
             ref={imageRef}
             src={imageUrl}
             alt={imageTitle || "Image"}
-            className="max-h-[85vh] max-w-[90vw] object-contain"
+            width={imageDimensions.width}
+            height={imageDimensions.height}
+            sizes="90vw"
+            priority
+            onLoad={(event) => {
+              const { naturalWidth, naturalHeight } = event.currentTarget;
+              setImageDimensions((current) =>
+                current.width === naturalWidth &&
+                current.height === naturalHeight
+                  ? current
+                  : { width: naturalWidth, height: naturalHeight },
+              );
+            }}
+            className="h-auto max-h-[85vh] w-auto max-w-[90vw] object-contain"
             style={{
               transform: `rotate(${rotation}deg)`,
               filter: `brightness(${brightness}%) contrast(${contrast}%)`,
