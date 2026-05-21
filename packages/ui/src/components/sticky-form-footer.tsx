@@ -84,7 +84,7 @@ export function StickyFormFooter({
             ) : (
               <Save className="mr-2 size-4" />
             )}
-            {isSaving ? "Saving..." : saveLabel}
+            {isSaving ? "Saving…" : saveLabel}
           </Button>
         </div>
       </div>

@@ -616,22 +616,28 @@ export const addCoverage = mutation({
       "organization.manage_settings",
     );
 
+    const [collection, exhibition, loan] = await Promise.all([
+      args.collectionId ? ctx.db.get(args.collectionId) : null,
+      args.exhibitionId ? ctx.db.get(args.exhibitionId) : null,
+      args.loanId ? ctx.db.get(args.loanId) : null,
+    ]);
+
     if (args.collectionId) {
-      const collection = await ctx.db.get(args.collectionId);
       if (!collection || collection.organizationId !== policy.organizationId) {
         throw new Error("Collection not found or belongs to different org");
       }
     }
 
     if (args.exhibitionId) {
-      const exhibition = await ctx.db.get(args.exhibitionId);
-      if (!exhibition || exhibition.organizationId !== policy.organizationId) {
+      if (
+        !exhibition ||
+        exhibition.organizationId !== policy.organizationId
+      ) {
         throw new Error("Exhibition not found or belongs to different org");
       }
     }
 
     if (args.loanId) {
-      const loan = await ctx.db.get(args.loanId);
       if (!loan || loan.organizationId !== policy.organizationId) {
         throw new Error("Loan not found or belongs to different org");
       }
@@ -1097,17 +1103,12 @@ export const getClaim = query({
       );
     }
 
-    let exhibitionTitle: string | undefined;
-    if (claim.exhibitionId) {
-      const exhibition = await ctx.db.get(claim.exhibitionId);
-      exhibitionTitle = exhibition?.title;
-    }
-
-    let loanNumber: string | undefined;
-    if (claim.loanId) {
-      const loan = await ctx.db.get(claim.loanId);
-      loanNumber = loan?.loanNumber;
-    }
+    const [exhibition, loan] = await Promise.all([
+      claim.exhibitionId ? ctx.db.get(claim.exhibitionId) : null,
+      claim.loanId ? ctx.db.get(claim.loanId) : null,
+    ]);
+    const exhibitionTitle = exhibition?.title;
+    const loanNumber = loan?.loanNumber;
 
     const documentUrls = claim.documentIds
       ? await Promise.all(claim.documentIds.map((id) => ctx.storage.getUrl(id)))

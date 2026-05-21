@@ -69,7 +69,7 @@ function InvitationEmail({
             <Button
               href={acceptUrl}
               style={{
-                backgroundColor: "#000000",
+                backgroundColor: "#0a0a0f",
                 borderRadius: "5px",
                 color: "#ffffff",
                 fontSize: "16px",

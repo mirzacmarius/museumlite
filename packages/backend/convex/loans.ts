@@ -83,8 +83,10 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireLoansAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "loans.create");
+    await Promise.all([
+      requireLoansAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "loans.create"),
+    ]);
 
     // Validate account if provided
     if (args.accountId) {
@@ -163,57 +165,59 @@ export const create = mutation({
 
     if (itemsToAdd.length > 0) {
       // Verify collections belong to organization and are active
-      for (const item of itemsToAdd) {
-        const collection = await ctx.db.get(item.collectionId);
-        if (!collection) {
-          throw new Error(`Collection ${item.collectionId} not found`);
-        }
+      await Promise.all(
+        itemsToAdd.map(async (item) => {
+          const collection = await ctx.db.get(item.collectionId);
+          if (!collection) {
+            throw new Error(`Collection ${item.collectionId} not found`);
+          }
 
-        if (collection.organizationId !== args.organizationId) {
-          throw new Error(
-            `Collection ${item.collectionId} does not belong to organization`,
-          );
-        }
-
-        if (collection.status !== "active") {
-          throw new Error(`Collection ${item.collectionId} is not active`);
-        }
-
-        // Check if already in a loan
-        const existingLoanItem = await ctx.db
-          .query("loanItems")
-          .withIndex("by_collection", (q) =>
-            q.eq("collectionId", item.collectionId),
-          )
-          .filter((q) => {
-            return q.eq(q.field("collectionId"), item.collectionId);
-          })
-          .first();
-
-        if (existingLoanItem) {
-          const existingLoan = await ctx.db.get(existingLoanItem.loanId);
-          if (
-            existingLoan &&
-            (existingLoan.status === "pending" ||
-              existingLoan.status === "active")
-          ) {
+          if (collection.organizationId !== args.organizationId) {
             throw new Error(
-              `Collection ${item.collectionId} is already in an active loan`,
+              `Collection ${item.collectionId} does not belong to organization`,
             );
           }
-        }
 
-        await ctx.db.insert("loanItems", {
-          loanId,
-          collectionId: item.collectionId,
-          conditionOut: item.conditionOut,
-        });
+          if (collection.status !== "active") {
+            throw new Error(`Collection ${item.collectionId} is not active`);
+          }
 
-        await markCollectionLoaned(ctx, {
-          collectionId: item.collectionId,
-          changedBy: userId,
-        });
-      }
+          // Check if already in a loan
+          const existingLoanItem = await ctx.db
+            .query("loanItems")
+            .withIndex("by_collection", (q) =>
+              q.eq("collectionId", item.collectionId),
+            )
+            .filter((q) => {
+              return q.eq(q.field("collectionId"), item.collectionId);
+            })
+            .first();
+
+          if (existingLoanItem) {
+            const existingLoan = await ctx.db.get(existingLoanItem.loanId);
+            if (
+              existingLoan &&
+              (existingLoan.status === "pending" ||
+                existingLoan.status === "active")
+            ) {
+              throw new Error(
+                `Collection ${item.collectionId} is already in an active loan`,
+              );
+            }
+          }
+
+          await ctx.db.insert("loanItems", {
+            loanId,
+            collectionId: item.collectionId,
+            conditionOut: item.conditionOut,
+          });
+
+          await markCollectionLoaned(ctx, {
+            collectionId: item.collectionId,
+            changedBy: userId,
+          });
+        }),
+      );
     }
 
     // Log audit action
@@ -322,62 +326,66 @@ export const addItems = mutation({
       throw new Error("Can only add items to pending or active loans");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     // Verify collections belong to organization and are active
-    for (const collectionId of args.collectionIds) {
-      const collection = await ctx.db.get(collectionId);
-      if (!collection) {
-        throw new Error(`Collection ${collectionId} not found`);
-      }
+    await Promise.all(
+      args.collectionIds.map(async (collectionId) => {
+        const collection = await ctx.db.get(collectionId);
+        if (!collection) {
+          throw new Error(`Collection ${collectionId} not found`);
+        }
 
-      if (collection.organizationId !== loan.organizationId) {
-        throw new Error(
-          `Collection ${collectionId} does not belong to organization`,
-        );
-      }
-
-      if (collection.status !== "active") {
-        throw new Error(`Collection ${collectionId} is not active`);
-      }
-
-      // Check if already in a loan
-      const existingLoanItem = await ctx.db
-        .query("loanItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .filter((q) => {
-          // Check if collection is in an active loan
-          const loanId = q.field("loanId");
-          return loanId;
-        })
-        .first();
-
-      if (existingLoanItem) {
-        const existingLoan = await ctx.db.get(existingLoanItem.loanId);
-        if (
-          existingLoan &&
-          (existingLoan.status === "pending" ||
-            existingLoan.status === "active")
-        ) {
+        if (collection.organizationId !== loan.organizationId) {
           throw new Error(
-            `Collection ${collectionId} is already in an active loan`,
+            `Collection ${collectionId} does not belong to organization`,
           );
         }
-      }
 
-      // Create loan item
-      await ctx.db.insert("loanItems", {
-        loanId: args.loanId,
-        collectionId,
-        conditionOut: args.conditionOut,
-      });
+        if (collection.status !== "active") {
+          throw new Error(`Collection ${collectionId} is not active`);
+        }
 
-      await markCollectionLoaned(ctx, {
-        collectionId,
-        changedBy: userId,
-      });
-    }
+        // Check if already in a loan
+        const existingLoanItem = await ctx.db
+          .query("loanItems")
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .filter((q) => {
+            // Check if collection is in an active loan
+            const loanId = q.field("loanId");
+            return loanId;
+          })
+          .first();
+
+        if (existingLoanItem) {
+          const existingLoan = await ctx.db.get(existingLoanItem.loanId);
+          if (
+            existingLoan &&
+            (existingLoan.status === "pending" ||
+              existingLoan.status === "active")
+          ) {
+            throw new Error(
+              `Collection ${collectionId} is already in an active loan`,
+            );
+          }
+        }
+
+        // Create loan item
+        await ctx.db.insert("loanItems", {
+          loanId: args.loanId,
+          collectionId,
+          conditionOut: args.conditionOut,
+        });
+
+        await markCollectionLoaned(ctx, {
+          collectionId,
+          changedBy: userId,
+        });
+      }),
+    );
 
     return null;
   },
@@ -407,8 +415,10 @@ export const removeItems = mutation({
       throw new Error("Can only remove items from pending loans");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     await Promise.all(
       Array.from(args.loanItemIds).map(async (loanItemId) => {
@@ -474,8 +484,10 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    await requireLoansAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "loans.read");
+    await Promise.all([
+      requireLoansAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "loans.read"),
+    ]);
 
     let query = ctx.db
       .query("loans")
@@ -650,8 +662,10 @@ export const get = query({
       return null;
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.read");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+    ]);
 
     let account:
       | {
@@ -784,8 +798,10 @@ export const update = mutation({
       throw new Error("Can only update pending loans");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     const updates: {
       lenderBorrowerName?: string;
@@ -835,8 +851,10 @@ export const approve = mutation({
       throw new Error("Loan is not pending");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.approve");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.approve"),
+    ]);
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1232,8 +1250,10 @@ export const returnLoan = mutation({
       throw new Error("Loan must be active or dispatched to return");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     const movement = await returnLoanItems(ctx, {
       loanId: args.loanId,
@@ -1345,8 +1365,10 @@ export const dispatch = mutation({
       throw new Error("Loan must be active to dispatch");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     await Promise.all([
       dispatchLoanItems(ctx, {
@@ -1416,8 +1438,10 @@ export const cancel = mutation({
       throw new Error("Can only cancel pending, active, or dispatched loans");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     await Promise.all([
       ctx.db.patch(args.loanId, {
@@ -1486,8 +1510,10 @@ export const returnItem = mutation({
       throw new Error("Loan is not active");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     // Find loan item
     const loanItem = await ctx.db
@@ -1596,8 +1622,10 @@ export const createConditionReport = mutation({
       throw new Error("Loan does not use detailed condition reports");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     const reportId = await ctx.db.insert("conditionReports", {
       loanItemId: args.loanItemId,
@@ -1659,8 +1687,10 @@ export const updateConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+    ]);
 
     const updates: {
       conditionDescription?: string;
@@ -1731,8 +1761,10 @@ export const getConditionReport = query({
       return null;
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.read");
+    await Promise.all([
+      requireLoansAccess(ctx, loan.organizationId),
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+    ]);
 
     const photoUrls = report.photos
       ? await Promise.all(

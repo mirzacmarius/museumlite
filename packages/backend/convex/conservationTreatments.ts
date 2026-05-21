@@ -121,8 +121,10 @@ export const get = query({
       return null;
     }
 
-    await requireConservationAccess(ctx, treatment.organizationId);
-    await requirePermission(ctx, treatment.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, treatment.organizationId),
+      requirePermission(ctx, treatment.organizationId, "collections.read"),
+    ]);
 
     const [collection, user] = await Promise.all([
       ctx.db.get(treatment.collectionId),
@@ -803,8 +805,10 @@ export const getWorkflowHistory = query({
       throw new Error("Conservation treatment not found");
     }
 
-    await requireConservationAccess(ctx, treatment.organizationId);
-    await requirePermission(ctx, treatment.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, treatment.organizationId),
+      requirePermission(ctx, treatment.organizationId, "collections.read"),
+    ]);
 
     const history = treatment.workflowHistory ?? [];
 
@@ -1135,12 +1139,14 @@ export const updateAlertRule = mutation({
       throw new Error("Alert rule not found");
     }
 
-    await requireConservationAccess(ctx, rule.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireConservationAccess(ctx, rule.organizationId),
+      requirePermission(
       ctx,
       rule.organizationId,
       "organization.manage_settings",
-    );
+    ),
+    ]);
 
     const { ruleId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -1224,8 +1230,10 @@ export const listAlertRules = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     return args.activeOnly
       ? ctx.db
@@ -1462,8 +1470,10 @@ export const listAlerts = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const limit = args.limit ?? 100;
 
@@ -1534,8 +1544,10 @@ export const getActiveAlerts = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     let alertsQuery = ctx.db
       .query("conservationAlerts")
@@ -1953,8 +1965,10 @@ export const getCostSummary = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     let treatments = await ctx.db
       .query("conservationTreatments")
@@ -2037,8 +2051,10 @@ export const createAssessmentSchedule = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.update");
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.update"),
+    ]);
 
     const nextDueDate = Date.now() + args.intervalDays * 24 * 60 * 60 * 1000;
 
@@ -2102,8 +2118,10 @@ export const updateAssessmentSchedule = mutation({
       throw new Error("Schedule not found");
     }
 
-    await requireConservationAccess(ctx, schedule.organizationId);
-    await requirePermission(ctx, schedule.organizationId, "collections.update");
+    await Promise.all([
+      requireConservationAccess(ctx, schedule.organizationId),
+      requirePermission(ctx, schedule.organizationId, "collections.update"),
+    ]);
 
     const { scheduleId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -2133,8 +2151,10 @@ export const completeScheduledAssessment = mutation({
       throw new Error("Schedule not found");
     }
 
-    await requireConservationAccess(ctx, schedule.organizationId);
-    await requirePermission(ctx, schedule.organizationId, "collections.update");
+    await Promise.all([
+      requireConservationAccess(ctx, schedule.organizationId),
+      requirePermission(ctx, schedule.organizationId, "collections.update"),
+    ]);
 
     // Calculate next due date
     const nextDueDate =
@@ -2175,8 +2195,10 @@ export const listAssessmentSchedules = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireConservationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const collectionId = args.collectionId;
     const schedules = collectionId

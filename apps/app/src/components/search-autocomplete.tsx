@@ -21,7 +21,7 @@ interface SearchAutocompleteProps {
 export function SearchAutocomplete({
   value = "",
   onValueChange,
-  placeholder = "Search objects...",
+  placeholder = "Search objects…",
   className,
   debounceMs = 300,
 }: SearchAutocompleteProps) {

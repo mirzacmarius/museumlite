@@ -213,7 +213,7 @@ export function TransferKanbanColumn({
                     </div>
                   </div>
 
-                  <div className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                  <div className="mt-3 rounded-lg border border-white/10 bg-gray-950/20 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                       Accession handling
                     </p>
@@ -223,7 +223,7 @@ export function TransferKanbanColumn({
                   </div>
 
                   {request.targetReviewNotes || request.sourceReviewNotes ? (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="mt-3 rounded-lg border border-white/10 bg-gray-950/20 px-3 py-2">
                       <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                         Review notes
                       </p>

@@ -175,7 +175,7 @@ export function CollectionEditMediaTab({
                   )}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 p-3">
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gray-950/65 p-3">
                   <div className="truncate text-xs text-white">
                     {file.fileName}
                   </div>

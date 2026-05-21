@@ -401,20 +401,20 @@ export const create = mutation({
       workflowHistory,
     });
 
-    await syncAccessionSearchDocument(ctx, accessionId);
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "created",
-      entityType: "accession",
-      entityId: accessionId,
-      changes: {
-        accessionNumber,
-        status: workflowConfig ? "pending" : "approved",
-      },
-    });
+    await Promise.all([
+      syncAccessionSearchDocument(ctx, accessionId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action: "created",
+        entityType: "accession",
+        entityId: accessionId,
+        changes: {
+          accessionNumber,
+          status: workflowConfig ? "pending" : "approved",
+        },
+      }),
+    ]);
 
     // If workflow exists, notify users who can approve step 1
     if (workflowConfig) {
@@ -811,25 +811,26 @@ export const upsertObjectDraft = mutation({
       },
       draftMedia: args.draftMedia,
     });
-    await syncAccessionSearchDocument(ctx, accessionId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action:
-        args.saveMode === "submit"
-          ? "submitted_object_accession"
-          : "saved_object_draft",
-      entityType: "accession",
-      entityId: accessionId,
-      changes: {
-        accessionNumber,
-        saveMode: args.saveMode,
-        workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
-        status: shouldAutoApproveSubmit ? "approved" : "pending",
-        title: normalizedObjectData.title,
-      },
-    });
+    await Promise.all([
+      syncAccessionSearchDocument(ctx, accessionId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action:
+          args.saveMode === "submit"
+            ? "submitted_object_accession"
+            : "saved_object_draft",
+        entityType: "accession",
+        entityId: accessionId,
+        changes: {
+          accessionNumber,
+          saveMode: args.saveMode,
+          workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
+          status: shouldAutoApproveSubmit ? "approved" : "pending",
+          title: normalizedObjectData.title,
+        },
+      }),
+    ]);
 
     if (shouldAutoApproveSubmit) {
       await ctx.runMutation(internal.accessions.createCollectionFromAccession, {

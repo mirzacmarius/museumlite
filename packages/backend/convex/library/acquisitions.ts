@@ -172,8 +172,10 @@ export const list = query({
     continueCursor: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "library"),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const requestQuery = args.status
       ? ctx.db
@@ -240,9 +242,10 @@ export const updateStatus = mutation({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
+    await Promise.all([
+      requireModuleEnabled(ctx, request.organizationId, "library"),
+      requirePermission(ctx, request.organizationId, "collections.update"),
+    ]);
 
     const validTransitions: Record<string, string[]> = {
       approved: ["ordered", "cancelled"],
@@ -311,9 +314,10 @@ export const updateOrderInfo = mutation({
       );
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
+    await Promise.all([
+      requireModuleEnabled(ctx, request.organizationId, "library"),
+      requirePermission(ctx, request.organizationId, "collections.update"),
+    ]);
 
     const updates: Record<string, unknown> = {};
 
@@ -367,9 +371,10 @@ export const linkToItem = mutation({
       throw new Error("Can only link items to received requests");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
+    await Promise.all([
+      requireModuleEnabled(ctx, request.organizationId, "library"),
+      requirePermission(ctx, request.organizationId, "collections.update"),
+    ]);
 
     await ctx.db.patch(args.requestId, {
       libraryItemId: args.libraryItemId,
@@ -424,9 +429,10 @@ export const update = mutation({
       throw new Error("Cannot update request in current status");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
+    await Promise.all([
+      requireModuleEnabled(ctx, request.organizationId, "library"),
+      requirePermission(ctx, request.organizationId, "collections.update"),
+    ]);
 
     const updates: Record<string, unknown> = {};
 
@@ -482,9 +488,10 @@ export const cancel = mutation({
       throw new Error("Cannot cancel request that has been received");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.update");
+    await Promise.all([
+      requireModuleEnabled(ctx, request.organizationId, "library"),
+      requirePermission(ctx, request.organizationId, "collections.update"),
+    ]);
 
     await ctx.db.patch(args.requestId, { status: "cancelled" });
 
@@ -521,9 +528,10 @@ export const remove = mutation({
       throw new Error("Cannot delete request in current status");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
-
-    await requirePermission(ctx, request.organizationId, "collections.delete");
+    await Promise.all([
+      requireModuleEnabled(ctx, request.organizationId, "library"),
+      requirePermission(ctx, request.organizationId, "collections.delete"),
+    ]);
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: request.organizationId,

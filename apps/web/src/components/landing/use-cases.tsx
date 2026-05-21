@@ -27,7 +27,7 @@ const useCases = [
 
 export function UseCases() {
   return (
-    <section id="use-cases" className="py-32 px-4 relative bg-black">
+    <section id="use-cases" className="py-32 px-4 relative bg-gray-950">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2
@@ -60,7 +60,7 @@ export function UseCases() {
                 <div className="size-14 rounded-2xl bg-neon-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <useCase.icon className="size-7 text-neon-purple" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">
+                <h3 className="text-2xl font-semibold text-white mb-4">
                   {useCase.title}
                 </h3>
                 <p className="text-zinc-400 leading-relaxed">

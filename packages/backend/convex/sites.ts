@@ -229,8 +229,12 @@ export const archive = mutation({
       throw new Error("Cannot archive the primary site");
     }
 
-    await requireFeatureAccess(ctx, site.organizationId, "public_portal");
-    await requirePermission(ctx, site.organizationId, "sites.delete");
+    await Promise.all([
+      requireFeatureAccess(ctx, site.organizationId, "public_portal"),
+      requirePermission(
+ctx, site.organizationId, "sites.delete"
+    ),
+    ]);
 
     // TODO: Add validation for active locations once siteId is added to locations table
     // This will be implemented in a later subtask (subtask-3-1)

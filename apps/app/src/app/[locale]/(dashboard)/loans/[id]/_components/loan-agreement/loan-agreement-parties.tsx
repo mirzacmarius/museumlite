@@ -11,7 +11,7 @@ export function LoanAgreementParties({
 }: LoanAgreementPartiesProps) {
   return (
     <div className="mb-6">
-      <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">
+      <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
         1. PARTIES
       </h2>
       <div className="grid grid-cols-2 gap-8">

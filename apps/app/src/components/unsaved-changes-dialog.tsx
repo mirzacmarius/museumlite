@@ -52,7 +52,7 @@ export function UnsavedChangesDialog({
           </AlertDialogCancel>
           {onSave && (
             <AlertDialogAction onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save changes"}
+              {isSaving ? "Saving…" : "Save changes"}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

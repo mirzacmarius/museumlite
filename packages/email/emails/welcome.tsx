@@ -52,7 +52,7 @@ export default function WelcomeEmail() {
             </Section>
             <Section className="mb-6">
               <Link href={baseUrl}>
-                <Button className="bg-black text-white p-4 text-center">
+                <Button className="bg-gray-950 text-white p-4 text-center">
                   Get started
                 </Button>
               </Link>

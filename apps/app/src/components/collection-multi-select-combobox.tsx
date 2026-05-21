@@ -169,7 +169,7 @@ export function CollectionMultiSelectCombobox({
             <CommandEmpty>
               <div className="p-4 text-sm text-center text-muted-foreground">
                 {collectionsResult === undefined
-                  ? "Loading..."
+                  ? "Loading…"
                   : "No collections found."}
               </div>
             </CommandEmpty>

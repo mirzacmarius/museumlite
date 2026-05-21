@@ -143,7 +143,7 @@ export function ObjectRequestFormLayout({
                     <ImageIcon className="size-12 text-muted-foreground" />
                   </div>
                 )}
-                <div className="absolute inset-x-0 bottom-0 bg-black/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 bg-gray-950/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                   Open media tab
                 </div>
               </button>

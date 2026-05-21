@@ -123,7 +123,7 @@ export function LocationHeader({
       </div>
 
       <div className="order-1 min-w-0 xl:order-2">
-        <h2 className="flex flex-wrap items-center gap-3 text-2xl font-bold tracking-tight text-foreground">
+        <h2 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight text-foreground">
           <span>{location.name}</span>
           <span
             className={`rounded-full border px-2 py-0.5 text-xs font-normal ${statusBadge.className}`}

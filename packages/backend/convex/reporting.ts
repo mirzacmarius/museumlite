@@ -93,12 +93,15 @@ export const createScheduledReport = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+ctx,
       args.organizationId,
       "organization.manage_settings",
-    );
+    
+    ),
+    ]);
 
     const nextRunAt = calculateNextRun(
       args.schedule,
@@ -180,12 +183,15 @@ export const updateScheduledReport = mutation({
       throw new Error("Report not found");
     }
 
-    await requireFeatureAccess(ctx, report.organizationId, "reporting");
-    await requirePermission(
-      ctx,
+    await Promise.all([
+      requireFeatureAccess(ctx, report.organizationId, "reporting"),
+      requirePermission(
+ctx,
       report.organizationId,
       "organization.manage_settings",
-    );
+    
+    ),
+    ]);
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
 
@@ -477,12 +483,15 @@ export const listReportRuns = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+ctx,
       args.organizationId,
       "organization.view_analytics",
-    );
+    
+    ),
+    ]);
 
     const runs = args.scheduledReportId
       ? await ctx.db
@@ -656,12 +665,15 @@ export const getCollectionTrends = query({
     }),
   }),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+ctx,
       args.organizationId,
       "organization.view_analytics",
-    );
+    
+    ),
+    ]);
 
     const [collections, accessions, deaccessions] = await Promise.all([
       ctx.db
@@ -1024,12 +1036,15 @@ export const getCollectionHealthDashboard = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(
-      ctx,
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+ctx,
       args.organizationId,
       "organization.view_analytics",
-    );
+    
+    ),
+    ]);
 
     const now = Date.now();
     const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();

@@ -56,7 +56,7 @@ export function LoanListKpis({
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {t("kpis.totalInsuredValue")}
         </p>
-        <p className="mt-1 text-2xl font-bold tracking-tight">—</p>
+        <p className="mt-1 text-2xl font-bold tracking-tight">-</p>
       </div>
 
       <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-all duration-300 hover:border-rose-500/30 hover:ring-1 hover:ring-rose-500/30">
@@ -72,7 +72,7 @@ export function LoanListKpis({
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {t("kpis.expiringAgreements")}
         </p>
-        <p className="mt-1 text-2xl font-bold tracking-tight">—</p>
+        <p className="mt-1 text-2xl font-bold tracking-tight">-</p>
       </div>
     </div>
   );

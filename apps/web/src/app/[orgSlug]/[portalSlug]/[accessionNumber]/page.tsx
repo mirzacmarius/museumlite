@@ -24,7 +24,7 @@ export default function PublicObjectPage() {
   if (object === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white/60">Loading...</p>
+        <p className="text-white/60">Loading…</p>
       </div>
     );
   }
@@ -32,7 +32,7 @@ export default function PublicObjectPage() {
   if (object === null) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold text-white mb-2">Object Not Found</h1>
+        <h1 className="text-2xl font-semibold text-white mb-2">Object Not Found</h1>
         <p className="text-white/60 mb-6">
           This object may not be publicly available
         </p>

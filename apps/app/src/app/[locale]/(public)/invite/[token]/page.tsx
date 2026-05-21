@@ -43,7 +43,7 @@ function InviteStatusView({
     <InviteShell>
       <div className="space-y-4 text-center">
         <div className="flex items-center justify-center">{icon}</div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description ? (
           <p className="text-muted-foreground">{description}</p>
         ) : null}
@@ -327,7 +327,7 @@ export default function InvitePage({ params }: PageProps) {
   return (
     <InviteShell>
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{t("heading")}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("heading")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 

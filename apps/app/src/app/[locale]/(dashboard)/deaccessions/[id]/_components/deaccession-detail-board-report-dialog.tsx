@@ -51,7 +51,7 @@ export function DeaccessionDetailBoardReportDialog({
                   <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 print:text-[10px]">
                     {exportData.organization.name}
                   </p>
-                  <h1 className="text-xl font-bold text-black print:text-lg">
+                  <h1 className="text-xl font-semibold text-black print:text-lg">
                     Deaccession Report
                   </h1>
                   <p className="text-sm text-zinc-600 print:text-xs">
@@ -76,7 +76,7 @@ export function DeaccessionDetailBoardReportDialog({
 
               {exportData.collection ? (
                 <div className="print:break-inside-avoid">
-                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                     Object Information
                   </h2>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:gap-x-4 print:gap-y-1 print:text-xs">
@@ -111,7 +111,7 @@ export function DeaccessionDetailBoardReportDialog({
               ) : null}
 
               <div className="print:break-inside-avoid">
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                   Deaccession Details
                 </h2>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:gap-x-4 print:gap-y-1 print:text-xs">
@@ -169,7 +169,7 @@ export function DeaccessionDetailBoardReportDialog({
               {exportData.deaccession.proceedsAmount ||
               exportData.deaccession.proceedsRecipient ? (
                 <div className="print:break-inside-avoid">
-                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                     <DollarSign className="mr-1 inline size-3" />
                     Proceeds Information
                   </h2>
@@ -228,7 +228,7 @@ export function DeaccessionDetailBoardReportDialog({
 
               {exportData.workflowHistory.length > 0 ? (
                 <div className="print:break-inside-avoid">
-                  <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+                  <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
                     Approval History
                   </h2>
                   <div className="space-y-2">

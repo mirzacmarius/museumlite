@@ -20,10 +20,10 @@ const ACTIVITY_ROW_SKELETON_KEYS = [
 
 export function ActivityPageSkeleton() {
   return (
-    <div className="flex size-full bg-black px-6 py-8">
+    <div className="flex size-full bg-gray-950 px-6 py-8">
       <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="hidden w-64 shrink-0 flex-col md:flex">
-          <div className="rounded-lg border border-white/10 bg-black p-4">
+          <div className="rounded-lg border border-white/10 bg-gray-950 p-4">
             <div className="mb-4 h-5 w-20 rounded bg-white/15" />
             <div className="space-y-2">
               {ACTIVITY_FILTER_SKELETON_KEYS.map((key) => (

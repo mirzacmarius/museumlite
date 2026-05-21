@@ -47,7 +47,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
             >
               <div className="h-40 bg-secondary relative overflow-hidden flex items-center justify-center">
                 <Box className="size-10 text-muted-foreground/30" />
-                <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[10px] font-mono text-white">
+                <div className="absolute top-2 right-2 px-2 py-1 bg-gray-950/50 backdrop-blur-md rounded text-[10px] font-mono text-white">
                   {item.accessionNumber}
                 </div>
               </div>

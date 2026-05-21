@@ -618,8 +618,12 @@ export const getComplianceReport = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "compliance");
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "compliance"),
+      requirePermission(
+ctx, args.organizationId, "collections.read"
+    ),
+    ]);
 
     const now = Date.now();
     const rangeStart = args.dateRangeStart ?? now - 30 * 24 * 60 * 60 * 1000;
@@ -899,8 +903,12 @@ export const getLocationUtilization = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(ctx, args.organizationId, "locations.read");
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+ctx, args.organizationId, "locations.read"
+    ),
+    ]);
 
     const now = Date.now();
 
@@ -1253,8 +1261,12 @@ export const getOperationalKpis = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireFeatureAccess(ctx, args.organizationId, "reporting");
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireFeatureAccess(ctx, args.organizationId, "reporting"),
+      requirePermission(
+ctx, args.organizationId, "collections.read"
+    ),
+    ]);
 
     const now = Date.now();
     const todayStart = startOfDay(new Date());
