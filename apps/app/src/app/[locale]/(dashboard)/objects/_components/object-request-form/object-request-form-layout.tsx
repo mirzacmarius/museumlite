@@ -130,15 +130,11 @@ export function ObjectRequestFormLayout({
           isDraftCurrent,
           isFormDirty,
         })}
-        dirty={isFormDirty}
         resolvedBackHref={resolvedBackHref}
         common={common}
         onNavigate={handleNavigate}
         onSaveDraft={() => void handleSaveDraft({ redirectToDetail: true })}
-      >
-        <ObjectRequestFormFooter.DraftStatus />
-        <ObjectRequestFormFooter.Actions />
-      </ObjectRequestFormFooter>
+      />
 
       <UnsavedChangesDialog
         open={showUnsavedDialog}

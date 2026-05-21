@@ -4,6 +4,7 @@ import {
   type LucideIcon,
   XCircle,
 } from "lucide-react";
+import { getExhibitionScheduleStatus } from "@/lib/exhibition-schedule-status";
 import type {
   ExhibitionDetail,
   ExhibitionDurationInfo,
@@ -16,28 +17,28 @@ export function getTimeStatus(
   now: number | undefined,
   t: (key: string) => string,
 ): ExhibitionTimeStatus {
-  const isPast =
-    now !== undefined && exhibition.endDate && exhibition.endDate < now;
-  const isUpcoming = now !== undefined && exhibition.startDate > now;
-
-  if (isPast) {
-    return {
-      color: "bg-muted text-muted-foreground border-border",
-      text: t("status.past"),
-    };
+  switch (getExhibitionScheduleStatus(exhibition, now)) {
+    case "past":
+      return {
+        color: "bg-muted text-muted-foreground border-border",
+        text: t("status.past"),
+      };
+    case "upcoming":
+      return {
+        color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+        text: t("status.upcoming"),
+      };
+    case "current":
+      return {
+        color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        text: t("status.current"),
+      };
+    default:
+      return {
+        color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        text: t("status.current"),
+      };
   }
-
-  if (isUpcoming) {
-    return {
-      color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-      text: t("status.upcoming"),
-    };
-  }
-
-  return {
-    color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    text: t("status.current"),
-  };
 }
 
 export function getWorkflowStatusInfo(
@@ -93,11 +94,9 @@ export function calculateDuration(
 ): ExhibitionDurationInfo {
   const start = exhibition.startDate;
   const end = exhibition.endDate;
-  const isPast =
-    now !== undefined && exhibition.endDate && exhibition.endDate < now;
-  const isUpcoming = now !== undefined && exhibition.startDate > now;
+  const scheduleStatus = getExhibitionScheduleStatus(exhibition, now);
 
-  if (isUpcoming && now !== undefined) {
+  if (scheduleStatus === "upcoming" && now !== undefined) {
     const daysUntilStart = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
     return {
       label: t("detail.startsIn"),
@@ -105,7 +104,7 @@ export function calculateDuration(
     };
   }
 
-  if (isPast && end && now !== undefined) {
+  if (scheduleStatus === "past" && end && now !== undefined) {
     const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     return {
       label: t("detail.duration"),

@@ -35,6 +35,11 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import {
+  type ExhibitionScheduleStatus,
+  getExhibitionScheduleStatus,
+  matchesScheduleFilter,
+} from "@/lib/exhibition-schedule-status";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ExhibitionTimeline } from "./_components/exhibition-timeline";
 import {
@@ -250,16 +255,10 @@ function ExhibitionList({
 
     if (!matchesSearch) return false;
 
-    if (statusFilter === "all") return true;
-
-    const isPast = now !== undefined && ex.endDate && ex.endDate < now;
-    const isUpcoming = now !== undefined && ex.startDate > now;
-
-    if (statusFilter === "past") return isPast;
-    if (statusFilter === "upcoming") return isUpcoming;
-    if (statusFilter === "current") return !isPast && !isUpcoming;
-
-    return true;
+    return matchesScheduleFilter(
+      getExhibitionScheduleStatus(ex, now),
+      statusFilter,
+    );
   });
 
   if (filteredExhibitions.length === 0) {
@@ -279,14 +278,17 @@ function ExhibitionList({
   }
 
   if (viewMode === "timeline") {
-    return <ExhibitionTimeline exhibitions={filteredExhibitions} />;
+    return <ExhibitionTimeline exhibitions={filteredExhibitions} now={now} />;
   }
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       {filteredExhibitions.map((ex) => (
         <div key={ex._id}>
-          <ExhibitionCard exhibition={ex} />
+          <ExhibitionCard
+            exhibition={ex}
+            scheduleStatus={getExhibitionScheduleStatus(ex, now)}
+          />
         </div>
       ))}
     </div>
@@ -304,23 +306,32 @@ interface Exhibition {
   isLoan?: boolean;
 }
 
-function ExhibitionCard({ exhibition }: { exhibition: Exhibition }) {
+function ExhibitionCard({
+  exhibition,
+  scheduleStatus,
+}: {
+  exhibition: Exhibition;
+  scheduleStatus: ExhibitionScheduleStatus | undefined;
+}) {
   const t = useScopedI18n("exhibitions");
   const locale = useCurrentLocale();
-  const now = useClientNow();
-  const isPast =
-    now !== undefined && exhibition.endDate && exhibition.endDate < now;
-  const isUpcoming = now !== undefined && exhibition.startDate > now;
 
   let statusColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
   let statusText = t("status.current");
 
-  if (isPast) {
-    statusColor = "bg-muted text-muted-foreground border-border";
-    statusText = t("status.past");
-  } else if (isUpcoming) {
-    statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    statusText = t("status.upcoming");
+  switch (scheduleStatus) {
+    case "past":
+      statusColor = "bg-muted text-muted-foreground border-border";
+      statusText = t("status.past");
+      break;
+    case "upcoming":
+      statusColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      statusText = t("status.upcoming");
+      break;
+    case "current":
+      break;
+    default:
+      break;
   }
 
   return (

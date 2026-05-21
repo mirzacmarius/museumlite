@@ -4,7 +4,7 @@ import { Box, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 import { ClientDate } from "@/components/client-date";
-import { useClientNow } from "@/hooks/use-client-date-format";
+import { getExhibitionScheduleStatus } from "@/lib/exhibition-schedule-status";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface Exhibition {
@@ -21,12 +21,15 @@ interface Exhibition {
 
 interface ExhibitionTimelineProps {
   exhibitions: Exhibition[];
+  now: number | undefined;
 }
 
-export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
+export function ExhibitionTimeline({
+  exhibitions,
+  now,
+}: ExhibitionTimelineProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("exhibitions");
-  const now = useClientNow();
 
   const groupedByYear = useMemo(() => {
     const groups: Record<string, Exhibition[]> = {};
@@ -52,25 +55,32 @@ export function ExhibitionTimeline({ exhibitions }: ExhibitionTimelineProps) {
   }, [exhibitions]);
 
   const getExhibitionStatus = (ex: Exhibition) => {
-    if (now !== undefined && ex.endDate && ex.endDate < now) {
-      return {
-        status: t("status.past"),
-        color: "bg-muted",
-        textColor: "text-muted-foreground",
-      };
+    switch (getExhibitionScheduleStatus(ex, now)) {
+      case "past":
+        return {
+          status: t("status.past"),
+          color: "bg-muted",
+          textColor: "text-muted-foreground",
+        };
+      case "upcoming":
+        return {
+          status: t("status.upcoming"),
+          color: "bg-blue-500/20",
+          textColor: "text-blue-400",
+        };
+      case "current":
+        return {
+          status: t("status.current"),
+          color: "bg-emerald-500/20",
+          textColor: "text-emerald-400",
+        };
+      default:
+        return {
+          status: t("status.current"),
+          color: "bg-emerald-500/20",
+          textColor: "text-emerald-400",
+        };
     }
-    if (now !== undefined && ex.startDate > now) {
-      return {
-        status: t("status.upcoming"),
-        color: "bg-blue-500/20",
-        textColor: "text-blue-400",
-      };
-    }
-    return {
-      status: t("status.current"),
-      color: "bg-emerald-500/20",
-      textColor: "text-emerald-400",
-    };
   };
 
   return (

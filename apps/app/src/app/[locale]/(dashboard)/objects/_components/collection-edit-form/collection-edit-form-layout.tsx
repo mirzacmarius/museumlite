@@ -172,10 +172,7 @@ export function CollectionEditFormLayout({
         common={common}
         t={t}
         onNavigate={handleNavigate}
-      >
-        <CollectionEditFormFooter.Status />
-        <CollectionEditFormFooter.Actions />
-      </CollectionEditFormFooter>
+      />
 
       <UnsavedChangesDialog
         open={showUnsavedDialog}

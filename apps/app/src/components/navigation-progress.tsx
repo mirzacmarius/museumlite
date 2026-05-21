@@ -44,6 +44,7 @@ export function NavigationProgress() {
   });
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pathnameRef = useRef(pathname);
   const pathnameAtNavigationStartRef = useRef(pathname);
 
   const clearProgressInterval = useCallback(() => {
@@ -70,6 +71,20 @@ export function NavigationProgress() {
     }, 200);
   }, [clearProgressInterval, clearResetTimeout]);
 
+  const startNavigation = useCallback(() => {
+    clearResetTimeout();
+    clearProgressInterval();
+    pathnameAtNavigationStartRef.current = pathnameRef.current;
+    dispatch({ type: "start" });
+    progressIntervalRef.current = setInterval(() => {
+      dispatch({ type: "tick", increment: Math.random() * 10 });
+    }, 100);
+  }, [clearProgressInterval, clearResetTimeout]);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
   useEffect(() => {
     if (!state.isNavigating) {
       return;
@@ -81,16 +96,6 @@ export function NavigationProgress() {
   }, [finishNavigation, pathname, state.isNavigating]);
 
   useEffect(() => {
-    const startNavigation = () => {
-      clearResetTimeout();
-      clearProgressInterval();
-      pathnameAtNavigationStartRef.current = pathname;
-      dispatch({ type: "start" });
-      progressIntervalRef.current = setInterval(() => {
-        dispatch({ type: "tick", increment: Math.random() * 10 });
-      }, 100);
-    };
-
     const onDocumentClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest("a");
@@ -112,7 +117,7 @@ export function NavigationProgress() {
       clearProgressInterval();
       clearResetTimeout();
     };
-  }, [clearProgressInterval, clearResetTimeout, pathname]);
+  }, [clearProgressInterval, clearResetTimeout, startNavigation]);
 
   if (!state.isNavigating) return null;
 

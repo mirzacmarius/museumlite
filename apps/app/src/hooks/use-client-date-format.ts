@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
   formatDate,
   formatDateFns,
@@ -107,12 +107,16 @@ export function useClientCurrentYear() {
   );
 }
 
+let cachedClientNow: number | undefined;
+
+function getClientNowSnapshot(): number | undefined {
+  if (cachedClientNow === undefined) {
+    cachedClientNow = Date.now();
+  }
+
+  return cachedClientNow;
+}
+
 export function useClientNow() {
-  const [now, setNow] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    setNow(Date.now());
-  }, []);
-
-  return now;
+  return useClientSnapshot(getClientNowSnapshot, () => undefined);
 }
