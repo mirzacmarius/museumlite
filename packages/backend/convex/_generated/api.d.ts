@@ -107,6 +107,8 @@ import type * as utils_collectionListHelpers from "../utils/collectionListHelper
 import type * as utils_convexAuth from "../utils/convexAuth.js";
 import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_dublinCore from "../utils/dublinCore.js";
+import type * as utils_exhibitionAccess from "../utils/exhibitionAccess.js";
+import type * as utils_exhibitionObjectLocation from "../utils/exhibitionObjectLocation.js";
 import type * as utils_featureGates from "../utils/featureGates.js";
 import type * as utils_featurePolicy from "../utils/featurePolicy.js";
 import type * as utils_formatConverters from "../utils/formatConverters.js";
@@ -122,6 +124,7 @@ import type * as utils_moduleValidators from "../utils/moduleValidators.js";
 import type * as utils_notificationRecipients from "../utils/notificationRecipients.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
+import type * as utils_organizationAudit from "../utils/organizationAudit.js";
 import type * as utils_organizationUsageCounters from "../utils/organizationUsageCounters.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_polarBilling from "../utils/polarBilling.js";
@@ -247,6 +250,8 @@ declare const fullApi: ApiFromModules<{
   "utils/convexAuth": typeof utils_convexAuth;
   "utils/dashboardAnalytics": typeof utils_dashboardAnalytics;
   "utils/dublinCore": typeof utils_dublinCore;
+  "utils/exhibitionAccess": typeof utils_exhibitionAccess;
+  "utils/exhibitionObjectLocation": typeof utils_exhibitionObjectLocation;
   "utils/featureGates": typeof utils_featureGates;
   "utils/featurePolicy": typeof utils_featurePolicy;
   "utils/formatConverters": typeof utils_formatConverters;
@@ -262,6 +267,7 @@ declare const fullApi: ApiFromModules<{
   "utils/notificationRecipients": typeof utils_notificationRecipients;
   "utils/numberGenerator": typeof utils_numberGenerator;
   "utils/objectDraftData": typeof utils_objectDraftData;
+  "utils/organizationAudit": typeof utils_organizationAudit;
   "utils/organizationUsageCounters": typeof utils_organizationUsageCounters;
   "utils/permissions": typeof utils_permissions;
   "utils/polarBilling": typeof utils_polarBilling;

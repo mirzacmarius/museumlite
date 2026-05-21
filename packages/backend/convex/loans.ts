@@ -23,6 +23,10 @@ import {
   returnLoanItems,
 } from "./utils/loanMovement";
 import {
+  logActionAndGetRecipients,
+  notifyOrganizationRecipients,
+} from "./utils/organizationAudit";
+import {
   getOrganizationNotificationRecipients,
   getWorkflowCreatorRecipient,
 } from "./utils/notificationRecipients";
@@ -1306,36 +1310,28 @@ export const returnLoan = mutation({
         }),
       );
     } else {
-      // Partial return - log action but don't change loan status
-      const [, recipients] = await Promise.all([
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: loan.organizationId,
-          userId,
-          action: "items_returned",
-          entityType: "loan",
-          entityId: args.loanId,
-          changes: {
-            itemsReturned: movement.returnedItemCount,
-            totalItems: movement.totalItemCount,
-            returnedItemIds: movement.returnedItemIds,
-          },
-        }),
-        getOrganizationNotificationRecipients(ctx, loan.organizationId, userId),
-      ] as const);
+      const recipients = await logActionAndGetRecipients(ctx, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "items_returned",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: {
+          itemsReturned: movement.returnedItemCount,
+          totalItems: movement.totalItemCount,
+          returnedItemIds: movement.returnedItemIds,
+        },
+      });
 
-      await Promise.all(
-        Array.from(recipients).map(async (recipientId) => {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: loan.organizationId,
-            userId: recipientId,
-            type: "loan_partial_return",
-            title: "Loan Items Returned",
-            message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
-            relatedEntityType: "loan",
-            relatedEntityId: args.loanId,
-          });
-        }),
-      );
+      await notifyOrganizationRecipients(ctx, recipients, {
+        organizationId: loan.organizationId,
+        userId,
+        type: "loan_partial_return",
+        title: "Loan Items Returned",
+        message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
+        relatedEntityType: "loan",
+        relatedEntityId: args.loanId,
+      });
     }
 
     return null;
