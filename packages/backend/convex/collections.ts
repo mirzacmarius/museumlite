@@ -9,9 +9,9 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-// Note: customFieldValue, provenanceChainEntry, shippingLogEntry are defined in schema
-// but return validators use v.any() to allow for existing data that may not match strict types
+import { customFieldValue } from "./schema";
 import { getNextCounterValue } from "./utils/accessionCounter";
+import { countOpenDeaccessionCollectionIds } from "./utils/indexedCounts";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
@@ -154,7 +154,7 @@ const objectDetailCollectionValidator = v.object({
   lastModifiedBy: v.optional(v.id("users")),
   lastModifiedAt: v.optional(v.number()),
   collectionType: v.optional(collectionTypeValidator),
-  customFields: v.optional(v.record(v.string(), v.any())),
+        customFields: v.optional(v.record(v.string(), customFieldValue)),
   verified: v.optional(v.boolean()),
   verifiedBy: v.optional(v.id("users")),
   verifiedByName: v.optional(v.string()),
@@ -796,26 +796,7 @@ async function getCollectionsWithOpenDeaccessions(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
 ) {
-  const [pendingDeaccessions, approvedDeaccessions] = await Promise.all([
-    ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "pending"),
-      )
-      .collect(),
-    ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", "approved"),
-      )
-      .collect(),
-  ] as const);
-
-  return new Set(
-    [...pendingDeaccessions, ...approvedDeaccessions].map(
-      (deaccession) => deaccession.collectionId,
-    ),
-  );
+  return countOpenDeaccessionCollectionIds(ctx, organizationId);
 }
 
 type CollectionListPageItem = {
@@ -1306,7 +1287,7 @@ export const get = query({
       lastModifiedBy: v.optional(v.id("users")),
       lastModifiedAt: v.optional(v.number()),
       collectionType: v.optional(collectionTypeValidator),
-      customFields: v.optional(v.record(v.string(), v.any())),
+      customFields: v.optional(v.record(v.string(), customFieldValue)),
       verified: v.optional(v.boolean()),
       verifiedBy: v.optional(v.id("users")),
       verifiedByName: v.optional(v.string()),
@@ -1414,7 +1395,7 @@ export const getWithModuleDetails = query({
         accessionNumber: v.string(),
         title: v.string(),
         collectionType: v.optional(collectionTypeValidator),
-        customFields: v.optional(v.record(v.string(), v.any())),
+        customFields: v.optional(v.record(v.string(), customFieldValue)),
         status: v.union(
           v.literal("active"),
           v.literal("loaned"),
