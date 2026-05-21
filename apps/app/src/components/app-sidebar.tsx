@@ -123,6 +123,21 @@ interface NavigationGroup {
   defaultOpen?: boolean;
 }
 
+interface SidebarOrganization {
+  _id: Id<"organizations">;
+  name: string;
+  role: {
+    name: string;
+  };
+}
+
+interface SidebarUser {
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  image?: string | null;
+}
+
 function TopLevelNavigation({
   items,
   isPathActive,
@@ -256,6 +271,100 @@ function NavigationGroups({
   );
 }
 
+function OrganizationSwitcher({
+  currentOrg,
+  currentOrganizationId,
+  isMobile,
+  organizations,
+  onOrganizationChange,
+}: {
+  currentOrg: SidebarOrganization | undefined;
+  currentOrganizationId: Id<"organizations"> | null | undefined;
+  isMobile: boolean;
+  organizations: SidebarOrganization[];
+  onOrganizationChange: (organizationId: Id<"organizations">) => void;
+}) {
+  return (
+    <SidebarHeader className="px-2 pb-1 pt-2">
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild id="org-menu-trigger">
+              <SidebarMenuButton
+                size="lg"
+                className="h-10 text-xs text-sidebar-foreground hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
+              >
+                <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-background text-foreground shadow-sm ring-1 ring-sidebar-border/80">
+                  <Logo className="size-5 text-foreground" />
+                </div>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate font-medium">
+                    {currentOrg?.name || "Select Org"}
+                  </span>
+                  <span className="truncate text-[10px] text-sidebar-foreground/70">
+                    {currentOrg?.role.name || "No Organization"}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto" />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+              align="start"
+              side={isMobile ? "bottom" : "right"}
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Organizations
+              </DropdownMenuLabel>
+              {organizations.map((org, index) => (
+                <DropdownMenuItem
+                  key={org._id}
+                  onClick={() => onOrganizationChange(org._id)}
+                  className="gap-2 p-2"
+                >
+                  <div className="flex size-6 items-center justify-center rounded-md border">
+                    <Building2 className="size-4 shrink-0" />
+                  </div>
+                  <span>{org.name}</span>
+                  <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
+                  {currentOrganizationId === org._id && (
+                    <Check className="size-4" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarHeader>
+  );
+}
+
+function SidebarSearch({ onOpen }: { onOpen: () => void }) {
+  return (
+    <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:hidden">
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="default"
+              className="h-9 rounded-lg border border-border bg-background px-3 py-2 text-sm font-normal text-muted-foreground shadow-none ring-offset-background transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onClick={onOpen}
+            >
+              <Search />
+              <span>Search</span>
+              <kbd className="ml-auto rounded border border-sidebar-border px-1 text-[10px] text-sidebar-foreground/70">
+                ⌘K
+              </kbd>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 function CollectionGroupNav({
   groups,
   activeCollectionGroupId,
@@ -332,6 +441,122 @@ function CollectionGroupNav({
   );
 }
 
+function UserMenu({
+  currentOrganizationId,
+  isMobile,
+  onSignOut,
+  user,
+}: {
+  currentOrganizationId: Id<"organizations"> | null | undefined;
+  isMobile: boolean;
+  onSignOut: () => void;
+  user: SidebarUser | null | undefined;
+}) {
+  const userAvatarUrl = user?.avatarUrl ?? user?.image ?? undefined;
+  const userInitials = getUserInitials(user ?? {});
+
+  return (
+    <SidebarFooter>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild id="user-menu-trigger">
+              <SidebarMenuButton
+                size="lg"
+                className="text-xs data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              >
+                <Avatar className="size-8 rounded-lg">
+                  <AvatarImage
+                    src={userAvatarUrl}
+                    alt={user?.name ?? undefined}
+                  />
+                  <AvatarFallback className="rounded-lg">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate font-medium">
+                    {user?.name ?? undefined}
+                  </span>
+                  <span className="truncate text-[10px] text-sidebar-foreground/70">
+                    {user?.email ?? undefined}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto" />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+              side={isMobile ? "bottom" : "right"}
+              align="end"
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="p-0 font-normal">
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                >
+                  <Avatar className="size-8 rounded-lg">
+                    <AvatarImage
+                      src={userAvatarUrl}
+                      alt={user?.name ?? undefined}
+                    />
+                    <AvatarFallback className="rounded-lg">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">
+                      {user?.name ?? undefined}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {user?.email ?? undefined}
+                    </span>
+                  </div>
+                </Link>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {currentOrganizationId ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/billing">Manage Billing</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  className="grid grid-cols-[1fr_auto] items-center gap-4"
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  <span>Theme</span>
+                  <div className="justify-self-end">
+                    <ThemeSwitcher triggerClass="w-auto min-w-24" />
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="grid grid-cols-[1fr_auto] items-center gap-4"
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  <span>Language</span>
+                  <div className="justify-self-end">
+                    <LanguageSwitcher triggerClass="w-auto min-w-28" />
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onSignOut}>
+                <LogOut />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarFooter>
+  );
+}
+
 export function AppSidebar({
   preloadedUser,
 }: {
@@ -343,8 +568,6 @@ export function AppSidebar({
   const { setOpen } = useCommandPalette();
   const { isMobile } = useSidebar();
   const user = usePreloadedQuery(preloadedUser);
-  const userAvatarUrl = user?.avatarUrl ?? user?.image ?? undefined;
-  const userInitials = getUserInitials(user ?? {});
   const { signOut } = useAuthActions();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -524,80 +747,16 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="px-2 pb-1 pt-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild id="org-menu-trigger">
-                <SidebarMenuButton
-                  size="lg"
-                  className="h-10 text-xs text-sidebar-foreground hover:bg-transparent hover:text-sidebar-foreground data-[state=open]:bg-transparent data-[state=open]:text-sidebar-foreground"
-                >
-                  <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-background text-foreground shadow-sm ring-1 ring-sidebar-border/80">
-                    <Logo className="size-5 text-foreground" />
-                  </div>
-                  <div className="grid flex-1 text-left leading-tight">
-                    <span className="truncate font-medium">
-                      {currentOrg?.name || "Select Org"}
-                    </span>
-                    <span className="truncate text-[10px] text-sidebar-foreground/70">
-                      {currentOrg?.role.name || "No Organization"}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                align="start"
-                side={isMobile ? "bottom" : "right"}
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Organizations
-                </DropdownMenuLabel>
-                {organizations.map((org, index) => (
-                  <DropdownMenuItem
-                    key={org._id}
-                    onClick={() => handleOrganizationChange(org._id)}
-                    className="gap-2 p-2"
-                  >
-                    <div className="flex size-6 items-center justify-center rounded-md border">
-                      <Building2 className="size-4 shrink-0" />
-                    </div>
-                    <span>{org.name}</span>
-                    <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
-                    {currentOrganizationId === org._id && (
-                      <Check className="size-4" />
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+      <OrganizationSwitcher
+        currentOrg={currentOrg}
+        currentOrganizationId={currentOrganizationId}
+        isMobile={isMobile}
+        organizations={organizations}
+        onOrganizationChange={handleOrganizationChange}
+      />
 
       <SidebarContent className="gap-0 py-1">
-        <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size="default"
-                  className="h-9 rounded-lg border border-border bg-background px-3 py-2 text-sm font-normal text-muted-foreground shadow-none ring-offset-background transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  onClick={openCommandPalette}
-                >
-                  <Search />
-                  <span>Search</span>
-                  <kbd className="ml-auto rounded border border-sidebar-border px-1 text-[10px] text-sidebar-foreground/70">
-                    ⌘K
-                  </kbd>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarSearch onOpen={openCommandPalette} />
 
         <TopLevelNavigation
           items={topLevelNavigation}
@@ -616,104 +775,12 @@ export function AppSidebar({
         />
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild id="user-menu-trigger">
-                <SidebarMenuButton
-                  size="lg"
-                  className="text-xs data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="size-8 rounded-lg">
-                    <AvatarImage
-                      src={userAvatarUrl}
-                      alt={user?.name ?? undefined}
-                    />
-                    <AvatarFallback className="rounded-lg">
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left leading-tight">
-                    <span className="truncate font-medium">
-                      {user?.name ?? undefined}
-                    </span>
-                    <span className="truncate text-[10px] text-sidebar-foreground/70">
-                      {user?.email ?? undefined}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                  >
-                    <Avatar className="size-8 rounded-lg">
-                      <AvatarImage
-                        src={userAvatarUrl}
-                        alt={user?.name ?? undefined}
-                      />
-                      <AvatarFallback className="rounded-lg">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">
-                        {user?.name ?? undefined}
-                      </span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {user?.email ?? undefined}
-                      </span>
-                    </div>
-                  </Link>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {currentOrganizationId ? (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link href="/settings/billing">Manage Billing</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                ) : null}
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    className="grid grid-cols-[1fr_auto] items-center gap-4"
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    <span>Theme</span>
-                    <div className="justify-self-end">
-                      <ThemeSwitcher triggerClass="w-auto min-w-24" />
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="grid grid-cols-[1fr_auto] items-center gap-4"
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    <span>Language</span>
-                    <div className="justify-self-end">
-                      <LanguageSwitcher triggerClass="w-auto min-w-28" />
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
+      <UserMenu
+        currentOrganizationId={currentOrganizationId}
+        isMobile={isMobile}
+        onSignOut={signOut}
+        user={user}
+      />
       <SidebarRail />
     </Sidebar>
   );
