@@ -96,21 +96,22 @@ describe("API Key Generation Security", () => {
     });
 
     // Generate multiple keys to test character set compliance
-    for (let i = 0; i < 50; i++) {
-      const result = await authed.mutation(api.apiKeys.create, {
-        organizationId,
-        name: `Test Key ${i}`,
-        permissions: ["read"],
-      });
+    await Promise.all(
+      Array.from({ length: 50 }, async (_, i) => {
+        const result = await authed.mutation(api.apiKeys.create, {
+          organizationId,
+          name: `Test Key ${i}`,
+          permissions: ["read"],
+        });
 
-      const keyBody = result.key.substring(3); // Remove 'ml_' prefix
-      expect(keyBody).toMatch(/^[A-Za-z0-9]+$/);
+        const keyBody = result.key.substring(3);
+        expect(keyBody).toMatch(/^[A-Za-z0-9]+$/);
 
-      // Verify no special characters or symbols
-      for (const char of keyBody) {
-        expect(/[A-Za-z0-9]/.test(char)).toBe(true);
-      }
-    }
+        for (const char of keyBody) {
+          expect(/[A-Za-z0-9]/.test(char)).toBe(true);
+        }
+      }),
+    );
   });
 
   test("should generate unique keys (no collisions in 1000+ generations)", async () => {
@@ -125,16 +126,18 @@ describe("API Key Generation Security", () => {
     const generatedKeys = new Set<string>();
     const iterations = 1000;
 
-    for (let i = 0; i < iterations; i++) {
-      const result = await authed.mutation(api.apiKeys.create, {
-        organizationId,
-        name: `Test Key ${i}`,
-        permissions: ["read"],
-      });
+    await Promise.all(
+      Array.from({ length: iterations }, async (_, i) => {
+        const result = await authed.mutation(api.apiKeys.create, {
+          organizationId,
+          name: `Test Key ${i}`,
+          permissions: ["read"],
+        });
 
-      expect(generatedKeys.has(result.key)).toBe(false);
-      generatedKeys.add(result.key);
-    }
+        expect(generatedKeys.has(result.key)).toBe(false);
+        generatedKeys.add(result.key);
+      }),
+    );
 
     expect(generatedKeys.size).toBe(iterations);
   });
@@ -152,17 +155,20 @@ describe("API Key Generation Security", () => {
     const charFrequency = new Map<string, number>();
 
     // Generate 100 keys to analyze
-    for (let i = 0; i < 100; i++) {
-      const result = await authed.mutation(api.apiKeys.create, {
-        organizationId,
-        name: `Test Key ${i}`,
-        permissions: ["read"],
-      });
+    const keyBodies = await Promise.all(
+      Array.from({ length: 100 }, async (_, i) => {
+        const result = await authed.mutation(api.apiKeys.create, {
+          organizationId,
+          name: `Test Key ${i}`,
+          permissions: ["read"],
+        });
 
-      const keyBody = result.key.substring(3); // Remove 'ml_' prefix
+        return result.key.substring(3);
+      }),
+    );
+
+    for (const keyBody of keyBodies) {
       keys.push(keyBody);
-
-      // Count character frequency
       for (const char of keyBody) {
         charFrequency.set(char, (charFrequency.get(char) || 0) + 1);
       }

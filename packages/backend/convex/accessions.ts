@@ -177,58 +177,95 @@ async function ensureAccessionNumberAvailable(
   }
 }
 
+async function tryGeneratedAccessionNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  attempt: number,
+  lastGeneratedAccessionNumber: string | null,
+): Promise<string | null> {
+  if (attempt >= 5) {
+    return lastGeneratedAccessionNumber;
+  }
+
+  const nextAccessionNumber = await generateAccessionNumber(
+    ctx,
+    organizationId,
+  );
+  try {
+    await ensureAccessionNumberAvailable(
+      ctx,
+      organizationId,
+      nextAccessionNumber,
+    );
+    return nextAccessionNumber;
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "Accession number already exists"
+    ) {
+      throw error;
+    }
+  }
+
+  return tryGeneratedAccessionNumber(
+    ctx,
+    organizationId,
+    attempt + 1,
+    nextAccessionNumber,
+  );
+}
+
+async function tryFallbackAccessionNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  fallbackBase: string,
+  suffixAttempt: number,
+): Promise<string> {
+  if (suffixAttempt > 20) {
+    throw new Error("Could not generate a unique accession number");
+  }
+
+  const fallbackAccessionNumber = `${fallbackBase}-${suffixAttempt}`;
+  try {
+    await ensureAccessionNumberAvailable(
+      ctx,
+      organizationId,
+      fallbackAccessionNumber,
+    );
+    return fallbackAccessionNumber;
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "Accession number already exists"
+    ) {
+      throw error;
+    }
+  }
+
+  return tryFallbackAccessionNumber(
+    ctx,
+    organizationId,
+    fallbackBase,
+    suffixAttempt + 1,
+  );
+}
+
 async function generateUniqueAccessionNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  let lastGeneratedAccessionNumber: string | null = null;
-
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const nextAccessionNumber = await generateAccessionNumber(
-      ctx,
-      organizationId,
-    );
-    lastGeneratedAccessionNumber = nextAccessionNumber;
-    try {
-      await ensureAccessionNumberAvailable(
-        ctx,
-        organizationId,
-        nextAccessionNumber,
-      );
-      return nextAccessionNumber;
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== "Accession number already exists"
-      ) {
-        throw error;
-      }
-    }
+  const generated = await tryGeneratedAccessionNumber(
+    ctx,
+    organizationId,
+    0,
+    null,
+  );
+  if (generated) {
+    return generated;
   }
 
-  const fallbackBase =
-    lastGeneratedAccessionNumber || `ACC-${new Date().getFullYear()}`;
-
-  for (let suffixAttempt = 1; suffixAttempt <= 20; suffixAttempt += 1) {
-    const fallbackAccessionNumber = `${fallbackBase}-${suffixAttempt}`;
-    try {
-      await ensureAccessionNumberAvailable(
-        ctx,
-        organizationId,
-        fallbackAccessionNumber,
-      );
-      return fallbackAccessionNumber;
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== "Accession number already exists"
-      ) {
-        throw error;
-      }
-    }
-  }
-
-  throw new Error("Could not generate a unique accession number");
+  const fallbackBase = `ACC-${new Date().getFullYear()}`;
+  return tryFallbackAccessionNumber(ctx, organizationId, fallbackBase, 1);
 }
 
 async function findReusablePendingDraftAccession(
@@ -2771,6 +2808,7 @@ export const processBulkImport = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    const importingUserId = userId;
 
     await requirePermission(ctx, args.organizationId, "collections.create");
 
@@ -2787,81 +2825,85 @@ export const processBulkImport = mutation({
     let imported = 0;
     let failed = 0;
 
-    for (let i = 0; i < args.items.length; i++) {
-      const item = args.items[i];
-      if (!item) continue;
-
-      try {
-        // Generate accession number if not provided
-        let accessionNumber = item.accessionNumber?.trim();
-        if (!accessionNumber) {
-          accessionNumber = await generateAccessionNumber(
-            ctx,
-            args.organizationId,
-          );
-        }
-
-        // Check for duplicate accession number
-        const existing = await ctx.db
-          .query("accessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
-          .first();
-
-        if (existing) {
-          throw new Error(`Duplicate accession number: ${accessionNumber}`);
-        }
-
-        // Create workflow history
-        const workflowHistory = workflowConfig
-          ? [
-              {
-                step: 0,
-                approvedBy: userId,
-                approvedAt: Date.now(),
-                comment: "Bulk import",
-              },
-            ]
-          : [];
-
-        const accessionId = await ctx.db.insert("accessions", {
-          organizationId: args.organizationId,
-          accessionNumber,
-          dateReceived: item.dateReceived,
-          source: item.source,
-          method: item.method,
-          cost: item.cost,
-          notes: item.notes,
-          status: workflowConfig ? "pending" : "approved",
-          workflowStep: workflowConfig ? 0 : undefined,
-          workflowHistory,
-        });
-
-        await syncAccessionSearchDocument(ctx, accessionId);
-
-        accessionIds.push(accessionId);
-        imported++;
-
-        // If no workflow, auto-create collection
-        if (!workflowConfig) {
-          await ctx.runMutation(
-            internal.accessions.createCollectionFromAccession,
-            { accessionId },
-          );
-        }
-      } catch (error) {
-        if (!args.skipValidationErrors) {
-          throw error;
-        }
-        errors.push({
-          row: i + 1,
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-        failed++;
+    async function importBulkItemAt(index: number): Promise<void> {
+      if (index >= args.items.length) {
+        return;
       }
+
+      const item = args.items[index];
+      if (item) {
+        try {
+          let accessionNumber = item.accessionNumber?.trim();
+          if (!accessionNumber) {
+            accessionNumber = await generateAccessionNumber(
+              ctx,
+              args.organizationId,
+            );
+          }
+
+          const existing = await ctx.db
+            .query("accessions")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+            .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
+            .first();
+
+          if (existing) {
+            throw new Error(`Duplicate accession number: ${accessionNumber}`);
+          }
+
+          const workflowHistory = workflowConfig
+            ? [
+                {
+                  step: 0,
+                  approvedBy: importingUserId,
+                  approvedAt: Date.now(),
+                  comment: "Bulk import",
+                },
+              ]
+            : [];
+
+          const accessionId = await ctx.db.insert("accessions", {
+            organizationId: args.organizationId,
+            accessionNumber,
+            dateReceived: item.dateReceived,
+            source: item.source,
+            method: item.method,
+            cost: item.cost,
+            notes: item.notes,
+            status: workflowConfig ? "pending" : "approved",
+            workflowStep: workflowConfig ? 0 : undefined,
+            workflowHistory,
+          });
+
+          await syncAccessionSearchDocument(ctx, accessionId);
+
+          accessionIds.push(accessionId);
+          imported++;
+
+          if (!workflowConfig) {
+            await ctx.runMutation(
+              internal.accessions.createCollectionFromAccession,
+              { accessionId },
+            );
+          }
+        } catch (error) {
+          if (!args.skipValidationErrors) {
+            throw error;
+          }
+          errors.push({
+            row: index + 1,
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+          failed++;
+        }
+      }
+
+      await importBulkItemAt(index + 1);
     }
+
+    await importBulkItemAt(0);
 
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {

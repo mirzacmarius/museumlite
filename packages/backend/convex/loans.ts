@@ -26,6 +26,7 @@ import {
   getWorkflowCreatorRecipient,
 } from "./utils/notificationRecipients";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
+import { batchGetByIds } from "./utils/batchLookup";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -2033,29 +2034,42 @@ export const checkCollectionsInActiveLoans = query({
       status: "pending" | "active" | "dispatched" | "returned" | "cancelled";
     }> = [];
 
-    // Check each collection for active loans
-    for (const collectionId of args.collectionIds) {
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
+    const perCollectionResults = await Promise.all(
+      args.collectionIds.map(async (collectionId) => {
+        const loanItems = await ctx.db
+          .query("loanItems")
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .collect();
 
-      for (const loanItem of loanItems) {
-        const loan = await ctx.db.get(loanItem.loanId);
-        if (
-          loan &&
-          (loan.status === "pending" ||
-            loan.status === "active" ||
-            loan.status === "dispatched")
-        ) {
-          results.push({
-            collectionId,
-            loanId: loan._id,
-            loanNumber: loan.loanNumber,
-            status: loan.status,
-          });
-          break; // Only need one active loan per collection
+        const loans = await batchGetByIds(
+          ctx,
+          loanItems.map((loanItem) => loanItem.loanId),
+          "loans",
+        );
+
+        for (let i = 0; i < loanItems.length; i++) {
+          const loan = loans[i];
+          if (
+            loan &&
+            (loan.status === "pending" ||
+              loan.status === "active" ||
+              loan.status === "dispatched")
+          ) {
+            return {
+              collectionId,
+              loanId: loan._id,
+              loanNumber: loan.loanNumber,
+              status: loan.status,
+            };
+          }
         }
+        return null;
+      }),
+    );
+
+    for (const entry of perCollectionResults) {
+      if (entry) {
+        results.push(entry);
       }
     }
 
@@ -2800,43 +2814,54 @@ export const checkLoanRemindersInternal = internalMutation({
       )
       .collect();
 
-    for (const loan of activeLoans) {
-      if (!loan.endDate) continue;
-      loansChecked++;
+    const reminderOutcomes = await Promise.all(
+      activeLoans.map(async (loan) => {
+        if (!loan.endDate) {
+          return { checked: false, created: false };
+        }
 
-      const daysUntilDue = Math.floor((loan.endDate - now) / oneDay);
+        const daysUntilDue = Math.floor((loan.endDate - now) / oneDay);
 
-      for (const threshold of thresholds) {
-        // Check if we should send this type of reminder
-        const shouldSend =
-          threshold.type === "overdue"
-            ? daysUntilDue < 0
-            : daysUntilDue <= threshold.days &&
-              daysUntilDue >
-                (thresholds[thresholds.indexOf(threshold) + 1]?.days ?? -1);
+        const existingReminders = await Promise.all(
+          thresholds.map((threshold) =>
+            ctx.db
+              .query("loanReminders")
+              .withIndex("by_loan_and_type", (q) =>
+                q.eq("loanId", loan._id).eq("reminderType", threshold.type),
+              )
+              .first(),
+          ),
+        );
 
-        if (!shouldSend) continue;
+        let matchedThreshold: (typeof thresholds)[number] | null = null;
+        for (let i = 0; i < thresholds.length; i++) {
+          const threshold = thresholds[i];
+          if (!threshold) continue;
 
-        // Check if reminder already sent
-        const existingReminder = await ctx.db
-          .query("loanReminders")
-          .withIndex("by_loan_and_type", (q) =>
-            q.eq("loanId", loan._id).eq("reminderType", threshold.type),
-          )
-          .first();
+          const shouldSend =
+            threshold.type === "overdue"
+              ? daysUntilDue < 0
+              : daysUntilDue <= threshold.days &&
+                daysUntilDue > (thresholds[i + 1]?.days ?? -1);
 
-        if (existingReminder) continue;
+          if (!shouldSend || existingReminders[i]) continue;
 
-        // Create reminder record
+          matchedThreshold = threshold;
+          break;
+        }
+
+        if (!matchedThreshold) {
+          return { checked: true, created: false };
+        }
+
         await ctx.db.insert("loanReminders", {
           loanId: loan._id,
           organizationId: loan.organizationId,
-          reminderType: threshold.type,
+          reminderType: matchedThreshold.type,
           sentAt: now,
           dueDate: loan.endDate,
         });
 
-        // Get users to notify (loan creator and org admins)
         const orgMembers = await ctx.db
           .query("userOrganizations")
           .withIndex("by_organization", (q) =>
@@ -2845,34 +2870,42 @@ export const checkLoanRemindersInternal = internalMutation({
           .collect();
 
         const notificationTitle =
-          threshold.type === "overdue"
+          matchedThreshold.type === "overdue"
             ? "Loan Overdue"
-            : `Loan Due in ${threshold.days} ${threshold.days === 1 ? "Day" : "Days"}`;
+            : `Loan Due in ${matchedThreshold.days} ${matchedThreshold.days === 1 ? "Day" : "Days"}`;
 
         const notificationMessage =
-          threshold.type === "overdue"
+          matchedThreshold.type === "overdue"
             ? `Loan ${loan.loanNumber} is overdue for return`
-            : `Loan ${loan.loanNumber} is due in ${threshold.days} ${threshold.days === 1 ? "day" : "days"}`;
+            : `Loan ${loan.loanNumber} is due in ${matchedThreshold.days} ${matchedThreshold.days === 1 ? "day" : "days"}`;
 
         await Promise.all(
-          Array.from(orgMembers).map(async (member) => {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
+          orgMembers.map((member) =>
+            ctx.runMutation(internal.audit.createNotificationInternal, {
               organizationId: loan.organizationId,
               userId: member.userId,
               type:
-                threshold.type === "overdue"
+                matchedThreshold.type === "overdue"
                   ? "loan_overdue"
                   : "loan_return_due_soon",
               title: notificationTitle,
               message: notificationMessage,
               relatedEntityType: "loan",
               relatedEntityId: loan._id,
-            });
-          }),
+            }),
+          ),
         );
 
+        return { checked: true, created: true };
+      }),
+    );
+
+    for (const outcome of reminderOutcomes) {
+      if (outcome.checked) {
+        loansChecked++;
+      }
+      if (outcome.created) {
         remindersCreated++;
-        break; // Only send one reminder type per loan per cron run
       }
     }
 
@@ -3605,14 +3638,14 @@ export const bulkExport = query({
           .withIndex("by_loan", (q) => q.eq("loanId", loanId))
           .collect();
 
-        // Get accession numbers for items
-        const accessionNumbers: string[] = [];
-        for (const item of loanItems) {
-          const collection = await ctx.db.get(item.collectionId);
-          if (collection) {
-            accessionNumbers.push(collection.accessionNumber);
-          }
-        }
+        const collections = await batchGetByIds(
+          ctx,
+          loanItems.map((item) => item.collectionId),
+          "collections",
+        );
+        const accessionNumbers = collections.flatMap((collection) =>
+          collection === null ? [] : [collection.accessionNumber],
+        );
 
         // Get approver name
         let approvedByName: string | undefined;

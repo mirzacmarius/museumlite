@@ -76,31 +76,29 @@ export async function publishAccessionObjectDraft(
     lastModifiedAt: catalogedAt,
   });
 
-  await Promise.all([
-    applyUsageCounterDelta(ctx, accession.organizationId, {
-      objectCount: 1,
+  await Promise.all(
+    [...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
+      const group = await ctx.db.get(collectionGroupId);
+      if (group && group.organizationId === accession.organizationId) {
+        await ctx.db.insert("collectionGroupItems", {
+          collectionGroupId,
+          collectionId,
+          addedAt: catalogedAt,
+          addedBy: catalogedBy,
+        });
+        await ctx.db.patch(collectionGroupId, {
+          itemsCount: (group.itemsCount || 0) + 1,
+          lastModifiedAt: catalogedAt,
+          lastModifiedBy: catalogedBy,
+        });
+      }
     }),
-    Promise.all(
-      [...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
-        const group = await ctx.db.get(collectionGroupId);
-        if (group && group.organizationId === accession.organizationId) {
-          await ctx.db.insert("collectionGroupItems", {
-            collectionGroupId,
-            collectionId,
-            addedAt: catalogedAt,
-            addedBy: catalogedBy,
-          });
-          await ctx.db.patch(collectionGroupId, {
-            itemsCount: (group.itemsCount || 0) + 1,
-            lastModifiedAt: catalogedAt,
-            lastModifiedBy: catalogedBy,
-          });
-        }
-      }),
-    ),
-    Promise.all(
-      (accession.draftMedia || []).map((draftMediaItem) =>
-        insertCompletedMediaAsset(ctx, {
+  );
+
+  await (accession.draftMedia ?? []).reduce(
+    (chain, draftMediaItem) =>
+      chain.then(async () => {
+        await insertCompletedMediaAsset(ctx, {
           collectionId,
           organizationId: accession.organizationId,
           storageId: draftMediaItem.storageId,
@@ -111,10 +109,14 @@ export async function publishAccessionObjectDraft(
           isPrimary: draftMediaItem.isPrimary,
           uploadedBy: catalogedBy,
           uploadedAt: catalogedAt,
-        }),
-      ),
-    ),
-  ]);
+        });
+      }),
+    Promise.resolve(),
+  );
+
+  await applyUsageCounterDelta(ctx, accession.organizationId, {
+    objectCount: 1,
+  });
 
   return collectionId;
 }

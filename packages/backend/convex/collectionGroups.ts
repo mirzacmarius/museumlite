@@ -57,47 +57,61 @@ async function getCollectionGroupThumbnailUrl(
     return null;
   }
 
-  // 3. Look for primary image first, then any image
-  for (const groupItem of groupItems) {
-    // Try to find primary image for this collection
-    const primaryMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", groupItem.collectionId),
-      )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("isPrimary"), true),
-          q.eq(q.field("fileType"), "image"),
-        ),
-      )
-      .first();
+  const primaryUrls = await Promise.all(
+    groupItems.map(async (groupItem) => {
+      const primaryMedia = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", groupItem.collectionId),
+        )
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("isPrimary"), true),
+            q.eq(q.field("fileType"), "image"),
+          ),
+        )
+        .first();
 
-    if (primaryMedia) {
-      // Return thumbnail if available, otherwise original
-      if (primaryMedia.thumbnailStorageId) {
-        return await ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
+      if (!primaryMedia) {
+        return null;
       }
-      return await ctx.storage.getUrl(primaryMedia.storageId);
-    }
+
+      if (primaryMedia.thumbnailStorageId) {
+        return ctx.storage.getUrl(primaryMedia.thumbnailStorageId);
+      }
+      return ctx.storage.getUrl(primaryMedia.storageId);
+    }),
+  );
+
+  const primaryMatch = primaryUrls.find((url) => url !== null);
+  if (primaryMatch) {
+    return primaryMatch;
   }
 
-  // 4. No primary images found, try any image with thumbnail
-  for (const groupItem of groupItems) {
-    const anyMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", groupItem.collectionId),
-      )
-      .filter((q) => q.eq(q.field("fileType"), "image"))
-      .first();
+  const anyUrls = await Promise.all(
+    groupItems.map(async (groupItem) => {
+      const anyMedia = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", groupItem.collectionId),
+        )
+        .filter((q) => q.eq(q.field("fileType"), "image"))
+        .first();
 
-    if (anyMedia) {
-      if (anyMedia.thumbnailStorageId) {
-        return await ctx.storage.getUrl(anyMedia.thumbnailStorageId);
+      if (!anyMedia) {
+        return null;
       }
-      return await ctx.storage.getUrl(anyMedia.storageId);
-    }
+
+      if (anyMedia.thumbnailStorageId) {
+        return ctx.storage.getUrl(anyMedia.thumbnailStorageId);
+      }
+      return ctx.storage.getUrl(anyMedia.storageId);
+    }),
+  );
+
+  const anyMatch = anyUrls.find((url) => url !== null);
+  if (anyMatch) {
+    return anyMatch;
   }
 
   return null;
@@ -738,8 +752,11 @@ export const getStats = query({
     let loaned = 0;
     let deaccessioned = 0;
 
-    for (const groupItem of groupItems) {
-      const collection = await ctx.db.get(groupItem.collectionId);
+    const collections = await Promise.all(
+      groupItems.map((groupItem) => ctx.db.get(groupItem.collectionId)),
+    );
+
+    for (const collection of collections) {
       if (collection) {
         switch (collection.status) {
           case "active":

@@ -836,12 +836,11 @@ export const updateOrder = mutation({
 
     await requirePermission(ctx, firstMedia.organizationId, "media.upload");
 
-    for (let i = 0; i < args.mediaIds.length; i++) {
-      const mediaId = args.mediaIds[i];
-      if (mediaId) {
-        await ctx.db.patch(mediaId, { displayOrder: i });
-      }
-    }
+    await Promise.all(
+      args.mediaIds.map((mediaId, i) =>
+        mediaId ? ctx.db.patch(mediaId, { displayOrder: i }) : Promise.resolve(),
+      ),
+    );
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: firstMedia.organizationId,
@@ -1666,33 +1665,42 @@ export const bulkUpdateRights = mutation({
     let updated = 0;
     let failed = 0;
 
-    for (const mediaId of args.mediaIds) {
-      try {
-        const media = await ctx.db.get(mediaId);
-        if (!media) {
-          failed++;
-          continue;
+    const outcomes = await Promise.all(
+      args.mediaIds.map(async (mediaId) => {
+        try {
+          const media = await ctx.db.get(mediaId);
+          if (!media) {
+            return "failed" as const;
+          }
+
+          await requirePermission(ctx, media.organizationId, "media.upload");
+
+          const updates: Record<string, unknown> = {};
+          if (args.rightsStatus !== undefined)
+            updates.rightsStatus = args.rightsStatus;
+          if (args.licenseType !== undefined)
+            updates.licenseType = args.licenseType;
+          if (args.licenseExpiry !== undefined)
+            updates.licenseExpiry = args.licenseExpiry;
+          if (args.rightsHolder !== undefined)
+            updates.rightsHolder = args.rightsHolder;
+          if (args.requiresAcknowledgment !== undefined)
+            updates.requiresAcknowledgment = args.requiresAcknowledgment;
+          if (args.acknowledgmentText !== undefined)
+            updates.acknowledgmentText = args.acknowledgmentText;
+
+          await ctx.db.patch(mediaId, updates);
+          return "updated" as const;
+        } catch {
+          return "failed" as const;
         }
+      }),
+    );
 
-        await requirePermission(ctx, media.organizationId, "media.upload");
-
-        const updates: Record<string, unknown> = {};
-        if (args.rightsStatus !== undefined)
-          updates.rightsStatus = args.rightsStatus;
-        if (args.licenseType !== undefined)
-          updates.licenseType = args.licenseType;
-        if (args.licenseExpiry !== undefined)
-          updates.licenseExpiry = args.licenseExpiry;
-        if (args.rightsHolder !== undefined)
-          updates.rightsHolder = args.rightsHolder;
-        if (args.requiresAcknowledgment !== undefined)
-          updates.requiresAcknowledgment = args.requiresAcknowledgment;
-        if (args.acknowledgmentText !== undefined)
-          updates.acknowledgmentText = args.acknowledgmentText;
-
-        await ctx.db.patch(mediaId, updates);
+    for (const outcome of outcomes) {
+      if (outcome === "updated") {
         updated++;
-      } catch {
+      } else if (outcome === "failed") {
         failed++;
       }
     }

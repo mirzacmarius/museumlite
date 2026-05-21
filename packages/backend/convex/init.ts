@@ -16,30 +16,33 @@ export default internalAction(async (ctx) => {
 
   let createdCount = 0;
 
-  for (const plan of BILLING_PLAN_DEFINITIONS) {
-    const existing = existingProducts.find(
-      (product) =>
-        product.name === plan.name &&
-        product.recurringInterval === plan.interval,
-    );
+  const createResults = await Promise.all(
+    BILLING_PLAN_DEFINITIONS.map(async (plan) => {
+      const existing = existingProducts.find(
+        (product) =>
+          product.name === plan.name &&
+          product.recurringInterval === plan.interval,
+      );
 
-    if (existing) {
-      continue;
-    }
+      if (existing) {
+        return false;
+      }
 
-    await polar.sdk.products.create({
-      name: plan.name,
-      description: plan.description,
-      recurringInterval: plan.interval,
-      prices: [
-        {
-          priceAmount: plan.priceAmount,
-          amountType: "fixed",
-        },
-      ],
-    });
-    createdCount += 1;
-  }
+      await polar.sdk.products.create({
+        name: plan.name,
+        description: plan.description,
+        recurringInterval: plan.interval,
+        prices: [
+          {
+            priceAmount: plan.priceAmount,
+            amountType: "fixed",
+          },
+        ],
+      });
+      return true;
+    }),
+  );
+  createdCount = createResults.filter(Boolean).length;
 
   if (createdCount === 0) {
     console.info("🏃‍♂️ Billing products already exist. Skipping creation.");
@@ -58,30 +61,32 @@ export default internalAction(async (ctx) => {
     },
   );
 
-  for (const product of items) {
-    const matchingProducts = componentProducts.filter(
-      (item: (typeof componentProducts)[number]) => item.id === product.id,
-    );
-    const nextProduct = toDatabaseProduct(product);
-
-    if (matchingProducts.length > 1) {
-      console.warn(
-        `Skipping Convex product sync for ${product.id} because duplicate rows already exist.`,
+  await Promise.all(
+    items.map(async (product) => {
+      const matchingProducts = componentProducts.filter(
+        (item: (typeof componentProducts)[number]) => item.id === product.id,
       );
-      continue;
-    }
+      const nextProduct = toDatabaseProduct(product);
 
-    if (matchingProducts.length === 1) {
-      await ctx.runMutation(components.polar.lib.updateProduct, {
+      if (matchingProducts.length > 1) {
+        console.warn(
+          `Skipping Convex product sync for ${product.id} because duplicate rows already exist.`,
+        );
+        return;
+      }
+
+      if (matchingProducts.length === 1) {
+        await ctx.runMutation(components.polar.lib.updateProduct, {
+          product: nextProduct,
+        });
+        return;
+      }
+
+      await ctx.runMutation(components.polar.lib.createProduct, {
         product: nextProduct,
       });
-      continue;
-    }
-
-    await ctx.runMutation(components.polar.lib.createProduct, {
-      product: nextProduct,
-    });
-  }
+    }),
+  );
 
   console.info(`🔄 Synced ${items.length} billing product(s) into Convex.`);
 });

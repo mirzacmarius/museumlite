@@ -131,30 +131,32 @@ export const create = mutation({
       const author = await ctx.db.get(userId);
       const authorName = author?.name ?? author?.username ?? "Someone";
 
-      for (const mentionedUserId of mentionedUserIds) {
-        const shouldNotify = await ctx.runMutation(
-          internal.notifications.shouldSendNotification,
-          {
+      await Promise.all(
+        mentionedUserIds.map(async (mentionedUserId) => {
+          const shouldNotify = await ctx.runMutation(
+            internal.notifications.shouldSendNotification,
+            {
+              organizationId: object.organizationId,
+              userId: mentionedUserId,
+              notificationType: NOTIFICATION_TYPES.COMMENT_MENTION,
+            },
+          );
+
+          if (!shouldNotify) {
+            return;
+          }
+
+          await ctx.runMutation(internal.notifications.sendNotification, {
             organizationId: object.organizationId,
             userId: mentionedUserId,
-            notificationType: NOTIFICATION_TYPES.COMMENT_MENTION,
-          },
-        );
-
-        if (!shouldNotify) {
-          continue;
-        }
-
-        await ctx.runMutation(internal.notifications.sendNotification, {
-          organizationId: object.organizationId,
-          userId: mentionedUserId,
-          type: NOTIFICATION_TYPES.COMMENT_MENTION,
-          title: "You were mentioned",
-          message: `${authorName} mentioned you on ${object.title}`,
-          relatedEntityType: "object",
-          relatedEntityId: args.objectId,
-        });
-      }
+            type: NOTIFICATION_TYPES.COMMENT_MENTION,
+            title: "You were mentioned",
+            message: `${authorName} mentioned you on ${object.title}`,
+            relatedEntityType: "object",
+            relatedEntityId: args.objectId,
+          });
+        }),
+      );
     }
 
     return commentId;

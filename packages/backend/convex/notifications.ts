@@ -8,6 +8,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { getUserIdsWithPermission } from "./utils/permissions";
 
 // ============================================
 // Notification Type Constants
@@ -620,39 +621,12 @@ export const notifyUsersWithPermission = internalMutation({
   },
   returns: v.number(),
   handler: async (ctx, args) => {
-    // Get all organization members
-    const members = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const userIds: Id<"users">[] = [];
-
-    for (const member of members) {
-      if (args.excludeUserId && member.userId === args.excludeUserId) {
-        continue;
-      }
-
-      // Get role and check permissions through rolePermissions join table
-      const rolePerms = await ctx.db
-        .query("rolePermissions")
-        .withIndex("by_role", (q) => q.eq("roleId", member.roleId))
-        .collect();
-
-      // Get the permission IDs for this role
-      const permissionIds = rolePerms.map((rp) => rp.permissionId);
-
-      // Check if any of the role's permissions match the required permission
-      for (const permId of permissionIds) {
-        const permission = await ctx.db.get(permId);
-        if (permission && permission.name === args.permission) {
-          userIds.push(member.userId);
-          break;
-        }
-      }
-    }
+    const userIds = await getUserIdsWithPermission(
+      ctx,
+      args.organizationId,
+      args.permission,
+      { excludeUserId: args.excludeUserId },
+    );
 
     if (userIds.length === 0) {
       return 0;

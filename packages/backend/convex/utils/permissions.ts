@@ -2,11 +2,60 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { batchGetByIds } from "./batchLookup";
 import {
   type FeatureId,
   hasFeatureAccess,
   requireFeatureAccess,
 } from "./featureGates";
+
+/**
+ * Returns user IDs in an organization whose role includes the given permission.
+ */
+export async function getUserIdsWithPermission(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  permissionName: string,
+  options?: { excludeUserId?: Id<"users"> },
+): Promise<Id<"users">[]> {
+  const members = await ctx.db
+    .query("userOrganizations")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .collect();
+
+  const matchingUserIds = await Promise.all(
+    members.map(async (member) => {
+      if (options?.excludeUserId && member.userId === options.excludeUserId) {
+        return null;
+      }
+
+      const rolePerms = await ctx.db
+        .query("rolePermissions")
+        .withIndex("by_role", (q) => q.eq("roleId", member.roleId))
+        .collect();
+
+      if (rolePerms.length === 0) {
+        return null;
+      }
+
+      const permissions = await batchGetByIds(
+        ctx,
+        rolePerms.map((rp) => rp.permissionId),
+        "permissions",
+      );
+
+      const hasMatch = permissions.some(
+        (permission) => permission?.name === permissionName,
+      );
+
+      return hasMatch ? member.userId : null;
+    }),
+  );
+
+  return matchingUserIds.flatMap((userId) =>
+    userId === null ? [] : [userId],
+  );
+}
 
 function getFeatureForPermission(permissionName: string): FeatureId | null {
   if (permissionName.startsWith("loans.")) {
@@ -303,39 +352,7 @@ export async function getUsersToNotifyForWorkflowStep(
 
   if (!workflowConfig) {
     const permissionName = getApprovalPermissionForWorkflow(workflowType);
-
-    // Get all users in organization
-    const userOrgs = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .collect();
-
-    const userIds: Id<"users">[] = [];
-    for (const userOrg of userOrgs) {
-      const role = await ctx.db.get(userOrg.roleId);
-      if (!role) continue;
-
-      const rolePermissions = await ctx.db
-        .query("rolePermissions")
-        .withIndex("by_role", (q) => q.eq("roleId", role._id))
-        .collect();
-
-      const permissions = await Promise.all(
-        rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
-      );
-
-      const permissionNames = permissions.flatMap((permission) =>
-        permission === null ? [] : [permission.name],
-      );
-
-      if (permissionNames.includes(permissionName)) {
-        userIds.push(userOrg.userId);
-      }
-    }
-
-    return userIds;
+    return getUserIdsWithPermission(ctx, organizationId, permissionName);
   }
 
   // Find the step

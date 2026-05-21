@@ -222,55 +222,69 @@ export const importAccessionsBatch = mutation({
 
     await ctx.db.patch(args.jobId, { status: "processing" });
 
-    const errors: string[] = [];
-    let processed = 0;
-
-    for (let i = 0; i < args.rows.length; i++) {
-      const row = args.rows[i];
-      if (!row) continue;
-
-      const rowNum = args.batchIndex * 50 + i + 2;
-
-      try {
-        const normalizedRow = normalizeAccessionImportRow(row, rowNum);
-        const rowErrors = normalizedRow.issues.filter(
-          (issue) => issue.severity === "error",
-        );
-
-        if (rowErrors.length > 0 || normalizedRow.normalized === null) {
-          errors.push(
-            ...rowErrors.map((issue) => `Row ${rowNum}: ${issue.message}`),
-          );
-          continue;
+    const importResults = await Promise.all(
+      args.rows.map(async (row, i) => {
+        if (!row) {
+          return { processed: false, errors: [] as string[] };
         }
 
-        await ctx.db.insert("accessions", {
-          organizationId: args.organizationId,
-          accessionNumber:
-            normalizedRow.normalized.accessionNumber ??
-            `IMP-${Date.now()}-${i}`,
-          dateReceived: normalizedRow.normalized.dateReceived,
-          source: normalizedRow.normalized.source,
-          method: normalizedRow.normalized.method,
-          cost: normalizedRow.normalized.cost,
-          notes: normalizedRow.normalized.notes,
-          status: "pending",
-          workflowStep: 0,
-          workflowHistory: [
-            {
-              step: 0,
-              approvedBy: userId,
-              approvedAt: Date.now(),
-              comment: "Imported via CSV",
-            },
-          ],
-        });
+        const rowNum = args.batchIndex * 50 + i + 2;
 
+        try {
+          const normalizedRow = normalizeAccessionImportRow(row, rowNum);
+          const rowErrors = normalizedRow.issues.filter(
+            (issue) => issue.severity === "error",
+          );
+
+          if (rowErrors.length > 0 || normalizedRow.normalized === null) {
+            return {
+              processed: false,
+              errors: rowErrors.map(
+                (issue) => `Row ${rowNum}: ${issue.message}`,
+              ),
+            };
+          }
+
+          await ctx.db.insert("accessions", {
+            organizationId: args.organizationId,
+            accessionNumber:
+              normalizedRow.normalized.accessionNumber ??
+              `IMP-${Date.now()}-${i}`,
+            dateReceived: normalizedRow.normalized.dateReceived,
+            source: normalizedRow.normalized.source,
+            method: normalizedRow.normalized.method,
+            cost: normalizedRow.normalized.cost,
+            notes: normalizedRow.normalized.notes,
+            status: "pending",
+            workflowStep: 0,
+            workflowHistory: [
+              {
+                step: 0,
+                approvedBy: userId,
+                approvedAt: Date.now(),
+                comment: "Imported via CSV",
+              },
+            ],
+          });
+
+          return { processed: true, errors: [] as string[] };
+        } catch (err) {
+          return {
+            processed: false,
+            errors: [
+              `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
+            ],
+          };
+        }
+      }),
+    );
+
+    const errors: string[] = [];
+    let processed = 0;
+    for (const result of importResults) {
+      errors.push(...result.errors);
+      if (result.processed) {
         processed++;
-      } catch (err) {
-        errors.push(
-          `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
       }
     }
 
@@ -842,57 +856,71 @@ export const importAccountsBatch = mutation({
 
     const validTypes = ["lender", "borrower", "both", "institution", "patron"];
 
-    const errors: string[] = [];
-    let processed = 0;
-
-    for (let i = 0; i < args.rows.length; i++) {
-      const row = args.rows[i];
-      if (!row) continue;
-
-      const rowNum = args.batchIndex * 50 + i + 2;
-
-      try {
-        const accountType = row.accountType?.toLowerCase().trim();
-        if (!accountType || !validTypes.includes(accountType)) {
-          errors.push(
-            `Row ${rowNum}: Invalid accountType "${row.accountType}". Use: lender, borrower, both, institution, or patron`,
-          );
-          continue;
+    const accountImportResults = await Promise.all(
+      args.rows.map(async (row, i) => {
+        if (!row) {
+          return { processed: false, errors: [] as string[] };
         }
 
-        const accountNumber =
-          row.accountNumber || `ACC-${Date.now()}-${args.batchIndex}-${i}`;
+        const rowNum = args.batchIndex * 50 + i + 2;
 
-        await ctx.db.insert("accounts", {
-          organizationId: args.organizationId,
-          accountNumber,
-          accountType: accountType as
-            | "lender"
-            | "borrower"
-            | "both"
-            | "institution"
-            | "patron",
-          businessName: row.businessName?.trim(),
-          firstName: row.firstName?.trim(),
-          lastName: row.lastName?.trim(),
-          email: row.email?.trim(),
-          phone: row.phone?.trim(),
-          address: row.address?.trim(),
-          city: row.city?.trim(),
-          zipCode: row.zipCode?.trim(),
-          country: row.country?.trim(),
-          contactPerson: row.contactPerson?.trim(),
-          contactEmail: row.contactEmail?.trim(),
-          notes: row.notes?.trim(),
-          createdBy: userId,
-          createdAt: Date.now(),
-        });
+        try {
+          const accountType = row.accountType?.toLowerCase().trim();
+          if (!accountType || !validTypes.includes(accountType)) {
+            return {
+              processed: false,
+              errors: [
+                `Row ${rowNum}: Invalid accountType "${row.accountType}". Use: lender, borrower, both, institution, or patron`,
+              ],
+            };
+          }
 
+          const accountNumber =
+            row.accountNumber || `ACC-${Date.now()}-${args.batchIndex}-${i}`;
+
+          await ctx.db.insert("accounts", {
+            organizationId: args.organizationId,
+            accountNumber,
+            accountType: accountType as
+              | "lender"
+              | "borrower"
+              | "both"
+              | "institution"
+              | "patron",
+            businessName: row.businessName?.trim(),
+            firstName: row.firstName?.trim(),
+            lastName: row.lastName?.trim(),
+            email: row.email?.trim(),
+            phone: row.phone?.trim(),
+            address: row.address?.trim(),
+            city: row.city?.trim(),
+            zipCode: row.zipCode?.trim(),
+            country: row.country?.trim(),
+            contactPerson: row.contactPerson?.trim(),
+            contactEmail: row.contactEmail?.trim(),
+            notes: row.notes?.trim(),
+            createdBy: userId,
+            createdAt: Date.now(),
+          });
+
+          return { processed: true, errors: [] as string[] };
+        } catch (err) {
+          return {
+            processed: false,
+            errors: [
+              `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
+            ],
+          };
+        }
+      }),
+    );
+
+    const errors: string[] = [];
+    let processed = 0;
+    for (const result of accountImportResults) {
+      errors.push(...result.errors);
+      if (result.processed) {
         processed++;
-      } catch (err) {
-        errors.push(
-          `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
       }
     }
 
@@ -1197,64 +1225,80 @@ export const importLoansBatch = mutation({
 
     const validTypes = ["incoming", "outgoing"];
 
+    const loanImportResults = await Promise.all(
+      args.rows.map(async (row, i) => {
+        if (!row) {
+          return { processed: false, errors: [] as string[] };
+        }
+
+        const rowNum = args.batchIndex * 50 + i + 2;
+
+        try {
+          const loanType = row.type?.toLowerCase().trim();
+          if (!loanType || !validTypes.includes(loanType)) {
+            return {
+              processed: false,
+              errors: [
+                `Row ${rowNum}: Invalid type "${row.type}". Use: incoming or outgoing`,
+              ],
+            };
+          }
+
+          if (!row.lenderBorrowerName || row.lenderBorrowerName.trim() === "") {
+            return {
+              processed: false,
+              errors: [`Row ${rowNum}: Lender/Borrower name is required`],
+            };
+          }
+
+          const startDate = parseDate(row.startDate);
+          const endDate = row.endDate ? parseDate(row.endDate) : undefined;
+          const insuranceValue = parseCost(row.insuranceValue || "");
+
+          const loanNumber =
+            row.loanNumber || `LN-${Date.now()}-${args.batchIndex}-${i}`;
+
+          await ctx.db.insert("loans", {
+            organizationId: args.organizationId,
+            loanNumber,
+            type: loanType as "incoming" | "outgoing",
+            lenderBorrowerName: row.lenderBorrowerName.trim(),
+            lenderBorrowerContact: row.lenderBorrowerContact?.trim(),
+            startDate,
+            endDate,
+            terms: row.terms?.trim(),
+            insuranceValue,
+            notes: row.notes?.trim(),
+            status: "pending",
+            workflowStep: 0,
+            workflowHistory: [
+              {
+                step: 0,
+                approvedBy: userId,
+                approvedAt: Date.now(),
+                comment: "Imported via CSV",
+              },
+            ],
+          });
+
+          return { processed: true, errors: [] as string[] };
+        } catch (err) {
+          return {
+            processed: false,
+            errors: [
+              `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
+            ],
+          };
+        }
+      }),
+    );
+
     const errors: string[] = [];
     let processed = 0;
-
-    for (let i = 0; i < args.rows.length; i++) {
-      const row = args.rows[i];
-      if (!row) continue;
-
-      const rowNum = args.batchIndex * 50 + i + 2;
-
-      try {
-        const loanType = row.type?.toLowerCase().trim();
-        if (!loanType || !validTypes.includes(loanType)) {
-          errors.push(
-            `Row ${rowNum}: Invalid type "${row.type}". Use: incoming or outgoing`,
-          );
-          continue;
-        }
-
-        if (!row.lenderBorrowerName || row.lenderBorrowerName.trim() === "") {
-          errors.push(`Row ${rowNum}: Lender/Borrower name is required`);
-          continue;
-        }
-
-        const startDate = parseDate(row.startDate);
-        const endDate = row.endDate ? parseDate(row.endDate) : undefined;
-        const insuranceValue = parseCost(row.insuranceValue || "");
-
-        const loanNumber =
-          row.loanNumber || `LN-${Date.now()}-${args.batchIndex}-${i}`;
-
-        await ctx.db.insert("loans", {
-          organizationId: args.organizationId,
-          loanNumber,
-          type: loanType as "incoming" | "outgoing",
-          lenderBorrowerName: row.lenderBorrowerName.trim(),
-          lenderBorrowerContact: row.lenderBorrowerContact?.trim(),
-          startDate,
-          endDate,
-          terms: row.terms?.trim(),
-          insuranceValue,
-          notes: row.notes?.trim(),
-          status: "pending",
-          workflowStep: 0,
-          workflowHistory: [
-            {
-              step: 0,
-              approvedBy: userId,
-              approvedAt: Date.now(),
-              comment: "Imported via CSV",
-            },
-          ],
-        });
-
+    for (const result of loanImportResults) {
+      errors.push(...result.errors);
+      if (result.processed) {
         processed++;
-      } catch (err) {
-        errors.push(
-          `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
       }
     }
 

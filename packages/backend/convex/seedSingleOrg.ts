@@ -187,28 +187,36 @@ export const clearAllData = action({
       "serialIssues",
     ];
 
+    async function clearTableUntilDone(tableName: string) {
+      const batchDeleted = await ctx.runMutation(
+        internal.seedMet.clearTableBatch,
+        {
+          tableName,
+          batchSize: 500,
+        },
+      );
+      if (batchDeleted === 500) {
+        await clearTableUntilDone(tableName);
+      }
+    }
+
     await Promise.all(
-      Array.from(tablesToClear).map(async (tableName) => {
-        let batchDeleted: number;
-        do {
-          batchDeleted = await ctx.runMutation(
-            internal.seedMet.clearTableBatch,
-            {
-              tableName,
-              batchSize: 500,
-            },
-          );
-        } while (batchDeleted === 500);
-      }),
+      tablesToClear.map((tableName) => clearTableUntilDone(tableName)),
     );
 
-    // Clear storage
-    let storageBatch: number;
-    do {
-      storageBatch = await ctx.runMutation(internal.seedMet.clearStorageBatch, {
-        batchSize: 100,
-      });
-    } while (storageBatch === 100);
+    async function clearStorageUntilDone() {
+      const storageBatch = await ctx.runMutation(
+        internal.seedMet.clearStorageBatch,
+        {
+          batchSize: 100,
+        },
+      );
+      if (storageBatch === 100) {
+        await clearStorageUntilDone();
+      }
+    }
+
+    await clearStorageUntilDone();
 
     console.log("All data cleared!");
     return null;
@@ -238,6 +246,7 @@ export const seedOrganization = action({
       console.error("User not found. Please log in first.");
       return null;
     }
+    const seedUserId = userId;
 
     // Create organization
     const orgId = await ctx.runMutation(internal.seedMet.createOrganization, {
@@ -248,7 +257,7 @@ export const seedOrganization = action({
     });
 
     await ctx.runMutation(internal.seedMet.assignUserToOrg, {
-      userId,
+      userId: seedUserId,
       organizationId: orgId,
     });
 
@@ -260,7 +269,7 @@ export const seedOrganization = action({
     const locationIds: Id<"locations">[] = [];
 
     await Promise.all(
-      Array.from(buildings).map(async (building) => {
+      buildings.map(async (building) => {
         const buildingId = await ctx.runMutation(
           internal.seedMet.createLocation,
           {
@@ -270,31 +279,35 @@ export const seedOrganization = action({
             sortOrder: 0,
           },
         );
-        for (const floor of floors) {
-          const floorId = await ctx.runMutation(
-            internal.seedMet.createLocation,
-            {
-              organizationId: orgId,
-              name: floor,
-              type: "floor",
-              parentLocationId: buildingId,
-              sortOrder: 0,
-            },
-          );
-          for (const room of rooms) {
-            const roomId = await ctx.runMutation(
+
+        await Promise.all(
+          floors.map(async (floor) => {
+            const floorId = await ctx.runMutation(
               internal.seedMet.createLocation,
               {
                 organizationId: orgId,
-                name: room,
-                type: "room",
-                parentLocationId: floorId,
+                name: floor,
+                type: "floor",
+                parentLocationId: buildingId,
                 sortOrder: 0,
               },
             );
-            locationIds.push(roomId);
-          }
-        }
+
+            const roomIds = await Promise.all(
+              rooms.map((room) =>
+                ctx.runMutation(internal.seedMet.createLocation, {
+                  organizationId: orgId,
+                  name: room,
+                  type: "room",
+                  parentLocationId: floorId,
+                  sortOrder: 0,
+                }),
+              ),
+            );
+
+            locationIds.push(...roomIds);
+          }),
+        );
       }),
     );
 
@@ -312,68 +325,91 @@ export const seedOrganization = action({
     let successCount = 0;
     const targetCount = 50;
     const maxAttempts = 150;
+    const candidateIds = objectIds.slice(
+      0,
+      Math.min(objectIds.length, maxAttempts),
+    );
+    const seedChunkSize = 10;
 
-    for (
-      let attempt = 0;
-      attempt < Math.min(objectIds.length, maxAttempts) &&
-      successCount < targetCount;
-      attempt++
-    ) {
-      const metId = objectIds[attempt]!;
+    async function seedObjectChunk(startIndex: number) {
+      if (startIndex >= candidateIds.length || successCount >= targetCount) {
+        return;
+      }
 
-      const obj = await fetchMetObject(metId);
-      if (!obj?.primaryImageSmall) continue;
+      const chunk = candidateIds.slice(
+        startIndex,
+        startIndex + seedChunkSize,
+      );
+      const seededInChunk = await Promise.all(
+        chunk.map(async (metId) => {
+          const obj = await fetchMetObject(metId);
+          if (!obj?.primaryImageSmall) {
+            return 0;
+          }
 
-      const blob = await fetchImageBlob(obj.primaryImageSmall);
-      if (!blob) continue;
+          const blob = await fetchImageBlob(obj.primaryImageSmall);
+          if (!blob) {
+            return 0;
+          }
 
-      const storageId = await ctx.storage.store(blob);
-      const randomLocation =
-        locationIds[Math.floor(Math.random() * locationIds.length)]!;
+          const storageId = await ctx.storage.store(blob);
+          const randomLocation =
+            locationIds[Math.floor(Math.random() * locationIds.length)]!;
 
-      const collectionId = await ctx.runMutation(
-        internal.seedMet.createCollection,
-        {
-          organizationId: orgId,
-          userId,
-          accessionNumber: `${org.prefix}-MET-${metId}`,
-          title: obj.title || "Untitled",
-          objectType: obj.department || "Art",
-          objectName: obj.objectName || obj.title || "Artwork",
-          culture: obj.culture || "",
-          period: obj.period || "",
-          dateCreated: obj.objectDate || "",
-          materials: obj.medium || "",
-          dimensions: obj.dimensions || "",
-          creditLine: obj.creditLine || "The Metropolitan Museum of Art",
-          currentLocationId: randomLocation,
-        },
+          const collectionId = await ctx.runMutation(
+            internal.seedMet.createCollection,
+            {
+              organizationId: orgId,
+              userId: seedUserId,
+              accessionNumber: `${org.prefix}-MET-${metId}`,
+              title: obj.title || "Untitled",
+              objectType: obj.department || "Art",
+              objectName: obj.objectName || obj.title || "Artwork",
+              culture: obj.culture || "",
+              period: obj.period || "",
+              dateCreated: obj.objectDate || "",
+              materials: obj.medium || "",
+              dimensions: obj.dimensions || "",
+              creditLine: obj.creditLine || "The Metropolitan Museum of Art",
+              currentLocationId: randomLocation,
+            },
+          );
+
+          await ctx.runMutation(internal.seedMet.createMediaFile, {
+            collectionId,
+            organizationId: orgId,
+            userId: seedUserId,
+            storageId,
+            fileName: `${org.prefix}-MET-${metId}.jpg`,
+            fileSize: blob.size,
+          });
+
+          await ctx.runMutation(internal.seedMet.createLocationHistory, {
+            collectionId,
+            toLocationId: randomLocation,
+            movedBy: seedUserId,
+            movedAt:
+              Date.now() -
+              Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000),
+            reason: "Initial cataloging",
+          });
+
+          return 1;
+        }),
       );
 
-      await ctx.runMutation(internal.seedMet.createMediaFile, {
-        collectionId,
-        organizationId: orgId,
-        userId,
-        storageId,
-        fileName: `${org.prefix}-MET-${metId}.jpg`,
-        fileSize: blob.size,
-      });
-
-      // Create location history
-      await ctx.runMutation(internal.seedMet.createLocationHistory, {
-        collectionId,
-        toLocationId: randomLocation,
-        movedBy: userId,
-        movedAt:
-          Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000),
-        reason: "Initial cataloging",
-      });
-
-      successCount++;
-      if (successCount % 10 === 0) {
+      successCount += seededInChunk.reduce<number>(
+        (sum, value) => sum + value,
+        0,
+      );
+      if (successCount > 0 && successCount % 10 === 0) {
         console.log(`  Progress: ${successCount}/${targetCount}`);
       }
+
+      await seedObjectChunk(startIndex + seedChunkSize);
     }
+
+    await seedObjectChunk(0);
 
     console.log(`  Created ${successCount} real museum objects`);
 
@@ -389,7 +425,7 @@ export const seedOrganization = action({
         Array.from({ length: lenders.length }, async (_, i) => {
           await ctx.runMutation(internal.seedMet.createAccount, {
             organizationId: orgId,
-            userId,
+            userId: seedUserId,
             accountNumber: `LEND-${String(i + 1).padStart(4, "0")}`,
             accountType: "lender",
             businessName: lenders[i]!.name,
@@ -406,7 +442,7 @@ export const seedOrganization = action({
         Array.from(["Excellent", "Good", "Fair", "Poor"]).map(async (c) => {
           await ctx.runMutation(internal.seedMet.createConditionOption, {
             organizationId: orgId,
-            userId,
+            userId: seedUserId,
             name: c,
             description: `${c} condition`,
           });
@@ -417,7 +453,7 @@ export const seedOrganization = action({
           async (m) => {
             await ctx.runMutation(internal.seedMet.createMaterialOption, {
               organizationId: orgId,
-              userId,
+              userId: seedUserId,
               name: m,
             });
           },
@@ -433,7 +469,7 @@ export const seedOrganization = action({
         ]).map(async (t) => {
           await ctx.runMutation(internal.seedMet.createTypeOption, {
             organizationId: orgId,
-            userId,
+            userId: seedUserId,
             name: t,
           });
         }),

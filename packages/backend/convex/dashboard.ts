@@ -230,61 +230,77 @@ export const getAnalytics = query({
                 )
                 .take(20);
 
-              // Look for primary image first
-              for (const groupItem of groupItems) {
-                const primaryMedia = await ctx.db
-                  .query("mediaFiles")
-                  .withIndex("by_collection", (q) =>
-                    q.eq("collectionId", groupItem.collectionId),
-                  )
-                  .filter((q) =>
-                    q.and(
-                      q.eq(q.field("isPrimary"), true),
-                      q.eq(q.field("fileType"), "image"),
-                    ),
-                  )
-                  .first();
-
-                if (primaryMedia) {
-                  if (primaryMedia.thumbnailStorageId) {
-                    imageUrl =
-                      (await ctx.storage.getUrl(
-                        primaryMedia.thumbnailStorageId,
-                      )) ?? undefined;
-                  } else {
-                    imageUrl =
-                      (await ctx.storage.getUrl(primaryMedia.storageId)) ??
-                      undefined;
-                  }
-                  break;
-                }
-              }
-
-              // If no primary, try any image
-              if (!imageUrl) {
-                for (const groupItem of groupItems) {
-                  const anyMedia = await ctx.db
+              const primaryImageUrls = await Promise.all(
+                groupItems.map(async (groupItem) => {
+                  const primaryMedia = await ctx.db
                     .query("mediaFiles")
                     .withIndex("by_collection", (q) =>
                       q.eq("collectionId", groupItem.collectionId),
                     )
-                    .filter((q) => q.eq(q.field("fileType"), "image"))
+                    .filter((q) =>
+                      q.and(
+                        q.eq(q.field("isPrimary"), true),
+                        q.eq(q.field("fileType"), "image"),
+                      ),
+                    )
                     .first();
 
-                  if (anyMedia) {
+                  if (!primaryMedia) {
+                    return undefined;
+                  }
+
+                  if (primaryMedia.thumbnailStorageId) {
+                    return (
+                      (await ctx.storage.getUrl(
+                        primaryMedia.thumbnailStorageId,
+                      )) ?? undefined
+                    );
+                  }
+
+                  return (
+                    (await ctx.storage.getUrl(primaryMedia.storageId)) ??
+                    undefined
+                  );
+                }),
+              );
+
+              imageUrl = primaryImageUrls.find(
+                (url): url is string => url !== undefined,
+              );
+
+              if (!imageUrl) {
+                const anyImageUrls = await Promise.all(
+                  groupItems.map(async (groupItem) => {
+                    const anyMedia = await ctx.db
+                      .query("mediaFiles")
+                      .withIndex("by_collection", (q) =>
+                        q.eq("collectionId", groupItem.collectionId),
+                      )
+                      .filter((q) => q.eq(q.field("fileType"), "image"))
+                      .first();
+
+                    if (!anyMedia) {
+                      return undefined;
+                    }
+
                     if (anyMedia.thumbnailStorageId) {
-                      imageUrl =
+                      return (
                         (await ctx.storage.getUrl(
                           anyMedia.thumbnailStorageId,
-                        )) ?? undefined;
-                    } else {
-                      imageUrl =
-                        (await ctx.storage.getUrl(anyMedia.storageId)) ??
-                        undefined;
+                        )) ?? undefined
+                      );
                     }
-                    break;
-                  }
-                }
+
+                    return (
+                      (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                      undefined
+                    );
+                  }),
+                );
+
+                imageUrl = anyImageUrls.find(
+                  (url): url is string => url !== undefined,
+                );
               }
             }
 

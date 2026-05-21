@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const CONVEX_DIR = path.resolve(import.meta.dirname, "../convex");
-const SKIP_FILES = new Set(["seedMetAction.ts"]);
+const SKIP_FILES = new Set([]);
 
 function walkTs(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

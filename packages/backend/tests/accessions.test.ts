@@ -1147,30 +1147,32 @@ test("should batch lookup collections and assignees for list query", async () =>
   // Create multiple collections (simulate realistic scenario)
   const [collectionIds, assigneeIds] = await Promise.all([
     t.run(async (ctx) => {
-      const ids: Id<"collections">[] = [];
-      for (let i = 1; i <= 5; i++) {
-        const id = await ctx.db.insert("collections", {
-          organizationId: orgId,
-          accessionNumber: `COLL-${String(i).padStart(3, "0")}`,
-          status: "active",
-          catalogedBy: userId,
-          catalogedAt: Date.now(),
-          title: `Collection ${i}`,
-          description: `Test collection ${i}`,
-        });
-        ids.push(id);
-      }
+      const ids = await Promise.all(
+        Array.from({ length: 5 }, (_, index) => {
+          const i = index + 1;
+          return ctx.db.insert("collections", {
+            organizationId: orgId,
+            accessionNumber: `COLL-${String(i).padStart(3, "0")}`,
+            status: "active",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+            title: `Collection ${i}`,
+            description: `Test collection ${i}`,
+          });
+        }),
+      );
       return ids;
     }),
     t.run(async (ctx) => {
-      const ids: Id<"users">[] = [];
-      for (let i = 1; i <= 3; i++) {
-        const id = await ctx.db.insert("users", {
-          email: `curator${i}@museum.test`,
-          name: `Curator ${i}`,
-        });
-        ids.push(id);
-      }
+      const ids = await Promise.all(
+        Array.from({ length: 3 }, (_, index) => {
+          const i = index + 1;
+          return ctx.db.insert("users", {
+            email: `curator${i}@museum.test`,
+            name: `Curator ${i}`,
+          });
+        }),
+      );
       return ids;
     }),
   ]);
@@ -1179,21 +1181,22 @@ test("should batch lookup collections and assignees for list query", async () =>
   // Create 30 accessions with various collections and assignees
   // This is more than a typical page size (25) to test pagination edge cases
   await t.run(async (ctx) => {
-    for (let i = 1; i <= 30; i++) {
-      await ctx.db.insert("accessions", {
-        organizationId: orgId,
-        accessionNumber: `ACC-2026-${String(i).padStart(3, "0")}`,
-        dateReceived: Date.now() - i * 86400000, // Stagger dates for sorting
-        source: `Source ${i}`,
-        method: i % 2 === 0 ? "donation" : "purchase",
-        status: "pending",
-        // Assign to different collections (round-robin)
-        collectionId: collectionIds[i % collectionIds.length],
-        // Assign to different users (round-robin)
-        assignedTo: assigneeIds[i % assigneeIds.length],
-        notes: `Test accession ${i}`,
-      });
-    }
+    await Promise.all(
+      Array.from({ length: 30 }, (_, index) => {
+        const i = index + 1;
+        return ctx.db.insert("accessions", {
+          organizationId: orgId,
+          accessionNumber: `ACC-2026-${String(i).padStart(3, "0")}`,
+          dateReceived: Date.now() - i * 86400000,
+          source: `Source ${i}`,
+          method: i % 2 === 0 ? "donation" : "purchase",
+          status: "pending",
+          collectionId: collectionIds[i % collectionIds.length],
+          assignedTo: assigneeIds[i % assigneeIds.length],
+          notes: `Test accession ${i}`,
+        });
+      }),
+    );
   });
 
   // Query the first page (25 items)

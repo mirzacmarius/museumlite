@@ -10,7 +10,10 @@ import {
   query,
 } from "./_generated/server";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
-import { requirePermission } from "./utils/permissions";
+import {
+  getUserIdsWithPermission,
+  requirePermission,
+} from "./utils/permissions";
 
 const policyTypeValidator = v.union(
   v.literal("blanket"),
@@ -1494,15 +1497,19 @@ export const checkExpiringPoliciesInternal = internalMutation({
           )
           .collect();
 
-        for (const policy of activePolicies) {
-          const daysUntilExpiry = Math.ceil(
-            (policy.expirationDate - now) / (24 * 60 * 60 * 1000),
-          );
+        await Promise.all(
+          activePolicies.map(async (policy) => {
+            const daysUntilExpiry = Math.ceil(
+              (policy.expirationDate - now) / (24 * 60 * 60 * 1000),
+            );
 
-          if (
-            daysUntilExpiry > 0 &&
-            alertThresholds.includes(daysUntilExpiry)
-          ) {
+            if (
+              daysUntilExpiry <= 0 ||
+              !alertThresholds.includes(daysUntilExpiry)
+            ) {
+              return;
+            }
+
             const coverages = await ctx.db
               .query("insuranceCoverages")
               .withIndex("by_policy_and_status", (q) =>
@@ -1511,51 +1518,31 @@ export const checkExpiringPoliciesInternal = internalMutation({
               .collect();
 
             const totalCoveredValue = coverages.reduce(
-              (sum, c) => sum + c.coveredValue,
+              (sum, coverage) => sum + coverage.coveredValue,
               0,
             );
 
-            const userOrgs = await ctx.db
-              .query("userOrganizations")
-              .withIndex("by_organization", (q) =>
-                q.eq("organizationId", org._id),
-              )
-              .collect();
+            const coordinatorUserIds = await getUserIdsWithPermission(
+              ctx,
+              org._id,
+              "organization.manage_settings",
+            );
 
-            for (const userOrg of userOrgs) {
-              const role = await ctx.db.get(userOrg.roleId);
-              if (!role) return;
-
-              const rolePermissions = await ctx.db
-                .query("rolePermissions")
-                .withIndex("by_role", (q) => q.eq("roleId", role._id))
-                .collect();
-
-              const permissions = await Promise.all(
-                rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
-              );
-
-              const permissionNames = permissions.flatMap((permission) =>
-                permission === null ? [] : [permission.name],
-              );
-
-              if (permissionNames.includes("organization.manage_settings")) {
-                await ctx.runMutation(
-                  internal.audit.createNotificationInternal,
-                  {
-                    organizationId: org._id,
-                    userId: userOrg.userId,
-                    type: "insurance_expiry",
-                    title: `Insurance Policy Expiring in ${daysUntilExpiry} Days`,
-                    message: `Policy ${policy.policyNumber} (${policy.carrier}) covering ${coverages.length} items worth $${totalCoveredValue.toLocaleString()} expires in ${daysUntilExpiry} days.`,
-                    relatedEntityType: "insurancePolicy",
-                    relatedEntityId: policy._id,
-                  },
-                );
-              }
-            }
-          }
-        }
+            await Promise.all(
+              coordinatorUserIds.map((coordinatorUserId) =>
+                ctx.runMutation(internal.audit.createNotificationInternal, {
+                  organizationId: org._id,
+                  userId: coordinatorUserId,
+                  type: "insurance_expiry",
+                  title: `Insurance Policy Expiring in ${daysUntilExpiry} Days`,
+                  message: `Policy ${policy.policyNumber} (${policy.carrier}) covering ${coverages.length} items worth $${totalCoveredValue.toLocaleString()} expires in ${daysUntilExpiry} days.`,
+                  relatedEntityType: "insurancePolicy",
+                  relatedEntityId: policy._id,
+                }),
+              ),
+            );
+          }),
+        );
       }),
     );
 
@@ -1603,42 +1590,25 @@ export const checkMissingCoverageInternal = internalMutation({
         );
 
         if (uncoveredCount > 0 && coveragePercentage < 90) {
-          const userOrgs = await ctx.db
-            .query("userOrganizations")
-            .withIndex("by_organization", (q) =>
-              q.eq("organizationId", org._id),
-            )
-            .collect();
+          const coordinatorUserIds = await getUserIdsWithPermission(
+            ctx,
+            org._id,
+            "organization.manage_settings",
+          );
 
-          for (const userOrg of userOrgs) {
-            const role = await ctx.db.get(userOrg.roleId);
-            if (!role) return;
-
-            const rolePermissions = await ctx.db
-              .query("rolePermissions")
-              .withIndex("by_role", (q) => q.eq("roleId", role._id))
-              .collect();
-
-            const permissions = await Promise.all(
-              rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
-            );
-
-            const permissionNames = permissions.flatMap((permission) =>
-              permission === null ? [] : [permission.name],
-            );
-
-            if (permissionNames.includes("organization.manage_settings")) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
+          await Promise.all(
+            coordinatorUserIds.map((userId) =>
+              ctx.runMutation(internal.audit.createNotificationInternal, {
                 organizationId: org._id,
-                userId: userOrg.userId,
+                userId,
                 type: "missing_coverage",
                 title: "Objects Missing Insurance Coverage",
                 message: `${uncoveredCount} of ${allActiveObjects.length} objects (${100 - coveragePercentage}%) are not covered by any insurance policy.`,
                 relatedEntityType: "organization",
                 relatedEntityId: org._id,
-              });
-            }
-          }
+              }),
+            ),
+          );
         }
       }),
     );
@@ -1949,65 +1919,46 @@ export const createAutoClaimForTransitDamage = internalMutation({
     const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
     const now = Date.now();
 
-    const [claimId, userOrgs] = await Promise.all([
-      ctx.db.insert("insuranceClaims", {
-        organizationId: args.organizationId,
-        policyId: policy._id,
-        claimNumber,
-        collectionIds: args.collectionIds,
-        loanId: args.loanId,
-        incidentDate: now,
-        incidentType: "transit",
-        incidentDescription: args.incidentDescription,
-        claimedAmount,
-        status: "draft",
-        reportedDate: now,
-        isAutoClaim: true,
-        autoClaimSource: "loan_return_damage",
-        conditionDisputeId: args.conditionDisputeId,
-        internalNotes:
-          "Auto-generated claim based on condition change detected during loan return.",
-        createdBy: (await ctx.db.query("users").first())?._id as Id<"users">,
-        createdAt: now,
-      }),
-      ctx.db
-        .query("userOrganizations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
+    const claimId = await ctx.db.insert("insuranceClaims", {
+      organizationId: args.organizationId,
+      policyId: policy._id,
+      claimNumber,
+      collectionIds: args.collectionIds,
+      loanId: args.loanId,
+      incidentDate: now,
+      incidentType: "transit",
+      incidentDescription: args.incidentDescription,
+      claimedAmount,
+      status: "draft",
+      reportedDate: now,
+      isAutoClaim: true,
+      autoClaimSource: "loan_return_damage",
+      conditionDisputeId: args.conditionDisputeId,
+      internalNotes:
+        "Auto-generated claim based on condition change detected during loan return.",
+      createdBy: (await ctx.db.query("users").first())?._id as Id<"users">,
+      createdAt: now,
+    });
 
-    // Notify insurance coordinators
-    for (const userOrg of userOrgs) {
-      const role = await ctx.db.get(userOrg.roleId);
-      if (!role) continue;
+    const coordinatorUserIds = await getUserIdsWithPermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
-      const rolePermissions = await ctx.db
-        .query("rolePermissions")
-        .withIndex("by_role", (q) => q.eq("roleId", role._id))
-        .collect();
-
-      const permissions = await Promise.all(
-        rolePermissions.map((rp) => ctx.db.get(rp.permissionId)),
-      );
-
-      const permissionNames = permissions.flatMap((permission) =>
-        permission === null ? [] : [permission.name],
-      );
-
-      if (permissionNames.includes("organization.manage_settings")) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
+    await Promise.all(
+      coordinatorUserIds.map((userId) =>
+        ctx.runMutation(internal.audit.createNotificationInternal, {
           organizationId: args.organizationId,
-          userId: userOrg.userId,
+          userId,
           type: "insurance_auto_claim",
           title: "Auto-Generated Insurance Claim",
           message: `A draft insurance claim (${claimNumber}) has been created for transit damage detected during loan return. Please review and submit.`,
           relatedEntityType: "insuranceClaim",
           relatedEntityId: claimId,
-        });
-      }
-    }
+        }),
+      ),
+    );
 
     return claimId;
   },

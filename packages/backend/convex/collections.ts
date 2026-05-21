@@ -29,6 +29,7 @@ import {
   getCollectionTypeModuleRequirement,
 } from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
+import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
@@ -278,6 +279,30 @@ async function getCollectionPrimaryImageUrls(
   return new Map(entries);
 }
 
+async function loadLocationAncestors(
+  ctx: QueryCtx,
+  pendingIds: Set<Id<"locations">>,
+  locationMap: Map<Id<"locations">, Doc<"locations">>,
+) {
+  const ids = [...pendingIds];
+  pendingIds.clear();
+
+  const locations = await Promise.all(ids.map((id) => ctx.db.get(id)));
+  for (const location of locations) {
+    if (!location || locationMap.has(location._id)) {
+      continue;
+    }
+
+    locationMap.set(location._id, location);
+    if (
+      location.parentLocationId &&
+      !locationMap.has(location.parentLocationId)
+    ) {
+      pendingIds.add(location.parentLocationId);
+    }
+  }
+}
+
 async function getLocationPathStrings(
   ctx: QueryCtx,
   locationIds: Id<"locations">[],
@@ -287,23 +312,7 @@ async function getLocationPathStrings(
   const pendingIds = new Set(uniqueLocationIds);
 
   while (pendingIds.size > 0) {
-    const ids = [...pendingIds];
-    pendingIds.clear();
-
-    const locations = await Promise.all(ids.map((id) => ctx.db.get(id)));
-    for (const location of locations) {
-      if (!location || locationMap.has(location._id)) {
-        continue;
-      }
-
-      locationMap.set(location._id, location);
-      if (
-        location.parentLocationId &&
-        !locationMap.has(location.parentLocationId)
-      ) {
-        pendingIds.add(location.parentLocationId);
-      }
-    }
+    await loadLocationAncestors(ctx, pendingIds, locationMap);
   }
 
   const pathMap = new Map<Id<"locations">, string | undefined>();
@@ -3460,84 +3469,60 @@ export const bulkExport = query({
       throw new Error("Not authenticated");
     }
 
-    const results: Array<{
-      _id: Id<"collections">;
-      accessionNumber: string;
-      title: string;
-      alternativeTitle?: string;
-      creator?: string;
-      objectType?: string;
-      objectName?: string;
-      culture?: string;
-      period?: string;
-      dateCreated?: string;
-      materials?: string;
-      technique?: string;
-      dimensions?: string;
-      description?: string;
-      condition?: string;
-      provenance?: string;
-      status: string;
-      locationPath?: string;
-      collectionGroup?: string;
-      catalogedAt: number;
-    }> = [];
+    const collections = (
+      await batchGetByIds(ctx, args.collectionIds, "collections")
+    ).filter(
+      (collection): collection is Doc<"collections"> => collection !== null,
+    );
+    const organizationIds = [
+      ...new Set(collections.map((collection) => collection.organizationId)),
+    ];
+    await Promise.all(
+      organizationIds.map((organizationId) =>
+        requirePermission(ctx, organizationId, "collections.read"),
+      ),
+    );
 
-    for (const collectionId of args.collectionIds) {
-      const collection = await ctx.db.get(collectionId);
-      if (!collection) continue;
-
-      await requirePermission(
-        ctx,
-        collection.organizationId,
-        "collections.read",
+    const locationIds = collections
+      .map((collection) => collection.currentLocationId)
+      .filter((locationId): locationId is Id<"locations"> =>
+        Boolean(locationId),
       );
+    const locationPathMap = await getLocationPathStrings(ctx, locationIds);
 
-      let locationPath: string | undefined;
-      if (collection.currentLocationId) {
-        const locationNames: Array<string> = [];
-        let currentId: Id<"locations"> | undefined =
-          collection.currentLocationId;
-        while (currentId) {
-          const loc: Doc<"locations"> | null = await ctx.db.get(currentId);
-          if (!loc) break;
-          locationNames.unshift(loc.name);
-          currentId = loc.parentLocationId;
-        }
-        locationPath = locationNames.join(" > ");
-      }
+    const groupIds = collections
+      .map((collection) => collection.collectionGroupId)
+      .filter((groupId): groupId is Id<"collectionGroups"> => Boolean(groupId));
+    const groupMap = createLookupMap<"collectionGroups">(
+      await batchGetByIds(ctx, groupIds, "collectionGroups"),
+    );
 
-      let collectionGroup: string | undefined;
-      if (collection.collectionGroupId) {
-        const group = await ctx.db.get(collection.collectionGroupId);
-        collectionGroup = group?.name;
-      }
-
-      results.push({
-        _id: collection._id,
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-        alternativeTitle: collection.alternativeTitle,
-        creator: collection.creator,
-        objectType: collection.objectType,
-        objectName: collection.objectName,
-        culture: collection.culture,
-        period: collection.period,
-        dateCreated: collection.dateCreated,
-        materials: collection.materials,
-        technique: collection.technique,
-        dimensions: collection.dimensions,
-        description: collection.description,
-        condition: collection.condition,
-        provenance: collection.provenance,
-        status: collection.status,
-        locationPath,
-        collectionGroup,
-        catalogedAt: collection.catalogedAt,
-      });
-    }
-
-    return results;
+    return collections.map((collection) => ({
+      _id: collection._id,
+      accessionNumber: collection.accessionNumber,
+      title: collection.title,
+      alternativeTitle: collection.alternativeTitle,
+      creator: collection.creator,
+      objectType: collection.objectType,
+      objectName: collection.objectName,
+      culture: collection.culture,
+      period: collection.period,
+      dateCreated: collection.dateCreated,
+      materials: collection.materials,
+      technique: collection.technique,
+      dimensions: collection.dimensions,
+      description: collection.description,
+      condition: collection.condition,
+      provenance: collection.provenance,
+      status: collection.status,
+      locationPath: collection.currentLocationId
+        ? locationPathMap.get(collection.currentLocationId)
+        : undefined,
+      collectionGroup: collection.collectionGroupId
+        ? groupMap.get(collection.collectionGroupId)?.name
+        : undefined,
+      catalogedAt: collection.catalogedAt,
+    }));
   },
 });
 

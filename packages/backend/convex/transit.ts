@@ -1497,22 +1497,19 @@ export const checkUpcomingDeliveriesInternal = internalMutation({
             .collect();
 
           await Promise.all(
-            Array.from(userOrgs).map(async (userOrg) => {
-              for (const transit of upcomingDeliveries) {
-                await ctx.runMutation(
-                  internal.audit.createNotificationInternal,
-                  {
-                    organizationId: org._id,
-                    userId: userOrg.userId,
-                    type: "transit_delivery_reminder",
-                    title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
-                    message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
-                    relatedEntityType: "transitRecord",
-                    relatedEntityId: transit._id,
-                  },
-                );
-              }
-            }),
+            userOrgs.flatMap((userOrg) =>
+              upcomingDeliveries.map((transit) =>
+                ctx.runMutation(internal.audit.createNotificationInternal, {
+                  organizationId: org._id,
+                  userId: userOrg.userId,
+                  type: "transit_delivery_reminder",
+                  title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
+                  message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
+                  relatedEntityType: "transitRecord",
+                  relatedEntityId: transit._id,
+                }),
+              ),
+            ),
           );
         }
       }),
@@ -1568,17 +1565,19 @@ export const checkDelayedTransitsInternal = internalMutation({
               )
               .collect();
 
-            for (const userOrg of userOrgs) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: org._id,
-                userId: userOrg.userId,
-                type: "transit_delayed",
-                title: `Transit Delayed: ${transit.transitNumber}`,
-                message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
-                relatedEntityType: "transitRecord",
-                relatedEntityId: transit._id,
-              });
-            }
+            await Promise.all(
+              userOrgs.map((userOrg) =>
+                ctx.runMutation(internal.audit.createNotificationInternal, {
+                  organizationId: org._id,
+                  userId: userOrg.userId,
+                  type: "transit_delayed",
+                  title: `Transit Delayed: ${transit.transitNumber}`,
+                  message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
+                  relatedEntityType: "transitRecord",
+                  relatedEntityId: transit._id,
+                }),
+              ),
+            );
           }),
         );
       }),

@@ -1772,24 +1772,28 @@ export const reorder = mutation({
     // Insert the moved location at the new position
     sortedSiblings.splice(args.newSortOrder, 0, location);
 
-    // Update sortOrder for all affected siblings
-    for (let i = 0; i < sortedSiblings.length; i++) {
-      const sibling = sortedSiblings[i];
-      if (!sibling) continue;
+    await Promise.all(
+      sortedSiblings.map((sibling, i) => {
+        if (!sibling) {
+          return Promise.resolve();
+        }
 
-      if (sibling._id === args.locationId) {
-        // Update the moved location with new parent and sortOrder
-        await ctx.db.patch(args.locationId, {
-          parentLocationId: newParentId,
-          sortOrder: i,
-        });
-      } else if (sibling.sortOrder !== i) {
-        // Only update if sortOrder changed
-        await ctx.db.patch(sibling._id, {
-          sortOrder: i,
-        });
-      }
-    }
+        if (sibling._id === args.locationId) {
+          return ctx.db.patch(args.locationId, {
+            parentLocationId: newParentId,
+            sortOrder: i,
+          });
+        }
+
+        if (sibling.sortOrder !== i) {
+          return ctx.db.patch(sibling._id, {
+            sortOrder: i,
+          });
+        }
+
+        return Promise.resolve();
+      }),
+    );
 
     // If parent changed, re-normalize sortOrder in old parent
     if (oldParentId !== newParentId) {
@@ -1864,30 +1868,34 @@ export const getObjectsAtLocation = query({
       const pendingLocationIds: Id<"locations">[] = [args.locationId];
 
       while (pendingLocationIds.length > 0) {
-        const currentLocationId = pendingLocationIds.shift();
-        if (!currentLocationId) {
-          continue;
-        }
+        const waveIds = [...pendingLocationIds];
+        pendingLocationIds.length = 0;
 
-        const children = await ctx.db
-          .query("locations")
-          .withIndex("by_parentLocation", (q) =>
-            q.eq("parentLocationId", currentLocationId),
-          )
-          .collect();
+        const childrenByParent = await Promise.all(
+          waveIds.map((parentId) =>
+            ctx.db
+              .query("locations")
+              .withIndex("by_parentLocation", (q) =>
+                q.eq("parentLocationId", parentId),
+              )
+              .collect(),
+          ),
+        );
 
-        for (const child of children) {
-          if (
-            !child.isActive ||
-            child.organizationId !== location.organizationId ||
-            visitedLocationIds.has(child._id)
-          ) {
-            continue;
+        for (const children of childrenByParent) {
+          for (const child of children) {
+            if (
+              !child.isActive ||
+              child.organizationId !== location.organizationId ||
+              visitedLocationIds.has(child._id)
+            ) {
+              continue;
+            }
+
+            visitedLocationIds.add(child._id);
+            locationIds.add(child._id);
+            pendingLocationIds.push(child._id);
           }
-
-          visitedLocationIds.add(child._id);
-          locationIds.add(child._id);
-          pendingLocationIds.push(child._id);
         }
       }
     }

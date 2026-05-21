@@ -773,11 +773,9 @@ export const purgeOrganizationsInternal = internalMutation({
             ),
             deleteDocuments(ctx, snapshot.childDocuments.userPreferences),
             Promise.all(
-              Array.from(snapshot.organizationDocuments).map(async (entry) => {
-                for (const doc of entry.docs) {
-                  await ctx.db.delete(doc._id);
-                }
-              }),
+              Array.from(snapshot.organizationDocuments).flatMap((entry) =>
+                entry.docs.map((doc) => ctx.db.delete(doc._id)),
+              ),
             ),
             ctx.db.delete(snapshot.organization._id),
           ] as const);

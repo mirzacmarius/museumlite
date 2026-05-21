@@ -12,6 +12,7 @@ import { NOTIFICATION_TYPES } from "./notifications";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
+import { batchGetByIds } from "./utils/batchLookup";
 import {
   getCurrentUserOrganization,
   hasPermission,
@@ -254,20 +255,43 @@ async function ensureAccessionNumberAvailable(
   }
 }
 
+async function resolveGeneratedAccessionNumberAttempt(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  attempt: number,
+): Promise<string | null> {
+  if (attempt >= 5) {
+    return null;
+  }
+
+  const accessionNumber = await generateAccessionNumber(ctx, organizationId);
+  const conflict = await findAccessionConflict(
+    ctx,
+    organizationId,
+    accessionNumber,
+  );
+  if (!conflict) {
+    return accessionNumber;
+  }
+
+  return resolveGeneratedAccessionNumberAttempt(
+    ctx,
+    organizationId,
+    attempt + 1,
+  );
+}
+
 async function resolveGeneratedAccessionNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const accessionNumber = await generateAccessionNumber(ctx, organizationId);
-    const conflict = await findAccessionConflict(
-      ctx,
-      organizationId,
-      accessionNumber,
-    );
-    if (!conflict) {
-      return accessionNumber;
-    }
+  const accessionNumber = await resolveGeneratedAccessionNumberAttempt(
+    ctx,
+    organizationId,
+    0,
+  );
+  if (accessionNumber) {
+    return accessionNumber;
   }
 
   throw new Error(
@@ -387,15 +411,18 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  for (const loanItem of loanItems) {
-    const loan = await ctx.db.get(loanItem.loanId);
-    if (loan && ACTIVE_LOAN_STATUSES.has(loan.status)) {
-      blockers.push({
-        code: "active_loan",
-        message: "This object is currently on loan and cannot be moved.",
-      });
-      break;
-    }
+  const loans = await batchGetByIds(
+    ctx,
+    loanItems.map((loanItem) => loanItem.loanId),
+    "loans",
+  );
+  if (
+    loans.some((loan) => loan !== null && ACTIVE_LOAN_STATUSES.has(loan.status))
+  ) {
+    blockers.push({
+      code: "active_loan",
+      message: "This object is currently on loan and cannot be moved.",
+    });
   }
 
   const locationMoveRequests = await ctx.db
@@ -458,16 +485,23 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  for (const transitItem of transitItems) {
-    const transitRecord = await ctx.db.get(transitItem.transitRecordId);
-    if (transitRecord && ACTIVE_TRANSIT_STATUSES.has(transitRecord.status)) {
-      blockers.push({
-        code: "active_transit",
-        message:
-          "This object is part of an active transit record and cannot be moved.",
-      });
-      break;
-    }
+  const transitRecords = await batchGetByIds(
+    ctx,
+    transitItems.map((transitItem) => transitItem.transitRecordId),
+    "transitRecords",
+  );
+  if (
+    transitRecords.some(
+      (transitRecord) =>
+        transitRecord !== null &&
+        ACTIVE_TRANSIT_STATUSES.has(transitRecord.status),
+    )
+  ) {
+    blockers.push({
+      code: "active_transit",
+      message:
+        "This object is part of an active transit record and cannot be moved.",
+    });
   }
 
   const exhibitions = await ctx.db

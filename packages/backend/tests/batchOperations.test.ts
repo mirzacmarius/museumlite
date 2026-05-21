@@ -79,17 +79,19 @@ describe("batchOperations schema", () => {
     ]);
     const collectionIds = await t.run(async (ctx) => {
       const ids: Id<"collections">[] = [];
-      for (let i = 0; i < 5; i++) {
-        const id = await ctx.db.insert("collections", {
-          organizationId: orgId,
-          accessionNumber: `2025.00${i + 1}`,
-          title: `Test Object ${i + 1}`,
-          status: "active",
-          catalogedBy: userId,
-          catalogedAt: Date.now(),
-        });
-        ids.push(id);
-      }
+      const insertedIds = await Promise.all(
+        Array.from({ length: 5 }, (_, i) =>
+          ctx.db.insert("collections", {
+            organizationId: orgId,
+            accessionNumber: `2025.00${i + 1}`,
+            title: `Test Object ${i + 1}`,
+            status: "active",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+          }),
+        ),
+      );
+      ids.push(...insertedIds);
       return ids;
     });
 

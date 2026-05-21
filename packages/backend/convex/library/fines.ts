@@ -110,27 +110,39 @@ export const recordPayment = mutation({
     const paidFineIds: Id<"libraryFines">[] = [];
 
     if (args.fineIds && args.fineIds.length > 0) {
-      for (const fineId of args.fineIds) {
+      const fines = await Promise.all(
+        args.fineIds.map((fineId) => ctx.db.get(fineId)),
+      );
+      const patchPromises: Array<Promise<void>> = [];
+
+      for (let i = 0; i < args.fineIds.length; i++) {
         if (remainingPayment <= 0) break;
 
-        const fine = await ctx.db.get(fineId);
-        if (!fine || fine.accountId !== args.accountId) continue;
+        const fineId = args.fineIds[i];
+        const fine = fines[i];
+        if (!fineId || !fine || fine.accountId !== args.accountId) continue;
         if (fine.status !== "outstanding") continue;
 
         const paymentForFine = Math.min(remainingPayment, fine.balance);
         const newAmountPaid = fine.amountPaid + paymentForFine;
         const newBalance = fine.amount - newAmountPaid;
 
-        await ctx.db.patch(fineId, {
-          amountPaid: newAmountPaid,
-          balance: newBalance,
-          status: newBalance <= 0 ? "paid" : "outstanding",
-          paidAt: newBalance <= 0 ? now : undefined,
-        });
+        patchPromises.push(
+          ctx.db
+            .patch(fineId, {
+              amountPaid: newAmountPaid,
+              balance: newBalance,
+              status: newBalance <= 0 ? "paid" : "outstanding",
+              paidAt: newBalance <= 0 ? now : undefined,
+            })
+            .then(() => undefined),
+        );
 
         remainingPayment -= paymentForFine;
         paidFineIds.push(fineId);
       }
+
+      await Promise.all(patchPromises);
     } else {
       const outstandingFines = await ctx.db
         .query("libraryFines")
@@ -141,6 +153,7 @@ export const recordPayment = mutation({
 
       outstandingFines.sort((a, b) => a.createdAt - b.createdAt);
 
+      const patchPromises: Array<Promise<void>> = [];
       for (const fine of outstandingFines) {
         if (remainingPayment <= 0) break;
 
@@ -148,16 +161,22 @@ export const recordPayment = mutation({
         const newAmountPaid = fine.amountPaid + paymentForFine;
         const newBalance = fine.amount - newAmountPaid;
 
-        await ctx.db.patch(fine._id, {
-          amountPaid: newAmountPaid,
-          balance: newBalance,
-          status: newBalance <= 0 ? "paid" : "outstanding",
-          paidAt: newBalance <= 0 ? now : undefined,
-        });
+        patchPromises.push(
+          ctx.db
+            .patch(fine._id, {
+              amountPaid: newAmountPaid,
+              balance: newBalance,
+              status: newBalance <= 0 ? "paid" : "outstanding",
+              paidAt: newBalance <= 0 ? now : undefined,
+            })
+            .then(() => undefined),
+        );
 
         remainingPayment -= paymentForFine;
         paidFineIds.push(fine._id);
       }
+
+      await Promise.all(patchPromises);
     }
 
     const paymentId = await ctx.db.insert("libraryPayments", {

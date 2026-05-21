@@ -746,97 +746,99 @@ export const autoRenewEligibleItems = mutation({
       )
       .collect();
 
+    const renewalOutcomes = await Promise.all(
+      circulations.map(async (circulation) => {
+        const account = await ctx.db.get(circulation.accountId);
+        if (!account || !account.autoRenewalEnabled) {
+          return "skipped" as const;
+        }
+
+        if (circulation.isRecalled) {
+          await ctx.db.patch(circulation._id, {
+            lastAutoRenewalAttempt: now,
+            autoRenewalFailureReason: "Item recalled",
+          });
+          return "failed" as const;
+        }
+
+        const holds = await ctx.db
+          .query("libraryHolds")
+          .withIndex("by_item_and_status", (q) =>
+            q.eq("itemId", circulation.itemId).eq("status", "pending"),
+          )
+          .first();
+
+        if (holds) {
+          await ctx.db.patch(circulation._id, {
+            lastAutoRenewalAttempt: now,
+            autoRenewalFailureReason: "Pending holds on item",
+          });
+          return "failed" as const;
+        }
+
+        const item = await ctx.db.get(circulation.itemId);
+        const membershipType = account.membershipTypeId
+          ? await ctx.db.get(account.membershipTypeId)
+          : null;
+
+        const maxRenewals =
+          item?.maxRenewals ??
+          membershipType?.renewalLimit ??
+          settings.maxRenewalsAllowed ??
+          3;
+
+        if (circulation.renewalCount >= maxRenewals) {
+          await ctx.db.patch(circulation._id, {
+            lastAutoRenewalAttempt: now,
+            autoRenewalFailureReason: `Maximum renewals (${maxRenewals}) reached`,
+          });
+          return "failed" as const;
+        }
+
+        const renewalPeriodDays =
+          item?.loanPeriodDays ??
+          membershipType?.loanPeriodDays ??
+          settings.renewalPeriodDays ??
+          settings.defaultLoanPeriodDays;
+
+        const newDueDate = now + renewalPeriodDays * 24 * 60 * 60 * 1000;
+
+        await ctx.db.patch(circulation._id, {
+          dueDate: newDueDate,
+          renewalCount: circulation.renewalCount + 1,
+          lastRenewalDate: now,
+          autoRenewed: true,
+          lastAutoRenewalAttempt: now,
+          autoRenewalFailureReason: undefined,
+        });
+
+        if (account.userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: account.userId,
+            type: "library_auto_renewal",
+            title: "Item Auto-Renewed",
+            message: `Your checkout of "${item?.title}" has been automatically renewed. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
+            relatedEntityType: "circulation",
+            relatedEntityId: circulation._id,
+          });
+        }
+
+        return "renewed" as const;
+      }),
+    );
+
     let renewedCount = 0;
     let failedCount = 0;
     let skippedCount = 0;
-
-    for (const circulation of circulations) {
-      const account = await ctx.db.get(circulation.accountId);
-      if (!account || !account.autoRenewalEnabled) {
+    for (const outcome of renewalOutcomes) {
+      if (outcome === "renewed") {
+        renewedCount++;
+      } else if (outcome === "failed") {
+        failedCount++;
+      } else {
         skippedCount++;
-        continue;
       }
-
-      // Check if item is recalled
-      if (circulation.isRecalled) {
-        await ctx.db.patch(circulation._id, {
-          lastAutoRenewalAttempt: now,
-          autoRenewalFailureReason: "Item recalled",
-        });
-        failedCount++;
-        continue;
-      }
-
-      // Check for holds
-      const holds = await ctx.db
-        .query("libraryHolds")
-        .withIndex("by_item_and_status", (q) =>
-          q.eq("itemId", circulation.itemId).eq("status", "pending"),
-        )
-        .first();
-
-      if (holds) {
-        await ctx.db.patch(circulation._id, {
-          lastAutoRenewalAttempt: now,
-          autoRenewalFailureReason: "Pending holds on item",
-        });
-        failedCount++;
-        continue;
-      }
-
-      // Check renewal limit
-      const item = await ctx.db.get(circulation.itemId);
-      const membershipType = account.membershipTypeId
-        ? await ctx.db.get(account.membershipTypeId)
-        : null;
-
-      const maxRenewals =
-        item?.maxRenewals ??
-        membershipType?.renewalLimit ??
-        settings.maxRenewalsAllowed ??
-        3;
-
-      if (circulation.renewalCount >= maxRenewals) {
-        await ctx.db.patch(circulation._id, {
-          lastAutoRenewalAttempt: now,
-          autoRenewalFailureReason: `Maximum renewals (${maxRenewals}) reached`,
-        });
-        failedCount++;
-        continue;
-      }
-
-      // Perform renewal
-      const renewalPeriodDays =
-        item?.loanPeriodDays ??
-        membershipType?.loanPeriodDays ??
-        settings.renewalPeriodDays ??
-        settings.defaultLoanPeriodDays;
-
-      const newDueDate = now + renewalPeriodDays * 24 * 60 * 60 * 1000;
-
-      await ctx.db.patch(circulation._id, {
-        dueDate: newDueDate,
-        renewalCount: circulation.renewalCount + 1,
-        lastRenewalDate: now,
-        autoRenewed: true,
-        lastAutoRenewalAttempt: now,
-        autoRenewalFailureReason: undefined,
-      });
-
-      // Send notification
-      if (account.userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: args.organizationId,
-          userId: account.userId,
-          type: "library_auto_renewal",
-          title: "Item Auto-Renewed",
-          message: `Your checkout of "${item?.title}" has been automatically renewed. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
-          relatedEntityType: "circulation",
-          relatedEntityId: circulation._id,
-        });
-      }
-
-      renewedCount++;
     }
 
     return { renewedCount, failedCount, skippedCount };

@@ -483,18 +483,20 @@ describe("notification CRUD operations", () => {
     ]);
     const notificationIds = await t.run(async (ctx) => {
       const ids = [];
-      for (let i = 0; i < 3; i++) {
-        const id = await ctx.db.insert("notifications", {
-          organizationId: orgId,
-          userId,
-          type: "loan_pending_approval",
-          title: `Notification ${i}`,
-          message: `Message ${i}`,
-          read: false,
-          createdAt: Date.now(),
-        });
-        ids.push(id);
-      }
+      const insertedIds = await Promise.all(
+        Array.from({ length: 3 }, (_, i) =>
+          ctx.db.insert("notifications", {
+            organizationId: orgId,
+            userId,
+            type: "loan_pending_approval",
+            title: `Notification ${i}`,
+            message: `Message ${i}`,
+            read: false,
+            createdAt: Date.now(),
+          }),
+        ),
+      );
+      ids.push(...insertedIds);
       return ids;
     });
 
@@ -534,18 +536,20 @@ describe("notification CRUD operations", () => {
     ]);
     const notificationIds = await t.run(async (ctx) => {
       const ids = [];
-      for (let i = 0; i < 3; i++) {
-        const id = await ctx.db.insert("notifications", {
-          organizationId: orgId,
-          userId,
-          type: "loan_pending_approval",
-          title: `Notification ${i}`,
-          message: `Message ${i}`,
-          read: false,
-          createdAt: Date.now(),
-        });
-        ids.push(id);
-      }
+      const insertedIds = await Promise.all(
+        Array.from({ length: 3 }, (_, i) =>
+          ctx.db.insert("notifications", {
+            organizationId: orgId,
+            userId,
+            type: "loan_pending_approval",
+            title: `Notification ${i}`,
+            message: `Message ${i}`,
+            read: false,
+            createdAt: Date.now(),
+          }),
+        ),
+      );
+      ids.push(...insertedIds);
       return ids;
     });
 
@@ -856,14 +860,14 @@ describe("sendNotificationToUsers", () => {
       }),
       t.run(async (ctx) => {
         const ids = [];
-        for (let i = 0; i < 3; i++) {
-          const id = await ctx.db.insert("users", {
-            name: `User ${i}`,
-            email: `user${i}@example.com`,
-          });
-          ids.push(id);
-        }
-        return ids;
+        return Promise.all(
+          Array.from({ length: 3 }, (_, i) =>
+            ctx.db.insert("users", {
+              name: `User ${i}`,
+              email: `user${i}@example.com`,
+            }),
+          ),
+        );
       }),
     ]);
     const count = await t.mutation(
@@ -879,17 +883,19 @@ describe("sendNotificationToUsers", () => {
 
     expect(count).toBe(3);
 
-    for (const userId of userIds) {
-      const notifications = await t.run(async (ctx) => {
-        return await ctx.db
-          .query("notifications")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .collect();
-      });
+    await Promise.all(
+      userIds.map(async (notifyUserId) => {
+        const notifications = await t.run(async (ctx) => {
+          return await ctx.db
+            .query("notifications")
+            .withIndex("by_user", (q) => q.eq("userId", notifyUserId))
+            .collect();
+        });
 
-      expect(notifications).toHaveLength(1);
-      expect(notifications[0].title).toBe("System Announcement");
-    }
+        expect(notifications).toHaveLength(1);
+        expect(notifications[0]?.title).toBe("System Announcement");
+      }),
+    );
   });
 });
 
@@ -1898,18 +1904,20 @@ describe("notification read/unread state management", () => {
     ]);
     const notificationIds = await t.run(async (ctx) => {
       const ids = [];
-      for (let i = 0; i < 5; i++) {
-        const id = await ctx.db.insert("notifications", {
-          organizationId: orgId,
-          userId,
-          type: "task_assigned",
-          title: `Notification ${i}`,
-          message: `Message ${i}`,
-          read: false,
-          createdAt: Date.now(),
-        });
-        ids.push(id);
-      }
+      const insertedIds = await Promise.all(
+        Array.from({ length: 5 }, (_, i) =>
+          ctx.db.insert("notifications", {
+            organizationId: orgId,
+            userId,
+            type: "task_assigned",
+            title: `Notification ${i}`,
+            message: `Message ${i}`,
+            read: false,
+            createdAt: Date.now(),
+          }),
+        ),
+      );
+      ids.push(...insertedIds);
       return ids;
     });
 
