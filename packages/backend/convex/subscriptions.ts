@@ -507,9 +507,9 @@ export const syncAllCatalogProducts = internalAction({
     });
     const items = products.result?.items ?? [];
 
-    for (const product of items) {
-      await syncPolarProduct(ctx, product);
-    }
+    await Promise.all(
+      Array.from(items).map((product) => syncPolarProduct(ctx, product)),
+    );
 
     return { count: items.length };
   },
@@ -780,27 +780,29 @@ export const changeOrganizationSubscriptionPlan = action({
       },
     });
 
-    await syncPolarSubscription(ctx, updatedSubscription);
-    await ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
-      organizationId: args.organizationId,
-      tier,
-      productId: updatedSubscription.productId,
-      productName: product.name,
-      productDescription: product.description,
-      subscriptionId: updatedSubscription.id,
-      customerId: updatedSubscription.customerId,
-      recurringInterval: updatedSubscription.recurringInterval ?? undefined,
-      status: normalizeSubscriptionStatus(updatedSubscription.status),
-      cancelAtPeriodEnd: updatedSubscription.cancelAtPeriodEnd,
-      currentPeriodStart:
-        getTimestamp(updatedSubscription.currentPeriodStart.toISOString()) ??
-        Date.now(),
-      currentPeriodEnd:
-        getTimestamp(
-          updatedSubscription.currentPeriodEnd?.toISOString() ?? null,
-        ) ?? undefined,
-      metadata: updatedSubscription.metadata,
-    });
+    await Promise.all([
+      syncPolarSubscription(ctx, updatedSubscription),
+      ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
+        organizationId: args.organizationId,
+        tier,
+        productId: updatedSubscription.productId,
+        productName: product.name,
+        productDescription: product.description,
+        subscriptionId: updatedSubscription.id,
+        customerId: updatedSubscription.customerId,
+        recurringInterval: updatedSubscription.recurringInterval ?? undefined,
+        status: normalizeSubscriptionStatus(updatedSubscription.status),
+        cancelAtPeriodEnd: updatedSubscription.cancelAtPeriodEnd,
+        currentPeriodStart:
+          getTimestamp(updatedSubscription.currentPeriodStart.toISOString()) ??
+          Date.now(),
+        currentPeriodEnd:
+          getTimestamp(
+            updatedSubscription.currentPeriodEnd?.toISOString() ?? null,
+          ) ?? undefined,
+        metadata: updatedSubscription.metadata,
+      }),
+    ]);
 
     return null;
   },

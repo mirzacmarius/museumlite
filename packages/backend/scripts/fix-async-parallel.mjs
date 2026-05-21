@@ -233,6 +233,19 @@ function fixPermissionThenCollect(content) {
   );
 }
 
+function fixRequirePermissionThenCollect(content) {
+  return content.replace(
+    /await requirePermission\(([^)]+)\);\s*\n\s*\/\/[^\n]*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)/g,
+    (match, permArgs, varName, table) => {
+      if (match.includes("Promise.all")) return match;
+      return `const [, ${varName}] = await Promise.all([
+      requirePermission(${permArgs}),
+      ctx.db
+        .query("${table}")`;
+    },
+  );
+}
+
 function fixLoanCancelBulk(content) {
   return content.replace(
     /\/\/ Update loan status\s*\n\s*await ctx\.db\.patch\(loanId, \{\s*\n\s*status: "cancelled",\s*\n\s*\}\);\s*\n\s*\/\/ Update collection statuses back to active\s*\n\s*const loanItems = await ctx\.db\s*\n\s*\.query\("loanItems"\)\s*\n\s*\.withIndex\("by_loan", \(q\) => q\.eq\("loanId", loanId\)\)\s*\n\s*\.collect\(\);/g,
@@ -270,6 +283,7 @@ function apply(filePath) {
   content = fixRequireModuleThenPermission(content);
   content = fixPatchThenAuditStandalone(content);
   content = fixLoanCancelBulk(content);
+  content = fixRequirePermissionThenCollect(content);
   if (content !== original) {
     fs.writeFileSync(filePath, content);
     return true;

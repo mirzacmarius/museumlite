@@ -1,68 +1,63 @@
-"use client";
-
 import { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { PublicObjectDetail } from "@/components/public-object-detail";
+import { fetchQuery } from "convex/nextjs";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PublicPortalObjectPageClient } from "./public-object-page-client";
 
-export default function PublicObjectPage() {
-  const params = useParams();
-  const orgSlug = params.orgSlug as string;
-  const portalSlug = params.portalSlug as string;
-  const accessionNumber = decodeURIComponent(params.accessionNumber as string);
+interface PageProps {
+  params: Promise<{
+    orgSlug: string;
+    portalSlug: string;
+    accessionNumber: string;
+  }>;
+}
 
-  const basePath = `/${orgSlug}/${portalSlug}`;
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { orgSlug, accessionNumber } = await params;
+  const decodedAccessionNumber = decodeURIComponent(accessionNumber);
 
-  const object = useQuery(api.collections.getPublic, {
-    organizationSlug: orgSlug,
-    accessionNumber,
-  });
+  try {
+    const object = await fetchQuery(api.collections.getPublic, {
+      organizationSlug: orgSlug,
+      accessionNumber: decodedAccessionNumber,
+    });
 
-  if (object === undefined) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-white/60">Loading…</p>
-      </div>
-    );
+    if (!object) {
+      return {
+        title: "Object Not Found | MuseumLite",
+        description: "This object may not be publicly available.",
+      };
+    }
+
+    return {
+      title: `${object.title} | MuseumLite`,
+      description: object.description ?? `View ${object.title} in the collection.`,
+      openGraph: {
+        title: object.title,
+        description: object.description ?? undefined,
+        type: "article",
+      },
+    };
+  } catch {
+    return {
+      title: `${decodedAccessionNumber} | MuseumLite`,
+      description: "View object in the public collection portal.",
+    };
   }
+}
 
-  if (object === null) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-semibold text-white mb-2">
-          Object Not Found
-        </h1>
-        <p className="text-white/60 mb-6">
-          This object may not be publicly available
-        </p>
-        <Button asChild variant="outline" className="border-white/20">
-          <Link href={basePath}>
-            <ArrowLeft className="mr-2 size-4" />
-            Back to Collection
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
+export default function PublicPortalObjectPage(_props: PageProps) {
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-8">
-          <Link
-            href={basePath}
-            className="inline-flex items-center text-white/60 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="mr-2 size-4" />
-            Back to Collection
-          </Link>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-white/60">Loading object…</p>
         </div>
-
-        <PublicObjectDetail object={object} />
-      </div>
-    </div>
+      }
+    >
+      <PublicPortalObjectPageClient />
+    </Suspense>
   );
 }

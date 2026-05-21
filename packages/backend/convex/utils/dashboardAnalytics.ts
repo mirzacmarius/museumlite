@@ -122,46 +122,54 @@ export async function buildRecentCollectionGroups(
             )
             .take(20);
 
-          for (const groupItem of groupItems) {
-            const primaryMedia = await ctx.db
-              .query("mediaFiles")
-              .withIndex("by_collection", (q) =>
-                q.eq("collectionId", groupItem.collectionId),
-              )
-              .filter((q) =>
-                q.and(
-                  q.eq(q.field("isPrimary"), true),
-                  q.eq(q.field("fileType"), "image"),
-                ),
-              )
-              .first();
-
-            if (primaryMedia) {
-              imageUrl =
-                (await ctx.storage.getUrl(
-                  primaryMedia.thumbnailStorageId ?? primaryMedia.storageId,
-                )) ?? undefined;
-              break;
-            }
-          }
-
-          if (!imageUrl) {
-            for (const groupItem of groupItems) {
-              const anyMedia = await ctx.db
+          const primaryMediaResults = await Promise.all(
+            groupItems.map((groupItem) =>
+              ctx.db
                 .query("mediaFiles")
                 .withIndex("by_collection", (q) =>
                   q.eq("collectionId", groupItem.collectionId),
                 )
-                .filter((q) => q.eq(q.field("fileType"), "image"))
-                .first();
+                .filter((q) =>
+                  q.and(
+                    q.eq(q.field("isPrimary"), true),
+                    q.eq(q.field("fileType"), "image"),
+                  ),
+                )
+                .first(),
+            ),
+          );
 
-              if (anyMedia) {
-                imageUrl =
-                  (await ctx.storage.getUrl(
-                    anyMedia.thumbnailStorageId ?? anyMedia.storageId,
-                  )) ?? undefined;
-                break;
-              }
+          const primaryMedia = primaryMediaResults.find(
+            (media): media is NonNullable<typeof media> => media !== null,
+          );
+          if (primaryMedia) {
+            imageUrl =
+              (await ctx.storage.getUrl(
+                primaryMedia.thumbnailStorageId ?? primaryMedia.storageId,
+              )) ?? undefined;
+          }
+
+          if (!imageUrl) {
+            const anyMediaResults = await Promise.all(
+              groupItems.map((groupItem) =>
+                ctx.db
+                  .query("mediaFiles")
+                  .withIndex("by_collection", (q) =>
+                    q.eq("collectionId", groupItem.collectionId),
+                  )
+                  .filter((q) => q.eq(q.field("fileType"), "image"))
+                  .first(),
+              ),
+            );
+
+            const anyMedia = anyMediaResults.find(
+              (media): media is NonNullable<typeof media> => media !== null,
+            );
+            if (anyMedia) {
+              imageUrl =
+                (await ctx.storage.getUrl(
+                  anyMedia.thumbnailStorageId ?? anyMedia.storageId,
+                )) ?? undefined;
             }
           }
         }
@@ -474,20 +482,22 @@ async function buildSiteScopedAnalytics(
   organizationId: Id<"organizations">,
   siteId: Id<"sites">,
 ) {
-  const locations = await ctx.db
-    .query("locations")
-    .withIndex("by_organization_and_site", (q) =>
-      q.eq("organizationId", organizationId).eq("siteId", siteId),
-    )
-    .collect();
-
-  const collections = await loadSiteCollections(ctx, organizationId, siteId);
+  const [locations, collections, allCollectionGroups] = await Promise.all([
+    ctx.db
+      .query("locations")
+      .withIndex("by_organization_and_site", (q) =>
+        q.eq("organizationId", organizationId).eq("siteId", siteId),
+      )
+      .collect(),
+    loadSiteCollections(ctx, organizationId, siteId),
+    ctx.db
+      .query("collectionGroups")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  ] as const);
   const collectionIds = new Set(collections.map((c) => c._id));
-
-  const allCollectionGroups = await ctx.db
-    .query("collectionGroups")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .collect();
 
   const groupIdsForSite = new Set<Id<"collectionGroups">>();
   const groupItemsByCollection = await Promise.all(
@@ -566,7 +576,7 @@ async function buildSiteScopedAnalytics(
       !collectionIdsWithOpenDeaccessions.has(collection._id),
   );
 
-  const [recentCollectionGroups, recentObjects, recentActivity] =
+  const [recentCollectionGroups, recentObjects, recentActivity, transfers] =
     await Promise.all([
       buildRecentCollectionGroups(ctx, collectionGroups),
       buildRecentObjects(ctx, collections),
@@ -577,14 +587,13 @@ async function buildSiteScopedAnalytics(
         deaccessionIds: new Set(deaccessions.map((d) => d._id)),
         collectionGroupIds: groupIdsForSite,
       }),
-    ]);
-
-  const transfers = await ctx.db
-    .query("organizationMoveRequests")
-    .withIndex("by_source_organization", (q) =>
-      q.eq("sourceOrganizationId", organizationId),
-    )
-    .collect();
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_source_organization", (q) =>
+          q.eq("sourceOrganizationId", organizationId),
+        )
+        .collect(),
+    ] as const);
 
   return {
     collections: {

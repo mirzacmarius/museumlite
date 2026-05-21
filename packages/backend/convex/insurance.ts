@@ -2112,14 +2112,15 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
       const collectionId = coverage.collectionId;
       if (!collectionId) continue;
 
-      const [policy, collection] = await Promise.all([
+      const [policy, collection, appraisal] = await Promise.all([
         ctx.db.get(coverage.policyId),
         ctx.db.get(collectionId),
+        coverage.appraisalId
+          ? ctx.db.get(coverage.appraisalId)
+          : Promise.resolve(null),
       ] as const);
 
-      // Check for linked appraisal
       if (coverage.appraisalId) {
-        const appraisal = await ctx.db.get(coverage.appraisalId);
         if (appraisal) {
           const ageDays = Math.floor(
             (now - appraisal.appraisalDate) / msPerDay,

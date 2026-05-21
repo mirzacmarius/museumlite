@@ -257,23 +257,22 @@ export const setDefault = mutation({
       throw new Error("Template not found");
     }
 
-    await requirePermission(
-      ctx,
-      template.organizationId,
-      "organization.manage_settings",
-    );
-
-    // Unset all other defaults for this organization
-    const allTemplates = await ctx.db
-      .query("accessionTemplates")
-      .withIndex("by_organization_and_default", (q) =>
-        q.eq("organizationId", template.organizationId).eq("isDefault", true),
-      )
-      .collect();
-    await Promise.all([
-      Promise.all(
-        allTemplates.map((t) => ctx.db.patch(t._id, { isDefault: false })),
+    const [, allTemplates] = await Promise.all([
+      requirePermission(
+        ctx,
+        template.organizationId,
+        "organization.manage_settings",
       ),
+      ctx.db
+        .query("accessionTemplates")
+        .withIndex("by_organization_and_default", (q) =>
+          q.eq("organizationId", template.organizationId).eq("isDefault", true),
+        )
+        .collect(),
+    ] as const);
+
+    await Promise.all([
+      ...allTemplates.map((t) => ctx.db.patch(t._id, { isDefault: false })),
       ctx.db.patch(args.templateId, { isDefault: true }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: template.organizationId,

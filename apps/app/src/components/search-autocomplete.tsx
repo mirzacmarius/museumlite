@@ -26,16 +26,8 @@ export function SearchAutocomplete({
   debounceMs = 300,
 }: SearchAutocompleteProps) {
   const [open, setOpen] = React.useState(false);
-  const [debouncedValue, setDebouncedValue] = React.useState(value);
   const { currentOrganizationId } = useOrganization();
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, debounceMs);
-
-    return () => clearTimeout(timer);
-  }, [value, debounceMs]);
+  const debouncedValue = useDebouncedValue(value, debounceMs);
 
   // Fetch suggestions based on debounced value
   const normalizedQuery = debouncedValue.trim();
@@ -210,4 +202,15 @@ export function SearchAutocomplete({
       </PopoverContent>
     </Popover>
   );
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = React.useState(value);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+
+  return debouncedValue;
 }

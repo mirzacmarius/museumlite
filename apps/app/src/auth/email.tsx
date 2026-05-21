@@ -14,7 +14,7 @@ interface AuthEmailFormProps {
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
-  const [email, setEmail] = useState(defaultEmail);
+  const [email, setEmail] = useState(() => defaultEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFocused, _setIsFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);

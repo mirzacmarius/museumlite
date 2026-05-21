@@ -45,6 +45,15 @@ export function useFieldValidation<T>({
         return false;
       }
 
+      const syncResult = schema.safeParse(value);
+      if (!syncResult.success) {
+        const message = syncResult.error.errors[0]?.message || "Invalid value";
+        setStatus("invalid");
+        setError(message);
+        onValidationComplete?.(false, message);
+        return false;
+      }
+
       setStatus("validating");
 
       try {

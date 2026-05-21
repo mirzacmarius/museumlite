@@ -205,7 +205,11 @@ export function AuthFormRoot({
 
   if (step === "email") {
     return (
-      <AuthEmailForm defaultEmail={email} onSubmit={handleEmailVerification} />
+      <AuthEmailForm
+        key={email}
+        defaultEmail={email}
+        onSubmit={handleEmailVerification}
+      />
     );
   }
 

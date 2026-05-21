@@ -156,14 +156,16 @@ test("getOrganizationSubscription enforces membership and returns stored entitle
     },
   );
 
-  const outsiderResult = await authedForUser(t, outsiderUserId).query(
-    api.subscriptions.getOrganizationSubscription,
-    { organizationId },
-  );
-  const memberResult = await authedForUser(t, memberUserId).query(
-    api.subscriptions.getOrganizationSubscription,
-    { organizationId },
-  );
+  const [outsiderResult, memberResult] = await Promise.all([
+    authedForUser(t, outsiderUserId).query(
+      api.subscriptions.getOrganizationSubscription,
+      { organizationId },
+    ),
+    authedForUser(t, memberUserId).query(
+      api.subscriptions.getOrganizationSubscription,
+      { organizationId },
+    ),
+  ]);
 
   expect(outsiderResult).toBeNull();
   expect(memberResult?.isEntitled).toBe(true);

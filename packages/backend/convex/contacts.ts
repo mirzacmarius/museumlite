@@ -439,23 +439,22 @@ export const setPrimary = mutation({
       throw new Error("Contact not found");
     }
 
-    // Get account to check organization
     const account = await ctx.db.get(contact.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
 
-    await requireAuthorizedOrganization(ctx, {
-      organizationId: account.organizationId,
-      moduleId: "accounts",
-      permission: "accounts.write",
-    });
-
-    // Unset all other primary contacts for this account
-    const existingPrimaryContacts = await ctx.db
-      .query("contacts")
-      .withIndex("by_account", (q) => q.eq("accountId", contact.accountId))
-      .collect();
+    const [, existingPrimaryContacts] = await Promise.all([
+      requireAuthorizedOrganization(ctx, {
+        organizationId: account.organizationId,
+        moduleId: "accounts",
+        permission: "accounts.write",
+      }),
+      ctx.db
+        .query("contacts")
+        .withIndex("by_account", (q) => q.eq("accountId", contact.accountId))
+        .collect(),
+    ] as const);
     await Promise.all([
       Promise.all(
         Array.from(existingPrimaryContacts).map(async (existingContact) => {

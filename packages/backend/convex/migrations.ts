@@ -954,35 +954,37 @@ export const addCollectionWorkflowApprovalPermissions = internalMutation({
           },
         ];
 
-        for (const assignment of assignments) {
-          const role = assignment.role;
-          if (!role) {
-            return;
-          }
+        await Promise.all(
+          assignments.map(async (assignment) => {
+            const role = assignment.role;
+            if (!role) {
+              return;
+            }
 
-          await Promise.all(
-            assignment.permissionNames.map(async (permissionName) => {
-              const permissionId = permissionIds.get(permissionName);
-              if (!permissionId) {
-                return;
-              }
+            await Promise.all(
+              assignment.permissionNames.map(async (permissionName) => {
+                const permissionId = permissionIds.get(permissionName);
+                if (!permissionId) {
+                  return;
+                }
 
-              const existing = await ctx.db
-                .query("rolePermissions")
-                .withIndex("by_role", (q) => q.eq("roleId", role._id))
-                .filter((q) => q.eq(q.field("permissionId"), permissionId))
-                .first();
+                const existing = await ctx.db
+                  .query("rolePermissions")
+                  .withIndex("by_role", (q) => q.eq("roleId", role._id))
+                  .filter((q) => q.eq(q.field("permissionId"), permissionId))
+                  .first();
 
-              if (!existing) {
-                await ctx.db.insert("rolePermissions", {
-                  roleId: role._id,
-                  permissionId,
-                });
-                rolePermissionsAdded++;
-              }
-            }),
-          );
-        }
+                if (!existing) {
+                  await ctx.db.insert("rolePermissions", {
+                    roleId: role._id,
+                    permissionId,
+                  });
+                  rolePermissionsAdded++;
+                }
+              }),
+            );
+          }),
+        );
       }),
     );
 

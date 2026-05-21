@@ -747,14 +747,14 @@ function parseArray(value: unknown): string[] {
 
   if (typeof value === "string") {
     // Split on common delimiters
-    const delimiters = [";", ",", "|", "\n"];
-    for (const delimiter of delimiters) {
-      if (value.includes(delimiter)) {
-        return value.split(delimiter).flatMap((item) => {
-          const trimmedItem = item.trim();
-          return trimmedItem.length > 0 ? [trimmedItem] : [];
-        });
-      }
+    const delimiter = [";", ",", "|", "\n"].find((candidate) =>
+      value.includes(candidate),
+    );
+    if (delimiter) {
+      return value.split(delimiter).flatMap((item) => {
+        const trimmedItem = item.trim();
+        return trimmedItem.length > 0 ? [trimmedItem] : [];
+      });
     }
     // Return single-item array if no delimiters found
     return [value.trim()];

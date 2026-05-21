@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { PublicCollectionPageClient } from "./public-collection-page-client";
 
+export { generateMetadata } from "./layout";
+
 export default function PublicCollectionPage() {
   return (
     <Suspense
