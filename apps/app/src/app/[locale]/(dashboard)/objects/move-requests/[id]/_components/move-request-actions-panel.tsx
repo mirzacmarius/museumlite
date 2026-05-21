@@ -4,21 +4,20 @@ import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { Loader2 } from "lucide-react";
-import {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from "react";
+import { createContext, type ReactNode, use, useMemo } from "react";
 import type { MoveRequestSubmitAction } from "./use-move-request-detail";
+
+interface MoveRequestActionsPanelAvailability {
+  sourceReview: boolean;
+  targetReview: boolean;
+  cancel: boolean;
+}
 
 interface MoveRequestActionsPanelContextValue {
   reviewNotes: string;
   onReviewNotesChange: (value: string) => void;
-  isSubmitting: MoveRequestSubmitAction;
-  canSourceApproveOrReject: boolean;
-  canTargetAcceptOrReject: boolean;
-  canCancel: boolean;
+  submittingAction: MoveRequestSubmitAction;
+  availableActions: MoveRequestActionsPanelAvailability;
   onApprove: () => void;
   onAccept: () => void;
   onReject: () => void;
@@ -29,7 +28,7 @@ const MoveRequestActionsPanelContext =
   createContext<MoveRequestActionsPanelContextValue | null>(null);
 
 function useMoveRequestActionsPanel() {
-  const context = useContext(MoveRequestActionsPanelContext);
+  const context = use(MoveRequestActionsPanelContext);
   if (!context) {
     throw new Error(
       "MoveRequestActionsPanel subcomponents must be used within MoveRequestActionsPanel",
@@ -41,10 +40,8 @@ function useMoveRequestActionsPanel() {
 interface MoveRequestActionsPanelProps {
   reviewNotes: string;
   onReviewNotesChange: (value: string) => void;
-  isSubmitting: MoveRequestSubmitAction;
-  canSourceApproveOrReject: boolean;
-  canTargetAcceptOrReject: boolean;
-  canCancel: boolean;
+  submittingAction: MoveRequestSubmitAction;
+  availableActions: MoveRequestActionsPanelAvailability;
   onApprove: () => void;
   onAccept: () => void;
   onReject: () => void;
@@ -55,10 +52,8 @@ interface MoveRequestActionsPanelProps {
 function MoveRequestActionsPanelProvider({
   reviewNotes,
   onReviewNotesChange,
-  isSubmitting,
-  canSourceApproveOrReject,
-  canTargetAcceptOrReject,
-  canCancel,
+  submittingAction,
+  availableActions,
   onApprove,
   onAccept,
   onReject,
@@ -69,10 +64,8 @@ function MoveRequestActionsPanelProvider({
     () => ({
       reviewNotes,
       onReviewNotesChange,
-      isSubmitting,
-      canSourceApproveOrReject,
-      canTargetAcceptOrReject,
-      canCancel,
+      submittingAction,
+      availableActions,
       onApprove,
       onAccept,
       onReject,
@@ -81,10 +74,8 @@ function MoveRequestActionsPanelProvider({
     [
       reviewNotes,
       onReviewNotesChange,
-      isSubmitting,
-      canSourceApproveOrReject,
-      canTargetAcceptOrReject,
-      canCancel,
+      submittingAction,
+      availableActions,
       onApprove,
       onAccept,
       onReject,
@@ -92,12 +83,16 @@ function MoveRequestActionsPanelProvider({
     ],
   );
 
-  if (!canSourceApproveOrReject && !canTargetAcceptOrReject && !canCancel) {
+  if (
+    !availableActions.sourceReview &&
+    !availableActions.targetReview &&
+    !availableActions.cancel
+  ) {
     return null;
   }
 
   const showReviewNotes =
-    canSourceApproveOrReject || canTargetAcceptOrReject;
+    availableActions.sourceReview || availableActions.targetReview;
 
   return (
     <MoveRequestActionsPanelContext.Provider value={value}>
@@ -110,9 +105,7 @@ function MoveRequestActionsPanelProvider({
               <Textarea
                 id="reviewNotes"
                 value={reviewNotes}
-                onChange={(event) =>
-                  onReviewNotesChange(event.target.value)
-                }
+                onChange={(event) => onReviewNotesChange(event.target.value)}
                 placeholder="Add notes for the requester or approval record"
                 rows={4}
               />
@@ -135,21 +128,17 @@ function MoveRequestActionsPanelProvider({
 }
 
 function MoveRequestActionsPanelSourceActions() {
-  const {
-    isSubmitting,
-    canSourceApproveOrReject,
-    canTargetAcceptOrReject,
-    onApprove,
-    onReject,
-  } = useMoveRequestActionsPanel();
+  const { submittingAction, availableActions, onApprove, onReject } =
+    useMoveRequestActionsPanel();
+  const { sourceReview, targetReview } = availableActions;
 
-  if (!canSourceApproveOrReject && !canTargetAcceptOrReject) return null;
+  if (!sourceReview && !targetReview) return null;
 
   return (
     <>
-      {canSourceApproveOrReject && (
-        <Button onClick={onApprove} disabled={isSubmitting !== null}>
-          {isSubmitting === "approve" && (
+      {sourceReview && (
+        <Button onClick={onApprove} disabled={submittingAction !== null}>
+          {submittingAction === "approve" && (
             <Loader2 className="mr-2 size-4 animate-spin" />
           )}
           Approve for transfer
@@ -158,9 +147,9 @@ function MoveRequestActionsPanelSourceActions() {
       <Button
         variant="destructive"
         onClick={onReject}
-        disabled={isSubmitting !== null}
+        disabled={submittingAction !== null}
       >
-        {isSubmitting === "reject" && (
+        {submittingAction === "reject" && (
           <Loader2 className="mr-2 size-4 animate-spin" />
         )}
         Reject request
@@ -170,14 +159,15 @@ function MoveRequestActionsPanelSourceActions() {
 }
 
 function MoveRequestActionsPanelTargetActions() {
-  const { isSubmitting, canTargetAcceptOrReject, onAccept } =
+  const { submittingAction, availableActions, onAccept } =
     useMoveRequestActionsPanel();
+  const { targetReview } = availableActions;
 
-  if (!canTargetAcceptOrReject) return null;
+  if (!targetReview) return null;
 
   return (
-    <Button onClick={onAccept} disabled={isSubmitting !== null}>
-      {isSubmitting === "accept" && (
+    <Button onClick={onAccept} disabled={submittingAction !== null}>
+      {submittingAction === "accept" && (
         <Loader2 className="mr-2 size-4 animate-spin" />
       )}
       Accept and complete transfer
@@ -186,17 +176,19 @@ function MoveRequestActionsPanelTargetActions() {
 }
 
 function MoveRequestActionsPanelCancelAction() {
-  const { isSubmitting, canCancel, onCancel } = useMoveRequestActionsPanel();
+  const { submittingAction, availableActions, onCancel } =
+    useMoveRequestActionsPanel();
+  const { cancel } = availableActions;
 
-  if (!canCancel) return null;
+  if (!cancel) return null;
 
   return (
     <Button
       variant="outline"
       onClick={onCancel}
-      disabled={isSubmitting !== null}
+      disabled={submittingAction !== null}
     >
-      {isSubmitting === "cancel" && (
+      {submittingAction === "cancel" && (
         <Loader2 className="mr-2 size-4 animate-spin" />
       )}
       Cancel request

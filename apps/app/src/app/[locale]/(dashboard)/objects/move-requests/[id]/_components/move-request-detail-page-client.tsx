@@ -74,10 +74,12 @@ export function MoveRequestDetailPageClient() {
           <MoveRequestActionsPanel
             reviewNotes={reviewNotes}
             onReviewNotesChange={setReviewNotes}
-            isSubmitting={isSubmitting}
-            canSourceApproveOrReject={permissions.canSourceApproveOrReject}
-            canTargetAcceptOrReject={permissions.canTargetAcceptOrReject}
-            canCancel={permissions.canCancel}
+            submittingAction={isSubmitting}
+            availableActions={{
+              sourceReview: permissions.canSourceApproveOrReject,
+              targetReview: permissions.canTargetAcceptOrReject,
+              cancel: permissions.canCancel,
+            }}
             onApprove={() => handleApprove(request)}
             onAccept={() => handleAccept(request)}
             onReject={() => handleReject(request)}

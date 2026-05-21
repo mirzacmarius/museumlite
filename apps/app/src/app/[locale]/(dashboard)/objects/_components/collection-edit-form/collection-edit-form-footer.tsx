@@ -2,12 +2,7 @@
 
 import { Button } from "@v1/ui/button";
 import { Save } from "lucide-react";
-import {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from "react";
+import { createContext, type ReactNode, use, useMemo } from "react";
 
 export type CollectionEditFormFooterState =
   | { kind: "submitting" }
@@ -29,7 +24,7 @@ const CollectionEditFormFooterContext =
   createContext<CollectionEditFormFooterContextValue | null>(null);
 
 function useCollectionEditFormFooter() {
-  const context = useContext(CollectionEditFormFooterContext);
+  const context = use(CollectionEditFormFooterContext);
   if (!context) {
     throw new Error(
       "CollectionEditFormFooter subcomponents must be used within CollectionEditFormFooter",
@@ -121,9 +116,7 @@ function CollectionEditFormFooterStatus() {
           Media changes are already applied.
         </span>
       ) : (
-        <span className="text-muted-foreground">
-          No unsaved field changes.
-        </span>
+        <span className="text-muted-foreground">No unsaved field changes.</span>
       )}
     </div>
   );
