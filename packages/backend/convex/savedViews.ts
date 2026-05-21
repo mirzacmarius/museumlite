@@ -122,14 +122,19 @@ export const create = mutation({
         )
         .collect();
 
+      const viewsToClear: typeof existingViews = [];
+      for (const view of existingViews) {
+        if (
+          view.organizationId === args.organizationId &&
+          view.isDefault === true
+        ) {
+          viewsToClear.push(view);
+        }
+      }
       await Promise.all(
-        existingViews
-          .filter(
-            (view) =>
-              view.organizationId === args.organizationId &&
-              view.isDefault === true,
-          )
-          .map((view) => ctx.db.patch(view._id, { isDefault: false })),
+        viewsToClear.map((view) =>
+          ctx.db.patch(view._id, { isDefault: false }),
+        ),
       );
     }
 
@@ -188,17 +193,20 @@ export const update = mutation({
         )
         .collect();
 
+      const viewsToClear: typeof existingViews = [];
+      for (const existingView of existingViews) {
+        if (
+          existingView._id !== args.viewId &&
+          existingView.organizationId === view.organizationId &&
+          existingView.isDefault === true
+        ) {
+          viewsToClear.push(existingView);
+        }
+      }
       await Promise.all(
-        existingViews
-          .filter(
-            (existingView) =>
-              existingView._id !== args.viewId &&
-              existingView.organizationId === view.organizationId &&
-              existingView.isDefault === true,
-          )
-          .map((existingView) =>
-            ctx.db.patch(existingView._id, { isDefault: false }),
-          ),
+        viewsToClear.map((existingView) =>
+          ctx.db.patch(existingView._id, { isDefault: false }),
+        ),
       );
     }
 

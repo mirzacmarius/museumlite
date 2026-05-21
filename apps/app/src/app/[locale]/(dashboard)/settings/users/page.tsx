@@ -24,7 +24,7 @@ import {
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { Clock, Mail, Trash2, UserCog, UserPlus } from "lucide-react";
-import { useEffect, useReducer, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -711,11 +711,8 @@ function getDateFormatter(locale: string) {
 }
 
 function useClientFormattedDate(timestamp: number, locale: string) {
-  const [formattedDate, setFormattedDate] = useState("");
-
-  useEffect(() => {
-    setFormattedDate(getDateFormatter(locale).format(timestamp));
-  }, [locale, timestamp]);
-
-  return formattedDate;
+  return useMemo(
+    () => getDateFormatter(locale).format(timestamp),
+    [locale, timestamp],
+  );
 }

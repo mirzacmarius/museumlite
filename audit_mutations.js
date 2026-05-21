@@ -52,11 +52,14 @@ for (const file of files) {
 
     const mutationBlock = content.substring(startIndex, endIndex + 1);
 
-    // Check if requirePermission, canInitiateWorkflow, or canApproveAtStep is called
-    const hasPermissionCheck =
-      mutationBlock.includes("requirePermission") ||
-      mutationBlock.includes("canInitiateWorkflow") ||
-      mutationBlock.includes("canApproveAtStep");
+    const permissionMarkers = new Set([
+      "requirePermission",
+      "canInitiateWorkflow",
+      "canApproveAtStep",
+    ]);
+    const hasPermissionCheck = [...permissionMarkers].some((marker) =>
+      mutationBlock.includes(marker),
+    );
 
     if (hasPermissionCheck) {
       withChecks.push({ file, mutationName });

@@ -2625,7 +2625,12 @@ export const getEnvironmentalSummary = query({
     };
 
     // Get most recent reading for current values
-    const latest = readings.sort((a, b) => b.recordedAt - a.recordedAt)[0];
+    const latest =
+      readings.length > 0
+        ? readings.reduce((newest, reading) =>
+            reading.recordedAt > newest.recordedAt ? reading : newest,
+          )
+        : undefined;
 
     const alertCount = readings.filter((r) => r.alertTriggered).length;
 

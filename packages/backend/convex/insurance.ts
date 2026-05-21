@@ -2030,11 +2030,9 @@ export const checkAppraisalForCoverage = query({
       };
     }
 
-    // Sort by date and get most recent
-    const sortedAppraisals = appraisals.sort(
-      (a, b) => b.appraisalDate - a.appraisalDate,
+    const latestAppraisal = appraisals.reduce((newest, appraisal) =>
+      appraisal.appraisalDate > newest.appraisalDate ? appraisal : newest,
     );
-    const latestAppraisal = sortedAppraisals[0]!;
 
     const now = Date.now();
     const ageDays = Math.floor(
@@ -2250,9 +2248,9 @@ export const addCoverageWithAppraisalCheck = mutation({
       }
       warning = "No appraisal on file for this object";
     } else {
-      const latest = appraisals.sort(
-        (a, b) => b.appraisalDate - a.appraisalDate,
-      )[0]!;
+      const latest = appraisals.reduce((newest, appraisal) =>
+        appraisal.appraisalDate > newest.appraisalDate ? appraisal : newest,
+      );
       appraisalId = latest._id;
       appraisalDate = latest.appraisalDate;
 

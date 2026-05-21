@@ -9,7 +9,7 @@ import {
   hasCustomFieldValues,
   setOptionalNumberCustomField,
 } from "../../location-custom-fields";
-import { LOCATION_IMAGE_CUSTOM_FIELD } from "../location-form-shared";
+import { LOCATION_IMAGE_CUSTOM_FIELD } from "../location-form-shared/constants";
 
 interface UseAddChildLocationFormOptions {
   parentLocationId?: string;

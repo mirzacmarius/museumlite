@@ -209,9 +209,9 @@ describe("savedViews schema", () => {
     });
 
     expect(allViews).toHaveLength(5);
+    const viewsByModule = new Map(allViews.map((v) => [v.module, v]));
     for (const module of moduleTypes) {
-      const view = allViews.find((v) => v.module === module);
-      expect(view).toBeDefined();
+      expect(viewsByModule.get(module)).toBeDefined();
     }
   });
 });

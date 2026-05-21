@@ -87,6 +87,8 @@ function listConvexModules(): string[] {
 const filesystemModules = Object.fromEntries(
   listConvexModules().map((path) => [
     path,
+    // Dynamic path per convex module file; static import string is not possible.
+    // biome-ignore lint/nursery/noDynamicImportPath: runtime discovery of convex/**/*.ts
     () => import(new URL(path, packageRootUrl).href),
   ]),
 ) as Record<string, ModuleLoader>;

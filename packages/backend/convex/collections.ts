@@ -3333,16 +3333,17 @@ export const bulkExport = query({
       ),
     );
 
-    const locationIds = collections
-      .map((collection) => collection.currentLocationId)
-      .filter((locationId): locationId is Id<"locations"> =>
-        Boolean(locationId),
-      );
+    const locationIds: Id<"locations">[] = [];
+    const groupIds: Id<"collectionGroups">[] = [];
+    for (const collection of collections) {
+      if (collection.currentLocationId) {
+        locationIds.push(collection.currentLocationId);
+      }
+      if (collection.collectionGroupId) {
+        groupIds.push(collection.collectionGroupId);
+      }
+    }
     const locationPathMap = await getLocationPathStrings(ctx, locationIds);
-
-    const groupIds = collections
-      .map((collection) => collection.collectionGroupId)
-      .filter((groupId): groupId is Id<"collectionGroups"> => Boolean(groupId));
     const groupMap = createLookupMap<"collectionGroups">(
       await batchGetByIds(ctx, groupIds, "collectionGroups"),
     );
