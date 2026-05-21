@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { redirect, useParams } from "next/navigation";
 import { Suspense } from "react";
 import { useScopedI18n } from "@/locales/client";
-import { ObjectRequestFormPage } from "../../../objects/new/page";
+import { ObjectRequestFormPage } from "../../../objects/_components/object-request-form/object-request-form-page";
 
 export default function EditAccessionObjectPage() {
   const params = useParams();
