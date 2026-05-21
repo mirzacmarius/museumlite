@@ -197,6 +197,10 @@ export const update = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibition.status === "closed" || exhibition.status === "rejected") {
+      throw new Error("Cannot update closed or rejected exhibition");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     await requirePermission(
@@ -204,10 +208,6 @@ export const update = mutation({
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibition.status === "closed" || exhibition.status === "rejected") {
-      throw new Error("Cannot update closed or rejected exhibition");
-    }
 
     const { id, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -263,6 +263,10 @@ export const remove = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibition.status === "active") {
+      throw new Error("Cannot delete active exhibition");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     await requirePermission(
@@ -270,10 +274,6 @@ export const remove = mutation({
       exhibition.organizationId,
       "collections.delete",
     );
-
-    if (exhibition.status === "active") {
-      throw new Error("Cannot delete active exhibition");
-    }
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
@@ -514,11 +514,11 @@ export const approve = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
     if (exhibition.status !== "proposed") {
       throw new Error("Exhibition is not pending approval");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -676,11 +676,11 @@ export const reject = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
     if (exhibition.status !== "proposed") {
       throw new Error("Exhibition is not pending approval");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -765,17 +765,9 @@ export const activate = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
     if (exhibition.status !== "approved") {
       throw new Error("Exhibition must be approved before activation");
     }
-
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
 
     // Check if all required installation tasks are complete
     if (!args.skipInstallationCheck) {
@@ -790,6 +782,14 @@ export const activate = mutation({
         );
       }
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     // Move all exhibition objects to installed status and update their locations
     const exhibitionObjects = await ctx.db
@@ -859,20 +859,12 @@ export const close = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
     if (
       exhibition.status !== "active" &&
       exhibition.status !== "deinstalling"
     ) {
       throw new Error("Exhibition must be active or deinstalling to close");
     }
-
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
 
     // Check if all required deinstallation tasks are complete
     if (!args.skipDeinstallationCheck) {
@@ -887,6 +879,14 @@ export const close = mutation({
         );
       }
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     // Handle objects - return them to original locations if requested
     const exhibitionObjects = await ctx.db
@@ -1307,16 +1307,16 @@ export const setInstallationChecklist = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibition.status !== "proposed" && exhibition.status !== "approved") {
+      throw new Error("Cannot modify checklist after installation has started");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibition.status !== "proposed" && exhibition.status !== "approved") {
-      throw new Error("Cannot modify checklist after installation has started");
-    }
 
     const checklistItems = args.checklist.map((item) => ({
       taskId: item.taskId,
@@ -1364,18 +1364,18 @@ export const startInstallation = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibition.status !== "approved") {
+      throw new Error(
+        "Exhibition must be approved before starting installation",
+      );
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibition.status !== "approved") {
-      throw new Error(
-        "Exhibition must be approved before starting installation",
-      );
-    }
 
     await ctx.db.patch(args.exhibitionId, {
       status: "installing",
@@ -1416,13 +1416,6 @@ export const completeInstallationTask = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
     if (
       exhibition.status !== "installing" &&
       exhibition.status !== "approved"
@@ -1441,6 +1434,13 @@ export const completeInstallationTask = mutation({
     if (!existingTask) {
       throw new Error("Task not found");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     checklist[taskIndex] = {
       taskId: existingTask.taskId,
@@ -1489,13 +1489,6 @@ export const uncompleteInstallationTask = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
     if (
       exhibition.status !== "installing" &&
       exhibition.status !== "approved"
@@ -1514,6 +1507,13 @@ export const uncompleteInstallationTask = mutation({
     if (!existingTask) {
       throw new Error("Task not found");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     checklist[taskIndex] = {
       taskId: existingTask.taskId,
@@ -1630,13 +1630,6 @@ export const completeInstallation = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
     if (exhibition.status !== "installing") {
       throw new Error("Exhibition is not in installation phase");
     }
@@ -1652,6 +1645,13 @@ export const completeInstallation = mutation({
         `Cannot complete installation: ${incompleteRequired.length} required tasks remain`,
       );
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     await ctx.db.patch(args.exhibitionId, {
       status: "approved", // Back to approved, ready for activation
@@ -1755,16 +1755,16 @@ export const startDeinstallation = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibition.status !== "active") {
+      throw new Error("Exhibition must be active to start deinstallation");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibition.status !== "active") {
-      throw new Error("Exhibition must be active to start deinstallation");
-    }
 
     await ctx.db.patch(args.exhibitionId, {
       status: "deinstalling",
@@ -1806,13 +1806,6 @@ export const completeDeinstallationTask = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
     if (exhibition.status !== "deinstalling") {
       throw new Error("Exhibition is not in deinstallation phase");
     }
@@ -1828,6 +1821,13 @@ export const completeDeinstallationTask = mutation({
     if (!existingTask) {
       throw new Error("Task not found");
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     checklist[taskIndex] = {
       taskId: existingTask.taskId,
@@ -2040,16 +2040,16 @@ export const removeExhibitionObject = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibitionObject.status !== "pending") {
+      throw new Error("Cannot remove object that has been installed");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibitionObject.status !== "pending") {
-      throw new Error("Cannot remove object that has been installed");
-    }
 
     await ctx.db.delete(args.exhibitionObjectId);
 
@@ -2092,16 +2092,16 @@ export const installObject = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibitionObject.status !== "pending") {
+      throw new Error("Object is not in pending status");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibitionObject.status !== "pending") {
-      throw new Error("Object is not in pending status");
-    }
 
     // Update exhibition object status
     await ctx.db.patch(args.exhibitionObjectId, {
@@ -2168,16 +2168,16 @@ export const deinstallObject = mutation({
       throw new Error("Exhibition not found");
     }
 
+    if (exhibitionObject.status !== "installed") {
+      throw new Error("Object is not installed");
+    }
+
     await requireExhibitionAccess(ctx, exhibition.organizationId);
     await requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
     );
-
-    if (exhibitionObject.status !== "installed") {
-      throw new Error("Object is not installed");
-    }
 
     await ctx.db.patch(args.exhibitionObjectId, {
       status: "deinstalled",
@@ -2227,13 +2227,6 @@ export const returnObjectToOriginalLocation = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    );
-
     if (
       exhibitionObject.status !== "deinstalled" &&
       exhibitionObject.status !== "installed"
@@ -2242,6 +2235,13 @@ export const returnObjectToOriginalLocation = mutation({
         "Object must be installed or deinstalled before returning",
       );
     }
+
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(
+      ctx,
+      exhibition.organizationId,
+      "collections.update",
+    );
 
     const returnLocation =
       args.overrideLocationId ?? exhibitionObject.originalLocationId;

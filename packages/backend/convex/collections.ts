@@ -2616,15 +2616,15 @@ export const archiveCollection = mutation({
       throw new Error("Collection not found");
     }
 
+    if (collection.status === "loaned") {
+      throw new Error("Cannot archive an object that is currently on loan");
+    }
+
     await requirePermission(
       ctx,
       collection.organizationId,
       "collections.delete",
     );
-
-    if (collection.status === "loaned") {
-      throw new Error("Cannot archive an object that is currently on loan");
-    }
 
     await applyCollectionDisposition(ctx, {
       collectionId: args.collectionId,
@@ -2670,15 +2670,15 @@ export const softDeleteCollection = mutation({
       throw new Error("Collection not found");
     }
 
+    if (collection.status === "loaned") {
+      throw new Error("Cannot delete an object that is currently on loan");
+    }
+
     await requirePermission(
       ctx,
       collection.organizationId,
       "collections.delete",
     );
-
-    if (collection.status === "loaned") {
-      throw new Error("Cannot delete an object that is currently on loan");
-    }
 
     await applyCollectionDisposition(ctx, {
       collectionId: args.collectionId,
@@ -2787,15 +2787,15 @@ export const restoreCollection = mutation({
       throw new Error("Collection not found");
     }
 
+    if (collection.status !== "archived" && collection.status !== "deleted") {
+      throw new Error("Can only restore archived or deleted objects");
+    }
+
     await requirePermission(
       ctx,
       collection.organizationId,
       "collections.update",
     );
-
-    if (collection.status !== "archived" && collection.status !== "deleted") {
-      throw new Error("Can only restore archived or deleted objects");
-    }
 
     await markCollectionActive(ctx, {
       collectionId: args.collectionId,

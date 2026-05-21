@@ -1411,15 +1411,15 @@ export const approve = mutation({
       throw new Error("Move request not found");
     }
 
+    if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
+      throw new Error(`Move request is already ${request.status}.`);
+    }
+
     await requirePermission(
       ctx,
       request.sourceOrganizationId,
       "organization.manage_settings",
     );
-
-    if (normalizeRequestStatus(request.status) !== "pending_source_approval") {
-      throw new Error(`Move request is already ${request.status}.`);
-    }
 
     const collection = await ctx.db.get(request.collectionId);
     if (!collection) {
@@ -1506,15 +1506,15 @@ export const accept = mutation({
       throw new Error("Move request not found");
     }
 
+    if (request.status !== "awaiting_acceptance") {
+      throw new Error(`Move request is already ${request.status}.`);
+    }
+
     await requirePermission(
       ctx,
       request.targetOrganizationId,
       "organization.manage_settings",
     );
-
-    if (request.status !== "awaiting_acceptance") {
-      throw new Error(`Move request is already ${request.status}.`);
-    }
 
     const collection = await ctx.db.get(request.collectionId);
     if (!collection) {

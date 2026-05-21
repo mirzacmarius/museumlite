@@ -66,11 +66,11 @@ export const createMediaImportJob = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "media.upload");
-
     if (args.mappingType === "csv" && !args.mappingData) {
       throw new Error("Mapping data is required for CSV mapping type");
     }
+
+    await requirePermission(ctx, args.organizationId, "media.upload");
 
     const jobId = await ctx.db.insert("importJobs", {
       organizationId: args.organizationId,
@@ -175,11 +175,11 @@ export const generateBulkUploadUrl = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "media.upload");
-
     if (!isSupportedMediaMimeType(args.mimeType)) {
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
+
+    await requirePermission(ctx, args.organizationId, "media.upload");
 
     const job = await ctx.db.get(args.jobId);
     if (!job || job.organizationId !== args.organizationId) {

@@ -526,12 +526,12 @@ export const unblockTask = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
     if (task.status !== "blocked") {
       throw new Error("Task is not blocked");
     }
+
+    await requireInstallationAccess(ctx, task.organizationId);
+    await requirePermission(ctx, task.organizationId, "collections.update");
 
     await ctx.db.patch(args.taskId, {
       status: "todo",
@@ -683,9 +683,6 @@ export const addDependency = mutation({
       throw new Error("Tasks must belong to the same exhibition");
     }
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
-
     if (args.taskId === args.dependsOnTaskId) {
       throw new Error("Task cannot depend on itself");
     }
@@ -694,6 +691,9 @@ export const addDependency = mutation({
     if (currentDeps.includes(args.dependsOnTaskId)) {
       throw new Error("Dependency already exists");
     }
+
+    await requireInstallationAccess(ctx, task.organizationId);
+    await requirePermission(ctx, task.organizationId, "collections.update");
 
     await ctx.db.patch(args.taskId, {
       dependsOnTaskIds: [...currentDeps, args.dependsOnTaskId],

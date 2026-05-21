@@ -318,12 +318,12 @@ export const addItems = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     if (loan.status !== "pending" && loan.status !== "active") {
       throw new Error("Can only add items to pending or active loans");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.update");
 
     // Verify collections belong to organization and are active
     for (const collectionId of args.collectionIds) {
@@ -403,12 +403,12 @@ export const removeItems = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     if (loan.status !== "pending") {
       throw new Error("Can only remove items from pending loans");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.update");
 
     await Promise.all(
       Array.from(args.loanItemIds).map(async (loanItemId) => {
@@ -780,12 +780,12 @@ export const update = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     if (loan.status !== "pending") {
       throw new Error("Can only update pending loans");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const updates: {
       lenderBorrowerName?: string;
@@ -831,12 +831,12 @@ export const approve = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.approve");
-
     if (loan.status !== "pending") {
       throw new Error("Loan is not pending");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.approve");
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1105,11 +1105,11 @@ export const reject = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-
     if (loan.status !== "pending") {
       throw new Error("Loan is not pending approval");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -1228,12 +1228,12 @@ export const returnLoan = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     if (loan.status !== "active" && loan.status !== "dispatched") {
       throw new Error("Loan must be active or dispatched to return");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const movement = await returnLoanItems(ctx, {
       loanId: args.loanId,
@@ -1341,12 +1341,13 @@ export const dispatch = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     if (loan.status !== "active") {
       throw new Error("Loan must be active to dispatch");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
     await Promise.all([
       dispatchLoanItems(ctx, {
         loanId: args.loanId,
@@ -1407,9 +1408,6 @@ export const cancel = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     if (
       loan.status !== "pending" &&
       loan.status !== "active" &&
@@ -1417,6 +1415,10 @@ export const cancel = mutation({
     ) {
       throw new Error("Can only cancel pending, active, or dispatched loans");
     }
+
+    await requireLoansAccess(ctx, loan.organizationId);
+    await requirePermission(ctx, loan.organizationId, "loans.update");
+
     await Promise.all([
       ctx.db.patch(args.loanId, {
         status: "cancelled",
@@ -1480,12 +1482,11 @@ export const returnItem = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-
     if (loan.status !== "active") {
       throw new Error("Loan is not active");
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     // Find loan item
@@ -1591,12 +1592,11 @@ export const createConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
-    await requireLoansAccess(ctx, loan.organizationId);
-
     if (!loan.useDetailedConditionReports) {
       throw new Error("Loan does not use detailed condition reports");
     }
 
+    await requireLoansAccess(ctx, loan.organizationId);
     await requirePermission(ctx, loan.organizationId, "loans.update");
 
     const reportId = await ctx.db.insert("conditionReports", {
@@ -2462,9 +2462,6 @@ export const requestExtension = mutation({
       throw new Error("Loan not found");
     }
 
-    // Verify permission
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
     // Can only extend active or dispatched loans
     if (loan.status !== "active" && loan.status !== "dispatched") {
       throw new Error(
@@ -2476,6 +2473,9 @@ export const requestExtension = mutation({
     if (loan.endDate && args.newEndDate <= loan.endDate) {
       throw new Error("New end date must be after current end date");
     }
+
+    // Verify permission
+    await requirePermission(ctx, loan.organizationId, "loans.update");
 
     // Check for existing pending request
     const existingRequest = await ctx.db
@@ -2971,11 +2971,11 @@ export const startDisputeInvestigation = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
-
     if (dispute.status !== "reported") {
       throw new Error("Dispute is not in reported status");
     }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     await ctx.db.patch(args.disputeId, {
       status: "investigating",
@@ -3028,11 +3028,11 @@ export const updateDisputeInvestigation = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
-
     if (dispute.status !== "investigating") {
       throw new Error("Dispute is not under investigation");
     }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     const updates: Record<string, unknown> = {};
     if (args.investigationNotes !== undefined) {
@@ -3072,11 +3072,11 @@ export const resolveConditionDispute = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
-
     if (dispute.status !== "reported" && dispute.status !== "investigating") {
       throw new Error("Dispute cannot be resolved in current status");
     }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     const updates: Record<string, unknown> = {
       status: args.resolution,
@@ -3174,13 +3174,6 @@ export const withdrawConditionDispute = mutation({
       throw new Error("Dispute not found");
     }
 
-    await requirePermission(ctx, dispute.organizationId, "loans.update");
-
-    // Only the reporter or admins can withdraw
-    if (dispute.reportedBy !== userId) {
-      await requirePermission(ctx, dispute.organizationId, "loans.approve");
-    }
-
     if (
       dispute.status === "resolved_in_favor_lender" ||
       dispute.status === "resolved_in_favor_borrower" ||
@@ -3189,6 +3182,13 @@ export const withdrawConditionDispute = mutation({
     ) {
       throw new Error("Dispute is already resolved or withdrawn");
     }
+
+    // Only the reporter or admins can withdraw
+    if (dispute.reportedBy !== userId) {
+      await requirePermission(ctx, dispute.organizationId, "loans.approve");
+    }
+
+    await requirePermission(ctx, dispute.organizationId, "loans.update");
 
     await ctx.db.patch(args.disputeId, {
       status: "withdrawn",
@@ -3259,42 +3259,47 @@ export const listConditionDisputes = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    const query = await (async () => {
-      if (args.loanId) {
-        const loanId = args.loanId;
-        const loan = await ctx.db.get(loanId);
-        if (!loan) {
-          throw new Error("Loan not found");
-        }
-        await requirePermission(ctx, loan.organizationId, "loans.read");
-        return ctx.db
-          .query("conditionDisputes")
-          .withIndex("by_loan", (q) => q.eq("loanId", loanId));
-      }
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
 
-      if (!args.organizationId) {
+    if (!args.loanId && !args.organizationId) {
+      throw new Error("Either loanId or organizationId is required");
+    }
+
+    let disputesQuery;
+    if (args.loanId) {
+      const loanId = args.loanId;
+      const loan = await ctx.db.get(loanId);
+      if (!loan) {
+        throw new Error("Loan not found");
+      }
+      await requirePermission(ctx, loan.organizationId, "loans.read");
+      disputesQuery = ctx.db
+        .query("conditionDisputes")
+        .withIndex("by_loan", (q) => q.eq("loanId", loanId));
+    } else {
+      const organizationId = args.organizationId;
+      if (!organizationId) {
         throw new Error("Either loanId or organizationId is required");
       }
-
-      const organizationId = args.organizationId;
       await requirePermission(ctx, organizationId, "loans.read");
-      if (args.status) {
-        const status = args.status;
-        return ctx.db
-          .query("conditionDisputes")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", organizationId).eq("status", status),
-          );
-      }
+      const status = args.status;
+      disputesQuery = status
+        ? ctx.db
+            .query("conditionDisputes")
+            .withIndex("by_organization_and_status", (q) =>
+              q.eq("organizationId", organizationId).eq("status", status),
+            )
+        : ctx.db
+            .query("conditionDisputes")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", organizationId),
+            );
+    }
 
-      return ctx.db
-        .query("conditionDisputes")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        );
-    })();
-
-    const result = await query.paginate(args.paginationOpts);
+    const result = await disputesQuery.paginate(args.paginationOpts);
 
     const enrichedDisputes = await Promise.all(
       result.page.map(async (dispute) => {

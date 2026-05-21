@@ -218,9 +218,6 @@ export const generateBatchQRCodes = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
     if (args.collectionIds.length === 0) {
       throw new Error("No collections selected");
     }
@@ -228,6 +225,8 @@ export const generateBatchQRCodes = mutation({
     if (args.collectionIds.length > 1000) {
       throw new Error("Maximum 1000 items per batch operation");
     }
+
+    await requirePermission(ctx, args.organizationId, "collections.read");
 
     // Get organization for slug
     const organization = await ctx.db.get(args.organizationId);

@@ -74,15 +74,13 @@ export const generateUploadUrl = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "media.upload");
-
-    await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
-
-    // Validate file type
     if (!isSupportedMediaMimeType(args.mimeType)) {
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
+
+    await requirePermission(ctx, args.organizationId, "media.upload");
+
+    await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     const isLargeFile = args.fileSize > MAX_SMALL_MEDIA_FILE_SIZE;
 
@@ -446,12 +444,9 @@ export const getThumbnailUrl = query({
 
     await requirePermission(ctx, media.organizationId, "media.read");
 
-    if (media.thumbnailStorageId) {
-      return await ctx.storage.getUrl(media.thumbnailStorageId);
-    }
-
-    // Fallback to original if no thumbnail
-    return await ctx.storage.getUrl(media.storageId);
+    return media.thumbnailStorageId
+      ? await ctx.storage.getUrl(media.thumbnailStorageId)
+      : await ctx.storage.getUrl(media.storageId);
   },
 });
 
@@ -1394,24 +1389,21 @@ export const trackDownload = mutation({
       throw new Error("Media not found");
     }
 
-    await requirePermission(ctx, media.organizationId, "media.read");
-
-    // Check if acknowledgment is required
     if (media.requiresAcknowledgment && !args.acknowledgedRights) {
       throw new Error("Rights acknowledgment required for this media");
     }
 
-    // Check for restricted or licensed content
     if (media.rightsStatus === "restricted") {
       throw new Error(
         "This media has restricted rights and cannot be downloaded",
       );
     }
 
-    // Check license expiry
     if (media.licenseExpiry && media.licenseExpiry < Date.now()) {
       throw new Error("License for this media has expired");
     }
+
+    await requirePermission(ctx, media.organizationId, "media.read");
 
     // Track the download
     const [downloadId, url] = await Promise.all([
@@ -1456,9 +1448,6 @@ export const checkDownloadAllowed = query({
       };
     }
 
-    await requirePermission(ctx, media.organizationId, "media.read");
-
-    // Check for restricted content
     if (media.rightsStatus === "restricted") {
       return {
         allowed: false,
@@ -1467,7 +1456,6 @@ export const checkDownloadAllowed = query({
       };
     }
 
-    // Check license expiry
     if (media.licenseExpiry && media.licenseExpiry < Date.now()) {
       return {
         allowed: false,
@@ -1475,6 +1463,8 @@ export const checkDownloadAllowed = query({
         reason: "License has expired",
       };
     }
+
+    await requirePermission(ctx, media.organizationId, "media.read");
 
     return {
       allowed: true,

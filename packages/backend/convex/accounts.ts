@@ -583,12 +583,12 @@ export const restore = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.manage");
-
     if (account.status !== "archived") {
       throw new Error("Can only restore archived accounts");
     }
+
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.manage");
 
     await ctx.db.patch(args.accountId, {
       status: "active",

@@ -604,17 +604,17 @@ export const addCoverage = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(
-      ctx,
-      policy.organizationId,
-      "organization.manage_settings",
-    );
-
     if (!args.collectionId && !args.exhibitionId && !args.loanId) {
       throw new Error(
         "Must specify at least one of: collectionId, exhibitionId, or loanId",
       );
     }
+
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
 
     if (args.collectionId) {
       const collection = await ctx.db.get(args.collectionId);
@@ -1677,12 +1677,6 @@ export const openDispute = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(
-      ctx,
-      claim.organizationId,
-      "organization.manage_settings",
-    );
-
     if (
       claim.status !== "denied" &&
       claim.status !== "approved" &&
@@ -1694,6 +1688,12 @@ export const openDispute = mutation({
     if (claim.isDisputed) {
       throw new Error("Claim already has an open dispute");
     }
+
+    await requirePermission(
+      ctx,
+      claim.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.patch(args.claimId, {
       status: "appealed",
@@ -1739,15 +1739,15 @@ export const updateDisputeStatus = mutation({
       throw new Error("Claim not found");
     }
 
+    if (!claim.isDisputed) {
+      throw new Error("Claim does not have an open dispute");
+    }
+
     await requirePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
     );
-
-    if (!claim.isDisputed) {
-      throw new Error("Claim does not have an open dispute");
-    }
 
     const updates: Record<string, unknown> = {
       disputeStatus: args.disputeStatus,
@@ -1798,15 +1798,15 @@ export const resolveDispute = mutation({
       throw new Error("Claim not found");
     }
 
+    if (!claim.isDisputed) {
+      throw new Error("Claim does not have an open dispute");
+    }
+
     await requirePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
     );
-
-    if (!claim.isDisputed) {
-      throw new Error("Claim does not have an open dispute");
-    }
 
     const now = Date.now();
     const updates: Record<string, unknown> = {
@@ -1867,15 +1867,15 @@ export const uploadDisputeDocument = mutation({
       throw new Error("Claim not found");
     }
 
+    if (!claim.isDisputed) {
+      throw new Error("Claim does not have an open dispute");
+    }
+
     await requirePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
     );
-
-    if (!claim.isDisputed) {
-      throw new Error("Claim does not have an open dispute");
-    }
 
     const documentIds = claim.disputeDocumentIds ?? [];
     documentIds.push(args.storageId);

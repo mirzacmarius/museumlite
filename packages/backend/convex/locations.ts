@@ -934,15 +934,10 @@ export const moveObject = mutation({
       throw new Error("Target location not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, collection.organizationId, "locations.update");
-
-    // Verify location belongs to same organization
     if (toLocation.organizationId !== collection.organizationId) {
       throw new Error("Location belongs to different organization");
     }
 
-    // Check location status
     const locationStatus = toLocation.status ?? "active";
     if (!toLocation.isActive || locationStatus === "closed") {
       if (!args.overrideStatus) {
@@ -963,6 +958,8 @@ export const moveObject = mutation({
         );
       }
     }
+
+    await requirePermission(ctx, collection.organizationId, "locations.update");
 
     // Check capacity
     if (toLocation.capacity) {
@@ -1158,11 +1155,11 @@ export const createMoveRequest = mutation({
       throw new Error("Target location not found");
     }
 
-    await requirePermission(ctx, collection.organizationId, "locations.update");
-
     if (toLocation.organizationId !== collection.organizationId) {
       throw new Error("Location belongs to different organization");
     }
+
+    await requirePermission(ctx, collection.organizationId, "locations.update");
 
     // Check for pending requests for same object
     const existingRequest = await ctx.db
@@ -1234,11 +1231,11 @@ export const approveMoveRequest = mutation({
       throw new Error("Move request not found");
     }
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
-
     if (request.status !== "pending") {
       throw new Error(`Request is already ${request.status}`);
     }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
 
     await ctx.db.patch(args.requestId, {
       status: "approved",
@@ -1282,11 +1279,11 @@ export const rejectMoveRequest = mutation({
       throw new Error("Move request not found");
     }
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
-
     if (request.status !== "pending") {
       throw new Error(`Request is already ${request.status}`);
     }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
 
     await ctx.db.patch(args.requestId, {
       status: "rejected",
@@ -1328,11 +1325,11 @@ export const executeMoveRequest = mutation({
       throw new Error("Move request not found");
     }
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
-
     if (request.status !== "approved") {
       throw new Error("Move request must be approved before execution");
     }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
 
     const collection = await ctx.db.get(request.collectionId);
     if (!collection) {
@@ -1428,11 +1425,11 @@ export const cancelMoveRequest = mutation({
       throw new Error("Move request not found");
     }
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
-
     if (request.status === "executed" || request.status === "cancelled") {
       throw new Error(`Cannot cancel ${request.status} request`);
     }
+
+    await requirePermission(ctx, request.organizationId, "locations.update");
 
     await ctx.db.patch(args.requestId, {
       status: "cancelled",

@@ -140,13 +140,13 @@ async function syncOrganizationBillingFromSubscription(
 }
 
 const billingWebhook = httpAction(async (ctx, request) => {
-  const { Webhook, WebhookVerificationError } = await import(
-    "standardwebhooks"
-  );
-
   if (!request.body) {
     return new Response("Missing request body", { status: 400 });
   }
+
+  const { Webhook, WebhookVerificationError } = await import(
+    "standardwebhooks"
+  );
 
   const body = await request.text();
   const headers = {

@@ -144,12 +144,6 @@ export const create = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
     if (!args.url.startsWith("https://")) {
       throw new Error("Webhook URL must use HTTPS");
     }
@@ -160,6 +154,12 @@ export const create = mutation({
     if (invalidEvents.length > 0) {
       throw new Error(`Invalid events: ${invalidEvents.join(", ")}`);
     }
+
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
 
     const secret = generateSecret();
 
@@ -207,12 +207,6 @@ export const update = mutation({
     const webhook = await ctx.db.get(args.webhookId);
     if (!webhook) throw new Error("Webhook not found");
 
-    await requirePermission(
-      ctx,
-      webhook.organizationId,
-      "organization.manage_settings",
-    );
-
     if (args.url && !args.url.startsWith("https://")) {
       throw new Error("Webhook URL must use HTTPS");
     }
@@ -225,6 +219,12 @@ export const update = mutation({
         throw new Error(`Invalid events: ${invalidEvents.join(", ")}`);
       }
     }
+
+    await requirePermission(
+      ctx,
+      webhook.organizationId,
+      "organization.manage_settings",
+    );
 
     await ctx.db.patch(args.webhookId, {
       ...(args.name !== undefined && { name: args.name }),
