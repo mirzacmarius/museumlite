@@ -24,9 +24,10 @@ import {
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { Clock, Mail, Trash2, UserCog, UserPlus } from "lucide-react";
-import { useMemo, useReducer, useState } from "react";
+import { useReducer, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useClientDate } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface RoleOption {
@@ -475,7 +476,7 @@ function UserRow({
   onRemoveUser,
   onUpdateRole,
 }: UserRowProps) {
-  const joinedDate = useClientFormattedDate(user.joinedAt, locale);
+  const joinedDate = useClientDate(user.joinedAt, locale);
 
   return (
     <div className="flex items-center justify-between p-4">
@@ -634,7 +635,7 @@ function PendingInvitationRow({
   onCancelInvitation,
   onResendInvitation,
 }: PendingInvitationRowProps) {
-  const expiresDate = useClientFormattedDate(invitation.expiresAt, locale);
+  const expiresDate = useClientDate(invitation.expiresAt, locale);
 
   return (
     <div className="flex items-center justify-between p-4">
@@ -695,30 +696,5 @@ function EmptyState({
     <div className={`flex ${heightClassName} items-center justify-center`}>
       <p className="text-muted-foreground">{label}</p>
     </div>
-  );
-}
-
-const DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>([
-  ["en-US", new Intl.DateTimeFormat("en-US")],
-  ["fr", new Intl.DateTimeFormat("fr")],
-  ["es", new Intl.DateTimeFormat("es")],
-  ["nb-NO", new Intl.DateTimeFormat("nb-NO")],
-  ["ro-RO", new Intl.DateTimeFormat("ro-RO")],
-]);
-
-function getDateFormatter(locale: string) {
-  const intlLocale = locale === "no" ? "nb-NO" : locale;
-  let formatter = DATE_FORMATTERS.get(intlLocale);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat(intlLocale);
-    DATE_FORMATTERS.set(intlLocale, formatter);
-  }
-  return formatter;
-}
-
-function useClientFormattedDate(timestamp: number, locale: string) {
-  return useMemo(
-    () => getDateFormatter(locale).format(timestamp),
-    [locale, timestamp],
   );
 }

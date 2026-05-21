@@ -45,19 +45,6 @@ for (const locale of Object.keys(LOCALE_MAP) as Locale[]) {
   }
 }
 
-function getCurrencyFormatter(locale: Locale, currency: string) {
-  const key = `${locale}:${currency}`;
-  let formatter = CURRENCY_FORMATTERS.get(key);
-  if (!formatter) {
-    formatter = new Intl.NumberFormat(LOCALE_MAP[locale], {
-      style: "currency",
-      currency,
-    });
-    CURRENCY_FORMATTERS.set(key, formatter);
-  }
-  return formatter;
-}
-
 /**
  * Formats a number with locale-specific thousand separators and decimals.
  *
@@ -81,5 +68,13 @@ export function formatCurrency(
   locale: Locale,
   currency: string,
 ): string {
-  return getCurrencyFormatter(locale, currency).format(value);
+  const formatter = CURRENCY_FORMATTERS.get(`${locale}:${currency}`);
+  if (formatter) {
+    return formatter.format(value);
+  }
+
+  return value.toLocaleString(LOCALE_MAP[locale], {
+    style: "currency",
+    currency,
+  });
 }
