@@ -32,6 +32,8 @@ export interface Loan {
   startDate: number;
   endDate?: number;
   insuranceValue?: number;
+  terms?: string;
+  notes?: string;
   status: LoanStatus;
   workflowStep?: number;
   workflowHistory: WorkflowHistoryEntry[];

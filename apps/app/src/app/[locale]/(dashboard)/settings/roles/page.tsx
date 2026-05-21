@@ -1,60 +1,32 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
-import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@v1/ui/dialog";
-import { EmptyState } from "@v1/ui/empty-state";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
-import { Textarea } from "@v1/ui/textarea";
-import { useMutation, useQuery } from "convex/react";
-import { Edit, Plus, Shield, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { CreateRoleButton, RoleFormDialog } from "./role-form-dialog";
+import { RolesList } from "./roles-list";
+import { useRolesSettings } from "./use-roles-settings";
 
 export default function RolesSettingsPage() {
-  const t = useScopedI18n("settings.roles");
-  const { currentOrganizationId } = useOrganization();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<{
-    _id: Id<"roles">;
-    name: string;
-    description?: string;
-    permissions: Id<"permissions">[];
-  } | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    selectedPermissions: [] as Id<"permissions">[],
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const roles = useQuery(
-    api.roles.listRoles,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
-
-  const permissions = useQuery(api.roles.listPermissions, {});
-
-  const createRole = useMutation(api.roles.createRole);
-  const updateRole = useMutation(api.roles.updateRole);
-  const deleteRole = useMutation(api.roles.deleteRole);
+  const {
+    t,
+    currentOrganizationId,
+    roles,
+    groupedPermissions,
+    createDialogOpen,
+    setCreateDialogOpen,
+    editDialogOpen,
+    setEditDialogOpen,
+    formData,
+    setFormData,
+    isSubmitting,
+    error,
+    handleCreateRole,
+    handleEditRole,
+    handleUpdateRole,
+    handleDeleteRole,
+    togglePermission,
+    closeCreateDialog,
+    closeEditDialog,
+  } = useRolesSettings();
 
   if (!currentOrganizationId) {
     return (
@@ -65,138 +37,6 @@ export default function RolesSettingsPage() {
       </div>
     );
   }
-
-  const groupedPermissions = permissions?.reduce(
-    (acc, perm) => {
-      const category = perm.category;
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category]!.push(perm);
-      return acc;
-    },
-    {} as Record<string, Array<(typeof permissions)[0]>>,
-  );
-
-  const handleCreateRole = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!formData.name.trim()) {
-      setError(t("nameRequired"));
-      return;
-    }
-
-    if (formData.selectedPermissions.length === 0) {
-      setError(t("permissionsRequired"));
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await createRole({
-        organizationId: currentOrganizationId as Id<"organizations">,
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        permissionIds: formData.selectedPermissions,
-      });
-      setFormData({
-        name: "",
-        description: "",
-        selectedPermissions: [],
-      });
-      setCreateDialogOpen(false);
-    } catch (err) {
-      console.error("Error creating role:", err);
-      setError(err instanceof Error ? err.message : t("createFailed"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEditRole = (role: NonNullable<typeof roles>[0]) => {
-    if (role.isSystemRole) {
-      alert(t("systemRoleError"));
-      return;
-    }
-    setEditingRole({
-      _id: role._id,
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions.map(
-        (p: { _id: Id<"permissions"> }) => p._id,
-      ),
-    });
-    setFormData({
-      name: role.name,
-      description: role.description || "",
-      selectedPermissions: role.permissions.map(
-        (p: { _id: Id<"permissions"> }) => p._id,
-      ),
-    });
-    setEditDialogOpen(true);
-  };
-
-  const handleUpdateRole = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingRole) return;
-
-    setError(null);
-
-    if (!formData.name.trim()) {
-      setError(t("nameRequired"));
-      return;
-    }
-
-    if (formData.selectedPermissions.length === 0) {
-      setError(t("permissionsRequired"));
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await updateRole({
-        roleId: editingRole._id,
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        permissionIds: formData.selectedPermissions,
-      });
-      setEditingRole(null);
-      setFormData({
-        name: "",
-        description: "",
-        selectedPermissions: [],
-      });
-      setEditDialogOpen(false);
-    } catch (err) {
-      console.error("Error updating role:", err);
-      setError(err instanceof Error ? err.message : t("updateFailed"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteRole = async (roleId: Id<"roles">) => {
-    if (!confirm(t("deleteConfirm"))) {
-      return;
-    }
-
-    try {
-      await deleteRole({ roleId });
-    } catch (err) {
-      console.error("Error deleting role:", err);
-      alert(err instanceof Error ? err.message : t("deleteFailed"));
-    }
-  };
-
-  const togglePermission = (permissionId: Id<"permissions">) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedPermissions: prev.selectedPermissions.includes(permissionId)
-        ? prev.selectedPermissions.filter((id) => id !== permissionId)
-        : [...prev.selectedPermissions, permissionId],
-    }));
-  };
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -212,323 +52,45 @@ export default function RolesSettingsPage() {
           </p>
         </div>
         <PermissionGate permission="users.manage_roles">
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 size-4" />
-                {t("createButton")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-              <form onSubmit={handleCreateRole}>
-                <DialogHeader>
-                  <DialogTitle>{t("createNewRole")}</DialogTitle>
-                  <DialogDescription>
-                    {t("createDescription")}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  {error && (
-                    <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                      {error}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="role-name">{t("roleNameLabel")}</Label>
-                    <Input
-                      id="role-name"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      placeholder={t("roleNamePlaceholder")}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role-description">
-                      {t("descriptionLabel")}
-                    </Label>
-                    <Textarea
-                      id="role-description"
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          description: e.target.value,
-                        }))
-                      }
-                      placeholder={t("descriptionPlaceholder")}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label>{t("permissionsLabel")}</Label>
-                    <div className="space-y-4 rounded-lg border border-border p-4">
-                      {groupedPermissions &&
-                        Object.entries(groupedPermissions).map(
-                          ([category, perms]) => (
-                            <div key={category} className="space-y-2">
-                              <h4 className="text-sm font-medium capitalize">
-                                {category}
-                              </h4>
-                              <div className="space-y-2 pl-4">
-                                {perms.map((perm) => (
-                                  <div
-                                    key={perm._id}
-                                    className="flex items-center gap-x-2"
-                                  >
-                                    <Checkbox
-                                      id={`perm-${perm._id}`}
-                                      checked={formData.selectedPermissions.includes(
-                                        perm._id,
-                                      )}
-                                      onCheckedChange={() =>
-                                        togglePermission(perm._id)
-                                      }
-                                    />
-                                    <Label
-                                      htmlFor={`perm-${perm._id}`}
-                                      className="text-sm font-normal cursor-pointer"
-                                    >
-                                      {perm.name}
-                                      {perm.description && (
-                                        <span className="ml-2 text-xs text-muted-foreground">
-                                          - {perm.description}
-                                        </span>
-                                      )}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ),
-                        )}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setCreateDialogOpen(false);
-                      setFormData({
-                        name: "",
-                        description: "",
-                        selectedPermissions: [],
-                      });
-                      setError(null);
-                    }}
-                  >
-                    {t("cancel")}
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? t("updating") : t("createButton")}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <RoleFormDialog
+            mode="create"
+            open={createDialogOpen}
+            onOpenChange={setCreateDialogOpen}
+            formData={formData}
+            setFormData={setFormData}
+            groupedPermissions={groupedPermissions}
+            error={error}
+            isSubmitting={isSubmitting}
+            onSubmit={handleCreateRole}
+            onCancel={closeCreateDialog}
+            onTogglePermission={togglePermission}
+            t={t}
+            trigger={<CreateRoleButton label={t("createButton")} />}
+          />
         </PermissionGate>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {roles === undefined ? (
-          <div className="col-span-2 flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">Loading roles…</p>
-          </div>
-        ) : roles.length === 0 ? (
-          <div className="col-span-2">
-            <EmptyState
-              icon={Shield}
-              title="No roles found"
-              description="Create custom roles to manage team permissions"
-              size="md"
-            />
-          </div>
-        ) : (
-          roles.map((role) => (
-            <div
-              key={role._id}
-              className="rounded-lg border border-border bg-card p-4"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium">{role.name}</h3>
-                    {role.isSystemRole && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                        {t("systemBadge")}
-                      </span>
-                    )}
-                  </div>
-                  {role.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {role.description}
-                    </p>
-                  )}
-                  <div className="mt-3">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Permissions ({role.permissions.length})
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {role.permissions.slice(0, 5).map((perm) => (
-                        <span
-                          key={perm._id}
-                          className="rounded bg-secondary px-2 py-0.5 text-xs"
-                        >
-                          {perm.name}
-                        </span>
-                      ))}
-                      {role.permissions.length > 5 && (
-                        <span className="rounded bg-secondary px-2 py-0.5 text-xs">
-                          +{role.permissions.length - 5} {t("morePermissions")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {!role.isSystemRole && (
-                  <div className="flex gap-2">
-                    <PermissionGate permission="users.manage_roles">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditRole(role)}
-                      >
-                        <Edit className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteRole(role._id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </PermissionGate>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <RolesList
+        roles={roles}
+        onEditRole={handleEditRole}
+        onDeleteRole={handleDeleteRole}
+        t={t}
+      />
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-          <form onSubmit={handleUpdateRole}>
-            <DialogHeader>
-              <DialogTitle>{t("editRole")}</DialogTitle>
-              <DialogDescription>{t("editDescription")}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              {error && (
-                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="edit-role-name">{t("roleNameLabel")}</Label>
-                <Input
-                  id="edit-role-name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-role-description">
-                  {t("descriptionLabel")}
-                </Label>
-                <Textarea
-                  id="edit-role-description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-3">
-                <Label>{t("permissionsLabel")}</Label>
-                <div className="space-y-4 rounded-lg border border-border p-4">
-                  {groupedPermissions &&
-                    Object.entries(groupedPermissions).map(
-                      ([category, perms]) => (
-                        <div key={category} className="space-y-2">
-                          <h4 className="text-sm font-medium capitalize">
-                            {category}
-                          </h4>
-                          <div className="space-y-2 pl-4">
-                            {perms.map((perm) => (
-                              <div
-                                key={perm._id}
-                                className="flex items-center gap-x-2"
-                              >
-                                <Checkbox
-                                  id={`edit-perm-${perm._id}`}
-                                  checked={formData.selectedPermissions.includes(
-                                    perm._id,
-                                  )}
-                                  onCheckedChange={() =>
-                                    togglePermission(perm._id)
-                                  }
-                                />
-                                <Label
-                                  htmlFor={`edit-perm-${perm._id}`}
-                                  className="text-sm font-normal cursor-pointer"
-                                >
-                                  {perm.name}
-                                  {perm.description && (
-                                    <span className="ml-2 text-xs text-muted-foreground">
-                                      - {perm.description}
-                                    </span>
-                                  )}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ),
-                    )}
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEditDialogOpen(false);
-                  setEditingRole(null);
-                  setFormData({
-                    name: "",
-                    description: "",
-                    selectedPermissions: [],
-                  });
-                  setError(null);
-                }}
-              >
-                {t("cancel")}
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? t("updating") : t("updateButton")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <RoleFormDialog
+        mode="edit"
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        formData={formData}
+        setFormData={setFormData}
+        groupedPermissions={groupedPermissions}
+        error={error}
+        isSubmitting={isSubmitting}
+        onSubmit={handleUpdateRole}
+        onCancel={closeEditDialog}
+        onTogglePermission={togglePermission}
+        t={t}
+      />
     </div>
   );
 }

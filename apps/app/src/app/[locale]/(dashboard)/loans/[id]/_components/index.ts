@@ -1,7 +1,8 @@
 export { ActivityTab } from "./activity-tab";
 export { FacilityTab } from "./facility-tab";
-export { LoanAgreement } from "./loan-agreement";
-export { LoanApprovalWorkflow } from "./loan-approval-workflow";
+export { LoanAgreement } from "./loan-agreement/index";
+export { LoanItemsManager } from "./loan-items-manager/index";
+export { LoanApprovalWorkflow } from "./loan-approval-workflow/index";
 export { LoanContextSidebar } from "./loan-context-sidebar";
 export { LogisticsTab } from "./logistics-tab";
 export { ObjectsTab } from "./objects-tab";

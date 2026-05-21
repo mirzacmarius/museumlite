@@ -2,29 +2,18 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from "@v1/ui/command";
+import { Command } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
-import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { Check, ChevronsUpDown, Plus, Trash2, X } from "lucide-react";
+import { ChevronsUpDown, Plus } from "lucide-react";
 import * as React from "react";
+import { TypeComboboxDeleteDialog } from "./type-combobox-delete-dialog";
+import { TypeComboboxListContent } from "./type-combobox-list-content";
+import {
+  TypeComboboxSelectedBadge,
+  formatTypeName,
+} from "./type-combobox-selected-badge";
 
 interface TypeComboboxProps {
   organizationId?: string;
@@ -37,50 +26,6 @@ interface TypeComboboxProps {
 }
 
 const EMPTY_TYPE_VALUES: string[] = [];
-
-function SelectedTypeBadge({
-  type,
-  onRemove,
-}: {
-  type: string;
-  onRemove: (type: string) => void;
-}) {
-  return (
-    <div
-      role="listitem"
-      className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
-      onClick={(event) => {
-        event.stopPropagation();
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.stopPropagation();
-        }
-      }}
-    >
-      <span>{type}</span>
-      <span
-        role="button"
-        tabIndex={0}
-        onClick={(event) => {
-          event.stopPropagation();
-          onRemove(type);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.stopPropagation();
-            event.preventDefault();
-            onRemove(type);
-          }
-        }}
-        className="cursor-pointer hover:text-destructive"
-        aria-label={`Remove ${type}`}
-      >
-        <X className="size-3" />
-      </span>
-    </div>
-  );
-}
 
 export function TypeCombobox({
   organizationId,
@@ -106,12 +51,10 @@ export function TypeCombobox({
     window.requestAnimationFrame(() => inputRef.current?.focus());
   };
 
-  // Ensure value is always an array
   const selectedValues = React.useMemo(() => {
     return Array.isArray(value) ? value : [];
   }, [value]);
 
-  // Fetch types for the organization
   const types = useQuery(
     api.typeOptions.list,
     organizationId
@@ -119,7 +62,6 @@ export function TypeCombobox({
       : "skip",
   );
 
-  // Check type usage when attempting to delete (exclude current collection)
   const typeUsage = useQuery(
     api.typeOptions.checkUsage,
     typeToDelete
@@ -132,11 +74,9 @@ export function TypeCombobox({
       : "skip",
   );
 
-  // Mutations
   const createType = useMutation(api.typeOptions.create);
   const removeType = useMutation(api.typeOptions.remove);
 
-  // Convert types to options format
   const typeOptions = React.useMemo(() => {
     return (types || []).map((type) => ({
       value: type.name,
@@ -151,14 +91,12 @@ export function TypeCombobox({
     );
 
     if (isSelected) {
-      // Remove from selection
       onValueChange?.(
         selectedValues.filter(
           (v) => v.toLowerCase() !== selectedValue.toLowerCase(),
         ),
       );
     } else {
-      // Add to selection
       onValueChange?.([...selectedValues, selectedValue]);
     }
     setInputValue("");
@@ -168,7 +106,6 @@ export function TypeCombobox({
     onValueChange?.(selectedValues.filter((v) => v !== typeToRemove));
   };
 
-  // Filter options based on search
   const filteredTypes = typeOptions.filter((type) =>
     type.label.toLowerCase().includes(inputValue.toLowerCase()),
   );
@@ -177,13 +114,6 @@ export function TypeCombobox({
     inputValue.trim().length > 0 &&
     filteredTypes.length === 0;
 
-  // Format type name with first letter uppercase
-  const formatTypeName = (name: string): string => {
-    const trimmed = name.trim();
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-  };
-
-  // Handle creating and selecting type
   const handleCreateAndSelectType = async (typeName: string) => {
     if (!organizationId || !typeName.trim()) {
       return;
@@ -197,15 +127,12 @@ export function TypeCombobox({
         name: formattedName,
       });
 
-      // Add the newly created type to selection
       if (!selectedValues.includes(formattedName)) {
         onValueChange?.([...selectedValues, formattedName]);
       }
 
-      // Clear input
       setInputValue("");
     } catch (err) {
-      // If type already exists, just add it to selection
       if (err instanceof Error && err.message.includes("already exists")) {
         if (!selectedValues.includes(formattedName)) {
           onValueChange?.([...selectedValues, formattedName]);
@@ -215,11 +142,6 @@ export function TypeCombobox({
     }
   };
 
-  // Handle deleting type from organization
-  const handleDeleteType = (typeId: string, typeName: string) => {
-    setTypeToDelete({ id: typeId, name: typeName });
-  };
-
   const confirmDeleteType = async () => {
     if (!typeToDelete) return;
 
@@ -227,13 +149,11 @@ export function TypeCombobox({
       await removeType({
         typeId: typeToDelete.id as Id<"typeOptions">,
       });
-      // Remove from selection if it was selected
       if (selectedValues.includes(typeToDelete.name)) {
         onValueChange?.(selectedValues.filter((v) => v !== typeToDelete.name));
       }
       setTypeToDelete(null);
-    } catch (err) {
-      // Silently fail
+    } catch {
       setTypeToDelete(null);
     }
   };
@@ -255,16 +175,14 @@ export function TypeCombobox({
               }
             }}
           >
-            {/* Selected types as badges */}
             {selectedValues.map((type) => (
-              <SelectedTypeBadge
+              <TypeComboboxSelectedBadge
                 key={type}
                 type={type}
                 onRemove={handleRemove}
               />
             ))}
 
-            {/* Inline input for searching/adding */}
             <input
               ref={inputRef}
               type="text"
@@ -317,150 +235,27 @@ export function TypeCombobox({
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <Command shouldFilter={false}>
-            <CommandList id={listId} className="max-h-[300px]">
-              <CommandEmpty>
-                {inputValue ? (
-                  <div className="p-4 text-sm text-center">
-                    <p className="text-muted-foreground mb-2">
-                      No matching types found.
-                    </p>
-                    {organizationId && (
-                      <p className="text-xs text-muted-foreground">
-                        Press{" "}
-                        <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">
-                          Enter
-                        </kbd>{" "}
-                        to add{" "}
-                        <span className="font-medium text-foreground">
-                          "{formatTypeName(inputValue)}"
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-4 text-sm text-muted-foreground text-center">
-                    Type to search types
-                  </div>
-                )}
-              </CommandEmpty>
-
-              {filteredTypes.length > 0 && (
-                <CommandGroup heading="Organization Types">
-                  {filteredTypes.map((type) => (
-                    <CommandItem
-                      key={type.value}
-                      value={type.value}
-                      onSelect={() => handleSelect(type.value)}
-                      className="px-2 py-1.5"
-                    >
-                      <div className="flex w-full items-center gap-2">
-                        <Check
-                          className={cn(
-                            "size-4 shrink-0",
-                            selectedValues.some(
-                              (v) =>
-                                v.toLowerCase() === type.value.toLowerCase(),
-                            )
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                        <span className="flex-1 text-sm">{type.label}</span>
-                        {canDeleteTypes && type.id ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="size-6 p-0 text-destructive hover:text-destructive"
-                            onPointerDown={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              handleDeleteType(type.id, type.label);
-                            }}
-                          >
-                            <Trash2 className="size-3" />
-                          </Button>
-                        ) : null}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </CommandList>
+            <TypeComboboxListContent
+              listId={listId}
+              inputValue={inputValue}
+              organizationId={organizationId}
+              filteredTypes={filteredTypes}
+              selectedValues={selectedValues}
+              canDeleteTypes={canDeleteTypes}
+              formatTypeName={formatTypeName}
+              onSelect={handleSelect}
+              onDeleteType={(id, name) => setTypeToDelete({ id, name })}
+            />
           </Command>
         </PopoverContent>
       </Popover>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={!!typeToDelete}
-        onOpenChange={(open) => !open && setTypeToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {typeUsage?.isUsed ? "Cannot Delete Type" : "Delete Type"}
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              {typeUsage?.isUsed ? (
-                <div className="space-y-2">
-                  <div>
-                    The type{" "}
-                    <span className="font-semibold text-foreground">
-                      "{typeToDelete?.name}"
-                    </span>{" "}
-                    cannot be deleted because it is currently being used by{" "}
-                    {typeUsage.usageCount}{" "}
-                    {typeUsage.usageCount === 1 ? "collection" : "collections"}.
-                  </div>
-                  {typeUsage.collectionNames.length > 0 && (
-                    <div className="mt-2">
-                      <div className="text-xs font-medium mb-1">Used in:</div>
-                      <ul className="text-xs list-disc pl-4 space-y-0.5">
-                        {typeUsage.collectionNames.slice(0, 5).map((name) => (
-                          <li key={name}>{name}</li>
-                        ))}
-                        {typeUsage.collectionNames.length > 5 && (
-                          <li className="italic">
-                            ...and {typeUsage.collectionNames.length - 5} more
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-foreground">
-                    "{typeToDelete?.name}"
-                  </span>
-                  ? This action cannot be undone.
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {typeUsage?.isUsed ? (
-              <AlertDialogCancel>Close</AlertDialogCancel>
-            ) : (
-              <>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={confirmDeleteType}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <TypeComboboxDeleteDialog
+        typeToDelete={typeToDelete}
+        typeUsage={typeUsage ?? undefined}
+        onOpenChange={() => setTypeToDelete(null)}
+        onConfirm={confirmDeleteType}
+      />
     </div>
   );
 }

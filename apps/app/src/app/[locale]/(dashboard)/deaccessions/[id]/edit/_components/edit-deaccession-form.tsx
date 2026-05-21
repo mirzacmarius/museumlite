@@ -1,0 +1,303 @@
+"use client";
+
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
+import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { Textarea } from "@v1/ui/textarea";
+import { Save } from "lucide-react";
+import type {
+  DeaccessionMethod,
+  DeaccessionTargetStatus,
+  EditDeaccessionFormData,
+} from "./edit-deaccession-form-types";
+
+interface EditDeaccessionFormProps {
+  deaccessionNumber: string;
+  dateDeaccessionedLabel: string;
+  formData: EditDeaccessionFormData;
+  setFormData: React.Dispatch<React.SetStateAction<EditDeaccessionFormData>>;
+  error: string | null;
+  isSubmitting: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+  onCancel: () => void;
+}
+
+export function EditDeaccessionForm({
+  deaccessionNumber,
+  dateDeaccessionedLabel,
+  formData,
+  setFormData,
+  error,
+  isSubmitting,
+  onSubmit,
+  onCancel,
+}: EditDeaccessionFormProps) {
+  const t = useScopedI18n("deaccessions");
+  const tCommon = useScopedI18n("common");
+
+  return (
+    <form onSubmit={onSubmit} className="p-6">
+      {error && (
+        <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="space-y-2">
+          <Label>{t("form.deaccessionNumber")}</Label>
+          <Input value={deaccessionNumber} disabled className="bg-muted" />
+          <p className="text-xs text-muted-foreground">
+            {t("form.deaccessionNumberReadonly")}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>{t("form.dateDeaccessioned")}</Label>
+          <Input value={dateDeaccessionedLabel} disabled className="bg-muted" />
+          <p className="text-xs text-muted-foreground">
+            {t("form.dateDeaccessionedReadonly")}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="reason">{t("form.reasonLabel")}</Label>
+          <Input
+            id="reason"
+            value={formData.reason}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, reason: e.target.value }))
+            }
+            placeholder={t("form.reasonPlaceholder")}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="targetCollectionStatus">Requested Action</Label>
+          <Select
+            value={formData.targetCollectionStatus}
+            onValueChange={(value) => {
+              const nextTargetCollectionStatus =
+                value as DeaccessionTargetStatus;
+              setFormData((prev) => ({
+                ...prev,
+                targetCollectionStatus: nextTargetCollectionStatus,
+                method:
+                  nextTargetCollectionStatus === "deaccessioned"
+                    ? formData.method
+                    : "destruction",
+              }));
+            }}
+          >
+            <SelectTrigger id="targetCollectionStatus">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="deaccessioned">Deaccession</SelectItem>
+              <SelectItem value="archived">Archive</SelectItem>
+              <SelectItem value="deleted">Delete</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="method">{t("form.methodLabel")}</Label>
+          <Select
+            value={formData.method}
+            onValueChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                method: value as DeaccessionMethod,
+              }))
+            }
+          >
+            <SelectTrigger
+              id="method"
+              disabled={formData.targetCollectionStatus !== "deaccessioned"}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sale">{t("form.methodSale")}</SelectItem>
+              <SelectItem value="donation">
+                {t("form.methodDonation")}
+              </SelectItem>
+              <SelectItem value="destruction">
+                {t("form.methodDestruction")}
+              </SelectItem>
+              <SelectItem value="transfer">
+                {t("form.methodTransfer")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {formData.targetCollectionStatus !== "deaccessioned" ? (
+            <p className="text-xs text-muted-foreground">
+              Archive and delete requests use the deaccession approval workflow
+              and do not need a separate disposal method.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="disposition">{t("form.dispositionLabel")}</Label>
+          <Input
+            id="disposition"
+            value={formData.disposition}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                disposition: e.target.value,
+              }))
+            }
+            placeholder={t("form.dispositionPlaceholder")}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="notes">{t("form.notesLabel")}</Label>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, notes: e.target.value }))
+            }
+            placeholder={t("form.notesPlaceholder")}
+            rows={4}
+          />
+        </div>
+
+        {formData.targetCollectionStatus === "deaccessioned" &&
+          formData.method === "sale" && (
+            <div className="border-t border-border pt-6 mt-6">
+              <h3 className="text-sm font-medium text-foreground mb-4">
+                {t("form.proceedsTitle")}
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="proceedsAmount">
+                      {t("form.proceedsAmount")}
+                    </Label>
+                    <Input
+                      id="proceedsAmount"
+                      type="number"
+                      step="0.01"
+                      value={formData.proceedsAmount}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          proceedsAmount: e.target.value,
+                        }))
+                      }
+                      placeholder={t("form.proceedsAmountPlaceholder")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="proceedsCurrency">
+                      {t("form.proceedsCurrency")}
+                    </Label>
+                    <Select
+                      value={formData.proceedsCurrency}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          proceedsCurrency: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="proceedsCurrency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="GBP">GBP</SelectItem>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                        <SelectItem value="NOK">NOK</SelectItem>
+                        <SelectItem value="SEK">SEK</SelectItem>
+                        <SelectItem value="DKK">DKK</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="proceedsRecipient">
+                      {t("form.proceedsRecipient")}
+                    </Label>
+                    <Input
+                      id="proceedsRecipient"
+                      value={formData.proceedsRecipient}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          proceedsRecipient: e.target.value,
+                        }))
+                      }
+                      placeholder={t("form.proceedsRecipientPlaceholder")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="proceedsDate">
+                      {t("form.proceedsDate")}
+                    </Label>
+                    <Input
+                      id="proceedsDate"
+                      type="date"
+                      value={formData.proceedsDate}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          proceedsDate: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="proceedsNotes">
+                    {t("form.proceedsNotes")}
+                  </Label>
+                  <Textarea
+                    id="proceedsNotes"
+                    value={formData.proceedsNotes}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        proceedsNotes: e.target.value,
+                      }))
+                    }
+                    placeholder={t("form.proceedsNotesPlaceholder")}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {tCommon("cancel")}
+          </Button>
+          <PermissionGate permission="collections.update">
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 size-4" />
+              {isSubmitting ? t("actions.updating") : t("actions.update")}
+            </Button>
+          </PermissionGate>
+        </div>
+      </div>
+    </form>
+  );
+}

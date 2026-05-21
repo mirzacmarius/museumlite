@@ -5,7 +5,9 @@
  * type-safe formatting functions.
  */
 
-type Locale = "en" | "fr" | "es" | "no" | "ro";
+export type FormatLocale = "en" | "fr" | "es" | "no" | "ro";
+
+type Locale = FormatLocale;
 
 /**
  * Maps app locale codes to Intl API locale strings.

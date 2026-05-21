@@ -1,9 +1,9 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
-import { cn } from "@v1/ui/utils";
 
 /**
  * PageHeader - Standardized page header component

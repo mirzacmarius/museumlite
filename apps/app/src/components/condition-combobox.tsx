@@ -2,103 +2,22 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@v1/ui/command";
+import { Command } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
-import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import {
-  AlertOctagon,
-  Check,
-  ChevronsUpDown,
-  Edit3,
-  Gem,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 import * as React from "react";
+import { ConditionComboboxDeleteDialog } from "./condition-combobox-delete-dialog";
+import { ConditionComboboxListContent } from "./condition-combobox-list-content";
+import {
+  type ConditionComboboxProps,
+  STANDARD_CONDITIONS,
+  formatConditionName,
+} from "./condition-combobox-types";
 
-export interface ConditionOption {
-  value: string;
-  label: string;
-  description: string;
-  id?: string; // For custom conditions (enables edit/delete)
-  icon?: React.ReactNode; // Icon for the condition
-}
-
-const STANDARD_CONDITIONS: ConditionOption[] = [
-  {
-    value: "Excellent",
-    label: "Excellent",
-    description:
-      "New or mint condition. Either purchased new or has been well curated since it was made.",
-    icon: <Gem className="size-3.5 text-emerald-500" />,
-  },
-  {
-    value: "Very Good",
-    label: "Very Good",
-    description:
-      "Shows some minor signs of use or age. Wear is normal, no visible damage.",
-    icon: <Sparkles className="size-3.5 text-cyan-500" />,
-  },
-  {
-    value: "Good",
-    label: "Good",
-    description:
-      "Item is aged or faded and may show minor damage but remains structurally sound.",
-    icon: <ShieldCheck className="size-3.5 text-blue-500" />,
-  },
-  {
-    value: "Poor",
-    label: "Poor",
-    description:
-      "Item exhibits severe damage or heavy use and would require extensive stabilization, restoration or conservation.",
-    icon: <AlertOctagon className="size-3.5 text-red-500" />,
-  },
-];
-
-/**
- * Get the icon for a given condition value
- * Returns the standard condition icon, or Edit3 icon for custom conditions
- */
-export function getConditionIcon(conditionValue: string): React.ReactNode {
-  const standardCondition = STANDARD_CONDITIONS.find(
-    (c) => c.value.toLowerCase() === conditionValue.toLowerCase(),
-  );
-
-  if (standardCondition) {
-    return standardCondition.icon;
-  }
-
-  // Return custom condition icon for non-standard conditions
-  return <Edit3 className="size-3.5 text-purple-500" />;
-}
-
-interface ConditionComboboxProps {
-  organizationId?: string;
-  value?: string;
-  onValueChange?: (value: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-}
+export type { ConditionOption } from "./condition-combobox-types";
+export { getConditionIcon } from "./condition-combobox-types";
 
 export function ConditionCombobox({
   organizationId,
@@ -115,7 +34,6 @@ export function ConditionCombobox({
     name: string;
   } | null>(null);
 
-  // Fetch custom conditions for the organization
   const customConditions = useQuery(
     api.conditionOptions.list,
     organizationId
@@ -123,7 +41,6 @@ export function ConditionCombobox({
       : "skip",
   );
 
-  // Check condition usage when attempting to delete
   const conditionUsage = useQuery(
     api.conditionOptions.checkUsage,
     conditionToDelete
@@ -131,11 +48,9 @@ export function ConditionCombobox({
       : "skip",
   );
 
-  // Mutations
   const createCondition = useMutation(api.conditionOptions.create);
   const removeCondition = useMutation(api.conditionOptions.remove);
 
-  // Convert custom conditions to options format
   const customConditionOptions = React.useMemo(() => {
     return (customConditions || []).map((condition) => ({
       value: condition.name,
@@ -145,10 +60,7 @@ export function ConditionCombobox({
     }));
   }, [customConditions]);
 
-  // Combine all options
   const allOptions = [...STANDARD_CONDITIONS, ...customConditionOptions];
-
-  // Find selected option
   const selectedOption = allOptions.find(
     (option) => option.value.toLowerCase() === value?.toLowerCase(),
   );
@@ -160,7 +72,6 @@ export function ConditionCombobox({
     setInputValue("");
   };
 
-  // Filter options based on search
   const filteredSystemConditions = STANDARD_CONDITIONS.filter(
     (condition) =>
       condition.label.toLowerCase().includes(inputValue.toLowerCase()) ||
@@ -173,16 +84,6 @@ export function ConditionCombobox({
       condition.description.toLowerCase().includes(inputValue.toLowerCase()),
   );
 
-  const hasResults =
-    filteredSystemConditions.length > 0 || filteredCustomConditions.length > 0;
-
-  // Format condition name with first letter uppercase
-  const formatConditionName = (name: string): string => {
-    const trimmed = name.trim();
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-  };
-
-  // Handle creating and selecting condition inline
   const handleCreateAndSelectCondition = async (conditionName: string) => {
     if (!organizationId || !conditionName.trim()) {
       return;
@@ -197,28 +98,16 @@ export function ConditionCombobox({
         description: `Custom condition: ${formattedName}`,
       });
 
-      // Select the newly created condition
       onValueChange?.(formattedName);
-
-      // Clear input and close
       setInputValue("");
       setOpen(false);
     } catch (err) {
-      // If condition already exists, just select it
       if (err instanceof Error && err.message.includes("already exists")) {
         onValueChange?.(formattedName);
         setInputValue("");
         setOpen(false);
       }
     }
-  };
-
-  // Handle deleting condition from organization
-  const handleDeleteCondition = (
-    conditionId: string,
-    conditionName: string,
-  ) => {
-    setConditionToDelete({ id: conditionId, name: conditionName });
   };
 
   const confirmDeleteCondition = async () => {
@@ -228,13 +117,11 @@ export function ConditionCombobox({
       await removeCondition({
         conditionId: conditionToDelete.id as Id<"conditionOptions">,
       });
-      // Clear selection if it was selected
       if (value === conditionToDelete.name) {
         onValueChange?.("");
       }
       setConditionToDelete(null);
-    } catch (err) {
-      // Silently fail
+    } catch {
       setConditionToDelete(null);
     }
   };
@@ -259,212 +146,30 @@ export function ConditionCombobox({
         </PopoverTrigger>
         <PopoverContent className="w-[500px] p-0" align="start">
           <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search conditions or type new..."
-              value={inputValue}
-              onValueChange={setInputValue}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && inputValue.trim() && !hasResults) {
-                  e.preventDefault();
-                  handleCreateAndSelectCondition(inputValue);
-                }
-              }}
+            <ConditionComboboxListContent
+              listId={listId}
+              inputValue={inputValue}
+              organizationId={organizationId}
+              value={value}
+              filteredSystemConditions={filteredSystemConditions}
+              filteredCustomConditions={filteredCustomConditions}
+              onInputChange={setInputValue}
+              onSelect={handleSelect}
+              onCreateCondition={handleCreateAndSelectCondition}
+              onDeleteCondition={(id, name) =>
+                setConditionToDelete({ id, name })
+              }
             />
-            <CommandList id={listId} className="max-h-[300px]">
-              <CommandEmpty>
-                {inputValue ? (
-                  <div className="p-4 text-sm text-center">
-                    <div className="text-muted-foreground mb-2">
-                      No matching conditions found.
-                    </div>
-                    {organizationId && (
-                      <div className="text-xs text-muted-foreground">
-                        Press{" "}
-                        <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">
-                          Enter
-                        </kbd>{" "}
-                        to add{" "}
-                        <span className="font-medium text-foreground">
-                          "{formatConditionName(inputValue)}"
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-4 text-sm text-muted-foreground text-center">
-                    Type to search conditions
-                  </div>
-                )}
-              </CommandEmpty>
-
-              {(filteredSystemConditions.length > 0 ||
-                filteredCustomConditions.length > 0) && (
-                <CommandGroup>
-                  {filteredSystemConditions.map((condition) => (
-                    <CommandItem
-                      key={condition.value}
-                      value={condition.value}
-                      onSelect={() => handleSelect(condition.value)}
-                      className="px-2 py-1.5"
-                    >
-                      <div className="flex w-full items-start gap-2">
-                        <Check
-                          className={cn(
-                            "size-4 shrink-0 mt-0.5",
-                            value?.toLowerCase() ===
-                              condition.value.toLowerCase()
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            {condition.icon}
-                            <span className="font-medium text-sm">
-                              {condition.label}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                            {condition.description}
-                          </div>
-                        </div>
-                      </div>
-                    </CommandItem>
-                  ))}
-                  {filteredCustomConditions.map((condition) => (
-                    <CommandItem
-                      key={condition.value}
-                      value={condition.value}
-                      onSelect={() => handleSelect(condition.value)}
-                      className="px-2 py-1.5"
-                    >
-                      <div className="flex w-full items-start gap-2">
-                        <Check
-                          className={cn(
-                            "size-4 shrink-0 mt-0.5",
-                            value?.toLowerCase() ===
-                              condition.value.toLowerCase()
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <Edit3 className="size-3.5 text-purple-500" />
-                            <span className="font-medium text-sm">
-                              {condition.label}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                            {condition.description}
-                          </div>
-                        </div>
-                        {condition.id && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="size-6 p-0 text-destructive hover:text-destructive shrink-0"
-                            onPointerDown={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              handleDeleteCondition(
-                                condition.id!,
-                                condition.label,
-                              );
-                            }}
-                          >
-                            <Trash2 className="size-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={!!conditionToDelete}
-        onOpenChange={(open) => !open && setConditionToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {conditionUsage?.isUsed
-                ? "Cannot Delete Condition"
-                : "Delete Condition"}
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              {conditionUsage?.isUsed ? (
-                <div className="space-y-2">
-                  <div>
-                    The condition{" "}
-                    <span className="font-semibold text-foreground">
-                      "{conditionToDelete?.name}"
-                    </span>{" "}
-                    cannot be deleted because it is currently being used by{" "}
-                    {conditionUsage.usageCount}{" "}
-                    {conditionUsage.usageCount === 1
-                      ? "collection"
-                      : "collections"}
-                    .
-                  </div>
-                  {conditionUsage.collectionNames.length > 0 && (
-                    <div className="mt-2">
-                      <div className="text-xs font-medium mb-1">Used in:</div>
-                      <ul className="text-xs list-disc pl-4 space-y-0.5">
-                        {conditionUsage.collectionNames
-                          .slice(0, 5)
-                          .map((name) => (
-                            <li key={name}>{name}</li>
-                          ))}
-                        {conditionUsage.collectionNames.length > 5 && (
-                          <li className="italic">
-                            ...and {conditionUsage.collectionNames.length - 5}{" "}
-                            more
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-foreground">
-                    "{conditionToDelete?.name}"
-                  </span>
-                  ? This action cannot be undone.
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {conditionUsage?.isUsed ? (
-              <AlertDialogCancel>Close</AlertDialogCancel>
-            ) : (
-              <>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={confirmDeleteCondition}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConditionComboboxDeleteDialog
+        conditionToDelete={conditionToDelete}
+        conditionUsage={conditionUsage ?? undefined}
+        onOpenChange={() => setConditionToDelete(null)}
+        onConfirm={confirmDeleteCondition}
+      />
     </>
   );
 }

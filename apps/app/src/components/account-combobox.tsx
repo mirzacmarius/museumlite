@@ -1,103 +1,25 @@
 "use client";
 
-import {
-  type AccountHolderType,
-  DEFAULT_ACCOUNT_HOLDER_TYPE,
-  parseDateInputValue,
-} from "@/lib/account-holder";
+import { parseDateInputValue } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@v1/ui/command";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@v1/ui/dialog";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
+import { Command } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
-import { Textarea } from "@v1/ui/textarea";
-import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import {
-  Building2,
-  Check,
-  ChevronsUpDown,
-  Mail,
-  Phone,
-  Plus,
-  User,
-} from "lucide-react";
+import { Building2, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { AccountComboboxCreateDialog } from "./account-combobox-create-dialog";
+import { AccountComboboxListContent } from "./account-combobox-list-content";
+import {
+  type AccountComboboxProps,
+  type NewAccountForm,
+  initialAccountFormState,
+} from "./account-combobox-types";
 
-interface AccountComboboxProps {
-  organizationId?: string;
-  value?: string;
-  onValueChange?: (accountId: string | undefined) => void;
-  onAccountSelect?: (
-    account:
-      | {
-          _id: string;
-          businessName?: string;
-          contactPerson?: string;
-          email?: string;
-          phone?: string;
-        }
-      | undefined,
-  ) => void;
-  placeholder?: string;
-  disabled?: boolean;
-}
-
-interface NewAccountForm {
-  holderType: AccountHolderType;
-  businessName: string;
-  taxId: string;
-  dateOfBirth: string;
-  phone: string;
-  email: string;
-  address: string;
-  address2: string;
-  zipCode: string;
-  city: string;
-  country: string;
-  contactPerson: string;
-  contactPhone: string;
-  contactEmail: string;
-  notes: string;
-}
-
-const initialFormState: NewAccountForm = {
-  holderType: DEFAULT_ACCOUNT_HOLDER_TYPE,
-  businessName: "",
-  taxId: "",
-  dateOfBirth: "",
-  phone: "",
-  email: "",
-  address: "",
-  address2: "",
-  zipCode: "",
-  city: "",
-  country: "",
-  contactPerson: "",
-  contactPhone: "",
-  contactEmail: "",
-  notes: "",
-};
+export type { AccountComboboxProps } from "./account-combobox-types";
 
 export function AccountCombobox({
   organizationId,
@@ -112,8 +34,9 @@ export function AccountCombobox({
   const listId = React.useId();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [formData, setFormData] =
-    React.useState<NewAccountForm>(initialFormState);
+  const [formData, setFormData] = React.useState<NewAccountForm>(
+    initialAccountFormState,
+  );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const accounts = useQuery(
@@ -153,6 +76,15 @@ export function AccountCombobox({
   const handleClear = () => {
     onValueChange?.(undefined);
     onAccountSelect?.(undefined);
+  };
+
+  const openCreateDialog = (prefillName: string) => {
+    setOpen(false);
+    setFormData({
+      ...initialAccountFormState,
+      businessName: prefillName,
+    });
+    setDialogOpen(true);
   };
 
   const handleCreateAccount = async () => {
@@ -195,7 +127,7 @@ export function AccountCombobox({
 
       toast.success(tToast("accountCreated"));
       setDialogOpen(false);
-      setFormData(initialFormState);
+      setFormData(initialAccountFormState);
 
       onValueChange?.(accountId);
       onAccountSelect?.({
@@ -241,110 +173,16 @@ export function AccountCombobox({
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
           <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search accounts..."
-              value={searchQuery}
-              onValueChange={setSearchQuery}
+            <AccountComboboxListContent
+              listId={listId}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              organizationId={organizationId}
+              accounts={accounts?.accounts}
+              value={value}
+              onSelect={handleSelect}
+              onOpenCreateDialog={openCreateDialog}
             />
-            <CommandList id={listId} className="max-h-[300px]">
-              <CommandEmpty>
-                <div className="p-4 text-sm text-center">
-                  <p className="text-muted-foreground mb-2">
-                    No accounts found.
-                  </p>
-                  {organizationId && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setOpen(false);
-                        setFormData({
-                          ...initialFormState,
-                          businessName: searchQuery,
-                        });
-                        setDialogOpen(true);
-                      }}
-                      className="w-full"
-                    >
-                      <Plus className="mr-2 size-4" />
-                      Create New Account
-                    </Button>
-                  )}
-                </div>
-              </CommandEmpty>
-
-              {accounts?.accounts && accounts.accounts.length > 0 && (
-                <CommandGroup heading="Accounts">
-                  {accounts.accounts.map((account) => (
-                    <CommandItem
-                      key={account._id}
-                      value={account._id}
-                      onSelect={() => handleSelect(account._id)}
-                      className="p-2"
-                    >
-                      <div className="flex w-full items-start gap-2">
-                        <Check
-                          className={cn(
-                            "size-4 shrink-0 mt-0.5",
-                            value === account._id ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                            <span className="font-medium truncate">
-                              {account.businessName}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {account.accountNumber}
-                            </span>
-                          </div>
-                          <div className="flex flex-col gap-0.5 mt-1 text-xs text-muted-foreground">
-                            {account.contactPerson && (
-                              <span className="flex items-center gap-1">
-                                <User className="size-3" />
-                                {account.contactPerson}
-                              </span>
-                            )}
-                            {account.email && (
-                              <span className="flex items-center gap-1">
-                                <Mail className="size-3" />
-                                {account.email}
-                              </span>
-                            )}
-                            {account.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="size-3" />
-                                {account.phone}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-
-              {organizationId && (
-                <div className="p-2 border-t">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setOpen(false);
-                      setDialogOpen(true);
-                    }}
-                    className="w-full justify-start"
-                  >
-                    <Plus className="mr-2 size-4" />
-                    Create New Account
-                  </Button>
-                </div>
-              )}
-            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
@@ -361,329 +199,14 @@ export function AccountCombobox({
         </Button>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Account</DialogTitle>
-            <DialogDescription>
-              Add a new lender/borrower account to your organization.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium">Account Holder</h4>
-              <div className="grid gap-4">
-                <div className="space-y-3">
-                  <Label>Holder type</Label>
-                  <RadioGroup
-                    className="grid gap-3 sm:grid-cols-2"
-                    value={formData.holderType}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        holderType: value as AccountHolderType,
-                      }))
-                    }
-                  >
-                    <Label
-                      htmlFor="holderType-organization"
-                      className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
-                        formData.holderType === "organization" &&
-                          "border-primary bg-primary/5",
-                      )}
-                    >
-                      <RadioGroupItem
-                        id="holderType-organization"
-                        value="organization"
-                        className="mt-0.5"
-                      />
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          Business / Organization
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Use this for companies, museums, galleries, and
-                          institutions.
-                        </p>
-                      </div>
-                    </Label>
-                    <Label
-                      htmlFor="holderType-privatePerson"
-                      className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
-                        formData.holderType === "privatePerson" &&
-                          "border-primary bg-primary/5",
-                      )}
-                    >
-                      <RadioGroupItem
-                        id="holderType-privatePerson"
-                        value="privatePerson"
-                        className="mt-0.5"
-                      />
-                      <div className="space-y-1">
-                        <div className="font-medium">Private Person</div>
-                        <p className="text-sm text-muted-foreground">
-                          Use this for individuals acting in their own name.
-                        </p>
-                      </div>
-                    </Label>
-                  </RadioGroup>
-                </div>
-                <div>
-                  <Label htmlFor="businessName">
-                    {formData.holderType === "organization"
-                      ? "Business Name / Organisation *"
-                      : "Full Name *"}
-                  </Label>
-                  <Input
-                    id="businessName"
-                    value={formData.businessName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        businessName: e.target.value,
-                      }))
-                    }
-                    placeholder={
-                      formData.holderType === "organization"
-                        ? "Enter business or organization name"
-                        : "Enter full name"
-                    }
-                  />
-                </div>
-                {formData.holderType === "organization" ? (
-                  <div>
-                    <Label htmlFor="taxId">Organization Number</Label>
-                    <Input
-                      id="taxId"
-                      value={formData.taxId}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          taxId: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter organization number"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          dateOfBirth: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                )}
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          phone: e.target.value,
-                        }))
-                      }
-                      placeholder="+47 123 45 678"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      placeholder="contact@company.com"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="font-medium text-sm">Address</h4>
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        address: e.target.value,
-                      }))
-                    }
-                    placeholder="Street address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address2">Address 2</Label>
-                  <Input
-                    id="address2"
-                    value={formData.address2}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        address2: e.target.value,
-                      }))
-                    }
-                    placeholder="Apartment, suite, unit, etc."
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <Label htmlFor="zipCode">Zip Code</Label>
-                    <Input
-                      id="zipCode"
-                      value={formData.zipCode}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          zipCode: e.target.value,
-                        }))
-                      }
-                      placeholder="0000"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          city: e.target.value,
-                        }))
-                      }
-                      placeholder="City"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          country: e.target.value,
-                        }))
-                      }
-                      placeholder="Norway"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {formData.holderType === "organization" && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium">Contact Person</h4>
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="contactPerson">Name</Label>
-                    <Input
-                      id="contactPerson"
-                      value={formData.contactPerson}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          contactPerson: e.target.value,
-                        }))
-                      }
-                      placeholder="Contact person name"
-                    />
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="contactPhone">Phone</Label>
-                      <Input
-                        id="contactPhone"
-                        value={formData.contactPhone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            contactPhone: e.target.value,
-                          }))
-                        }
-                        placeholder="+47 123 45 678"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="contactEmail">Email</Label>
-                      <Input
-                        id="contactEmail"
-                        type="email"
-                        value={formData.contactEmail}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            contactEmail: e.target.value,
-                          }))
-                        }
-                        placeholder="person@company.com"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Information / Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                placeholder="Anything else that should be stored with this account"
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setDialogOpen(false);
-                setFormData(initialFormState);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreateAccount}
-              disabled={isSubmitting || !formData.businessName.trim()}
-            >
-              {isSubmitting ? "Creating..." : "Create Account"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AccountComboboxCreateDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        formData={formData}
+        setFormData={setFormData}
+        isSubmitting={isSubmitting}
+        onCreate={handleCreateAccount}
+      />
     </>
   );
 }

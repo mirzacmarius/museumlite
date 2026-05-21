@@ -286,9 +286,12 @@ export function useMediaFilters() {
   );
   const [fileType, setFileType] = useQueryState(
     "fileType",
-    parseAsStringLiteral(["all", "image", "document", "3d"] as const).withDefault(
+    parseAsStringLiteral([
       "all",
-    ),
+      "image",
+      "document",
+      "3d",
+    ] as const).withDefault("all"),
   );
 
   const filters = useMemo(

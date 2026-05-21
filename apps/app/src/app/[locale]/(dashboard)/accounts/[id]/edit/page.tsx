@@ -6,22 +6,14 @@ import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
-import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Loader2, Save, Shield, UserCog } from "lucide-react";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { EditAccountDetailsFields } from "./edit-account-details-fields";
+import type { EditAccountFormData } from "./edit-account-form-types";
+import { EditAccountPermissionsFields } from "./edit-account-permissions-fields";
 
 export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
@@ -47,7 +39,7 @@ export default function EditAccountPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EditAccountFormData>({
     businessName: "",
     phone: "",
     email: "",
@@ -60,8 +52,8 @@ export default function EditAccountPage() {
     contactPhone: "",
     contactEmail: "",
     notes: "",
-    accountType: "" as "lender" | "borrower" | "both" | "institution" | "",
-    selectedRoles: [] as Id<"roles">[],
+    accountType: "",
+    selectedRoles: [],
   });
 
   useEffect(() => {
@@ -207,346 +199,18 @@ export default function EditAccountPage() {
               </div>
             )}
             <div className="mx-auto max-w-2xl space-y-6">
-              {/* Business Information */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("form.businessInformation")}
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="businessName">
-                      {t("form.businessName")}{" "}
-                      <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="businessName"
-                      value={formData.businessName}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          businessName: e.target.value,
-                        }))
-                      }
-                      placeholder={t("form.placeholders.businessName")}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">{t("form.phone")}</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.phone")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">{t("form.email")}</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.email")}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("form.address")}
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">{t("form.streetAddress")}</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          address: e.target.value,
-                        }))
-                      }
-                      placeholder={t("form.placeholders.streetAddress")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address2">{t("form.addressLine2")}</Label>
-                    <Input
-                      id="address2"
-                      value={formData.address2}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          address2: e.target.value,
-                        }))
-                      }
-                      placeholder={t("form.placeholders.addressLine2")}
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">{t("form.city")}</Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            city: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.city")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
-                      <Input
-                        id="zipCode"
-                        value={formData.zipCode}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            zipCode: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.zipCode")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="country">{t("form.country")}</Label>
-                      <Input
-                        id="country"
-                        value={formData.country}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            country: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.country")}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Person */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("form.contactPerson")}
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="contactPerson">
-                      {t("form.contactName")}
-                    </Label>
-                    <Input
-                      id="contactPerson"
-                      value={formData.contactPerson}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          contactPerson: e.target.value,
-                        }))
-                      }
-                      placeholder={t("form.placeholders.contactName")}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="contactPhone">
-                        {t("form.contactPhone")}
-                      </Label>
-                      <Input
-                        id="contactPhone"
-                        value={formData.contactPhone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            contactPhone: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.phone")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="contactEmail">
-                        {t("form.contactEmail")}
-                      </Label>
-                      <Input
-                        id="contactEmail"
-                        type="email"
-                        value={formData.contactEmail}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            contactEmail: e.target.value,
-                          }))
-                        }
-                        placeholder={t("form.placeholders.contactEmail")}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">{t("form.notes")}</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                  }
-                  placeholder={t("form.placeholders.notes")}
-                  rows={4}
-                />
-              </div>
-
-              {/* Account Type / Role */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <UserCog className="size-4" />
-                  {t("form.accountTypeRole")}
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="accountType">{t("form.accountType")}</Label>
-                    <Select
-                      value={formData.accountType}
-                      onValueChange={(
-                        value:
-                          | "lender"
-                          | "borrower"
-                          | "both"
-                          | "institution"
-                          | "",
-                      ) =>
-                        setFormData((prev) => ({ ...prev, accountType: value }))
-                      }
-                    >
-                      <SelectTrigger id="accountType">
-                        <SelectValue
-                          placeholder={t("form.placeholders.accountType")}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="lender">
-                          {t("types.lender")}
-                        </SelectItem>
-                        <SelectItem value="borrower">
-                          {t("types.borrower")}
-                        </SelectItem>
-                        <SelectItem value="both">{t("types.both")}</SelectItem>
-                        <SelectItem value="institution">
-                          {t("types.institution")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {t("form.accountTypeDescription")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Permissions */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Shield className="size-4" />
-                  {t("form.rolesWithAccess")}
-                </h3>
-                <div className="space-y-4 rounded-lg border border-border p-4">
-                  <p className="text-sm text-muted-foreground">
-                    {t("form.rolesDescription")}
-                  </p>
-                  {rolesWithLoansPermissions &&
-                  rolesWithLoansPermissions.length > 0 ? (
-                    <div className="space-y-3">
-                      {rolesWithLoansPermissions.map((role) => (
-                        <div
-                          key={role._id}
-                          className="flex items-center gap-x-2"
-                        >
-                          <Checkbox
-                            id={`role-${role._id}`}
-                            checked={formData.selectedRoles.includes(role._id)}
-                            onCheckedChange={() => toggleRole(role._id)}
-                          />
-                          <Label
-                            htmlFor={`role-${role._id}`}
-                            className="text-sm font-normal cursor-pointer flex-1"
-                          >
-                            {role.name}
-                            {role.description && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                - {role.description}
-                              </span>
-                            )}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No roles found. Roles with loans permissions will appear
-                      here.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Permissions Details */}
-              {groupedPermissionEntries.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Shield className="size-4" />
-                    Available Permissions
-                  </h3>
-                  <div className="space-y-4 rounded-lg border border-border p-4">
-                    {groupedPermissionEntries.map(([category, perms]) => (
-                      <div key={category} className="space-y-2">
-                        <h4 className="text-sm font-medium capitalize">
-                          {category}
-                        </h4>
-                        <div className="space-y-1 pl-4">
-                          {perms.map((perm) => (
-                            <div
-                              key={perm._id}
-                              className="text-xs text-muted-foreground"
-                            >
-                              • {perm.name}
-                              {perm.description && (
-                                <span className="ml-2">
-                                  - {perm.description}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <EditAccountDetailsFields
+                t={t}
+                formData={formData}
+                setFormData={setFormData}
+              />
+              <EditAccountPermissionsFields
+                t={t}
+                formData={formData}
+                toggleRole={toggleRole}
+                rolesWithLoansPermissions={rolesWithLoansPermissions}
+                groupedPermissionEntries={groupedPermissionEntries}
+              />
 
               <div className="flex justify-end gap-4">
                 <Button type="button" variant="outline" onClick={() => back()}>

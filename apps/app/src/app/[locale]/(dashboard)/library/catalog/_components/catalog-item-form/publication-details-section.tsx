@@ -1,0 +1,140 @@
+"use client";
+
+import {
+  IsbnLookup,
+  type IsbnLookupData,
+} from "@/components/library/isbn-lookup";
+import { useScopedI18n } from "@/locales/client";
+import { Button } from "@v1/ui/button";
+import { Input } from "@v1/ui/input";
+import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
+import { Textarea } from "@v1/ui/textarea";
+import { Loader2, Plus, Save, Trash2 } from "lucide-react";
+import type { CatalogItemFormData, ItemType, TargetAudience } from "./types";
+import { ITEM_TYPE_VALUES } from "./types";
+
+interface CatalogItemPublicationDetailsSectionProps {
+  formData: CatalogItemFormData;
+  setFormData: React.Dispatch<React.SetStateAction<CatalogItemFormData>>;
+  getItemTypeLabel: (value: string) => string;
+  getAudienceLabel: (value: string) => string;
+  onIsbnData?: (data: IsbnLookupData) => void;
+  addAuthor?: () => void;
+  removeAuthor?: (index: number) => void;
+  updateAuthor?: (index: number, value: string) => void;
+}
+
+export function CatalogItemPublicationDetailsSection({
+  formData,
+  setFormData,
+  getItemTypeLabel,
+  getAudienceLabel,
+  onIsbnData,
+  addAuthor,
+  removeAuthor,
+  updateAuthor,
+}: CatalogItemPublicationDetailsSectionProps) {
+  const t = useScopedI18n("library.placeholders");
+  const tNew = useScopedI18n("library.catalog.new");
+  const tLib = useScopedI18n("library");
+
+  return (
+    <>
+      {/* Publication Details */}
+      <div className="rounded-lg border border-border bg-card">
+        <div className="border-b border-border p-6">
+          <h2 className="text-lg font-medium">{tNew("publicationDetails")}</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="publisher">{tNew("publisher")}</Label>
+            <Input
+              id="publisher"
+              value={formData.publisher}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  publisher: e.target.value,
+                }))
+              }
+              placeholder={t("publisherName")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="publicationYear">{tNew("publicationYear")}</Label>
+            <Input
+              id="publicationYear"
+              type="number"
+              value={formData.publicationYear}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  publicationYear: e.target.value,
+                }))
+              }
+              placeholder="e.g., 2024"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="publicationPlace">{tNew("publicationPlace")}</Label>
+            <Input
+              id="publicationPlace"
+              value={formData.publicationPlace}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  publicationPlace: e.target.value,
+                }))
+              }
+              placeholder="e.g., New York"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edition">{tNew("edition")}</Label>
+            <Input
+              id="edition"
+              value={formData.edition}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  edition: e.target.value,
+                }))
+              }
+              placeholder="e.g., 2nd Edition"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pages">{tNew("pages")}</Label>
+            <Input
+              id="pages"
+              type="number"
+              value={formData.pages}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, pages: e.target.value }))
+              }
+              placeholder={t("numberOfPages")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="format">{tNew("format")}</Label>
+            <Input
+              id="format"
+              value={formData.format}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, format: e.target.value }))
+              }
+              placeholder="e.g., Hardcover, Paperback"
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

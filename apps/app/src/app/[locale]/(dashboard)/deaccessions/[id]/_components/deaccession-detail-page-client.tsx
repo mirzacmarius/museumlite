@@ -1,0 +1,163 @@
+"use client";
+
+import { useOrganization } from "@/components/organization-provider";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { DeaccessionDetailBoardReportDialog } from "./deaccession-detail-board-report-dialog";
+import { DeaccessionDetailMainContent } from "./deaccession-detail-main-content";
+import {
+  formatDeaccessionStatusLabel,
+  getDeaccessionActionLabel,
+} from "./deaccession-detail-types";
+
+export function DeaccessionDetailPageClient() {
+  const params = useParams();
+  const deaccessionId = params.id as string;
+  const locale = useCurrentLocale();
+  const t = useScopedI18n("deaccessions");
+  const tCommon = useScopedI18n("common");
+  const { currentOrganizationId } = useOrganization();
+
+  const deaccession = useQuery(
+    api.deaccessions.get,
+    deaccessionId
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
+  );
+
+  const collection = useQuery(
+    api.collections.get,
+    deaccession ? { collectionId: deaccession.collectionId } : "skip",
+  );
+  const collectionThumbnail = useQuery(
+    api.collections.getThumbnail,
+    deaccession ? { collectionId: deaccession.collectionId } : "skip",
+  );
+
+  const workflowHistory = useQuery(
+    api.deaccessions.getWorkflowHistory,
+    deaccessionId
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
+  );
+
+  const [comment, setComment] = useState("");
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const approve = useMutation(api.deaccessions.approve);
+  const reject = useMutation(api.deaccessions.reject);
+
+  const exportData = useQuery(
+    api.deaccessions.getExportData,
+    deaccessionId && isPrintModalOpen
+      ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
+      : "skip",
+  );
+
+  useEffect(() => {
+    setComment("");
+    setIsApproving(false);
+    setIsRejecting(false);
+  }, [deaccessionId]);
+
+  if (!currentOrganizationId) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <p className="text-muted-foreground">{t("detail.selectOrg")}</p>
+      </div>
+    );
+  }
+
+  if (deaccession === undefined || collection === undefined) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <p className="text-muted-foreground">{tCommon("loading")}</p>
+      </div>
+    );
+  }
+
+  if (deaccession === null) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <p className="text-muted-foreground">{t("detail.notFound")}</p>
+      </div>
+    );
+  }
+
+  const actionLabel = getDeaccessionActionLabel(deaccession);
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      await approve({
+        deaccessionId: deaccessionId as Id<"deaccessions">,
+        comment: comment || undefined,
+      });
+      setComment("");
+    } catch (error) {
+      console.error("Failed to approve:", error);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    setIsRejecting(true);
+    try {
+      await reject({
+        deaccessionId: deaccessionId as Id<"deaccessions">,
+        comment: comment || undefined,
+      });
+      setComment("");
+    } catch (error) {
+      console.error("Failed to reject:", error);
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
+  const collectionStatusLabel = collection
+    ? formatDeaccessionStatusLabel(collection.status)
+    : null;
+  const workflowEntryCount = workflowHistory?.length ?? 0;
+  const reviewStateLabel =
+    deaccession.status === "pending"
+      ? "Awaiting review"
+      : deaccession.status === "approved"
+        ? "Approved"
+        : "Rejected";
+
+  const viewProps = {
+    deaccessionId,
+    locale,
+    deaccession,
+    collection,
+    collectionThumbnailUrl: collectionThumbnail?.thumbnailUrl,
+    actionLabel,
+    collectionStatusLabel,
+    reviewStateLabel,
+    workflowHistory,
+    workflowEntryCount,
+    comment,
+    setComment,
+    isApproving,
+    isRejecting,
+    handleApprove,
+    handleReject,
+    isPrintModalOpen,
+    setIsPrintModalOpen,
+    exportData,
+  };
+
+  return (
+    <>
+      <DeaccessionDetailMainContent {...viewProps} />
+      <DeaccessionDetailBoardReportDialog {...viewProps} />
+    </>
+  );
+}
