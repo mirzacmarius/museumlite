@@ -64,9 +64,7 @@ function EntityPreview({
             fill
             sizes="256px"
             className="object-cover"
-            unoptimized={
-              image.startsWith("blob:") || image.startsWith("data:")
-            }
+            unoptimized={image.startsWith("blob:") || image.startsWith("data:")}
           />
         </div>
       )}
