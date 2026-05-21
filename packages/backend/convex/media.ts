@@ -3,21 +3,21 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type QueryCtx,
   internalMutation,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
-  MAX_SMALL_MEDIA_FILE_SIZE,
   completeChunkedMediaAsset,
   deleteMediaAsset,
   getDefaultMediaCategory,
   getMediaFileType,
   insertCompletedMediaAsset,
   isSupportedMediaMimeType,
+  MAX_SMALL_MEDIA_FILE_SIZE,
   shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
 import {
@@ -218,14 +218,15 @@ export const list = query({
       throw new Error("Collection not found");
     }
 
-    await requirePermission(ctx, collection.organizationId, "media.read");
-
-    const mediaFiles = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, mediaFiles] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const mediaWithUrls = await Promise.all(
       mediaFiles.map(async (media) => {
@@ -280,12 +281,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -348,12 +350,13 @@ export const deleteMedia = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -379,12 +382,13 @@ export const setPrimary = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -807,7 +811,7 @@ export const checkFileType = query({
     mimeType: v.string(),
   },
   returns: v.boolean(),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     return isSupportedMediaMimeType(args.mimeType);
   },
 });
@@ -1076,12 +1080,13 @@ export const updateMetadata = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1180,12 +1185,13 @@ export const setContentHash = mutation({
     duplicateOfMediaId: v.optional(v.id("mediaFiles")),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1321,12 +1327,13 @@ export const updateRights = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1379,12 +1386,13 @@ export const trackDownload = mutation({
     url: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1498,12 +1506,13 @@ export const listDownloads = query({
       return [];
     }
 
-    await requirePermission(ctx, media.organizationId, "media.read");
-
-    const downloads = await ctx.db
-      .query("mediaDownloads")
-      .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
-      .collect();
+    const [, downloads] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.read"),
+      ctx.db
+        .query("mediaDownloads")
+        .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
+        .collect(),
+    ] as const);
 
     const enriched = await Promise.all(
       downloads.map(async (download) => {
@@ -1545,16 +1554,17 @@ export const listByRightsStatus = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const media = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_rights_status", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("rightsStatus", args.rightsStatus),
-      )
-      .collect();
+    const [, media] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_rights_status", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("rightsStatus", args.rightsStatus),
+        )
+        .collect(),
+    ] as const);
 
     const enriched = await Promise.all(
       media.map(async (m) => {
@@ -1730,14 +1740,15 @@ export const getRightsSummary = query({
     unknownRights: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const allMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, allMedia] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     const totalMedia = allMedia.length;
 

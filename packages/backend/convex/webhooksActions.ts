@@ -94,7 +94,5 @@ async function signPayload(payload: string, secret: string): Promise<string> {
     encoder.encode(payload),
   );
   const hashArray = Array.from(new Uint8Array(signature));
-  return (
-    "sha256=" + hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
-  );
+  return `sha256=${hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }

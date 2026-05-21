@@ -3,10 +3,10 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import {
-  MAX_SMALL_MEDIA_FILE_SIZE,
   getMediaFileType,
   insertCompletedMediaAsset,
   isSupportedMediaMimeType,
+  MAX_SMALL_MEDIA_FILE_SIZE,
 } from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
 
@@ -376,12 +376,13 @@ export const mapFileToCollection = mutation({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, job] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.jobId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const job = await ctx.db.get(args.jobId);
     if (!job) {
       throw new Error("Import job not found");
     }
@@ -464,12 +465,13 @@ export const deleteUnmappedFile = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, job] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.jobId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const job = await ctx.db.get(args.jobId);
     if (!job) {
       throw new Error("Import job not found");
     }
@@ -525,12 +527,13 @@ export const parseMappingCsv = mutation({
     errors: v.array(v.string()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "media.upload"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "media.upload");
 
     const lines = args.csvContent.split("\n").filter((line) => line.trim());
     const mappings: { filename: string; accessionNumber: string }[] = [];

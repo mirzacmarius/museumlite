@@ -1266,7 +1266,7 @@ const EXHIBITION_VENUES = [
   "Contemporary Wing",
 ];
 
-const INSTALLATION_TASK_TYPES = [
+const _INSTALLATION_TASK_TYPES = [
   "lighting",
   "signage",
   "mounts",
@@ -1299,7 +1299,7 @@ const INSTALLATION_TASKS = [
   { title: "Final walkthrough", type: "other" as const, hours: 2 },
 ];
 
-const TREATMENT_TYPES = [
+const _TREATMENT_TYPES = [
   "routine",
   "stabilization",
   "restoration",
@@ -2781,7 +2781,7 @@ async function seedAccessionsData(
   let totalAccessions = 0;
   let totalDeaccessions = 0;
 
-  const currentYear = new Date().getFullYear();
+  const _currentYear = new Date().getFullYear();
 
   await Promise.all(
     Array.from({ length: 50 }, async (_, i) => {
@@ -3148,10 +3148,10 @@ async function seedInsuranceData(
 
   console.log(`  Created ${totalPolicies} insurance policies`);
 
-  const blanketPolicy = policyIds[0]!;
+  const _blanketPolicy = policyIds[0]!;
   const scheduledPolicy = policyIds[1]!;
   const exhibitionPolicy = policyIds[2]!;
-  const transitPolicy = policyIds[3]!;
+  const _transitPolicy = policyIds[3]!;
   const loanPolicy = policyIds[4]!;
   await Promise.all([
     Promise.all(
@@ -3212,7 +3212,7 @@ async function seedInsuranceData(
   let claimIndex = 1;
 
   await Promise.all(
-    Array.from({ length: numClaims }, async (_, i) => {
+    Array.from({ length: numClaims }, async (_, _i) => {
       const policyId = policyIds[Math.floor(Math.random() * policyIds.length)]!;
       const incidentType =
         INCIDENT_TYPES[Math.floor(Math.random() * INCIDENT_TYPES.length)]!;
@@ -4254,7 +4254,7 @@ async function seedLibraryData(
     classificationSystem: "dewey",
   });
 
-  const membershipTypeIds = await Promise.all(
+  const _membershipTypeIds = await Promise.all(
     MEMBERSHIP_TYPES_DATA.map((mt, i) =>
       ctx.runMutation(internal.seedMet.createMembershipType, {
         organizationId: orgId,
@@ -4316,37 +4316,40 @@ async function seedLibraryData(
           const c = copyIndex + 1;
           const copyStatus = randomElement(COPY_STATUSES);
 
-          const copyId = await ctx.runMutation(internal.seedMet.createItemCopy, {
-            organizationId: orgId,
-            itemId,
-            copyNumber: c,
-            barcode: `LIB-${String(itemIndex).padStart(4, "0")}-${c}`,
-            locationId:
-              locationIds.length > 0
-                ? locationIds[randomInt(0, locationIds.length - 1)]
-                : undefined,
-            shelfLocation: randomElement(SHELF_LOCATIONS),
-            status: copyStatus,
-            condition: randomElement(COPY_CONDITIONS),
-            acquisitionDate:
-              Date.now() - randomInt(30, 365 * 5) * 24 * 60 * 60 * 1000,
-            acquisitionPrice: randomInt(20, 150),
-            replacementCost: randomInt(30, 200),
-            notes:
-              Math.random() > 0.8
-                ? "Reference copy - restricted circulation"
-                : undefined,
-          });
+          const copyId = await ctx.runMutation(
+            internal.seedMet.createItemCopy,
+            {
+              organizationId: orgId,
+              itemId,
+              copyNumber: c,
+              barcode: `LIB-${String(itemIndex).padStart(4, "0")}-${c}`,
+              locationId:
+                locationIds.length > 0
+                  ? locationIds[randomInt(0, locationIds.length - 1)]
+                  : undefined,
+              shelfLocation: randomElement(SHELF_LOCATIONS),
+              status: copyStatus,
+              condition: randomElement(COPY_CONDITIONS),
+              acquisitionDate:
+                Date.now() - randomInt(30, 365 * 5) * 24 * 60 * 60 * 1000,
+              acquisitionPrice: randomInt(20, 150),
+              replacementCost: randomInt(30, 200),
+              notes:
+                Math.random() > 0.8
+                  ? "Reference copy - restricted circulation"
+                  : undefined,
+            },
+          );
 
           return { copyId, isAvailable: copyStatus === "available" };
         }),
       );
 
-      let availableCount = 0;
+      let _availableCount = 0;
       for (const result of copyResults) {
         copyIds.push(result.copyId);
         if (result.isAvailable) {
-          availableCount++;
+          _availableCount++;
         }
       }
       itemIndex++;
@@ -4365,9 +4368,11 @@ async function seedLibraryData(
       Array.from({ length: numCirculations }, async (_, i) => {
         const patron = patrons[i % patrons.length]!;
         const copyId = copyIds[i % copyIds.length]!;
-        const itemId = libraryItemIds[Math.floor(i / 3) % libraryItemIds.length]!;
+        const itemId =
+          libraryItemIds[Math.floor(i / 3) % libraryItemIds.length]!;
 
-        const checkoutDate = Date.now() - randomInt(1, 60) * 24 * 60 * 60 * 1000;
+        const checkoutDate =
+          Date.now() - randomInt(1, 60) * 24 * 60 * 60 * 1000;
         const loanDays = randomInt(14, 28);
         const dueDate = checkoutDate + loanDays * 24 * 60 * 60 * 1000;
         const status = randomElement(CIRCULATION_STATUSES);
@@ -4730,7 +4735,7 @@ async function seedAuditData(
 
   const now = Date.now();
   const oneDay = 24 * 60 * 60 * 1000;
-  const oneMonth = 30 * oneDay;
+  const _oneMonth = 30 * oneDay;
 
   const [collections, locations] = await Promise.all([
     ctx.runQuery(internal.seedMet.getCollections, {
@@ -4906,7 +4911,7 @@ async function fetchImageBlob(url: string): Promise<Blob | null> {
 async function seedModuleDetails(
   ctx: ActionCtx,
   orgId: Id<"organizations">,
-  userId: Id<"users">,
+  _userId: Id<"users">,
   orgType: "museum" | "gallery" | "library" | "collector",
 ): Promise<void> {
   // Get all collections for this org
@@ -5175,7 +5180,7 @@ async function seedRelationshipsAndDocuments(
   console.log("  Seeding relationships and documents...");
 
   // --- Account Relationships ---
-  const [lenders, borrowers, loans] = await Promise.all([
+  const [lenders, _borrowers, loans] = await Promise.all([
     ctx.runQuery(internal.seedMet.getAccounts, {
       organizationId: orgId,
       accountType: "lender",
@@ -5239,7 +5244,7 @@ async function seedRelationshipsAndDocuments(
     Array.from(collectionsWithComments).map(async (collection) => {
       const numComments = 1 + Math.floor(Math.random() * 3); // 1-3 comments
       await Promise.all(
-        Array.from({ length: numComments }, async (_, i) => {
+        Array.from({ length: numComments }, async (_, _i) => {
           const comment =
             commentTemplates[
               Math.floor(Math.random() * commentTemplates.length)
@@ -5687,8 +5692,7 @@ async function seedLibraryExtensions(
             itemId: item._id,
             issueNumber: (j + 1).toString(),
             volume: `Vol. ${2024 - Math.floor(j / 4)}`,
-            issueDate:
-              Date.now() - (issueCount - j) * 30 * 24 * 60 * 60 * 1000,
+            issueDate: Date.now() - (issueCount - j) * 30 * 24 * 60 * 60 * 1000,
             receivedDate:
               issueStatus === "received"
                 ? Date.now() - (issueCount - j - 1) * 30 * 24 * 60 * 60 * 1000
@@ -5851,7 +5855,9 @@ export const resetAndSeed = internalAction({
       }
     }
 
-    await Promise.all(tablesToClear.map((tableName) => clearTableWithRetries(tableName)));
+    await Promise.all(
+      tablesToClear.map((tableName) => clearTableWithRetries(tableName)),
+    );
 
     let storageDeleted = 0;
     async function clearStorageBatches() {
@@ -5878,12 +5884,15 @@ export const resetAndSeed = internalAction({
       ORGANIZATIONS.map(async (org) => {
         console.log(`\nSeeding ${org.name}...`);
 
-        const orgId = await ctx.runMutation(internal.seedMet.createOrganization, {
-          name: org.name,
-          slug: org.slug,
-          type: org.type,
-          subscriptionTier: org.subscriptionTier,
-        });
+        const orgId = await ctx.runMutation(
+          internal.seedMet.createOrganization,
+          {
+            name: org.name,
+            slug: org.slug,
+            type: org.type,
+            subscriptionTier: org.subscriptionTier,
+          },
+        );
         const [, objectIds] = await Promise.all([
           Promise.all([
             ctx.runMutation(internal.seedMet.assignUserToOrg, {
@@ -5920,10 +5929,7 @@ export const resetAndSeed = internalAction({
             return;
           }
 
-          const chunk = objectIds.slice(
-            startIndex,
-            startIndex + seedChunkSize,
-          );
+          const chunk = objectIds.slice(startIndex, startIndex + seedChunkSize);
           const seededInChunk = await Promise.all(
             chunk.map(async (metId) => {
               attemptCount++;
@@ -5954,7 +5960,8 @@ export const resetAndSeed = internalAction({
                   dateCreated: obj.objectDate || "",
                   materials: obj.medium || "",
                   dimensions: obj.dimensions || "",
-                  creditLine: obj.creditLine || "The Metropolitan Museum of Art",
+                  creditLine:
+                    obj.creditLine || "The Metropolitan Museum of Art",
                 },
               );
 

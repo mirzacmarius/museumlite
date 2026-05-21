@@ -1,5 +1,4 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
@@ -71,12 +70,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, vendor] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.vendorId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const vendor = await ctx.db.get(args.vendorId);
     if (!vendor) {
       throw new Error("Vendor not found");
     }
@@ -115,12 +115,13 @@ export const deactivate = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, vendor] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.vendorId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const vendor = await ctx.db.get(args.vendorId);
     if (!vendor) {
       throw new Error("Vendor not found");
     }
@@ -142,12 +143,13 @@ export const reactivate = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, vendor] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.vendorId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const vendor = await ctx.db.get(args.vendorId);
     if (!vendor) {
       throw new Error("Vendor not found");
     }
@@ -169,12 +171,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, vendor] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.vendorId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const vendor = await ctx.db.get(args.vendorId);
     if (!vendor) {
       throw new Error("Vendor not found");
     }

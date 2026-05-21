@@ -14,10 +14,10 @@ import {
   accessionParser,
 } from "./utils/accessionNumberParser";
 import {
-  type SubscriptionTier,
   enforceUserQuota,
   getTierLimits,
   requireFeatureAccess,
+  type SubscriptionTier,
 } from "./utils/featureGates";
 import type { ModuleId } from "./utils/moduleCatalog";
 import { enabledModuleValidator } from "./utils/moduleValidators";
@@ -582,13 +582,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.organizationId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "updated_organization",
-      entityType: "organization",
-      entityId: args.organizationId,
-      changes: updates,
-    }),
+        organizationId: args.organizationId,
+        userId,
+        action: "updated_organization",
+        entityType: "organization",
+        entityId: args.organizationId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -1336,15 +1336,15 @@ export const removeUser = mutation({
     await Promise.all([
       ctx.db.delete(userOrganization._id),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId: currentUserId,
-      action: "removed_user",
-      entityType: "user",
-      entityId: args.userId,
-      changes: {
-        removedUserId: args.userId,
-      },
-    }),
+        organizationId: args.organizationId,
+        userId: currentUserId,
+        action: "removed_user",
+        entityType: "user",
+        entityId: args.userId,
+        changes: {
+          removedUserId: args.userId,
+        },
+      }),
     ]);
 
     return null;
@@ -1384,19 +1384,19 @@ export const updateUserRole = mutation({
 
     await Promise.all([
       ctx.db.patch(userOrganization._id, {
-      roleId: args.roleId,
-    }),
+        roleId: args.roleId,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId: currentUserId,
-      action: "updated_user_role",
-      entityType: "user",
-      entityId: args.userId,
-      changes: {
-        previousRoleId: userOrganization.roleId,
-        newRoleId: args.roleId,
-      },
-    }),
+        organizationId: args.organizationId,
+        userId: currentUserId,
+        action: "updated_user_role",
+        entityType: "user",
+        entityId: args.userId,
+        changes: {
+          previousRoleId: userOrganization.roleId,
+          newRoleId: args.roleId,
+        },
+      }),
     ]);
 
     return null;
@@ -1601,7 +1601,7 @@ export const createDefaultRoles = internalMutation({
 
     await Promise.all(
       Array.from(permissionNames).map(async (permName) => {
-        const [category, name] = permName.split(".");
+        const [category, _name] = permName.split(".");
         const permissionCategory = category as PermissionCategory;
         const existing = await ctx.db
           .query("permissions")
@@ -1763,7 +1763,7 @@ export const validateAccessionFormat = query({
     preview: v.string(),
     examples: v.array(v.string()),
   }),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     return accessionParser.validate(args.template, args.organizationSlug);
   },
 });

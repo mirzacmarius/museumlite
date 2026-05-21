@@ -9,7 +9,7 @@ import { getUserRole, requirePermission } from "./utils/permissions";
 async function checkGroupAccessControl(
   ctx: MutationCtx,
   group: Doc<"collectionGroups">,
-  userId: Id<"users">,
+  _userId: Id<"users">,
 ): Promise<void> {
   if (!group.managedByRoleId) {
     return;
@@ -128,12 +128,13 @@ export const create = mutation({
   },
   returns: v.id("collectionGroups"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const groupId = await ctx.db.insert("collectionGroups", {
       organizationId: args.organizationId,
@@ -310,12 +311,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, group] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.groupId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const group = await ctx.db.get(args.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
@@ -346,18 +348,18 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.groupId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: group.organizationId,
-      userId,
-      action: "updated_collection_group",
-      entityType: "collectionGroup",
-      entityId: args.groupId,
-      changes: {
-        name: args.name,
-        description: args.description,
-        curatorId: args.curatorId,
-        managedByRoleId: args.managedByRoleId,
-      },
-    }),
+        organizationId: group.organizationId,
+        userId,
+        action: "updated_collection_group",
+        entityType: "collectionGroup",
+        entityId: args.groupId,
+        changes: {
+          name: args.name,
+          description: args.description,
+          curatorId: args.curatorId,
+          managedByRoleId: args.managedByRoleId,
+        },
+      }),
     ]);
 
     return null;
@@ -370,12 +372,13 @@ export const deleteGroup = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, group] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.groupId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const group = await ctx.db.get(args.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
@@ -435,12 +438,13 @@ export const addItems = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, group] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.groupId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const group = await ctx.db.get(args.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
@@ -515,12 +519,13 @@ export const removeItems = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, group] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.groupId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const group = await ctx.db.get(args.groupId);
     if (!group) {
       throw new Error("Group not found");
     }
@@ -551,23 +556,23 @@ export const removeItems = mutation({
     // Update items count
     if (removedCount > 0) {
       await Promise.all([
-      ctx.db.patch(args.groupId, {
-        itemsCount: Math.max(0, (group.itemsCount || 0) - removedCount),
-        lastModifiedAt: Date.now(),
-        lastModifiedBy: userId,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: group.organizationId,
-        userId,
-        action: "removed_items_from_collection_group",
-        entityType: "collectionGroup",
-        entityId: args.groupId,
-        changes: {
-          collectionIds: args.collectionIds,
-          removedCount,
-        },
-      }),
-    ]);
+        ctx.db.patch(args.groupId, {
+          itemsCount: Math.max(0, (group.itemsCount || 0) - removedCount),
+          lastModifiedAt: Date.now(),
+          lastModifiedBy: userId,
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: group.organizationId,
+          userId,
+          action: "removed_items_from_collection_group",
+          entityType: "collectionGroup",
+          entityId: args.groupId,
+          changes: {
+            collectionIds: args.collectionIds,
+            removedCount,
+          },
+        }),
+      ]);
     }
 
     return null;
@@ -605,14 +610,15 @@ export const listItems = query({
       return [];
     }
 
-    await requirePermission(ctx, group.organizationId, "collections.read");
-
-    const groupItems = await ctx.db
-      .query("collectionGroupItems")
-      .withIndex("by_collectionGroup", (q) =>
-        q.eq("collectionGroupId", args.groupId),
-      )
-      .collect();
+    const [, groupItems] = await Promise.all([
+      requirePermission(ctx, group.organizationId, "collections.read"),
+      ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collectionGroup", (q) =>
+          q.eq("collectionGroupId", args.groupId),
+        )
+        .collect(),
+    ] as const);
 
     const items: Array<{
       _id: Id<"collectionGroupItems">;
@@ -671,14 +677,15 @@ export const getGroupsForCollection = query({
       return [];
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    const groupItems = await ctx.db
-      .query("collectionGroupItems")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, groupItems] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const groups: Array<{
       _id: Id<"collectionGroups">;
@@ -741,14 +748,15 @@ export const getStats = query({
       return null;
     }
 
-    await requirePermission(ctx, group.organizationId, "collections.read");
-
-    const groupItems = await ctx.db
-      .query("collectionGroupItems")
-      .withIndex("by_collectionGroup", (q) =>
-        q.eq("collectionGroupId", args.groupId),
-      )
-      .collect();
+    const [, groupItems] = await Promise.all([
+      requirePermission(ctx, group.organizationId, "collections.read"),
+      ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collectionGroup", (q) =>
+          q.eq("collectionGroupId", args.groupId),
+        )
+        .collect(),
+    ] as const);
 
     let active = 0;
     let loaned = 0;

@@ -4,10 +4,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
-  type QueryCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { batchGetByIds } from "./utils/batchLookup";
@@ -29,7 +29,6 @@ import {
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
-  canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
   hasPermission,
   requirePermission,
@@ -149,7 +148,7 @@ export const create = mutation({
       insuranceValue: args.insuranceValue,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
-      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
 
@@ -313,12 +312,13 @@ export const addItems = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -402,12 +402,13 @@ export const removeItems = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -684,7 +685,7 @@ export const get = query({
           contactPhone: string | undefined;
           contactEmail: string | undefined;
         }
-      | undefined = undefined;
+      | undefined;
 
     if (loan.accountId) {
       const accountData = await ctx.db.get(loan.accountId);
@@ -785,12 +786,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -838,12 +840,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1043,15 +1046,13 @@ export const approve = mutation({
           changes: { status: "active" },
         }),
       ]);
-      const recipients = await getOrganizationNotificationRecipients(
-        ctx,
-        loan.organizationId,
-        userId,
-      );
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-        .collect();
+      const [recipients, loanItems] = await Promise.all([
+        getOrganizationNotificationRecipients(ctx, loan.organizationId, userId),
+        ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+          .collect(),
+      ] as const);
 
       // Get item names from collections
       let itemName = "Loan items";
@@ -1114,12 +1115,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1237,12 +1239,13 @@ export const returnLoan = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1352,12 +1355,13 @@ export const dispatch = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1421,12 +1425,13 @@ export const cancel = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1497,12 +1502,13 @@ export const returnItem = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1604,12 +1610,13 @@ export const createConditionReport = mutation({
   },
   returns: v.id("conditionReports"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loanItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanItemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loanItem = await ctx.db.get(args.loanItemId);
     if (!loanItem) {
       throw new Error("Loan item not found");
     }
@@ -1668,12 +1675,13 @@ export const updateConditionReport = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, report] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.reportId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const report = await ctx.db.get(args.reportId);
     if (!report) {
       throw new Error("Condition report not found");
     }
@@ -1803,12 +1811,13 @@ export const uploadLoanDocument = mutation({
   },
   returns: v.id("loanDocuments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1895,12 +1904,13 @@ export const deleteLoanDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, document] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.documentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const document = await ctx.db.get(args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -1962,15 +1972,14 @@ export const deleteAllLoans = mutation({
 
         await Promise.all(
           Array.from(loanItems).map(async (item) => {
-            // Update collection status back to active
-            await markCollectionActive(ctx, {
-              collectionId: item.collectionId,
-              changedBy: userId,
-            });
+            await Promise.all([
+              markCollectionActive(ctx, {
+                collectionId: item.collectionId,
+                changedBy: userId,
+              }),
+              ctx.db.delete(item._id),
+            ]);
             updatedCollections++;
-
-            // Delete loan item
-            await ctx.db.delete(item._id);
             deletedLoanItems++;
           }),
         );
@@ -2496,12 +2505,13 @@ export const requestExtension = mutation({
   },
   returns: v.id("loanExtensionRequests"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -2589,12 +2599,13 @@ export const approveExtension = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Extension request not found");
     }
@@ -2656,12 +2667,13 @@ export const rejectExtension = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Extension request not found");
     }
@@ -2742,13 +2754,14 @@ export const listExtensionRequests = query({
       return [];
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.read");
-
-    const requests = await ctx.db
-      .query("loanExtensionRequests")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .order("desc")
-      .collect();
+    const [, requests] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+      ctx.db
+        .query("loanExtensionRequests")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .order("desc")
+        .collect(),
+    ] as const);
 
     // Enrich with user names
     return await Promise.all(
@@ -2939,24 +2952,25 @@ export const createConditionDispute = mutation({
   },
   returns: v.id("conditionDisputes"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
-    // Verify the collection item is part of this loan
-    const loanItem = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
-      .first();
+    const [, loanItem] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+      ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
+        .first(),
+    ] as const);
 
     if (!loanItem) {
       throw new Error("Item is not part of this loan");
@@ -3024,12 +3038,13 @@ export const startDisputeInvestigation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3081,12 +3096,13 @@ export const updateDisputeInvestigation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3125,12 +3141,13 @@ export const resolveConditionDispute = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3228,12 +3245,13 @@ export const withdrawConditionDispute = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3333,25 +3351,26 @@ export const listConditionDisputes = query({
       throw new Error("Either loanId or organizationId is required");
     }
 
-    let disputesQuery;
-    if (args.loanId) {
-      const loanId = args.loanId;
-      const loan = await ctx.db.get(loanId);
-      if (!loan) {
-        throw new Error("Loan not found");
+    const disputesQuery = await (async () => {
+      if (args.loanId) {
+        const loanId = args.loanId;
+        const loan = await ctx.db.get(loanId);
+        if (!loan) {
+          throw new Error("Loan not found");
+        }
+        await requirePermission(ctx, loan.organizationId, "loans.read");
+        return ctx.db
+          .query("conditionDisputes")
+          .withIndex("by_loan", (q) => q.eq("loanId", loanId));
       }
-      await requirePermission(ctx, loan.organizationId, "loans.read");
-      disputesQuery = ctx.db
-        .query("conditionDisputes")
-        .withIndex("by_loan", (q) => q.eq("loanId", loanId));
-    } else {
+
       const organizationId = args.organizationId;
       if (!organizationId) {
         throw new Error("Either loanId or organizationId is required");
       }
       await requirePermission(ctx, organizationId, "loans.read");
       const status = args.status;
-      disputesQuery = status
+      return status
         ? ctx.db
             .query("conditionDisputes")
             .withIndex("by_organization_and_status", (q) =>
@@ -3362,7 +3381,7 @@ export const listConditionDisputes = query({
             .withIndex("by_organization", (q) =>
               q.eq("organizationId", organizationId),
             );
-    }
+    })();
 
     const result = await disputesQuery.paginate(args.paginationOpts);
 

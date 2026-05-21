@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type QueryCtx, internalMutation, query } from "./_generated/server";
+import { internalMutation, type QueryCtx, query } from "./_generated/server";
 import { hasPermission } from "./utils/permissions";
 
 /**
@@ -25,7 +25,7 @@ export const logSearchPerformance = internalMutation({
     isWithinThreshold: v.boolean(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     // Log to Convex logs for monitoring
     // In production, this could be sent to an external monitoring service
     const logData = {
@@ -222,7 +222,7 @@ export const globalSearch = query({
     ),
   }),
   handler: async (ctx, args) => {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const searchLimit = args.limit ?? 5;
     const searchQuery = args.query.trim();
 
@@ -443,7 +443,7 @@ export const paginatedSearchCollections = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const searchQuery = args.query.trim();
 
     if (searchQuery.length < 2) {
@@ -520,7 +520,7 @@ export const searchSuggestions = query({
   },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const limit = args.limit ?? 10;
     const queryPrefix = args.query?.trim().toLowerCase() ?? "";
     const suggestions = new Set<string>();

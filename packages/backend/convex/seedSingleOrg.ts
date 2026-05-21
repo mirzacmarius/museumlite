@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, internalAction } from "./_generated/server";
+import { action } from "./_generated/server";
 
 const SEED_USER_EMAIL = "mirzacmarius@gmail.com";
 
@@ -51,7 +51,7 @@ async function fetchImageBlob(imageUrl: string): Promise<Blob | null> {
   }
 }
 
-function sleep(ms: number): Promise<void> {
+function _sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -336,10 +336,7 @@ export const seedOrganization = action({
         return;
       }
 
-      const chunk = candidateIds.slice(
-        startIndex,
-        startIndex + seedChunkSize,
-      );
+      const chunk = candidateIds.slice(startIndex, startIndex + seedChunkSize);
       const seededInChunk = await Promise.all(
         chunk.map(async (metId) => {
           const obj = await fetchMetObject(metId);
@@ -486,7 +483,7 @@ export const seedOrganization = action({
 export const runFullSeed = action({
   args: {},
   returns: v.null(),
-  handler: async (ctx) => {
+  handler: async (_ctx) => {
     console.log("Starting full seed with real Met Museum data...");
     console.log("This will run in 6 steps (clear + 5 orgs)");
     console.log("");

@@ -3,10 +3,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
-  type QueryCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
@@ -158,12 +158,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.id);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -205,12 +206,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.id);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -341,12 +343,13 @@ export const create = mutation({
   },
   returns: v.id("conservationTreatments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -400,7 +403,7 @@ export const create = mutation({
       performedAt: args.performedAt ?? Date.now(),
       notes: args.notes,
       status: workflowConfig ? "proposed" : "completed",
-      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -453,12 +456,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -614,12 +618,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -701,12 +706,13 @@ export const startProgress = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -740,12 +746,13 @@ export const complete = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -861,12 +868,13 @@ export const addAttachment = mutation({
   },
   returns: v.id("conservationAttachments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -900,12 +908,13 @@ export const removeAttachment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, attachment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.attachmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const attachment = await ctx.db.get(args.attachmentId);
     if (!attachment) {
       throw new Error("Attachment not found");
     }
@@ -1134,12 +1143,13 @@ export const updateAlertRule = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, rule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.ruleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const rule = await ctx.db.get(args.ruleId);
     if (!rule) {
       throw new Error("Alert rule not found");
     }
@@ -1183,12 +1193,13 @@ export const deleteAlertRule = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, rule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.ruleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const rule = await ctx.db.get(args.ruleId);
     if (!rule) {
       throw new Error("Alert rule not found");
     }
@@ -1329,12 +1340,13 @@ export const acknowledgeAlert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, alert] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.alertId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const alert = await ctx.db.get(args.alertId);
     if (!alert) {
       throw new Error("Alert not found");
     }
@@ -1371,12 +1383,13 @@ export const resolveAlert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, alert] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.alertId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const alert = await ctx.db.get(args.alertId);
     if (!alert) {
       throw new Error("Alert not found");
     }
@@ -1414,12 +1427,13 @@ export const dismissAlert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, alert] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.alertId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const alert = await ctx.db.get(args.alertId);
     if (!alert) {
       throw new Error("Alert not found");
     }
@@ -1906,12 +1920,13 @@ export const updateTreatmentCosts = mutation({
     laborCost: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -1926,13 +1941,13 @@ export const updateTreatmentCosts = mutation({
     const laborCost =
       args.laborHours && args.laborRate
         ? args.laborHours * args.laborRate
-        : treatment.laborCost ?? 0;
+        : (treatment.laborCost ?? 0);
 
     const materialsCost =
       args.materialsCost ??
       (args.materials
         ? args.materials.reduce((sum, m) => sum + m.totalCost, 0)
-        : treatment.materialsCost ?? 0);
+        : (treatment.materialsCost ?? 0));
 
     const externalServicesCost =
       args.externalServicesCost ?? treatment.externalServicesCost ?? 0;
@@ -2135,12 +2150,13 @@ export const updateAssessmentSchedule = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, schedule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.scheduleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const schedule = await ctx.db.get(args.scheduleId);
     if (!schedule) {
       throw new Error("Schedule not found");
     }
@@ -2168,12 +2184,13 @@ export const completeScheduledAssessment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, schedule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.scheduleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const schedule = await ctx.db.get(args.scheduleId);
     if (!schedule) {
       throw new Error("Schedule not found");
     }

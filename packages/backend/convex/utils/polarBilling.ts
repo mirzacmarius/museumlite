@@ -217,7 +217,7 @@ export function toDatabaseProduct(product: Product): DatabaseProductRecord {
       modifiedAt: price.modifiedAt?.toISOString() ?? null,
       recurringInterval:
         price.type === "recurring"
-          ? price.recurringInterval ?? undefined
+          ? (price.recurringInterval ?? undefined)
           : undefined,
       priceAmount: price.amountType === "fixed" ? price.priceAmount : undefined,
       priceCurrency:
@@ -226,15 +226,15 @@ export function toDatabaseProduct(product: Product): DatabaseProductRecord {
           : undefined,
       minimumAmount:
         price.amountType === "custom"
-          ? price.minimumAmount ?? undefined
+          ? (price.minimumAmount ?? undefined)
           : undefined,
       maximumAmount:
         price.amountType === "custom"
-          ? price.maximumAmount ?? undefined
+          ? (price.maximumAmount ?? undefined)
           : undefined,
       presetAmount:
         price.amountType === "custom"
-          ? price.presetAmount ?? undefined
+          ? (price.presetAmount ?? undefined)
           : undefined,
       type: price.type,
     })),

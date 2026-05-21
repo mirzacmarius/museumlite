@@ -3,12 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  type MutationCtx,
-  internalMutation,
-  mutation,
-  query,
-} from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
@@ -100,16 +95,17 @@ export const createPolicy = mutation({
   },
   returns: v.id("insurancePolicies"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     const existingPolicy = await ctx.db
       .query("insurancePolicies")
@@ -196,12 +192,13 @@ export const updatePolicy = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, policy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.policyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error("Policy not found");
     }
@@ -234,18 +231,18 @@ export const updatePolicy = mutation({
 
     await Promise.all([
       ctx.db.patch(args.policyId, {
-      ...filteredUpdates,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    }),
+        ...filteredUpdates,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: policy.organizationId,
-      userId,
-      action: "updated",
-      entityType: "insurancePolicy",
-      entityId: args.policyId,
-      changes: filteredUpdates,
-    }),
+        organizationId: policy.organizationId,
+        userId,
+        action: "updated",
+        entityType: "insurancePolicy",
+        entityId: args.policyId,
+        changes: filteredUpdates,
+      }),
     ]);
 
     return null;
@@ -258,12 +255,13 @@ export const deletePolicy = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, policy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.policyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error("Policy not found");
     }
@@ -303,13 +301,13 @@ export const deletePolicy = mutation({
     await Promise.all([
       ctx.db.delete(args.policyId),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: policy.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "insurancePolicy",
-      entityId: args.policyId,
-      changes: { policyNumber: policy.policyNumber },
-    }),
+        organizationId: policy.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "insurancePolicy",
+        entityId: args.policyId,
+        changes: { policyNumber: policy.policyNumber },
+      }),
     ]);
 
     return null;
@@ -598,12 +596,13 @@ export const addCoverage = mutation({
   },
   returns: v.id("insuranceCoverages"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, policy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.policyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error("Policy not found");
     }
@@ -633,10 +632,7 @@ export const addCoverage = mutation({
     }
 
     if (args.exhibitionId) {
-      if (
-        !exhibition ||
-        exhibition.organizationId !== policy.organizationId
-      ) {
+      if (!exhibition || exhibition.organizationId !== policy.organizationId) {
         throw new Error("Exhibition not found or belongs to different org");
       }
     }
@@ -684,12 +680,13 @@ export const removeCoverage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, coverage] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.coverageId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const coverage = await ctx.db.get(args.coverageId);
     if (!coverage) {
       throw new Error("Coverage not found");
     }
@@ -739,15 +736,16 @@ export const getCoverageForObject = query({
       return [];
     }
 
-    await requirePermission(ctx, collection.organizationId, "loans.read");
-
-    const coverages = await ctx.db
-      .query("insuranceCoverages")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .filter((q) => q.eq(q.field("status"), "active"))
-      .collect();
+    const [, coverages] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "loans.read"),
+      ctx.db
+        .query("insuranceCoverages")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .collect(),
+    ] as const);
 
     const enrichedCoverages = await Promise.all(
       coverages.map(async (coverage) => {
@@ -863,12 +861,13 @@ export const updateClaim = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, claim] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.claimId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const claim = await ctx.db.get(args.claimId);
     if (!claim) {
       throw new Error("Claim not found");
     }
@@ -913,13 +912,13 @@ export const updateClaim = mutation({
     await Promise.all([
       ctx.db.patch(args.claimId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: claim.organizationId,
-      userId,
-      action: "updated",
-      entityType: "insuranceClaim",
-      entityId: args.claimId,
-      changes: updates,
-    }),
+        organizationId: claim.organizationId,
+        userId,
+        action: "updated",
+        entityType: "insuranceClaim",
+        entityId: args.claimId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -1256,14 +1255,15 @@ export const getUncoveredObjects = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
-
-    const allObjects = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "active"),
-      )
-      .collect();
+    const [, allObjects] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "active"),
+        )
+        .collect(),
+    ] as const);
 
     const coveredObjectIds = new Set<string>();
     const allCoverages = await ctx.db
@@ -1321,14 +1321,15 @@ export const getInsuranceStats = query({
     expiringIn30Days: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
-
-    const allPolicies = await ctx.db
-      .query("insurancePolicies")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, allPolicies] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      ctx.db
+        .query("insurancePolicies")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     const activePolicies = allPolicies.filter((p) => p.status === "active");
 
@@ -1407,12 +1408,13 @@ export const uploadPolicyDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, policy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.policyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error("Policy not found");
     }
@@ -1444,12 +1446,13 @@ export const uploadClaimDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, claim] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.claimId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const claim = await ctx.db.get(args.claimId);
     if (!claim) {
       throw new Error("Claim not found");
     }
@@ -1641,12 +1644,13 @@ export const openDispute = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, claim] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.claimId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const claim = await ctx.db.get(args.claimId);
     if (!claim) {
       throw new Error("Claim not found");
     }
@@ -1704,12 +1708,13 @@ export const updateDisputeStatus = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, claim] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.claimId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const claim = await ctx.db.get(args.claimId);
     if (!claim) {
       throw new Error("Claim not found");
     }
@@ -1739,13 +1744,13 @@ export const updateDisputeStatus = mutation({
     await Promise.all([
       ctx.db.patch(args.claimId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: claim.organizationId,
-      userId,
-      action: "updated_dispute",
-      entityType: "insuranceClaim",
-      entityId: args.claimId,
-      changes: { disputeStatus: args.disputeStatus },
-    }),
+        organizationId: claim.organizationId,
+        userId,
+        action: "updated_dispute",
+        entityType: "insuranceClaim",
+        entityId: args.claimId,
+        changes: { disputeStatus: args.disputeStatus },
+      }),
     ]);
 
     return null;
@@ -1764,12 +1769,13 @@ export const resolveDispute = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, claim] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.claimId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const claim = await ctx.db.get(args.claimId);
     if (!claim) {
       throw new Error("Claim not found");
     }
@@ -1807,17 +1813,17 @@ export const resolveDispute = mutation({
     await Promise.all([
       ctx.db.patch(args.claimId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: claim.organizationId,
-      userId,
-      action: "resolved_dispute",
-      entityType: "insuranceClaim",
-      entityId: args.claimId,
-      changes: {
-        resolution: args.resolution,
-        newStatus: args.newStatus,
-        settledAmount: args.settledAmount,
-      },
-    }),
+        organizationId: claim.organizationId,
+        userId,
+        action: "resolved_dispute",
+        entityType: "insuranceClaim",
+        entityId: args.claimId,
+        changes: {
+          resolution: args.resolution,
+          newStatus: args.newStatus,
+          settledAmount: args.settledAmount,
+        },
+      }),
     ]);
 
     return null;
@@ -1834,12 +1840,13 @@ export const uploadDisputeDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, claim] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.claimId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const claim = await ctx.db.get(args.claimId);
     if (!claim) {
       throw new Error("Claim not found");
     }
@@ -1988,12 +1995,13 @@ export const linkAppraisalToCoverage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, coverage] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.coverageId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const coverage = await ctx.db.get(args.coverageId);
     if (!coverage) {
       throw new Error("Coverage not found");
     }
@@ -2253,12 +2261,13 @@ export const addCoverageWithAppraisalCheck = mutation({
     blocked: v.boolean(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, policy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.policyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error("Policy not found");
     }

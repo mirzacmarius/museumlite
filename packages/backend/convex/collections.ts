@@ -5,8 +5,8 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
-  type QueryCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 // Note: customFieldValue, provenanceChainEntry, shippingLogEntry are defined in schema
@@ -269,7 +269,7 @@ async function getCollectionPrimaryImageUrls(
         preferredMedia.thumbnailStorageId ??
         (isImageMedia(preferredMedia) ? preferredMedia.storageId : undefined);
       const url = storageId
-        ? (await ctx.storage.getUrl(storageId)) ?? undefined
+        ? ((await ctx.storage.getUrl(storageId)) ?? undefined)
         : undefined;
 
       return [collectionId, url] as const;
@@ -401,7 +401,7 @@ async function getObjectDetailLocationPath(
   return path;
 }
 
-async function getLocationPathString(
+async function _getLocationPathString(
   ctx: QueryCtx,
   locationId: Id<"locations">,
 ) {
@@ -1357,12 +1357,13 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) return null;
 
     await requirePermission(ctx, collection.organizationId, "collections.read");
@@ -1400,12 +1401,13 @@ export const getObjectDetail = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       return null;
     }
@@ -1546,12 +1548,13 @@ export const getWithModuleDetails = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       return null;
     }
@@ -2438,12 +2441,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -2604,12 +2608,13 @@ export const deleteCollection = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -2647,12 +2652,13 @@ export const archiveCollection = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -2702,12 +2708,13 @@ export const softDeleteCollection = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -2753,14 +2760,15 @@ export const countDeletedCollections = query({
   },
   returns: v.number(),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    const deletedCollections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "deleted"),
-      )
-      .collect();
+    const [, deletedCollections] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "deleted"),
+        )
+        .collect(),
+    ] as const);
 
     return deletedCollections.length;
   },
@@ -2774,12 +2782,13 @@ export const emptyDeletedCollections = mutation({
     deletedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.delete"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.delete");
 
     const deletedCollections = await ctx.db
       .query("collections")
@@ -2820,12 +2829,13 @@ export const restoreCollection = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -2991,12 +3001,13 @@ export const addAlternateAccessionNumber = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -3046,12 +3057,13 @@ export const removeAlternateAccessionNumber = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -3135,7 +3147,7 @@ export const getParentObject = query({
   ),
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection || !collection.parentObjectId) {
+    if (!collection?.parentObjectId) {
       return null;
     }
 
@@ -3227,7 +3239,7 @@ export const getSiblingObjects = query({
   ),
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection || !collection.parentObjectId) {
+    if (!collection?.parentObjectId) {
       return [];
     }
 
@@ -3289,7 +3301,7 @@ export const getParentObjectWithThumbnail = query({
   ),
   handler: async (ctx, args) => {
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection || !collection.parentObjectId) {
+    if (!collection?.parentObjectId) {
       return null;
     }
 

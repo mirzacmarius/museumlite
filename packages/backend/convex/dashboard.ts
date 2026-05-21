@@ -207,148 +207,152 @@ export const getAnalytics = query({
       loans = loans.filter((l) => loanIdsForSite.has(l._id));
     }
 
-    const [recentCollectionGroups, recentObjects] = await Promise.all([
-      Promise.all(
-        collectionGroups
-          .toSorted((a, b) => b._creationTime - a._creationTime)
-          .slice(0, 4)
-          .map(async (group) => {
-            let imageUrl: string | undefined;
+    const [recentCollectionGroups, recentObjects, auditLogEntriesRaw] =
+      await Promise.all([
+        Promise.all(
+          collectionGroups
+            .toSorted((a, b) => b._creationTime - a._creationTime)
+            .slice(0, 4)
+            .map(async (group) => {
+              let imageUrl: string | undefined;
 
-            // 1. Try group's own image first
-            if (group.imageId) {
-              imageUrl = (await ctx.storage.getUrl(group.imageId)) ?? undefined;
-            }
+              // 1. Try group's own image first
+              if (group.imageId) {
+                imageUrl =
+                  (await ctx.storage.getUrl(group.imageId)) ?? undefined;
+              }
 
-            // 2. Fallback to item images if no group image
-            if (!imageUrl) {
-              // Find items in this group
-              const groupItems = await ctx.db
-                .query("collectionGroupItems")
-                .withIndex("by_collectionGroup", (q) =>
-                  q.eq("collectionGroupId", group._id),
-                )
-                .take(20);
-
-              const primaryImageUrls = await Promise.all(
-                groupItems.map(async (groupItem) => {
-                  const primaryMedia = await ctx.db
-                    .query("mediaFiles")
-                    .withIndex("by_collection", (q) =>
-                      q.eq("collectionId", groupItem.collectionId),
-                    )
-                    .filter((q) =>
-                      q.and(
-                        q.eq(q.field("isPrimary"), true),
-                        q.eq(q.field("fileType"), "image"),
-                      ),
-                    )
-                    .first();
-
-                  if (!primaryMedia) {
-                    return undefined;
-                  }
-
-                  if (primaryMedia.thumbnailStorageId) {
-                    return (
-                      (await ctx.storage.getUrl(
-                        primaryMedia.thumbnailStorageId,
-                      )) ?? undefined
-                    );
-                  }
-
-                  return (
-                    (await ctx.storage.getUrl(primaryMedia.storageId)) ??
-                    undefined
-                  );
-                }),
-              );
-
-              imageUrl = primaryImageUrls.find(
-                (url): url is string => url !== undefined,
-              );
-
+              // 2. Fallback to item images if no group image
               if (!imageUrl) {
-                const anyImageUrls = await Promise.all(
+                // Find items in this group
+                const groupItems = await ctx.db
+                  .query("collectionGroupItems")
+                  .withIndex("by_collectionGroup", (q) =>
+                    q.eq("collectionGroupId", group._id),
+                  )
+                  .take(20);
+
+                const primaryImageUrls = await Promise.all(
                   groupItems.map(async (groupItem) => {
-                    const anyMedia = await ctx.db
+                    const primaryMedia = await ctx.db
                       .query("mediaFiles")
                       .withIndex("by_collection", (q) =>
                         q.eq("collectionId", groupItem.collectionId),
                       )
-                      .filter((q) => q.eq(q.field("fileType"), "image"))
+                      .filter((q) =>
+                        q.and(
+                          q.eq(q.field("isPrimary"), true),
+                          q.eq(q.field("fileType"), "image"),
+                        ),
+                      )
                       .first();
 
-                    if (!anyMedia) {
+                    if (!primaryMedia) {
                       return undefined;
                     }
 
-                    if (anyMedia.thumbnailStorageId) {
+                    if (primaryMedia.thumbnailStorageId) {
                       return (
                         (await ctx.storage.getUrl(
-                          anyMedia.thumbnailStorageId,
+                          primaryMedia.thumbnailStorageId,
                         )) ?? undefined
                       );
                     }
 
                     return (
-                      (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                      (await ctx.storage.getUrl(primaryMedia.storageId)) ??
                       undefined
                     );
                   }),
                 );
 
-                imageUrl = anyImageUrls.find(
+                imageUrl = primaryImageUrls.find(
                   (url): url is string => url !== undefined,
                 );
+
+                if (!imageUrl) {
+                  const anyImageUrls = await Promise.all(
+                    groupItems.map(async (groupItem) => {
+                      const anyMedia = await ctx.db
+                        .query("mediaFiles")
+                        .withIndex("by_collection", (q) =>
+                          q.eq("collectionId", groupItem.collectionId),
+                        )
+                        .filter((q) => q.eq(q.field("fileType"), "image"))
+                        .first();
+
+                      if (!anyMedia) {
+                        return undefined;
+                      }
+
+                      if (anyMedia.thumbnailStorageId) {
+                        return (
+                          (await ctx.storage.getUrl(
+                            anyMedia.thumbnailStorageId,
+                          )) ?? undefined
+                        );
+                      }
+
+                      return (
+                        (await ctx.storage.getUrl(anyMedia.storageId)) ??
+                        undefined
+                      );
+                    }),
+                  );
+
+                  imageUrl = anyImageUrls.find(
+                    (url): url is string => url !== undefined,
+                  );
+                }
               }
-            }
 
-            return {
-              id: group._id,
-              name: group.name,
-              description: group.description,
-              itemsCount: group.itemsCount ?? 0,
-              imageUrl,
-              storageLocation: group.storageLocation,
-              valuation: group.valuation,
-            };
-          }),
-      ),
-      Promise.all(
-        collections
-          .toSorted((a, b) => b._creationTime - a._creationTime)
-          .slice(0, 6)
-          .map(async (collection) => {
-            const primaryMedia = await ctx.db
-              .query("mediaFiles")
-              .withIndex("by_collection", (q) =>
-                q.eq("collectionId", collection._id),
-              )
-              .filter((q) => q.eq(q.field("isPrimary"), true))
-              .first();
+              return {
+                id: group._id,
+                name: group.name,
+                description: group.description,
+                itemsCount: group.itemsCount ?? 0,
+                imageUrl,
+                storageLocation: group.storageLocation,
+                valuation: group.valuation,
+              };
+            }),
+        ),
+        Promise.all(
+          collections
+            .toSorted((a, b) => b._creationTime - a._creationTime)
+            .slice(0, 6)
+            .map(async (collection) => {
+              const primaryMedia = await ctx.db
+                .query("mediaFiles")
+                .withIndex("by_collection", (q) =>
+                  q.eq("collectionId", collection._id),
+                )
+                .filter((q) => q.eq(q.field("isPrimary"), true))
+                .first();
 
-            const imageUrl = primaryMedia?.storageId
-              ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
-              : undefined;
+              const imageUrl = primaryMedia?.storageId
+                ? ((await ctx.storage.getUrl(primaryMedia.storageId)) ??
+                  undefined)
+                : undefined;
 
-            return {
-              id: collection._id,
-              title: collection.title,
-              accessionNumber: collection.accessionNumber,
-              objectType: collection.objectType,
-              status: collection.status,
-              imageUrl,
-            };
-          }),
-      ),
-    ]);
-    let auditLogEntries = await ctx.db
-      .query("auditLog")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+              return {
+                id: collection._id,
+                title: collection.title,
+                accessionNumber: collection.accessionNumber,
+                objectType: collection.objectType,
+                status: collection.status,
+                imageUrl,
+              };
+            }),
+        ),
+        ctx.db
+          .query("auditLog")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+      ]);
+    let auditLogEntries = auditLogEntriesRaw;
 
     // Filter audit log by site if siteId is provided
     if (args.siteId !== undefined) {
@@ -636,9 +640,7 @@ export const getComplianceReport = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "compliance"),
-      requirePermission(
-ctx, args.organizationId, "collections.read"
-    ),
+      requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     const now = Date.now();
@@ -921,9 +923,7 @@ export const getLocationUtilization = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(
-ctx, args.organizationId, "locations.read"
-    ),
+      requirePermission(ctx, args.organizationId, "locations.read"),
     ]);
 
     const now = Date.now();
@@ -1091,18 +1091,19 @@ export const getCollectionGrowth = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
-
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, collections] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     const now = new Date();
     const months: { month: string; count: number }[] = [];
@@ -1279,9 +1280,7 @@ export const getOperationalKpis = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(
-ctx, args.organizationId, "collections.read"
-    ),
+      requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     const now = Date.now();

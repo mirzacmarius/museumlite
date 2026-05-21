@@ -3,9 +3,8 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import {
   type AccessionImportRow,
-  type ValidationIssue,
-  type ValidationSeverity,
   normalizeAccessionImportRow,
+  type ValidationIssue,
 } from "./utils/importRows";
 import { requirePermission } from "./utils/permissions";
 
@@ -257,12 +256,13 @@ export const validateImport = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     let report: ValidationReport;
 
@@ -329,12 +329,13 @@ export const validateAccessionImport = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const report = validateAccessions(args.rows);
 
@@ -396,12 +397,13 @@ export const validateCollectionImport = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const report = validateCollections(args.rows);
 

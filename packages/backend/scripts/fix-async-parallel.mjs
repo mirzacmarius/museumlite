@@ -189,6 +189,48 @@ function fixPatchThenAuditStandalone(content) {
   );
 }
 
+function fixGetAuthThenDbGet(content) {
+  return content.replace(
+    /const userId = await getAuthUserId\(ctx\);\s*\n\s*if \(!userId\) \{\s*\n\s*throw new Error\("Not authenticated"\);\s*\n\s*\}\s*\n\s*const (\w+) = await ctx\.db\.get\(([^)]+)\);/g,
+    `const [userId, $1] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get($2),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }`,
+  );
+}
+
+function fixGetAuthThenRequirePermission(content) {
+  return content.replace(
+    /const userId = await getAuthUserId\(ctx\);\s*\n\s*if \(!userId\) \{\s*\n\s*throw new Error\("Not authenticated"\);\s*\n\s*\}\s*\n\s*await requirePermission\(([^)]+)\);/g,
+    `const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission($1),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }`,
+  );
+}
+
+function fixPermissionThenCollect(content) {
+  return content.replace(
+    /await requirePermission\(([^)]+)\);\s*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)\s*\n\s*\.withIndex\(([\s\S]*?)\)\s*\n\s*\.collect\(\);/g,
+    (match, permArgs, varName, table, indexBlock) => {
+      if (match.includes("Promise.all")) return match;
+      return `const [, ${varName}] = await Promise.all([
+      requirePermission(${permArgs}),
+      ctx.db
+        .query("${table}")
+        .withIndex(${indexBlock})
+        .collect(),
+    ] as const);`;
+    },
+  );
+}
+
 function fixLoanCancelBulk(content) {
   return content.replace(
     /\/\/ Update loan status\s*\n\s*await ctx\.db\.patch\(loanId, \{\s*\n\s*status: "cancelled",\s*\n\s*\}\);\s*\n\s*\/\/ Update collection statuses back to active\s*\n\s*const loanItems = await ctx\.db\s*\n\s*\.query\("loanItems"\)\s*\n\s*\.withIndex\("by_loan", \(q\) => q\.eq\("loanId", loanId\)\)\s*\n\s*\.collect\(\);/g,
@@ -210,6 +252,9 @@ function apply(filePath) {
   let content = fs.readFileSync(filePath, "utf8");
   const original = content;
   content = fixAuthParallel(content);
+  content = fixGetAuthThenDbGet(content);
+  content = fixGetAuthThenRequirePermission(content);
+  content = fixPermissionThenCollect(content);
   content = fixSyncAuditParallel(content);
   content = fixConsecutiveDbGet(content);
   content = fixConsecutiveRunQuery(content);

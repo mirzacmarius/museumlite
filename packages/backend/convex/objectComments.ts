@@ -40,12 +40,13 @@ export const list = query({
     const object = await ctx.db.get(args.objectId);
     if (!object) return [];
 
-    await requirePermission(ctx, object.organizationId, "collections.read");
-
-    const comments = await ctx.db
-      .query("objectComments")
-      .withIndex("by_object", (q) => q.eq("objectId", args.objectId))
-      .collect();
+    const [, comments] = await Promise.all([
+      requirePermission(ctx, object.organizationId, "collections.read"),
+      ctx.db
+        .query("objectComments")
+        .withIndex("by_object", (q) => q.eq("objectId", args.objectId))
+        .collect(),
+    ] as const);
 
     const commentsWithUsers = await Promise.all(
       comments.map(async (c) => {

@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import {
   getUserPermissions as getUserPerms,
@@ -85,12 +84,13 @@ export const updateRole = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, role] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.roleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const role = await ctx.db.get(args.roleId);
     if (!role) {
       throw new Error("Role not found");
     }
@@ -179,12 +179,13 @@ export const deleteRole = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, role] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.roleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const role = await ctx.db.get(args.roleId);
     if (!role) {
       throw new Error("Role not found");
     }

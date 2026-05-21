@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { canApproveAtStep } from "./utils/permissions";
 
@@ -523,17 +522,13 @@ export const getAssignmentCounts = query({
         ctx.db
           .query("accessions")
           .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("status", "pending"),
+            q.eq("organizationId", args.organizationId).eq("status", "pending"),
           )
           .collect(),
         ctx.db
           .query("loans")
           .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("status", "pending"),
+            q.eq("organizationId", args.organizationId).eq("status", "pending"),
           )
           .collect(),
         ctx.db
@@ -542,8 +537,8 @@ export const getAssignmentCounts = query({
           .collect(),
       ] as const);
 
-    await Promise.all(
-      Array.from(pendingAccessions).map(async (accession) => {
+    await Promise.all([
+      ...Array.from(pendingAccessions).map(async (accession) => {
         const currentStep = accession.workflowStep ?? 1;
         const canApprove = await canApproveAtStep(
           ctx,
@@ -559,10 +554,7 @@ export const getAssignmentCounts = query({
           }
         }
       }),
-    );
-
-    await Promise.all(
-      Array.from(pendingLoans).map(async (loan) => {
+      ...Array.from(pendingLoans).map(async (loan) => {
         const currentStep = loan.workflowStep ?? 1;
         const canApprove = await canApproveAtStep(
           ctx,
@@ -578,7 +570,7 @@ export const getAssignmentCounts = query({
           }
         }
       }),
-    );
+    ]);
 
     const assignedCount = assignedAccessions.filter(
       (a) => a.organizationId === args.organizationId && a.status === "pending",

@@ -1,8 +1,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  internalMutation,
+  type MutationCtx,
+  mutation,
+  query,
+} from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
@@ -217,12 +222,13 @@ export const cancelBatchJob = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, job] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.jobId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const job = await ctx.db.get(args.jobId);
     if (!job) {
       throw new Error("Job not found");
     }
@@ -342,22 +348,19 @@ export const listBatchJobs = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    let jobsQuery;
-    if (args.status) {
-      jobsQuery = ctx.db
-        .query("batchJobs")
-        .withIndex("by_organization_and_status", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("status", args.status!),
-        );
-    } else {
-      jobsQuery = ctx.db
-        .query("batchJobs")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-    }
+    const jobsQuery = args.status
+      ? ctx.db
+          .query("batchJobs")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", args.status!),
+          )
+      : ctx.db
+          .query("batchJobs")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          );
 
     const jobs = await jobsQuery.collect();
 
@@ -553,9 +556,12 @@ export const processBatchJob = internalMutation({
 // Processing Helpers
 // ============================================
 
+type CollectionDoc = Doc<"collections">;
+type CollectionCustomFields = NonNullable<CollectionDoc["customFields"]>;
+
 async function processBulkEdit(
-  ctx: any,
-  collection: any,
+  ctx: MutationCtx,
+  collection: CollectionDoc,
   payload: {
     collectionGroupId?: Id<"collectionGroups">;
     currentLocationId?: Id<"locations">;
@@ -564,11 +570,11 @@ async function processBulkEdit(
     isPubliclyVisible?: boolean;
     isSearchable?: boolean;
     tags?: string[];
-    customFields?: Record<string, any>;
+    customFields?: CollectionCustomFields;
   },
   userId: Id<"users">,
 ) {
-  const updates: Record<string, any> = {
+  const updates: Partial<CollectionDoc> = {
     lastModifiedBy: userId,
     lastModifiedAt: Date.now(),
   };
@@ -606,8 +612,8 @@ async function processBulkEdit(
 }
 
 async function processBulkMove(
-  ctx: any,
-  collection: any,
+  ctx: MutationCtx,
+  collection: CollectionDoc,
   payload: {
     toLocationId: Id<"locations">;
     reason?: string;
@@ -637,7 +643,7 @@ async function processBulkMove(
   if (toLocation.capacity && !payload.overrideCapacity) {
     const objectsAtLocation = await ctx.db
       .query("collections")
-      .withIndex("by_currentLocation", (q: any) =>
+      .withIndex("by_currentLocation", (q) =>
         q.eq("currentLocationId", payload.toLocationId),
       )
       .collect();
@@ -673,8 +679,8 @@ async function processBulkMove(
 }
 
 async function processBulkStatusChange(
-  ctx: any,
-  collection: any,
+  ctx: MutationCtx,
+  collection: CollectionDoc,
   payload: {
     newStatus: "active" | "archived" | "deleted";
     reason?: string;
@@ -682,7 +688,7 @@ async function processBulkStatusChange(
   userId: Id<"users">,
 ) {
   const now = Date.now();
-  const updates: Record<string, any> = {
+  const updates: Partial<CollectionDoc> = {
     status: payload.newStatus,
     lastModifiedBy: userId,
     lastModifiedAt: now,
@@ -774,7 +780,7 @@ export const quickBulkEdit = mutation({
             };
           }
 
-          const updates: Record<string, any> = {
+          const updates: Partial<CollectionDoc> = {
             lastModifiedBy: userId,
             lastModifiedAt: Date.now(),
           };
@@ -892,7 +898,7 @@ export const quickBulkStatusChange = mutation({
             };
           }
 
-          const updates: Record<string, any> = {
+          const updates: Partial<CollectionDoc> = {
             status: args.newStatus,
             lastModifiedBy: userId,
             lastModifiedAt: now,
@@ -970,7 +976,10 @@ export const bulkAddTags = mutation({
       args.collectionIds.map(async (collectionId) => {
         try {
           const collection = await ctx.db.get(collectionId);
-          if (!collection || collection.organizationId !== args.organizationId) {
+          if (
+            !collection ||
+            collection.organizationId !== args.organizationId
+          ) {
             return false;
           }
 
@@ -1025,7 +1034,10 @@ export const bulkRemoveTags = mutation({
       args.collectionIds.map(async (collectionId) => {
         try {
           const collection = await ctx.db.get(collectionId);
-          if (!collection || collection.organizationId !== args.organizationId) {
+          if (
+            !collection ||
+            collection.organizationId !== args.organizationId
+          ) {
             return false;
           }
 

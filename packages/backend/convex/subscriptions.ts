@@ -10,9 +10,9 @@ import {
   query,
 } from "./_generated/server";
 import {
-  type SubscriptionRecordSource,
   hasActiveSubscriptionAccess,
   inferSubscriptionTierFromProductName,
+  type SubscriptionRecordSource,
   toDatabaseProduct,
   toDatabaseSubscription,
 } from "./utils/polarBilling";
@@ -550,7 +550,7 @@ export const listBillingProducts = action({
       prices: product.prices.map((price) => ({
         priceAmount:
           price.amountType === "fixed"
-            ? price.priceAmount ?? undefined
+            ? (price.priceAmount ?? undefined)
             : undefined,
       })),
     }));
