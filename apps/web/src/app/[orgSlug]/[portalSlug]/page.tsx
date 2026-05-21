@@ -1,7 +1,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { PublicPortalPageClient } from "./public-portal-page-client";
 
 interface PageProps {
@@ -38,15 +37,5 @@ export async function generateMetadata({
 }
 
 export default function PublicPortalPage(_props: PageProps) {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-white/60">Loading collection…</p>
-        </div>
-      }
-    >
-      <PublicPortalPageClient />
-    </Suspense>
-  );
+  return <PublicPortalPageClient />;
 }

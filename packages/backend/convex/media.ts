@@ -1141,16 +1141,17 @@ export const checkDuplicate = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const existing = await ctx.db
-      .query("mediaFiles")
+    const [, existing] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
       .withIndex("by_content_hash", (q) =>
         q
           .eq("organizationId", args.organizationId)
           .eq("contentHash", args.contentHash),
       )
-      .first();
+      .first(),
+    ] as const);
 
     if (!existing) {
       return {
@@ -1243,15 +1244,16 @@ export const listDuplicates = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const duplicates = await ctx.db
-      .query("mediaFiles")
+    const [, duplicates] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .filter((q) => q.eq(q.field("isDuplicate"), true))
-      .collect();
+      .collect(),
+    ] as const);
 
     const enriched = await Promise.all(
       duplicates.map(async (media) => {

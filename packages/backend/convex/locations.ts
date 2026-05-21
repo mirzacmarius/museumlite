@@ -769,15 +769,16 @@ export const getEnvironmentalReadings = query({
       return null;
     }
 
-    await requirePermission(ctx, location.organizationId, "locations.read");
-
-    const latestReading = await ctx.db
-      .query("environmentalReadings")
+    const [, latestReading] = await Promise.all([
+      requirePermission(ctx, location.organizationId, "locations.read"),
+      ctx.db
+        .query("environmentalReadings")
       .withIndex("by_location_and_time", (q) =>
         q.eq("locationId", args.locationId),
       )
       .order("desc")
-      .first();
+      .first(),
+    ] as const);
 
     if (!latestReading) {
       return null;
@@ -1639,20 +1640,21 @@ export const updateStatus = mutation({
       }
     }
 
-    await ctx.db.patch(args.locationId, {
-      status: args.status,
-      isActive: args.status !== "closed",
-      notes: args.notes ?? location.notes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: location.organizationId,
-      userId,
-      action: "updated_location_status",
-      entityType: "location",
-      entityId: args.locationId,
-      changes: { status: args.status },
-    });
+    await Promise.all([
+      ctx.db.patch(args.locationId, {
+        status: args.status,
+        isActive: args.status !== "closed",
+        notes: args.notes ?? location.notes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: location.organizationId,
+        userId,
+        action: "updated_location_status",
+        entityType: "location",
+        entityId: args.locationId,
+        changes: { status: args.status },
+      }),
+    ]);
 
     return null;
   },

@@ -271,18 +271,19 @@ export const deletePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(
+    const [, activeCoverages] = await Promise.all([
+      requirePermission(
       ctx,
       policy.organizationId,
       "organization.manage_settings",
-    );
-
-    const activeCoverages = await ctx.db
-      .query("insuranceCoverages")
+    ),
+      ctx.db
+        .query("insuranceCoverages")
       .withIndex("by_policy_and_status", (q) =>
         q.eq("policyId", args.policyId).eq("status", "active"),
       )
-      .first();
+      .first(),
+    ] as const);
 
     if (activeCoverages) {
       throw new Error("Cannot delete policy with active coverages");
@@ -1969,20 +1970,21 @@ export const linkAppraisalToCoverage = mutation({
     }
 
     // Update coverage with appraisal info
-    await ctx.db.patch(args.coverageId, {
-      appraisalId: args.appraisalId,
-      appraisalDate: appraisal.appraisalDate,
-      appraisalWarning: undefined, // Clear any warning
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: coverage.organizationId,
-      userId,
-      action: "linked_appraisal",
-      entityType: "insuranceCoverage",
-      entityId: args.coverageId,
-      changes: { appraisalId: args.appraisalId },
-    });
+    await Promise.all([
+      ctx.db.patch(args.coverageId, {
+        appraisalId: args.appraisalId,
+        appraisalDate: appraisal.appraisalDate,
+        appraisalWarning: undefined, // Clear any warning
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: coverage.organizationId,
+        userId,
+        action: "linked_appraisal",
+        entityType: "insuranceCoverage",
+        entityId: args.coverageId,
+        changes: { appraisalId: args.appraisalId },
+      }),
+    ]);
 
     return null;
   },

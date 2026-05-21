@@ -339,12 +339,13 @@ export const getUnmappedFiles = query({
     const job = await ctx.db.get(args.jobId);
     if (!job) return [];
 
-    await requirePermission(ctx, job.organizationId, "media.read");
-
-    const mediaData = await ctx.db
-      .query("mediaImportJobData")
+    const [, mediaData] = await Promise.all([
+      requirePermission(ctx, job.organizationId, "media.read"),
+      ctx.db
+        .query("mediaImportJobData")
       .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
-      .first();
+      .first(),
+    ] as const);
 
     if (!mediaData) return [];
 
@@ -476,12 +477,13 @@ export const deleteUnmappedFile = mutation({
       throw new Error("Import job not found");
     }
 
-    await requirePermission(ctx, job.organizationId, "media.delete");
-
-    const mediaData = await ctx.db
-      .query("mediaImportJobData")
+    const [, mediaData] = await Promise.all([
+      requirePermission(ctx, job.organizationId, "media.delete"),
+      ctx.db
+        .query("mediaImportJobData")
       .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
-      .first();
+      .first(),
+    ] as const);
 
     if (!mediaData) {
       throw new Error("Media import data not found");
@@ -594,16 +596,17 @@ export const listMediaImportJobs = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const jobs = await ctx.db
-      .query("importJobs")
+    const [, jobs] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("importJobs")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .filter((q) => q.eq(q.field("type"), "media"))
       .order("desc")
-      .take(20);
+      .take(20),
+    ] as const);
 
     const results = await Promise.all(
       jobs.map(async (job) => {

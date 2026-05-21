@@ -2452,19 +2452,20 @@ export const uploadChecklistDocument = mutation({
       documents.push(args.storageId);
     }
 
-    await ctx.db.patch(args.accessionId, {
-      documentChecklist: updatedChecklist,
-      documents,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId,
-      action: "document_uploaded",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { documentType: args.documentType },
-    });
+    await Promise.all([
+      ctx.db.patch(args.accessionId, {
+        documentChecklist: updatedChecklist,
+        documents,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "document_uploaded",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { documentType: args.documentType },
+      }),
+    ]);
 
     return null;
   },

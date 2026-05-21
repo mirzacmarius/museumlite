@@ -38,6 +38,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@v1/ui/sidebar";
+import { Skeleton } from "@v1/ui/skeleton";
 import { cn } from "@v1/ui/utils";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import {
@@ -75,6 +76,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { Suspense } from "react";
 import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
 import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import { useCommandPalette } from "@/components/command-palette-provider";
@@ -556,7 +558,37 @@ function UserMenu({
   );
 }
 
-export function AppSidebarClient({
+const SIDEBAR_SKELETON_KEYS = [
+  "nav-skeleton-1",
+  "nav-skeleton-2",
+  "nav-skeleton-3",
+  "nav-skeleton-4",
+  "nav-skeleton-5",
+  "nav-skeleton-6",
+  "nav-skeleton-7",
+  "nav-skeleton-8",
+] as const;
+
+function AppSidebarFallback() {
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="px-2 pb-1 pt-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Skeleton className="h-10 w-full rounded-md" />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent className="gap-2 px-2 py-1">
+        {SIDEBAR_SKELETON_KEYS.map((skeletonKey) => (
+          <Skeleton key={skeletonKey} className="h-7 w-full rounded-md" />
+        ))}
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+function AppSidebarClientInner({
   preloadedUser,
 }: {
   preloadedUser: Preloaded<typeof api.users.getUser>;
@@ -782,5 +814,17 @@ export function AppSidebarClient({
       />
       <SidebarRail />
     </Sidebar>
+  );
+}
+
+export function AppSidebarClient({
+  preloadedUser,
+}: {
+  preloadedUser: Preloaded<typeof api.users.getUser>;
+}) {
+  return (
+    <Suspense fallback={<AppSidebarFallback />}>
+      <AppSidebarClientInner preloadedUser={preloadedUser} />
+    </Suspense>
   );
 }

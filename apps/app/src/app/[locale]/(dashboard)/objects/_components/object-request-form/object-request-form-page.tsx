@@ -1,6 +1,8 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import type {
   CollectionFormData,
   DraftMediaItem,
@@ -18,8 +20,26 @@ export interface ObjectRequestFormPageProps {
   backHref?: string;
 }
 
-export function ObjectRequestFormPage(props: ObjectRequestFormPageProps) {
-  const form = useObjectRequestForm(props);
+function ObjectRequestFormFallback() {
+  return (
+    <div className="flex size-full items-center justify-center">
+      <p className="text-muted-foreground">Loading form…</p>
+    </div>
+  );
+}
+
+function ObjectRequestFormPageInner(props: ObjectRequestFormPageProps) {
+  const searchParams = useSearchParams();
+  const collectionGroupIdFromUrl = searchParams.get("collectionGroupId");
+  const collectionGroupId =
+    props.prefilledCollectionGroupId ||
+    collectionGroupIdFromUrl ||
+    undefined;
+
+  const form = useObjectRequestForm({
+    ...props,
+    prefilledCollectionGroupId: collectionGroupId,
+  });
 
   if (!form.currentOrganizationId) {
     return (
@@ -30,4 +50,12 @@ export function ObjectRequestFormPage(props: ObjectRequestFormPageProps) {
   }
 
   return <ObjectRequestFormLayout form={form} />;
+}
+
+export function ObjectRequestFormPage(props: ObjectRequestFormPageProps) {
+  return (
+    <Suspense fallback={<ObjectRequestFormFallback />}>
+      <ObjectRequestFormPageInner {...props} />
+    </Suspense>
+  );
 }

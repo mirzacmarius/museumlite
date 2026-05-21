@@ -95,6 +95,7 @@ test("claimPolarWebhook rejects duplicate webhook ids", async () => {
     webhookId: "evt_duplicate",
     eventType: "subscription.updated",
   });
+  // Sequential: second claim must run after first to assert duplicate rejection.
   const second = await t.mutation(internal.subscriptions.claimPolarWebhook, {
     webhookId: "evt_duplicate",
     eventType: "subscription.updated",
