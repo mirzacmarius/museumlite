@@ -6,7 +6,14 @@ import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { serializeStringListField } from "@/lib/string-list-field";
@@ -29,6 +36,39 @@ import {
   withLinkEntryLocalIds,
   withOwnershipEntryLocalIds,
 } from "../collection-form-shared/utils";
+
+interface CollectionEditFormSyncState {
+  formData: CollectionFormData;
+  isInitialized: boolean;
+}
+
+type CollectionEditFormSyncAction =
+  | { type: "sync_from_server"; formData: CollectionFormData }
+  | {
+      type: "update_field";
+      field: keyof CollectionFormData;
+      value: CollectionFormData[keyof CollectionFormData];
+    };
+
+function collectionEditFormSyncReducer(
+  state: CollectionEditFormSyncState,
+  action: CollectionEditFormSyncAction,
+): CollectionEditFormSyncState {
+  switch (action.type) {
+    case "sync_from_server":
+      return { formData: action.formData, isInitialized: true };
+    case "update_field":
+      return {
+        ...state,
+        formData: { ...state.formData, [action.field]: action.value },
+      };
+  }
+}
+
+const initialCollectionEditFormSyncState: CollectionEditFormSyncState = {
+  formData: EMPTY_EDIT_FORM,
+  isInitialized: false,
+};
 
 export function useCollectionEditForm() {
   const t = useScopedI18n("objects");
@@ -64,9 +104,11 @@ export function useCollectionEditForm() {
     collectionId ? { collectionId: typedCollectionId } : "skip",
   );
 
-  const [formData, setFormData] = useState<CollectionFormData>(EMPTY_EDIT_FORM);
+  const [{ formData, isInitialized }, dispatchFormSync] = useReducer(
+    collectionEditFormSyncReducer,
+    initialCollectionEditFormSyncState,
+  );
   const [activeTab, setActiveTab] = useState<CollectionEditTabId>("general");
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isMediaBaselineReady, setIsMediaBaselineReady] = useState(false);
   const initialFormSignatureRef = useRef("");
   const initialMediaSignatureRef = useRef("");
@@ -193,14 +235,13 @@ export function useCollectionEditForm() {
 
     if (!isInitialized) {
       initialFormSignatureRef.current = nextSignature;
-      setFormData(nextFormData);
-      setIsInitialized(true);
+      dispatchFormSync({ type: "sync_from_server", formData: nextFormData });
       return;
     }
 
     if (!isFormDirty && nextSignature !== initialFormSignatureRef.current) {
-      setFormData(nextFormData);
       initialFormSignatureRef.current = nextSignature;
+      dispatchFormSync({ type: "sync_from_server", formData: nextFormData });
     }
   }, [collection, collectionGroupsForCollection, isFormDirty, isInitialized]);
 
@@ -305,7 +346,7 @@ export function useCollectionEditForm() {
       field: K,
       value: CollectionFormData[K],
     ) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      dispatchFormSync({ type: "update_field", field, value });
     },
     [],
   );
