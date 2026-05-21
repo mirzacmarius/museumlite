@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useReducer, useRef } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 interface NavigationProgressState {
   isNavigating: boolean;
@@ -36,32 +37,58 @@ function navigationProgressReducer(
 }
 
 export function NavigationProgress() {
+  const pathname = usePathname();
   const [state, dispatch] = useReducer(navigationProgressReducer, {
     isNavigating: false,
     progress: 0,
   });
-  const isNavigatingRef = useRef(state.isNavigating);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pathnameAtNavigationStartRef = useRef(pathname);
+
+  const clearProgressInterval = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  }, []);
+
+  const clearResetTimeout = useCallback(() => {
+    if (resetTimeoutRef.current) {
+      clearTimeout(resetTimeoutRef.current);
+      resetTimeoutRef.current = null;
+    }
+  }, []);
+
+  const finishNavigation = useCallback(() => {
+    clearProgressInterval();
+    clearResetTimeout();
+    dispatch({ type: "complete" });
+    resetTimeoutRef.current = setTimeout(() => {
+      dispatch({ type: "reset" });
+      resetTimeoutRef.current = null;
+    }, 200);
+  }, [clearProgressInterval, clearResetTimeout]);
 
   useEffect(() => {
-    isNavigatingRef.current = state.isNavigating;
-  }, [state.isNavigating]);
+    if (!state.isNavigating) {
+      return;
+    }
+
+    if (pathname !== pathnameAtNavigationStartRef.current) {
+      finishNavigation();
+    }
+  }, [finishNavigation, pathname, state.isNavigating]);
 
   useEffect(() => {
-    let progressInterval: NodeJS.Timeout;
-
     const startNavigation = () => {
+      clearResetTimeout();
+      clearProgressInterval();
+      pathnameAtNavigationStartRef.current = pathname;
       dispatch({ type: "start" });
-      progressInterval = setInterval(() => {
+      progressIntervalRef.current = setInterval(() => {
         dispatch({ type: "tick", increment: Math.random() * 10 });
       }, 100);
-    };
-
-    const completeNavigation = () => {
-      dispatch({ type: "complete" });
-      setTimeout(() => {
-        dispatch({ type: "reset" });
-      }, 200);
-      if (progressInterval) clearInterval(progressInterval);
     };
 
     const onDocumentClick = (e: MouseEvent) => {
@@ -78,21 +105,14 @@ export function NavigationProgress() {
       }
     };
 
-    const observer = new MutationObserver(() => {
-      if (isNavigatingRef.current) {
-        completeNavigation();
-      }
-    });
-
     document.addEventListener("click", onDocumentClick);
-    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       document.removeEventListener("click", onDocumentClick);
-      observer.disconnect();
-      if (progressInterval) clearInterval(progressInterval);
+      clearProgressInterval();
+      clearResetTimeout();
     };
-  }, []);
+  }, [clearProgressInterval, clearResetTimeout, pathname]);
 
   if (!state.isNavigating) return null;
 

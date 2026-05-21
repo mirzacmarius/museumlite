@@ -142,8 +142,17 @@ export function useCollectionEditForm() {
   );
 
   useEffect(() => {
+    if (tabs.length === 0) {
+      return;
+    }
+
+    const firstTabId = tabs[0]?.id;
+    if (!firstTabId) {
+      return;
+    }
+
     if (!tabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab(tabs[0]?.id ?? "general");
+      setActiveTab(firstTabId);
     }
   }, [activeTab, tabs]);
 

@@ -133,6 +133,11 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
   );
 
   const prevDataVersionRef = useRef<string>("");
+  const expandedItemsRef = useRef<string[]>(state.expandedItems);
+
+  useEffect(() => {
+    expandedItemsRef.current = state.expandedItems;
+  }, [state.expandedItems]);
 
   useEffect(() => {
     const hash = getLocationTreeDataVersion(allLocations);
@@ -161,9 +166,18 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
         key={`tree-${state.treeVersion}`}
         organizationId={organizationId}
         initialExpandedItems={state.expandedItems}
-        onExpandedItemsChange={(items) =>
-          dispatch({ type: "setExpandedItems", value: items })
-        }
+        onExpandedItemsChange={(items) => {
+          const previousItems = expandedItemsRef.current;
+          if (
+            previousItems.length === items.length &&
+            previousItems.every((item, index) => item === items[index])
+          ) {
+            return;
+          }
+
+          expandedItemsRef.current = items;
+          dispatch({ type: "setExpandedItems", value: items });
+        }}
         onEdit={(location) => dispatch({ type: "openEdit", location })}
         onAddChild={(location) => dispatch({ type: "openAddChild", location })}
         onMove={(location) => dispatch({ type: "openMove", location })}
