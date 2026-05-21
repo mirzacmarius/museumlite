@@ -28,8 +28,8 @@ export default function AssignmentsPage() {
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex size-full items-center justify-center bg-gray-950 px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-white/10 bg-gray-950 p-8">
+      <div className="flex size-full items-center justify-center bg-zinc-950 px-6 py-8">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-white/10 bg-zinc-950 p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-white">
               {t("assignmentsPage.selectOrg.title")}

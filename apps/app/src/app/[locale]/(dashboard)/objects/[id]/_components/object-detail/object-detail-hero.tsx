@@ -67,7 +67,7 @@ export function ObjectDetailHero({
               <ImageIcon className="size-12 text-muted-foreground" />
             </div>
           )}
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-gray-950/50 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
             <Maximize2 className="size-6 text-white" />
           </div>
         </button>

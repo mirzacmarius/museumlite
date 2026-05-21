@@ -58,7 +58,7 @@ export default function RootLayout({
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "antialiased dark min-h-screen bg-gray-950 text-white selection:bg-neon-purple/30",
+          "antialiased dark min-h-screen bg-zinc-950 text-white selection:bg-neon-purple/30",
         )}
       >
         <MotionProvider>

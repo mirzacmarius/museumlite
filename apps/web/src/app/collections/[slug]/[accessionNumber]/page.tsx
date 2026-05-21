@@ -20,7 +20,7 @@ export default function PublicObjectPage() {
 
   if (object === undefined) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <p className="text-white/60">Loading…</p>
       </div>
     );
@@ -28,7 +28,7 @@ export default function PublicObjectPage() {
 
   if (object === null) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center">
         <h1 className="text-2xl font-semibold text-white mb-2">Object Not Found</h1>
         <p className="text-white/60 mb-6">
           This object may not be publicly available
@@ -44,7 +44,7 @@ export default function PublicObjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-zinc-950">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-8">
           <Link

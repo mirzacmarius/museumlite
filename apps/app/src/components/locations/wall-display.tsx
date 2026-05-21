@@ -51,7 +51,7 @@ interface WallSlotProps {
 function WallSlot({ slot }: WallSlotProps) {
   if (slot.occupied) {
     return (
-      <div className="aspect-[3/4] bg-gray-950/40 border border-white/10 rounded flex items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
+      <div className="aspect-[3/4] bg-zinc-950/40 border border-white/10 rounded flex items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
         {slot.itemType === "sculpture" ? (
           <Scissors className="size-6 text-amber-200/80 group-hover:scale-110 transition-transform" />
         ) : (
@@ -62,7 +62,7 @@ function WallSlot({ slot }: WallSlotProps) {
   }
 
   return (
-    <div className="aspect-[3/4] bg-gray-950/40 border border-zinc-800 rounded flex items-center justify-center">
+    <div className="aspect-[3/4] bg-zinc-950/40 border border-zinc-800 rounded flex items-center justify-center">
       <span className="text-[9px] text-zinc-700">Empty</span>
     </div>
   );

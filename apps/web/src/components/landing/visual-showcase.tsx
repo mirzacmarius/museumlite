@@ -5,7 +5,7 @@ import { seededRandom } from "./seeded-rng";
 
 export function VisualShowcase() {
   return (
-    <section className="py-32 px-4 relative bg-gray-950 overflow-hidden">
+    <section className="py-32 px-4 relative bg-zinc-950 overflow-hidden">
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-neon-purple/20 rounded-full blur-[120px] pointer-events-none" />
 
@@ -39,7 +39,7 @@ export function VisualShowcase() {
           style={{ perspective: "1000px" }}
         >
           {/* Browser Frame */}
-          <div className="relative rounded-xl bg-gray-950/80 border border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10">
+          <div className="relative rounded-xl bg-zinc-950/80 border border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10">
             {/* Header */}
             <div className="h-12 border-b border-white/10 flex items-center px-4 gap-2 bg-white/5">
               <div className="size-3 rounded-full bg-red-500/50" />
@@ -49,7 +49,7 @@ export function VisualShowcase() {
             </div>
 
             {/* Content Area (Mockup) */}
-            <div className="aspect-video w-full bg-gray-950/50 relative overflow-hidden group">
+            <div className="aspect-video w-full bg-zinc-950/50 relative overflow-hidden group">
               {/* Abstract UI Mockup */}
               <div className="absolute inset-0 p-8 grid grid-cols-12 gap-6">
                 {/* Sidebar */}
