@@ -1,8 +1,5 @@
 "use client";
 
-import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -11,6 +8,10 @@ import {
   DialogTitle,
 } from "@v1/ui/dialog";
 import { CheckCircle, DollarSign, Loader2, Printer } from "lucide-react";
+import Image from "next/image";
+import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
+import { type FormatLocale, formatCurrency } from "@/lib/format-number";
+import { useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 export function DeaccessionDetailBoardReportDialog({
@@ -41,9 +42,11 @@ export function DeaccessionDetailBoardReportDialog({
             <div className="space-y-5 bg-white p-6 text-black print:space-y-4 print:break-inside-avoid-page print:p-[15mm]">
               <div className="flex items-start gap-4 border-b border-zinc-200 pb-4 print:gap-3 print:pb-3">
                 {exportData.collection?.primaryImageUrl ? (
-                  <img
+                  <Image
                     src={exportData.collection.primaryImageUrl}
                     alt={exportData.collection.title}
+                    width={96}
+                    height={96}
                     className="size-24 flex-shrink-0 rounded border border-zinc-300 object-cover print:size-20"
                   />
                 ) : null}

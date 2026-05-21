@@ -74,7 +74,11 @@
     "./utils": "./src/utils/index.ts",
     "./wizard": "./src/components/wizard.tsx"
   },
-  "files": ["tailwind.config.ts", "postcss.config.js", "globals.css"],
+  "files": [
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "globals.css"
+  ],
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "format": "biome format --write .",
@@ -117,9 +121,15 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
   },
+  "peerDependencies": {
+    "next": ">=14.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
     "autoprefixer": "^10.4.20",
+    "next": "^16.2.0",
     "postcss": "^8.4.43",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

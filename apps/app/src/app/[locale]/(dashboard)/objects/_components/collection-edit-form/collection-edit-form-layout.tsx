@@ -1,9 +1,5 @@
 "use client";
 
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { PermissionGate } from "@/components/permission-gate";
-import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -22,7 +18,12 @@ import {
   MapPin,
   Save,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { DeaccessionDialog } from "@/components/deaccession-dialog";
+import { MediaEditorDialog } from "@/components/media-editor-dialog";
+import { PermissionGate } from "@/components/permission-gate";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { CollectionEditAccessionTab } from "./tabs/accession-tab";
 import { CollectionEditDigitalTab } from "./tabs/digital-tab";
 import { CollectionEditGeneralTab } from "./tabs/general-tab";
@@ -179,9 +180,11 @@ export function CollectionEditFormLayout({
                 onClick={() => setActiveTab("media")}
               >
                 {heroImage?.url ? (
-                  <img
+                  <Image
                     src={heroImage.thumbnailUrl || heroImage.url}
                     alt={collection.title}
+                    width={192}
+                    height={192}
                     className="size-48 object-cover"
                   />
                 ) : (

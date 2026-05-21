@@ -1,8 +1,5 @@
 "use client";
 
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -26,6 +23,10 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
+import Image from "next/image";
+import { MediaEditorDialog } from "@/components/media-editor-dialog";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { MediaEditDialog } from "./media-edit-dialog";
 import type { useMediaGallery } from "./use-media-gallery";
 
@@ -122,10 +123,12 @@ export function MediaGalleryImageGrid({
                       onClick={() => openImageLightbox(lightboxIdx)}
                       aria-label={`View ${file.caption || file.fileName}`}
                     >
-                      <img
+                      <Image
                         src={file.thumbnailUrl || file.url}
                         alt={file.caption || file.fileName}
-                        className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 400px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                       />
                     </button>
                   ) : file.fileType === "video" ? (

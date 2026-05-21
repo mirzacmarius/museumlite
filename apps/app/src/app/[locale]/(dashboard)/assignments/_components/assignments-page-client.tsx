@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientRelativeTime } from "@/components/client-date";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
@@ -22,8 +20,11 @@ import {
   Presentation,
   Truck,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ClientRelativeTime } from "@/components/client-date";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface PendingApproval {
   _id: string;
@@ -392,10 +393,12 @@ function CollectionCard({
         <div className="relative aspect-[2/1] bg-muted overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90 z-10" />
           {item.thumbnailUrl ? (
-            <img
+            <Image
               src={item.thumbnailUrl}
               alt={item.title}
-              className="size-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-60 group-hover:opacity-80"
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out opacity-60 group-hover:opacity-80"
             />
           ) : (
             <div className="size-full flex items-center justify-center">

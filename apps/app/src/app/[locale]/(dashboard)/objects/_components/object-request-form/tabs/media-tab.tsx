@@ -1,37 +1,13 @@
 "use client";
 
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
-import { CollectionTypeSelector } from "@/components/collection-type-selector";
-import { ConditionCombobox } from "@/components/condition-combobox";
-import { DonationDetailsField } from "@/components/donation-details-field";
-import { LocationSelector } from "@/components/location-selector";
-import { MaterialsCombobox } from "@/components/materials-combobox";
-import { ObjectCombobox } from "@/components/object-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
-import { TypeCombobox } from "@/components/type-combobox";
-import type { useFeatureAccess } from "@/hooks/use-feature-access";
 import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
-import { Textarea } from "@v1/ui/textarea";
-import { Camera, CheckCircle, Plus, Star, Upload, X } from "lucide-react";
+import { Camera, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
-import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type {
   CollectionFormTabProps,
   DraftMediaItem,
-  OwnershipEntry,
 } from "../../collection-form-shared/types";
 
 export interface ObjectRequestMediaTabProps extends CollectionFormTabProps {
@@ -55,11 +31,11 @@ export interface ObjectRequestMediaTabProps extends CollectionFormTabProps {
 }
 
 export function ObjectRequestMediaTab({
-  formData,
-  updateField,
-  placeholders,
-  currentOrganizationId,
-  isLocationTrackingEnabled,
+  _formData,
+  _updateField,
+  _placeholders,
+  _currentOrganizationId,
+  _isLocationTrackingEnabled,
   common,
   fileInputRef,
   cameraInputRef,
@@ -131,11 +107,15 @@ export function ObjectRequestMediaTab({
                         className="overflow-hidden rounded-xl border border-border/60 bg-background/70"
                       >
                         {item.url ? (
-                          <img
-                            src={item.url}
-                            alt={item.fileName}
-                            className="aspect-square w-full object-cover"
-                          />
+                          <div className="relative aspect-square w-full">
+                            <Image
+                              src={item.url}
+                              alt={item.fileName}
+                              fill
+                              sizes="200px"
+                              className="object-cover w-full object-cover"
+                            />
+                          </div>
                         ) : null}
                         <div className="px-4 py-3">
                           <p className="truncate text-sm font-medium text-foreground">
