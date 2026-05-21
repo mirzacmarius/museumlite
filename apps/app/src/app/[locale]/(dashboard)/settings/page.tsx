@@ -137,9 +137,7 @@ export default function DashboardSettings() {
       {/* Name */}
       <form
         className="flex w-full flex-col items-start rounded-lg border border-border bg-card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+        action={() => {
           void nameForm.handleSubmit();
         }}
       >
@@ -179,9 +177,7 @@ export default function DashboardSettings() {
       {/* Username */}
       <form
         className="flex w-full flex-col items-start rounded-lg border border-border bg-card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+        action={() => {
           void usernameForm.handleSubmit();
         }}
       >
