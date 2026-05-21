@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
@@ -12,7 +10,10 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 export function DeaccessionDetailReviewPanel({
@@ -100,11 +101,12 @@ export function DeaccessionDetailReviewPanel({
             >
               <div className="flex size-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background">
                 {collectionThumbnailUrl ? (
-                  <img
+                  <Image
                     src={collectionThumbnailUrl}
                     alt={collection.title}
-                    className="size-full object-cover"
-                    loading="lazy"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                   />
                 ) : (
                   <ImageIcon className="size-5 text-muted-foreground" />

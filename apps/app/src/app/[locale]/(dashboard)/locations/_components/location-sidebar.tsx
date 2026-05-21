@@ -1,12 +1,12 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { ChevronRight, Lock, Thermometer } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   isStorageLocation,
   shouldShowInExhibitionSidebar,
 } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { ChevronRight, Lock, Thermometer } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 
 interface SidebarLocation {
   _id: Id<"locations">;

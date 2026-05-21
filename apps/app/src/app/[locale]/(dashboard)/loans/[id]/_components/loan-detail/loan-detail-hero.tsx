@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
+import { Banknote, CalendarRange, Check, Copy, Layers } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { useScopedI18n } from "@/locales/client";
-import { cn } from "@v1/ui/utils";
-import { Banknote, CalendarRange, Check, Copy, Layers } from "lucide-react";
 import type { Loan } from "../types";
 
 interface LoanDetailHeroProps {

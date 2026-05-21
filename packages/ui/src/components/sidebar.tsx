@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
-import { type VariantProps, cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
@@ -83,7 +83,8 @@ const SidebarProvider = ({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
+      // Cookie Store API lacks broad browser support; document.cookie persists sidebar state.
+      // biome-ignore lint/suspicious/noDocumentCookie: intentional fallback until Cookie Store is viable
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open],

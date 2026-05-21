@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
 import type { api } from "@v1/backend/convex/_generated/api";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import type { FunctionReturnType } from "convex/server";
@@ -13,6 +11,8 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { ClientDateFns } from "@/components/client-date";
+import { useCurrentLocale } from "@/locales/client";
 
 type TransferRequest = FunctionReturnType<
   typeof api.objectMoves.listForOrganization

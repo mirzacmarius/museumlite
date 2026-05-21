@@ -1,7 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
-import { internal } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
@@ -859,7 +858,7 @@ describe("sendNotificationToUsers", () => {
         });
       }),
       t.run(async (ctx) => {
-        const ids = [];
+        const _ids = [];
         return Promise.all(
           Array.from({ length: 3 }, (_, i) =>
             ctx.db.insert("users", {

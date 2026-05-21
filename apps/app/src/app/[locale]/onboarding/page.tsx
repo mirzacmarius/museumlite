@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -13,11 +12,12 @@ import {
   useEffect,
   useReducer,
 } from "react";
+import { useI18n } from "@/locales/client";
 import { FirstDataStep } from "./first-data-step";
 import {
+  isOrganizationSlugTakenError,
   type OnboardingStep,
   type OrganizationFormData,
-  isOrganizationSlugTakenError,
 } from "./onboarding-types";
 import { OrganizationStep } from "./organization-step";
 import { StepIndicator } from "./step-indicator";
@@ -86,8 +86,7 @@ export default function OnboardingPage() {
       (value) => {
         dispatch({
           type: "setOrgFormData",
-          value:
-            typeof value === "function" ? value(state.orgFormData) : value,
+          value: typeof value === "function" ? value(state.orgFormData) : value,
         });
       },
       [state.orgFormData],

@@ -1,10 +1,10 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
 import { Button } from "@v1/ui/button";
 import { Download, Tag } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { ClientDate } from "@/components/client-date";
 
 interface PublicObjectImage {
   _id: string;

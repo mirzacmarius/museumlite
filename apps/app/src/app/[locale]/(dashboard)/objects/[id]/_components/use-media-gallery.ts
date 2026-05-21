@@ -1,12 +1,12 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { type LightboxImage, useLightbox } from "@v1/ui/image-lightbox";
 import { useMutation, useQuery } from "convex/react";
 import { type DragEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 
 interface UseMediaGalleryOptions {
   collectionId: string;
@@ -153,8 +153,8 @@ export function useMediaGallery({
     }
 
     const currentOrder = images.map((img) => img._id);
-    const draggedIndex = currentOrder.findIndex((id) => id === draggedId);
-    const targetIndex = currentOrder.findIndex((id) => id === targetId);
+    const draggedIndex = currentOrder.indexOf(draggedId);
+    const targetIndex = currentOrder.indexOf(targetId);
 
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedId(null);

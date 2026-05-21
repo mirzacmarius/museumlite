@@ -1,11 +1,11 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
 import { Label } from "@v1/ui/label";
 import { ArrowRightLeft } from "lucide-react";
+import { ClientDateFns } from "@/components/client-date";
 import {
-  MoveRequestStatusBadge,
   formatMoveRequestAccessionMode,
+  MoveRequestStatusBadge,
 } from "./move-request-utils";
 import type { MoveRequestDetail } from "./use-move-request-detail";
 

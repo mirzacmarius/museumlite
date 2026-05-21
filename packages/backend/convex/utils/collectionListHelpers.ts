@@ -1,10 +1,10 @@
 import type { Doc, Id } from "../_generated/dataModel";
-import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 import type { QueryCtx } from "../_generated/server";
 import {
   getCollectionPrimaryImageUrls,
   getLocationPathStrings,
 } from "./collectionDisplayHelpers";
+import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
 /**
  * Whether catalog list pagination can use org/status indexes only (no filters).

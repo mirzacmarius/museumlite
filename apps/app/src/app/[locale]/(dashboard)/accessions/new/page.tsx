@@ -1,13 +1,5 @@
 "use client";
 
-import { AccountCombobox } from "@/components/account-combobox";
-import {
-  DropzoneUploader,
-  type UploadFile,
-} from "@/components/dropzone-uploader";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -33,6 +25,14 @@ import {
   useCallback,
   useReducer,
 } from "react";
+import { AccountCombobox } from "@/components/account-combobox";
+import {
+  DropzoneUploader,
+  type UploadFile,
+} from "@/components/dropzone-uploader";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 type AccessionMethod =
   | "purchase"
@@ -453,8 +453,7 @@ export default function NewAccessionPage() {
     (value) => {
       dispatch({
         type: "setFormData",
-        value:
-          typeof value === "function" ? value(state.formData) : value,
+        value: typeof value === "function" ? value(state.formData) : value,
       });
     },
     [state.formData],
@@ -588,9 +587,7 @@ export default function NewAccessionPage() {
       dispatch({
         type: "setError",
         value:
-          err instanceof Error
-            ? err.message
-            : t("form.sourceRequiredError"),
+          err instanceof Error ? err.message : t("form.sourceRequiredError"),
       });
       dispatch({ type: "setIsSubmitting", value: false });
     }

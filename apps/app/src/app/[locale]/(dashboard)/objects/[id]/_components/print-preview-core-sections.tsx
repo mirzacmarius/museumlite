@@ -1,8 +1,9 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
+import Image from "next/image";
 import { formatStringListField } from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
-import { cn } from "@v1/ui/utils";
 import type { CollectionData, HeroImageData } from "./types";
 
 interface PrintPreviewCoreSectionsProps {
@@ -22,9 +23,11 @@ export function PrintPreviewCoreSections({
       {/* Header */}
       <div className="flex items-start gap-4 border-b border-zinc-200 pb-4 print:gap-3 print:pb-3">
         {heroImage?.url && (
-          <img
+          <Image
             src={heroImage.thumbnailUrl || heroImage.url}
             alt={collection.title}
+            width={112}
+            height={112}
             className="size-28 flex-shrink-0 rounded border border-zinc-300 object-cover print:size-20"
           />
         )}

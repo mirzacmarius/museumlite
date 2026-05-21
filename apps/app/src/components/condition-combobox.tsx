@@ -12,8 +12,8 @@ import { ConditionComboboxDeleteDialog } from "./condition-combobox-delete-dialo
 import { ConditionComboboxListContent } from "./condition-combobox-list-content";
 import {
   type ConditionComboboxProps,
-  STANDARD_CONDITIONS,
   formatConditionName,
+  STANDARD_CONDITIONS,
 } from "./condition-combobox-types";
 
 export type { ConditionOption } from "./condition-combobox-types";

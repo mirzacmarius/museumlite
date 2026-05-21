@@ -1,5 +1,5 @@
-import type { FieldMapping } from "@/components/import-field-mapper";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { FieldMapping } from "@/components/import-field-mapper";
 
 export interface ParsedRow {
   accessionNumber?: string;

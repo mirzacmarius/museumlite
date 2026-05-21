@@ -1,11 +1,11 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { Separator } from "@v1/ui/separator";
 import { SidebarTrigger } from "@v1/ui/sidebar";
 import { Building2 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useOrganization } from "@/components/organization-provider";
 
 export function DashboardHeader({ children }: { children: ReactNode }) {
   const { currentOrganization } = useOrganization();

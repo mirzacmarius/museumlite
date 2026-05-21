@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
 } from "@v1/ui/dialog";
 import { FileText, Mail, Printer } from "lucide-react";
 import { useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 import { LoanAgreementDocument } from "./loan-agreement-document";
 import type { LoanAgreementProps } from "./types";
 import { useLoanAgreementActions } from "./use-loan-agreement-actions";

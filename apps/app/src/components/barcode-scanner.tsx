@@ -57,7 +57,7 @@ export function BarcodeScanner({
         if (state === 2) {
           await html5QrCodeRef.current.stop();
         }
-      } catch (error) {
+      } catch (_error) {
         // Silently handle stop errors
       } finally {
         isCleaningUpRef.current = false;
@@ -78,7 +78,7 @@ export function BarcodeScanner({
       });
 
       setFlashEnabled(!flashEnabled);
-    } catch (error) {
+    } catch (_error) {
       setErrorMessage("Flash not supported on this device");
     }
   }, [flashEnabled]);
@@ -121,7 +121,7 @@ export function BarcodeScanner({
             }, 2000);
           }
         },
-        (errorMsg) => {
+        (_errorMsg) => {
           // Silent scanning errors are normal when no code is in view
         },
       );

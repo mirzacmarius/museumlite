@@ -1,8 +1,5 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { formatCurrency, formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { api } from "@v1/backend/convex/_generated/api";
 import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
@@ -15,6 +12,9 @@ import {
   Trophy,
   Wrench,
 } from "lucide-react";
+import { ClientDateFns } from "@/components/client-date";
+import { formatCurrency, formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.vehicleDetails.get>
@@ -27,7 +27,7 @@ interface VehicleDetailsContentProps {
 export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("modules.vehicle");
-  const common = useScopedI18n("modules.common");
+  const _common = useScopedI18n("modules.common");
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -178,9 +178,9 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
 
         {details.serviceLog && details.serviceLog.length > 0 ? (
           <div className="space-y-3">
-            {details.serviceLog.map((entry, index) => (
+            {details.serviceLog.map((entry, _index) => (
               <div
-                key={`${entry.serviceDate}-${index}`}
+                key={`${entry.serviceDate}-${entry.serviceType}-${entry.description}`}
                 className="rounded-lg border border-border/60 bg-secondary/20 p-4"
               >
                 <div className="flex items-center justify-between">
@@ -231,9 +231,9 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
 
         {details.eventHistory && details.eventHistory.length > 0 ? (
           <div className="space-y-3">
-            {details.eventHistory.map((event, index) => (
+            {details.eventHistory.map((event, _index) => (
               <div
-                key={`${event.eventDate}-${index}`}
+                key={`${event.eventDate}-${event.eventType}-${event.title ?? ""}`}
                 className="rounded-lg border border-border/60 bg-secondary/20 p-4"
               >
                 <div className="flex items-center justify-between">

@@ -1,8 +1,8 @@
 "use client";
 
+import { AlertCircle, CheckCircle2, Clock, User } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useScopedI18n } from "@/locales/client";
-import { AlertCircle, CheckCircle2, Clock, User } from "lucide-react";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 
 export function ExhibitionDetailStats({

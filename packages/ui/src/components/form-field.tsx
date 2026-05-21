@@ -96,10 +96,10 @@ function FormDescription({ children, className }: FormDescriptionProps) {
 }
 
 export {
+  FormDescription,
+  FormError,
   FormField,
   FormLabel,
-  FormError,
-  FormDescription,
-  useFormField,
   useFormControlProps,
+  useFormField,
 };

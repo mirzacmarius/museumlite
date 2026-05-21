@@ -1,7 +1,5 @@
 "use client";
 
-import { AccountCombobox } from "@/components/account-combobox";
-import { useScopedI18n } from "@/locales/client";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -11,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
+import { AccountCombobox } from "@/components/account-combobox";
+import { useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
 interface NewLoanBasicsSectionProps {

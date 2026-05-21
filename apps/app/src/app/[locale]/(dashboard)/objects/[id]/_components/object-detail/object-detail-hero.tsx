@@ -11,6 +11,7 @@ import {
   MapPin,
   Maximize2,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { ObjectDetailData } from "../types";
 
@@ -57,9 +58,11 @@ export function ObjectDetailHero({
           aria-label={viewFullSizeLabel}
         >
           {heroImage?.url ? (
-            <img
+            <Image
               src={heroImage.thumbnailUrl || heroImage.url}
               alt={collection.title}
+              width={192}
+              height={192}
               className="size-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
             />
           ) : (

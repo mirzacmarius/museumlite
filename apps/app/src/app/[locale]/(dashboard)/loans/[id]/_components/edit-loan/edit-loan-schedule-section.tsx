@@ -1,10 +1,10 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Banknote, Calendar } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
 interface EditLoanScheduleSectionProps {

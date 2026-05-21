@@ -2,12 +2,12 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import {
   countAccessionsByStatus,
+  countCatalogObjects,
   countCollectionsByStatus,
   countDeaccessionsByStatus,
   countIndexedQuery,
   countLoansByStatus,
   countLoansByType,
-  countCatalogObjects,
   countOpenDeaccessionCollectionIds,
 } from "./indexedCounts";
 
@@ -197,7 +197,7 @@ export async function buildRecentObjects(
           .first();
 
         const imageUrl = primaryMedia?.storageId
-          ? (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined
+          ? ((await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined)
           : undefined;
 
         return {
@@ -292,7 +292,9 @@ export async function buildRecentActivity(
         }
       } else if (type === "loan" && isValidConvexId(event.entityId)) {
         try {
-          const loan = await ctx.db.get(event.entityId as unknown as Id<"loans">);
+          const loan = await ctx.db.get(
+            event.entityId as unknown as Id<"loans">,
+          );
           title = loan?.loanNumber ?? event.entityType;
           subtitle = loan?.lenderBorrowerName ?? event.action;
           status = loan?.status;
@@ -484,9 +486,7 @@ async function buildSiteScopedAnalytics(
 
   const allCollectionGroups = await ctx.db
     .query("collectionGroups")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    )
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
     .collect();
 
   const groupIdsForSite = new Set<Id<"collectionGroups">>();

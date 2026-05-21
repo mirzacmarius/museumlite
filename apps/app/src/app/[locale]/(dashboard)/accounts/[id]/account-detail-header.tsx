@@ -1,6 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -16,6 +15,7 @@ import {
 import { Button } from "@v1/ui/button";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
 
 interface AccountDetailHeaderProps {
   accountId: Id<"accounts">;

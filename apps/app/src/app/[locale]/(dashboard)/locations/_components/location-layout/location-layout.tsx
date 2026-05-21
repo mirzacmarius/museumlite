@@ -1,6 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -8,6 +7,7 @@ import { useQuery } from "convex/react";
 import { MapPin, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { LocationContentSkeleton } from "../../location-page-skeleton";
 import {
   getAutomaticDisplayUnitCounts,

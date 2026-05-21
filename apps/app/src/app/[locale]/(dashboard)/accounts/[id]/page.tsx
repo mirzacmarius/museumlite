@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -52,23 +48,24 @@ import {
   MapPin,
   Phone,
   Plus,
-  Shield,
   Trash2,
   Upload,
   User,
-  UserCog,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ClientDate } from "@/components/client-date";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function AccountDetailPage() {
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
-  const tToast = useScopedI18n("accounts.detail.toasts");
+  const _tToast = useScopedI18n("accounts.detail.toasts");
   const params = useParams();
   const { push } = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -96,7 +93,7 @@ export default function AccountDetailPage() {
   const timeline = timelineResult?.events;
 
   const deleteAccount = useMutation(api.accounts.remove);
-  const roles = useQuery(
+  const _roles = useQuery(
     api.roles.listRoles,
     currentOrganizationId
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
@@ -565,7 +562,7 @@ function ContactsTab({
                             try {
                               await deleteContact({ contactId: contact._id });
                               toast.success(tToast("contactDeleted"));
-                            } catch (error) {
+                            } catch (_error) {
                               toast.error(tToast("contactDeleteFailed"));
                             }
                           }}
@@ -664,7 +661,7 @@ function ContactForm({
         toast.success(tToast("contactAdded"));
       }
       onSuccess();
-    } catch (error) {
+    } catch (_error) {
       toast.error(
         contact ? tToast("contactUpdateFailed") : tToast("contactAddFailed"),
       );
@@ -765,7 +762,9 @@ function ContactForm({
 
 function DownloadDocumentButton({
   documentId,
-}: { documentId: Id<"accountDocuments"> }) {
+}: {
+  documentId: Id<"accountDocuments">;
+}) {
   const documentWithUrl = useQuery(api.accountDocuments.get, { documentId });
 
   return (
@@ -900,7 +899,7 @@ function DocumentsTab({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error(tToast("documentUploadFailed"));
     } finally {
       dispatch({ type: "setIsUploading", value: false });
@@ -980,7 +979,7 @@ function DocumentsTab({
                             try {
                               await deleteDocument({ documentId: doc._id });
                               toast.success(tToast("documentDeleted"));
-                            } catch (error) {
+                            } catch (_error) {
                               toast.error(tToast("documentDeleteFailed"));
                             }
                           }}
@@ -1085,7 +1084,7 @@ function DocumentsTab({
 
 // Relationships Tab Component
 function RelationshipsTab({
-  accountId,
+  _accountId,
   relationships,
 }: {
   accountId: Id<"accounts">;
@@ -1153,7 +1152,10 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
       ) : (
         <div className="space-y-4">
           {timeline.map((event, index) => (
-            <div key={`${event.timestamp}-${index}`} className="flex gap-4">
+            <div
+              key={`${event.timestamp}-${event.type}`}
+              className="flex gap-4"
+            >
               <div className="flex flex-col items-center">
                 <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
                   <History className="size-4 text-primary" />

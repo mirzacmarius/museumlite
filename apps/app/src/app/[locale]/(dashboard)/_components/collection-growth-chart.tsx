@@ -1,6 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -11,6 +10,7 @@ import {
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import dynamic from "next/dynamic";
+import { useOrganization } from "@/components/organization-provider";
 
 interface ChartDataItem {
   month: string;

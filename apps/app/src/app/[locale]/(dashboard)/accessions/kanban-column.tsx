@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import {
@@ -11,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 
 type AccessionItem = {
   _id: Id<"accessions">;

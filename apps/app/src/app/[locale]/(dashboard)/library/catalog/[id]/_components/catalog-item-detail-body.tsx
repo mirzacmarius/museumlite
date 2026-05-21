@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
+import { useScopedI18n } from "@/locales/client";
 import { CatalogItemDetailCopiesSection } from "./catalog-item-detail-copies-section";
 import { CatalogItemDetailSidebar } from "./catalog-item-detail-sidebar";
 import type { CatalogItemDetailViewProps } from "./catalog-item-detail-view-props";

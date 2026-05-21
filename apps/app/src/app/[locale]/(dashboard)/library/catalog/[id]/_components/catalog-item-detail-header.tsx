@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +14,7 @@ import {
 import { Button } from "@v1/ui/button";
 import { Archive, ArrowLeft, Check, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 import { CatalogItemStatusBadge } from "./catalog-item-detail-ui";
 import type { CatalogItemDetailViewProps } from "./catalog-item-detail-view-props";
 

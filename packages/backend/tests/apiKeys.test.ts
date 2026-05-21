@@ -197,7 +197,7 @@ describe("API Key Generation Security", () => {
     let tooRare = 0;
     let tooCommon = 0;
 
-    for (const [char, count] of charFrequency.entries()) {
+    for (const [_char, count] of charFrequency.entries()) {
       if (count < expectedPerChar * 0.3) tooRare++; // Less than 30% of expected
       if (count > expectedPerChar * 1.7) tooCommon++; // More than 170% of expected
     }
@@ -282,7 +282,7 @@ describe("API Key Generation Security", () => {
 
   test("should not validate keys with incorrect format", async () => {
     const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createTestSetup(t);
+    const { userId } = await createTestSetup(t);
 
     const authed = t.withIdentity({
       subject: `${userId}|session-invalid`,

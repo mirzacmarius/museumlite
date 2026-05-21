@@ -1,8 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
-import { useState } from "react";
 import { ActivityFilters } from "./_components/activity-filters";
 import { ActivityList } from "./_components/activity-list";
 import { ActivityPageSkeleton } from "./activity-page-skeleton";

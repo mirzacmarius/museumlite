@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,6 +22,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 
 interface BulkMoveLocationDialogProps {
   open: boolean;
@@ -42,7 +42,7 @@ export function BulkMoveLocationDialog({
   const t = useScopedI18n("common.toast");
   const tDialog = useScopedI18n("objects.bulkDialogs.moveLocation");
   const tCommon = useScopedI18n("common");
-  const placeholders = useScopedI18n("objects.form.placeholders");
+  const _placeholders = useScopedI18n("objects.form.placeholders");
   const [locationId, setLocationId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -77,7 +77,7 @@ export function BulkMoveLocationDialog({
       onSuccess();
       onOpenChange(false);
       setLocationId("");
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("itemsMoveFailed"));
     } finally {
       setIsSubmitting(false);

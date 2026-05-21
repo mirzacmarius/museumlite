@@ -33,7 +33,7 @@ export const IconHover3D: React.FC<Props> = ({
   const [currentVariant, setCurrentVariant] = useState<"Default" | "Hover">(
     variant,
   );
-  const [gestureState, setGestureState] = useState({ isHovered: false });
+  const [_gestureState, setGestureState] = useState({ isHovered: false });
   const refBinding = useRef<HTMLDivElement>(null);
   const defaultLayoutId = React.useId();
 

@@ -135,23 +135,7 @@ export function TemplateComboboxPopoverContent({
                       value === template.value ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <div
-                    role="group"
-                    className="flex min-w-0 flex-1 items-center justify-between gap-2"
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest("button")) {
-                        e.stopPropagation();
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        (e.key === "Enter" || e.key === " ") &&
-                        (e.target as HTMLElement).closest("button")
-                      ) {
-                        e.stopPropagation();
-                      }
-                    }}
-                  >
+                  <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <span className="text-sm font-medium truncate block">
                         {template.label}

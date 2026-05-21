@@ -1,11 +1,11 @@
 "use client";
 
-import { writeTextToClipboard } from "@/lib/clipboard";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useCallback, useState } from "react";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useScopedI18n } from "@/locales/client";
 
 export function useWebhooksTab(organizationId: Id<"organizations">) {
   const t = useScopedI18n("settings");

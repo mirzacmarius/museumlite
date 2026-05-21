@@ -1,5 +1,5 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import type { ParseError, ParsedRow } from "../../import/import-csv";
+import type { ParsedRow, ParseError } from "../../import/import-csv";
 
 export interface ImportLocationsState {
   step: "upload" | "preview" | "importing" | "complete";

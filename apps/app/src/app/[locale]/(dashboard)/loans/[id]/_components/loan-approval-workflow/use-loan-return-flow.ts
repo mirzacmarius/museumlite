@@ -1,8 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useEffect, useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
 import { isLoanItemReturned } from "./loan-item-utils";
 

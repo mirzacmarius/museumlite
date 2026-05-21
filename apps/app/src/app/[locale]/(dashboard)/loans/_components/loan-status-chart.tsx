@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -12,6 +10,8 @@ import {
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { Cell, Legend, Pie, PieChart, Tooltip } from "recharts";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: CHART_COLOR_ARRAY[3] ?? "#fbbf24",

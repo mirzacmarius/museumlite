@@ -3,10 +3,10 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import {
-  MODULE_IDS,
   getFeatureRequiredTier,
   getTierLimits,
   hasFeatureTierAccess,
+  MODULE_IDS,
 } from "../convex/utils/featurePolicy";
 
 import { modules } from "./testSetup";

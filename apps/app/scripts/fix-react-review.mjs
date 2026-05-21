@@ -38,7 +38,10 @@ function fixLoadingEllipsis(content) {
   let next = content;
   next = next.replace(/>(\s*)Loading\.\.\.(\s*)</g, ">$1Loading…$2<");
   next = next.replace(/>(\s*)loading\.\.\.(\s*)</gi, ">$1loading…$2<");
-  next = next.replace(/>(\s*)Load older logs\.\.\.(\s*)</g, ">$1Load older logs…$2<");
+  next = next.replace(
+    />(\s*)Load older logs\.\.\.(\s*)</g,
+    ">$1Load older logs…$2<",
+  );
   next = next.replace(/"Loading\.\.\."/g, '"Loading…"');
   next = next.replace(/'Loading\.\.\.'/g, "'Loading…'");
   next = next.replace(/"Searching\.\.\."/g, '"Searching…"');
@@ -109,7 +112,9 @@ function applyFixes(filePath) {
   }
 
   if (rel === "packages/backend/convex/email/senders.tsx") {
-    content = content.replace(/#000000/g, "#0a0a0f").replace(/#000\b/g, "#0a0a0f");
+    content = content
+      .replace(/#000000/g, "#0a0a0f")
+      .replace(/#000\b/g, "#0a0a0f");
   }
 
   if (filePath.endsWith(".ts") && rel.startsWith("packages/backend/convex")) {

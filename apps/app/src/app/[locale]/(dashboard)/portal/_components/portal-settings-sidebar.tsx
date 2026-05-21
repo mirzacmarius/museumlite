@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -11,6 +9,8 @@ import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import { useEffect, useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 
 interface PortalSettingsSidebarState {
   isSubmitting: boolean;

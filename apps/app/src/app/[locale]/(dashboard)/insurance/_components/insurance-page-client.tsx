@@ -1,10 +1,5 @@
 "use client";
 
-import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,6 +18,11 @@ import { Building2, Plus, Shield } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale } from "@/locales/client";
 import { ClaimForm } from "./claim-form";
 import { InsuranceClaimsTab } from "./insurance-claims-tab";
 import { InsurancePoliciesTab } from "./insurance-policies-tab";
@@ -210,7 +210,10 @@ export function InsurancePageClient() {
                         try {
                           await createPolicy(payload);
                           toast.success("Policy created");
-                          dispatch({ type: "setPolicyDialogOpen", value: false });
+                          dispatch({
+                            type: "setPolicyDialogOpen",
+                            value: false,
+                          });
                         } catch (err) {
                           toast.error(
                             err instanceof Error
@@ -252,7 +255,10 @@ export function InsurancePageClient() {
                         try {
                           await createClaim(payload);
                           toast.success("Claim created");
-                          dispatch({ type: "setClaimDialogOpen", value: false });
+                          dispatch({
+                            type: "setClaimDialogOpen",
+                            value: false,
+                          });
                         } catch (err) {
                           toast.error(
                             err instanceof Error

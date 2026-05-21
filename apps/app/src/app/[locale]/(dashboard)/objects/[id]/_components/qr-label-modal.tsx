@@ -1,8 +1,5 @@
 "use client";
 
-import { QRLabelGenerator } from "@/components/qr-label-generator";
-import type { LabelData, LabelSize } from "@/components/qr-label-generator";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -14,6 +11,9 @@ import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { Printer } from "lucide-react";
 import { useRef, useState } from "react";
+import type { LabelData, LabelSize } from "@/components/qr-label-generator";
+import { QRLabelGenerator } from "@/components/qr-label-generator";
+import { useScopedI18n } from "@/locales/client";
 import type { CollectionData } from "./types";
 
 interface QRLabelModalProps {

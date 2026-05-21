@@ -1,10 +1,10 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { Archive, CheckCircle, Clock, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { ClientDateFns } from "@/components/client-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { DeaccessionKanbanItem } from "./deaccession-kanban";
 
 type DeaccessionKanbanColumnProps = {

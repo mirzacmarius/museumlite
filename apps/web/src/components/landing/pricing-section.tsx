@@ -2,7 +2,7 @@
 
 import { Button } from "@v1/ui/button";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { SpotlightCard } from "../spotlight-card";
 

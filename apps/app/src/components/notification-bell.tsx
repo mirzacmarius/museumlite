@@ -1,7 +1,5 @@
 "use client";
 
-import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -11,6 +9,8 @@ import { useMutation, useQuery } from "convex/react";
 import { ArrowRightLeft, Bell, Check, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useCurrentLocale } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 
 function NotificationTimestamp({ timestamp }: { timestamp: number }) {

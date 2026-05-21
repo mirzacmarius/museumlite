@@ -80,4 +80,4 @@ const toastPromise = <T,>({
   });
 };
 
-export { Toaster, toastWithUndo, toastPromise };
+export { Toaster, toastPromise, toastWithUndo };

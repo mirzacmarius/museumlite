@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,6 +20,7 @@ import {
 import { useQuery } from "convex/react";
 import { Download, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 import { useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 import type { ImportType } from "./data-csv-utils";
 import { DataImportJobsCard } from "./data-import-jobs-card";
 import { useDataImport } from "./use-data-import";

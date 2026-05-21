@@ -1,8 +1,5 @@
 "use client";
 
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -20,6 +17,9 @@ import {
   ShieldCheck,
   Stamp,
 } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface CoinsStampsDetailsTabProps {
   collectionId: string;

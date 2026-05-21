@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -24,6 +23,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useReducer } from "react";
+import { useScopedI18n } from "@/locales/client";
 
 interface DeleteLocationDialogProps {
   locationId: string;

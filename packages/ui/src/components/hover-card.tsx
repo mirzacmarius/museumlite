@@ -1,6 +1,7 @@
 "use client";
 
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
+import Image from "next/image";
 import type * as React from "react";
 import { cn } from "../utils";
 
@@ -56,8 +57,17 @@ function EntityPreview({
   return (
     <div className={cn("space-y-3", className)}>
       {image && (
-        <div className="aspect-video w-full overflow-hidden rounded-md bg-muted">
-          <img src={image} alt={title} className="size-full object-cover" />
+        <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+          <Image
+            src={image}
+            alt={title}
+            fill
+            sizes="256px"
+            className="object-cover"
+            unoptimized={
+              image.startsWith("blob:") || image.startsWith("data:")
+            }
+          />
         </div>
       )}
 
@@ -91,4 +101,4 @@ function EntityPreview({
   );
 }
 
-export { HoverCard, HoverCardTrigger, HoverCardContent, EntityPreview };
+export { EntityPreview, HoverCard, HoverCardContent, HoverCardTrigger };

@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { Edit, MoreHorizontal, Move, Plus, Trash2 } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { LocationItem, SelectedLocationAction } from "./types";
 
 interface LocationTreeItemActionsProps {
@@ -39,18 +39,15 @@ export function LocationTreeItemActions({
   };
 
   return (
-    <div
-      className="ml-auto z-10"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.stopPropagation();
-        }
-      }}
-    >
+    <div className="ml-auto z-10">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="size-7 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="size-7 p-0"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
             <MoreHorizontal className="size-4" />
             <span className="sr-only">{t("actions")}</span>
           </Button>

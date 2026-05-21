@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { LayoutGrid, List } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 export type ViewMode = "list" | "grid";
 

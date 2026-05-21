@@ -148,11 +148,7 @@ export function RoleFormDialog({
   );
 }
 
-export function CreateRoleButton({
-  label,
-}: {
-  label: string;
-}) {
+export function CreateRoleButton({ label }: { label: string }) {
   return (
     <Button>
       <Plus className="mr-2 size-4" />

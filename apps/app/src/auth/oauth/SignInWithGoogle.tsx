@@ -1,10 +1,10 @@
 "use client";
 
-import { useCurrentLocale } from "@/locales/client";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@v1/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useCurrentLocale } from "@/locales/client";
 
 interface SignInWithGoogleProps {
   redirectTo?: string;

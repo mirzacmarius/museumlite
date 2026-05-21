@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -30,6 +27,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 
 type FilterType = "all" | "unread";
@@ -289,7 +289,7 @@ function NotificationRow({
 
 export default function NotificationsPage() {
   const t = useI18n();
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const { currentOrganizationId, isLoading } = useOrganization();
   const [filter, setFilter] = useState<FilterType>("all");
   const [category, setCategory] = useState<CategoryType>("all");

@@ -1,14 +1,18 @@
 "use client";
 
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Logo } from "@v1/ui/logo";
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
-import { useMutation } from "convex/react";
+import {
+  Authenticated,
+  Unauthenticated,
+  useMutation,
+  useQuery,
+} from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, use, useState } from "react";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface PageProps {
   params: Promise<{
@@ -195,7 +199,7 @@ export default function InvitePage({ params }: PageProps) {
       } else if (!result.success && "error" in result) {
         setError(result.error ?? null);
       }
-    } catch (err) {
+    } catch (_err) {
       setError(t("acceptFailed"));
     } finally {
       setIsAccepting(false);
@@ -216,7 +220,7 @@ export default function InvitePage({ params }: PageProps) {
       } else if (!result.success && "error" in result) {
         setError(result.error ?? null);
       }
-    } catch (err) {
+    } catch (_err) {
       setError(t("declineFailed"));
     } finally {
       setIsDeclining(false);
@@ -327,7 +331,9 @@ export default function InvitePage({ params }: PageProps) {
   return (
     <InviteShell>
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("heading")}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {t("heading")}
+        </h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 

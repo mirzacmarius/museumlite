@@ -1,9 +1,9 @@
 "use client";
 
-import type { IsbnLookupData } from "@/components/library/isbn-lookup";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Loader2, Save } from "lucide-react";
+import type { IsbnLookupData } from "@/components/library/isbn-lookup";
+import { useScopedI18n } from "@/locales/client";
 import { CatalogItemBasicInformationSection } from "./basic-information-section";
 import { CatalogItemClassificationSection } from "./classification-section";
 import { CatalogItemDescriptionSection } from "./description-section";
@@ -40,7 +40,7 @@ export function CatalogItemForm({
   submitLabel,
   savingLabel,
 }: CatalogItemFormProps) {
-  const tNew = useScopedI18n("library.catalog.new");
+  const _tNew = useScopedI18n("library.catalog.new");
   const sectionProps = {
     formData,
     setFormData,

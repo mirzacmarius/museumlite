@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
+import { useScopedI18n } from "@/locales/client";
 
 export function useAcquisitionStatusLabel() {
   const tAcq = useScopedI18n("library.acquisitions");

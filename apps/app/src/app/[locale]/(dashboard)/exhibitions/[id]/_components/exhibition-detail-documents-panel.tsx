@@ -1,8 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -23,6 +20,9 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Download, FileText, Plus, Trash2, Upload } from "lucide-react";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 
 export function ExhibitionDetailDocumentsPanel({

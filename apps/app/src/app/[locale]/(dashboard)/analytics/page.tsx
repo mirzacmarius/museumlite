@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientTime } from "@/components/client-date";
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -11,6 +7,10 @@ import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import { BarChart3 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { ClientTime } from "@/components/client-date";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useI18n } from "@/locales/client";
 
 const chartFallback = () => (
   <Skeleton className="h-[400px] w-full rounded-xl bg-muted/20" />

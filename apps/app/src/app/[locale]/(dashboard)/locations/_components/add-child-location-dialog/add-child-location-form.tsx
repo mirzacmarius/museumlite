@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { useScopedI18n } from "@/locales/client";
 import {
   LocationImageField,
   LocationTypeSelect,

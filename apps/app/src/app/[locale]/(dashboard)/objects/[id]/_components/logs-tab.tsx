@@ -1,12 +1,12 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
+import { ClientDate } from "@/components/client-date";
+import { useScopedI18n } from "@/locales/client";
 
 /**
  * Get the badge color classes based on the action string

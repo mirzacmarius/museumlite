@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -21,6 +20,7 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { Loader2 } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { NewAcquisitionRequestForm, Priority } from "./types";
 
 interface NewAcquisitionRequestDialogProps {

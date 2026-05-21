@@ -5,5 +5,5 @@ export { NewLoanPageHeader } from "./new-loan-page-header";
 export { NewLoanScheduleSection } from "./new-loan-schedule-section";
 export { NewLoanSummarySidebar } from "./new-loan-summary-sidebar";
 export { SelectedCollectionItem } from "./selected-collection-item";
-export { useNewLoanForm } from "./use-new-loan-form";
 export type { NewLoanFormData } from "./types";
+export { useNewLoanForm } from "./use-new-loan-form";

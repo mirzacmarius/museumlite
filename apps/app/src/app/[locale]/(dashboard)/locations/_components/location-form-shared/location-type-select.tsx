@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -9,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
+import { useScopedI18n } from "@/locales/client";
 import { LOCATION_TYPE_KEYS } from "./constants";
 
 interface LocationTypeSelectProps {

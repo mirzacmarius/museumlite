@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -19,10 +17,14 @@ import { Button } from "@v1/ui/button";
 import { useMutation } from "convex/react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 export function UtilitiesTab({
   organizationId,
-}: { organizationId: Id<"organizations"> }) {
+}: {
+  organizationId: Id<"organizations">;
+}) {
   const t = useScopedI18n("settings.developer");
   const common = useScopedI18n("common");
   const [isDeletingLoans, setIsDeletingLoans] = useState(false);

@@ -79,7 +79,8 @@ export function LibraryCirculationSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                defaultLoanPeriodDays: Number.parseInt(e.target.value) || 14,
+                defaultLoanPeriodDays:
+                  Number.parseInt(e.target.value, 10) || 14,
               }))
             }
           />
@@ -93,7 +94,7 @@ export function LibraryCirculationSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                renewalPeriodDays: Number.parseInt(e.target.value) || 14,
+                renewalPeriodDays: Number.parseInt(e.target.value, 10) || 14,
               }))
             }
           />
@@ -107,7 +108,7 @@ export function LibraryCirculationSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                defaultRenewalLimit: Number.parseInt(e.target.value) || 0,
+                defaultRenewalLimit: Number.parseInt(e.target.value, 10) || 0,
               }))
             }
           />
@@ -121,7 +122,7 @@ export function LibraryCirculationSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                maxRenewalsAllowed: Number.parseInt(e.target.value) || 0,
+                maxRenewalsAllowed: Number.parseInt(e.target.value, 10) || 0,
               }))
             }
           />
@@ -183,7 +184,7 @@ export function LibraryFineSettingsSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                gracePeriodDays: Number.parseInt(e.target.value) || 0,
+                gracePeriodDays: Number.parseInt(e.target.value, 10) || 0,
               }))
             }
           />
@@ -230,7 +231,7 @@ export function LibraryHoldSettingsSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                holdExpirationDays: Number.parseInt(e.target.value) || 7,
+                holdExpirationDays: Number.parseInt(e.target.value, 10) || 7,
               }))
             }
           />
@@ -244,7 +245,7 @@ export function LibraryHoldSettingsSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                maxHoldsPerPatron: Number.parseInt(e.target.value) || 10,
+                maxHoldsPerPatron: Number.parseInt(e.target.value, 10) || 10,
               }))
             }
           />
@@ -290,7 +291,7 @@ export function LibraryCardSettingsSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                cardNumberLength: Number.parseInt(e.target.value) || 10,
+                cardNumberLength: Number.parseInt(e.target.value, 10) || 10,
               }))
             }
           />
@@ -360,7 +361,7 @@ export function LibraryCatalogingSection({
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                dueDateReminderDays: Number.parseInt(e.target.value) || 3,
+                dueDateReminderDays: Number.parseInt(e.target.value, 10) || 3,
               }))
             }
           />

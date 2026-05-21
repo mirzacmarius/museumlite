@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -18,6 +17,7 @@ import { useMutation } from "convex/react";
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 
 interface BulkDeaccessionDialogProps {
   open: boolean;
@@ -74,7 +74,7 @@ export function BulkDeaccessionDialog({
       onSuccess();
       onOpenChange(false);
       setReason("");
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("itemsDeaccessionFailed"));
     } finally {
       setIsSubmitting(false);

@@ -1,7 +1,5 @@
 "use client";
 
-import { pluralize } from "@/lib/utils/pluralize";
-import { useScopedI18n } from "@/locales/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
+import { pluralize } from "@/lib/utils/pluralize";
+import { useScopedI18n } from "@/locales/client";
 
 interface ReturnConfirmDialogProps {
   open: boolean;

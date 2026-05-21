@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
-import { Package } from "lucide-react";
+import Image from "next/image";
 import { LocationObjectThumbnail } from "./location-object-thumbnail";
 
 interface GalleryObject {
@@ -210,11 +210,13 @@ export function GalleryView({
               <div className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
                 {backgroundImageUrl ? (
                   <>
-                    <img
+                    <Image
                       src={backgroundImageUrl}
                       alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 size-full object-cover opacity-15"
+                      aria-hidden
+                      fill
+                      sizes="100vw"
+                      className="object-cover opacity-15"
                     />
                     <div className="absolute inset-0 bg-background/80" />
                   </>

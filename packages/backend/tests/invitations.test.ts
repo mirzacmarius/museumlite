@@ -1,7 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
@@ -82,7 +81,11 @@ describe("invitations", () => {
     const t = convexTest(schema, modules);
 
     // Setup
-    const { orgId, roleId, userId } = await t.run(async (ctx) => {
+    const {
+      orgId,
+      roleId: _roleId,
+      userId,
+    } = await t.run(async (ctx) => {
       const [userId, orgId] = await Promise.all([
         ctx.db.insert("users", {
           email: "admin@test.com",

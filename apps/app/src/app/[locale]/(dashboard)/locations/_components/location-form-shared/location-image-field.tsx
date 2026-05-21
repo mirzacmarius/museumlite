@@ -1,10 +1,11 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Image as ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
+import Image from "next/image";
 import type { RefObject } from "react";
+import { useScopedI18n } from "@/locales/client";
 
 interface LocationImageFieldProps {
   name: string;
@@ -37,10 +38,12 @@ export function LocationImageField({
       <div className="overflow-hidden rounded-xl border border-border/60 bg-secondary/20">
         <div className="relative aspect-[16/9] bg-muted/30">
           {locationImageUrl ? (
-            <img
+            <Image
               src={locationImageUrl}
               alt={name || "Location photo"}
-              className="size-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover"
             />
           ) : (
             <div className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">

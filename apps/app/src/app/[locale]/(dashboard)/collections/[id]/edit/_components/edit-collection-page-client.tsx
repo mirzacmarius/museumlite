@@ -1,10 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
-import { useAutoSave } from "@/hooks/use-auto-save";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -19,6 +14,11 @@ import {
   useEffect,
   useReducer,
 } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
+import { useAutoSave } from "@/hooks/use-auto-save";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useScopedI18n } from "@/locales/client";
 import { EditCollectionDeleteZone } from "./edit-collection-delete-zone";
 import {
   type EditCollectionFormData,
@@ -115,8 +115,7 @@ export function EditCollectionPageClient() {
       (value) => {
         dispatch({
           type: "setFormData",
-          value:
-            typeof value === "function" ? value(state.formData) : value,
+          value: typeof value === "function" ? value(state.formData) : value,
         });
       },
       [state.formData],

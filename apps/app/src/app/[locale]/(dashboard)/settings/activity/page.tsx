@@ -1,9 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -21,6 +17,10 @@ import {
 import { useQuery } from "convex/react";
 import { Calendar, Filter, RotateCcw, X } from "lucide-react";
 import { useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface ActivityPageState {
   selectedUserId: string;

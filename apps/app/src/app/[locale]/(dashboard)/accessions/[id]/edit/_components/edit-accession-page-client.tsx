@@ -1,10 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useClientDate } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -13,6 +8,11 @@ import { ArrowLeft, Calendar, Info, Package, Save } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ClientDate } from "@/components/client-date";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useClientDate } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { EditAccessionEditSidebar } from "./edit-accession-edit-sidebar";
 import {
   EditAccessionFormBody,

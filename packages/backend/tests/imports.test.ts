@@ -7,12 +7,12 @@ import {
 } from "./testHarness";
 
 test("should create import job from CSV", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should validate import field mapping", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
@@ -215,12 +215,12 @@ test("should import warning-only accession rows with normalized values", async (
 });
 
 test("should track import progress", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should rollback failed import", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 

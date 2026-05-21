@@ -1,12 +1,12 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ActivityItem } from "./activity-item";
 
 interface ActivityListProps {
@@ -100,9 +100,9 @@ export function ActivityList({
         // Only update if there are actually new activities
         if (newActivities.length === 0) return prev;
         // Update ref with new IDs
-        newActivities.forEach((a) =>
-          lastProcessedActivityIds.current.add(a._id),
-        );
+        for (const a of newActivities) {
+          lastProcessedActivityIds.current.add(a._id);
+        }
         return [...prev, ...newActivities];
       });
     } else {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Tree, TreeDragLine, TreeItem, TreeItemLabel } from "@v1/ui/tree";
@@ -8,6 +7,7 @@ import { useQuery } from "convex/react";
 import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useScopedI18n } from "@/locales/client";
 import { TREE_INDENT } from "./constants";
 import { LocationTreeItemActions } from "./location-tree-item-actions";
 import { LocationTreeTypeIcon } from "./location-tree-type-icon";

@@ -1,7 +1,5 @@
 "use client";
 
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import {
   AlertTriangle,
   Check,
@@ -10,6 +8,8 @@ import {
   Package,
   Truck,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface AcquisitionsStatisticsProps {
   statistics: {

@@ -1,7 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { BookOpen } from "lucide-react";
+import Image from "next/image";
+import { useScopedI18n } from "@/locales/client";
 import type { CatalogItemDetailViewProps } from "./catalog-item-detail-view-props";
 
 export function CatalogItemDetailSidebar({
@@ -14,11 +15,16 @@ export function CatalogItemDetailSidebar({
       <div className="rounded-lg border border-border bg-card">
         <div className="p-6">
           {item.coverImageUrl ? (
-            <img
-              src={item.coverImageUrl}
-              alt={item.title}
-              className="w-full rounded-lg object-cover"
-            />
+            <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg">
+              <Image
+                src={item.coverImageUrl}
+                alt={item.title}
+                fill
+                sizes="(max-width: 768px) 100vw, 320px"
+                unoptimized
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="flex aspect-[2/3] items-center justify-center rounded-lg bg-muted">
               <BookOpen className="size-16 text-muted-foreground" />

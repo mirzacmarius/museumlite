@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Building2, Library } from "lucide-react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 
 export function AcquisitionsNoOrganizationState() {
   const tAcq = useScopedI18n("library.acquisitions");

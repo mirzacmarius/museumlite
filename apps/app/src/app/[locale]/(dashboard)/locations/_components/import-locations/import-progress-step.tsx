@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Loader2 } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 interface ImportProgressStepProps {
   processedItems: number;

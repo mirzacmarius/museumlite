@@ -1,15 +1,13 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { Calendar, MapPin, Plus, TreePine, User } from "lucide-react";
+import { Plus } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { NaturalHistoryDetailsContent } from "./natural-history-details-content";
 
 interface NaturalHistoryDetailsTabProps {
@@ -19,9 +17,9 @@ interface NaturalHistoryDetailsTabProps {
 
 export function NaturalHistoryDetailsTab({
   collectionId,
-  organizationId,
+  _organizationId,
 }: NaturalHistoryDetailsTabProps) {
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.naturalHistory");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();

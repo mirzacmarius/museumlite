@@ -1,8 +1,8 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
 
 interface LocationPathSegment {
   _id: string;

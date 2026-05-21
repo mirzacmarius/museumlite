@@ -1,13 +1,13 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useClientNow } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
 import { useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useClientNow } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ExhibitionDetailBody } from "./exhibition-detail-body";
 import { ExhibitionDetailHeader } from "./exhibition-detail-header";
 import {
@@ -193,11 +193,9 @@ export function ExhibitionDetailPageClient() {
       dispatch({ type: "setUploadDialogOpen", value }),
     isUploading: state.isUploading,
     uploadDocType: state.uploadDocType,
-    setUploadDocType: (value) =>
-      dispatch({ type: "setUploadDocType", value }),
+    setUploadDocType: (value) => dispatch({ type: "setUploadDocType", value }),
     selectedFile: state.selectedFile,
-    setSelectedFile: (value) =>
-      dispatch({ type: "setSelectedFile", value }),
+    setSelectedFile: (value) => dispatch({ type: "setSelectedFile", value }),
     handleFileUpload,
     handleDeleteDocument,
   };

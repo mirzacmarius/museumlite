@@ -1,5 +1,10 @@
 "use client";
 
+import { useAuthActions } from "@convex-dev/auth/react";
+import { api } from "@v1/backend/convex/_generated/api";
+import { useConvex } from "convex/react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { AuthEmailForm } from "@/auth/email";
 import { AuthPasswordForm } from "@/auth/password";
 import type {
@@ -9,11 +14,6 @@ import type {
   UniqueCodeFlow,
 } from "@/auth/types";
 import { AuthUniqueCodeForm } from "@/auth/unique-code";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "@v1/backend/convex/_generated/api";
-import { useConvex } from "convex/react";
-import { useState } from "react";
-import { toast } from "sonner";
 
 interface AuthFormRootProps {
   currentAuthMode: AuthMode;

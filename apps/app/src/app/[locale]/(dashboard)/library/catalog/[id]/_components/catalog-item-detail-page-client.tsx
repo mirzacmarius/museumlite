@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -10,6 +8,8 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { CatalogItemAddCopyDialog } from "./catalog-item-add-copy-dialog";
 import { CatalogItemDetailBody } from "./catalog-item-detail-body";
 import { CatalogItemDetailHeader } from "./catalog-item-detail-header";

@@ -1,8 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useScopedI18n } from "@/locales/client";
 
 interface AccessionsErrorProps {
   error?: Error;

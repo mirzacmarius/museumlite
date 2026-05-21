@@ -14,8 +14,8 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import type { Dispatch, SetStateAction } from "react";
 import {
-  type NewDonorForm,
   initialDonorForm,
+  type NewDonorForm,
   validateDonorEmail,
 } from "./donor-combobox-types";
 

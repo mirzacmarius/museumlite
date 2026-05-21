@@ -7,11 +7,7 @@ import { ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { TemplateComboboxFormatModifier } from "./template-combobox-format-modifier";
 import { TemplateComboboxPopoverContent } from "./template-combobox-popover-content";
-import type {
-  TemplateComboboxProps,
-  TemplateOption,
-  ValidationResult,
-} from "./template-combobox-types";
+import type { TemplateComboboxProps } from "./template-combobox-types";
 
 export type {
   TemplateOption,

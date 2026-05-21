@@ -1,7 +1,6 @@
 import { convexTest } from "convex-test";
-import { beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
@@ -765,7 +764,7 @@ describe("roles", () => {
     test("should list all roles for an organization", async () => {
       const t = convexTest(schema, modules);
 
-      const { orgId, roleIds } = await t.run(async (ctx) => {
+      const { orgId, roleIds: _roleIds } = await t.run(async (ctx) => {
         const orgId = await ctx.db.insert("organizations", {
           name: "Test Org",
           slug: "test-org",
@@ -844,42 +843,44 @@ describe("roles", () => {
     test("should get a role with its permissions", async () => {
       const t = convexTest(schema, modules);
 
-      const { roleId, permissionIds } = await t.run(async (ctx) => {
-        const orgId = await ctx.db.insert("organizations", {
-          name: "Test Org",
-          slug: "test-org",
-          type: "museum",
-        });
+      const { roleId, permissionIds: _permissionIds } = await t.run(
+        async (ctx) => {
+          const orgId = await ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          });
 
-        const roleId = await ctx.db.insert("roles", {
-          organizationId: orgId,
-          name: "Curator",
-          description: "Manages collections",
-          isSystemRole: false,
-        });
+          const roleId = await ctx.db.insert("roles", {
+            organizationId: orgId,
+            name: "Curator",
+            description: "Manages collections",
+            isSystemRole: false,
+          });
 
-        const permissionIds = [
-          await ctx.db.insert("permissions", {
-            name: "collections.read",
-            category: "collections",
-          }),
-          await ctx.db.insert("permissions", {
-            name: "collections.create",
-            category: "collections",
-          }),
-        ];
+          const permissionIds = [
+            await ctx.db.insert("permissions", {
+              name: "collections.read",
+              category: "collections",
+            }),
+            await ctx.db.insert("permissions", {
+              name: "collections.create",
+              category: "collections",
+            }),
+          ];
 
-        await Promise.all(
-          Array.from(permissionIds).map(async (permId) => {
-            await ctx.db.insert("rolePermissions", {
-              roleId,
-              permissionId: permId,
-            });
-          }),
-        );
+          await Promise.all(
+            Array.from(permissionIds).map(async (permId) => {
+              await ctx.db.insert("rolePermissions", {
+                roleId,
+                permissionId: permId,
+              });
+            }),
+          );
 
-        return { roleId, permissionIds };
-      });
+          return { roleId, permissionIds };
+        },
+      );
 
       const role = await t.query(api.roles.getRole, {
         roleId,

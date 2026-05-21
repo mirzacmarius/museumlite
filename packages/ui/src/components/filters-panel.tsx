@@ -89,9 +89,7 @@ interface FilterGroupProps {
 export function FilterGroup({ children, label, className }: FilterGroupProps) {
   return (
     <div className={cn("space-y-2", className)}>
-      <label className="text-sm font-medium text-muted-foreground">
-        {label}
-      </label>
+      <p className="text-sm font-medium text-muted-foreground">{label}</p>
       {children}
     </div>
   );

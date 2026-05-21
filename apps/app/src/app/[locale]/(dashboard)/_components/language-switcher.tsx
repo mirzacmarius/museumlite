@@ -1,6 +1,5 @@
 "use client";
 
-import { useChangeLocale, useCurrentLocale } from "@/locales/client";
 import {
   Select,
   SelectContent,
@@ -9,6 +8,7 @@ import {
 } from "@v1/ui/select";
 import { cn } from "@v1/ui/utils";
 import { Languages } from "lucide-react";
+import { useChangeLocale, useCurrentLocale } from "@/locales/client";
 
 export function LanguageSwitcher({ triggerClass }: { triggerClass?: string }) {
   const changeLocale = useChangeLocale();

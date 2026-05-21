@@ -1,12 +1,11 @@
 "use client";
 
-import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Archive, ArrowLeft, Image as ImageIcon, Save } from "lucide-react";
 import Image from "next/image";
-import type { CollectionEditTabId } from "../collection-form-shared";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { ObjectRequestAccessionTab } from "./tabs/accession-tab";
 import { ObjectRequestDigitalTab } from "./tabs/digital-tab";
 import { ObjectRequestGeneralTab } from "./tabs/general-tab";

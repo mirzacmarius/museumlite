@@ -1,6 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -9,6 +8,7 @@ import { Label } from "@v1/ui/label";
 import { useAction } from "convex/react";
 import { Loader2, Search } from "lucide-react";
 import { useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
 
 export interface IsbnLookupData {
   title?: string;
@@ -89,7 +89,7 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
           "No book found with this ISBN. Please enter details manually.",
         );
       }
-    } catch (err) {
+    } catch (_err) {
       setError(
         "Failed to look up ISBN. Please try again or enter details manually.",
       );
