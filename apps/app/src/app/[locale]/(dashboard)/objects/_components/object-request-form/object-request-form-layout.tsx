@@ -1,7 +1,11 @@
 "use client";
 
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
-import { ObjectRequestFormFooter } from "./object-request-form-footer";
+import {
+  ObjectRequestFormFooter,
+  resolveObjectRequestFormFooterDraft,
+  resolveObjectRequestFormFooterPhase,
+} from "./object-request-form-footer";
 import { ObjectRequestFormHeader } from "./object-request-form-header";
 import { ObjectRequestFormHero } from "./object-request-form-hero";
 import { ObjectRequestFormTabShell } from "./object-request-form-tab-shell";
@@ -113,20 +117,28 @@ export function ObjectRequestFormLayout({
       </div>
 
       <ObjectRequestFormFooter
-        error={error}
-        isSubmitting={isSubmitting}
-        isSavingDraft={isSavingDraft}
-        hasSavedFieldDraft={hasSavedFieldDraft}
-        hasLocalMediaSelections={hasLocalMediaSelections}
-        isFormDirty={isFormDirty}
-        isDraftCurrent={isDraftCurrent}
-        selectedFileCount={selectedFiles.length}
-        selectedDocumentCount={selectedDocuments.length}
+        phase={resolveObjectRequestFormFooterPhase({
+          error,
+          isSubmitting,
+          isSavingDraft,
+          hasUploads:
+            selectedFiles.length > 0 || selectedDocuments.length > 0,
+        })}
+        draft={resolveObjectRequestFormFooterDraft({
+          hasSavedFieldDraft,
+          hasLocalMediaSelections,
+          isDraftCurrent,
+          isFormDirty,
+        })}
+        dirty={isFormDirty}
         resolvedBackHref={resolvedBackHref}
         common={common}
         onNavigate={handleNavigate}
         onSaveDraft={() => void handleSaveDraft({ redirectToDetail: true })}
-      />
+      >
+        <ObjectRequestFormFooter.DraftStatus />
+        <ObjectRequestFormFooter.Actions />
+      </ObjectRequestFormFooter>
 
       <UnsavedChangesDialog
         open={showUnsavedDialog}

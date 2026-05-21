@@ -82,7 +82,11 @@ export function MoveRequestDetailPageClient() {
             onAccept={() => handleAccept(request)}
             onReject={() => handleReject(request)}
             onCancel={() => handleCancel(request)}
-          />
+          >
+            <MoveRequestActionsPanel.SourceActions />
+            <MoveRequestActionsPanel.TargetActions />
+            <MoveRequestActionsPanel.CancelAction />
+          </MoveRequestActionsPanel>
         </div>
       </div>
     </main>

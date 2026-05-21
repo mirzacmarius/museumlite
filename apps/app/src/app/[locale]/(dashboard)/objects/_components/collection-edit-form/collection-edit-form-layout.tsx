@@ -6,7 +6,10 @@ import type { FunctionReturnType } from "convex/server";
 import { DeaccessionDialog } from "@/components/deaccession-dialog";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
-import { CollectionEditFormFooter } from "./collection-edit-form-footer";
+import {
+  CollectionEditFormFooter,
+  resolveCollectionEditFormFooterState,
+} from "./collection-edit-form-footer";
 import { CollectionEditFormHeader } from "./collection-edit-form-header";
 import { CollectionEditFormHero } from "./collection-edit-form-hero";
 import { CollectionEditFormTabShell } from "./collection-edit-form-tab-shell";
@@ -159,15 +162,20 @@ export function CollectionEditFormLayout({
 
       <CollectionEditFormFooter
         error={error}
-        isSubmitting={isSubmitting}
-        isFormDirty={isFormDirty}
-        hasMediaChanges={hasMediaChanges}
+        state={resolveCollectionEditFormFooterState({
+          isSubmitting,
+          isFormDirty,
+          hasMediaChanges,
+        })}
         canUpdateObject={canUpdateObject}
         collectionId={collectionId}
         common={common}
         t={t}
         onNavigate={handleNavigate}
-      />
+      >
+        <CollectionEditFormFooter.Status />
+        <CollectionEditFormFooter.Actions />
+      </CollectionEditFormFooter>
 
       <UnsavedChangesDialog
         open={showUnsavedDialog}

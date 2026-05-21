@@ -2,7 +2,13 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ChevronRight, Lock, Thermometer } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   isStorageLocation,
   shouldShowInExhibitionSidebar,
@@ -173,7 +179,7 @@ function LocationNavTreeItem({
 
   return (
     <li>
-      <LocationNavItem
+      <LocationNavItem.Root
         location={location}
         isSelected={selectedLocationId === location._id}
         onSelect={() => onSelectLocation(location._id)}
@@ -183,7 +189,10 @@ function LocationNavTreeItem({
         isSecure={isLocationSecure}
         isColdStorage={location.type.toLowerCase().includes("cold")}
         depth={depth}
-      />
+      >
+        <LocationNavItem.Trigger />
+        <LocationNavItem.Link />
+      </LocationNavItem.Root>
       {isExpanded && (
         <ul className="mt-1 space-y-1" aria-label={`${location.name} children`}>
           {childLocations.map((childLocation) => (
@@ -206,7 +215,32 @@ function LocationNavTreeItem({
   );
 }
 
-interface LocationNavItemProps {
+interface LocationNavItemContextValue {
+  location: SidebarLocation;
+  isSelected: boolean;
+  onSelect: () => void;
+  hasChildren: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  isSecure: boolean;
+  isColdStorage: boolean;
+  depth: number;
+}
+
+const LocationNavItemContext =
+  createContext<LocationNavItemContextValue | null>(null);
+
+function useLocationNavItem() {
+  const context = useContext(LocationNavItemContext);
+  if (!context) {
+    throw new Error(
+      "LocationNavItem subcomponents must be used within LocationNavItem.Root",
+    );
+  }
+  return context;
+}
+
+interface LocationNavItemRootProps {
   location: SidebarLocation;
   isSelected: boolean;
   onSelect: () => void;
@@ -216,9 +250,10 @@ interface LocationNavItemProps {
   isSecure: boolean;
   isColdStorage?: boolean;
   depth: number;
+  children: ReactNode;
 }
 
-function LocationNavItem({
+function LocationNavItemRoot({
   location,
   isSelected,
   onSelect,
@@ -226,9 +261,78 @@ function LocationNavItem({
   isExpanded,
   onToggle,
   isSecure,
-  isColdStorage,
+  isColdStorage = false,
   depth,
-}: LocationNavItemProps) {
+  children,
+}: LocationNavItemRootProps) {
+  const value = useMemo(
+    () => ({
+      location,
+      isSelected,
+      onSelect,
+      hasChildren,
+      isExpanded,
+      onToggle,
+      isSecure,
+      isColdStorage,
+      depth,
+    }),
+    [
+      location,
+      isSelected,
+      onSelect,
+      hasChildren,
+      isExpanded,
+      onToggle,
+      isSecure,
+      isColdStorage,
+      depth,
+    ],
+  );
+
+  return (
+    <LocationNavItemContext.Provider value={value}>
+      <div
+        className={`flex w-full items-center rounded-r transition-all ${
+          isSelected
+            ? "border-l-2 border-primary bg-muted font-medium text-foreground shadow-sm"
+            : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+        }`}
+        style={{ paddingLeft: `${depth * 14 + 12}px` }}
+      >
+        {children}
+      </div>
+    </LocationNavItemContext.Provider>
+  );
+}
+
+function LocationNavItemTrigger() {
+  const { location, hasChildren, isExpanded, onToggle } = useLocationNavItem();
+
+  if (!hasChildren) {
+    return <span className="h-7 w-5 shrink-0" />;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex h-7 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+      aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+      aria-expanded={isExpanded}
+    >
+      <ChevronRight
+        className={`size-3 transition-transform ${
+          isExpanded ? "rotate-90" : ""
+        }`}
+      />
+    </button>
+  );
+}
+
+function LocationNavItemLink() {
+  const { location, onSelect, isSecure, isColdStorage } = useLocationNavItem();
+
   const getStatusColor = () => {
     if (!location.isActive) return "bg-muted-foreground";
     if (isSecure) return "bg-amber-500";
@@ -238,52 +342,31 @@ function LocationNavItem({
   const statusColor = getStatusColor();
 
   return (
-    <div
-      className={`flex w-full items-center rounded-r transition-all ${
-        isSelected
-          ? "border-l-2 border-primary bg-muted font-medium text-foreground shadow-sm"
-          : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-      }`}
-      style={{ paddingLeft: `${depth * 14 + 12}px` }}
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pr-3 text-left"
     >
-      {hasChildren ? (
-        <button
-          type="button"
-          onClick={onToggle}
-          className="flex h-7 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
-          aria-expanded={isExpanded}
-        >
-          <ChevronRight
-            className={`size-3 transition-transform ${
-              isExpanded ? "rotate-90" : ""
-            }`}
-          />
-        </button>
+      <span className="truncate">{location.name}</span>
+      {isColdStorage ? (
+        <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
+          <Thermometer className="size-2.5" />
+          4°C
+        </span>
+      ) : isSecure ? (
+        <Lock className="size-3 shrink-0 text-muted-foreground" />
       ) : (
-        <span className="h-7 w-5 shrink-0" />
+        <span className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
       )}
-
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pr-3 text-left"
-      >
-        <span className="truncate">{location.name}</span>
-        {isColdStorage ? (
-          <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
-            <Thermometer className="size-2.5" />
-            4°C
-          </span>
-        ) : isSecure ? (
-          <Lock className="size-3 shrink-0 text-muted-foreground" />
-        ) : (
-          <span className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
-        )}
-      </button>
-    </div>
+    </button>
   );
 }
+
+export const LocationNavItem = {
+  Root: LocationNavItemRoot,
+  Trigger: LocationNavItemTrigger,
+  Link: LocationNavItemLink,
+};
 
 function getInitialExpandedLocationIds({
   exhibitionLocations,
