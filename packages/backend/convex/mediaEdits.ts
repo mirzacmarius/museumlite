@@ -97,14 +97,14 @@ export const getEditHistory = query({
     }
 
     // Check permission
-    await requirePermission(ctx, media.organizationId, "media.upload");
-
-    // Query edit history for this media file, ordered by most recent first
-    const editHistory = await ctx.db
-      .query("mediaEditHistory")
+    const [, editHistory] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.upload"),
+      ctx.db
+        .query("mediaEditHistory")
       .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
       .order("desc")
-      .collect();
+      .collect()
+    ] as const);
 
     return editHistory;
   },

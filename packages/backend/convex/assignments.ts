@@ -84,11 +84,6 @@ export const listMyAssignments = query({
     }),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
     const limit = args.limit ?? 10;
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
@@ -125,6 +120,7 @@ export const listMyAssignments = query({
     };
 
     const [
+      userId,
       slaConfigs,
       pendingAccessions,
       pendingDeaccessions,
@@ -132,6 +128,7 @@ export const listMyAssignments = query({
       pendingExhibitions,
       pendingConservation,
     ] = await Promise.all([
+      getAuthUserId(ctx),
       ctx.db
         .query("workflowSlaConfigs")
         .withIndex("by_organization", (q) =>
@@ -168,7 +165,10 @@ export const listMyAssignments = query({
           q.eq("organizationId", args.organizationId).eq("status", "proposed"),
         )
         .collect(),
-    ]);
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
 
     // Check accessions
     await Promise.all(

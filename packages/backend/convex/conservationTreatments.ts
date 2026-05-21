@@ -1082,18 +1082,19 @@ export const createAlertRule = mutation({
   },
   returns: v.id("conservationAlertRules"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    await Promise.all([
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
       requireConservationAccess(ctx, args.organizationId),
       requirePermission(
         ctx,
         args.organizationId,
         "organization.manage_settings",
       ),
-    ]);
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
     const ruleId = await ctx.db.insert("conservationAlertRules", {
       organizationId: args.organizationId,
       name: args.name,
@@ -1300,14 +1301,15 @@ export const createAlert = mutation({
   },
   returns: v.id("conservationAlerts"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.update"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requireConservationAccess(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "collections.update"),
-    ]);
     const alertId = await ctx.db.insert("conservationAlerts", {
       organizationId: args.organizationId,
       collectionId: args.collectionId,
@@ -2112,15 +2114,15 @@ export const createAssessmentSchedule = mutation({
   },
   returns: v.id("assessmentSchedules"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireConservationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.update"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await Promise.all([
-      requireConservationAccess(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "collections.update"),
-    ]);
 
     const nextDueDate = Date.now() + args.intervalDays * 24 * 60 * 60 * 1000;
 

@@ -930,18 +930,19 @@ export const updatePortalSettings = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    await Promise.all([
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
       requirePermission(
         ctx,
         args.organizationId,
         "organization.manage_settings",
       ),
       requireFeatureAccess(ctx, args.organizationId, "public_portal"),
-    ]);
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       throw new Error("Organization not found");
@@ -1319,15 +1320,15 @@ export const removeUser = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "users.remove");
-
-    // Find user organization
-    const userOrganization = await ctx.db
-      .query("userOrganizations")
+    const [, userOrganization] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "users.remove"),
+      ctx.db
+        .query("userOrganizations")
       .withIndex("by_user_and_organization", (q) =>
         q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (!userOrganization) {
       throw new Error("User is not in this organization");
@@ -1368,15 +1369,15 @@ export const updateUserRole = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "users.manage_roles");
-
-    // Find user organization
-    const userOrganization = await ctx.db
-      .query("userOrganizations")
+    const [, userOrganization] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "users.manage_roles"),
+      ctx.db
+        .query("userOrganizations")
       .withIndex("by_user_and_organization", (q) =>
         q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (!userOrganization) {
       throw new Error("User is not in this organization");

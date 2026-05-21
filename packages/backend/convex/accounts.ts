@@ -216,15 +216,15 @@ export const create = mutation({
   },
   returns: v.id("accounts"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.write"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await Promise.all([
-      requireModuleEnabled(ctx, args.organizationId, "accounts"),
-      requirePermission(ctx, args.organizationId, "accounts.write"),
-    ]);
 
     validateAccountProfileForCreate(args);
 

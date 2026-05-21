@@ -89,19 +89,19 @@ export const createScheduledReport = mutation({
   },
   returns: v.id("scheduledReports"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
 
-    await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
       requirePermission(
         ctx,
         args.organizationId,
         "organization.manage_settings",
       ),
-    ]);
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
 
     const nextRunAt = calculateNextRun(
       args.schedule,

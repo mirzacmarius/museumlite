@@ -37,10 +37,12 @@ export const deleteUserAccount = internalMutation({
           .withIndex("sessionId", (q) => q.eq("sessionId", authSession._id))
           .collect();
 
-        await Promise.all(
-          refreshTokens.map((refreshToken) => ctx.db.delete(refreshToken._id)),
-        );
-        await ctx.db.delete(authSession._id);
+        await Promise.all([
+          ...refreshTokens.map((refreshToken) =>
+            ctx.db.delete(refreshToken._id),
+          ),
+          ctx.db.delete(authSession._id),
+        ]);
       }),
       ...authAccounts.map(async (authAccount) => {
         const verificationCode = await ctx.db

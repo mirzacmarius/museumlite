@@ -17,14 +17,15 @@ export const create = mutation({
   },
   returns: v.id("sites"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireFeatureAccess(ctx, args.organizationId, "public_portal"),
+      requirePermission(ctx, args.organizationId, "sites.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requireFeatureAccess(ctx, args.organizationId, "public_portal"),
-      requirePermission(ctx, args.organizationId, "sites.create"),
-    ]);
     const organization = await ctx.db.get(args.organizationId);
     if (!organization) {
       throw new Error("Organization not found");
