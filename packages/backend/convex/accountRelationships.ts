@@ -100,16 +100,18 @@ export const listByEntity = query({
       return [];
     }
 
-    await requireModuleEnabled(
+    await Promise.all([
+      requireModuleEnabled(
       ctx,
       firstRelationship.organizationId,
       "accounts",
-    );
-    await requirePermission(
+    ),
+      requirePermission(
       ctx,
       firstRelationship.organizationId,
       "accounts.read",
-    );
+    ),
+    ]);
 
     return relationships;
   },
@@ -150,8 +152,10 @@ export const timeline = query({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.read");
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.read"),
+    ]);
 
     const events: TimelineEvent[] = [];
 
@@ -297,8 +301,10 @@ export const update = mutation({
       throw new Error("Relationship not found");
     }
 
-    await requireModuleEnabled(ctx, relationship.organizationId, "accounts");
-    await requirePermission(ctx, relationship.organizationId, "accounts.write");
+    await Promise.all([
+      requireModuleEnabled(ctx, relationship.organizationId, "accounts"),
+      requirePermission(ctx, relationship.organizationId, "accounts.write"),
+    ]);
 
     const updates: Record<string, unknown> = {};
 

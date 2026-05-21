@@ -160,7 +160,7 @@ export default function AnalyticsPage() {
       <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
               <BarChart3 className="size-6 text-primary" />
               {t("analytics.title")}
             </h2>

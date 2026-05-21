@@ -74,7 +74,7 @@ function VitrineCard({ item }: VitrineCardProps) {
   if (item.type === "empty") {
     return (
       <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md transition-all hover:border-zinc-700/40">
-        <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-black/20">
+        <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-gray-950/20">
           <span className="text-[10px] font-mono text-zinc-500">
             {item.id.toUpperCase()}
           </span>
@@ -90,7 +90,7 @@ function VitrineCard({ item }: VitrineCardProps) {
   if (item.type === "maintenance") {
     return (
       <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md transition-all hover:border-zinc-700/40">
-        <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-black/20">
+        <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-gray-950/20">
           <span className="text-[10px] font-mono text-zinc-400">
             {item.id.toUpperCase()}
           </span>
@@ -109,7 +109,7 @@ function VitrineCard({ item }: VitrineCardProps) {
   return (
     <div className="group relative aspect-[4/5] rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-transparent backdrop-blur-md shadow-2xl transition-all hover:border-primary/40 hover:shadow-primary/10">
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
-      <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-black/20">
+      <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-center border-b border-white/5 bg-gray-950/20">
         <span className="text-[10px] font-mono text-zinc-400">
           {item.id.toUpperCase()} (
           {item.type.charAt(0).toUpperCase() + item.type.slice(1)})
@@ -121,7 +121,7 @@ function VitrineCard({ item }: VitrineCardProps) {
           <div className="size-16 relative group/item cursor-pointer">
             <div className="absolute inset-0 bg-amber-500/20 blur-xl opacity-0 group-hover/item:opacity-50 transition-opacity" />
             <Package className="size-full text-zinc-300 drop-shadow-xl relative z-10" />
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-0.5 rounded text-[8px] text-white opacity-0 group-hover/item:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-gray-950/80 px-2 py-0.5 rounded text-[8px] text-white opacity-0 group-hover/item:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
               {item.name}
             </div>
           </div>

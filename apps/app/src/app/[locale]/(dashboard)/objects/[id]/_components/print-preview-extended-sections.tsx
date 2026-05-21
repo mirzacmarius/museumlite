@@ -26,7 +26,7 @@ export function PrintPreviewExtendedSections({
         collection.acquisitionMethod ||
         collection.donated_by) && (
         <div>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
             {t("provenanceAndAcquisition")}
           </h2>
           <div className="space-y-2 text-sm print:text-xs print:space-y-1">
@@ -80,7 +80,7 @@ export function PrintPreviewExtendedSections({
       {collection.ownershipHistory &&
         collection.ownershipHistory.length > 0 && (
           <div>
-            <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
               {t("ownershipHistory")}
             </h2>
             <div className="space-y-2">
@@ -113,7 +113,7 @@ export function PrintPreviewExtendedSections({
       {/* Exhibition History */}
       {collection.exhibitionHistory && (
         <div>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
             {t("exhibitionHistory")}
           </h2>
           <p className="text-sm text-black whitespace-pre-wrap print:text-xs">
@@ -125,7 +125,7 @@ export function PrintPreviewExtendedSections({
       {/* Location */}
       {locationPath && locationPath.length > 0 && (
         <div>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
             {t("currentLocation")}
           </h2>
           <p className="text-sm text-black print:text-xs">
@@ -137,7 +137,7 @@ export function PrintPreviewExtendedSections({
       {/* Tags */}
       {collection.tags && collection.tags.length > 0 && (
         <div>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
             {t("tags")}
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -155,7 +155,7 @@ export function PrintPreviewExtendedSections({
 
       {/* Legal & Visibility */}
       <div>
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
           {t("legalAndVisibility")}
         </h2>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">

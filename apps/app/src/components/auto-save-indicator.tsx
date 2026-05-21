@@ -27,7 +27,7 @@ export function AutoSaveIndicator({
       case "saving":
         return {
           icon: <Loader2 className="size-3.5 animate-spin" />,
-          text: "Saving...",
+          text: "Saving…",
           color: "text-white/60",
         };
       case "saved":

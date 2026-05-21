@@ -212,7 +212,7 @@ export function InspectorField({
     <div className={cn("flex flex-col gap-1", className)}>
       <span className="text-xs text-white/50">{label}</span>
       <span className="text-sm text-white/90">
-        {value ?? <span className="text-white/30">—</span>}
+        {value ?? <span className="text-white/30">-</span>}
       </span>
     </div>
   );

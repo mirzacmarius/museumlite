@@ -129,20 +129,23 @@ export const get = query({
       return null;
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.read"),
+    ]);
 
     const [collection, workflowConfig] = await Promise.all([
       ctx.db.get(exhibition.collectionId),
       getWorkflowConfig(ctx, exhibition.organizationId, "exhibition"),
     ] as const);
-    const approver = exhibition.approvedBy
-      ? await ctx.db.get(exhibition.approvedBy)
-      : null;
-    const creator = exhibition.createdBy
-      ? await ctx.db.get(exhibition.createdBy)
-      : null;
+    const [approver, creator] = await Promise.all([
+      exhibition.approvedBy
+        ? ctx.db.get(exhibition.approvedBy)
+        : Promise.resolve(null),
+      exhibition.createdBy
+        ? ctx.db.get(exhibition.createdBy)
+        : Promise.resolve(null),
+    ]);
 
     return {
       _id: exhibition._id,
@@ -201,13 +204,14 @@ export const update = mutation({
       throw new Error("Cannot update closed or rejected exhibition");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     const { id, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -267,13 +271,14 @@ export const remove = mutation({
       throw new Error("Cannot delete active exhibition");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.delete",
-    );
+    ),
+    ]);
 
     await ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
@@ -783,13 +788,14 @@ export const activate = mutation({
       }
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     // Move all exhibition objects to installed status and update their locations
     const exhibitionObjects = await ctx.db
@@ -880,13 +886,14 @@ export const close = mutation({
       }
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     // Handle objects - return them to original locations if requested
     const exhibitionObjects = await ctx.db
@@ -984,9 +991,10 @@ export const checkScheduleConflicts = query({
       return { hasConflicts: false, conflicts: [] };
     }
 
-    await requireExhibitionAccess(ctx, collection.organizationId);
-
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    await Promise.all([
+      requireExhibitionAccess(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+    ]);
 
     const conflicts: Array<{
       type: "exhibition" | "loan";
@@ -1094,9 +1102,10 @@ export const getWorkflowHistory = query({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-
-    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.read"),
+    ]);
 
     const history = exhibition.workflowHistory ?? [];
 
@@ -1311,12 +1320,14 @@ export const setInstallationChecklist = mutation({
       throw new Error("Cannot modify checklist after installation has started");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     const checklistItems = args.checklist.map((item) => ({
       taskId: item.taskId,
@@ -1370,12 +1381,14 @@ export const startInstallation = mutation({
       );
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     await ctx.db.patch(args.exhibitionId, {
       status: "installing",
@@ -1435,12 +1448,14 @@ export const completeInstallationTask = mutation({
       throw new Error("Task not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     checklist[taskIndex] = {
       taskId: existingTask.taskId,
@@ -1508,12 +1523,14 @@ export const uncompleteInstallationTask = mutation({
       throw new Error("Task not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     checklist[taskIndex] = {
       taskId: existingTask.taskId,
@@ -1573,8 +1590,10 @@ export const checkInstallationReadiness = query({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.read"),
+    ]);
 
     const checklist = exhibition.installationChecklist ?? [];
     const totalTasks = checklist.length;
@@ -1646,12 +1665,14 @@ export const completeInstallation = mutation({
       );
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     await ctx.db.patch(args.exhibitionId, {
       status: "approved", // Back to approved, ready for activation
@@ -1701,12 +1722,14 @@ export const setDeinstallationChecklist = mutation({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     const checklistItems = args.checklist.map((item) => ({
       taskId: item.taskId,
@@ -1759,12 +1782,14 @@ export const startDeinstallation = mutation({
       throw new Error("Exhibition must be active to start deinstallation");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     await ctx.db.patch(args.exhibitionId, {
       status: "deinstalling",
@@ -1822,12 +1847,14 @@ export const completeDeinstallationTask = mutation({
       throw new Error("Task not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     checklist[taskIndex] = {
       taskId: existingTask.taskId,
@@ -1888,8 +1915,10 @@ export const checkDeinstallationReadiness = query({
       throw new Error("Exhibition not found");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(ctx, exhibition.organizationId, "collections.read"),
+    ]);
 
     const checklist = exhibition.deinstallationChecklist ?? [];
     const totalTasks = checklist.length;
@@ -2044,12 +2073,14 @@ export const removeExhibitionObject = mutation({
       throw new Error("Cannot remove object that has been installed");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     await ctx.db.delete(args.exhibitionObjectId);
 
@@ -2096,12 +2127,14 @@ export const installObject = mutation({
       throw new Error("Object is not in pending status");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     // Update exhibition object status
     await ctx.db.patch(args.exhibitionObjectId, {
@@ -2172,12 +2205,14 @@ export const deinstallObject = mutation({
       throw new Error("Object is not installed");
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     await ctx.db.patch(args.exhibitionObjectId, {
       status: "deinstalled",
@@ -2236,12 +2271,14 @@ export const returnObjectToOriginalLocation = mutation({
       );
     }
 
-    await requireExhibitionAccess(ctx, exhibition.organizationId);
-    await requirePermission(
+    await Promise.all([
+      requireExhibitionAccess(ctx, exhibition.organizationId),
+      requirePermission(
       ctx,
       exhibition.organizationId,
       "collections.update",
-    );
+    ),
+    ]);
 
     const returnLocation =
       args.overrideLocationId ?? exhibitionObject.originalLocationId;

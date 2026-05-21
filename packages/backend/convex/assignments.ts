@@ -133,14 +133,46 @@ export const listMyAssignments = query({
       return { slaDueAt, slaBreached: Date.now() > slaDueAt };
     };
 
-    // Check accessions
-    const pendingAccessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "pending"),
-      )
-      .collect();
+    const [
+      pendingAccessions,
+      pendingDeaccessions,
+      pendingLoans,
+      pendingExhibitions,
+      pendingConservation,
+    ] = await Promise.all([
+      ctx.db
+        .query("accessions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "pending"),
+        )
+        .collect(),
+      ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "pending"),
+        )
+        .collect(),
+      ctx.db
+        .query("loans")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "pending"),
+        )
+        .collect(),
+      ctx.db
+        .query("exhibitions")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "proposed"),
+        )
+        .collect(),
+      ctx.db
+        .query("conservationTreatments")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", "proposed"),
+        )
+        .collect(),
+    ]);
 
+    // Check accessions
     await Promise.all(
       Array.from(pendingAccessions).map(async (accession) => {
         const currentStep = accession.workflowStep ?? 1;
@@ -178,13 +210,6 @@ export const listMyAssignments = query({
     );
 
     // Check deaccessions
-    const pendingDeaccessions = await ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "pending"),
-      )
-      .collect();
-
     await Promise.all(
       Array.from(pendingDeaccessions).map(async (deaccession) => {
         const currentStep = deaccession.workflowStep ?? 1;
@@ -225,13 +250,6 @@ export const listMyAssignments = query({
     );
 
     // Check loans
-    const pendingLoans = await ctx.db
-      .query("loans")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "pending"),
-      )
-      .collect();
-
     await Promise.all(
       Array.from(pendingLoans).map(async (loan) => {
         const currentStep = loan.workflowStep ?? 1;
@@ -269,13 +287,6 @@ export const listMyAssignments = query({
     );
 
     // Check exhibitions
-    const pendingExhibitions = await ctx.db
-      .query("exhibitions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "proposed"),
-      )
-      .collect();
-
     await Promise.all(
       Array.from(pendingExhibitions).map(async (exhibition) => {
         const currentStep = exhibition.workflowStep ?? 1;
@@ -313,13 +324,6 @@ export const listMyAssignments = query({
     );
 
     // Check conservation treatments
-    const pendingConservation = await ctx.db
-      .query("conservationTreatments")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "proposed"),
-      )
-      .collect();
-
     await Promise.all(
       Array.from(pendingConservation).map(async (treatment) => {
         const currentStep = treatment.workflowStep ?? 1;

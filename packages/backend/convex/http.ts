@@ -144,11 +144,10 @@ const billingWebhook = httpAction(async (ctx, request) => {
     return new Response("Missing request body", { status: 400 });
   }
 
-  const { Webhook, WebhookVerificationError } = await import(
-    "standardwebhooks"
-  );
-
-  const body = await request.text();
+  const [{ Webhook, WebhookVerificationError }, body] = await Promise.all([
+    import("standardwebhooks"),
+    request.text(),
+  ]);
   const headers = {
     "webhook-id": request.headers.get("webhook-id") ?? "",
     "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",

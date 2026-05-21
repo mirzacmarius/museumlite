@@ -56,7 +56,7 @@ export function LoanPrintManifestDialog({
                     National Museum
                   </span>
                 </div>
-                <h1 className="text-2xl font-serif text-zinc-900 font-bold tracking-tight leading-none">
+                <h1 className="text-2xl font-serif text-zinc-900 font-semibold tracking-tight leading-none">
                   Outgoing Loan Manifest
                 </h1>
                 <p className="text-muted-foreground mt-2 font-mono text-sm">
@@ -73,13 +73,13 @@ export function LoanPrintManifestDialog({
 
             <div className="bg-zinc-50 border border-zinc-100 p-4 rounded text-sm grid grid-cols-2 gap-8">
               <div>
-                <h4 className="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
+                <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
                   Lender
                 </h4>
                 <p>National Museum</p>
               </div>
               <div>
-                <h4 className="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
+                <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
                   Borrower (Consignee)
                 </h4>
                 <p>{loan.lenderBorrowerName}</p>
@@ -92,7 +92,7 @@ export function LoanPrintManifestDialog({
             </div>
 
             <div>
-              <h4 className="font-bold text-zinc-900 uppercase text-[10px] tracking-wide mb-4 border-b border-zinc-100 pb-1">
+              <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-4 border-b border-zinc-100 pb-1">
                 Loan Items
               </h4>
               <table className="w-full text-xs text-left">

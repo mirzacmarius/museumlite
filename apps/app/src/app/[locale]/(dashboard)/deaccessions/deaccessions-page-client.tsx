@@ -228,7 +228,7 @@ function DeaccessionsReportDialog({
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                   {exportData.organization.name}
                 </p>
-                <h1 className="text-xl font-bold text-black">
+                <h1 className="text-xl font-semibold text-black">
                   {t("report.deaccessionReport")}
                 </h1>
                 <p className="text-sm text-zinc-600">
@@ -272,7 +272,7 @@ function DeaccessionsReportDialog({
               </div>
 
               <div>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   {t("report.records")}
                 </h2>
                 <table className="w-full text-xs">

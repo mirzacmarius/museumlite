@@ -29,14 +29,14 @@ export function LoanAgreementDocument({
       style={{ fontFamily: "serif" }}
     >
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2">LOAN AGREEMENT</h1>
+        <h1 className="text-2xl font-semibold mb-2">LOAN AGREEMENT</h1>
         <p className="text-lg">Agreement Number: {loan.loanNumber}</p>
       </div>
 
       <LoanAgreementParties loan={loan} organizationName={organizationName} />
 
       <div className="mb-6">
-        <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">
+        <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
           2. LOAN PERIOD
         </h2>
         <p>
@@ -52,7 +52,7 @@ export function LoanAgreementDocument({
       </div>
 
       <div className="mb-6">
-        <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">
+        <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
           3. OBJECTS ON LOAN
         </h2>
         <table className="w-full border-collapse">
@@ -87,7 +87,7 @@ export function LoanAgreementDocument({
 
       {loan.insuranceValue && (
         <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">
+          <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
             4. INSURANCE
           </h2>
           <p>
@@ -99,7 +99,7 @@ export function LoanAgreementDocument({
 
       {loan.terms && (
         <div className="mb-6">
-          <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">
+          <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
             5. TERMS AND CONDITIONS
           </h2>
           <p className="whitespace-pre-wrap">{loan.terms}</p>
@@ -107,7 +107,7 @@ export function LoanAgreementDocument({
       )}
 
       <div className="mb-6">
-        <h2 className="text-lg font-bold border-b border-black pb-1 mb-3">
+        <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
           {loan.terms ? "6" : "5"}. STANDARD CONDITIONS
         </h2>
         <ol className="list-decimal pl-5 space-y-2">
@@ -144,7 +144,7 @@ export function LoanAgreementDocument({
       </div>
 
       <div className="mt-16">
-        <h2 className="text-lg font-bold border-b border-black pb-1 mb-8">
+        <h2 className="text-lg font-semibold border-b border-black pb-1 mb-8">
           SIGNATURES
         </h2>
         <div className="grid grid-cols-2 gap-16">

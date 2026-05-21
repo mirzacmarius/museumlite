@@ -122,7 +122,7 @@ function PublicObjectHeading({ object }: PublicObjectDetailProps) {
   return (
     <div>
       <p className="mb-2 text-sm text-white/40">{object.accessionNumber}</p>
-      <h1 className="mb-2 text-3xl font-bold text-white">{object.title}</h1>
+      <h1 className="mb-2 text-3xl font-semibold text-white">{object.title}</h1>
       {object.alternativeTitle ? (
         <p className="text-xl text-white/60">{object.alternativeTitle}</p>
       ) : null}

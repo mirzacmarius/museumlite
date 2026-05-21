@@ -101,7 +101,7 @@ export function LoanDetailHero({
                     year: "numeric",
                   }}
                 />{" "}
-                —{" "}
+                to{" "}
                 {loan.endDate ? (
                   <ClientDate
                     timestamp={loan.endDate}

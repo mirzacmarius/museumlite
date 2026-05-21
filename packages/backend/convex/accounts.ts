@@ -39,8 +39,10 @@ export const list = query({
     continueCursor: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.read");
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.read"),
+    ]);
 
     let results = await ctx.db
       .query("accounts")
@@ -220,8 +222,10 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireModuleEnabled(ctx, args.organizationId, "accounts");
-    await requirePermission(ctx, args.organizationId, "accounts.write");
+    await Promise.all([
+      requireModuleEnabled(ctx, args.organizationId, "accounts"),
+      requirePermission(ctx, args.organizationId, "accounts.write"),
+    ]);
 
     validateAccountProfileForCreate(args);
 
@@ -326,8 +330,10 @@ export const update = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.write");
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.write"),
+    ]);
 
     const now = Date.now();
     const updates = buildAccountUpdatePatch(args, {
@@ -587,8 +593,10 @@ export const restore = mutation({
       throw new Error("Can only restore archived accounts");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "accounts");
-    await requirePermission(ctx, account.organizationId, "accounts.manage");
+    await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.manage"),
+    ]);
 
     await ctx.db.patch(args.accountId, {
       status: "active",
@@ -722,8 +730,10 @@ export const bulkExport = query({
           return null;
         }
 
-        await requireModuleEnabled(ctx, account.organizationId, "accounts");
-        await requirePermission(ctx, account.organizationId, "accounts.read");
+        await Promise.all([
+      requireModuleEnabled(ctx, account.organizationId, "accounts"),
+      requirePermission(ctx, account.organizationId, "accounts.read"),
+    ]);
 
         return {
           _id: account._id,

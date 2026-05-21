@@ -165,7 +165,7 @@ export function LogsTab({
                   colSpan={3}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
-                  Loading logs...
+                  Loading logs…
                 </td>
               </tr>
             ) : auditLogs.length > 0 ? (
@@ -236,7 +236,7 @@ export function LogsTab({
               type="button"
               className="text-xs text-muted-foreground transition-colors hover:text-muted-foreground"
             >
-              Load older logs...
+              Load older logs…
             </button>
           </div>
         )}

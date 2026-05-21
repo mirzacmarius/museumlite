@@ -180,7 +180,7 @@ export function ObjectRequestMediaTab({
                   )}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/65 p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gray-950/65 p-3 opacity-0 transition-opacity group-hover:opacity-100">
                   <div className="truncate text-xs text-white">
                     {file.file.name}
                   </div>

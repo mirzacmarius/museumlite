@@ -50,7 +50,7 @@ const features = [
 
 export function FeaturesGrid() {
   return (
-    <section className="py-32 px-4 relative bg-black">
+    <section className="py-32 px-4 relative bg-gray-950">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2
@@ -88,7 +88,7 @@ export function FeaturesGrid() {
                   <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                     <feature.icon className="size-6 text-neon-blue" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-3">
+                  <h3 className="text-2xl font-semibold text-white mb-3">
                     {feature.title}
                   </h3>
                   <p className="text-zinc-400 leading-relaxed">

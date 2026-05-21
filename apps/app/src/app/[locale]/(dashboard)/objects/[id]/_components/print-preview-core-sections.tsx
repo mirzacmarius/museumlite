@@ -29,7 +29,7 @@ export function PrintPreviewCoreSections({
           />
         )}
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-black print:text-lg">
+          <h1 className="text-xl font-semibold text-black print:text-lg">
             {collection.title}
           </h1>
           {collection.alternativeTitle && (
@@ -70,7 +70,7 @@ export function PrintPreviewCoreSections({
 
       {/* Basic Information */}
       <div className="print:break-inside-avoid">
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
           {t("basicInformation")}
         </h2>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
@@ -125,7 +125,7 @@ export function PrintPreviewCoreSections({
 
       {/* Physical Description */}
       <div className="print:break-inside-avoid">
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
           {t("physicalDescription")}
         </h2>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:text-xs print:gap-x-4 print:gap-y-1">
@@ -215,7 +215,7 @@ export function PrintPreviewCoreSections({
       {/* Description */}
       {collection.description && (
         <div>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-zinc-500 print:text-[10px]">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
             {t("description")}
           </h2>
           <p className="text-sm text-black whitespace-pre-wrap print:text-xs">

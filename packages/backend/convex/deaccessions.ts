@@ -287,19 +287,20 @@ async function createDeaccessionRecord(
     proceedsDate: args.proceedsDate,
     proceedsNotes: args.proceedsNotes,
   });
-  await syncDeaccessionSearchDocument(ctx, deaccessionId);
-
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: args.organizationId,
-    userId,
-    action: "created",
-    entityType: "deaccession",
-    entityId: deaccessionId,
-    changes: {
-      deaccessionNumber,
-      status: workflowConfig ? "pending" : "approved",
-    },
-  });
+  await Promise.all([
+    syncDeaccessionSearchDocument(ctx, deaccessionId),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: args.organizationId,
+      userId,
+      action: "created",
+      entityType: "deaccession",
+      entityId: deaccessionId,
+      changes: {
+        deaccessionNumber,
+        status: workflowConfig ? "pending" : "approved",
+      },
+    }),
+  ]);
 
   if (workflowConfig) {
     const usersToNotify = await getUsersToNotifyForWorkflowStep(
@@ -482,20 +483,21 @@ export const createRejectedFromAccession = internalMutation({
         },
       ],
     });
-    await syncDeaccessionSearchDocument(ctx, deaccessionId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId: args.createdByUserId,
-      action: "rejected",
-      entityType: "deaccession",
-      entityId: deaccessionId,
-      changes: {
-        deaccessionNumber,
-        source: "accession_rejection",
-        accessionNumber: args.accessionNumber,
-      },
-    });
+    await Promise.all([
+      syncDeaccessionSearchDocument(ctx, deaccessionId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId: args.createdByUserId,
+        action: "rejected",
+        entityType: "deaccession",
+        entityId: deaccessionId,
+        changes: {
+          deaccessionNumber,
+          source: "accession_rejection",
+          accessionNumber: args.accessionNumber,
+        },
+      }),
+    ]);
 
     return deaccessionId;
   },

@@ -39,8 +39,13 @@ export function useFieldValidation<T>({
 
   const validate = useCallback(
     async (value: unknown): Promise<boolean> => {
-      setStatus("validating");
       latestValueRef.current = value;
+
+      if (latestValueRef.current !== value) {
+        return false;
+      }
+
+      setStatus("validating");
 
       try {
         await schema.parseAsync(value);

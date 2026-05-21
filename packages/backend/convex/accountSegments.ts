@@ -66,8 +66,10 @@ export const get = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, segment.organizationId, "accounts");
-    await requirePermission(ctx, segment.organizationId, "accounts.read");
+    await Promise.all([
+      requireModuleEnabled(ctx, segment.organizationId, "accounts"),
+      requirePermission(ctx, segment.organizationId, "accounts.read"),
+    ]);
 
     return segment;
   },
@@ -217,8 +219,10 @@ export const update = mutation({
       throw new Error("Segment not found");
     }
 
-    await requireModuleEnabled(ctx, segment.organizationId, "accounts");
-    await requirePermission(ctx, segment.organizationId, "accounts.write");
+    await Promise.all([
+      requireModuleEnabled(ctx, segment.organizationId, "accounts"),
+      requirePermission(ctx, segment.organizationId, "accounts.write"),
+    ]);
 
     const updates: Record<string, unknown> = {
       updatedAt: Date.now(),

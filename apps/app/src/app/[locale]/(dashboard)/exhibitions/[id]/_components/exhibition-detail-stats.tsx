@@ -42,7 +42,7 @@ export function ExhibitionDetailStats({
               </span>
             ) : null}
           </div>
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-3xl font-semibold text-foreground">
             {exhibition.title}
           </h1>
         </div>

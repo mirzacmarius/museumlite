@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export function CTASection() {
   return (
-    <section className="py-32 px-4 relative bg-black overflow-hidden">
+    <section className="py-32 px-4 relative bg-gray-950 overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-neon-blue/10 via-transparent to-transparent pointer-events-none" />
 
@@ -20,7 +20,7 @@ export function CTASection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-5xl md:text-7xl font-bold mb-8 text-white tracking-tight">
+          <h2 className="text-5xl md:text-7xl font-semibold mb-8 text-white tracking-tight">
             Ready to step into the <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">
               future?

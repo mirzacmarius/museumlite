@@ -144,8 +144,10 @@ export const updateTask = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
 
     const { taskId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -262,8 +264,10 @@ export const getTask = query({
     const task = await ctx.db.get(args.taskId);
     if (!task) return null;
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.read");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.read"),
+    ]);
 
     let assigneeInfo:
       | { name: string | undefined; email: string | undefined }
@@ -341,8 +345,10 @@ export const listTasks = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     let tasksQuery = ctx.db
       .query("installationTasks")
@@ -402,8 +408,10 @@ export const moveTask = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
 
     const updates: {
       status: typeof args.status;
@@ -530,8 +538,10 @@ export const unblockTask = mutation({
       throw new Error("Task is not blocked");
     }
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
 
     await ctx.db.patch(args.taskId, {
       status: "todo",
@@ -692,8 +702,10 @@ export const addDependency = mutation({
       throw new Error("Dependency already exists");
     }
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
 
     await ctx.db.patch(args.taskId, {
       dependsOnTaskIds: [...currentDeps, args.dependsOnTaskId],
@@ -718,8 +730,10 @@ export const removeDependency = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.update");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.update"),
+    ]);
 
     const currentDeps = task.dependsOnTaskIds ?? [];
     const newDeps = currentDeps.filter((id) => id !== args.dependsOnTaskId);
@@ -749,8 +763,10 @@ export const getDependencyChain = query({
     const task = await ctx.db.get(args.taskId);
     if (!task) return [];
 
-    await requireInstallationAccess(ctx, task.organizationId);
-    await requirePermission(ctx, task.organizationId, "collections.read");
+    await Promise.all([
+      requireInstallationAccess(ctx, task.organizationId),
+      requirePermission(ctx, task.organizationId, "collections.read"),
+    ]);
 
     const visited = new Set<Id<"installationTasks">>();
     const result: Array<{
@@ -851,8 +867,10 @@ export const updateTemplate = mutation({
     const template = await ctx.db.get(args.templateId);
     if (!template) throw new Error("Template not found");
 
-    await requireInstallationAccess(ctx, template.organizationId);
-    await requirePermission(ctx, template.organizationId, "collections.update");
+    await Promise.all([
+      requireInstallationAccess(ctx, template.organizationId),
+      requirePermission(ctx, template.organizationId, "collections.update"),
+    ]);
 
     const { templateId, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
@@ -906,8 +924,10 @@ export const listTemplates = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     let templatesQuery = ctx.db
       .query("installationTaskTemplates")
@@ -1340,8 +1360,10 @@ export const getOverdueTasks = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireInstallationAccess(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireInstallationAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const now = Date.now();
 
