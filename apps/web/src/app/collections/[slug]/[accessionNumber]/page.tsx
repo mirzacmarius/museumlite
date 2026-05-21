@@ -8,7 +8,9 @@ interface PageProps {
   params: Promise<{ slug: string; accessionNumber: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { slug, accessionNumber } = await params;
   const decodedAccessionNumber = decodeURIComponent(accessionNumber);
 

@@ -213,7 +213,9 @@ export const backfillLocationCodes = internalMutation({
 
           await Promise.all(locationPatches);
 
-          console.log(`✓ Updated ${locations.length} locations in group ${key}`);
+          console.log(
+            `✓ Updated ${locations.length} locations in group ${key}`,
+          );
           return { updated: locationPatches.length, error: false };
         } catch (error) {
           console.error(`Error processing group ${key}:`, error);

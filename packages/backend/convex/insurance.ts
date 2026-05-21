@@ -273,16 +273,16 @@ export const deletePolicy = mutation({
 
     const [, activeCoverages] = await Promise.all([
       requirePermission(
-      ctx,
-      policy.organizationId,
-      "organization.manage_settings",
-    ),
+        ctx,
+        policy.organizationId,
+        "organization.manage_settings",
+      ),
       ctx.db
         .query("insuranceCoverages")
-      .withIndex("by_policy_and_status", (q) =>
-        q.eq("policyId", args.policyId).eq("status", "active"),
-      )
-      .first(),
+        .withIndex("by_policy_and_status", (q) =>
+          q.eq("policyId", args.policyId).eq("status", "active"),
+        )
+        .first(),
     ] as const);
 
     if (activeCoverages) {

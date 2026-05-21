@@ -92,9 +92,7 @@ function renderObjectRequestFormFooterStatus(
             </span>
           );
         case "saved":
-          return (
-            <span className="text-muted-foreground">Draft saved.</span>
-          );
+          return <span className="text-muted-foreground">Draft saved.</span>;
         case "dirty":
           return (
             <span className="text-foreground">

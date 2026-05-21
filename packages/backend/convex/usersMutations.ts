@@ -41,17 +41,21 @@ export const deleteUserAccount = internalMutation({
           .collect()
           .then((refreshTokens) => ({
             authSessionId: authSession._id,
-            refreshTokenIds: refreshTokens.map((refreshToken) => refreshToken._id),
+            refreshTokenIds: refreshTokens.map(
+              (refreshToken) => refreshToken._id,
+            ),
           })),
       ),
     );
     await Promise.all(
-      sessionsWithRefreshTokens.flatMap(({ authSessionId, refreshTokenIds }) => [
-        ...refreshTokenIds.map((refreshTokenId) =>
-          ctx.db.delete(refreshTokenId),
-        ),
-        ctx.db.delete(authSessionId),
-      ]),
+      sessionsWithRefreshTokens.flatMap(
+        ({ authSessionId, refreshTokenIds }) => [
+          ...refreshTokenIds.map((refreshTokenId) =>
+            ctx.db.delete(refreshTokenId),
+          ),
+          ctx.db.delete(authSessionId),
+        ],
+      ),
     );
 
     const accountsWithVerificationCodes = await Promise.all(

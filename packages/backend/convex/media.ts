@@ -1145,12 +1145,12 @@ export const checkDuplicate = query({
       requirePermission(ctx, args.organizationId, "media.read"),
       ctx.db
         .query("mediaFiles")
-      .withIndex("by_content_hash", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("contentHash", args.contentHash),
-      )
-      .first(),
+        .withIndex("by_content_hash", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("contentHash", args.contentHash),
+        )
+        .first(),
     ] as const);
 
     if (!existing) {
@@ -1201,13 +1201,13 @@ export const setContentHash = mutation({
       requirePermission(ctx, media.organizationId, "media.upload"),
       ctx.db
         .query("mediaFiles")
-      .withIndex("by_content_hash", (q) =>
-        q
-          .eq("organizationId", media.organizationId)
-          .eq("contentHash", args.contentHash),
-      )
-      .filter((q) => q.neq(q.field("_id"), args.mediaId))
-      .first()
+        .withIndex("by_content_hash", (q) =>
+          q
+            .eq("organizationId", media.organizationId)
+            .eq("contentHash", args.contentHash),
+        )
+        .filter((q) => q.neq(q.field("_id"), args.mediaId))
+        .first(),
     ] as const);
 
     const isDuplicate = !!existing;
@@ -1248,11 +1248,11 @@ export const listDuplicates = query({
       requirePermission(ctx, args.organizationId, "media.read"),
       ctx.db
         .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isDuplicate"), true))
-      .collect(),
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("isDuplicate"), true))
+        .collect(),
     ] as const);
 
     const enriched = await Promise.all(

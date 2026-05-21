@@ -2032,10 +2032,10 @@ export const getCurrentAppraisal = query({
       requirePermission(ctx, collection.organizationId, "collections.read"),
       ctx.db
         .query("appraisals")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect()
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
     ] as const);
 
     if (appraisals.length === 0) {

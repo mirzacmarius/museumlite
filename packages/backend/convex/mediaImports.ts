@@ -343,8 +343,8 @@ export const getUnmappedFiles = query({
       requirePermission(ctx, job.organizationId, "media.read"),
       ctx.db
         .query("mediaImportJobData")
-      .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
-      .first(),
+        .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
+        .first(),
     ] as const);
 
     if (!mediaData) return [];
@@ -481,8 +481,8 @@ export const deleteUnmappedFile = mutation({
       requirePermission(ctx, job.organizationId, "media.delete"),
       ctx.db
         .query("mediaImportJobData")
-      .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
-      .first(),
+        .withIndex("by_job", (q) => q.eq("jobId", args.jobId))
+        .first(),
     ] as const);
 
     if (!mediaData) {
@@ -600,12 +600,12 @@ export const listMediaImportJobs = query({
       requirePermission(ctx, args.organizationId, "media.read"),
       ctx.db
         .query("importJobs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("type"), "media"))
-      .order("desc")
-      .take(20),
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("type"), "media"))
+        .order("desc")
+        .take(20),
     ] as const);
 
     const results = await Promise.all(

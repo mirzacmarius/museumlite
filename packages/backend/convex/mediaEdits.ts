@@ -101,9 +101,9 @@ export const getEditHistory = query({
       requirePermission(ctx, media.organizationId, "media.upload"),
       ctx.db
         .query("mediaEditHistory")
-      .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
-      .order("desc")
-      .collect()
+        .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
+        .order("desc")
+        .collect(),
     ] as const);
 
     return editHistory;

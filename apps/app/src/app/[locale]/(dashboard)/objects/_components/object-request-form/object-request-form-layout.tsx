@@ -121,8 +121,7 @@ export function ObjectRequestFormLayout({
           error,
           isSubmitting,
           isSavingDraft,
-          hasUploads:
-            selectedFiles.length > 0 || selectedDocuments.length > 0,
+          hasUploads: selectedFiles.length > 0 || selectedDocuments.length > 0,
         })}
         draft={resolveObjectRequestFormFooterDraft({
           hasSavedFieldDraft,

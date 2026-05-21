@@ -30,10 +30,10 @@ export const createRole = mutation({
       requirePermission(ctx, args.organizationId, "users.manage_roles"),
       ctx.db
         .query("roles")
-      .withIndex("by_organization_and_name", (q) =>
-        q.eq("organizationId", args.organizationId).eq("name", args.name),
-      )
-      .first()
+        .withIndex("by_organization_and_name", (q) =>
+          q.eq("organizationId", args.organizationId).eq("name", args.name),
+        )
+        .first(),
     ] as const);
 
     if (existing) {
@@ -198,11 +198,11 @@ export const deleteRole = mutation({
       requirePermission(ctx, role.organizationId, "users.manage_roles"),
       ctx.db
         .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", role.organizationId),
-      )
-      .filter((q) => q.eq(q.field("roleId"), args.roleId))
-      .first(),
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", role.organizationId),
+        )
+        .filter((q) => q.eq(q.field("roleId"), args.roleId))
+        .first(),
     ] as const);
 
     if (usersWithRole) {

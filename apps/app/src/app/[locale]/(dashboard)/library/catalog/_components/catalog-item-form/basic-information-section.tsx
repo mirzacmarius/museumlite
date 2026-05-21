@@ -20,8 +20,8 @@ function buildAuthorRows(authors: string[]) {
   return authors.map((author, position, allAuthors) => {
     const label = author || "author-empty";
     const occurrence =
-      allAuthors.slice(0, position).filter((value) => value === author)
-        .length + 1;
+      allAuthors.slice(0, position).filter((value) => value === author).length +
+      1;
     return { author, key: `${label}-${occurrence}`, position };
   });
 }
@@ -124,27 +124,29 @@ export function CatalogItemBasicInformationSection({
 
           <div className="space-y-2 sm:col-span-2">
             <Label>{tNew("authors")}</Label>
-            {buildAuthorRows(formData.authors).map(({ author, key, position }) => (
-              <div key={key} className="flex gap-2">
-                <Input
-                  value={author}
-                  onChange={(e) => updateAuthor?.(position, e.target.value)}
-                  placeholder={tNew("authorPlaceholder", {
-                    number: position + 1,
-                  })}
-                />
-                {formData.authors.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => removeAuthor?.(position)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+            {buildAuthorRows(formData.authors).map(
+              ({ author, key, position }) => (
+                <div key={key} className="flex gap-2">
+                  <Input
+                    value={author}
+                    onChange={(e) => updateAuthor?.(position, e.target.value)}
+                    placeholder={tNew("authorPlaceholder", {
+                      number: position + 1,
+                    })}
+                  />
+                  {formData.authors.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeAuthor?.(position)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
+                </div>
+              ),
+            )}
             <Button
               type="button"
               variant="outline"

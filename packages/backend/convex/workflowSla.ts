@@ -78,18 +78,18 @@ export const get = query({
   handler: async (ctx, args) => {
     const [, config] = await Promise.all([
       requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    ),
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
       ctx.db
         .query("workflowSlaConfigs")
-      .withIndex("by_organization_and_type", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("workflowType", args.workflowType),
-      )
-      .unique(),
+        .withIndex("by_organization_and_type", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("workflowType", args.workflowType),
+        )
+        .unique(),
     ] as const);
 
     if (!config) return null;

@@ -33,7 +33,8 @@ export async function generateMetadata({
 
     return {
       title: `${object.title} | MuseumLite`,
-      description: object.description ?? `View ${object.title} in the collection.`,
+      description:
+        object.description ?? `View ${object.title} in the collection.`,
       openGraph: {
         title: object.title,
         description: object.description ?? undefined,

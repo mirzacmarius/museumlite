@@ -1174,8 +1174,8 @@ export const getTransitForLoanWithHistory = query({
       requirePermission(ctx, loan.organizationId, "loans.read"),
       ctx.db
         .query("transitRecords")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect(),
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .collect(),
     ] as const);
 
     // Limit to 5 most recent records if limit specified

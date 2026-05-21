@@ -150,17 +150,13 @@ export const upsert = mutation({
     }
 
     const [, existing] = await Promise.all([
-      requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, collection.organizationId, "collections.update"),
       ctx.db
         .query("naturalHistoryDetails")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .unique(),
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .unique(),
     ] as const);
 
     const { collectionId, ...updateData } = args;

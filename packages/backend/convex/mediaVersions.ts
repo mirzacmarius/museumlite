@@ -148,10 +148,10 @@ export const listVersions = query({
       requirePermission(ctx, media.organizationId, "media.read"),
       ctx.db
         .query("mediaVersions")
-      .withIndex("by_original_media", (q) =>
-        q.eq("originalMediaId", args.mediaId),
-      )
-      .collect()
+        .withIndex("by_original_media", (q) =>
+          q.eq("originalMediaId", args.mediaId),
+        )
+        .collect(),
     ] as const);
 
     // Get URLs for each version

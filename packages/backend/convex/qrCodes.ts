@@ -129,12 +129,12 @@ export const generateQRCodeByAccessionNumber = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
       ctx.db
         .query("collections")
-      .withIndex("by_organization_and_accessionNumber", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("accessionNumber", args.accessionNumber),
-      )
-      .first()
+        .withIndex("by_organization_and_accessionNumber", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("accessionNumber", args.accessionNumber),
+        )
+        .first(),
     ] as const);
 
     if (!collection) {

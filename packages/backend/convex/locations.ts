@@ -773,11 +773,11 @@ export const getEnvironmentalReadings = query({
       requirePermission(ctx, location.organizationId, "locations.read"),
       ctx.db
         .query("environmentalReadings")
-      .withIndex("by_location_and_time", (q) =>
-        q.eq("locationId", args.locationId),
-      )
-      .order("desc")
-      .first(),
+        .withIndex("by_location_and_time", (q) =>
+          q.eq("locationId", args.locationId),
+        )
+        .order("desc")
+        .first(),
     ] as const);
 
     if (!latestReading) {
@@ -825,11 +825,11 @@ export const deleteLocation = mutation({
       requirePermission(ctx, location.organizationId, "locations.delete"),
       ctx.db
         .query("locations")
-      .withIndex("by_parentLocation", (q) =>
-        q.eq("parentLocationId", args.locationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first()
+        .withIndex("by_parentLocation", (q) =>
+          q.eq("parentLocationId", args.locationId),
+        )
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first(),
     ] as const);
 
     if (children) {
@@ -1169,16 +1169,16 @@ export const createMoveRequest = mutation({
       requirePermission(ctx, collection.organizationId, "locations.update"),
       ctx.db
         .query("locationMoveRequests")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "approved"),
-        ),
-      )
-      .first()
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("status"), "pending"),
+            q.eq(q.field("status"), "approved"),
+          ),
+        )
+        .first(),
     ] as const);
 
     if (existingRequest) {
@@ -2049,11 +2049,11 @@ export const listAllWithPaths = query({
       requirePermission(ctx, args.organizationId, "locations.read"),
       ctx.db
         .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect()
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .collect(),
     ] as const);
 
     // Build a map of location ID to location for quick lookup

@@ -1325,10 +1325,10 @@ export const removeUser = mutation({
       requirePermission(ctx, args.organizationId, "users.remove"),
       ctx.db
         .query("userOrganizations")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first()
+        .withIndex("by_user_and_organization", (q) =>
+          q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+        )
+        .first(),
     ] as const);
 
     if (!userOrganization) {
@@ -1374,10 +1374,10 @@ export const updateUserRole = mutation({
       requirePermission(ctx, args.organizationId, "users.manage_roles"),
       ctx.db
         .query("userOrganizations")
-      .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-      )
-      .first()
+        .withIndex("by_user_and_organization", (q) =>
+          q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+        )
+        .first(),
     ] as const);
 
     if (!userOrganization) {

@@ -152,15 +152,13 @@ function getTimestamp(value: string | null): number | null {
   return Number.isNaN(timestamp) ? null : timestamp;
 }
 
-function mapComponentProductToBillingProduct(
-  product: {
-    id: string;
-    name: string;
-    description: string | null;
-    recurringInterval: "month" | "year" | null;
-    prices: Array<{ priceAmount?: number }>;
-  },
-) {
+function mapComponentProductToBillingProduct(product: {
+  id: string;
+  name: string;
+  description: string | null;
+  recurringInterval: "month" | "year" | null;
+  prices: Array<{ priceAmount?: number }>;
+}) {
   return {
     id: product.id,
     name: product.name,
@@ -519,10 +517,13 @@ export const applyBillingSubscriptionEvent = internalAction({
   args: polarWebhookSubscriptionValidator,
   returns: v.object({ processed: v.boolean() }),
   handler: async (ctx, args) => {
-    const claim = await ctx.runMutation(internal.subscriptions.claimPolarWebhook, {
-      webhookId: args.webhookId,
-      eventType: args.eventType,
-    });
+    const claim = await ctx.runMutation(
+      internal.subscriptions.claimPolarWebhook,
+      {
+        webhookId: args.webhookId,
+        eventType: args.eventType,
+      },
+    );
 
     if (!claim.claimed) {
       return { processed: false };
@@ -568,21 +569,24 @@ export const applyBillingSubscriptionEvent = internalAction({
       getTimestamp(args.currentPeriodStart) ?? Date.now();
     const currentPeriodEnd = getTimestamp(args.currentPeriodEnd) ?? undefined;
 
-    await ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
-      organizationId,
-      tier,
-      productId: args.productId,
-      productName: args.productName,
-      productDescription: args.productDescription,
-      subscriptionId: args.id,
-      customerId: args.customerId,
-      recurringInterval: args.recurringInterval ?? undefined,
-      status: normalizeSubscriptionStatus(args.status),
-      cancelAtPeriodEnd: args.cancelAtPeriodEnd,
-      currentPeriodStart,
-      currentPeriodEnd,
-      metadata: args.metadata,
-    });
+    await ctx.runMutation(
+      internal.subscriptions.upsertOrganizationSubscription,
+      {
+        organizationId,
+        tier,
+        productId: args.productId,
+        productName: args.productName,
+        productDescription: args.productDescription,
+        subscriptionId: args.id,
+        customerId: args.customerId,
+        recurringInterval: args.recurringInterval ?? undefined,
+        status: normalizeSubscriptionStatus(args.status),
+        cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+        currentPeriodStart,
+        currentPeriodEnd,
+        metadata: args.metadata,
+      },
+    );
 
     return { processed: true };
   },
@@ -596,10 +600,13 @@ export const applyBillingProductEvent = internalAction({
   },
   returns: v.object({ processed: v.boolean() }),
   handler: async (ctx, args) => {
-    const claim = await ctx.runMutation(internal.subscriptions.claimPolarWebhook, {
-      webhookId: args.webhookId,
-      eventType: args.eventType,
-    });
+    const claim = await ctx.runMutation(
+      internal.subscriptions.claimPolarWebhook,
+      {
+        webhookId: args.webhookId,
+        eventType: args.eventType,
+      },
+    );
 
     if (!claim.claimed) {
       return { processed: false };

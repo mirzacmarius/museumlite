@@ -67,11 +67,11 @@ export const listPendingInvitations = query({
       requirePermission(ctx, args.organizationId, "users.invite"),
       ctx.db
         .query("organizationInvitations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect()
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("status"), "pending"))
+        .collect(),
     ] as const);
 
     // Enrich with role and inviter information
