@@ -1,20 +1,25 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Polar } from "@convex-dev/polar";
+import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import { ConvexError, v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type ActionCtx,
   action,
+  internalAction,
   internalMutation,
+  internalQuery,
   query,
 } from "./_generated/server";
+import {
+  syncPolarProduct,
+  syncPolarSubscription,
+} from "./utils/polarComponentSync";
 import {
   hasActiveSubscriptionAccess,
   inferSubscriptionTierFromProductName,
   type SubscriptionRecordSource,
-  toDatabaseProduct,
-  toDatabaseSubscription,
 } from "./utils/polarBilling";
 
 export const polar = new Polar(components.polar, {
@@ -61,7 +66,7 @@ const organizationSubscriptionValidator = v.object({
   isEntitled: v.boolean(),
 });
 
-const billingProductValidator = v.object({
+export const billingProductValidator = v.object({
   id: v.string(),
   name: v.string(),
   description: v.union(v.string(), v.null()),
@@ -72,6 +77,56 @@ const billingProductValidator = v.object({
     }),
   ),
 });
+
+const polarWebhookSubscriptionValidator = v.object({
+  webhookId: v.string(),
+  eventType: v.string(),
+  id: v.string(),
+  customerId: v.string(),
+  productId: v.string(),
+  productName: v.string(),
+  productDescription: v.union(v.string(), v.null()),
+  priceId: v.string(),
+  checkoutId: v.union(v.string(), v.null()),
+  amount: v.union(v.number(), v.null()),
+  currency: v.union(v.string(), v.null()),
+  recurringInterval: v.union(v.literal("month"), v.literal("year"), v.null()),
+  status: v.string(),
+  createdAt: v.string(),
+  modifiedAt: v.union(v.string(), v.null()),
+  currentPeriodStart: v.string(),
+  currentPeriodEnd: v.union(v.string(), v.null()),
+  cancelAtPeriodEnd: v.boolean(),
+  startedAt: v.union(v.string(), v.null()),
+  endedAt: v.union(v.string(), v.null()),
+  metadata: v.record(v.string(), v.union(v.string(), v.number(), v.boolean())),
+  organizationId: v.optional(v.string()),
+});
+
+interface PolarWebhookSubscriptionPayload {
+  webhookId: string;
+  eventType: string;
+  id: string;
+  customerId: string;
+  productId: string;
+  productName: string;
+  productDescription: string | null;
+  priceId: string;
+  checkoutId: string | null;
+  amount: number | null;
+  currency: string | null;
+  recurringInterval: "month" | "year" | null;
+  status: string;
+  createdAt: string;
+  modifiedAt: string | null;
+  currentPeriodStart: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  startedAt: string | null;
+  endedAt: string | null;
+  metadata: Record<string, string | number | boolean>;
+  organizationId?: string;
+}
 
 function normalizeSubscriptionStatus(
   status: string,
@@ -97,70 +152,48 @@ function getTimestamp(value: string | null): number | null {
   return Number.isNaN(timestamp) ? null : timestamp;
 }
 
-async function upsertComponentSubscription(
-  ctx: ActionCtx,
-  subscription: SubscriptionRecordSource | null,
+function mapComponentProductToBillingProduct(
+  product: {
+    id: string;
+    name: string;
+    description: string | null;
+    recurringInterval: "month" | "year" | null;
+    prices: Array<{ priceAmount?: number }>;
+  },
 ) {
-  if (!subscription) {
-    return;
-  }
-
-  const existingSubscriptions = await ctx.runQuery(
-    components.polar.lib.listCustomerSubscriptions,
-    {
-      customerId: subscription.customerId,
-    },
-  );
-  const existing = existingSubscriptions.find(
-    (item: (typeof existingSubscriptions)[number]) =>
-      item.id === subscription.id,
-  );
-  const nextSubscription = toDatabaseSubscription(subscription);
-
-  if (existing) {
-    await ctx.runMutation(components.polar.lib.updateSubscription, {
-      subscription: nextSubscription,
-    });
-    return;
-  }
-
-  await ctx.runMutation(components.polar.lib.createSubscription, {
-    subscription: nextSubscription,
-  });
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    recurringInterval: product.recurringInterval,
+    prices: product.prices.map((price) => ({
+      priceAmount: price.priceAmount,
+    })),
+  };
 }
 
-async function upsertComponentProduct(
-  ctx: ActionCtx,
-  product: Awaited<ReturnType<typeof polar.sdk.products.get>>,
-) {
-  const existingProducts = await ctx.runQuery(
-    components.polar.lib.listProducts,
-    {
-      includeArchived: true,
-    },
-  );
-  const matchingProducts = existingProducts.filter(
-    (item: (typeof existingProducts)[number]) => item.id === product.id,
-  );
-  const nextProduct = toDatabaseProduct(product);
-
-  if (matchingProducts.length > 1) {
-    console.warn(
-      `Skipping Polar component product sync for ${product.id} because duplicate rows already exist.`,
-    );
-    return;
-  }
-
-  if (matchingProducts.length === 1) {
-    await ctx.runMutation(components.polar.lib.updateProduct, {
-      product: nextProduct,
-    });
-    return;
-  }
-
-  await ctx.runMutation(components.polar.lib.createProduct, {
-    product: nextProduct,
-  });
+function webhookSubscriptionToRecordSource(
+  args: PolarWebhookSubscriptionPayload,
+): SubscriptionRecordSource {
+  return {
+    id: args.id,
+    customerId: args.customerId,
+    createdAt: args.createdAt,
+    modifiedAt: args.modifiedAt,
+    productId: args.productId,
+    priceId: args.priceId,
+    checkoutId: args.checkoutId,
+    amount: args.amount,
+    currency: args.currency,
+    recurringInterval: args.recurringInterval,
+    status: args.status,
+    currentPeriodStart: args.currentPeriodStart,
+    currentPeriodEnd: args.currentPeriodEnd,
+    cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+    startedAt: args.startedAt,
+    endedAt: args.endedAt,
+    metadata: args.metadata,
+  };
 }
 
 async function requireBillingPermission(
@@ -258,6 +291,51 @@ async function getActiveOrganizationSubscriptionFromPolar(
   );
 }
 
+export const resolveOrganizationId = internalQuery({
+  args: {
+    organizationId: v.string(),
+  },
+  returns: v.union(v.id("organizations"), v.null()),
+  handler: async (ctx, args) => {
+    const organizationId = ctx.db.normalizeId(
+      "organizations",
+      args.organizationId,
+    );
+    if (!organizationId) {
+      return null;
+    }
+
+    const organization = await ctx.db.get(organizationId);
+    return organization?._id ?? null;
+  },
+});
+
+export const claimPolarWebhook = internalMutation({
+  args: {
+    webhookId: v.string(),
+    eventType: v.string(),
+  },
+  returns: v.object({ claimed: v.boolean() }),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("polarWebhookEvents")
+      .withIndex("by_webhook_id", (q) => q.eq("webhookId", args.webhookId))
+      .first();
+
+    if (existing) {
+      return { claimed: false };
+    }
+
+    await ctx.db.insert("polarWebhookEvents", {
+      webhookId: args.webhookId,
+      eventType: args.eventType,
+      processedAt: Date.now(),
+    });
+
+    return { claimed: true };
+  },
+});
+
 export const upsertOrganizationSubscription = internalMutation({
   args: {
     organizationId: v.id("organizations"),
@@ -291,6 +369,11 @@ export const upsertOrganizationSubscription = internalMutation({
       .first();
 
     const now = Date.now();
+    const isEntitled = hasActiveSubscriptionAccess({
+      status: args.status,
+      cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+      currentPeriodEnd: args.currentPeriodEnd ?? null,
+    });
 
     if (existing) {
       await ctx.db.patch(existing._id, {
@@ -305,6 +388,7 @@ export const upsertOrganizationSubscription = internalMutation({
         cancelAtPeriodEnd: args.cancelAtPeriodEnd,
         currentPeriodStart: args.currentPeriodStart,
         currentPeriodEnd: args.currentPeriodEnd,
+        isEntitled,
         metadata: args.metadata,
         updatedAt: now,
       });
@@ -322,17 +406,12 @@ export const upsertOrganizationSubscription = internalMutation({
         cancelAtPeriodEnd: args.cancelAtPeriodEnd,
         currentPeriodStart: args.currentPeriodStart,
         currentPeriodEnd: args.currentPeriodEnd,
+        isEntitled,
         metadata: args.metadata,
         createdAt: now,
         updatedAt: now,
       });
     }
-
-    const isEntitled = hasActiveSubscriptionAccess({
-      status: args.status,
-      cancelAtPeriodEnd: args.cancelAtPeriodEnd,
-      currentPeriodEnd: args.currentPeriodEnd ?? null,
-    });
 
     await ctx.db.patch(args.organizationId, {
       subscriptionTier: isEntitled ? args.tier : "free",
@@ -353,14 +432,12 @@ export const getOrganizationSubscription = query({
       return null;
     }
 
-    const memberships = await ctx.db
+    const membership = await ctx.db
       .query("userOrganizations")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    const membership = memberships.find(
-      (item) => item.organizationId === args.organizationId,
-    );
+      .withIndex("by_user_and_organization", (q) =>
+        q.eq("userId", userId).eq("organizationId", args.organizationId),
+      )
+      .unique();
 
     if (!membership) {
       return null;
@@ -378,6 +455,13 @@ export const getOrganizationSubscription = query({
     }
 
     const currentPeriodEnd = subscription.currentPeriodEnd ?? null;
+    const isEntitled =
+      subscription.isEntitled ??
+      hasActiveSubscriptionAccess({
+        status: subscription.status,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        currentPeriodEnd,
+      });
 
     return {
       organizationId: subscription.organizationId,
@@ -392,12 +476,137 @@ export const getOrganizationSubscription = query({
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd,
-      isEntitled: hasActiveSubscriptionAccess({
-        status: subscription.status,
-        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        currentPeriodEnd,
-      }),
+      isEntitled,
     };
+  },
+});
+
+export const listCatalogProducts = query({
+  args: {},
+  returns: v.array(billingProductValidator),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const products = await ctx.runQuery(components.polar.lib.listProducts, {
+      includeArchived: false,
+    });
+
+    return products.map(mapComponentProductToBillingProduct);
+  },
+});
+
+export const syncAllCatalogProducts = internalAction({
+  args: {},
+  returns: v.object({ count: v.number() }),
+  handler: async (ctx) => {
+    const products = await polar.sdk.products.list({
+      isArchived: false,
+    });
+    const items = products.result?.items ?? [];
+
+    for (const product of items) {
+      await syncPolarProduct(ctx, product);
+    }
+
+    return { count: items.length };
+  },
+});
+
+export const applyBillingSubscriptionEvent = internalAction({
+  args: polarWebhookSubscriptionValidator,
+  returns: v.object({ processed: v.boolean() }),
+  handler: async (ctx, args) => {
+    const claim = await ctx.runMutation(internal.subscriptions.claimPolarWebhook, {
+      webhookId: args.webhookId,
+      eventType: args.eventType,
+    });
+
+    if (!claim.claimed) {
+      return { processed: false };
+    }
+
+    const subscriptionRecord = webhookSubscriptionToRecordSource(args);
+    await syncPolarSubscription(ctx, subscriptionRecord);
+
+    const organizationIdString =
+      args.organizationId ??
+      (typeof args.metadata.organizationId === "string"
+        ? args.metadata.organizationId
+        : undefined);
+
+    if (!organizationIdString) {
+      return { processed: true };
+    }
+
+    const organizationId = await ctx.runQuery(
+      internal.subscriptions.resolveOrganizationId,
+      { organizationId: organizationIdString },
+    );
+
+    if (!organizationId) {
+      console.warn(
+        `Skipping organization billing sync for unknown organization ${organizationIdString}`,
+      );
+      return { processed: true };
+    }
+
+    const tier =
+      (args.metadata.tier === "enterprise"
+        ? "enterprise"
+        : args.metadata.tier === "pro"
+          ? "pro"
+          : null) ?? inferSubscriptionTierFromProductName(args.productName);
+
+    if (!tier) {
+      return { processed: true };
+    }
+
+    const currentPeriodStart =
+      getTimestamp(args.currentPeriodStart) ?? Date.now();
+    const currentPeriodEnd = getTimestamp(args.currentPeriodEnd) ?? undefined;
+
+    await ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
+      organizationId,
+      tier,
+      productId: args.productId,
+      productName: args.productName,
+      productDescription: args.productDescription,
+      subscriptionId: args.id,
+      customerId: args.customerId,
+      recurringInterval: args.recurringInterval ?? undefined,
+      status: normalizeSubscriptionStatus(args.status),
+      cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+      currentPeriodStart,
+      currentPeriodEnd,
+      metadata: args.metadata,
+    });
+
+    return { processed: true };
+  },
+});
+
+export const applyBillingProductEvent = internalAction({
+  args: {
+    webhookId: v.string(),
+    eventType: v.string(),
+    product: v.any(),
+  },
+  returns: v.object({ processed: v.boolean() }),
+  handler: async (ctx, args) => {
+    const claim = await ctx.runMutation(internal.subscriptions.claimPolarWebhook, {
+      webhookId: args.webhookId,
+      eventType: args.eventType,
+    });
+
+    if (!claim.claimed) {
+      return { processed: false };
+    }
+
+    await syncPolarProduct(ctx, args.product as Product);
+    return { processed: true };
   },
 });
 
@@ -489,6 +698,8 @@ export const syncOrganizationSubscription = action({
       return { synced: false };
     }
 
+    await syncPolarSubscription(ctx, subscription);
+
     await ctx.runMutation(
       internal.subscriptions.upsertOrganizationSubscription,
       {
@@ -513,47 +724,6 @@ export const syncOrganizationSubscription = action({
     );
 
     return { synced: true };
-  },
-});
-
-export const syncBillingProducts = action({
-  args: {},
-  returns: v.object({ count: v.number() }),
-  handler: async (ctx) => {
-    const products = await polar.sdk.products.list({
-      isArchived: false,
-    });
-    const items = products.result?.items ?? [];
-
-    await Promise.all(
-      items.map((product) => upsertComponentProduct(ctx, product)),
-    );
-
-    return { count: items.length };
-  },
-});
-
-export const listBillingProducts = action({
-  args: {},
-  returns: v.array(billingProductValidator),
-  handler: async () => {
-    const products = await polar.sdk.products.list({
-      isArchived: false,
-    });
-    const items = products.result?.items ?? [];
-
-    return items.map((product) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      recurringInterval: product.recurringInterval ?? null,
-      prices: product.prices.map((price) => ({
-        priceAmount:
-          price.amountType === "fixed"
-            ? (price.priceAmount ?? undefined)
-            : undefined,
-      })),
-    }));
   },
 });
 
@@ -610,29 +780,27 @@ export const changeOrganizationSubscriptionPlan = action({
       },
     });
 
-    await Promise.all([
-      upsertComponentSubscription(ctx, updatedSubscription),
-      ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
-        organizationId: args.organizationId,
-        tier,
-        productId: updatedSubscription.productId,
-        productName: product.name,
-        productDescription: product.description,
-        subscriptionId: updatedSubscription.id,
-        customerId: updatedSubscription.customerId,
-        recurringInterval: updatedSubscription.recurringInterval ?? undefined,
-        status: normalizeSubscriptionStatus(updatedSubscription.status),
-        cancelAtPeriodEnd: updatedSubscription.cancelAtPeriodEnd,
-        currentPeriodStart:
-          getTimestamp(updatedSubscription.currentPeriodStart.toISOString()) ??
-          Date.now(),
-        currentPeriodEnd:
-          getTimestamp(
-            updatedSubscription.currentPeriodEnd?.toISOString() ?? null,
-          ) ?? undefined,
-        metadata: updatedSubscription.metadata,
-      }),
-    ]);
+    await syncPolarSubscription(ctx, updatedSubscription);
+    await ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
+      organizationId: args.organizationId,
+      tier,
+      productId: updatedSubscription.productId,
+      productName: product.name,
+      productDescription: product.description,
+      subscriptionId: updatedSubscription.id,
+      customerId: updatedSubscription.customerId,
+      recurringInterval: updatedSubscription.recurringInterval ?? undefined,
+      status: normalizeSubscriptionStatus(updatedSubscription.status),
+      cancelAtPeriodEnd: updatedSubscription.cancelAtPeriodEnd,
+      currentPeriodStart:
+        getTimestamp(updatedSubscription.currentPeriodStart.toISOString()) ??
+        Date.now(),
+      currentPeriodEnd:
+        getTimestamp(
+          updatedSubscription.currentPeriodEnd?.toISOString() ?? null,
+        ) ?? undefined,
+      metadata: updatedSubscription.metadata,
+    });
 
     return null;
   },
@@ -664,12 +832,3 @@ export const createOrganizationCustomerPortalUrl = action({
     return { url: session.customerPortalUrl };
   },
 });
-
-export const {
-  changeCurrentSubscription,
-  cancelCurrentSubscription,
-  listAllProducts,
-} = polar.api();
-
-export const { generateCheckoutLink, generateCustomerPortalUrl } =
-  polar.checkoutApi();

@@ -3945,6 +3945,7 @@ export default defineSchema({
     cancelAtPeriodEnd: v.boolean(),
     currentPeriodStart: v.number(),
     currentPeriodEnd: v.optional(v.number()),
+    isEntitled: v.optional(v.boolean()),
     metadata: v.optional(metadataRecord),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -3952,6 +3953,12 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_subscription", ["subscriptionId"])
     .index("by_status", ["status"]),
+
+  polarWebhookEvents: defineTable({
+    webhookId: v.string(),
+    eventType: v.string(),
+    processedAt: v.number(),
+  }).index("by_webhook_id", ["webhookId"]),
 
   contacts: defineTable({
     organizationId: v.id("organizations"),

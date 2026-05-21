@@ -125,6 +125,7 @@ import type * as utils_objectDraftData from "../utils/objectDraftData.js";
 import type * as utils_organizationUsageCounters from "../utils/organizationUsageCounters.js";
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_polarBilling from "../utils/polarBilling.js";
+import type * as utils_polarComponentSync from "../utils/polarComponentSync.js";
 import type * as utils_reportingCatalogAnalytics from "../utils/reportingCatalogAnalytics.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
@@ -264,6 +265,7 @@ declare const fullApi: ApiFromModules<{
   "utils/organizationUsageCounters": typeof utils_organizationUsageCounters;
   "utils/permissions": typeof utils_permissions;
   "utils/polarBilling": typeof utils_polarBilling;
+  "utils/polarComponentSync": typeof utils_polarComponentSync;
   "utils/reportingCatalogAnalytics": typeof utils_reportingCatalogAnalytics;
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;

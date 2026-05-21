@@ -1,142 +1,52 @@
 import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import type { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
 import { httpRouter } from "convex/server";
-import { components, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { type ActionCtx, httpAction } from "./_generated/server";
+import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { env } from "./env";
-import {
-  inferSubscriptionTierFromProductName,
-  toDatabaseProduct,
-  toDatabaseSubscription,
-} from "./utils/polarBilling";
 
 const http = httpRouter();
 
 auth.addHttpRoutes(http);
 
-function normalizeSubscriptionStatus(
-  status: string,
-): "active" | "canceled" | "past_due" | "unpaid" | "incomplete" {
-  switch (status) {
-    case "active":
-    case "canceled":
-    case "past_due":
-    case "unpaid":
-    case "incomplete":
-      return status;
-    default:
-      return "incomplete";
-  }
-}
-
 function encodeBase64(value: string) {
   return btoa(value);
 }
 
-async function upsertPolarProduct(ctx: ActionCtx, product: Product) {
-  const existingProducts = await ctx.runQuery(
-    components.polar.lib.listProducts,
-    {
-      includeArchived: true,
-    },
-  );
-  const matchingProducts = existingProducts.filter(
-    (item: (typeof existingProducts)[number]) => item.id === product.id,
-  );
-  const nextProduct = toDatabaseProduct(product);
-
-  if (matchingProducts.length > 1) {
-    console.warn(
-      `Skipping Polar webhook product sync for ${product.id} because duplicate rows already exist.`,
-    );
-    return;
-  }
-
-  if (matchingProducts.length === 1) {
-    await ctx.runMutation(components.polar.lib.updateProduct, {
-      product: nextProduct,
-    });
-    return;
-  }
-
-  await ctx.runMutation(components.polar.lib.createProduct, {
-    product: nextProduct,
-  });
-}
-
-async function upsertPolarSubscription(
-  ctx: ActionCtx,
+function serializeWebhookSubscription(
   subscription: Subscription,
+  webhookId: string,
+  eventType: string,
 ) {
-  const customerSubscriptions = await ctx.runQuery(
-    components.polar.lib.listCustomerSubscriptions,
-    {
-      customerId: subscription.customerId,
-    },
-  );
-  const existing = customerSubscriptions.find(
-    (item: (typeof customerSubscriptions)[number]) =>
-      item.id === subscription.id,
-  );
-  const nextSubscription = toDatabaseSubscription(subscription);
-
-  if (existing) {
-    await ctx.runMutation(components.polar.lib.updateSubscription, {
-      subscription: nextSubscription,
-    });
-    return;
-  }
-
-  await ctx.runMutation(components.polar.lib.createSubscription, {
-    subscription: nextSubscription,
-  });
-}
-
-async function syncOrganizationBillingFromSubscription(
-  ctx: ActionCtx,
-  subscription: Subscription,
-) {
-  const organizationId = subscription.metadata?.organizationId;
-  if (typeof organizationId !== "string") {
-    return;
-  }
-
-  const tier =
-    (subscription.metadata?.tier === "enterprise"
-      ? "enterprise"
-      : subscription.metadata?.tier === "pro"
-        ? "pro"
-        : null) ??
-    inferSubscriptionTierFromProductName(subscription.product.name);
-
-  if (!tier) {
-    return;
-  }
-
-  const currentPeriodStart = Date.parse(
-    subscription.currentPeriodStart.toISOString(),
-  );
-  const currentPeriodEnd = subscription.currentPeriodEnd
-    ? Date.parse(subscription.currentPeriodEnd.toISOString())
-    : undefined;
-
-  await ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
-    organizationId: organizationId as Id<"organizations">,
-    tier,
+  return {
+    webhookId,
+    eventType,
+    id: subscription.id,
+    customerId: subscription.customerId,
     productId: subscription.productId,
     productName: subscription.product.name,
     productDescription: subscription.product.description,
-    subscriptionId: subscription.id,
-    customerId: subscription.customerId,
-    recurringInterval: subscription.recurringInterval ?? undefined,
-    status: normalizeSubscriptionStatus(subscription.status),
+    priceId: subscription.priceId,
+    checkoutId: subscription.checkoutId,
+    amount: subscription.amount,
+    currency: subscription.currency,
+    recurringInterval: subscription.recurringInterval,
+    status: subscription.status,
+    createdAt: subscription.createdAt.toISOString(),
+    modifiedAt: subscription.modifiedAt?.toISOString() ?? null,
+    currentPeriodStart: subscription.currentPeriodStart.toISOString(),
+    currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-    currentPeriodStart,
-    currentPeriodEnd,
+    startedAt: subscription.startedAt?.toISOString() ?? null,
+    endedAt: subscription.endedAt?.toISOString() ?? null,
     metadata: subscription.metadata,
-  });
+    organizationId:
+      typeof subscription.metadata?.organizationId === "string"
+        ? subscription.metadata.organizationId
+        : undefined,
+  };
 }
 
 const billingWebhook = httpAction(async (ctx, request) => {
@@ -153,6 +63,7 @@ const billingWebhook = httpAction(async (ctx, request) => {
     "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
     "webhook-signature": request.headers.get("webhook-signature") ?? "",
   };
+  const webhookId = headers["webhook-id"];
 
   try {
     const webhook = new Webhook(encodeBase64(env.POLAR_WEBHOOK_SECRET));
@@ -171,8 +82,10 @@ const billingWebhook = httpAction(async (ctx, request) => {
         if (!("customerId" in event.data)) {
           return new Response("Invalid webhook payload", { status: 400 });
         }
-        await upsertPolarSubscription(ctx, event.data);
-        await syncOrganizationBillingFromSubscription(ctx, event.data);
+        await ctx.runAction(
+          internal.subscriptions.applyBillingSubscriptionEvent,
+          serializeWebhookSubscription(event.data, webhookId, event.type),
+        );
         break;
       }
       case "product.created":
@@ -180,7 +93,11 @@ const billingWebhook = httpAction(async (ctx, request) => {
         if (!("prices" in event.data)) {
           return new Response("Invalid webhook payload", { status: 400 });
         }
-        await upsertPolarProduct(ctx, event.data);
+        await ctx.runAction(internal.subscriptions.applyBillingProductEvent, {
+          webhookId,
+          eventType: event.type,
+          product: event.data,
+        });
         break;
       }
       default:

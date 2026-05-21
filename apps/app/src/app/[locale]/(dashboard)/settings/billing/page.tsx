@@ -362,7 +362,7 @@ function BillingSettingsContent() {
   const getSearchParam = searchParams.get.bind(searchParams);
   const t = useScopedI18n("billing");
   const { currentOrganization, currentOrganizationId } = useOrganization();
-  const cachedProducts = useQuery(api.subscriptions.listAllProducts);
+  const catalogProducts = useQuery(api.subscriptions.listCatalogProducts);
   const organizationSubscription = useQuery(
     api.subscriptions.getOrganizationSubscription,
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
@@ -385,19 +385,17 @@ function BillingSettingsContent() {
   const syncOrganizationSubscription = useAction(
     api.subscriptions.syncOrganizationSubscription,
   );
-  const listBillingProducts = useAction(api.subscriptions.listBillingProducts);
   const createOrganizationCustomerPortalUrl = useAction(
     api.subscriptions.createOrganizationCustomerPortalUrl,
   );
 
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("month");
-  const [products, setProducts] = useState<BillingProduct[]>([]);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const [isManagingPortal, setIsManagingPortal] = useState(false);
   const [isPending, startTransition] = useTransition();
   const syncedCheckoutRef = useRef(false);
-  const loadedProductsRef = useRef(false);
+  const products: BillingProduct[] = catalogProducts ?? [];
 
   useEffect(() => {
     if (syncedCheckoutRef.current) {
@@ -422,27 +420,6 @@ function BillingSettingsContent() {
     getSearchParam,
     syncOrganizationSubscription,
   ]);
-
-  useEffect(() => {
-    if (loadedProductsRef.current) {
-      return;
-    }
-
-    if (cachedProducts === undefined) {
-      return;
-    }
-
-    if (cachedProducts.length > 0) {
-      loadedProductsRef.current = true;
-      setProducts(cachedProducts);
-      return;
-    }
-
-    loadedProductsRef.current = true;
-    void listBillingProducts().then((result) => {
-      setProducts(result);
-    });
-  }, [cachedProducts, listBillingProducts]);
 
   if (!currentOrganizationId || !currentOrganization) {
     return null;
