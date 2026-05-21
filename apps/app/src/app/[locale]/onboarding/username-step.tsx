@@ -35,9 +35,7 @@ export function UsernameStep({ onContinue }: UsernameStepProps) {
 
       <form
         className="flex w-full flex-col items-start gap-1"
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+        action={() => {
           void usernameForm.handleSubmit();
         }}
       >
