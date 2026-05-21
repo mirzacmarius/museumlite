@@ -188,3 +188,31 @@ status: v.union(v.literal("pending"), v.literal("active"))
 ## Middleware Note
 
 Non-standard location: `apps/app/src/proxy.ts` (not `middleware.ts`)
+
+## Cursor Cloud specific instructions
+
+### Convex Agent Mode
+
+Cloud agents use `CONVEX_AGENT_MODE=anonymous` which provisions an isolated local Convex deployment. The update script handles `bun install`; agents must start services manually each session:
+
+```bash
+# 1. Start Convex backend (creates .env.local with CONVEX_URL automatically)
+cd packages/backend && CONVEX_AGENT_MODE=anonymous bunx convex dev --tail-logs &
+# Wait for "Convex functions ready!" before starting frontends
+
+# 2. Set frontend env (use the URL from packages/backend/.env.local)
+echo "NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210" > apps/app/.env.local
+echo "NEXT_PUBLIC_CONVEX_URL=http://127.0.0.1:3210" > apps/web/.env.local
+
+# 3. Start Next.js apps
+cd apps/app && bun dev &   # port 3000
+cd apps/web && bun dev &   # port 3001
+```
+
+### Gotchas
+
+- `convex dev` in agent mode prompts "Set up Convex AI files?" — answer **n** (non-interactive: pipe `echo n` or use `yes n |`).
+- The Convex MCP tool requires cloud deployment auth and does **not** work with anonymous local deployments. Use `bunx convex run --url http://127.0.0.1:3210 <function> '<args>'` instead.
+- `bun run typecheck` has pre-existing errors in `@v1/analytics` (missing `PostEventPayload` export from `@openpanel/nextjs`) which cascade to `@v1/web` and `@v1/app`. These are not caused by agent changes.
+- Backend tests (`cd packages/backend && bun test:once`) run entirely in-memory via `convex-test` and do not require the Convex dev server to be running.
+- The `postinstall` script (`node scripts/apply-patches.js`) applies a patch to `@xixixao/uploadstuff`; it runs automatically on `bun install`.
