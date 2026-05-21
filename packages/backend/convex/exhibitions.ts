@@ -10,6 +10,18 @@ import {
 } from "./_generated/server";
 import { requireExhibitionAccess } from "./utils/exhibitionAccess";
 import {
+  checkDeinstallationReadinessHandler,
+  checkInstallationReadinessHandler,
+  completeDeinstallationTaskHandler,
+  completeInstallationHandler,
+  completeInstallationTaskHandler,
+  setDeinstallationChecklistHandler,
+  setInstallationChecklistHandler,
+  startDeinstallationHandler,
+  startInstallationHandler,
+  uncompleteInstallationTaskHandler,
+} from "./utils/exhibitionInstallation";
+import {
   addExhibitionObjectHandler,
   bulkInstallObjectsHandler,
   bulkReturnObjectsHandler,
@@ -1281,19 +1293,6 @@ export const generateUploadUrl = mutation({
 // Installation Phase Management
 // ============================================================================
 
-const _installationTaskValidator = v.object({
-  taskId: v.string(),
-  task: v.string(),
-  required: v.boolean(),
-  completed: v.boolean(),
-  completedBy: v.optional(v.id("users")),
-  completedAt: v.optional(v.number()),
-  notes: v.optional(v.string()),
-});
-
-/**
- * Initialize or update installation checklist for an exhibition
- */
 export const setInstallationChecklist = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
@@ -1306,108 +1305,17 @@ export const setInstallationChecklist = mutation({
     ),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (exhibition.status !== "proposed" && exhibition.status !== "approved") {
-      throw new Error("Cannot modify checklist after installation has started");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    const checklistItems = args.checklist.map((item) => ({
-      taskId: item.taskId,
-      task: item.task,
-      required: item.required,
-      completed: false,
-      completedBy: undefined,
-      completedAt: undefined,
-      notes: undefined,
-    }));
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        installationChecklist: checklistItems,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "set_installation_checklist",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { taskCount: args.checklist.length },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => setInstallationChecklistHandler(ctx, args),
 });
 
-/**
- * Start the installation phase for an approved exhibition
- */
 export const startInstallation = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (exhibition.status !== "approved") {
-      throw new Error(
-        "Exhibition must be approved before starting installation",
-      );
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        status: "installing",
-        installationStartedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "started_installation",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { status: "installing" },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => startInstallationHandler(ctx, args),
 });
 
-/**
- * Complete an installation checklist task
- */
 export const completeInstallationTask = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
@@ -1415,146 +1323,18 @@ export const completeInstallationTask = mutation({
     notes: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (
-      exhibition.status !== "installing" &&
-      exhibition.status !== "approved"
-    ) {
-      throw new Error("Exhibition is not in installation phase");
-    }
-
-    const checklist = exhibition.installationChecklist ?? [];
-    const taskIndex = checklist.findIndex((t) => t.taskId === args.taskId);
-
-    if (taskIndex === -1) {
-      throw new Error("Task not found in installation checklist");
-    }
-
-    const existingTask = checklist[taskIndex];
-    if (!existingTask) {
-      throw new Error("Task not found");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    checklist[taskIndex] = {
-      taskId: existingTask.taskId,
-      task: existingTask.task,
-      required: existingTask.required,
-      completed: true,
-      completedBy: userId,
-      completedAt: Date.now(),
-      notes: args.notes,
-    };
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        installationChecklist: checklist,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "completed_installation_task",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { taskId: args.taskId, task: existingTask.task },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => completeInstallationTaskHandler(ctx, args),
 });
 
-/**
- * Uncomplete an installation checklist task
- */
 export const uncompleteInstallationTask = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
     taskId: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (
-      exhibition.status !== "installing" &&
-      exhibition.status !== "approved"
-    ) {
-      throw new Error("Exhibition is not in installation phase");
-    }
-
-    const checklist = exhibition.installationChecklist ?? [];
-    const taskIndex = checklist.findIndex((t) => t.taskId === args.taskId);
-
-    if (taskIndex === -1) {
-      throw new Error("Task not found in installation checklist");
-    }
-
-    const existingTask = checklist[taskIndex];
-    if (!existingTask) {
-      throw new Error("Task not found");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    checklist[taskIndex] = {
-      taskId: existingTask.taskId,
-      task: existingTask.task,
-      required: existingTask.required,
-      completed: false,
-      completedBy: undefined,
-      completedAt: undefined,
-      notes: undefined,
-    };
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        installationChecklist: checklist,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "uncompleted_installation_task",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { taskId: args.taskId },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => uncompleteInstallationTaskHandler(ctx, args),
 });
 
-/**
- * Check if all required installation tasks are complete
- */
 export const checkInstallationReadiness = query({
   args: {
     exhibitionId: v.id("exhibitions"),
@@ -1577,119 +1357,17 @@ export const checkInstallationReadiness = query({
       }),
     ),
   }),
-  handler: async (ctx, args) => {
-    const exhibition = await ctx.db.get(args.exhibitionId);
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.read"),
-    ]);
-
-    const checklist = exhibition.installationChecklist ?? [];
-    const totalTasks = checklist.length;
-    const completedTasks = checklist.filter((t) => t.completed).length;
-    const requiredTasksRemaining = checklist.filter(
-      (t) => t.required && !t.completed,
-    ).length;
-
-    const enrichedChecklist = await Promise.all(
-      checklist.map(async (task) => {
-        const completer = task.completedBy
-          ? await ctx.db.get(task.completedBy)
-          : null;
-        return {
-          taskId: task.taskId,
-          task: task.task,
-          required: task.required,
-          completed: task.completed,
-          completedBy: task.completedBy,
-          completedAt: task.completedAt,
-          completedByName: completer?.name ?? completer?.username ?? undefined,
-          notes: task.notes,
-        };
-      }),
-    );
-
-    return {
-      isReady: requiredTasksRemaining === 0,
-      totalTasks,
-      completedTasks,
-      requiredTasksRemaining,
-      checklist: enrichedChecklist,
-    };
-  },
+  handler: async (ctx, args) => checkInstallationReadinessHandler(ctx, args),
 });
 
-/**
- * Complete installation and mark ready for activation
- */
 export const completeInstallation = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (exhibition.status !== "installing") {
-      throw new Error("Exhibition is not in installation phase");
-    }
-
-    // Check if all required tasks are complete
-    const checklist = exhibition.installationChecklist ?? [];
-    const incompleteRequired = checklist.filter(
-      (t) => t.required && !t.completed,
-    );
-
-    if (incompleteRequired.length > 0) {
-      throw new Error(
-        `Cannot complete installation: ${incompleteRequired.length} required tasks remain`,
-      );
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        status: "approved", // Back to approved, ready for activation
-        installationCompletedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "completed_installation",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { status: "approved" },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => completeInstallationHandler(ctx, args),
 });
 
-// ============================================================================
-// Deinstallation Workflow
-// ============================================================================
-
-/**
- * Initialize or update deinstallation checklist for an exhibition
- */
 export const setDeinstallationChecklist = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
@@ -1702,104 +1380,18 @@ export const setDeinstallationChecklist = mutation({
     ),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    const checklistItems = args.checklist.map((item) => ({
-      taskId: item.taskId,
-      task: item.task,
-      required: item.required,
-      completed: false,
-      completedBy: undefined,
-      completedAt: undefined,
-      notes: undefined,
-    }));
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        deinstallationChecklist: checklistItems,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "set_deinstallation_checklist",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { taskCount: args.checklist.length },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => setDeinstallationChecklistHandler(ctx, args),
 });
 
-/**
- * Start the deinstallation phase for an active exhibition
- */
 export const startDeinstallation = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
     notes: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (exhibition.status !== "active") {
-      throw new Error("Exhibition must be active to start deinstallation");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        status: "deinstalling",
-        deinstallationStartedAt: Date.now(),
-        deinstallationNotes: args.notes,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "started_deinstallation",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { status: "deinstalling" },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => startDeinstallationHandler(ctx, args),
 });
 
-/**
- * Complete a deinstallation checklist task
- */
 export const completeDeinstallationTask = mutation({
   args: {
     exhibitionId: v.id("exhibitions"),
@@ -1807,70 +1399,9 @@ export const completeDeinstallationTask = mutation({
     notes: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, exhibition] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.exhibitionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    if (exhibition.status !== "deinstalling") {
-      throw new Error("Exhibition is not in deinstallation phase");
-    }
-
-    const checklist = exhibition.deinstallationChecklist ?? [];
-    const taskIndex = checklist.findIndex((t) => t.taskId === args.taskId);
-
-    if (taskIndex === -1) {
-      throw new Error("Task not found in deinstallation checklist");
-    }
-
-    const existingTask = checklist[taskIndex];
-    if (!existingTask) {
-      throw new Error("Task not found");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.update"),
-    ]);
-
-    checklist[taskIndex] = {
-      taskId: existingTask.taskId,
-      task: existingTask.task,
-      required: existingTask.required,
-      completed: true,
-      completedBy: userId,
-      completedAt: Date.now(),
-      notes: args.notes,
-    };
-
-    await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-        deinstallationChecklist: checklist,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: exhibition.organizationId,
-        userId,
-        action: "completed_deinstallation_task",
-        entityType: "exhibition",
-        entityId: args.exhibitionId,
-        changes: { taskId: args.taskId, task: existingTask.task },
-      }),
-    ]);
-
-    return null;
-  },
+  handler: async (ctx, args) => completeDeinstallationTaskHandler(ctx, args),
 });
 
-/**
- * Check deinstallation readiness
- */
 export const checkDeinstallationReadiness = query({
   args: {
     exhibitionId: v.id("exhibitions"),
@@ -1894,63 +1425,7 @@ export const checkDeinstallationReadiness = query({
       }),
     ),
   }),
-  handler: async (ctx, args) => {
-    const exhibition = await ctx.db.get(args.exhibitionId);
-    if (!exhibition) {
-      throw new Error("Exhibition not found");
-    }
-
-    await Promise.all([
-      requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(ctx, exhibition.organizationId, "collections.read"),
-    ]);
-
-    const checklist = exhibition.deinstallationChecklist ?? [];
-    const totalTasks = checklist.length;
-    const completedTasks = checklist.filter((t) => t.completed).length;
-    const requiredTasksRemaining = checklist.filter(
-      (t) => t.required && !t.completed,
-    ).length;
-
-    // Check if all objects have been returned
-    const exhibitionObjects = await ctx.db
-      .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) =>
-        q.eq("exhibitionId", args.exhibitionId),
-      )
-      .collect();
-
-    const objectsNotReturned = exhibitionObjects.filter(
-      (obj) => obj.status !== "returned",
-    ).length;
-
-    const enrichedChecklist = await Promise.all(
-      checklist.map(async (task) => {
-        const completer = task.completedBy
-          ? await ctx.db.get(task.completedBy)
-          : null;
-        return {
-          taskId: task.taskId,
-          task: task.task,
-          required: task.required,
-          completed: task.completed,
-          completedBy: task.completedBy,
-          completedAt: task.completedAt,
-          completedByName: completer?.name ?? completer?.username ?? undefined,
-          notes: task.notes,
-        };
-      }),
-    );
-
-    return {
-      isReady: requiredTasksRemaining === 0 && objectsNotReturned === 0,
-      totalTasks,
-      completedTasks,
-      requiredTasksRemaining,
-      objectsNotReturned,
-      checklist: enrichedChecklist,
-    };
-  },
+  handler: async (ctx, args) => checkDeinstallationReadinessHandler(ctx, args),
 });
 
 // ============================================================================

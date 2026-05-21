@@ -1,79 +1,11 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
-import { requireExhibitionAccess } from "./exhibitionAccess";
-import { requirePermission } from "./permissions";
-
-async function requireAuthenticatedUserId(ctx: MutationCtx | QueryCtx) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-
-  return userId;
-}
-
-async function requireExhibitionUpdatePermission(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-) {
-  await Promise.all([
-    requireExhibitionAccess(ctx, organizationId),
-    requirePermission(ctx, organizationId, "collections.update"),
-  ]);
-}
-
-async function requireExhibitionReadPermission(
-  ctx: QueryCtx,
-  organizationId: Id<"organizations">,
-) {
-  await Promise.all([
-    requireExhibitionAccess(ctx, organizationId),
-    requirePermission(ctx, organizationId, "collections.read"),
-  ]);
-}
-
-async function loadExhibitionObjectContext(
-  ctx: MutationCtx,
-  exhibitionObjectId: Id<"exhibitionObjects">,
-) {
-  const [userId, exhibitionObject] = await Promise.all([
-    requireAuthenticatedUserId(ctx),
-    ctx.db.get(exhibitionObjectId),
-  ] as const);
-
-  if (!exhibitionObject) {
-    throw new Error("Exhibition object not found");
-  }
-
-  const exhibition = await ctx.db.get(exhibitionObject.exhibitionId);
-  if (!exhibition) {
-    throw new Error("Exhibition not found");
-  }
-
-  await requireExhibitionUpdatePermission(ctx, exhibition.organizationId);
-
-  return { userId, exhibitionObject, exhibition };
-}
-
-async function loadExhibitionContext(
-  ctx: MutationCtx,
-  exhibitionId: Id<"exhibitions">,
-) {
-  const [userId, exhibition] = await Promise.all([
-    requireAuthenticatedUserId(ctx),
-    ctx.db.get(exhibitionId),
-  ] as const);
-
-  if (!exhibition) {
-    throw new Error("Exhibition not found");
-  }
-
-  await requireExhibitionUpdatePermission(ctx, exhibition.organizationId);
-
-  return { userId, exhibition };
-}
+import {
+  loadExhibitionMutationContext,
+  loadExhibitionObjectMutationContext,
+  requireExhibitionReadPermission,
+} from "./exhibitionContext";
 
 export async function addExhibitionObjectHandler(
   ctx: MutationCtx,
@@ -84,7 +16,7 @@ export async function addExhibitionObjectHandler(
     exhibitionLocationId?: Id<"locations">;
   },
 ) {
-  const { userId, exhibition } = await loadExhibitionContext(ctx, args.exhibitionId);
+  const { userId, exhibition } = await loadExhibitionMutationContext(ctx, args.exhibitionId);
   const collection = await ctx.db.get(args.collectionId);
   if (!collection) {
     throw new Error("Collection object not found");
@@ -133,7 +65,7 @@ export async function removeExhibitionObjectHandler(
   args: { exhibitionObjectId: Id<"exhibitionObjects"> },
 ) {
   const { userId, exhibitionObject, exhibition } =
-    await loadExhibitionObjectContext(ctx, args.exhibitionObjectId);
+    await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "pending") {
     throw new Error("Cannot remove object that has been installed");
@@ -163,7 +95,7 @@ export async function installObjectHandler(
   },
 ) {
   const { userId, exhibitionObject, exhibition } =
-    await loadExhibitionObjectContext(ctx, args.exhibitionObjectId);
+    await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "pending") {
     throw new Error("Object is not in pending status");
@@ -211,7 +143,7 @@ export async function deinstallObjectHandler(
   },
 ) {
   const { userId, exhibitionObject, exhibition } =
-    await loadExhibitionObjectContext(ctx, args.exhibitionObjectId);
+    await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (exhibitionObject.status !== "installed") {
     throw new Error("Object is not installed");
@@ -248,7 +180,7 @@ export async function returnObjectToOriginalLocationHandler(
   },
 ) {
   const { userId, exhibitionObject, exhibition } =
-    await loadExhibitionObjectContext(ctx, args.exhibitionObjectId);
+    await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
   if (
     exhibitionObject.status !== "deinstalled" &&
@@ -345,7 +277,7 @@ export async function bulkInstallObjectsHandler(
   ctx: MutationCtx,
   args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const { userId, exhibition } = await loadExhibitionContext(ctx, args.exhibitionId);
+  const { userId, exhibition } = await loadExhibitionMutationContext(ctx, args.exhibitionId);
 
   const pendingObjects = await ctx.db
     .query("exhibitionObjects")
@@ -387,7 +319,7 @@ export async function bulkReturnObjectsHandler(
   ctx: MutationCtx,
   args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const { userId, exhibition } = await loadExhibitionContext(ctx, args.exhibitionId);
+  const { userId, exhibition } = await loadExhibitionMutationContext(ctx, args.exhibitionId);
 
   const deinstalledObjects = await ctx.db
     .query("exhibitionObjects")

@@ -1273,42 +1273,32 @@ export const returnLoan = mutation({
 
     // Update loan status only if all items are now returned (either in this operation or after it)
     if (movement.allItemsNowReturned) {
-      await Promise.all([
-        ctx.db.patch(args.loanId, {
-          status: "returned",
-        }),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: loan.organizationId,
-          userId,
-          action: "returned",
-          entityType: "loan",
-          entityId: args.loanId,
-          changes: {
-            status: "returned",
-            itemsReturned: movement.returnedItemCount,
-            returnedItemIds: movement.returnedItemIds,
-          },
-        }),
-      ]);
-      const recipients = await getOrganizationNotificationRecipients(
-        ctx,
-        loan.organizationId,
-        userId,
-      );
+      await ctx.db.patch(args.loanId, {
+        status: "returned",
+      });
 
-      await Promise.all(
-        Array.from(recipients).map(async (recipientId) => {
-          await ctx.runMutation(internal.audit.createNotificationInternal, {
-            organizationId: loan.organizationId,
-            userId: recipientId,
-            type: "loan_returned",
-            title: "Loan Returned",
-            message: `Loan ${loan.loanNumber} has been returned.`,
-            relatedEntityType: "loan",
-            relatedEntityId: args.loanId,
-          });
-        }),
-      );
+      const recipients = await logActionAndGetRecipients(ctx, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "returned",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: {
+          status: "returned",
+          itemsReturned: movement.returnedItemCount,
+          returnedItemIds: movement.returnedItemIds,
+        },
+      });
+
+      await notifyOrganizationRecipients(ctx, recipients, {
+        organizationId: loan.organizationId,
+        userId,
+        type: "loan_returned",
+        title: "Loan Returned",
+        message: `Loan ${loan.loanNumber} has been returned.`,
+        relatedEntityType: "loan",
+        relatedEntityId: args.loanId,
+      });
     } else {
       const recipients = await logActionAndGetRecipients(ctx, {
         organizationId: loan.organizationId,
@@ -1375,34 +1365,26 @@ export const dispatch = mutation({
       ctx.db.patch(args.loanId, {
         status: "dispatched",
       }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "dispatched",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: { status: "dispatched" },
-      }),
     ]);
-    const recipients = await getOrganizationNotificationRecipients(
-      ctx,
-      loan.organizationId,
-      userId,
-    );
 
-    await Promise.all(
-      Array.from(recipients).map(async (recipientId) => {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: recipientId,
-          type: "loan_dispatched",
-          title: "Loan Dispatched",
-          message: `Loan ${loan.loanNumber} has been dispatched.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }),
-    );
+    const recipients = await logActionAndGetRecipients(ctx, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "dispatched",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "dispatched" },
+    });
+
+    await notifyOrganizationRecipients(ctx, recipients, {
+      organizationId: loan.organizationId,
+      userId,
+      type: "loan_dispatched",
+      title: "Loan Dispatched",
+      message: `Loan ${loan.loanNumber} has been dispatched.`,
+      relatedEntityType: "loan",
+      relatedEntityId: args.loanId,
+    });
 
     return null;
   },
@@ -1445,38 +1427,30 @@ export const cancel = mutation({
       ctx.db.patch(args.loanId, {
         status: "cancelled",
       }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "cancelled",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: { status: "cancelled" },
-      }),
       restoreLoanCollections(ctx, {
         loanId: args.loanId,
         changedBy: userId,
       }),
     ]);
-    const recipients = await getOrganizationNotificationRecipients(
-      ctx,
-      loan.organizationId,
-      userId,
-    );
 
-    await Promise.all(
-      Array.from(recipients).map(async (recipientId) => {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: loan.organizationId,
-          userId: recipientId,
-          type: "loan_cancelled",
-          title: "Loan Cancelled",
-          message: `Loan ${loan.loanNumber} has been cancelled.`,
-          relatedEntityType: "loan",
-          relatedEntityId: args.loanId,
-        });
-      }),
-    );
+    const recipients = await logActionAndGetRecipients(ctx, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "cancelled",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "cancelled" },
+    });
+
+    await notifyOrganizationRecipients(ctx, recipients, {
+      organizationId: loan.organizationId,
+      userId,
+      type: "loan_cancelled",
+      title: "Loan Cancelled",
+      message: `Loan ${loan.loanNumber} has been cancelled.`,
+      relatedEntityType: "loan",
+      relatedEntityId: args.loanId,
+    });
 
     return null;
   },
