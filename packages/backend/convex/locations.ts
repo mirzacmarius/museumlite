@@ -1880,9 +1880,12 @@ export const getObjectsAtLocation = query({
       const visitedLocationIds = new Set<Id<"locations">>([args.locationId]);
       const pendingLocationIds: Id<"locations">[] = [args.locationId];
 
-      while (pendingLocationIds.length > 0) {
-        const waveIds = [...pendingLocationIds];
-        pendingLocationIds.length = 0;
+      const collectDescendantLocations = async (
+        waveIds: Id<"locations">[],
+      ): Promise<void> => {
+        if (waveIds.length === 0) {
+          return;
+        }
 
         const childrenByParent = await Promise.all(
           waveIds.map((parentId) =>
@@ -1895,6 +1898,7 @@ export const getObjectsAtLocation = query({
           ),
         );
 
+        const nextWaveIds: Id<"locations">[] = [];
         for (const children of childrenByParent) {
           for (const child of children) {
             if (
@@ -1907,10 +1911,14 @@ export const getObjectsAtLocation = query({
 
             visitedLocationIds.add(child._id);
             locationIds.add(child._id);
-            pendingLocationIds.push(child._id);
+            nextWaveIds.push(child._id);
           }
         }
-      }
+
+        await collectDescendantLocations(nextWaveIds);
+      };
+
+      await collectDescendantLocations(pendingLocationIds);
     }
 
     const objectsById = new Map<

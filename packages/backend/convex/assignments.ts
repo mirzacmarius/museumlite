@@ -513,8 +513,6 @@ export const getAssignmentCounts = query({
       return { pendingApprovals: 0, assignedAccessions: 0, urgentItems: 0 };
     }
 
-    let pendingCount = 0;
-    let urgentCount = 0;
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
     const [pendingAccessions, pendingLoans, assignedAccessions] =
@@ -537,40 +535,55 @@ export const getAssignmentCounts = query({
           .collect(),
       ] as const);
 
-    await Promise.all([
-      ...Array.from(pendingAccessions).map(async (accession) => {
-        const currentStep = accession.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "accession",
-          currentStep,
-        );
+    const [accessionCounts, loanCounts] = await Promise.all([
+      Promise.all(
+        pendingAccessions.map(async (accession) => {
+          const currentStep = accession.workflowStep ?? 1;
+          const canApprove = await canApproveAtStep(
+            ctx,
+            args.organizationId,
+            "accession",
+            currentStep,
+          );
 
-        if (canApprove) {
-          pendingCount++;
-          if (accession.dateReceived < sevenDaysAgo) {
-            urgentCount++;
+          if (!canApprove) {
+            return { pending: 0, urgent: 0 };
           }
-        }
-      }),
-      ...Array.from(pendingLoans).map(async (loan) => {
-        const currentStep = loan.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
-          ctx,
-          args.organizationId,
-          "loan",
-          currentStep,
-        );
 
-        if (canApprove) {
-          pendingCount++;
-          if (loan.startDate < sevenDaysAgo) {
-            urgentCount++;
+          return {
+            pending: 1,
+            urgent: accession.dateReceived < sevenDaysAgo ? 1 : 0,
+          };
+        }),
+      ),
+      Promise.all(
+        pendingLoans.map(async (loan) => {
+          const currentStep = loan.workflowStep ?? 1;
+          const canApprove = await canApproveAtStep(
+            ctx,
+            args.organizationId,
+            "loan",
+            currentStep,
+          );
+
+          if (!canApprove) {
+            return { pending: 0, urgent: 0 };
           }
-        }
-      }),
+
+          return {
+            pending: 1,
+            urgent: loan.startDate < sevenDaysAgo ? 1 : 0,
+          };
+        }),
+      ),
     ]);
+
+    const pendingCount =
+      accessionCounts.reduce((sum, count) => sum + count.pending, 0) +
+      loanCounts.reduce((sum, count) => sum + count.pending, 0);
+    const urgentCount =
+      accessionCounts.reduce((sum, count) => sum + count.urgent, 0) +
+      loanCounts.reduce((sum, count) => sum + count.urgent, 0);
 
     const assignedCount = assignedAccessions.filter(
       (a) => a.organizationId === args.organizationId && a.status === "pending",

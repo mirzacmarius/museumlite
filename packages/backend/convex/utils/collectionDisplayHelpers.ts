@@ -70,6 +70,19 @@ async function loadLocationAncestors(
   }
 }
 
+async function loadAllLocationAncestors(
+  ctx: Pick<QueryCtx, "db">,
+  pendingIds: Set<Id<"locations">>,
+  locationMap: Map<Id<"locations">, Doc<"locations">>,
+) {
+  if (pendingIds.size === 0) {
+    return;
+  }
+
+  await loadLocationAncestors(ctx, pendingIds, locationMap);
+  return loadAllLocationAncestors(ctx, pendingIds, locationMap);
+}
+
 export async function getLocationPathStrings(
   ctx: Pick<QueryCtx, "db">,
   locationIds: Id<"locations">[],
@@ -78,9 +91,7 @@ export async function getLocationPathStrings(
   const locationMap = new Map<Id<"locations">, Doc<"locations">>();
   const pendingIds = new Set(uniqueLocationIds);
 
-  while (pendingIds.size > 0) {
-    await loadLocationAncestors(ctx, pendingIds, locationMap);
-  }
+  await loadAllLocationAncestors(ctx, pendingIds, locationMap);
 
   const pathMap = new Map<Id<"locations">, string | undefined>();
 

@@ -680,26 +680,30 @@ async function moveConservationRecords(
       .collect(),
   ]);
 
+  const treatmentsWithAttachments = await Promise.all(
+    treatments.map((treatment) =>
+      ctx.db
+        .query("conservationAttachments")
+        .withIndex("by_treatment", (q) => q.eq("treatmentId", treatment._id))
+        .collect()
+        .then((attachments) => ({
+          treatmentId: treatment._id,
+          attachmentIds: attachments.map((attachment) => attachment._id),
+        })),
+    ),
+  );
+
   await Promise.all([
-    ...treatments.map(async (treatment) => {
-      const [, attachments] = await Promise.all([
-        ctx.db.patch(treatment._id, {
+    ...treatmentsWithAttachments.flatMap(({ treatmentId, attachmentIds }) => [
+      ctx.db.patch(treatmentId, {
+        organizationId: targetOrganizationId,
+      }),
+      ...attachmentIds.map((attachmentId) =>
+        ctx.db.patch(attachmentId, {
           organizationId: targetOrganizationId,
         }),
-        ctx.db
-          .query("conservationAttachments")
-          .withIndex("by_treatment", (q) => q.eq("treatmentId", treatment._id))
-          .collect(),
-      ]);
-
-      await Promise.all(
-        attachments.map((attachment) =>
-          ctx.db.patch(attachment._id, {
-            organizationId: targetOrganizationId,
-          }),
-        ),
-      );
-    }),
+      ),
+    ]),
     ...schedules.map((schedule) =>
       ctx.db.patch(schedule._id, {
         organizationId: targetOrganizationId,

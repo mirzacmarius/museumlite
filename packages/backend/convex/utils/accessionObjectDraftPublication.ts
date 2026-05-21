@@ -82,24 +82,33 @@ export async function publishAccessionObjectDraft(
     }),
   ] as const);
 
+  const uniqueCollectionGroupIds = [...new Set(collectionGroupIds)];
+  const collectionGroups = await Promise.all(
+    uniqueCollectionGroupIds.map((collectionGroupId) =>
+      ctx.db.get(collectionGroupId),
+    ),
+  );
+
   await Promise.all([
-    ...[...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
-      const group = await ctx.db.get(collectionGroupId);
-      if (group && group.organizationId === accession.organizationId) {
-        await Promise.all([
-          ctx.db.insert("collectionGroupItems", {
-            collectionGroupId,
-            collectionId,
-            addedAt: catalogedAt,
-            addedBy: catalogedBy,
-          }),
-          ctx.db.patch(collectionGroupId, {
-            itemsCount: (group.itemsCount || 0) + 1,
-            lastModifiedAt: catalogedAt,
-            lastModifiedBy: catalogedBy,
-          }),
-        ]);
+    ...uniqueCollectionGroupIds.flatMap((collectionGroupId, index) => {
+      const group = collectionGroups[index];
+      if (!group || group.organizationId !== accession.organizationId) {
+        return [];
       }
+
+      return [
+        ctx.db.insert("collectionGroupItems", {
+          collectionGroupId,
+          collectionId,
+          addedAt: catalogedAt,
+          addedBy: catalogedBy,
+        }),
+        ctx.db.patch(collectionGroupId, {
+          itemsCount: (group.itemsCount || 0) + 1,
+          lastModifiedAt: catalogedAt,
+          lastModifiedBy: catalogedBy,
+        }),
+      ];
     }),
     ...(accession.draftMedia ?? []).map((draftMediaItem) =>
       insertCompletedMediaAsset(ctx, {
