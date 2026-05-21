@@ -491,13 +491,12 @@ export const deleteTransitRecord = mutation({
       throw new Error("Can only delete draft or cancelled transit records");
     }
 
-    await requirePermission(
-      ctx,
-      transitRecord.organizationId,
-      "organization.manage_settings",
-    );
-
-    const [transitItems, statusUpdates] = await Promise.all([
+    const [, transitItems, statusUpdates] = await Promise.all([
+      requirePermission(
+        ctx,
+        transitRecord.organizationId,
+        "organization.manage_settings",
+      ),
       ctx.db
         .query("transitItems")
         .withIndex("by_transitRecord", (q) =>
@@ -510,7 +509,7 @@ export const deleteTransitRecord = mutation({
           q.eq("transitRecordId", args.transitRecordId),
         )
         .collect(),
-    ]);
+    ] as const);
 
     await Promise.all([
       ...transitItems.map((item) => ctx.db.delete(item._id)),

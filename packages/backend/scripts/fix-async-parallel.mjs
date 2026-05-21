@@ -140,6 +140,71 @@ function fixLogActionThenNotify(content) {
   );
 }
 
+function fixDeleteStorageThenDbDelete(content) {
+  return content.replace(
+    /await deleteStorageIds\(([^)]+)\);\s*\n\s*await ctx\.db\.delete\(([^)]+)\);/g,
+    "await Promise.all([\n              deleteStorageIds($1),\n              ctx.db.delete($2),\n            ]);",
+  );
+}
+
+function fixAuditThenDbDelete(content) {
+  return content.replace(
+    /await ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\);\s*\n\s*await ctx\.db\.delete\(([^)]+)\);/g,
+    (match, auditArgs, deleteArg) => {
+      if (auditArgs.length > 1500) return match;
+      return `await Promise.all([\n      ctx.runMutation(internal.audit.logAction, ${auditArgs}),\n      ctx.db.delete(${deleteArg}),\n    ]);`;
+    },
+  );
+}
+
+function fixRequireModuleThenPermission(content) {
+  const moduleFns = [
+    "requireAutomotiveModule",
+    "requireNaturalHistoryModule",
+    "requireCoinsStampsModule",
+    "requireArchiveModule",
+  ];
+  let next = content;
+  for (const fn of moduleFns) {
+    const re = new RegExp(
+      `await ${fn}\\(([^)]+)\\);\\s*\\n\\s*await requirePermission\\(([^;]+)\\);`,
+      "g",
+    );
+    next = next.replace(
+      re,
+      (_m, a1, a2) =>
+        `await Promise.all([\n      ${fn}(${a1}),\n      requirePermission(${a2}),\n    ]);`,
+    );
+  }
+  return next;
+}
+
+function fixPatchThenAuditStandalone(content) {
+  return content.replace(
+    /await ctx\.db\.patch\(([^;\n]+)\);\s*\n\s*await ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\);/g,
+    (match, patchArgs, auditArgs) => {
+      if (auditArgs.length > 1500) return match;
+      return `await Promise.all([\n      ctx.db.patch(${patchArgs}),\n      ctx.runMutation(internal.audit.logAction, ${auditArgs}),\n    ]);`;
+    },
+  );
+}
+
+function fixLoanCancelBulk(content) {
+  return content.replace(
+    /\/\/ Update loan status\s*\n\s*await ctx\.db\.patch\(loanId, \{\s*\n\s*status: "cancelled",\s*\n\s*\}\);\s*\n\s*\/\/ Update collection statuses back to active\s*\n\s*const loanItems = await ctx\.db\s*\n\s*\.query\("loanItems"\)\s*\n\s*\.withIndex\("by_loan", \(q\) => q\.eq\("loanId", loanId\)\)\s*\n\s*\.collect\(\);/g,
+    `// Update loan status and load items in parallel
+        const [, loanItems] = await Promise.all([
+          ctx.db.patch(loanId, {
+            status: "cancelled",
+          }),
+          ctx.db
+            .query("loanItems")
+            .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+            .collect(),
+        ]);`,
+  );
+}
+
 function apply(filePath) {
   if (SKIP_FILES.has(path.basename(filePath))) return false;
   let content = fs.readFileSync(filePath, "utf8");
@@ -153,6 +218,11 @@ function apply(filePath) {
   content = fixPermissionPatchAudit(content);
   content = fixPermissionThenPatchAudit(content);
   content = fixLogActionThenNotify(content);
+  content = fixDeleteStorageThenDbDelete(content);
+  content = fixAuditThenDbDelete(content);
+  content = fixRequireModuleThenPermission(content);
+  content = fixPatchThenAuditStandalone(content);
+  content = fixLoanCancelBulk(content);
   if (content !== original) {
     fs.writeFileSync(filePath, content);
     return true;

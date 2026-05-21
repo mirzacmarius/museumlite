@@ -232,8 +232,10 @@ export const listExpiredRetention = query({
       throw new Error("Not authenticated");
     }
 
-    await requireArchiveModule(ctx, args.organizationId);
-    await requirePermission(ctx, args.organizationId, "collections.read");
+    await Promise.all([
+      requireArchiveModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ]);
 
     const now = Date.now();
 

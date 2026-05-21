@@ -156,13 +156,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.appraisalId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: appraisal.organizationId,
-      userId,
-      action: "updated",
-      entityType: "appraisal",
-      entityId: args.appraisalId,
-      changes: updates,
-    }),
+        organizationId: appraisal.organizationId,
+        userId,
+        action: "updated",
+        entityType: "appraisal",
+        entityId: args.appraisalId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -223,29 +223,23 @@ export const setAsCurrent = mutation({
       throw new Error("Appraisal not found");
     }
 
-    await requirePermission(
-      ctx,
-      appraisal.organizationId,
-      "collections.update",
-    );
+    const [, existingAppraisals] = await Promise.all([
+      requirePermission(ctx, appraisal.organizationId, "collections.update"),
+      ctx.db
+        .query("appraisals")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", appraisal.collectionId),
+        )
+        .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
+        .collect(),
+    ] as const);
 
-    // Unset any existing current appraisals for this collection
-    const existingAppraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", appraisal.collectionId),
-      )
-      .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
-      .collect();
-
-    await Promise.all(
-      existingAppraisals.map((existing) =>
+    await Promise.all([
+      ...existingAppraisals.map((existing) =>
         ctx.db.patch(existing._id, { isCurrentAppraisal: false }),
       ),
-    );
-
-    // Set this one as current
-    await ctx.db.patch(args.appraisalId, { isCurrentAppraisal: true });
+      ctx.db.patch(args.appraisalId, { isCurrentAppraisal: true }),
+    ]);
 
     return null;
   },

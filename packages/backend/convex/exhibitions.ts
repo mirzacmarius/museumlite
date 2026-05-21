@@ -206,11 +206,7 @@ export const update = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const { id, ...updates } = args;
@@ -239,13 +235,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.id, filteredUpdates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "updated",
-      entityType: "exhibition",
-      entityId: args.id,
-      changes: filteredUpdates,
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "updated",
+        entityType: "exhibition",
+        entityId: args.id,
+        changes: filteredUpdates,
+      }),
     ]);
 
     return null;
@@ -274,23 +270,20 @@ export const remove = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.delete",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.delete"),
     ]);
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "exhibition",
-      entityId: args.id,
-      changes: { title: exhibition.title },
-    });
-
-    await ctx.db.delete(args.id);
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "exhibition",
+        entityId: args.id,
+        changes: { title: exhibition.title },
+      }),
+      ctx.db.delete(args.id),
+    ]);
     return null;
   },
 });
@@ -414,9 +407,9 @@ export const create = mutation({
         .collect();
 
       await Promise.all(
-        Array.from(currentExhibitions).map(async (exhibition) => {
-          await ctx.db.patch(exhibition._id, { isCurrent: false });
-        }),
+        currentExhibitions.map((exhibition) =>
+          ctx.db.patch(exhibition._id, { isCurrent: false }),
+        ),
       );
     }
 
@@ -572,21 +565,21 @@ export const approve = mutation({
 
       if (isLastStep) {
         await Promise.all([
-      ctx.db.patch(args.exhibitionId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        }),
-      ctx.runMutation(internal.audit.logAction, {
-          organizationId: exhibition.organizationId,
-          userId,
-          action: "approved",
-          entityType: "exhibition",
-          entityId: args.exhibitionId,
-          changes: { status: "approved", step: currentStep },
-        }),
-    ]);
+          ctx.db.patch(args.exhibitionId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: exhibition.organizationId,
+            userId,
+            action: "approved",
+            entityType: "exhibition",
+            entityId: args.exhibitionId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -725,17 +718,17 @@ export const reject = mutation({
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      status: "rejected",
-      workflowHistory: history,
-    }),
+        status: "rejected",
+        workflowHistory: history,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "rejected", comment: args.comment },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
     ]);
 
     const creatorEntry = history.find((h) => h.step === 0);
@@ -793,11 +786,7 @@ export const activate = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     // Move all exhibition objects to installed status and update their locations
@@ -891,11 +880,7 @@ export const close = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     // Handle objects - return them to original locations if requested
@@ -1325,11 +1310,7 @@ export const setInstallationChecklist = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const checklistItems = args.checklist.map((item) => ({
@@ -1344,16 +1325,16 @@ export const setInstallationChecklist = mutation({
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      installationChecklist: checklistItems,
-    }),
+        installationChecklist: checklistItems,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "set_installation_checklist",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskCount: args.checklist.length },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "set_installation_checklist",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskCount: args.checklist.length },
+      }),
     ]);
 
     return null;
@@ -1387,26 +1368,22 @@ export const startInstallation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      status: "installing",
-      installationStartedAt: Date.now(),
-    }),
+        status: "installing",
+        installationStartedAt: Date.now(),
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "started_installation",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "installing" },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "started_installation",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "installing" },
+      }),
     ]);
 
     return null;
@@ -1455,11 +1432,7 @@ export const completeInstallationTask = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     checklist[taskIndex] = {
@@ -1474,16 +1447,16 @@ export const completeInstallationTask = mutation({
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      installationChecklist: checklist,
-    }),
+        installationChecklist: checklist,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "completed_installation_task",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskId: args.taskId, task: existingTask.task },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "completed_installation_task",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskId: args.taskId, task: existingTask.task },
+      }),
     ]);
 
     return null;
@@ -1531,11 +1504,7 @@ export const uncompleteInstallationTask = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     checklist[taskIndex] = {
@@ -1550,16 +1519,16 @@ export const uncompleteInstallationTask = mutation({
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      installationChecklist: checklist,
-    }),
+        installationChecklist: checklist,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "uncompleted_installation_task",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskId: args.taskId },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "uncompleted_installation_task",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskId: args.taskId },
+      }),
     ]);
 
     return null;
@@ -1674,26 +1643,22 @@ export const completeInstallation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      status: "approved", // Back to approved, ready for activation
-      installationCompletedAt: Date.now(),
-    }),
+        status: "approved", // Back to approved, ready for activation
+        installationCompletedAt: Date.now(),
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "completed_installation",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "approved" },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "completed_installation",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "approved" },
+      }),
     ]);
 
     return null;
@@ -1732,11 +1697,7 @@ export const setDeinstallationChecklist = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const checklistItems = args.checklist.map((item) => ({
@@ -1751,16 +1712,16 @@ export const setDeinstallationChecklist = mutation({
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      deinstallationChecklist: checklistItems,
-    }),
+        deinstallationChecklist: checklistItems,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "set_deinstallation_checklist",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskCount: args.checklist.length },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "set_deinstallation_checklist",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskCount: args.checklist.length },
+      }),
     ]);
 
     return null;
@@ -1793,27 +1754,23 @@ export const startDeinstallation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      status: "deinstalling",
-      deinstallationStartedAt: Date.now(),
-      deinstallationNotes: args.notes,
-    }),
+        status: "deinstalling",
+        deinstallationStartedAt: Date.now(),
+        deinstallationNotes: args.notes,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "started_deinstallation",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "deinstalling" },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "started_deinstallation",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "deinstalling" },
+      }),
     ]);
 
     return null;
@@ -1859,11 +1816,7 @@ export const completeDeinstallationTask = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     checklist[taskIndex] = {
@@ -1878,16 +1831,16 @@ export const completeDeinstallationTask = mutation({
 
     await Promise.all([
       ctx.db.patch(args.exhibitionId, {
-      deinstallationChecklist: checklist,
-    }),
+        deinstallationChecklist: checklist,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "completed_deinstallation_task",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskId: args.taskId, task: existingTask.task },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "completed_deinstallation_task",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskId: args.taskId, task: existingTask.task },
+      }),
     ]);
 
     return null;
@@ -2086,23 +2039,19 @@ export const removeExhibitionObject = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     await Promise.all([
       ctx.db.delete(args.exhibitionObjectId),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "removed_exhibition_object",
-      entityType: "exhibition",
-      entityId: exhibitionObject.exhibitionId,
-      changes: { collectionId: exhibitionObject.collectionId },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "removed_exhibition_object",
+        entityType: "exhibition",
+        entityId: exhibitionObject.exhibitionId,
+        changes: { collectionId: exhibitionObject.collectionId },
+      }),
     ]);
 
     return null;
@@ -2141,11 +2090,7 @@ export const installObject = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     // Update exhibition object status
@@ -2219,30 +2164,26 @@ export const deinstallObject = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
     await Promise.all([
       ctx.db.patch(args.exhibitionObjectId, {
-      status: "deinstalled",
-      deinstalledAt: Date.now(),
-      deinstalledBy: userId,
-      conditionAtDeinstallation: args.conditionNotes,
-    }),
+        status: "deinstalled",
+        deinstalledAt: Date.now(),
+        deinstalledBy: userId,
+        conditionAtDeinstallation: args.conditionNotes,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deinstalled_exhibition_object",
-      entityType: "exhibition",
-      entityId: exhibitionObject.exhibitionId,
-      changes: {
-        collectionId: exhibitionObject.collectionId,
-        conditionNotes: args.conditionNotes,
-      },
-    }),
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "deinstalled_exhibition_object",
+        entityType: "exhibition",
+        entityId: exhibitionObject.exhibitionId,
+        changes: {
+          collectionId: exhibitionObject.collectionId,
+          conditionNotes: args.conditionNotes,
+        },
+      }),
     ]);
 
     return null;
@@ -2285,11 +2226,7 @@ export const returnObjectToOriginalLocation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const returnLocation =
@@ -2451,17 +2388,18 @@ export const bulkInstallObjects = mutation({
       ...pendingObjects.map(async (obj) => {
         const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
 
-        await ctx.db.patch(obj._id, {
-          status: "installed",
-          installedAt: Date.now(),
-          installedBy: userId,
-        });
-
-        if (newLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: newLocationId,
-          });
-        }
+        await Promise.all([
+          ctx.db.patch(obj._id, {
+            status: "installed",
+            installedAt: Date.now(),
+            installedBy: userId,
+          }),
+          newLocationId
+            ? ctx.db.patch(obj.collectionId, {
+                currentLocationId: newLocationId,
+              })
+            : Promise.resolve(),
+        ]);
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: exhibition.organizationId,

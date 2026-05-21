@@ -272,13 +272,13 @@ export const updateStatus = mutation({
     await Promise.all([
       ctx.db.patch(args.requestId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "status_changed",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { from: request.status, to: args.status },
-    }),
+        organizationId: request.organizationId,
+        userId,
+        action: "status_changed",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { from: request.status, to: args.status },
+      }),
     ]);
 
     return null;
@@ -336,13 +336,13 @@ export const updateOrderInfo = mutation({
     await Promise.all([
       ctx.db.patch(args.requestId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "updated",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: updates,
-    }),
+        organizationId: request.organizationId,
+        userId,
+        action: "updated",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -380,17 +380,17 @@ export const linkToItem = mutation({
 
     await Promise.all([
       ctx.db.patch(args.requestId, {
-      libraryItemId: args.libraryItemId,
-      status: "cataloged",
-    }),
+        libraryItemId: args.libraryItemId,
+        status: "cataloged",
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "linked_to_item",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { libraryItemId: args.libraryItemId, status: "cataloged" },
-    }),
+        organizationId: request.organizationId,
+        userId,
+        action: "linked_to_item",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { libraryItemId: args.libraryItemId, status: "cataloged" },
+      }),
     ]);
 
     return null;
@@ -456,13 +456,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.requestId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "updated",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: updates,
-    }),
+        organizationId: request.organizationId,
+        userId,
+        action: "updated",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -500,13 +500,13 @@ export const cancel = mutation({
     await Promise.all([
       ctx.db.patch(args.requestId, { status: "cancelled" }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "cancelled",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { status: "cancelled" },
-    }),
+        organizationId: request.organizationId,
+        userId,
+        action: "cancelled",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { status: "cancelled" },
+      }),
     ]);
 
     return null;
@@ -538,16 +538,17 @@ export const remove = mutation({
       requirePermission(ctx, request.organizationId, "collections.delete"),
     ]);
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { title: request.title },
-    });
-
-    await ctx.db.delete(args.requestId);
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { title: request.title },
+      }),
+      ctx.db.delete(args.requestId),
+    ]);
 
     return null;
   },
@@ -718,22 +719,22 @@ export const approve = mutation({
 
       if (isLastStep) {
         await Promise.all([
-      ctx.db.patch(args.requestId, {
-          status: "approved",
-          reviewedBy: userId,
-          reviewedAt: now,
-          reviewNotes: args.comment,
-          workflowHistory: history,
-        }),
-      ctx.runMutation(internal.audit.logAction, {
-          organizationId: request.organizationId,
-          userId,
-          action: "approved",
-          entityType: "libraryAcquisitionRequest",
-          entityId: args.requestId,
-          changes: { status: "approved", step: currentStep },
-        }),
-    ]);
+          ctx.db.patch(args.requestId, {
+            status: "approved",
+            reviewedBy: userId,
+            reviewedAt: now,
+            reviewNotes: args.comment,
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: request.organizationId,
+            userId,
+            action: "approved",
+            entityType: "libraryAcquisitionRequest",
+            entityId: args.requestId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -793,21 +794,21 @@ export const approve = mutation({
       }
     } else {
       await Promise.all([
-      ctx.db.patch(args.requestId, {
-        status: "approved",
-        reviewedBy: userId,
-        reviewedAt: now,
-        reviewNotes: args.comment,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: request.organizationId,
-        userId,
-        action: "approved",
-        entityType: "libraryAcquisitionRequest",
-        entityId: args.requestId,
-        changes: { status: "approved" },
-      }),
-    ]);
+        ctx.db.patch(args.requestId, {
+          status: "approved",
+          reviewedBy: userId,
+          reviewedAt: now,
+          reviewNotes: args.comment,
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: request.organizationId,
+          userId,
+          action: "approved",
+          entityType: "libraryAcquisitionRequest",
+          entityId: args.requestId,
+          changes: { status: "approved" },
+        }),
+      ]);
     }
 
     return null;
@@ -869,20 +870,20 @@ export const reject = mutation({
 
     await Promise.all([
       ctx.db.patch(args.requestId, {
-      status: "rejected",
-      reviewedBy: userId,
-      reviewedAt: now,
-      reviewNotes: args.comment,
-      workflowHistory: history,
-    }),
+        status: "rejected",
+        reviewedBy: userId,
+        reviewedAt: now,
+        reviewNotes: args.comment,
+        workflowHistory: history,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { status: "rejected", comment: args.comment },
-    }),
+        organizationId: request.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
     ]);
 
     const creatorEntry = history.find((h) => h.step === 0);

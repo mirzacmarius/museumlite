@@ -13,6 +13,7 @@ import {
 // but return validators use v.any() to allow for existing data that may not match strict types
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
   applyCollectionDisposition,
@@ -29,7 +30,6 @@ import {
   getCollectionTypeModuleRequirement,
 } from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
-import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 
@@ -645,8 +645,10 @@ async function deleteCollectionDependents(
         .collect();
       await Promise.all(
         Array.from(appraisals).map(async (appraisal) => {
-          await deleteStorageIds(ctx, appraisal.documents ?? []);
-          await ctx.db.delete(appraisal._id);
+          await Promise.all([
+            deleteStorageIds(ctx, appraisal.documents ?? []),
+            ctx.db.delete(appraisal._id),
+          ]);
         }),
       );
     })(),
@@ -696,8 +698,10 @@ async function deleteCollectionDependents(
             .collect();
           await Promise.all(
             Array.from(conditionReports).map(async (report) => {
-              await deleteStorageIds(ctx, report.photos ?? []);
-              await ctx.db.delete(report._id);
+              await Promise.all([
+                deleteStorageIds(ctx, report.photos ?? []),
+                ctx.db.delete(report._id),
+              ]);
             }),
           );
           await ctx.db.delete(loanItem._id);
@@ -771,8 +775,10 @@ async function deleteCollectionDependents(
             ),
             Promise.all(
               Array.from(exhibitionDocuments).map(async (document) => {
-                await deleteStorageIds(ctx, [document.storageId]);
-                await ctx.db.delete(document._id);
+                await Promise.all([
+                  deleteStorageIds(ctx, [document.storageId]),
+                  ctx.db.delete(document._id),
+                ]);
               }),
             ),
             ctx.db.delete(exhibition._id),
@@ -3009,21 +3015,21 @@ export const addAlternateAccessionNumber = mutation({
 
     await Promise.all([
       ctx.db.patch(args.collectionId, {
-      alternateAccessionNumbers: [...alternateNumbers, args.accessionNumber],
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    }),
+        alternateAccessionNumbers: [...alternateNumbers, args.accessionNumber],
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "added_alternate_accession_number",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        addedNumber: args.accessionNumber,
-        primaryAccessionNumber: collection.accessionNumber,
-      },
-    }),
+        organizationId: collection.organizationId,
+        userId,
+        action: "added_alternate_accession_number",
+        entityType: "collection",
+        entityId: args.collectionId,
+        changes: {
+          addedNumber: args.accessionNumber,
+          primaryAccessionNumber: collection.accessionNumber,
+        },
+      }),
     ]);
 
     return null;
@@ -3064,21 +3070,21 @@ export const removeAlternateAccessionNumber = mutation({
 
     await Promise.all([
       ctx.db.patch(args.collectionId, {
-      alternateAccessionNumbers: updated,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    }),
+        alternateAccessionNumbers: updated,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "removed_alternate_accession_number",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        removedNumber: args.accessionNumber,
-        primaryAccessionNumber: collection.accessionNumber,
-      },
-    }),
+        organizationId: collection.organizationId,
+        userId,
+        action: "removed_alternate_accession_number",
+        entityType: "collection",
+        entityId: args.collectionId,
+        changes: {
+          removedNumber: args.accessionNumber,
+          primaryAccessionNumber: collection.accessionNumber,
+        },
+      }),
     ]);
 
     return null;

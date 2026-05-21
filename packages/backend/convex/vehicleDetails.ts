@@ -144,8 +144,10 @@ export const getByVin = query({
       return null;
     }
 
-    await requireAutomotiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.read");
+    await Promise.all([
+      requireAutomotiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.read"),
+    ]);
 
     return {
       _id: details._id,
@@ -208,19 +210,19 @@ export const upsert = mutation({
 
     if (existing) {
       await Promise.all([
-      ctx.db.patch(existing._id, {
-        ...updateData,
-        lastModifiedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "updated",
-        entityType: "vehicleDetails",
-        entityId: existing._id,
-        changes: updateData,
-      }),
-    ]);
+        ctx.db.patch(existing._id, {
+          ...updateData,
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "updated",
+          entityType: "vehicleDetails",
+          entityId: existing._id,
+          changes: updateData,
+        }),
+      ]);
 
       return existing._id;
     }
@@ -307,19 +309,19 @@ export const addServiceLogEntry = mutation({
     if (existing) {
       const currentLog = existing.serviceLog ?? [];
       await Promise.all([
-      ctx.db.patch(existing._id, {
-        serviceLog: [...currentLog, args.entry],
-        lastModifiedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "added_service_log",
-        entityType: "vehicleDetails",
-        entityId: existing._id,
-        changes: { entry: args.entry },
-      }),
-    ]);
+        ctx.db.patch(existing._id, {
+          serviceLog: [...currentLog, args.entry],
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "added_service_log",
+          entityType: "vehicleDetails",
+          entityId: existing._id,
+          changes: { entry: args.entry },
+        }),
+      ]);
 
       return existing._id;
     }
@@ -374,19 +376,19 @@ export const addEventHistoryEntry = mutation({
     if (existing) {
       const currentHistory = existing.eventHistory ?? [];
       await Promise.all([
-      ctx.db.patch(existing._id, {
-        eventHistory: [...currentHistory, args.entry],
-        lastModifiedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "added_event_history",
-        entityType: "vehicleDetails",
-        entityId: existing._id,
-        changes: { entry: args.entry },
-      }),
-    ]);
+        ctx.db.patch(existing._id, {
+          eventHistory: [...currentHistory, args.entry],
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "added_event_history",
+          entityType: "vehicleDetails",
+          entityId: existing._id,
+          changes: { entry: args.entry },
+        }),
+      ]);
 
       return existing._id;
     }

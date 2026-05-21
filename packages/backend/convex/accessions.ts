@@ -1765,23 +1765,23 @@ export const reject = mutation({
       },
     );
 
-    await ctx.runMutation(internal.deaccessions.createRejectedFromAccession, {
-      organizationId: accession.organizationId,
-      collectionId,
-      createdByUserId: userId,
-      accessionNumber: accession.accessionNumber,
-      comment: args.comment,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { status: "rejected", comment: args.comment },
-    });
+    await Promise.all([
+      ctx.runMutation(internal.deaccessions.createRejectedFromAccession, {
+        organizationId: accession.organizationId,
+        collectionId,
+        createdByUserId: userId,
+        accessionNumber: accession.accessionNumber,
+        comment: args.comment,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
+    ]);
 
     // Notify users who were involved in the workflow (from history)
     const history = accession.workflowHistory ?? [];

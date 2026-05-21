@@ -10,6 +10,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
   markCollectionDeaccessioned,
@@ -26,7 +27,6 @@ import {
   getWorkflowCreatorRecipient,
 } from "./utils/notificationRecipients";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
-import { batchGetByIds } from "./utils/batchLookup";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -2445,35 +2445,33 @@ export const bulkCancel = mutation({
           return;
         }
 
-        // Update loan status
-        await ctx.db.patch(loanId, {
-          status: "cancelled",
-        });
+        // Update loan status and load items in parallel
+        const [, loanItems] = await Promise.all([
+          ctx.db.patch(loanId, {
+            status: "cancelled",
+          }),
+          ctx.db
+            .query("loanItems")
+            .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+            .collect(),
+        ]);
 
-        // Update collection statuses back to active
-        const loanItems = await ctx.db
-          .query("loanItems")
-          .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-          .collect();
-
-        await Promise.all(
-          Array.from(loanItems).map(async (item) => {
-            await markCollectionActive(ctx, {
+        await Promise.all([
+          ...Array.from(loanItems).map((item) =>
+            markCollectionActive(ctx, {
               collectionId: item.collectionId,
               changedBy: userId,
-            });
+            }),
+          ),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: loan.organizationId,
+            userId,
+            action: "cancelled",
+            entityType: "loan",
+            entityId: loanId,
+            changes: { status: "cancelled", bulkAction: true },
           }),
-        );
-
-        // Log audit action
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: loan.organizationId,
-          userId,
-          action: "cancelled",
-          entityType: "loan",
-          entityId: loanId,
-          changes: { status: "cancelled", bulkAction: true },
-        });
+        ]);
 
         cancelled++;
       }),
@@ -3043,19 +3041,19 @@ export const startDisputeInvestigation = mutation({
     await requirePermission(ctx, dispute.organizationId, "loans.update");
     await Promise.all([
       ctx.db.patch(args.disputeId, {
-      status: "investigating",
-      investigatorId: userId,
-      investigationStartedAt: Date.now(),
-      investigationNotes: args.investigationNotes,
-    }),
+        status: "investigating",
+        investigatorId: userId,
+        investigationStartedAt: Date.now(),
+        investigationNotes: args.investigationNotes,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: dispute.organizationId,
-      userId,
-      action: "updated",
-      entityType: "conditionDispute",
-      entityId: args.disputeId,
-      changes: { status: "investigating" },
-    }),
+        organizationId: dispute.organizationId,
+        userId,
+        action: "updated",
+        entityType: "conditionDispute",
+        entityId: args.disputeId,
+        changes: { status: "investigating" },
+      }),
     ]);
 
     // Notify the reporter
@@ -3191,19 +3189,20 @@ export const resolveConditionDispute = mutation({
       }
     }
 
-    await ctx.db.patch(args.disputeId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: dispute.organizationId,
-      userId,
-      action: "resolved",
-      entityType: "conditionDispute",
-      entityId: args.disputeId,
-      changes: {
-        status: args.resolution,
-        resolutionNotes: args.resolutionNotes,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.disputeId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: dispute.organizationId,
+        userId,
+        action: "resolved",
+        entityType: "conditionDispute",
+        entityId: args.disputeId,
+        changes: {
+          status: args.resolution,
+          resolutionNotes: args.resolutionNotes,
+        },
+      }),
+    ]);
 
     // Notify the reporter
     if (dispute.reportedBy !== userId) {
@@ -3257,19 +3256,19 @@ export const withdrawConditionDispute = mutation({
 
     await Promise.all([
       ctx.db.patch(args.disputeId, {
-      status: "withdrawn",
-      resolvedBy: userId,
-      resolvedAt: Date.now(),
-      resolutionNotes: args.reason ?? "Dispute withdrawn",
-    }),
+        status: "withdrawn",
+        resolvedBy: userId,
+        resolvedAt: Date.now(),
+        resolutionNotes: args.reason ?? "Dispute withdrawn",
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: dispute.organizationId,
-      userId,
-      action: "withdrawn",
-      entityType: "conditionDispute",
-      entityId: args.disputeId,
-      changes: { reason: args.reason },
-    }),
+        organizationId: dispute.organizationId,
+        userId,
+        action: "withdrawn",
+        entityType: "conditionDispute",
+        entityId: args.disputeId,
+        changes: { reason: args.reason },
+      }),
     ]);
 
     return null;

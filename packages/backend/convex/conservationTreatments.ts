@@ -186,13 +186,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.id, filteredUpdates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "updated",
-      entityType: "conservationTreatment",
-      entityId: args.id,
-      changes: filteredUpdates,
-    }),
+        organizationId: treatment.organizationId,
+        userId,
+        action: "updated",
+        entityType: "conservationTreatment",
+        entityId: args.id,
+        changes: filteredUpdates,
+      }),
     ]);
 
     return null;
@@ -225,16 +225,17 @@ export const remove = mutation({
       "collections.delete",
     );
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "conservationTreatment",
-      entityId: args.id,
-      changes: { title: treatment.title },
-    });
-
-    await ctx.db.delete(args.id);
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "conservationTreatment",
+        entityId: args.id,
+        changes: { title: treatment.title },
+      }),
+      ctx.db.delete(args.id),
+    ]);
     return null;
   },
 });
@@ -512,21 +513,21 @@ export const approve = mutation({
 
       if (isLastStep) {
         await Promise.all([
-      ctx.db.patch(args.treatmentId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        }),
-      ctx.runMutation(internal.audit.logAction, {
-          organizationId: treatment.organizationId,
-          userId,
-          action: "approved",
-          entityType: "conservationTreatment",
-          entityId: args.treatmentId,
-          changes: { status: "approved", step: currentStep },
-        }),
-    ]);
+          ctx.db.patch(args.treatmentId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: treatment.organizationId,
+            userId,
+            action: "approved",
+            entityType: "conservationTreatment",
+            entityId: args.treatmentId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -663,17 +664,17 @@ export const reject = mutation({
 
     await Promise.all([
       ctx.db.patch(args.treatmentId, {
-      status: "rejected",
-      workflowHistory: history,
-    }),
+        status: "rejected",
+        workflowHistory: history,
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { status: "rejected", comment: args.comment },
-    }),
+        organizationId: treatment.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
     ]);
 
     const creatorEntry = history.find((h) => h.step === 0);
@@ -777,13 +778,13 @@ export const complete = mutation({
     await Promise.all([
       ctx.db.patch(args.treatmentId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "completed",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { status: "completed" },
-    }),
+        organizationId: treatment.organizationId,
+        userId,
+        action: "completed",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { status: "completed" },
+      }),
     ]);
 
     return null;
@@ -1146,10 +1147,10 @@ export const updateAlertRule = mutation({
     await Promise.all([
       requireConservationAccess(ctx, rule.organizationId),
       requirePermission(
-      ctx,
-      rule.organizationId,
-      "organization.manage_settings",
-    ),
+        ctx,
+        rule.organizationId,
+        "organization.manage_settings",
+      ),
     ]);
 
     const { ruleId, ...updates } = args;
@@ -1159,17 +1160,17 @@ export const updateAlertRule = mutation({
 
     await Promise.all([
       ctx.db.patch(args.ruleId, {
-      ...filteredUpdates,
-      lastModifiedAt: Date.now(),
-    }),
+        ...filteredUpdates,
+        lastModifiedAt: Date.now(),
+      }),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: rule.organizationId,
-      userId,
-      action: "updated",
-      entityType: "conservationAlertRule",
-      entityId: args.ruleId,
-      changes: filteredUpdates,
-    }),
+        organizationId: rule.organizationId,
+        userId,
+        action: "updated",
+        entityType: "conservationAlertRule",
+        entityId: args.ruleId,
+        changes: filteredUpdates,
+      }),
     ]);
 
     return null;
@@ -1720,18 +1721,15 @@ export const checkOverdueTreatmentsInternal = internalMutation({
                 const uniqueUsers = [...new Set(usersToNotify)];
                 await Promise.all(
                   uniqueUsers.map((notifyUserId) =>
-                    ctx.runMutation(
-                      internal.audit.createNotificationInternal,
-                      {
-                        organizationId: org._id,
-                        userId: notifyUserId as typeof treatment.performedBy,
-                        type: "conservation_alert",
-                        title: "Overdue Treatment Alert",
-                        message: `Treatment "${treatment.title}" is overdue and requires attention.`,
-                        relatedEntityType: "conservationAlert",
-                        relatedEntityId: alertId,
-                      },
-                    ),
+                    ctx.runMutation(internal.audit.createNotificationInternal, {
+                      organizationId: org._id,
+                      userId: notifyUserId as typeof treatment.performedBy,
+                      type: "conservation_alert",
+                      title: "Overdue Treatment Alert",
+                      message: `Treatment "${treatment.title}" is overdue and requires attention.`,
+                      relatedEntityType: "conservationAlert",
+                      relatedEntityId: alertId,
+                    }),
                   ),
                 );
               }),
@@ -1856,18 +1854,15 @@ export const checkAssessmentsDueInternal = internalMutation({
                 const uniqueUsers = [...new Set(usersToNotify)];
                 await Promise.all(
                   uniqueUsers.map((notifyUserId) =>
-                    ctx.runMutation(
-                      internal.audit.createNotificationInternal,
-                      {
-                        organizationId: org._id,
-                        userId: notifyUserId as typeof collection.catalogedBy,
-                        type: "conservation_alert",
-                        title: "Assessment Due Alert",
-                        message: `Object "${collection.title}" requires a conservation assessment.`,
-                        relatedEntityType: "conservationAlert",
-                        relatedEntityId: alertId,
-                      },
-                    ),
+                    ctx.runMutation(internal.audit.createNotificationInternal, {
+                      organizationId: org._id,
+                      userId: notifyUserId as typeof collection.catalogedBy,
+                      type: "conservation_alert",
+                      title: "Assessment Due Alert",
+                      message: `Object "${collection.title}" requires a conservation assessment.`,
+                      relatedEntityType: "conservationAlert",
+                      relatedEntityId: alertId,
+                    }),
                   ),
                 );
               }),
@@ -1962,13 +1957,13 @@ export const updateTreatmentCosts = mutation({
     await Promise.all([
       ctx.db.patch(args.treatmentId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "costs_updated",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { totalCost, laborCost, materialsCost },
-    }),
+        organizationId: treatment.organizationId,
+        userId,
+        action: "costs_updated",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { totalCost, laborCost, materialsCost },
+      }),
     ]);
 
     return { totalCost, laborCost };

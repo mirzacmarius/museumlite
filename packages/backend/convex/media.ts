@@ -326,13 +326,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.mediaId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "updated_media",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: updates,
-    }),
+        organizationId: media.organizationId,
+        userId,
+        action: "updated_media",
+        entityType: "media",
+        entityId: args.mediaId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -389,28 +389,25 @@ export const setPrimary = mutation({
       throw new Error("Media not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, media.organizationId, "media.upload");
+    const [, otherMedia] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.upload"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", media.collectionId),
+        )
+        .filter((q) => q.eq(q.field("isPrimary"), true))
+        .collect(),
+    ] as const);
 
-    // Unset other primary images for this collection
-    const otherMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", media.collectionId),
-      )
-      .filter((q) => q.eq(q.field("isPrimary"), true))
-      .collect();
-
-    await Promise.all(
-      otherMedia.map((m) =>
+    await Promise.all([
+      ...otherMedia.map((m) =>
         m._id !== args.mediaId
           ? ctx.db.patch(m._id, { isPrimary: false })
           : Promise.resolve(),
       ),
-    );
-
-    // Set this as primary
-    await ctx.db.patch(args.mediaId, { isPrimary: true });
+      ctx.db.patch(args.mediaId, { isPrimary: true }),
+    ]);
 
     // Generate thumbnail if image <50MB
     if (
@@ -837,23 +834,24 @@ export const updateOrder = mutation({
 
     await requirePermission(ctx, firstMedia.organizationId, "media.upload");
 
-    await Promise.all(
-      args.mediaIds.map((mediaId, i) =>
-        mediaId ? ctx.db.patch(mediaId, { displayOrder: i }) : Promise.resolve(),
+    await Promise.all([
+      ...args.mediaIds.map((mediaId, i) =>
+        mediaId
+          ? ctx.db.patch(mediaId, { displayOrder: i })
+          : Promise.resolve(),
       ),
-    );
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: firstMedia.organizationId,
-      userId,
-      action: "reordered_media",
-      entityType: "media",
-      entityId: args.mediaIds[0] as Id<"mediaFiles">,
-      changes: {
-        mediaCount: args.mediaIds.length,
-        collectionId: firstMedia.collectionId,
-      },
-    });
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: firstMedia.organizationId,
+        userId,
+        action: "reordered_media",
+        entityType: "media",
+        entityId: args.mediaIds[0] as Id<"mediaFiles">,
+        changes: {
+          mediaCount: args.mediaIds.length,
+          collectionId: firstMedia.collectionId,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -1094,21 +1092,22 @@ export const updateMetadata = mutation({
     const existingMetadata = media.metadata || {};
     const updatedMetadata = { ...existingMetadata, ...args.metadata };
 
-    await ctx.db.patch(args.mediaId, {
-      metadata: updatedMetadata,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "updated_media_metadata",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: {
-        fileName: media.fileName,
-        metadataFields: Object.keys(args.metadata),
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, {
+        metadata: updatedMetadata,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: media.organizationId,
+        userId,
+        action: "updated_media_metadata",
+        entityType: "media",
+        entityId: args.mediaId,
+        changes: {
+          fileName: media.fileName,
+          metadataFields: Object.keys(args.metadata),
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -1349,16 +1348,17 @@ export const updateRights = mutation({
     if (args.acknowledgmentText !== undefined)
       updates.acknowledgmentText = args.acknowledgmentText;
 
-    await ctx.db.patch(args.mediaId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "updated_media_rights",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: media.organizationId,
+        userId,
+        action: "updated_media_rights",
+        entityType: "media",
+        entityId: args.mediaId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },

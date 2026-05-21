@@ -82,8 +82,10 @@ export const get = query({
       return null;
     }
 
-    await requireCoinsStampsModule(ctx, collection.organizationId);
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    await Promise.all([
+      requireCoinsStampsModule(ctx, collection.organizationId),
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+    ]);
 
     return await ctx.db
       .query("coinsStampsDetails")
