@@ -26,7 +26,13 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type RefObject,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 
 interface ParsedRow {
   accountNumber?: string;
@@ -188,6 +194,313 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
+function ImportAccountsHeader({
+  backLabel,
+  downloadTemplateLabel,
+  onDownloadTemplate,
+}: {
+  backLabel: string;
+  downloadTemplateLabel: string;
+  onDownloadTemplate: () => void;
+}) {
+  return (
+    <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/accounts">
+          <ArrowLeft className="mr-2 size-4" />
+          {backLabel}
+        </Link>
+      </Button>
+      <Button variant="outline" size="sm" onClick={onDownloadTemplate}>
+        <Download className="mr-2 size-4" />
+        {downloadTemplateLabel}
+      </Button>
+    </div>
+  );
+}
+
+function AccountImportUploadStep({
+  fileInputRef,
+  labels,
+  onFileSelect,
+}: {
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  labels: {
+    title: string;
+    description: string;
+    dropZone: string;
+    maxRows: string;
+    formatRequirements: string;
+    required: string;
+    accountTypes: string;
+    accountTypesValues: string;
+    forInstitutions: string;
+    forInstitutionsValues: string;
+    forIndividuals: string;
+    forIndividualsValues: string;
+    optional: string;
+    optionalValues: string;
+  };
+  onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-8 text-center">
+        <FileSpreadsheet className="mx-auto mb-4 size-12 text-muted-foreground" />
+        <h2 className="text-xl font-semibold">{labels.title}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {labels.description}
+        </p>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        onChange={onFileSelect}
+        className="hidden"
+      />
+
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(event) =>
+          event.key === "Enter" && fileInputRef.current?.click()
+        }
+        role="button"
+        tabIndex={0}
+        className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
+      >
+        <Upload className="mb-4 size-10 text-muted-foreground" />
+        <p className="font-medium">{labels.dropZone}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{labels.maxRows}</p>
+      </div>
+
+      <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
+        <h3 className="mb-2 font-medium">{labels.formatRequirements}</h3>
+        <ul className="space-y-1 text-sm text-muted-foreground">
+          <li>
+            <strong>{labels.required}</strong> accountType
+          </li>
+          <li>
+            <strong>{labels.accountTypes}</strong> {labels.accountTypesValues}
+          </li>
+          <li>
+            <strong>{labels.forInstitutions}</strong>{" "}
+            {labels.forInstitutionsValues}
+          </li>
+          <li>
+            <strong>{labels.forIndividuals}</strong>{" "}
+            {labels.forIndividualsValues}
+          </li>
+          <li>
+            <strong>{labels.optional}</strong> {labels.optionalValues}
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function AccountImportErrors({
+  errors,
+  title,
+  tone = "destructive",
+}: {
+  errors: string[];
+  title: string;
+  tone?: "destructive" | "warning";
+}) {
+  if (errors.length === 0) {
+    return null;
+  }
+
+  const colorClasses =
+    tone === "warning"
+      ? "border-amber-500/50 bg-amber-500/10 text-amber-600"
+      : "border-destructive bg-destructive/10 text-destructive";
+
+  return (
+    <div className={`rounded-lg border p-4 ${colorClasses}`}>
+      <div className="flex items-center gap-2">
+        <AlertCircle className="size-4" />
+        <span className="font-medium">{title}</span>
+      </div>
+      <ul className="mt-2 space-y-1 text-sm">
+        {errors.slice(0, 5).map((error) => (
+          <li key={error}>{error}</li>
+        ))}
+        {errors.length > 5 ? <li>... and {errors.length - 5} more</li> : null}
+      </ul>
+    </div>
+  );
+}
+
+function AccountImportPreviewStep({
+  labels,
+  onCancel,
+  onStartImport,
+  state,
+}: {
+  labels: {
+    previewTitle: string;
+    rowsReady: string;
+    cancel: string;
+    importButton: string;
+    validationErrors: string;
+  };
+  onCancel: () => void;
+  onStartImport: () => void;
+  state: ImportState;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">{labels.previewTitle}</h2>
+          <p className="text-sm text-muted-foreground">{labels.rowsReady}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            <X className="mr-2 size-4" />
+            {labels.cancel}
+          </Button>
+          <PermissionGate permission="accounts.write">
+            <Button
+              onClick={onStartImport}
+              disabled={state.rows.length === 0}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Upload className="mr-2 size-4" />
+              {labels.importButton}
+            </Button>
+          </PermissionGate>
+        </div>
+      </div>
+
+      <AccountImportErrors
+        errors={state.errors}
+        title={labels.validationErrors}
+      />
+
+      <div className="rounded-lg border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">#</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Name/Business</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>City</TableHead>
+              <TableHead>Contact</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {state.rows.slice(0, 20).map((row, rowIndex) => (
+              <TableRow key={`${row.accountType}-${rowIndex}`}>
+                <TableCell className="text-muted-foreground">
+                  {rowIndex + 1}
+                </TableCell>
+                <TableCell className="capitalize">{row.accountType}</TableCell>
+                <TableCell>
+                  {row.businessName ||
+                    [row.firstName, row.lastName].filter(Boolean).join(" ") ||
+                    "-"}
+                </TableCell>
+                <TableCell>{row.email || "-"}</TableCell>
+                <TableCell>{row.phone || "-"}</TableCell>
+                <TableCell>{row.city || "-"}</TableCell>
+                <TableCell>{row.contactPerson || "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {state.rows.length > 20 ? (
+          <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
+            Showing 20 of {state.rows.length} rows
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function AccountImportProgressStep({
+  importJob,
+  totalRows,
+}: {
+  importJob:
+    | {
+        processedItems?: number;
+        totalItems?: number;
+        progress?: number;
+      }
+    | null
+    | undefined;
+  totalRows: number;
+}) {
+  return (
+    <div className="mx-auto max-w-md text-center">
+      <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
+      <h2 className="text-xl font-semibold">Importing Accounts...</h2>
+      <p className="mt-2 text-muted-foreground">
+        {importJob?.processedItems || 0} of {importJob?.totalItems || totalRows}{" "}
+        processed
+      </p>
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${importJob?.progress || 0}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AccountImportCompleteStep({
+  errors,
+  importJob,
+  onReset,
+  totalRows,
+}: {
+  errors: string[];
+  importJob:
+    | {
+        processedItems?: number;
+      }
+    | null
+    | undefined;
+  onReset: () => void;
+  totalRows: number;
+}) {
+  return (
+    <div className="mx-auto max-w-md text-center">
+      <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
+      <h2 className="text-xl font-semibold">Import Complete</h2>
+      <p className="mt-2 text-muted-foreground">
+        Successfully imported {importJob?.processedItems || totalRows} accounts
+      </p>
+
+      <div className="mt-6">
+        <AccountImportErrors
+          errors={errors}
+          title={`${errors.length} rows had issues`}
+          tone="warning"
+        />
+      </div>
+
+      <div className="mt-6 flex justify-center gap-4">
+        <Button variant="outline" onClick={onReset}>
+          Import More
+        </Button>
+        <Button asChild className="bg-primary hover:bg-primary/90">
+          <Link href="/accounts">View Accounts</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ImportAccountsPage() {
   const t = useScopedI18n("accounts.csvImport");
   const tAccounts = useScopedI18n("accounts");
@@ -211,32 +524,29 @@ export default function ImportAccountsPage() {
     state.jobId ? { jobId: state.jobId } : "skip",
   );
 
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleFileSelect = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        const { rows, errors } = parseCSV(text);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const { rows, errors } = parseCSV(text);
 
-        setState({
-          step: "preview",
-          file,
-          rows,
-          errors,
-          jobId: null,
-        });
-      };
-      reader.readAsText(file);
+      setState({
+        step: "preview",
+        file,
+        rows,
+        errors,
+        jobId: null,
+      });
+    };
+    reader.readAsText(file);
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    },
-    [],
-  );
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
 
   const handleStartImport = useCallback(async () => {
     if (!currentOrganizationId || state.rows.length === 0) return;
@@ -324,237 +634,72 @@ export default function ImportAccountsPage() {
     <div className="flex size-full bg-background px-6">
       <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/accounts">
-                <ArrowLeft className="mr-2 size-4" />
-                {t("backToAccounts")}
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="mr-2 size-4" />
-              {t("downloadTemplate")}
-            </Button>
-          </div>
+          <ImportAccountsHeader
+            backLabel={t("backToAccounts")}
+            downloadTemplateLabel={t("downloadTemplate")}
+            onDownloadTemplate={downloadTemplate}
+          />
 
           <div className="flex-1 overflow-auto p-6">
             {state.step === "upload" && (
-              <div className="mx-auto max-w-2xl">
-                <div className="mb-8 text-center">
-                  <FileSpreadsheet className="mx-auto mb-4 size-12 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">{t("title")}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {t("description")}
-                  </p>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && fileInputRef.current?.click()
-                  }
-                  role="button"
-                  tabIndex={0}
-                  className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
-                >
-                  <Upload className="mb-4 size-10 text-muted-foreground" />
-                  <p className="font-medium">{t("dropZone")}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {t("maxRows")}
-                  </p>
-                </div>
-
-                <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
-                  <h3 className="mb-2 font-medium">
-                    {t("formatRequirements")}
-                  </h3>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>
-                      <strong>{t("required")}</strong> accountType
-                    </li>
-                    <li>
-                      <strong>{t("accountTypes")}</strong>{" "}
-                      {t("accountTypesValues")}
-                    </li>
-                    <li>
-                      <strong>{t("forInstitutions")}</strong>{" "}
-                      {t("forInstitutionsValues")}
-                    </li>
-                    <li>
-                      <strong>{t("forIndividuals")}</strong>{" "}
-                      {t("forIndividualsValues")}
-                    </li>
-                    <li>
-                      <strong>{t("optional")}</strong> {t("optionalValues")}
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <AccountImportUploadStep
+                fileInputRef={fileInputRef}
+                labels={{
+                  title: t("title"),
+                  description: t("description"),
+                  dropZone: t("dropZone"),
+                  maxRows: t("maxRows"),
+                  formatRequirements: t("formatRequirements"),
+                  required: t("required"),
+                  accountTypes: t("accountTypes"),
+                  accountTypesValues: t("accountTypesValues"),
+                  forInstitutions: t("forInstitutions"),
+                  forInstitutionsValues: t("forInstitutionsValues"),
+                  forIndividuals: t("forIndividuals"),
+                  forIndividualsValues: t("forIndividualsValues"),
+                  optional: t("optional"),
+                  optionalValues: t("optionalValues"),
+                }}
+                onFileSelect={handleFileSelect}
+              />
             )}
 
             {state.step === "preview" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold">
-                      {t("previewTitle")}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {t("rowsReady", {
-                        count: state.rows.length.toString(),
-                        filename: state.file?.name || "",
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleReset}>
-                      <X className="mr-2 size-4" />
-                      {t("cancel")}
-                    </Button>
-                    <PermissionGate permission="accounts.write">
-                      <Button
-                        onClick={handleStartImport}
-                        disabled={state.rows.length === 0}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        <Upload className="mr-2 size-4" />
-                        {t("importButton", {
-                          count: state.rows.length.toString(),
-                        })}
-                      </Button>
-                    </PermissionGate>
-                  </div>
-                </div>
-
-                {state.errors.length > 0 && (
-                  <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-                    <div className="flex items-center gap-2 text-destructive">
-                      <AlertCircle className="size-4" />
-                      <span className="font-medium">
-                        {t("validationErrors", {
-                          count: state.errors.length.toString(),
-                        })}
-                      </span>
-                    </div>
-                    <ul className="mt-2 space-y-1 text-sm text-destructive">
-                      {state.errors.slice(0, 5).map((error) => (
-                        <li key={error}>{error}</li>
-                      ))}
-                      {state.errors.length > 5 && (
-                        <li>... and {state.errors.length - 5} more</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="rounded-lg border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">#</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Name/Business</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>City</TableHead>
-                        <TableHead>Contact</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {state.rows.slice(0, 20).map((row, rowIndex) => (
-                        <TableRow key={`${row.accountType}-${rowIndex}`}>
-                          <TableCell className="text-muted-foreground">
-                            {rowIndex + 1}
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {row.accountType}
-                          </TableCell>
-                          <TableCell>
-                            {row.businessName ||
-                              [row.firstName, row.lastName]
-                                .filter(Boolean)
-                                .join(" ") ||
-                              "-"}
-                          </TableCell>
-                          <TableCell>{row.email || "-"}</TableCell>
-                          <TableCell>{row.phone || "-"}</TableCell>
-                          <TableCell>{row.city || "-"}</TableCell>
-                          <TableCell>{row.contactPerson || "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {state.rows.length > 20 && (
-                    <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-                      Showing 20 of {state.rows.length} rows
-                    </div>
-                  )}
-                </div>
-              </div>
+              <AccountImportPreviewStep
+                labels={{
+                  previewTitle: t("previewTitle"),
+                  rowsReady: t("rowsReady", {
+                    count: state.rows.length.toString(),
+                    filename: state.file?.name || "",
+                  }),
+                  cancel: t("cancel"),
+                  importButton: t("importButton", {
+                    count: state.rows.length.toString(),
+                  }),
+                  validationErrors: t("validationErrors", {
+                    count: state.errors.length.toString(),
+                  }),
+                }}
+                onCancel={handleReset}
+                onStartImport={handleStartImport}
+                state={state}
+              />
             )}
 
             {state.step === "importing" && (
-              <div className="mx-auto max-w-md text-center">
-                <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
-                <h2 className="text-xl font-semibold">Importing Accounts...</h2>
-                <p className="mt-2 text-muted-foreground">
-                  {importJob?.processedItems || 0} of{" "}
-                  {importJob?.totalItems || state.rows.length} processed
-                </p>
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${importJob?.progress || 0}%` }}
-                  />
-                </div>
-              </div>
+              <AccountImportProgressStep
+                importJob={importJob}
+                totalRows={state.rows.length}
+              />
             )}
 
             {state.step === "complete" && (
-              <div className="mx-auto max-w-md text-center">
-                <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
-                <h2 className="text-xl font-semibold">Import Complete</h2>
-                <p className="mt-2 text-muted-foreground">
-                  Successfully imported{" "}
-                  {importJob?.processedItems || state.rows.length} accounts
-                </p>
-
-                {state.errors.length > 0 && (
-                  <div className="mt-6 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-left">
-                    <div className="flex items-center gap-2 text-amber-600">
-                      <AlertCircle className="size-4" />
-                      <span className="font-medium">
-                        {state.errors.length} rows had issues
-                      </span>
-                    </div>
-                    <ul className="mt-2 space-y-1 text-sm text-amber-600">
-                      {state.errors.slice(0, 5).map((error) => (
-                        <li key={error}>{error}</li>
-                      ))}
-                      {state.errors.length > 5 && (
-                        <li>... and {state.errors.length - 5} more</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="mt-6 flex justify-center gap-4">
-                  <Button variant="outline" onClick={handleReset}>
-                    Import More
-                  </Button>
-                  <Button asChild className="bg-primary hover:bg-primary/90">
-                    <Link href="/accounts">View Accounts</Link>
-                  </Button>
-                </div>
-              </div>
+              <AccountImportCompleteStep
+                errors={state.errors}
+                importJob={importJob}
+                onReset={handleReset}
+                totalRows={state.rows.length}
+              />
             )}
           </div>
         </div>

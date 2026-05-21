@@ -26,7 +26,342 @@ import { useMutation } from "convex/react";
 import { ArrowLeft, Save, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import {
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+  useCallback,
+  useState,
+} from "react";
+
+type AccessionMethod =
+  | "purchase"
+  | "gift"
+  | "loan"
+  | "transfer"
+  | "donation"
+  | "other"
+  | "bequest";
+
+interface NewAccessionFormData {
+  accessionNumber: string;
+  dateReceived: Date;
+  source: string;
+  donorAccountId: string | undefined;
+  method: AccessionMethod;
+  cost: string;
+  notes: string;
+}
+
+interface UploadedDocument {
+  storageId: Id<"_storage">;
+  name: string;
+}
+
+type SetFormData = Dispatch<SetStateAction<NewAccessionFormData>>;
+
+function NewAccessionHeader({ backLabel }: { backLabel: string }) {
+  return (
+    <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/accessions">
+          <ArrowLeft className="mr-2 size-4" />
+          {backLabel}
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function FormError({ message }: { message: string | null }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+      {message}
+    </div>
+  );
+}
+
+function AccessionIdentityFields({
+  formData,
+  labels,
+  setFormData,
+}: {
+  formData: NewAccessionFormData;
+  labels: {
+    accessionNumber: string;
+    accessionNumberPlaceholder: string;
+    accessionNumberHint: string;
+    dateReceived: string;
+    dateReceivedPlaceholder: string;
+    method: string;
+    required: string;
+    methods: Record<"purchase" | "gift" | "loan" | "transfer", string>;
+  };
+  setFormData: SetFormData;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="accessionNumber">{labels.accessionNumber}</Label>
+        <Input
+          id="accessionNumber"
+          value={formData.accessionNumber}
+          onChange={(event) =>
+            setFormData((prev) => ({
+              ...prev,
+              accessionNumber: event.target.value,
+            }))
+          }
+          placeholder={labels.accessionNumberPlaceholder}
+        />
+        <p className="text-xs text-muted-foreground">
+          {labels.accessionNumberHint}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="dateReceived">
+            {labels.dateReceived} {labels.required}
+          </Label>
+          <DatePicker
+            id="dateReceived"
+            date={formData.dateReceived}
+            onSelect={(date: Date | undefined) =>
+              setFormData((prev) => ({
+                ...prev,
+                dateReceived: date ?? prev.dateReceived,
+              }))
+            }
+            placeholder={labels.dateReceivedPlaceholder}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="method">
+            {labels.method} {labels.required}
+          </Label>
+          <Select
+            value={formData.method}
+            onValueChange={(value: AccessionMethod) =>
+              setFormData((prev) => ({ ...prev, method: value }))
+            }
+          >
+            <SelectTrigger id="method">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="purchase">
+                {labels.methods.purchase}
+              </SelectItem>
+              <SelectItem value="gift">{labels.methods.gift}</SelectItem>
+              <SelectItem value="loan">{labels.methods.loan}</SelectItem>
+              <SelectItem value="transfer">
+                {labels.methods.transfer}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function AccessionSourceFields({
+  formData,
+  labels,
+  organizationId,
+  setFormData,
+}: {
+  formData: NewAccessionFormData;
+  labels: {
+    donorAccount: string;
+    donorAccountPlaceholder: string;
+    donorAccountHint: string;
+    source: string;
+    sourcePlaceholder: string;
+    sourceOptional: string;
+    sourceRequired: string;
+    required: string;
+  };
+  organizationId: Id<"organizations">;
+  setFormData: SetFormData;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="donorAccount">{labels.donorAccount}</Label>
+        <AccountCombobox
+          organizationId={organizationId}
+          value={formData.donorAccountId}
+          onValueChange={(accountId) =>
+            setFormData((prev) => ({
+              ...prev,
+              donorAccountId: accountId,
+            }))
+          }
+          placeholder={labels.donorAccountPlaceholder}
+        />
+        <p className="text-xs text-muted-foreground">
+          {labels.donorAccountHint}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="source">
+          {labels.source} {!formData.donorAccountId && labels.required}
+        </Label>
+        <Input
+          id="source"
+          value={formData.source}
+          onChange={(event) =>
+            setFormData((prev) => ({ ...prev, source: event.target.value }))
+          }
+          placeholder={labels.sourcePlaceholder}
+          required={!formData.donorAccountId}
+        />
+        <p className="text-xs text-muted-foreground">
+          {formData.donorAccountId
+            ? labels.sourceOptional
+            : labels.sourceRequired}
+        </p>
+      </div>
+    </>
+  );
+}
+
+function AccessionFinancialAndNotesFields({
+  formData,
+  labels,
+  setFormData,
+}: {
+  formData: NewAccessionFormData;
+  labels: {
+    cost: string;
+    costPlaceholder: string;
+    notes: string;
+    notesPlaceholder: string;
+  };
+  setFormData: SetFormData;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="cost">{labels.cost}</Label>
+        <Input
+          id="cost"
+          type="number"
+          step="0.01"
+          value={formData.cost}
+          onChange={(event) =>
+            setFormData((prev) => ({ ...prev, cost: event.target.value }))
+          }
+          placeholder={labels.costPlaceholder}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">{labels.notes}</Label>
+        <Textarea
+          id="notes"
+          value={formData.notes}
+          onChange={(event) =>
+            setFormData((prev) => ({ ...prev, notes: event.target.value }))
+          }
+          placeholder={labels.notesPlaceholder}
+          rows={4}
+        />
+      </div>
+    </>
+  );
+}
+
+function SupportingDocumentsField({
+  labels,
+  onDocumentUpload,
+  onRemoveDocument,
+  uploadedDocuments,
+  uploadingFiles,
+}: {
+  labels: {
+    supportingDocuments: string;
+    documentsLabel: string;
+    documentsSublabel: string;
+  };
+  onDocumentUpload: (files: File[]) => void;
+  onRemoveDocument: (storageId: Id<"_storage">) => void;
+  uploadedDocuments: UploadedDocument[];
+  uploadingFiles: UploadFile[];
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{labels.supportingDocuments}</Label>
+      <DropzoneUploader
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        multiple
+        maxSizeBytes={20 * 1024 * 1024}
+        maxFiles={10}
+        onFilesSelected={onDocumentUpload}
+        uploadingFiles={uploadingFiles}
+        label={labels.documentsLabel}
+        sublabel={labels.documentsSublabel}
+      />
+      {uploadedDocuments.length > 0 ? (
+        <div className="mt-2 space-y-1">
+          {uploadedDocuments.map((document) => (
+            <div
+              key={document.storageId}
+              className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+            >
+              <span className="truncate">{document.name}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onRemoveDocument(document.storageId)}
+                className="size-6 p-0"
+              >
+                <X className="size-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function NewAccessionActions({
+  cancelLabel,
+  createLabel,
+  creatingLabel,
+  isSubmitting,
+  onCancel,
+}: {
+  cancelLabel: string;
+  createLabel: string;
+  creatingLabel: string;
+  isSubmitting: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="flex justify-end gap-4">
+      <Button type="button" variant="outline" onClick={onCancel}>
+        {cancelLabel}
+      </Button>
+      <PermissionGate permission="collections.create">
+        <Button type="submit" disabled={isSubmitting}>
+          <Save className="mr-2 size-4" />
+          {isSubmitting ? creatingLabel : createLabel}
+        </Button>
+      </PermissionGate>
+    </div>
+  );
+}
 
 export default function NewAccessionPage() {
   const t = useScopedI18n("accessions");
@@ -38,21 +373,14 @@ export default function NewAccessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState<UploadFile[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<
-    { storageId: Id<"_storage">; name: string }[]
+    UploadedDocument[]
   >([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<NewAccessionFormData>({
     accessionNumber: "",
     dateReceived: new Date(),
     source: "",
-    donorAccountId: undefined as string | undefined,
-    method: "purchase" as
-      | "purchase"
-      | "gift"
-      | "loan"
-      | "transfer"
-      | "donation"
-      | "other"
-      | "bequest",
+    donorAccountId: undefined,
+    method: "purchase",
     cost: "",
     notes: "",
   });
@@ -146,7 +474,7 @@ export default function NewAccessionPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!formData.source.trim() && !formData.donorAccountId) {
@@ -186,212 +514,79 @@ export default function NewAccessionPage() {
     <div className="flex size-full bg-background px-6">
       <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/accessions">
-                <ArrowLeft className="mr-2 size-4" />
-                {t("backToAccessions")}
-              </Link>
-            </Button>
-          </div>
+          <NewAccessionHeader backLabel={t("backToAccessions")} />
 
           <form onSubmit={handleSubmit} className="p-6">
-            {error && (
-              <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            <FormError message={error} />
             <div className="mx-auto max-w-2xl space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="accessionNumber">
-                  {t("form.accessionNumber")}
-                </Label>
-                <Input
-                  id="accessionNumber"
-                  value={formData.accessionNumber}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      accessionNumber: e.target.value,
-                    }))
-                  }
-                  placeholder={t("form.accessionNumberPlaceholder")}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t("form.accessionNumberHint")}
-                </p>
-              </div>
+              <AccessionIdentityFields
+                formData={formData}
+                labels={{
+                  accessionNumber: t("form.accessionNumber"),
+                  accessionNumberPlaceholder: t(
+                    "form.accessionNumberPlaceholder",
+                  ),
+                  accessionNumberHint: t("form.accessionNumberHint"),
+                  dateReceived: t("form.dateReceived"),
+                  dateReceivedPlaceholder: t("form.dateReceivedPlaceholder"),
+                  method: t("form.method"),
+                  required: t("form.required"),
+                  methods: {
+                    purchase: t("form.methods.purchase"),
+                    gift: t("form.methods.gift"),
+                    loan: t("form.methods.loan"),
+                    transfer: t("form.methods.transfer"),
+                  },
+                }}
+                setFormData={setFormData}
+              />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dateReceived">
-                    {t("form.dateReceived")} {t("form.required")}
-                  </Label>
-                  <DatePicker
-                    id="dateReceived"
-                    date={formData.dateReceived}
-                    onSelect={(date: Date | undefined) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dateReceived: date ?? prev.dateReceived,
-                      }))
-                    }
-                    placeholder={t("form.dateReceivedPlaceholder")}
-                  />
-                </div>
+              <AccessionSourceFields
+                formData={formData}
+                labels={{
+                  donorAccount: t("form.donorAccount"),
+                  donorAccountPlaceholder: t("form.donorAccountPlaceholder"),
+                  donorAccountHint: t("form.donorAccountHint"),
+                  source: t("form.source"),
+                  sourcePlaceholder: t("form.sourcePlaceholder"),
+                  sourceOptional: t("form.sourceOptional"),
+                  sourceRequired: t("form.sourceRequired"),
+                  required: t("form.required"),
+                }}
+                organizationId={currentOrganizationId}
+                setFormData={setFormData}
+              />
 
-                <div className="space-y-2">
-                  <Label htmlFor="method">
-                    {t("form.method")} {t("form.required")}
-                  </Label>
-                  <Select
-                    value={formData.method}
-                    onValueChange={(
-                      value:
-                        | "purchase"
-                        | "gift"
-                        | "loan"
-                        | "transfer"
-                        | "donation"
-                        | "other"
-                        | "bequest",
-                    ) => setFormData((prev) => ({ ...prev, method: value }))}
-                  >
-                    <SelectTrigger id="method">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="purchase">
-                        {t("form.methods.purchase")}
-                      </SelectItem>
-                      <SelectItem value="gift">
-                        {t("form.methods.gift")}
-                      </SelectItem>
-                      <SelectItem value="loan">
-                        {t("form.methods.loan")}
-                      </SelectItem>
-                      <SelectItem value="transfer">
-                        {t("form.methods.transfer")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <AccessionFinancialAndNotesFields
+                formData={formData}
+                labels={{
+                  cost: t("form.cost"),
+                  costPlaceholder: t("form.costPlaceholder"),
+                  notes: t("form.notes"),
+                  notesPlaceholder: t("form.notesPlaceholder"),
+                }}
+                setFormData={setFormData}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="donorAccount">{t("form.donorAccount")}</Label>
-                <AccountCombobox
-                  organizationId={currentOrganizationId}
-                  value={formData.donorAccountId}
-                  onValueChange={(accountId) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      donorAccountId: accountId,
-                    }))
-                  }
-                  placeholder={t("form.donorAccountPlaceholder")}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t("form.donorAccountHint")}
-                </p>
-              </div>
+              <SupportingDocumentsField
+                labels={{
+                  supportingDocuments: t("form.supportingDocuments"),
+                  documentsLabel: t("form.documentsLabel"),
+                  documentsSublabel: t("form.documentsSublabel"),
+                }}
+                onDocumentUpload={handleDocumentUpload}
+                onRemoveDocument={handleRemoveDocument}
+                uploadedDocuments={uploadedDocuments}
+                uploadingFiles={uploadingFiles}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="source">
-                  {t("form.source")}{" "}
-                  {!formData.donorAccountId && t("form.required")}
-                </Label>
-                <Input
-                  id="source"
-                  value={formData.source}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, source: e.target.value }))
-                  }
-                  placeholder={t("form.sourcePlaceholder")}
-                  required={!formData.donorAccountId}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {formData.donorAccountId
-                    ? t("form.sourceOptional")
-                    : t("form.sourceRequired")}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cost">{t("form.cost")}</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  step="0.01"
-                  value={formData.cost}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, cost: e.target.value }))
-                  }
-                  placeholder={t("form.costPlaceholder")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">{t("form.notes")}</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                  }
-                  placeholder={t("form.notesPlaceholder")}
-                  rows={4}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t("form.supportingDocuments")}</Label>
-                <DropzoneUploader
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  multiple
-                  maxSizeBytes={20 * 1024 * 1024}
-                  maxFiles={10}
-                  onFilesSelected={handleDocumentUpload}
-                  uploadingFiles={uploadingFiles}
-                  label={t("form.documentsLabel")}
-                  sublabel={t("form.documentsSublabel")}
-                />
-                {uploadedDocuments.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {uploadedDocuments.map((doc) => (
-                      <div
-                        key={doc.storageId}
-                        className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-                      >
-                        <span className="truncate">{doc.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveDocument(doc.storageId)}
-                          className="size-6 p-0"
-                        >
-                          <X className="size-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => back()}>
-                  {t("form.cancel")}
-                </Button>
-                <PermissionGate permission="collections.create">
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 size-4" />
-                    {isSubmitting
-                      ? t("form.creating")
-                      : t("form.createAccession")}
-                  </Button>
-                </PermissionGate>
-              </div>
+              <NewAccessionActions
+                cancelLabel={t("form.cancel")}
+                createLabel={t("form.createAccession")}
+                creatingLabel={t("form.creating")}
+                isSubmitting={isSubmitting}
+                onCancel={back}
+              />
             </div>
           </form>
         </div>

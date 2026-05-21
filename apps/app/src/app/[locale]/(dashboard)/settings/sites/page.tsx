@@ -22,7 +22,7 @@ import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
-import { useReducer } from "react";
+import { type Dispatch, type FormEvent, useReducer } from "react";
 
 interface SiteFormData {
   name: string;
@@ -99,6 +99,260 @@ function sitesPageReducer(
   }
 }
 
+function SitesPageHeader({
+  createDialogOpen,
+  dispatch,
+  error,
+  formData,
+  isSubmitting,
+  onCreateSite,
+}: {
+  createDialogOpen: boolean;
+  dispatch: Dispatch<SitesPageAction>;
+  error: string | null;
+  formData: SiteFormData;
+  isSubmitting: boolean;
+  onCreateSite: (event: FormEvent) => void;
+}) {
+  return (
+    <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl font-medium text-foreground">Site Management</h2>
+        <p className="text-sm text-muted-foreground">
+          Manage physical locations and branches for your organization
+        </p>
+      </div>
+      <PermissionGate permission="sites.create">
+        <Dialog
+          open={createDialogOpen}
+          onOpenChange={(open) =>
+            dispatch({ type: "setCreateDialogOpen", open })
+          }
+        >
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 size-4" />
+              Create Site
+            </Button>
+          </DialogTrigger>
+          <SiteFormDialogContent
+            error={error}
+            formData={formData}
+            isSubmitting={isSubmitting}
+            mode="create"
+            onCancel={() =>
+              dispatch({ type: "setCreateDialogOpen", open: false })
+            }
+            onSubmit={onCreateSite}
+            onUpdateForm={(patch) => dispatch({ type: "patchFormData", patch })}
+          />
+        </Dialog>
+      </PermissionGate>
+    </div>
+  );
+}
+
+function SiteFormDialogContent({
+  error,
+  formData,
+  isSubmitting,
+  mode,
+  onCancel,
+  onSubmit,
+  onUpdateForm,
+}: {
+  error: string | null;
+  formData: SiteFormData;
+  isSubmitting: boolean;
+  mode: "create" | "edit";
+  onCancel: () => void;
+  onSubmit: (event: FormEvent) => void;
+  onUpdateForm: (patch: Partial<SiteFormData>) => void;
+}) {
+  const isCreate = mode === "create";
+
+  return (
+    <DialogContent>
+      <form onSubmit={onSubmit}>
+        <DialogHeader>
+          <DialogTitle>
+            {isCreate ? "Create New Site" : "Edit Site"}
+          </DialogTitle>
+          <DialogDescription>
+            {isCreate
+              ? "Add a new physical location or branch to your organization."
+              : "Update site details and settings."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {error ? (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <Label htmlFor={isCreate ? "name" : "edit-name"}>Site Name *</Label>
+            <Input
+              id={isCreate ? "name" : "edit-name"}
+              placeholder="e.g., Main Museum, Storage Facility"
+              value={formData.name}
+              onChange={(event) => onUpdateForm({ name: event.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={isCreate ? "description" : "edit-description"}>
+              Description
+            </Label>
+            <Textarea
+              id={isCreate ? "description" : "edit-description"}
+              placeholder="Describe this site..."
+              value={formData.description}
+              onChange={(event) =>
+                onUpdateForm({ description: event.target.value })
+              }
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={isCreate ? "address" : "edit-address"}>
+              Address
+            </Label>
+            <Textarea
+              id={isCreate ? "address" : "edit-address"}
+              placeholder="123 Main St, City, State, ZIP"
+              value={formData.address}
+              onChange={(event) =>
+                onUpdateForm({ address: event.target.value })
+              }
+              rows={2}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label
+                htmlFor={isCreate ? "isPrimary" : "edit-isPrimary"}
+                className="font-medium"
+              >
+                Primary Site
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Set this as the main location for your organization
+              </p>
+            </div>
+            <Switch
+              id={isCreate ? "isPrimary" : "edit-isPrimary"}
+              checked={formData.isPrimary}
+              onCheckedChange={(checked) =>
+                onUpdateForm({ isPrimary: checked })
+              }
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting
+              ? isCreate
+                ? "Creating…"
+                : "Updating…"
+              : isCreate
+                ? "Create Site"
+                : "Update Site"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  );
+}
+
+function SiteCard({
+  onArchive,
+  onEdit,
+  site,
+}: {
+  onArchive: (siteId: Id<"sites">) => void;
+  onEdit: (site: EditingSite) => void;
+  site: EditingSite;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-1 items-start gap-3">
+          <div className="rounded-full bg-primary/10 p-2">
+            <Building2 className="size-4 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="truncate font-medium">{site.name}</h3>
+              {site.isPrimary ? (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Primary
+                </span>
+              ) : null}
+              {!site.isActive ? (
+                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  Archived
+                </span>
+              ) : null}
+            </div>
+            {site.description ? (
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {site.description}
+              </p>
+            ) : null}
+            {site.address ? (
+              <div className="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="mt-0.5 size-3.5 flex-shrink-0" />
+                <span className="line-clamp-2">{site.address}</span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <PermissionGate permission="sites.update">
+        <div className="mt-4 flex items-center gap-2 border-t pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(site)}
+            className="flex-1"
+          >
+            <Edit className="mr-2 size-3.5" />
+            Edit
+          </Button>
+          {!site.isPrimary && site.isActive ? (
+            <PermissionGate permission="sites.delete">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onArchive(site._id)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </PermissionGate>
+          ) : null}
+        </div>
+      </PermissionGate>
+    </div>
+  );
+}
+
 export default function SitesSettingsPage() {
   const t = useScopedI18n("settings");
   const { currentOrganizationId } = useOrganization();
@@ -136,7 +390,7 @@ export default function SitesSettingsPage() {
     );
   }
 
-  const handleCreateSite = async (e: React.FormEvent) => {
+  const handleCreateSite = async (e: FormEvent) => {
     e.preventDefault();
     dispatch({ type: "setError", error: null });
 
@@ -167,7 +421,7 @@ export default function SitesSettingsPage() {
     }
   };
 
-  const handleEditSite = (site: NonNullable<typeof sites>[0]) => {
+  const handleEditSite = (site: EditingSite) => {
     dispatch({
       type: "setEditingSite",
       site: {
@@ -191,7 +445,7 @@ export default function SitesSettingsPage() {
     dispatch({ type: "setEditDialogOpen", open: true });
   };
 
-  const handleUpdateSite = async (e: React.FormEvent) => {
+  const handleUpdateSite = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingSite) return;
 
@@ -241,137 +495,15 @@ export default function SitesSettingsPage() {
   return (
     <PermissionGate permission="sites.read">
       <div className="flex flex-col gap-8">
-        <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-foreground">
-              Site Management
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Manage physical locations and branches for your organization
-            </p>
-          </div>
-          <PermissionGate permission="sites.create">
-            <Dialog
-              open={createDialogOpen}
-              onOpenChange={(open) =>
-                dispatch({ type: "setCreateDialogOpen", open })
-              }
-            >
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 size-4" />
-                  Create Site
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <form onSubmit={handleCreateSite}>
-                  <DialogHeader>
-                    <DialogTitle>Create New Site</DialogTitle>
-                    <DialogDescription>
-                      Add a new physical location or branch to your
-                      organization.
-                    </DialogDescription>
-                  </DialogHeader>
+        <SitesPageHeader
+          createDialogOpen={createDialogOpen}
+          dispatch={dispatch}
+          error={error}
+          formData={formData}
+          isSubmitting={isSubmitting}
+          onCreateSite={handleCreateSite}
+        />
 
-                  <div className="space-y-4 py-4">
-                    {error && (
-                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                        {error}
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Site Name *</Label>
-                      <Input
-                        id="name"
-                        placeholder="e.g., Main Museum, Storage Facility"
-                        value={formData.name}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "patchFormData",
-                            patch: { name: e.target.value },
-                          })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        placeholder="Describe this site..."
-                        value={formData.description}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "patchFormData",
-                            patch: { description: e.target.value },
-                          })
-                        }
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Textarea
-                        id="address"
-                        placeholder="123 Main St, City, State, ZIP"
-                        value={formData.address}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "patchFormData",
-                            patch: { address: e.target.value },
-                          })
-                        }
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="isPrimary" className="font-medium">
-                          Primary Site
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          Set this as the main location for your organization
-                        </p>
-                      </div>
-                      <Switch
-                        id="isPrimary"
-                        checked={formData.isPrimary}
-                        onCheckedChange={(checked) =>
-                          dispatch({
-                            type: "patchFormData",
-                            patch: { isPrimary: checked },
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        dispatch({ type: "setCreateDialogOpen", open: false })
-                      }
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Creating…" : "Create Site"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </PermissionGate>
-        </div>
-
-        {/* Sites List */}
         <div className="space-y-4">
           <div>
             <h2 className="text-lg font-medium">Sites</h2>
@@ -389,184 +521,33 @@ export default function SitesSettingsPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {sites.map((site) => (
-                <div
+                <SiteCard
                   key={site._id}
-                  className="rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="rounded-full bg-primary/10 p-2">
-                        <Building2 className="size-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium truncate">{site.name}</h3>
-                          {site.isPrimary && (
-                            <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                              Primary
-                            </span>
-                          )}
-                          {!site.isActive && (
-                            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                              Archived
-                            </span>
-                          )}
-                        </div>
-                        {site.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {site.description}
-                          </p>
-                        )}
-                        {site.address && (
-                          <div className="flex items-start gap-1.5 mt-2 text-sm text-muted-foreground">
-                            <MapPin className="size-3.5 mt-0.5 flex-shrink-0" />
-                            <span className="line-clamp-2">{site.address}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <PermissionGate permission="sites.update">
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditSite(site)}
-                        className="flex-1"
-                      >
-                        <Edit className="mr-2 size-3.5" />
-                        Edit
-                      </Button>
-                      {!site.isPrimary && site.isActive && (
-                        <PermissionGate permission="sites.delete">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleArchiveSite(site._id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </PermissionGate>
-                      )}
-                    </div>
-                  </PermissionGate>
-                </div>
+                  site={site}
+                  onArchive={handleArchiveSite}
+                  onEdit={handleEditSite}
+                />
               ))}
             </div>
           )}
         </div>
 
-        {/* Edit Dialog */}
         <Dialog
           open={editDialogOpen}
           onOpenChange={(open) => dispatch({ type: "setEditDialogOpen", open })}
         >
-          <DialogContent>
-            <form onSubmit={handleUpdateSite}>
-              <DialogHeader>
-                <DialogTitle>Edit Site</DialogTitle>
-                <DialogDescription>
-                  Update site details and settings.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-4">
-                {error && (
-                  <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                    {error}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Site Name *</Label>
-                  <Input
-                    id="edit-name"
-                    placeholder="e.g., Main Museum, Storage Facility"
-                    value={formData.name}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "patchFormData",
-                        patch: { name: e.target.value },
-                      })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    placeholder="Describe this site..."
-                    value={formData.description}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "patchFormData",
-                        patch: { description: e.target.value },
-                      })
-                    }
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-address">Address</Label>
-                  <Textarea
-                    id="edit-address"
-                    placeholder="123 Main St, City, State, ZIP"
-                    value={formData.address}
-                    onChange={(e) =>
-                      dispatch({
-                        type: "patchFormData",
-                        patch: { address: e.target.value },
-                      })
-                    }
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-x-2 rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="edit-isPrimary" className="font-medium">
-                      Primary Site
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Set this as the main location for your organization
-                    </p>
-                  </div>
-                  <Switch
-                    id="edit-isPrimary"
-                    checked={formData.isPrimary}
-                    onCheckedChange={(checked) =>
-                      dispatch({
-                        type: "patchFormData",
-                        patch: { isPrimary: checked },
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    dispatch({ type: "setEditDialogOpen", open: false });
-                    dispatch({ type: "setEditingSite", site: null });
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating…" : "Update Site"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
+          <SiteFormDialogContent
+            error={error}
+            formData={formData}
+            isSubmitting={isSubmitting}
+            mode="edit"
+            onCancel={() => {
+              dispatch({ type: "setEditDialogOpen", open: false });
+              dispatch({ type: "setEditingSite", site: null });
+            }}
+            onSubmit={handleUpdateSite}
+            onUpdateForm={(patch) => dispatch({ type: "patchFormData", patch })}
+          />
         </Dialog>
       </div>
     </PermissionGate>

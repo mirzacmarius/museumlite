@@ -8,13 +8,162 @@ import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { useMutation } from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { type ReactNode, use, useState } from "react";
 
 interface PageProps {
   params: Promise<{
     token: string;
     locale: string;
   }>;
+}
+
+function InviteShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="size-screen flex flex-col items-center justify-center px-4">
+      <div className="flex w-full max-w-md flex-col items-center justify-center space-y-8">
+        <Logo width={200} height={200} />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InviteStatusView({
+  action,
+  description,
+  icon,
+  title,
+}: {
+  action?: ReactNode;
+  description?: string;
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <InviteShell>
+      <div className="space-y-4 text-center">
+        <div className="flex items-center justify-center">{icon}</div>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        {description ? (
+          <p className="text-muted-foreground">{description}</p>
+        ) : null}
+        {action}
+      </div>
+    </InviteShell>
+  );
+}
+
+function InviteLoadingView({ label }: { label: string }) {
+  return (
+    <InviteShell>
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        <p>{label}</p>
+      </div>
+    </InviteShell>
+  );
+}
+
+function InviteDetailsCard({
+  details,
+}: {
+  details: Array<{
+    label: string;
+    value: string;
+    valueClassName?: string;
+  }>;
+}) {
+  return (
+    <div className="w-full space-y-4 rounded-lg border border-border bg-card p-6">
+      {details.map((detail) => (
+        <div key={detail.label}>
+          <p className="text-sm text-muted-foreground">{detail.label}</p>
+          <p className={detail.valueClassName ?? "text-base"}>{detail.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InviteErrorMessage({ error }: { error: string | null }) {
+  if (!error) {
+    return null;
+  }
+
+  return (
+    <div className="flex w-full items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+      <AlertCircle className="size-4" />
+      {error}
+    </div>
+  );
+}
+
+function InviteActions({
+  acceptingLabel,
+  acceptLabel,
+  declineLabel,
+  decliningLabel,
+  isAccepting,
+  isDeclining,
+  onAccept,
+  onDecline,
+  onSignIn,
+  signInLabel,
+}: {
+  acceptingLabel: string;
+  acceptLabel: string;
+  declineLabel: string;
+  decliningLabel: string;
+  isAccepting: boolean;
+  isDeclining: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+  onSignIn: () => void;
+  signInLabel: string;
+}) {
+  return (
+    <div className="w-full space-y-3">
+      <Unauthenticated>
+        <Button className="w-full" size="lg" onClick={onSignIn}>
+          {signInLabel}
+        </Button>
+      </Unauthenticated>
+
+      <Authenticated>
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={onAccept}
+          disabled={isAccepting}
+        >
+          {isAccepting ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              {acceptingLabel}
+            </>
+          ) : (
+            acceptLabel
+          )}
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={onDecline}
+          disabled={isDeclining}
+        >
+          {isDeclining ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              {decliningLabel}
+            </>
+          ) : (
+            declineLabel
+          )}
+        </Button>
+      </Authenticated>
+    </div>
+  );
 }
 
 export default function InvitePage({ params }: PageProps) {
@@ -74,142 +223,97 @@ export default function InvitePage({ params }: PageProps) {
     }
   };
 
-  // Loading state
   if (invitation === undefined) {
-    return (
-      <div className="size-screen flex flex-col items-center justify-center px-4">
-        <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-          <Logo width={200} height={200} />
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
-            <p>{t("loading")}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <InviteLoadingView label={t("loading")} />;
   }
 
-  // Invitation not found
   if (invitation === null) {
     return (
-      <div className="size-screen flex flex-col items-center justify-center px-4">
-        <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-          <Logo width={200} height={200} />
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="rounded-full bg-destructive/10 p-3">
-                <XCircle className="size-8 text-destructive" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {t("notFound")}
-            </h1>
-            <p className="text-muted-foreground">{t("notFoundDescription")}</p>
-            <Button onClick={() => push(`/${locale}/login`)}>
-              {t("goToLogin")}
-            </Button>
+      <InviteStatusView
+        title={t("notFound")}
+        description={t("notFoundDescription")}
+        icon={
+          <div className="rounded-full bg-destructive/10 p-3">
+            <XCircle className="size-8 text-destructive" />
           </div>
-        </div>
-      </div>
+        }
+        action={
+          <Button onClick={() => push(`/${locale}/login`)}>
+            {t("goToLogin")}
+          </Button>
+        }
+      />
     );
   }
 
-  // Success state
   if (success) {
     return (
-      <div className="size-screen flex flex-col items-center justify-center px-4">
-        <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-          <Logo width={200} height={200} />
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="rounded-full bg-green-500/10 p-3">
-                <CheckCircle className="size-8 text-green-500" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">{success}</h1>
-            <p className="text-muted-foreground">{t("redirecting")}</p>
+      <InviteStatusView
+        title={success}
+        description={t("redirecting")}
+        icon={
+          <div className="rounded-full bg-green-500/10 p-3">
+            <CheckCircle className="size-8 text-green-500" />
           </div>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
-  // Expired invitation
   if (invitation.isExpired || invitation.status === "expired") {
     return (
-      <div className="size-screen flex flex-col items-center justify-center px-4">
-        <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-          <Logo width={200} height={200} />
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="rounded-full bg-orange-500/10 p-3">
-                <AlertCircle className="size-8 text-orange-500" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {t("expired")}
-            </h1>
-            <p className="text-muted-foreground">{t("expiredDescription")}</p>
-            <Button onClick={() => push(`/${locale}/login`)}>
-              {t("goToLogin")}
-            </Button>
+      <InviteStatusView
+        title={t("expired")}
+        description={t("expiredDescription")}
+        icon={
+          <div className="rounded-full bg-orange-500/10 p-3">
+            <AlertCircle className="size-8 text-orange-500" />
           </div>
-        </div>
-      </div>
+        }
+        action={
+          <Button onClick={() => push(`/${locale}/login`)}>
+            {t("goToLogin")}
+          </Button>
+        }
+      />
     );
   }
 
-  // Already accepted
   if (invitation.status === "accepted") {
     return (
-      <div className="size-screen flex flex-col items-center justify-center px-4">
-        <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-          <Logo width={200} height={200} />
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="rounded-full bg-blue-500/10 p-3">
-                <CheckCircle className="size-8 text-blue-500" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {t("alreadyAccepted")}
-            </h1>
-            <p className="text-muted-foreground">
-              {t("alreadyAcceptedDescription")}
-            </p>
-            <Button onClick={() => push(`/${locale}/login`)}>
-              {t("goToLogin")}
-            </Button>
+      <InviteStatusView
+        title={t("alreadyAccepted")}
+        description={t("alreadyAcceptedDescription")}
+        icon={
+          <div className="rounded-full bg-blue-500/10 p-3">
+            <CheckCircle className="size-8 text-blue-500" />
           </div>
-        </div>
-      </div>
+        }
+        action={
+          <Button onClick={() => push(`/${locale}/login`)}>
+            {t("goToLogin")}
+          </Button>
+        }
+      />
     );
   }
 
-  // Already declined
   if (invitation.status === "declined") {
     return (
-      <div className="size-screen flex flex-col items-center justify-center px-4">
-        <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-          <Logo width={200} height={200} />
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="rounded-full bg-destructive/10 p-3">
-                <XCircle className="size-8 text-destructive" />
-              </div>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {t("alreadyDeclined")}
-            </h1>
-            <p className="text-muted-foreground">
-              {t("alreadyDeclinedDescription")}
-            </p>
-            <Button onClick={() => push(`/${locale}/login`)}>
-              {t("goToLogin")}
-            </Button>
+      <InviteStatusView
+        title={t("alreadyDeclined")}
+        description={t("alreadyDeclinedDescription")}
+        icon={
+          <div className="rounded-full bg-destructive/10 p-3">
+            <XCircle className="size-8 text-destructive" />
           </div>
-        </div>
-      </div>
+        }
+        action={
+          <Button onClick={() => push(`/${locale}/login`)}>
+            {t("goToLogin")}
+          </Button>
+        }
+      />
     );
   }
 
@@ -220,105 +324,60 @@ export default function InvitePage({ params }: PageProps) {
     day: "numeric",
   });
 
-  // Main invitation view
   return (
-    <div className="size-screen flex flex-col items-center justify-center px-4">
-      <div className="flex flex-col items-center justify-center max-w-md w-full space-y-8">
-        <Logo width={200} height={200} />
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t("heading")}</h1>
-          <p className="text-muted-foreground">{t("description")}</p>
-        </div>
-
-        <div className="w-full rounded-lg border border-border bg-card p-6 space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">{t("organization")}</p>
-            <p className="text-lg font-semibold">
-              {invitation.organizationName}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{t("role")}</p>
-            <p className="text-lg font-semibold">{invitation.roleName}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{t("invitedBy")}</p>
-            <p className="text-base">
-              {invitation.inviterName || t("unknownInviter")}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{t("expiresOn")}</p>
-            <p className="text-base">{formattedDate}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">{t("email")}</p>
-            <p className="text-base font-mono text-sm">{invitation.email}</p>
-          </div>
-        </div>
-
-        {error && (
-          <div className="w-full rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center gap-2">
-            <AlertCircle className="size-4" />
-            {error}
-          </div>
-        )}
-
-        <div className="w-full space-y-3">
-          <Unauthenticated>
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => {
-                // Redirect to login with return URL
-                push(
-                  `/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/invite/${token}`)}`,
-                );
-              }}
-            >
-              {t("signInToAccept")}
-            </Button>
-          </Unauthenticated>
-
-          <Authenticated>
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={handleAccept}
-              disabled={isAccepting}
-            >
-              {isAccepting ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  {t("accepting")}
-                </>
-              ) : (
-                t("accept")
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              size="lg"
-              onClick={handleDecline}
-              disabled={isDeclining}
-            >
-              {isDeclining ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  {t("declining")}
-                </>
-              ) : (
-                t("decline")
-              )}
-            </Button>
-          </Authenticated>
-        </div>
-
-        <p className="text-xs text-muted-foreground text-center">
-          {t("helpText")}
-        </p>
+    <InviteShell>
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">{t("heading")}</h1>
+        <p className="text-muted-foreground">{t("description")}</p>
       </div>
-    </div>
+
+      <InviteDetailsCard
+        details={[
+          {
+            label: t("organization"),
+            value: invitation.organizationName,
+            valueClassName: "text-lg font-semibold",
+          },
+          {
+            label: t("role"),
+            value: invitation.roleName,
+            valueClassName: "text-lg font-semibold",
+          },
+          {
+            label: t("invitedBy"),
+            value: invitation.inviterName || t("unknownInviter"),
+          },
+          { label: t("expiresOn"), value: formattedDate },
+          {
+            label: t("email"),
+            value: invitation.email,
+            valueClassName: "font-mono text-sm",
+          },
+        ]}
+      />
+
+      <InviteErrorMessage error={error} />
+
+      <InviteActions
+        acceptingLabel={t("accepting")}
+        acceptLabel={t("accept")}
+        declineLabel={t("decline")}
+        decliningLabel={t("declining")}
+        isAccepting={isAccepting}
+        isDeclining={isDeclining}
+        onAccept={handleAccept}
+        onDecline={handleDecline}
+        onSignIn={() =>
+          push(
+            `/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/invite/${token}`)}`,
+          )
+        }
+        signInLabel={t("signInToAccept")}
+      />
+
+      <p className="text-xs text-muted-foreground text-center">
+        {t("helpText")}
+      </p>
+    </InviteShell>
   );
 }

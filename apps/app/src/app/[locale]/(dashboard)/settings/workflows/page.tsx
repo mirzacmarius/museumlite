@@ -27,7 +27,7 @@ import {
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowDown, ArrowUp, Edit, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 
 type WorkflowType =
   | "accession"
@@ -77,6 +77,332 @@ const createNewStepKey = () => {
 
   return `step-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
+
+type WorkflowsT = ReturnType<typeof useScopedI18n<"workflows">>;
+type PlaceholdersT = ReturnType<typeof useScopedI18n<"settings.placeholders">>;
+
+interface WorkflowFormData {
+  steps: EditableWorkflowStep[];
+  canInitiateRoles: Id<"roles">[];
+}
+
+function WorkflowsHeader({
+  description,
+  title,
+}: {
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-xl font-medium text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function WorkflowStepEditor({
+  index,
+  isLast,
+  onMoveStep,
+  onRemoveStep,
+  onUpdateStep,
+  roles,
+  step,
+  t,
+  tPlaceholders,
+}: {
+  index: number;
+  isLast: boolean;
+  onMoveStep: (index: number, direction: "up" | "down") => void;
+  onRemoveStep: (index: number) => void;
+  onUpdateStep: (
+    index: number,
+    field: keyof WorkflowStep,
+    value: string | number | Id<"roles">,
+  ) => void;
+  roles: RoleOption[] | undefined;
+  step: EditableWorkflowStep;
+  t: WorkflowsT;
+  tPlaceholders: PlaceholdersT;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
+      <div className="mt-2.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+        {index + 1}
+      </div>
+
+      <div className="flex-1 space-y-3">
+        <div>
+          <Label className="text-xs text-muted-foreground">
+            {t("stepName")}
+          </Label>
+          <Input
+            value={step.name}
+            onChange={(event) =>
+              onUpdateStep(index, "name", event.target.value)
+            }
+            className="mt-1 border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
+            placeholder={tPlaceholders("stepName")}
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs text-muted-foreground">
+            {t("assignRole")}
+          </Label>
+          <Select
+            value={step.roleId}
+            onValueChange={(value) =>
+              onUpdateStep(index, "roleId", value as Id<"roles">)
+            }
+          >
+            <SelectTrigger className="mt-1 border-border bg-background text-foreground focus:ring-ring">
+              <SelectValue placeholder={tPlaceholders("selectRole")} />
+            </SelectTrigger>
+            <SelectContent className="border-border bg-background text-foreground">
+              {roles?.map((role) => (
+                <SelectItem
+                  key={role._id}
+                  value={role._id}
+                  className="focus:bg-muted focus:text-foreground"
+                >
+                  {role.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1 pt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6 text-muted-foreground hover:bg-accent hover:text-foreground/80"
+          onClick={() => onMoveStep(index, "up")}
+          disabled={index === 0}
+        >
+          <ArrowUp className="size-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6 text-muted-foreground hover:bg-accent hover:text-foreground/80"
+          onClick={() => onMoveStep(index, "down")}
+          disabled={isLast}
+        >
+          <ArrowDown className="size-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6 text-muted-foreground hover:bg-red-950/30 hover:text-red-400"
+          onClick={() => onRemoveStep(index)}
+        >
+          <Trash2 className="size-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function WorkflowStepsEditor({
+  onAddStep,
+  onMoveStep,
+  onRemoveStep,
+  onUpdateStep,
+  roles,
+  steps,
+  t,
+  tPlaceholders,
+}: {
+  onAddStep: () => void;
+  onMoveStep: (index: number, direction: "up" | "down") => void;
+  onRemoveStep: (index: number) => void;
+  onUpdateStep: (
+    index: number,
+    field: keyof WorkflowStep,
+    value: string | number | Id<"roles">,
+  ) => void;
+  roles: RoleOption[] | undefined;
+  steps: EditableWorkflowStep[];
+  t: WorkflowsT;
+  tPlaceholders: PlaceholdersT;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label className="text-foreground">{t("approvalSteps")}</Label>
+        <Button
+          type="button"
+          onClick={onAddStep}
+          variant="outline"
+          size="sm"
+          className="h-8 border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
+        >
+          <Plus className="mr-2 size-3.5" />
+          {t("addStep")}
+        </Button>
+      </div>
+
+      {steps.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
+          {t("noStepsDefined")}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {steps.map((step, index) => (
+            <WorkflowStepEditor
+              key={step.clientKey}
+              index={index}
+              isLast={index === steps.length - 1}
+              onMoveStep={onMoveStep}
+              onRemoveStep={onRemoveStep}
+              onUpdateStep={onUpdateStep}
+              roles={roles}
+              step={step}
+              t={t}
+              tPlaceholders={tPlaceholders}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WorkflowInitiatorRolesEditor({
+  canInitiateRoles,
+  onToggleRole,
+  roles,
+  t,
+}: {
+  canInitiateRoles: Id<"roles">[];
+  onToggleRole: (roleId: Id<"roles">) => void;
+  roles: RoleOption[] | undefined;
+  t: WorkflowsT;
+}) {
+  return (
+    <div className="space-y-3 pt-2">
+      <Label className="text-foreground">{t("canInitiateWorkflow")}</Label>
+      <div className="rounded-lg border border-border bg-muted/30 p-4">
+        <div className="grid grid-cols-2 gap-3">
+          {roles?.map((role) => (
+            <div key={role._id} className="flex items-center gap-x-2">
+              <Checkbox
+                id={`role-${role._id}`}
+                checked={canInitiateRoles.includes(role._id)}
+                onCheckedChange={() => onToggleRole(role._id)}
+                className="border-border data-[state=checked]:bg-zinc-200 data-[state=checked]:text-zinc-900"
+              />
+              <Label
+                htmlFor={`role-${role._id}`}
+                className="cursor-pointer text-sm font-normal text-foreground/80"
+              >
+                {role.name}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkflowEditDialog({
+  formData,
+  isOpen,
+  isSubmitting,
+  onAddStep,
+  onCancel,
+  onMoveStep,
+  onOpenChange,
+  onRemoveStep,
+  onSave,
+  onToggleInitiatorRole,
+  onUpdateStep,
+  roles,
+  t,
+  title,
+  tPlaceholders,
+}: {
+  formData: WorkflowFormData;
+  isOpen: boolean;
+  isSubmitting: boolean;
+  onAddStep: () => void;
+  onCancel: () => void;
+  onMoveStep: (index: number, direction: "up" | "down") => void;
+  onOpenChange: (open: boolean) => void;
+  onRemoveStep: (index: number) => void;
+  onSave: (event: FormEvent) => void;
+  onToggleInitiatorRole: (roleId: Id<"roles">) => void;
+  onUpdateStep: (
+    index: number,
+    field: keyof WorkflowStep,
+    value: string | number | Id<"roles">,
+  ) => void;
+  roles: RoleOption[] | undefined;
+  t: WorkflowsT;
+  title: string;
+  tPlaceholders: PlaceholdersT;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-border bg-background">
+        <DialogHeader>
+          <DialogTitle className="text-foreground">
+            {t("editDialogTitle", { workflow: title })}
+          </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            {t("configureSteps")}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={onSave} className="space-y-6 py-4">
+          <WorkflowStepsEditor
+            onAddStep={onAddStep}
+            onMoveStep={onMoveStep}
+            onRemoveStep={onRemoveStep}
+            onUpdateStep={onUpdateStep}
+            roles={roles}
+            steps={formData.steps}
+            t={t}
+            tPlaceholders={tPlaceholders}
+          />
+
+          <WorkflowInitiatorRolesEditor
+            canInitiateRoles={formData.canInitiateRoles}
+            onToggleRole={onToggleInitiatorRole}
+            roles={roles}
+            t={t}
+          />
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
+            >
+              {t("cancel")}
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+            >
+              {isSubmitting ? t("saving") : t("saveChanges")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function WorkflowsSettingsPage() {
   const t = useScopedI18n("workflows");
@@ -140,7 +466,7 @@ export default function WorkflowsSettingsPage() {
     setEditDialogOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingWorkflow) return;
 
@@ -240,10 +566,7 @@ export default function WorkflowsSettingsPage() {
 
   return (
     <div className="flex w-full flex-col gap-8 bg-background">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-medium text-foreground">{t("title")}</h2>
-        <p className="text-sm text-muted-foreground">{t("description")}</p>
-      </div>
+      <WorkflowsHeader title={t("title")} description={t("description")} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {WORKFLOW_TYPES.map((type) => (
@@ -259,178 +582,23 @@ export default function WorkflowsSettingsPage() {
         ))}
       </div>
 
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-background border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">
-              {t("editDialogTitle", {
-                workflow: getWorkflowTitle(editingWorkflow),
-              })}
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              {t("configureSteps")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSave} className="space-y-6 py-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-foreground">{t("approvalSteps")}</Label>
-                <Button
-                  type="button"
-                  onClick={addStep}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
-                >
-                  <Plus className="mr-2 size-3.5" />
-                  {t("addStep")}
-                </Button>
-              </div>
-
-              {formData.steps.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-                  {t("noStepsDefined")}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formData.steps.map((step, index) => (
-                    <div
-                      key={step.clientKey}
-                      className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4"
-                    >
-                      <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground mt-2.5">
-                        {index + 1}
-                      </div>
-
-                      <div className="flex-1 space-y-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            {t("stepName")}
-                          </Label>
-                          <Input
-                            value={step.name}
-                            onChange={(e) =>
-                              updateStep(index, "name", e.target.value)
-                            }
-                            className="mt-1 border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
-                            placeholder={tPlaceholders("stepName")}
-                          />
-                        </div>
-
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            {t("assignRole")}
-                          </Label>
-                          <Select
-                            value={step.roleId}
-                            onValueChange={(value) =>
-                              updateStep(index, "roleId", value as Id<"roles">)
-                            }
-                          >
-                            <SelectTrigger className="mt-1 border-border bg-background text-foreground focus:ring-ring">
-                              <SelectValue
-                                placeholder={tPlaceholders("selectRole")}
-                              />
-                            </SelectTrigger>
-                            <SelectContent className="border-border bg-background text-foreground">
-                              {roles?.map((role) => (
-                                <SelectItem
-                                  key={role._id}
-                                  value={role._id}
-                                  className="focus:bg-muted focus:text-foreground"
-                                >
-                                  {role.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 pt-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
-                          onClick={() => moveStep(index, "up")}
-                          disabled={index === 0}
-                        >
-                          <ArrowUp className="size-3.5" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-6 text-muted-foreground hover:text-foreground/80 hover:bg-accent"
-                          onClick={() => moveStep(index, "down")}
-                          disabled={index === formData.steps.length - 1}
-                        >
-                          <ArrowDown className="size-3.5" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-6 text-muted-foreground hover:text-red-400 hover:bg-red-950/30"
-                          onClick={() => removeStep(index)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <Label className="text-foreground">
-                {t("canInitiateWorkflow")}
-              </Label>
-              <div className="rounded-lg border border-border bg-muted/30 p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {roles?.map((role) => (
-                    <div key={role._id} className="flex items-center gap-x-2">
-                      <Checkbox
-                        id={`role-${role._id}`}
-                        checked={formData.canInitiateRoles.includes(role._id)}
-                        onCheckedChange={() => toggleInitiatorRole(role._id)}
-                        className="border-border data-[state=checked]:bg-zinc-200 data-[state=checked]:text-zinc-900"
-                      />
-                      <Label
-                        htmlFor={`role-${role._id}`}
-                        className="text-sm font-normal text-foreground/80 cursor-pointer"
-                      >
-                        {role.name}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditDialogOpen(false)}
-                className="border-border bg-muted text-foreground/80 hover:bg-accent hover:text-white"
-              >
-                {t("cancel")}
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-              >
-                {isSubmitting ? t("saving") : t("saveChanges")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <WorkflowEditDialog
+        formData={formData}
+        isOpen={editDialogOpen}
+        isSubmitting={isSubmitting}
+        onAddStep={addStep}
+        onCancel={() => setEditDialogOpen(false)}
+        onMoveStep={moveStep}
+        onOpenChange={setEditDialogOpen}
+        onRemoveStep={removeStep}
+        onSave={handleSave}
+        onToggleInitiatorRole={toggleInitiatorRole}
+        onUpdateStep={updateStep}
+        roles={roles}
+        t={t}
+        title={getWorkflowTitle(editingWorkflow)}
+        tPlaceholders={tPlaceholders}
+      />
     </div>
   );
 }

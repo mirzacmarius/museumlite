@@ -62,6 +62,218 @@ const FILTER_OPERATORS = [
   { value: "lte", label: "Less Than or Equal" },
 ];
 
+type FilterConditionWithId = FilterCondition & { id: string };
+type FilterGroupWithId = Omit<FilterGroup, "filters"> & {
+  id: string;
+  filters: FilterConditionWithId[];
+};
+
+function GroupOperatorSelector({
+  groupOperator,
+  onGroupOperatorChange,
+}: {
+  groupOperator: "AND" | "OR";
+  onGroupOperatorChange: (operator: "AND" | "OR") => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+      <Label className="text-sm font-medium">
+        Combine filter groups using:
+      </Label>
+      <Select value={groupOperator} onValueChange={onGroupOperatorChange}>
+        <SelectTrigger className="w-24">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="AND">AND</SelectItem>
+          <SelectItem value="OR">OR</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function FilterConditionRow({
+  filter,
+  groupIndex,
+  filterIndex,
+  onRemoveFilter,
+  onUpdateFilter,
+}: {
+  filter: FilterConditionWithId;
+  groupIndex: number;
+  filterIndex: number;
+  onRemoveFilter: (groupIndex: number, filterIndex: number) => void;
+  onUpdateFilter: (
+    groupIndex: number,
+    filterIndex: number,
+    updates: Partial<FilterCondition>,
+  ) => void;
+}) {
+  return (
+    <div className="flex items-end gap-2 rounded bg-muted/30 p-2">
+      <div className="flex-1 space-y-1">
+        <Label className="text-xs">Field</Label>
+        <Select
+          value={filter.field}
+          onValueChange={(value) =>
+            onUpdateFilter(groupIndex, filterIndex, { field: value })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FILTER_FIELDS.map((field) => (
+              <SelectItem key={field.value} value={field.value}>
+                {field.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex-1 space-y-1">
+        <Label className="text-xs">Operator</Label>
+        <Select
+          value={filter.operator}
+          onValueChange={(value) =>
+            onUpdateFilter(groupIndex, filterIndex, {
+              operator: value as FilterOperator,
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FILTER_OPERATORS.map((operator) => (
+              <SelectItem key={operator.value} value={operator.value}>
+                {operator.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex-1 space-y-1">
+        <Label className="text-xs">Value</Label>
+        <Input
+          type="text"
+          value={filter.value as string}
+          onChange={(event) =>
+            onUpdateFilter(groupIndex, filterIndex, {
+              value: event.target.value,
+            })
+          }
+          placeholder="Enter value..."
+        />
+      </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => onRemoveFilter(groupIndex, filterIndex)}
+        className="flex-shrink-0"
+      >
+        <Trash2 className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+function FilterGroupEditor({
+  canRemove,
+  group,
+  groupIndex,
+  onAddFilter,
+  onRemoveFilter,
+  onRemoveFilterGroup,
+  onUpdateFilter,
+  onUpdateGroupOperator,
+}: {
+  canRemove: boolean;
+  group: FilterGroupWithId;
+  groupIndex: number;
+  onAddFilter: (groupIndex: number) => void;
+  onRemoveFilter: (groupIndex: number, filterIndex: number) => void;
+  onRemoveFilterGroup: (groupIndex: number) => void;
+  onUpdateFilter: (
+    groupIndex: number,
+    filterIndex: number,
+    updates: Partial<FilterCondition>,
+  ) => void;
+  onUpdateGroupOperator: (groupIndex: number, operator: "AND" | "OR") => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border bg-card p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-semibold">
+            Filter Group {groupIndex + 1}
+          </Label>
+          {group.filters.length > 1 ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">
+                Combine with:
+              </span>
+              <Select
+                value={group.operator}
+                onValueChange={(value) =>
+                  onUpdateGroupOperator(groupIndex, value as "AND" | "OR")
+                }
+              >
+                <SelectTrigger className="h-7 w-20 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AND">AND</SelectItem>
+                  <SelectItem value="OR">OR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+        </div>
+        {canRemove ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemoveFilterGroup(groupIndex)}
+          >
+            <X className="size-4" />
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
+        {group.filters.map((filter, filterIndex) => (
+          <FilterConditionRow
+            key={filter.id}
+            filter={filter}
+            filterIndex={filterIndex}
+            groupIndex={groupIndex}
+            onRemoveFilter={onRemoveFilter}
+            onUpdateFilter={onUpdateFilter}
+          />
+        ))}
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => onAddFilter(groupIndex)}
+        className="w-full"
+      >
+        <Plus className="mr-2 size-4" />
+        Add Filter
+      </Button>
+    </div>
+  );
+}
+
 export function AdvancedSearchDialog({
   open,
   onOpenChange,
@@ -69,12 +281,6 @@ export function AdvancedSearchDialog({
   initialFilterGroups = [],
   initialGroupOperator = "AND",
 }: AdvancedSearchDialogProps) {
-  type FilterConditionWithId = FilterCondition & { id: string };
-  type FilterGroupWithId = Omit<FilterGroup, "filters"> & {
-    id: string;
-    filters: FilterConditionWithId[];
-  };
-
   const createId = () => {
     const uuid = globalThis.crypto?.randomUUID?.();
     if (uuid) return uuid;
@@ -218,181 +424,36 @@ export function AdvancedSearchDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Group Operator Selection (when multiple groups exist) */}
           {filterGroups.length > 1 && (
-            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-              <Label className="text-sm font-medium">
-                Combine filter groups using:
-              </Label>
-              <Select
-                value={groupOperator}
-                onValueChange={(value) =>
-                  setGroupOperator(value as "AND" | "OR")
-                }
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="AND">AND</SelectItem>
-                  <SelectItem value="OR">OR</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <GroupOperatorSelector
+              groupOperator={groupOperator}
+              onGroupOperatorChange={setGroupOperator}
+            />
           )}
 
-          {/* Filter Groups */}
           <div className="space-y-4">
             {filterGroups.map((group, groupIndex) => (
-              <div
+              <FilterGroupEditor
                 key={group.id}
-                className="border rounded-lg p-4 space-y-3 bg-card"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-semibold">
-                      Filter Group {groupIndex + 1}
-                    </Label>
-                    {group.filters.length > 1 && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">
-                          Combine with:
-                        </span>
-                        <Select
-                          value={group.operator}
-                          onValueChange={(value) =>
-                            updateGroupOperator(
-                              groupIndex,
-                              value as "AND" | "OR",
-                            )
-                          }
-                        >
-                          <SelectTrigger className="h-7 w-20 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AND">AND</SelectItem>
-                            <SelectItem value="OR">OR</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-                  {filterGroups.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFilterGroup(groupIndex)}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* Filters within group */}
-                <div className="space-y-2">
-                  {group.filters.map((filter, filterIndex) => (
-                    <div
-                      key={filter.id}
-                      className="flex items-end gap-2 p-2 bg-muted/30 rounded"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Field</Label>
-                        <Select
-                          value={filter.field}
-                          onValueChange={(value) =>
-                            updateFilter(groupIndex, filterIndex, {
-                              field: value,
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FILTER_FIELDS.map((field) => (
-                              <SelectItem key={field.value} value={field.value}>
-                                {field.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Operator</Label>
-                        <Select
-                          value={filter.operator}
-                          onValueChange={(value) =>
-                            updateFilter(groupIndex, filterIndex, {
-                              operator: value as FilterOperator,
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FILTER_OPERATORS.map((op) => (
-                              <SelectItem key={op.value} value={op.value}>
-                                {op.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex-1 space-y-1">
-                        <Label className="text-xs">Value</Label>
-                        <Input
-                          type="text"
-                          value={filter.value as string}
-                          onChange={(e) =>
-                            updateFilter(groupIndex, filterIndex, {
-                              value: e.target.value,
-                            })
-                          }
-                          placeholder="Enter value..."
-                        />
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeFilter(groupIndex, filterIndex)}
-                        className="flex-shrink-0"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add Filter Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addFilter(groupIndex)}
-                  className="w-full"
-                >
-                  <Plus className="size-4 mr-2" />
-                  Add Filter
-                </Button>
-              </div>
+                canRemove={filterGroups.length > 1}
+                group={group}
+                groupIndex={groupIndex}
+                onAddFilter={addFilter}
+                onRemoveFilter={removeFilter}
+                onRemoveFilterGroup={removeFilterGroup}
+                onUpdateFilter={updateFilter}
+                onUpdateGroupOperator={updateGroupOperator}
+              />
             ))}
           </div>
 
-          {/* Add Filter Group Button */}
           <Button
             type="button"
             variant="outline"
             onClick={addFilterGroup}
             className="w-full"
           >
-            <Plus className="size-4 mr-2" />
+            <Plus className="mr-2 size-4" />
             Add Filter Group
           </Button>
         </div>

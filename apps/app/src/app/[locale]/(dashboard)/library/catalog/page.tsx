@@ -60,6 +60,328 @@ type ItemType =
   | "other";
 type CatalogStatus = "draft" | "published" | "archived";
 
+interface CatalogItem {
+  _id: Id<"libraryItems">;
+  authors: string[];
+  availableCopies: number;
+  catalogStatus: string;
+  coverImageUrl?: string | null;
+  isbn?: string | null;
+  itemType: string;
+  publicationYear?: number | null;
+  subtitle?: string | null;
+  title: string;
+  totalCopies: number;
+}
+
+function LibraryCatalogUnavailableState({
+  action,
+  description,
+  icon: Icon,
+  title,
+}: {
+  action?: React.ReactNode;
+  description: string;
+  icon: typeof Library;
+  title: string;
+}) {
+  return (
+    <div className="flex size-full items-center justify-center bg-background px-6 py-8">
+      <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
+        <Icon className="size-12 text-muted-foreground" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        </div>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+function LibraryCatalogHeader({
+  addItemLabel,
+  description,
+  title,
+}: {
+  addItemLabel: string;
+  description: string;
+  title: string;
+}) {
+  return (
+    <>
+      <div className="flex w-full items-center justify-between rounded-lg p-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-medium text-primary">{title}</h2>
+          <p className="text-sm font-normal text-primary/60">{description}</p>
+        </div>
+        <Button asChild>
+          <Link href="/library/catalog/new">
+            <Plus className="mr-2 size-4" />
+            {addItemLabel}
+          </Link>
+        </Button>
+      </div>
+      <div className="flex w-full px-6">
+        <div className="w-full border-b border-border" />
+      </div>
+    </>
+  );
+}
+
+function LibraryCatalogFilters({
+  getItemTypeLabel,
+  getStatusFilterLabel,
+  labels,
+  onSearchChange,
+  onStatusFilterChange,
+  onTypeFilterChange,
+  searchQuery,
+  statusFilter,
+  typeFilter,
+}: {
+  getItemTypeLabel: (value: string) => string;
+  getStatusFilterLabel: (value: string) => string;
+  labels: {
+    filters: string;
+    searchCatalog: string;
+  };
+  onSearchChange: (value: string) => void;
+  onStatusFilterChange: (value: string) => void;
+  onTypeFilterChange: (value: string) => void;
+  searchQuery: string;
+  statusFilter: string;
+  typeFilter: string;
+}) {
+  return (
+    <div className="space-y-4 border-b border-border px-6 py-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder={labels.searchCatalog}
+          value={searchQuery}
+          onChange={(event) => onSearchChange(event.target.value)}
+          className="pl-9"
+        />
+      </div>
+      <div className="flex gap-4">
+        <div className="flex items-center gap-2">
+          <Filter className="size-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {labels.filters}:
+          </span>
+        </div>
+        <Select value={typeFilter} onValueChange={onTypeFilterChange}>
+          <SelectTrigger className="w-40">
+            <SelectValue>{getItemTypeLabel(typeFilter)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {ITEM_TYPE_VALUES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {getItemTypeLabel(value)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger className="w-40">
+            <SelectValue>{getStatusFilterLabel(statusFilter)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_FILTER_VALUES.map((value) => (
+              <SelectItem key={value} value={value}>
+                {getStatusFilterLabel(value)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
+
+function CatalogStatusBadge({
+  labels,
+  status,
+}: {
+  labels: {
+    archived: string;
+    draft: string;
+    published: string;
+  };
+  status: string;
+}) {
+  switch (status) {
+    case "draft":
+      return <Badge variant="secondary">{labels.draft}</Badge>;
+    case "published":
+      return (
+        <Badge variant="default" className="bg-green-500">
+          {labels.published}
+        </Badge>
+      );
+    case "archived":
+      return <Badge variant="outline">{labels.archived}</Badge>;
+    default:
+      return null;
+  }
+}
+
+function CatalogItemRow({
+  item,
+  labels,
+}: {
+  item: CatalogItem;
+  labels: {
+    copiesAvailable: string;
+    status: {
+      archived: string;
+      draft: string;
+      published: string;
+    };
+  };
+}) {
+  return (
+    <Link
+      key={item._id}
+      href={`/library/catalog/${item._id}`}
+      className="flex items-center gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-accent"
+    >
+      <div className="flex h-20 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
+        {item.coverImageUrl ? (
+          <img
+            src={item.coverImageUrl}
+            alt={item.title}
+            className="size-full object-cover"
+          />
+        ) : (
+          <BookOpen className="size-6 text-muted-foreground" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="truncate font-medium">{item.title}</h3>
+          <CatalogStatusBadge
+            status={item.catalogStatus}
+            labels={labels.status}
+          />
+        </div>
+        {item.subtitle ? (
+          <p className="truncate text-sm text-muted-foreground">
+            {item.subtitle}
+          </p>
+        ) : null}
+        <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
+          {item.authors.length > 0 ? (
+            <span className="truncate">{item.authors.join(", ")}</span>
+          ) : null}
+          {item.publicationYear ? (
+            <>
+              <span>|</span>
+              <span>{item.publicationYear}</span>
+            </>
+          ) : null}
+          {item.isbn ? (
+            <>
+              <span>|</span>
+              <span className="font-mono">{item.isbn}</span>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex-shrink-0 text-right">
+        <p className="text-sm font-medium">
+          {item.availableCopies}/{item.totalCopies}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {labels.copiesAvailable}
+        </p>
+        <Badge variant="secondary" className="mt-1 capitalize">
+          {item.itemType}
+        </Badge>
+      </div>
+    </Link>
+  );
+}
+
+function LibraryCatalogItems({
+  hasFilters,
+  items,
+  labels,
+}: {
+  hasFilters: boolean;
+  items:
+    | {
+        page: CatalogItem[];
+      }
+    | undefined;
+  labels: {
+    addFirstItem: string;
+    copiesAvailable: string;
+    emptyNoItems: string;
+    emptyNoItemsDescription: string;
+    emptyNoItemsFiltered: string;
+    emptyTryAdjustSearch: string;
+    status: {
+      archived: string;
+      draft: string;
+      published: string;
+    };
+  };
+}) {
+  if (items === undefined) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (items.page.length === 0) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center p-6">
+        <EmptyState
+          icon={BookCopy}
+          title={hasFilters ? labels.emptyNoItemsFiltered : labels.emptyNoItems}
+          description={
+            hasFilters
+              ? labels.emptyTryAdjustSearch
+              : labels.emptyNoItemsDescription
+          }
+          action={
+            hasFilters
+              ? undefined
+              : {
+                  label: labels.addFirstItem,
+                  href: "/library/catalog/new",
+                  icon: Plus,
+                }
+          }
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <div className="space-y-4">
+        {items.page.map((item) => (
+          <CatalogItemRow
+            key={item._id}
+            item={item}
+            labels={{
+              copiesAvailable: labels.copiesAvailable,
+              status: labels.status,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LibraryCatalogPage() {
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasModule } = useFeatureAccess();
@@ -110,252 +432,92 @@ export default function LibraryCatalogPage() {
 
   if (!organizations || organizations.length === 0) {
     return (
-      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Building2 className="size-12 text-muted-foreground" />
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">{tCat("noOrganization")}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {tCat("noOrganizationDescription")}
-            </p>
-          </div>
+      <LibraryCatalogUnavailableState
+        icon={Building2}
+        title={tCat("noOrganization")}
+        description={tCat("noOrganizationDescription")}
+        action={
           <Button asChild>
             <Link href="/organizations/new">{tLib("createOrganization")}</Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   if (!currentOrganizationId) {
     return (
-      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="size-12 text-muted-foreground" />
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">
-              {tCat("selectOrganization")}
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {tCat("selectOrganizationDescription")}
-            </p>
-          </div>
-        </div>
-      </div>
+      <LibraryCatalogUnavailableState
+        icon={Library}
+        title={tCat("selectOrganization")}
+        description={tCat("selectOrganizationDescription")}
+      />
     );
   }
 
   if (isLibraryEnabled === false) {
     return (
-      <div className="flex size-full items-center justify-center bg-background px-6 py-8">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-card p-8">
-          <Library className="size-12 text-muted-foreground" />
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">{tCat("notEnabled")}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {tCat("notEnabledDescription")}
-            </p>
-          </div>
+      <LibraryCatalogUnavailableState
+        icon={Library}
+        title={tCat("notEnabled")}
+        description={tCat("notEnabledDescription")}
+        action={
           <Button asChild>
             <Link href="/settings/integrations">
               {tLib("enableIntegration")}
             </Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
     );
   }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">{tCat("status.draft")}</Badge>;
-      case "published":
-        return (
-          <Badge variant="default" className="bg-green-500">
-            {tCat("status.published")}
-          </Badge>
-        );
-      case "archived":
-        return <Badge variant="outline">{tCat("status.archived")}</Badge>;
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="flex size-full bg-background px-6">
       <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          {/* Header */}
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium text-primary">
-                {tCat("title")}
-              </h2>
-              <p className="text-sm font-normal text-primary/60">
-                {tCat("description")}
-              </p>
-            </div>
-            <Button asChild>
-              <Link href="/library/catalog/new">
-                <Plus className="mr-2 size-4" />
-                {tCat("addItem")}
-              </Link>
-            </Button>
-          </div>
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
-          </div>
+          <LibraryCatalogHeader
+            addItemLabel={tCat("addItem")}
+            description={tCat("description")}
+            title={tCat("title")}
+          />
 
-          {/* Search & Filters */}
-          <div className="space-y-4 border-b border-border px-6 py-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={t("searchCatalog")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="size-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {tLib("filters")}:
-                </span>
-              </div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue>{getItemTypeLabel(typeFilter)}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {ITEM_TYPE_VALUES.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {getItemTypeLabel(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue>
-                    {getStatusFilterLabel(statusFilter)}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_FILTER_VALUES.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {getStatusFilterLabel(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <LibraryCatalogFilters
+            getItemTypeLabel={getItemTypeLabel}
+            getStatusFilterLabel={getStatusFilterLabel}
+            labels={{
+              filters: tLib("filters"),
+              searchCatalog: t("searchCatalog"),
+            }}
+            onSearchChange={setSearchQuery}
+            onStatusFilterChange={setStatusFilter}
+            onTypeFilterChange={setTypeFilter}
+            searchQuery={searchQuery}
+            statusFilter={statusFilter}
+            typeFilter={typeFilter}
+          />
 
-          {/* Items List */}
-          {items === undefined ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : items.page.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center p-6">
-              <EmptyState
-                icon={BookCopy}
-                title={
-                  searchQuery || typeFilter !== "all" || statusFilter !== "all"
-                    ? tCat("emptyState.noItemsFiltered")
-                    : tCat("emptyState.noItems")
-                }
-                description={
-                  searchQuery || typeFilter !== "all" || statusFilter !== "all"
-                    ? tCat("emptyState.tryAdjustSearch")
-                    : tCat("emptyState.noItemsDescription")
-                }
-                action={
-                  !searchQuery && typeFilter === "all" && statusFilter === "all"
-                    ? {
-                        label: tCat("addFirstItem"),
-                        href: "/library/catalog/new",
-                        icon: Plus,
-                      }
-                    : undefined
-                }
-              />
-            </div>
-          ) : (
-            <div className="p-6">
-              <div className="space-y-4">
-                {items.page.map((item) => (
-                  <Link
-                    key={item._id}
-                    href={`/library/catalog/${item._id}`}
-                    className="flex items-center gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-accent"
-                  >
-                    {/* Cover Image */}
-                    <div className="flex h-20 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                      {item.coverImageUrl ? (
-                        <img
-                          src={item.coverImageUrl}
-                          alt={item.title}
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <BookOpen className="size-6 text-muted-foreground" />
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium truncate">{item.title}</h3>
-                        {getStatusBadge(item.catalogStatus)}
-                      </div>
-                      {item.subtitle && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {item.subtitle}
-                        </p>
-                      )}
-                      <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-                        {item.authors.length > 0 && (
-                          <span className="truncate">
-                            {item.authors.join(", ")}
-                          </span>
-                        )}
-                        {item.publicationYear && (
-                          <>
-                            <span>|</span>
-                            <span>{item.publicationYear}</span>
-                          </>
-                        )}
-                        {item.isbn && (
-                          <>
-                            <span>|</span>
-                            <span className="font-mono">{item.isbn}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Copies Info */}
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-sm font-medium">
-                        {item.availableCopies}/{item.totalCopies}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {tCat("labels.copiesAvailable")}
-                      </p>
-                      <Badge variant="secondary" className="mt-1 capitalize">
-                        {item.itemType}
-                      </Badge>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          <LibraryCatalogItems
+            hasFilters={
+              Boolean(searchQuery) ||
+              typeFilter !== "all" ||
+              statusFilter !== "all"
+            }
+            items={items}
+            labels={{
+              addFirstItem: tCat("addFirstItem"),
+              copiesAvailable: tCat("labels.copiesAvailable"),
+              emptyNoItems: tCat("emptyState.noItems"),
+              emptyNoItemsDescription: tCat("emptyState.noItemsDescription"),
+              emptyNoItemsFiltered: tCat("emptyState.noItemsFiltered"),
+              emptyTryAdjustSearch: tCat("emptyState.tryAdjustSearch"),
+              status: {
+                archived: tCat("status.archived"),
+                draft: tCat("status.draft"),
+                published: tCat("status.published"),
+              },
+            }}
+          />
         </div>
       </div>
     </div>

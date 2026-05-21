@@ -14,18 +14,18 @@ import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 type BillingInterval = "month" | "year";
 type PaidTier = "pro" | "enterprise";
 
+interface BillingProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  recurringInterval?: "month" | "year" | null;
+  prices: Array<{
+    priceAmount?: number;
+  }>;
+}
+
 function getPlanProduct(
-  products:
-    | Array<{
-        id: string;
-        name: string;
-        description: string | null;
-        recurringInterval?: "month" | "year" | null;
-        prices: Array<{
-          priceAmount?: number;
-        }>;
-      }>
-    | undefined,
+  products: BillingProduct[] | undefined,
   tier: PaidTier,
   interval: BillingInterval,
 ) {
@@ -105,6 +105,257 @@ function PlanCard({
   );
 }
 
+function BillingOverview() {
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <h2 className="text-xl font-medium text-foreground">Billing overview</h2>
+      <p className="text-sm text-muted-foreground">
+        Review your current plan, compare available tiers, and manage billing
+        for your organization. For test purchases, you can use the card numbers
+        listed in this{" "}
+        <a
+          href="https://stripe.com/docs/testing#cards"
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-foreground underline"
+        >
+          resource from Stripe
+        </a>
+        .
+      </p>
+    </div>
+  );
+}
+
+function BillingIntervalToggle({
+  billingInterval,
+  monthlyLabel,
+  onBillingIntervalChange,
+  yearlyLabel,
+}: {
+  billingInterval: BillingInterval;
+  monthlyLabel: string;
+  onBillingIntervalChange: () => void;
+  yearlyLabel: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 self-end">
+      <span className="text-sm text-muted-foreground">{monthlyLabel}</span>
+      <Switch
+        id="billing-interval"
+        checked={billingInterval === "year"}
+        onCheckedChange={onBillingIntervalChange}
+      />
+      <span className="text-sm text-muted-foreground">{yearlyLabel}</span>
+    </div>
+  );
+}
+
+function BillingPlansSection({
+  billingInterval,
+  canManageBilling,
+  currentProductId,
+  currentTier,
+  intervalLabel,
+  isPending,
+  labels,
+  onBillingIntervalChange,
+  onCheckout,
+  onPlanChange,
+  organizationSubscription,
+  paidPlans,
+  pendingProductId,
+  subscriptionDate,
+}: {
+  billingInterval: BillingInterval;
+  canManageBilling: boolean | undefined;
+  currentProductId: string | null;
+  currentTier: string;
+  intervalLabel: string | null;
+  isPending: boolean;
+  labels: {
+    current: string;
+    currentPlan: string;
+    expires: string;
+    free: string;
+    freeDescription: string;
+    loadingPaidPlans: string;
+    managedByOrg: string;
+    monthly: string;
+    noChargeTest: string;
+    on: string;
+    perMonth: string;
+    perYear: string;
+    plan: string;
+    renews: string;
+    switchPlan: string;
+    title: string;
+    upgrade: string;
+    yearly: string;
+  };
+  onBillingIntervalChange: () => void;
+  onCheckout: (productId: string) => void;
+  onPlanChange: (productId: string) => void;
+  organizationSubscription:
+    | {
+        cancelAtPeriodEnd?: boolean;
+        productName?: string | null;
+      }
+    | null
+    | undefined;
+  paidPlans: BillingProduct[];
+  pendingProductId: string | null;
+  subscriptionDate: string | null;
+}) {
+  return (
+    <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
+      <div className="flex w-full flex-col gap-4 p-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-medium text-foreground">
+            {labels.title}
+          </h2>
+          <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
+            {labels.currentPlan}{" "}
+            <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary-foreground">
+              {organizationSubscription?.productName ??
+                (currentTier === "free" ? labels.free : currentTier)}
+            </span>
+            {labels.plan}.
+          </p>
+          {organizationSubscription && subscriptionDate ? (
+            <p className="text-sm font-normal text-muted-foreground">
+              {organizationSubscription.cancelAtPeriodEnd
+                ? labels.expires
+                : labels.renews}{" "}
+              {labels.on} {subscriptionDate}.
+            </p>
+          ) : null}
+        </div>
+
+        <BillingIntervalToggle
+          billingInterval={billingInterval}
+          monthlyLabel={labels.monthly}
+          onBillingIntervalChange={onBillingIntervalChange}
+          yearlyLabel={labels.yearly}
+        />
+
+        <div className="flex w-full flex-col gap-3">
+          <PlanCard
+            name={labels.free}
+            description={labels.freeDescription}
+            amount={0}
+            intervalLabel={null}
+            isCurrent={currentTier === "free"}
+            currentLabel={labels.current}
+          />
+
+          {paidPlans.map((product) => {
+            const isCurrent = currentProductId === product.id;
+            const isLoading = isPending && pendingProductId === product.id;
+            const actionLabel = isCurrent
+              ? labels.current
+              : canManageBilling !== true
+                ? undefined
+                : organizationSubscription
+                  ? labels.switchPlan
+                  : labels.upgrade;
+
+            return (
+              <PlanCard
+                key={product.id}
+                name={product.name}
+                description={product.description}
+                amount={product.prices[0]?.priceAmount ?? 0}
+                intervalLabel={intervalLabel}
+                isCurrent={isCurrent}
+                currentLabel={labels.current}
+                actionLabel={actionLabel}
+                isDisabled={canManageBilling !== true}
+                isLoading={isLoading}
+                onAction={() => {
+                  if (organizationSubscription) {
+                    onPlanChange(product.id);
+                    return;
+                  }
+                  onCheckout(product.id);
+                }}
+              />
+            );
+          })}
+
+          {paidPlans.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
+              {labels.loadingPaidPlans}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
+        <p className="text-sm font-normal text-muted-foreground">
+          {canManageBilling === false
+            ? labels.managedByOrg
+            : labels.noChargeTest}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ManageSubscriptionSection({
+  canManageBilling,
+  isManagingPortal,
+  isPending,
+  labels,
+  onManageSubscription,
+}: {
+  canManageBilling: boolean | undefined;
+  isManagingPortal: boolean;
+  isPending: boolean;
+  labels: {
+    manage: string;
+    manageDescription: string;
+    manageSubscription: string;
+    managedByOrg: string;
+    redirectPortal: string;
+  };
+  onManageSubscription: () => void;
+}) {
+  return (
+    <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
+      <div className="flex flex-col gap-2 p-6">
+        <h2 className="text-xl font-medium text-foreground">
+          {labels.manageSubscription}
+        </h2>
+        <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
+          {canManageBilling === false
+            ? labels.managedByOrg
+            : labels.manageDescription}
+        </p>
+      </div>
+
+      <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
+        <p className="text-sm font-normal text-muted-foreground">
+          {canManageBilling === false
+            ? labels.managedByOrg
+            : labels.redirectPortal}
+        </p>
+
+        {canManageBilling === true ? (
+          <Button
+            type="button"
+            size="sm"
+            onClick={onManageSubscription}
+            disabled={isManagingPortal || isPending}
+          >
+            {isManagingPortal ? "Working…" : labels.manage}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function BillingSettingsContent() {
   const locale = useCurrentLocale();
   const searchParams = useSearchParams();
@@ -141,17 +392,7 @@ function BillingSettingsContent() {
 
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("month");
-  const [products, setProducts] = useState<
-    Array<{
-      id: string;
-      name: string;
-      description: string | null;
-      recurringInterval?: "month" | "year" | null;
-      prices: Array<{
-        priceAmount?: number;
-      }>;
-    }>
-  >([]);
+  const [products, setProducts] = useState<BillingProduct[]>([]);
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const [isManagingPortal, setIsManagingPortal] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -280,162 +521,65 @@ function BillingSettingsContent() {
 
   return (
     <div className="flex size-full flex-col gap-6">
-      <div className="flex w-full flex-col gap-2">
-        <h2 className="text-xl font-medium text-foreground">
-          Billing overview
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Review your current plan, compare available tiers, and manage billing
-          for your organization. For test purchases, you can use the card
-          numbers listed in this{" "}
-          <a
-            href="https://stripe.com/docs/testing#cards"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-foreground underline"
-          >
-            resource from Stripe
-          </a>
-          .
-        </p>
-      </div>
+      <BillingOverview />
 
       <PlanUsageStats
         organizationId={currentOrganizationId}
         showUpgradeLink={false}
       />
 
-      <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
-        <div className="flex w-full flex-col gap-4 p-6">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-medium text-foreground">
-              {t("title")}
-            </h2>
-            <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
-              {t("currentPlan")}{" "}
-              <span className="flex h-[18px] items-center rounded-md bg-primary/10 px-1.5 text-sm font-medium text-primary-foreground">
-                {organizationSubscription?.productName ??
-                  (currentTier === "free" ? t("free") : currentTier)}
-              </span>
-              {t("plan")}.
-            </p>
-            {organizationSubscription && subscriptionDate ? (
-              <p className="text-sm font-normal text-muted-foreground">
-                {organizationSubscription.cancelAtPeriodEnd
-                  ? t("expires")
-                  : t("renews")}{" "}
-                {t("on")} {subscriptionDate}.
-              </p>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-3 self-end">
-            <span className="text-sm text-muted-foreground">
-              {t("monthly")}
-            </span>
-            <Switch
-              id="billing-interval"
-              checked={billingInterval === "year"}
-              onCheckedChange={() =>
-                setBillingInterval((state) =>
-                  state === "month" ? "year" : "month",
-                )
-              }
-            />
-            <span className="text-sm text-muted-foreground">{t("yearly")}</span>
-          </div>
-
-          <div className="flex w-full flex-col gap-3">
-            <PlanCard
-              name={t("free")}
-              description={t("freeDescription")}
-              amount={0}
-              intervalLabel={null}
-              isCurrent={currentTier === "free"}
-              currentLabel={t("current")}
-            />
-
-            {paidPlans.map((product) => {
-              const isCurrent = currentProductId === product.id;
-              const isLoading = isPending && pendingProductId === product.id;
-              const actionLabel = isCurrent
-                ? t("current")
-                : canManageBilling !== true
-                  ? undefined
-                  : organizationSubscription
-                    ? t("switchPlan")
-                    : t("upgrade");
-
-              return (
-                <PlanCard
-                  key={product.id}
-                  name={product.name}
-                  description={product.description}
-                  amount={product.prices[0]?.priceAmount ?? 0}
-                  intervalLabel={monthlyLabel}
-                  isCurrent={isCurrent}
-                  currentLabel={t("current")}
-                  actionLabel={actionLabel}
-                  isDisabled={canManageBilling !== true}
-                  isLoading={isLoading}
-                  onAction={() => {
-                    if (organizationSubscription) {
-                      handlePlanChange(product.id);
-                      return;
-                    }
-                    handleCheckout(product.id);
-                  }}
-                />
-              );
-            })}
-
-            {paidPlans.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                Loading paid plans…
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
-          <p className="text-sm font-normal text-muted-foreground">
-            {canManageBilling === false ? t("managedByOrg") : t("noChargeTest")}
-          </p>
-        </div>
-      </div>
+      <BillingPlansSection
+        billingInterval={billingInterval}
+        canManageBilling={canManageBilling}
+        currentProductId={currentProductId}
+        currentTier={currentTier}
+        intervalLabel={monthlyLabel}
+        isPending={isPending}
+        labels={{
+          current: t("current"),
+          currentPlan: t("currentPlan"),
+          expires: t("expires"),
+          free: t("free"),
+          freeDescription: t("freeDescription"),
+          loadingPaidPlans: "Loading paid plans…",
+          managedByOrg: t("managedByOrg"),
+          monthly: t("monthly"),
+          noChargeTest: t("noChargeTest"),
+          on: t("on"),
+          perMonth: t("perMonth"),
+          perYear: t("perYear"),
+          plan: t("plan"),
+          renews: t("renews"),
+          switchPlan: t("switchPlan"),
+          title: t("title"),
+          upgrade: t("upgrade"),
+          yearly: t("yearly"),
+        }}
+        onBillingIntervalChange={() =>
+          setBillingInterval((state) => (state === "month" ? "year" : "month"))
+        }
+        onCheckout={handleCheckout}
+        onPlanChange={handlePlanChange}
+        organizationSubscription={organizationSubscription}
+        paidPlans={paidPlans}
+        pendingProductId={pendingProductId}
+        subscriptionDate={subscriptionDate}
+      />
 
       {organizationSubscription ? (
-        <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
-          <div className="flex flex-col gap-2 p-6">
-            <h2 className="text-xl font-medium text-foreground">
-              {t("manageSubscription")}
-            </h2>
-            <p className="flex items-start gap-1 text-sm font-normal text-muted-foreground">
-              {canManageBilling === false
-                ? t("managedByOrg")
-                : t("manageDescription")}
-            </p>
-          </div>
-
-          <div className="flex min-h-14 w-full items-center justify-between rounded-lg rounded-t-none border-t border-border bg-secondary px-6 py-3 dark:bg-card">
-            <p className="text-sm font-normal text-muted-foreground">
-              {canManageBilling === false
-                ? t("managedByOrg")
-                : t("redirectPortal")}
-            </p>
-
-            {canManageBilling === true ? (
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleManageSubscription}
-                disabled={isManagingPortal || isPending}
-              >
-                {isManagingPortal ? "Working…" : t("manage")}
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        <ManageSubscriptionSection
+          canManageBilling={canManageBilling}
+          isManagingPortal={isManagingPortal}
+          isPending={isPending}
+          labels={{
+            manage: t("manage"),
+            manageDescription: t("manageDescription"),
+            manageSubscription: t("manageSubscription"),
+            managedByOrg: t("managedByOrg"),
+            redirectPortal: t("redirectPortal"),
+          }}
+          onManageSubscription={handleManageSubscription}
+        />
       ) : null}
     </div>
   );
