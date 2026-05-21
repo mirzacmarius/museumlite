@@ -2408,10 +2408,10 @@ export const bulkInstallObjects = mutation({
       .collect();
 
     await Promise.all([
-      ...pendingObjects.map(async (obj) => {
+      ...pendingObjects.map((obj) => {
         const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
 
-        await Promise.all([
+        return Promise.all([
           ctx.db.patch(obj._id, {
             status: "installed",
             installedAt: Date.now(),
@@ -2472,19 +2472,20 @@ export const bulkReturnObjects = mutation({
       .collect();
 
     await Promise.all([
-      ...deinstalledObjects.map(async (obj) => {
-        if (obj.originalLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: obj.originalLocationId,
-          });
-        }
-
-        await ctx.db.patch(obj._id, {
-          status: "returned",
-          returnedToOriginalLocation: true,
-          returnedAt: Date.now(),
-        });
-      }),
+      ...deinstalledObjects.map((obj) =>
+        Promise.all([
+          obj.originalLocationId
+            ? ctx.db.patch(obj.collectionId, {
+                currentLocationId: obj.originalLocationId,
+              })
+            : Promise.resolve(),
+          ctx.db.patch(obj._id, {
+            status: "returned",
+            returnedToOriginalLocation: true,
+            returnedAt: Date.now(),
+          }),
+        ]),
+      ),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: exhibition.organizationId,
         userId,

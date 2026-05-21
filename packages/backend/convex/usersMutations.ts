@@ -27,35 +27,55 @@ export const deleteUserAccount = internalMutation({
         .collect(),
     ]);
 
-    await Promise.all([
-      ...userOrganizations.map((userOrganization) =>
+    await Promise.all(
+      userOrganizations.map((userOrganization) =>
         ctx.db.delete(userOrganization._id),
       ),
-      ...authSessions.map(async (authSession) => {
-        const refreshTokens = await ctx.db
+    );
+
+    const sessionsWithRefreshTokens = await Promise.all(
+      authSessions.map((authSession) =>
+        ctx.db
           .query("authRefreshTokens")
           .withIndex("sessionId", (q) => q.eq("sessionId", authSession._id))
-          .collect();
+          .collect()
+          .then((refreshTokens) => ({
+            authSessionId: authSession._id,
+            refreshTokenIds: refreshTokens.map((refreshToken) => refreshToken._id),
+          })),
+      ),
+    );
+    await Promise.all(
+      sessionsWithRefreshTokens.flatMap(({ authSessionId, refreshTokenIds }) => [
+        ...refreshTokenIds.map((refreshTokenId) =>
+          ctx.db.delete(refreshTokenId),
+        ),
+        ctx.db.delete(authSessionId),
+      ]),
+    );
 
-        await Promise.all(
-          refreshTokens.map((refreshToken) => ctx.db.delete(refreshToken._id)),
-        );
-        await ctx.db.delete(authSession._id);
-      }),
-      ...authAccounts.map(async (authAccount) => {
-        const verificationCode = await ctx.db
+    const accountsWithVerificationCodes = await Promise.all(
+      authAccounts.map((authAccount) =>
+        ctx.db
           .query("authVerificationCodes")
           .withIndex("accountId", (q) => q.eq("accountId", authAccount._id))
-          .unique();
-
-        await Promise.all([
-          verificationCode
-            ? ctx.db.delete(verificationCode._id)
+          .unique()
+          .then((verificationCode) => ({
+            authAccountId: authAccount._id,
+            verificationCodeId: verificationCode?._id,
+          })),
+      ),
+    );
+    await Promise.all(
+      accountsWithVerificationCodes.flatMap(
+        ({ authAccountId, verificationCodeId }) => [
+          verificationCodeId
+            ? ctx.db.delete(verificationCodeId)
             : Promise.resolve(),
-          ctx.db.delete(authAccount._id),
-        ]);
-      }),
-    ]);
+          ctx.db.delete(authAccountId),
+        ],
+      ),
+    );
 
     await ctx.db.delete(args.userId);
     return null;

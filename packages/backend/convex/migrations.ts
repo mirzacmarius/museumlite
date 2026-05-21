@@ -183,45 +183,50 @@ export const backfillLocationCodes = internalMutation({
       }
     }
 
-    let updatedCount = 0;
-    let errorCount = 0;
+    const groupResults = await Promise.all(
+      [...locationsByParent.entries()].map(async ([key, locations]) => {
+        try {
+          const sortedLocations = locations.toSorted((left, right) => {
+            if (left.sortOrder !== right.sortOrder) {
+              return left.sortOrder - right.sortOrder;
+            }
 
-    for (const [key, locations] of locationsByParent) {
-      try {
-        const sortedLocations = locations.toSorted((left, right) => {
-          if (left.sortOrder !== right.sortOrder) {
-            return left.sortOrder - right.sortOrder;
-          }
+            return left._creationTime - right._creationTime;
+          });
 
-          return left._creationTime - right._creationTime;
-        });
+          const locationPatches = sortedLocations.flatMap((location, i) => {
+            if (!location || location.locationCode) {
+              return [];
+            }
 
-        const locationPatches = sortedLocations.flatMap((location, i) => {
-          if (!location || location.locationCode) {
-            return [];
-          }
+            const prefix = getLocationCodePrefix(location.type);
+            const sequence = String(i + 1).padStart(3, "0");
+            const locationCode = `${prefix}-${sequence}`;
 
-          const prefix = getLocationCodePrefix(location.type);
-          const sequence = String(i + 1).padStart(3, "0");
-          const locationCode = `${prefix}-${sequence}`;
+            return [
+              ctx.db.patch(location._id, {
+                locationCode,
+                locationCodeNormalized: locationCode.toLowerCase(),
+              }),
+            ];
+          });
 
-          return [
-            ctx.db.patch(location._id, {
-              locationCode,
-              locationCodeNormalized: locationCode.toLowerCase(),
-            }),
-          ];
-        });
+          await Promise.all(locationPatches);
 
-        await Promise.all(locationPatches);
-        updatedCount += locationPatches.length;
+          console.log(`✓ Updated ${locations.length} locations in group ${key}`);
+          return { updated: locationPatches.length, error: false };
+        } catch (error) {
+          console.error(`Error processing group ${key}:`, error);
+          return { updated: 0, error: true };
+        }
+      }),
+    );
 
-        console.log(`✓ Updated ${locations.length} locations in group ${key}`);
-      } catch (error) {
-        console.error(`Error processing group ${key}:`, error);
-        errorCount++;
-      }
-    }
+    const updatedCount = groupResults.reduce(
+      (sum, result) => sum + result.updated,
+      0,
+    );
+    const errorCount = groupResults.filter((result) => result.error).length;
 
     const result = {
       success: true,

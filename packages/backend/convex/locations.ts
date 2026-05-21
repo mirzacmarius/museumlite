@@ -820,11 +820,10 @@ export const deleteLocation = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, location.organizationId, "locations.delete");
-
-    // Check if location has children
-    const children = await ctx.db
-      .query("locations")
+    const [, children] = await Promise.all([
+      requirePermission(ctx, location.organizationId, "locations.delete"),
+      ctx.db
+        .query("locations")
       .withIndex("by_parentLocation", (q) =>
         q.eq("parentLocationId", args.locationId),
       )
@@ -1164,11 +1163,10 @@ export const createMoveRequest = mutation({
       throw new Error("Location belongs to different organization");
     }
 
-    await requirePermission(ctx, collection.organizationId, "locations.update");
-
-    // Check for pending requests for same object
-    const existingRequest = await ctx.db
-      .query("locationMoveRequests")
+    const [, existingRequest] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "locations.update"),
+      ctx.db
+        .query("locationMoveRequests")
       .withIndex("by_collection", (q) =>
         q.eq("collectionId", args.collectionId),
       )
@@ -1880,9 +1878,12 @@ export const getObjectsAtLocation = query({
       const visitedLocationIds = new Set<Id<"locations">>([args.locationId]);
       const pendingLocationIds: Id<"locations">[] = [args.locationId];
 
-      while (pendingLocationIds.length > 0) {
-        const waveIds = [...pendingLocationIds];
-        pendingLocationIds.length = 0;
+      const collectDescendantLocations = async (
+        waveIds: Id<"locations">[],
+      ): Promise<void> => {
+        if (waveIds.length === 0) {
+          return;
+        }
 
         const childrenByParent = await Promise.all(
           waveIds.map((parentId) =>
@@ -1895,6 +1896,7 @@ export const getObjectsAtLocation = query({
           ),
         );
 
+        const nextWaveIds: Id<"locations">[] = [];
         for (const children of childrenByParent) {
           for (const child of children) {
             if (
@@ -1907,10 +1909,14 @@ export const getObjectsAtLocation = query({
 
             visitedLocationIds.add(child._id);
             locationIds.add(child._id);
-            pendingLocationIds.push(child._id);
+            nextWaveIds.push(child._id);
           }
         }
-      }
+
+        await collectDescendantLocations(nextWaveIds);
+      };
+
+      await collectDescendantLocations(pendingLocationIds);
     }
 
     const objectsById = new Map<
@@ -2035,11 +2041,10 @@ export const listAllWithPaths = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "locations.read");
-
-    // Get all active locations for the organization
-    const allLocations = await ctx.db
-      .query("locations")
+    const [, allLocations] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      ctx.db
+        .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
