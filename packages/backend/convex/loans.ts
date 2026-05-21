@@ -17,15 +17,18 @@ import {
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
+import { requireLoansAccess } from "./utils/loanAccess";
 import {
-  dispatchLoanItems,
-  restoreLoanCollections,
-  returnLoanItems,
-} from "./utils/loanMovement";
+  cancelLoanHandler,
+  dispatchLoanHandler,
+  returnLoanHandler,
+  returnLoanItemHandler,
+} from "./utils/loanLifecycle";
 import {
-  logActionAndGetRecipients,
-  notifyOrganizationRecipients,
-} from "./utils/organizationAudit";
+  deleteLoanDocumentHandler,
+  listLoanDocumentsHandler,
+  uploadLoanDocumentHandler,
+} from "./utils/loanDocuments";
 import {
   getOrganizationNotificationRecipients,
   getWorkflowCreatorRecipient,
@@ -44,13 +47,6 @@ import {
   recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
-
-async function requireLoansAccess(
-  ctx: QueryCtx | MutationCtx,
-  organizationId: Id<"organizations">,
-) {
-  await requireFeatureAccess(ctx, organizationId, "loans");
-}
 
 /**
  * Create loan record
@@ -1242,223 +1238,25 @@ export const returnLoan = mutation({
     loanItemIds: v.optional(v.array(v.id("loanItems"))),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, loan] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.loanId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-
-    if (loan.status !== "active" && loan.status !== "dispatched") {
-      throw new Error("Loan must be active or dispatched to return");
-    }
-
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
-
-    const movement = await returnLoanItems(ctx, {
-      loanId: args.loanId,
-      organizationId: loan.organizationId,
-      changedBy: userId,
-      conditionIn: args.conditionIn,
-      selectedLoanItemIds: args.loanItemIds,
-    });
-
-    // Update loan status only if all items are now returned (either in this operation or after it)
-    if (movement.allItemsNowReturned) {
-      await ctx.db.patch(args.loanId, {
-        status: "returned",
-      });
-
-      const recipients = await logActionAndGetRecipients(ctx, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "returned",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: {
-          status: "returned",
-          itemsReturned: movement.returnedItemCount,
-          returnedItemIds: movement.returnedItemIds,
-        },
-      });
-
-      await notifyOrganizationRecipients(ctx, recipients, {
-        organizationId: loan.organizationId,
-        userId,
-        type: "loan_returned",
-        title: "Loan Returned",
-        message: `Loan ${loan.loanNumber} has been returned.`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-      });
-    } else {
-      const recipients = await logActionAndGetRecipients(ctx, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "items_returned",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: {
-          itemsReturned: movement.returnedItemCount,
-          totalItems: movement.totalItemCount,
-          returnedItemIds: movement.returnedItemIds,
-        },
-      });
-
-      await notifyOrganizationRecipients(ctx, recipients, {
-        organizationId: loan.organizationId,
-        userId,
-        type: "loan_partial_return",
-        title: "Loan Items Returned",
-        message: `${movement.returnedItemCount} of ${movement.totalItemCount} items from loan ${loan.loanNumber} have been returned.`,
-        relatedEntityType: "loan",
-        relatedEntityId: args.loanId,
-      });
-    }
-
-    return null;
-  },
+  handler: async (ctx, args) => returnLoanHandler(ctx, args),
 });
 
-/**
- * Dispatch loan (mark items as shipped)
- */
 export const dispatch = mutation({
   args: {
     loanId: v.id("loans"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, loan] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.loanId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-
-    if (loan.status !== "active") {
-      throw new Error("Loan must be active to dispatch");
-    }
-
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
-
-    await Promise.all([
-      dispatchLoanItems(ctx, {
-        loanId: args.loanId,
-        changedBy: userId,
-      }),
-      ctx.db.patch(args.loanId, {
-        status: "dispatched",
-      }),
-    ]);
-
-    const recipients = await logActionAndGetRecipients(ctx, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "dispatched",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { status: "dispatched" },
-    });
-
-    await notifyOrganizationRecipients(ctx, recipients, {
-      organizationId: loan.organizationId,
-      userId,
-      type: "loan_dispatched",
-      title: "Loan Dispatched",
-      message: `Loan ${loan.loanNumber} has been dispatched.`,
-      relatedEntityType: "loan",
-      relatedEntityId: args.loanId,
-    });
-
-    return null;
-  },
+  handler: async (ctx, args) => dispatchLoanHandler(ctx, args),
 });
 
-/**
- * Cancel loan
- */
 export const cancel = mutation({
   args: {
     loanId: v.id("loans"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, loan] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.loanId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-
-    if (
-      loan.status !== "pending" &&
-      loan.status !== "active" &&
-      loan.status !== "dispatched"
-    ) {
-      throw new Error("Can only cancel pending, active, or dispatched loans");
-    }
-
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
-
-    await Promise.all([
-      ctx.db.patch(args.loanId, {
-        status: "cancelled",
-      }),
-      restoreLoanCollections(ctx, {
-        loanId: args.loanId,
-        changedBy: userId,
-      }),
-    ]);
-
-    const recipients = await logActionAndGetRecipients(ctx, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "cancelled",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { status: "cancelled" },
-    });
-
-    await notifyOrganizationRecipients(ctx, recipients, {
-      organizationId: loan.organizationId,
-      userId,
-      type: "loan_cancelled",
-      title: "Loan Cancelled",
-      message: `Loan ${loan.loanNumber} has been cancelled.`,
-      relatedEntityType: "loan",
-      relatedEntityId: args.loanId,
-    });
-
-    return null;
-  },
+  handler: async (ctx, args) => cancelLoanHandler(ctx, args),
 });
 
-/**
- * Return single item from loan
- */
 export const returnItem = mutation({
   args: {
     loanId: v.id("loans"),
@@ -1467,91 +1265,7 @@ export const returnItem = mutation({
     notes: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, loan] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.loanId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-
-    if (loan.status !== "active") {
-      throw new Error("Loan is not active");
-    }
-
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
-
-    // Find loan item
-    const loanItem = await ctx.db
-      .query("loanItems")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .filter((q) => q.eq(q.field("loanId"), args.loanId))
-      .first();
-
-    if (!loanItem) {
-      throw new Error("Item not found in this loan");
-    }
-
-    // Update loan item with return info
-    await ctx.db.patch(loanItem._id, {
-      conditionIn: args.conditionIn,
-      notes: args.notes
-        ? loanItem.notes
-          ? `${loanItem.notes}\n${args.notes}`
-          : args.notes
-        : loanItem.notes,
-    });
-
-    // If it's an INCOMING loan, returning it means we send it back to owner.
-    // The user requested: "objects shuld be removed from collection when return (moved it to Deaccessions)"
-    if (loan.type === "incoming") {
-      // Create deaccession record
-      const collection = await ctx.db.get(args.collectionId);
-      if (collection) {
-        // Check if already deaccessioned
-        if (collection.status !== "deaccessioned") {
-          // Create Deaccession record
-          await ctx.db.insert("deaccessions", {
-            organizationId: loan.organizationId,
-            collectionId: args.collectionId,
-            deaccessionNumber: `RET-${collection.accessionNumber}`, // Auto-generated suffix
-            dateDeaccessioned: Date.now(),
-            reason: "Returned to lender",
-            method: "transfer",
-            disposition: `Returned to ${loan.lenderBorrowerName}`,
-            status: "approved",
-            approvedBy: userId,
-            approvedAt: Date.now(),
-            workflowStep: 0,
-          });
-
-          // Update collection status
-          await markCollectionDeaccessioned(ctx, {
-            collectionId: args.collectionId,
-            changedBy: userId,
-          });
-        }
-      }
-    } else {
-      // Outgoing loan being returned TO US.
-      // Status should go back to "active".
-      await markCollectionActive(ctx, {
-        collectionId: args.collectionId,
-        changedBy: userId,
-      });
-    }
-
-    return null;
-  },
+  handler: async (ctx, args) => returnLoanItemHandler(ctx, args),
 });
 
 /**
@@ -1776,32 +1490,7 @@ export const uploadLoanDocument = mutation({
     fileName: v.string(),
   },
   returns: v.id("loanDocuments"),
-  handler: async (ctx, args) => {
-    const [userId, loan] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.loanId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-    ]);
-    const documentId = await ctx.db.insert("loanDocuments", {
-      loanId: args.loanId,
-      storageId: args.storageId,
-      documentType: args.documentType,
-      fileName: args.fileName,
-      uploadedBy: userId,
-      uploadedAt: Date.now(),
-    });
-
-    return documentId;
-  },
+  handler: async (ctx, args) => uploadLoanDocumentHandler(ctx, args),
 });
 
 export const listLoanDocuments = query({
@@ -1824,81 +1513,17 @@ export const listLoanDocuments = query({
       uploaderName: v.optional(v.string()),
     }),
   ),
-  handler: async (ctx, args) => {
-    const loan = await ctx.db.get(args.loanId);
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-    await Promise.all([
-      requireLoansAccess(ctx, loan.organizationId),
-      requirePermission(ctx, loan.organizationId, "loans.read"),
-    ]);
-    const documents = await ctx.db
-      .query("loanDocuments")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
-
-    const documentsWithUrls = await Promise.all(
-      documents.map(async (doc) => {
-        const [url, uploader] = await Promise.all([
-          ctx.storage.getUrl(doc.storageId),
-          ctx.db.get(doc.uploadedBy),
-        ] as const);
-        return {
-          _id: doc._id,
-          storageId: doc.storageId,
-          documentType: doc.documentType,
-          fileName: doc.fileName,
-          url,
-          uploadedBy: doc.uploadedBy,
-          uploadedAt: doc.uploadedAt,
-          uploaderName: uploader?.name || uploader?.username || undefined,
-        };
-      }),
-    );
-
-    return documentsWithUrls;
-  },
+  handler: async (ctx, args) => listLoanDocumentsHandler(ctx, args),
 });
 
-/**
- * Delete loan document
- */
 export const deleteLoanDocument = mutation({
   args: {
     documentId: v.id("loanDocuments"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, document] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.documentId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!document) {
-      throw new Error("Document not found");
-    }
-
-    const loan = await ctx.db.get(document.loanId);
-    if (!loan) {
-      throw new Error("Loan not found");
-    }
-    await Promise.all([
-      requirePermission(ctx, loan.organizationId, "loans.update"),
-      ctx.storage.delete(document.storageId),
-      ctx.db.delete(args.documentId),
-    ] as const);
-
-    return null;
-  },
+  handler: async (ctx, args) => deleteLoanDocumentHandler(ctx, args),
 });
 
-/**
- * TEST UTILITY: Delete all loans and loan items for an organization
- * WARNING: This is a destructive operation for testing purposes only
- */
 export const deleteAllLoans = mutation({
   args: {
     organizationId: v.id("organizations"),

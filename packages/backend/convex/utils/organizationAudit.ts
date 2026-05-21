@@ -25,7 +25,7 @@ export interface OrganizationNotificationParams {
 export async function logActionAndGetRecipients(
   ctx: MutationCtx,
   params: AuditLogParams,
-): Promise<Set<Id<"users">>> {
+): Promise<Array<Id<"users">>> {
   const [, recipients] = await Promise.all([
     ctx.runMutation(internal.audit.logAction, params),
     getOrganizationNotificationRecipients(
