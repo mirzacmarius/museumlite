@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { loadCatalogGrowthSnapshot } from "./utils/reportingCatalogAnalytics";
 
 // ============================================
 // VALIDATORS
@@ -675,28 +676,11 @@ ctx,
     ),
     ]);
 
-    const [collections, accessions, deaccessions] = await Promise.all([
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("accessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "approved"))
-        .collect(),
-      ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "approved"))
-        .collect(),
-    ] as const);
+    const snapshot = await loadCatalogGrowthSnapshot(
+      ctx,
+      args.organizationId,
+    );
+    const { collections, accessions, deaccessions } = snapshot;
     // Generate date buckets
     const buckets = generateDateBuckets(
       args.startDate,
