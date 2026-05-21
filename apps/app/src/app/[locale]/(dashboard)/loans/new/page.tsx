@@ -780,11 +780,11 @@ export default function NewLoanPage() {
                         Objects ({selectedCollectionIds.length})
                       </span>
                       {selectedCollectionsList.length > 0 ? (
-                        <div className="flex -space-x-2 overflow-hidden">
+                        <div className="flex overflow-hidden">
                           {selectedCollectionsList.slice(0, 5).map((c) => (
                             <Avatar
                               key={c._id}
-                              className="inline-block size-8 rounded-full ring-2 ring-background"
+                              className="-ml-2 inline-block size-8 rounded-full ring-2 ring-background first:ml-0"
                             >
                               <AvatarFallback className="bg-secondary text-[8px]">
                                 {c.accessionNumber.slice(0, 2)}
@@ -792,7 +792,7 @@ export default function NewLoanPage() {
                             </Avatar>
                           ))}
                           {selectedCollectionsList.length > 5 && (
-                            <div className="flex size-8 items-center justify-center rounded-full bg-secondary ring-2 ring-background text-[10px] font-medium text-muted-foreground">
+                            <div className="-ml-2 flex size-8 items-center justify-center rounded-full bg-secondary text-[10px] font-medium text-muted-foreground ring-2 ring-background">
                               +{selectedCollectionsList.length - 5}
                             </div>
                           )}

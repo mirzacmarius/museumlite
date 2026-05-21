@@ -20,7 +20,7 @@ interface PageProps {
 function InviteShell({ children }: { children: ReactNode }) {
   return (
     <div className="size-screen flex flex-col items-center justify-center px-4">
-      <div className="flex w-full max-w-md flex-col items-center justify-center space-y-8">
+      <div className="flex w-full max-w-md flex-col items-center justify-center gap-y-8">
         <Logo width={200} height={200} />
         {children}
       </div>

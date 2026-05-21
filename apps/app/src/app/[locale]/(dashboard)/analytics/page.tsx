@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full space-y-6 p-6 overflow-hidden">
+      <div className="flex flex-col h-full gap-y-6 p-6 overflow-hidden">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <Skeleton className="h-8 w-48" />
@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
       isLocked={!hasFeature("reporting")}
       tierNeeded="pro"
     >
-      <div className="flex flex-col h-full space-y-6 p-6 overflow-y-auto">
+      <div className="flex flex-col h-full gap-y-6 p-6 overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">

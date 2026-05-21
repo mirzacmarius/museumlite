@@ -277,7 +277,7 @@ export default function EditExhibitionPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 rounded-lg border border-border bg-muted/50 p-4">
+                <div className="flex items-center gap-x-2 rounded-lg border border-border bg-muted/50 p-4">
                   <Checkbox
                     id="isCurrent"
                     checked={formData.isCurrent}
@@ -309,7 +309,7 @@ export default function EditExhibitionPage() {
               </h2>
 
               <div className="space-y-6">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-x-2">
                   <Checkbox
                     id="isLoan"
                     checked={formData.isLoan}

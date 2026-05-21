@@ -484,7 +484,7 @@ export default function EditAccountPage() {
                       {rolesWithLoansPermissions.map((role) => (
                         <div
                           key={role._id}
-                          className="flex items-center space-x-2"
+                          className="flex items-center gap-x-2"
                         >
                           <Checkbox
                             id={`role-${role._id}`}

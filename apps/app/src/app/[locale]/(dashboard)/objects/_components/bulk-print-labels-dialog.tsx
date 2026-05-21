@@ -103,7 +103,7 @@ export function BulkPrintLabelsDialog({
               onValueChange={(value) => setLabelSize(value as LabelSize)}
               className="flex gap-4"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-x-2">
                 <RadioGroupItem value="2x2" id="bulk-size-2x2" />
                 <Label
                   htmlFor="bulk-size-2x2"
@@ -112,7 +112,7 @@ export function BulkPrintLabelsDialog({
                   {tQrLabel("size2x2")} (2" × 2")
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-x-2">
                 <RadioGroupItem value="1x3" id="bulk-size-1x3" />
                 <Label
                   htmlFor="bulk-size-1x3"

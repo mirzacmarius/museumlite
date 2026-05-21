@@ -372,7 +372,7 @@ export default function LibrarySettingsPage() {
               }
             />
           </div>
-          <div className="flex items-center justify-between space-y-0 sm:col-span-2">
+          <div className="flex items-center justify-between gap-y-0 sm:col-span-2">
             <div>
               <Label>Auto-generate Card Numbers</Label>
               <p className="text-sm text-muted-foreground">

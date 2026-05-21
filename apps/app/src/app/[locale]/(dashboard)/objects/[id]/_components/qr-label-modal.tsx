@@ -68,7 +68,7 @@ export function QRLabelModal({
               onValueChange={(value) => setLabelSize(value as LabelSize)}
               className="flex gap-4"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-x-2">
                 <RadioGroupItem value="2x2" id="size-2x2" />
                 <Label
                   htmlFor="size-2x2"
@@ -77,7 +77,7 @@ export function QRLabelModal({
                   {t("size2x2")} (2" × 2")
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-x-2">
                 <RadioGroupItem value="1x3" id="size-1x3" />
                 <Label
                   htmlFor="size-1x3"
