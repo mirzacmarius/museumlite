@@ -1,6 +1,5 @@
 "use client";
 
-import type { AccountHolderType } from "@/lib/account-holder";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -16,9 +15,10 @@ import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import type { Dispatch, SetStateAction } from "react";
+import type { AccountHolderType } from "@/lib/account-holder";
 import {
-  type NewAccountForm,
   initialAccountFormState,
+  type NewAccountForm,
 } from "./account-combobox-types";
 
 interface AccountComboboxCreateDialogProps {

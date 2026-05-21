@@ -1,11 +1,5 @@
 "use client";
 
-import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatDate as formatDateUtil } from "@/lib/format-date";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -28,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertTriangle,
@@ -40,11 +33,16 @@ import {
   Library,
   Loader2,
   type LucideIcon,
-  Search,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useReducer } from "react";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatDate as formatDateUtil } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 const STATUS_FILTER_VALUES = ["all", "outstanding", "paid", "waived"] as const;
 

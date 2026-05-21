@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -22,6 +21,7 @@ import {
   Package,
 } from "lucide-react";
 import type * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface LocationUtilizationCardProps {
   data: {
@@ -90,7 +90,9 @@ function getProgressColor(percentage: number): string {
 
 function LocationSummaryGrid({
   summary,
-}: { summary: LocationUtilizationData["summary"] }) {
+}: {
+  summary: LocationUtilizationData["summary"];
+}) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
       <SummaryTile
@@ -162,11 +164,7 @@ function OverallUtilizationTile({ percentage }: { percentage: number }) {
   );
 }
 
-function LocationUtilizationTabs({
-  data,
-}: {
-  data: LocationUtilizationData;
-}) {
+function LocationUtilizationTabs({ data }: { data: LocationUtilizationData }) {
   const t = useI18n();
 
   return (
@@ -343,7 +341,9 @@ function EmptyLocationRow({ label }: { label: string }) {
 
 function LocationNameCell({
   location,
-}: { location: { name: string; path: string } }) {
+}: {
+  location: { name: string; path: string };
+}) {
   return (
     <TableCell>
       <div className="flex flex-col gap-0.5">

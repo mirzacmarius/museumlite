@@ -1,12 +1,12 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Timeline } from "@v1/ui/timeline";
 import { useQuery } from "convex/react";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface TransportStatusProps {
   loanId: Id<"loans">;

@@ -4,7 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback, useRef, useState } from "react";
-import { type ImportType, downloadCsv, parseCSV } from "./data-csv-utils";
+import { downloadCsv, type ImportType, parseCSV } from "./data-csv-utils";
 
 interface ImportTemplate {
   headers: string[];

@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -17,6 +16,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { Edit } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 
 interface MediaEditDialogProps {
   media: {

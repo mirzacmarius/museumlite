@@ -1,7 +1,7 @@
 import {
-  type Locale,
   format as dateFnsFormat,
   formatDistanceToNow,
+  type Locale,
 } from "date-fns";
 import { enUS, es, fr, nb, ro } from "date-fns/locale";
 

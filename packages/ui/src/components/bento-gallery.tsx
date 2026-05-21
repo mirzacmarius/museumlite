@@ -254,7 +254,9 @@ export const InteractiveImageBentoGallery: React.FC<
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="relative z-10 translate-y-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                  <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                  <h3 className="text-lg font-semibold text-white">
+                    {item.title}
+                  </h3>
                   <p className="mt-1 text-sm text-white/80">{item.desc}</p>
                 </div>
               </motion.div>

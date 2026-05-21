@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { usePermission } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -29,6 +26,9 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useOrganization } from "@/components/organization-provider";
+import { usePermission } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 const MODULE_ICONS: Record<ModuleId, typeof Users> = {
   library: BookOpen,
@@ -90,7 +90,7 @@ export default function ModulesSettingsPage() {
       toast.success(
         tToast("moduleToggled", { action: enabled ? "enabled" : "disabled" }),
       );
-    } catch (error) {
+    } catch (_error) {
       setEnabledModules(previous);
       toast.error(tToast("moduleUpdateFailed"));
     } finally {

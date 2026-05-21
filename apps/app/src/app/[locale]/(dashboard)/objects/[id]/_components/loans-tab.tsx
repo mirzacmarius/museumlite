@@ -1,6 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -8,6 +7,7 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Send } from "lucide-react";
 import Link from "next/link";
+import { ClientDate } from "@/components/client-date";
 import type { LoanForCollection } from "./types";
 
 interface LoansTabProps {

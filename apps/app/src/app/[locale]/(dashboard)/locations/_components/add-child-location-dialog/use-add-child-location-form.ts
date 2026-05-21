@@ -1,10 +1,10 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 import {
   hasCustomFieldValues,
   setOptionalNumberCustomField,

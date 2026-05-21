@@ -1,10 +1,10 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 import type { ItemToReturn, ManagedLoanItem } from "./types";
 
 interface UseLoanItemsManagerOptions {

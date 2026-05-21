@@ -1,5 +1,5 @@
-import type { CollectionType } from "@/components/collection-type-selector";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { CollectionType } from "@/components/collection-type-selector";
 import type { ObjectTabId } from "../../[id]/_components/object-tab-config";
 
 export interface OwnershipEntry {

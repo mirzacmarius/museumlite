@@ -1,11 +1,11 @@
 "use client";
 
-import { convertToCSV } from "@/lib/format-converters";
-import { useI18n } from "@/locales/client";
 import { Button, type ButtonProps } from "@v1/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { convertToCSV } from "@/lib/format-converters";
+import { useI18n } from "@/locales/client";
 
 interface ExportCSVButtonProps extends ButtonProps {
   data?: Record<string, unknown>[];
@@ -48,7 +48,7 @@ export function ExportCSVButton({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       toast.error(t("common.toast.exportFailed"));
     } finally {
       setIsExporting(false);

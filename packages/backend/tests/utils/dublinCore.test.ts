@@ -7,14 +7,14 @@
  */
 
 import { describe, expect, test } from "vitest";
+import type { Doc } from "../../convex/_generated/dataModel";
 import {
-  toDublinCore,
-  fromDublinCore,
-  toDublinCoreXML,
   collectionsToDublinCore,
   type DublinCoreMetadata,
+  fromDublinCore,
+  toDublinCore,
+  toDublinCoreXML,
 } from "../../convex/utils/dublinCore";
-import type { Doc } from "../../convex/_generated/dataModel";
 
 describe("toDublinCore", () => {
   test("should convert basic collection to Dublin Core", () => {

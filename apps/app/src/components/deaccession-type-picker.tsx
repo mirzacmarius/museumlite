@@ -1,8 +1,10 @@
 "use client";
 
 import { Archive, ArrowRightLeft, DollarSign, Trash2 } from "lucide-react";
-import type { DeaccessionWorkflowConfig } from "./deaccession-dialog-types";
-import type { RemovalType } from "./deaccession-dialog-types";
+import type {
+  DeaccessionWorkflowConfig,
+  RemovalType,
+} from "./deaccession-dialog-types";
 
 interface DeaccessionTypePickerProps {
   deaccessionWorkflow?: DeaccessionWorkflowConfig;

@@ -1,10 +1,10 @@
 "use client";
 
-import type { FieldMapping } from "@/components/import-field-mapper";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
+import type { FieldMapping } from "@/components/import-field-mapper";
 import type { ImportState, ParsedRow } from "./import-accessions-types";
 
 interface UseImportAccessionsOptions {

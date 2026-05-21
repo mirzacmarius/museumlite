@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  DeaccessionDialog,
-  type RemovalType,
-} from "@/components/deaccession-dialog";
-import { PermissionGate } from "@/components/permission-gate";
-import { writeTextToClipboard } from "@/lib/clipboard";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -36,6 +29,13 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useReducer } from "react";
+import {
+  DeaccessionDialog,
+  type RemovalType,
+} from "@/components/deaccession-dialog";
+import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useCurrentLocale } from "@/locales/client";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -380,93 +380,91 @@ function ObjectGridItem({
   };
 
   return (
-    <>
-      <div
-        className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:border-ring/50 hover:shadow-xl ${
-          isSelected ? "border-primary ring-1 ring-primary" : ""
-        }`}
-      >
-        {onSelect && (
-          <div
-            className={`absolute top-2 left-2 z-20 transition-opacity ${
-              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            }`}
-          >
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelect(!!checked)}
-              onClick={(e) => e.stopPropagation()}
-              className="border-input bg-background/80"
-            />
-          </div>
-        )}
-        <Link href={`/objects/${item._id}`} className="block">
-          <div className="relative aspect-square overflow-hidden bg-background">
-            {item.primaryImageUrl ? (
-              <Image
-                src={item.primaryImageUrl}
-                alt={item.title}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                loading={shouldEagerLoad ? "eager" : "lazy"}
-                className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
-                <Building2 className="size-12" />
-              </div>
-            )}
-
-            {/* Status Badge Top Right */}
-            <div className="absolute top-2 right-2 z-10">
-              {getStatusBadge(item.status)}
-            </div>
-          </div>
-          <div className="p-3">
-            <h3 className="truncate text-xs font-medium text-card-foreground">
-              {item.title}
-            </h3>
-            <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
-              {item.accessionNumber}
-            </p>
-            {item.objectType && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {(() => {
-                  try {
-                    const types = JSON.parse(item.objectType);
-                    if (Array.isArray(types) && types.length > 0) {
-                      return types.slice(0, 2).map((type: string) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
-                        >
-                          {type}
-                        </span>
-                      ));
-                    }
-                    return (
-                      <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                        {item.objectType}
-                      </span>
-                    );
-                  } catch {
-                    return (
-                      <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                        {item.objectType}
-                      </span>
-                    );
-                  }
-                })()}
-              </div>
-            )}
-          </div>
-        </Link>
-
-        <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-          <ObjectActionsMenu item={item} organizationId={organizationId} />
+    <div
+      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:border-ring/50 hover:shadow-xl ${
+        isSelected ? "border-primary ring-1 ring-primary" : ""
+      }`}
+    >
+      {onSelect && (
+        <div
+          className={`absolute top-2 left-2 z-20 transition-opacity ${
+            isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelect(!!checked)}
+            onClick={(e) => e.stopPropagation()}
+            className="border-input bg-background/80"
+          />
         </div>
+      )}
+      <Link href={`/objects/${item._id}`} className="block">
+        <div className="relative aspect-square overflow-hidden bg-background">
+          {item.primaryImageUrl ? (
+            <Image
+              src={item.primaryImageUrl}
+              alt={item.title}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              loading={shouldEagerLoad ? "eager" : "lazy"}
+              className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
+              <Building2 className="size-12" />
+            </div>
+          )}
+
+          {/* Status Badge Top Right */}
+          <div className="absolute top-2 right-2 z-10">
+            {getStatusBadge(item.status)}
+          </div>
+        </div>
+        <div className="p-3">
+          <h3 className="truncate text-xs font-medium text-card-foreground">
+            {item.title}
+          </h3>
+          <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+            {item.accessionNumber}
+          </p>
+          {item.objectType && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(() => {
+                try {
+                  const types = JSON.parse(item.objectType);
+                  if (Array.isArray(types) && types.length > 0) {
+                    return types.slice(0, 2).map((type: string) => (
+                      <span
+                        key={type}
+                        className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
+                      >
+                        {type}
+                      </span>
+                    ));
+                  }
+                  return (
+                    <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                      {item.objectType}
+                    </span>
+                  );
+                } catch {
+                  return (
+                    <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                      {item.objectType}
+                    </span>
+                  );
+                }
+              })()}
+            </div>
+          )}
+        </div>
+      </Link>
+
+      <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
+        <ObjectActionsMenu item={item} organizationId={organizationId} />
       </div>
-    </>
+    </div>
   );
 }
 

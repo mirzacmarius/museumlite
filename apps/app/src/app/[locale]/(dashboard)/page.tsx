@@ -1,9 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { usePermission } from "@/components/permission-gate";
-import { formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
@@ -18,6 +14,10 @@ import {
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
+import { useOrganization } from "@/components/organization-provider";
+import { usePermission } from "@/components/permission-gate";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { DashboardPageSkeleton } from "./dashboard-page-skeleton";
 
 export default function DashboardPage() {

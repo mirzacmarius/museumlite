@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 
 interface ImportCompleteStepProps {
   importedCount: number;

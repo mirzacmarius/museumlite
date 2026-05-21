@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,6 +20,9 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
 import { type Dispatch, type FormEvent, useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface SiteFormData {
   name: string;
@@ -354,7 +354,7 @@ function SiteCard({
 }
 
 export default function SitesSettingsPage() {
-  const t = useScopedI18n("settings");
+  const _t = useScopedI18n("settings");
   const { currentOrganizationId } = useOrganization();
   const [state, dispatch] = useReducer(
     sitesPageReducer,

@@ -1,6 +1,5 @@
 "use client";
 
-import type { AuthMode } from "@/auth/types";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -8,6 +7,7 @@ import { Eye, EyeOff, XCircle } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
+import type { AuthMode } from "@/auth/types";
 
 interface AuthPasswordFormProps {
   canSignInWithPassword: boolean;

@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
@@ -66,7 +67,7 @@ test("accountDocuments: create and list", async () => {
   });
 
   // Mock storage ID - _storage is a system table and can't be inserted in tests
-  const storageId = "0e9655dc186fb9e9;_storage" as any;
+  const storageId = "0e9655dc186fb9e9;_storage" as Id<"_storage">;
 
   const writePermissionId = await t.run(async (ctx) => {
     return await ctx.db.insert("permissions", {
@@ -169,7 +170,7 @@ test("accountDocuments: get with download URL", async () => {
   });
 
   // Mock storage ID - _storage is a system table and can't be inserted in tests
-  const storageId = "0e9655dc186fb9e9;_storage" as any;
+  const storageId = "0e9655dc186fb9e9;_storage" as Id<"_storage">;
 
   const documentId = await t.run(async (ctx) => {
     return await ctx.db.insert("accountDocuments", {
@@ -260,7 +261,7 @@ test("accountDocuments: remove", async () => {
   });
 
   // Mock storage ID - _storage is a system table and can't be inserted in tests
-  const storageId = "0e9655dc186fb9e9;_storage" as any;
+  const storageId = "0e9655dc186fb9e9;_storage" as Id<"_storage">;
 
   const documentId = await t.run(async (ctx) => {
     return await ctx.db.insert("accountDocuments", {

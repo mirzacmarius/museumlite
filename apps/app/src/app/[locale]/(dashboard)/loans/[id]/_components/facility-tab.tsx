@@ -1,8 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { AlertCircle, LayoutGrid, Shield } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 export function FacilityTab() {
   const t = useScopedI18n("loans.actions");

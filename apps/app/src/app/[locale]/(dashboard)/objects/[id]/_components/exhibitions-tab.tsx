@@ -1,13 +1,13 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Presentation } from "lucide-react";
+import { ClientDate } from "@/components/client-date";
+import { useScopedI18n } from "@/locales/client";
 
 interface ExhibitionsTabProps {
   collectionId: string;

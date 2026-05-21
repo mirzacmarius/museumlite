@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -12,6 +11,7 @@ import {
 } from "@v1/ui/dialog";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { useScopedI18n } from "@/locales/client";
 import type { useLoanItemsManager } from "./use-loan-items-manager";
 
 type LoanItemsManagerState = ReturnType<typeof useLoanItemsManager>;

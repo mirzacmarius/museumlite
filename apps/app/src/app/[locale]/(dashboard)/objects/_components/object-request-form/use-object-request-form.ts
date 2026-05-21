@@ -1,24 +1,24 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
 import {
-  type CollectionEditTabId,
-  type CollectionFormData,
-  type DraftMediaItem,
   buildDraftMediaPayload,
   buildObjectDraftPayload,
+  type CollectionEditTabId,
+  type CollectionFormData,
   createEmptyFormData,
   createFormDataFromDraftObject,
+  type DraftMediaItem,
   getFormSignature,
 } from "../collection-form-shared";
 
@@ -144,7 +144,9 @@ export function useObjectRequestForm({
 
   useEffect(() => {
     return () => {
-      selectedFiles.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      for (const item of selectedFiles) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
     };
   }, [selectedFiles]);
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { SignInWithOAuth } from "@/auth/SignInWithOAuth";
+import { useRouter } from "next/navigation";
+import { useReducer } from "react";
 import { AuthHeader } from "@/auth/auth-header";
 import { FormContainer } from "@/auth/common/container";
 import { AuthFormRoot } from "@/auth/form-root";
+import { SignInWithOAuth } from "@/auth/SignInWithOAuth";
 import type {
   AuthErrorInfo,
   AuthMode,
@@ -11,8 +13,6 @@ import type {
   UniqueCodeFlow,
 } from "@/auth/types";
 import { useCurrentLocale } from "@/locales/client";
-import { useRouter } from "next/navigation";
-import { useReducer } from "react";
 
 interface AuthRootProps {
   initialMode: AuthMode;

@@ -1,7 +1,7 @@
-import { AuthRoot } from "@/auth/auth-root";
-import { getI18n } from "@/locales/server";
 import { Logo } from "@v1/ui/logo";
 import Link from "next/link";
+import { AuthRoot } from "@/auth/auth-root";
+import { getI18n } from "@/locales/server";
 
 export async function generateMetadata() {
   const t = await getI18n();

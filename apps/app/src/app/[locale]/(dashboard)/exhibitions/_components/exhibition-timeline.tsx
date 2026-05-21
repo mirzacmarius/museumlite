@@ -1,11 +1,11 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useClientNow } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Box, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
+import { ClientDate } from "@/components/client-date";
+import { useClientNow } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface Exhibition {
   _id: string;

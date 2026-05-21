@@ -1,13 +1,13 @@
 "use client";
 
-import { CollectionSelector } from "@/components/collection-selector";
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Checkbox } from "@v1/ui/checkbox";
 import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { CollectionSelector } from "@/components/collection-selector";
+import { useScopedI18n } from "@/locales/client";
 import type { ExhibitionFormData } from "./exhibition-form-types";
 
 interface ExhibitionFormSectionsProps {

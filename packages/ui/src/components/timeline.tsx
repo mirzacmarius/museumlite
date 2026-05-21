@@ -25,8 +25,11 @@ const Timeline = ({
       <div className="absolute left-1.5 w-px bg-zinc-800 top-2 bottom-2" />
 
       <div className="space-y-6">
-        {items.map((item, index) => (
-          <div key={`${item.title}-${index}`} className="relative pl-4">
+        {items.map((item, _index) => (
+          <div
+            key={`${item.title}-${item.status ?? "none"}-${item.description ?? ""}`}
+            className="relative pl-4"
+          >
             <div
               className={cn(
                 "absolute -left-4 top-1 size-3 rounded-full border-2 border-zinc-950",
@@ -64,4 +67,4 @@ const Timeline = ({
 
 Timeline.displayName = "Timeline";
 
-export { Timeline, type TimelineProps, type TimelineItem };
+export { Timeline, type TimelineItem, type TimelineProps };

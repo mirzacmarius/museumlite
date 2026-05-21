@@ -1,7 +1,5 @@
 "use client";
 
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { api } from "@v1/backend/convex/_generated/api";
 import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
@@ -14,6 +12,8 @@ import {
   MapPin,
   Wine,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<FunctionReturnType<typeof api.wineDetails.get>>;
 

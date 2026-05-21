@@ -1,20 +1,20 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { LightboxImage } from "@v1/ui/image-lightbox";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ObjectDetailHeader } from "./_components/object-detail/object-detail-header";
 import { ObjectDetailHero } from "./_components/object-detail/object-detail-hero";
 import { ObjectDetailTabPanel } from "./_components/object-detail/object-detail-tab-panel";
 import {
-  type ObjectTabId as TabId,
   getObjectViewTabs,
+  type ObjectTabId as TabId,
 } from "./_components/object-tab-config";
 import type { ObjectDetailData } from "./_components/types";
 
@@ -244,7 +244,9 @@ function ObjectDetailView({
           onLinkCopiedChange={(value) =>
             dispatch({ type: "setLinkCopied", value })
           }
-          onPrintClick={() => dispatch({ type: "setPrintModalOpen", value: true })}
+          onPrintClick={() =>
+            dispatch({ type: "setPrintModalOpen", value: true })
+          }
           onQrLabelClick={() =>
             dispatch({ type: "setQrLabelModalOpen", value: true })
           }

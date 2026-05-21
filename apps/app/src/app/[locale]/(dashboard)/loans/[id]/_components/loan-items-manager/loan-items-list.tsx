@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +14,8 @@ import {
 import { Button } from "@v1/ui/button";
 import { ExternalLink, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { ManagedLoanItem } from "./types";
 import type { useLoanItemsManager } from "./use-loan-items-manager";
 

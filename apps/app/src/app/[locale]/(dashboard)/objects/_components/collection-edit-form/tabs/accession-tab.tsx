@@ -1,19 +1,6 @@
 "use client";
 
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
-import { ConditionCombobox } from "@/components/condition-combobox";
-import { DonationDetailsField } from "@/components/donation-details-field";
-import { LocationSelector } from "@/components/location-selector";
-import { MaterialsCombobox } from "@/components/materials-combobox";
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { ObjectCombobox } from "@/components/object-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
-import { TypeCombobox } from "@/components/type-combobox";
-import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
-import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -22,42 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
-import { Textarea } from "@v1/ui/textarea";
-import { cn } from "@v1/ui/utils";
-import type { FunctionReturnType } from "convex/server";
-import {
-  AlertOctagon,
-  Camera,
-  CheckCircle,
-  Edit,
-  Image as ImageIcon,
-  Plus,
-  Star,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import type React from "react";
+import { DonationDetailsField } from "@/components/donation-details-field";
 import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type {
-  CollectionFormTabProps,
-  LinkEntry,
-  OwnershipEntry,
-} from "../../collection-form-shared/types";
-import {
-  createLinkEntryLocalId,
-  createOwnershipEntryLocalId,
-  normalizeOptionalString,
-} from "../../collection-form-shared/utils";
-
-type CollectionDoc = NonNullable<
-  FunctionReturnType<typeof api.collections.get>
->;
-type MediaItem = NonNullable<FunctionReturnType<typeof api.media.list>>[number];
+import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
 export interface CollectionEditAccessionTabProps
   extends CollectionFormTabProps {
@@ -67,9 +22,9 @@ export interface CollectionEditAccessionTabProps
 export function CollectionEditAccessionTab({
   formData,
   updateField,
-  placeholders,
-  currentOrganizationId,
-  typedCollectionId,
+  placeholders: _placeholders,
+  currentOrganizationId: _currentOrganizationId,
+  typedCollectionId: _typedCollectionId,
 }: CollectionEditAccessionTabProps) {
   return (
     <div className="space-y-8">

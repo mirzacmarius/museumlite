@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import {
@@ -14,6 +13,7 @@ import {
 import { Label } from "@v1/ui/label";
 import { cn } from "@v1/ui/utils";
 import { Info } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
 import { getNonReturnedItemIds, isLoanItemReturned } from "./loan-item-utils";
 

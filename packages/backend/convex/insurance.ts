@@ -1322,7 +1322,7 @@ export const getInsuranceStats = query({
     expiringIn30Days: v.number(),
   }),
   handler: async (ctx, args) => {
-        await requirePermission(ctx, args.organizationId, "loans.read");
+    await requirePermission(ctx, args.organizationId, "loans.read");
     return await computeInsuranceStats(ctx, args.organizationId);
   },
 });

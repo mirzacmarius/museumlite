@@ -280,11 +280,11 @@ function WizardFooter({
 }
 
 export {
-  Wizard,
-  WizardSteps,
-  WizardContent,
-  WizardStepContent,
-  WizardFooter,
   useWizard,
+  Wizard,
+  WizardContent,
+  WizardFooter,
   type WizardStep,
+  WizardStepContent,
+  WizardSteps,
 };

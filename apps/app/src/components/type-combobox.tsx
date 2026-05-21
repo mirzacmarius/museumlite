@@ -11,8 +11,8 @@ import * as React from "react";
 import { TypeComboboxDeleteDialog } from "./type-combobox-delete-dialog";
 import { TypeComboboxListContent } from "./type-combobox-list-content";
 import {
-  TypeComboboxSelectedBadge,
   formatTypeName,
+  TypeComboboxSelectedBadge,
 } from "./type-combobox-selected-badge";
 
 interface TypeComboboxProps {
@@ -166,6 +166,7 @@ export function TypeCombobox({
             role="combobox"
             aria-expanded={open}
             aria-controls={listId}
+            tabIndex={disabled ? -1 : 0}
             className="flex min-h-[2.25rem] w-full cursor-text flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
             onClick={openAndFocusInput}
             onKeyDown={(e) => {

@@ -1,7 +1,7 @@
 "use client";
 
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import type { RefObject } from "react";
+import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { LoanAgreementParties } from "./loan-agreement-parties";
 import type { LoanAgreementItem, LoanAgreementLoan } from "./types";
 

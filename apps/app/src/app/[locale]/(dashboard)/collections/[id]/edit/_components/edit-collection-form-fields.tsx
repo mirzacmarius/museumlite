@@ -1,8 +1,5 @@
 "use client";
 
-import { AutoSaveIndicator } from "@/components/auto-save-indicator";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -16,6 +13,9 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { Save } from "lucide-react";
+import { AutoSaveIndicator } from "@/components/auto-save-indicator";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 export interface EditCollectionFormData {
   name: string;

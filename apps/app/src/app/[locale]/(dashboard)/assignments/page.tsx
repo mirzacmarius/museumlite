@@ -1,10 +1,10 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
+import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 import { AssignmentsPageClient } from "./_components/assignments-page-client";
 import { AssignmentsPageSkeleton } from "./assignments-page-skeleton";
 

@@ -1,7 +1,5 @@
 "use client";
 
-import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -14,9 +12,11 @@ import {
 } from "@v1/ui/dialog";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import { useQuery } from "convex/react";
-import { Download, File, Loader2, Star } from "lucide-react";
+import { Download, File, Loader2 } from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";

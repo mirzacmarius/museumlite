@@ -82,7 +82,7 @@ describe("Export Formats E2E Verification (manual)", () => {
     const asUser = authedForUser(t, userId);
 
     // Create test data - accession
-    const [accessionId, csvExport] = await Promise.all([
+    const [_accessionId, csvExport] = await Promise.all([
       asUser.run(async (ctx) => {
         return ctx.db.insert("accessions", {
           organizationId: orgId as Id<"organizations">,
@@ -162,7 +162,7 @@ describe("Export Formats E2E Verification (manual)", () => {
     const asUser = authedForUser(t, userId);
 
     // Create test collection item
-    const [collectionId, csvExport] = await Promise.all([
+    const [_collectionId, csvExport] = await Promise.all([
       asUser.run(async (ctx) => {
         return ctx.db.insert("collections", {
           organizationId: orgId as Id<"organizations">,

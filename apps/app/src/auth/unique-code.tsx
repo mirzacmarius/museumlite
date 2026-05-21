@@ -1,7 +1,5 @@
 "use client";
 
-import { CodeInput } from "@/auth/CodeInput";
-import type { UniqueCodeFlow } from "@/auth/types";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
@@ -9,6 +7,8 @@ import { CircleCheck, XCircle } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useReducer } from "react";
 import { toast } from "sonner";
+import { CodeInput } from "@/auth/CodeInput";
+import type { UniqueCodeFlow } from "@/auth/types";
 
 interface AuthUniqueCodeFormProps {
   email: string;

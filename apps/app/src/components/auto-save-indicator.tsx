@@ -1,9 +1,9 @@
 "use client";
 
-import type { AutoSaveStatus } from "@/hooks/use-auto-save";
 import { cn } from "@v1/ui/utils";
 import { formatDistanceToNow } from "date-fns";
 import { AlertCircle, Check, Cloud, Loader2 } from "lucide-react";
+import type { AutoSaveStatus } from "@/hooks/use-auto-save";
 
 interface AutoSaveIndicatorProps {
   status: AutoSaveStatus;

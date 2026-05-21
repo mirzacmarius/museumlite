@@ -1,15 +1,15 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PlanUsageStats } from "@/components/plan-usage-stats";
-import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Switch } from "@v1/ui/switch";
 import { useAction, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, useTransition } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { PlanUsageStats } from "@/components/plan-usage-stats";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type BillingInterval = "month" | "year";
 type PaidTier = "pro" | "enterprise";
@@ -72,7 +72,7 @@ function PlanCard({
             <span className="text-base font-medium text-primary-foreground">
               {name}
             </span>
-            {Boolean(amount) && intervalLabel ? (
+            {amount && intervalLabel ? (
               <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-sm font-medium text-primary-foreground">
                 ${amount / 100} / {intervalLabel}
               </span>

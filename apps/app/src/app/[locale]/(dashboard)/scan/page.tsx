@@ -1,12 +1,8 @@
 "use client";
 
-import { BarcodeScanner } from "@/components/barcode-scanner";
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { EmptyState } from "@v1/ui/empty-state";
 import { useQuery } from "convex/react";
 import {
   AlertCircle,
@@ -21,6 +17,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { BarcodeScanner } from "@/components/barcode-scanner";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { ScanPageSkeleton } from "./scan-page-skeleton";
 
 interface ScanHistoryItem {
@@ -56,7 +55,7 @@ function getObjectPathFromScan(decodedText: string) {
 }
 
 export default function ScanPage() {
-  const t = useScopedI18n("objects");
+  const _t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { push } = useRouter();

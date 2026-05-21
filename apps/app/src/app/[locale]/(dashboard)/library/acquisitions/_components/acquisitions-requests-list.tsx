@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Loader2, Plus, ShoppingCart } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import { AcquisitionRequestRow } from "./acquisition-request-row";
 
 interface AcquisitionRequest {

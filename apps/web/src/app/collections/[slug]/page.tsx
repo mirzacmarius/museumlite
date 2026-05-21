@@ -14,12 +14,12 @@ import { useQuery } from "convex/react";
 import { ChevronRight, Grid, List, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useReducer } from "react";
 import {
   createInitialPublicCollectionFiltersState,
   publicCollectionFiltersReducer,
 } from "@/lib/public-collection-filters";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useReducer } from "react";
 
 export default function PublicCollectionPage() {
   const params = useParams();
@@ -167,7 +167,9 @@ export default function PublicCollectionPage() {
             {filters?.periods && filters.periods.length > 0 && (
               <Select
                 value={period}
-                onValueChange={(value) => dispatch({ type: "setPeriod", value })}
+                onValueChange={(value) =>
+                  dispatch({ type: "setPeriod", value })
+                }
               >
                 <SelectTrigger className="w-[180px] bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Period" />

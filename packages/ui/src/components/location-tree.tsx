@@ -1,9 +1,8 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
 import { ChevronRight } from "lucide-react";
 import * as React from "react";
-
-import { cn } from "@v1/ui/utils";
 
 export interface LocationNode {
   id: string;
@@ -54,13 +53,12 @@ function TreeNode({ node, level, selectedId, onSelect }: TreeNodeProps) {
 
   return (
     <div>
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-200",
+          "flex w-full items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-200 text-left",
           isSelected
             ? "bg-muted text-foreground"
             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
@@ -82,7 +80,7 @@ function TreeNode({ node, level, selectedId, onSelect }: TreeNodeProps) {
             {node.count}
           </span>
         )}
-      </div>
+      </button>
       {hasChildren && isExpanded && (
         <div className="mt-0.5">
           {node.children?.map((child) => (

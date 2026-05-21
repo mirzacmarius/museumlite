@@ -1,10 +1,10 @@
 "use client";
 
-import type { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Checkbox } from "@v1/ui/checkbox";
 import { Label } from "@v1/ui/label";
 import { Shield } from "lucide-react";
+import type { useScopedI18n } from "@/locales/client";
 import type { EditAccountFormData } from "./edit-account-form-types";
 
 interface Role {

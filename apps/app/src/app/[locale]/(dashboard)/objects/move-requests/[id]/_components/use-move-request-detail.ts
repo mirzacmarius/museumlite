@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { usePermissions } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -9,6 +7,8 @@ import type { FunctionReturnType } from "convex/server";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useOrganization } from "@/components/organization-provider";
+import { usePermissions } from "@/components/permission-gate";
 
 export type MoveRequestDetail = NonNullable<
   FunctionReturnType<typeof api.objectMoves.get>

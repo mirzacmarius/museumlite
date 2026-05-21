@@ -1,15 +1,20 @@
 "use client";
 
-import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import { Plus } from "lucide-react";
-import { type Dispatch, type SetStateAction, useCallback, useReducer } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useReducer,
+} from "react";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import {
   AcquisitionsLibraryDisabledState,
   AcquisitionsNoOrganizationState,
@@ -89,8 +94,7 @@ export function LibraryAcquisitionsPageClient() {
     (value) => {
       dispatch({
         type: "setNewRequest",
-        value:
-          typeof value === "function" ? value(state.newRequest) : value,
+        value: typeof value === "function" ? value(state.newRequest) : value,
       });
     },
     [state.newRequest],

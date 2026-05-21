@@ -1081,9 +1081,11 @@ describe("auditLog detailed logging", () => {
 
       expect(result.entries).toHaveLength(5);
       for (let i = 0; i < result.entries.length - 1; i++) {
-        expect(result.entries[i]?.timestamp).toBeGreaterThanOrEqual(
-          result.entries[i + 1]?.timestamp!,
-        );
+        const current = result.entries[i];
+        const next = result.entries[i + 1];
+        expect(current).toBeDefined();
+        expect(next).toBeDefined();
+        expect(current.timestamp).toBeGreaterThanOrEqual(next.timestamp);
       }
     });
 

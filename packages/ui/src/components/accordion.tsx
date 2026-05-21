@@ -1,10 +1,9 @@
 "use client";
 
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { cn } from "@v1/ui/utils";
 import { ChevronDown } from "lucide-react";
 import type * as React from "react";
-
-import { cn } from "@v1/ui/utils";
 
 const Accordion = AccordionPrimitive.Root;
 
@@ -62,4 +61,4 @@ const AccordionContent = ({
 );
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+export { Accordion, AccordionContent, AccordionItem, AccordionTrigger };

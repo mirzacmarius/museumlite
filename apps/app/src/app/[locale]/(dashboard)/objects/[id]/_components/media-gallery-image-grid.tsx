@@ -24,6 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -68,6 +69,55 @@ export function MediaGalleryImageGrid({
     openImageLightbox,
   } = gallery;
 
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editable) return;
+
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const onDragOver = (event: DragEvent) => {
+      event.preventDefault();
+      const target = (event.target as HTMLElement).closest("[data-media-id]");
+      const mediaId = target?.getAttribute("data-media-id");
+      if (mediaId) {
+        handleDragOver(
+          event as unknown as React.DragEvent,
+          mediaId as Id<"mediaFiles">,
+        );
+      }
+    };
+
+    const onDragLeave = (event: DragEvent) => {
+      const related = event.relatedTarget as Node | null;
+      if (related && grid.contains(related)) return;
+      handleDragLeave();
+    };
+
+    const onDrop = (event: DragEvent) => {
+      event.preventDefault();
+      const target = (event.target as HTMLElement).closest("[data-media-id]");
+      const mediaId = target?.getAttribute("data-media-id");
+      if (mediaId) {
+        handleDrop(
+          event as unknown as React.DragEvent,
+          mediaId as Id<"mediaFiles">,
+        );
+      }
+    };
+
+    grid.addEventListener("dragover", onDragOver);
+    grid.addEventListener("dragleave", onDragLeave);
+    grid.addEventListener("drop", onDrop);
+
+    return () => {
+      grid.removeEventListener("dragover", onDragOver);
+      grid.removeEventListener("dragleave", onDragLeave);
+      grid.removeEventListener("drop", onDrop);
+    };
+  }, [editable, handleDragOver, handleDragLeave, handleDrop]);
+
   if (images.length === 0) {
     return (
       <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
@@ -81,7 +131,7 @@ export function MediaGalleryImageGrid({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div ref={gridRef} className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {images.map((file) => {
           const mediaId = file._id as Id<"mediaFiles">;
           const lightboxIdx = lightboxImages.findIndex(
@@ -93,20 +143,7 @@ export function MediaGalleryImageGrid({
           return (
             <div
               key={file._id}
-              draggable={editable && !file.isPrimary}
-              onDragStart={
-                editable
-                  ? (event) => handleDragStart(event, mediaId)
-                  : undefined
-              }
-              onDragOver={
-                editable ? (event) => handleDragOver(event, mediaId) : undefined
-              }
-              onDragLeave={editable ? handleDragLeave : undefined}
-              onDrop={
-                editable ? (event) => handleDrop(event, mediaId) : undefined
-              }
-              onDragEnd={editable ? handleDragEnd : undefined}
+              data-media-id={mediaId}
               className={cn(
                 "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-secondary transition-all",
                 isDragging && "opacity-50 scale-95",
@@ -161,9 +198,16 @@ export function MediaGalleryImageGrid({
 
                   {editable && !file.isPrimary && (
                     <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                      <div className="flex size-7 items-center justify-center rounded bg-zinc-950/50 cursor-grab active:cursor-grabbing">
+                      <button
+                        type="button"
+                        draggable
+                        onDragStart={(event) => handleDragStart(event, mediaId)}
+                        onDragEnd={handleDragEnd}
+                        className="flex size-7 items-center justify-center rounded bg-zinc-950/50 cursor-grab active:cursor-grabbing"
+                        aria-label={`Reorder ${file.fileName}`}
+                      >
                         <GripVertical className="size-3.5 text-white" />
-                      </div>
+                      </button>
                     </div>
                   )}
 

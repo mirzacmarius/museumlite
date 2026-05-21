@@ -1,12 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import {
-  type AccountHolderType,
-  DEFAULT_ACCOUNT_HOLDER_TYPE,
-  parseDateInputValue,
-} from "@/lib/account-holder";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -27,6 +20,13 @@ import { ArrowLeft, Loader2, Save, Shield, UserCog } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import {
+  type AccountHolderType,
+  DEFAULT_ACCOUNT_HOLDER_TYPE,
+  parseDateInputValue,
+} from "@/lib/account-holder";
+import { useScopedI18n } from "@/locales/client";
 
 type AccountType = "lender" | "borrower" | "both" | "institution";
 

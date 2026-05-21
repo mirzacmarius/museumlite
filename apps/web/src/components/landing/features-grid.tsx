@@ -1,16 +1,12 @@
 "use client";
 
-import { cn } from "@v1/ui/utils";
 import { motion } from "framer-motion";
 import {
   Archive,
-  FileCheck,
   Globe,
   Image as ImageIcon,
   MapPinned,
-  Repeat,
   Search,
-  ShieldCheck,
 } from "lucide-react";
 import { SpotlightCard } from "../spotlight-card";
 

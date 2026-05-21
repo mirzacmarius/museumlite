@@ -1,6 +1,5 @@
-import type * as React from "react";
-
 import { cn } from "@v1/ui/utils";
+import type * as React from "react";
 
 const Input = ({
   className,

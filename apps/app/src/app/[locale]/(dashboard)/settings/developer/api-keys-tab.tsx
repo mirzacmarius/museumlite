@@ -1,8 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { writeTextToClipboard } from "@/lib/clipboard";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -28,8 +25,11 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { useMutation, useQuery } from "convex/react";
-import { Check, Copy, Key, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Check, Copy, Loader2, Plus, Trash2 } from "lucide-react";
 import { useCallback, useReducer } from "react";
+import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useScopedI18n } from "@/locales/client";
 
 interface ApiKeysTabState {
   showCreate: boolean;
@@ -79,11 +79,14 @@ function apiKeysTabReducer(
       return { ...state, copied: action.value };
   }
 }
+
 import { ClientDateText } from "./developer-shared";
 
 export function ApiKeysTab({
   organizationId,
-}: { organizationId: Id<"organizations"> }) {
+}: {
+  organizationId: Id<"organizations">;
+}) {
   const t = useScopedI18n("settings");
   const apiKeys = useQuery(api.apiKeys.list, { organizationId });
   const createKey = useMutation(api.apiKeys.create);

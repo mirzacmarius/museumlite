@@ -1,10 +1,10 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
 import { CheckCircle, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
 import { AccessionDetailReviewPanel } from "./accession-detail-review-panel";
 import type {
   WorkflowHistoryEntry,
@@ -12,8 +12,8 @@ import type {
 } from "./accession-detail-types";
 import {
   DetailField,
-  SectionCard,
   formatWorkflowStepDetails,
+  SectionCard,
 } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 

@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@v1/ui/dialog";
 import { Logo } from "@v1/ui/logo";
 import Link from "next/link";
-import { SubscribeForm } from "./subscribe-form";
 
 export function Header() {
   return (

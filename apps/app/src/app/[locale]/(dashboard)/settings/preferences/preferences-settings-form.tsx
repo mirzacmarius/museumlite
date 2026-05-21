@@ -1,9 +1,5 @@
 "use client";
 
-import { MaterialsCombobox } from "@/components/materials-combobox";
-import { PermissionGate } from "@/components/permission-gate";
-import { TemplateCombobox } from "@/components/template-combobox";
-import { TypeCombobox } from "@/components/type-combobox";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
@@ -15,6 +11,10 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Save } from "lucide-react";
+import { MaterialsCombobox } from "@/components/materials-combobox";
+import { PermissionGate } from "@/components/permission-gate";
+import { TemplateCombobox } from "@/components/template-combobox";
+import { TypeCombobox } from "@/components/type-combobox";
 import {
   type CounterScope,
   LocationTypesEditor,

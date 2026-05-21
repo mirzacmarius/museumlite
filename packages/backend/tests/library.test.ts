@@ -5,7 +5,7 @@ import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
 test("should create library item and copy with barcode", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // const itemId = await t.mutation(api.library.items.create, {
   //   organizationId,
@@ -29,7 +29,7 @@ test("should create library item and copy with barcode", async () => {
 });
 
 test("should checkout and return library item", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // const circulationId = await t.mutation(api.library.circulation.checkout, {
   //   organizationId,
@@ -47,7 +47,7 @@ test("should checkout and return library item", async () => {
 });
 
 test("should place and fulfill hold", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // const holdId = await t.mutation(api.library.holds.place, {
   //   organizationId,
@@ -66,7 +66,7 @@ test("should place and fulfill hold", async () => {
 });
 
 test("should calculate fines on overdue return", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // const fines = await t.query(api.library.fines.list, {
   //   organizationId,
@@ -80,7 +80,7 @@ test("should calculate fines on overdue return", async () => {
 });
 
 test("should process fine payment", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // await t.mutation(api.library.fines.recordPayment, {
   //   organizationId,
@@ -96,7 +96,7 @@ test("should process fine payment", async () => {
 });
 
 test("should submit and approve acquisition request", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // const requestId = await t.mutation(api.library.acquisitions.create, {
   //   organizationId,

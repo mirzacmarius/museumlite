@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -9,12 +7,14 @@ import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Download } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { parseCSV } from "../../import/import-csv";
 import { ImportCompleteStep } from "./import-complete-step";
 import { ImportPreviewStep } from "./import-preview-step";
 import { ImportProgressStep } from "./import-progress-step";
 import { ImportUploadStep } from "./import-upload-step";
-import { INITIAL_IMPORT_STATE, type ImportLocationsState } from "./types";
+import { type ImportLocationsState, INITIAL_IMPORT_STATE } from "./types";
 import { useTranslatedParseError } from "./use-translated-parse-error";
 
 export function ImportLocationsPage() {

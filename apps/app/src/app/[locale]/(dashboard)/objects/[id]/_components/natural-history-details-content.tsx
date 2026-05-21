@@ -1,12 +1,10 @@
 "use client";
 
+import type { api } from "@v1/backend/convex/_generated/api";
+import type { FunctionReturnType } from "convex/server";
+import { Calendar, MapPin, TreePine } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import type { api } from "@v1/backend/convex/_generated/api";
-import { Button } from "@v1/ui/button";
-import { cn } from "@v1/ui/utils";
-import type { FunctionReturnType } from "convex/server";
-import { Calendar, MapPin, Plus, TreePine, User } from "lucide-react";
 
 type NaturalHistoryDetails = NonNullable<
   FunctionReturnType<typeof api.naturalHistoryDetails.get>

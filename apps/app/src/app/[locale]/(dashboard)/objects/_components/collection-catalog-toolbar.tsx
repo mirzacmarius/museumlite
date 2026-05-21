@@ -1,11 +1,11 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { LayoutGrid, List, Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { ColumnConfigDropdown } from "./column-config";
 import { ObjectAppliedFilters } from "./object-applied-filters";
 import { ObjectFiltersDropdown } from "./object-filters-dropdown";

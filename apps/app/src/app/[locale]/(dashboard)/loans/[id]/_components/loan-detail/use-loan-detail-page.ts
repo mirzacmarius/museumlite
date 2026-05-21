@@ -1,13 +1,13 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { writeTextToClipboard } from "@/lib/clipboard";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useCurrentLocale } from "@/locales/client";
 import type { Loan, LoanDocument } from "../types";
 
 export function useLoanDetailPage() {

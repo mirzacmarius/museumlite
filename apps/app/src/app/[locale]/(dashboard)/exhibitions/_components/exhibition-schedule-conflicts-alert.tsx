@@ -1,8 +1,8 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { AlertTriangle } from "lucide-react";
 import type { ExhibitionScheduleConflict } from "./exhibition-form-types";
 
 interface ExhibitionScheduleConflictsAlertProps {

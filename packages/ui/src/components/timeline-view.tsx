@@ -1,7 +1,5 @@
 "use client";
 
-import * as React from "react";
-
 import { cn } from "@v1/ui/utils";
 
 export interface TimelineEvent {
@@ -92,21 +90,30 @@ export function TimelineView({
             className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
             style={{ left: `${position}%` }}
           >
-            <div
-              onClick={() => onEventClick?.(event)}
-              onKeyDown={(e) => e.key === "Enter" && onEventClick?.(event)}
-              className={cn(
-                "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all duration-200",
-                getEventColor(event),
-                isInteractive &&
+            {isInteractive ? (
+              <button
+                type="button"
+                onClick={() => onEventClick?.(event)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all duration-200",
+                  getEventColor(event),
                   "cursor-pointer hover:scale-105 hover:shadow-lg",
-              )}
-              title={`${event.title} - ${event.startDate.toLocaleDateString()}`}
-              role="button"
-              tabIndex={isInteractive ? 0 : -1}
-            >
-              {event.title}
-            </div>
+                )}
+                title={`${event.title} - ${event.startDate.toLocaleDateString()}`}
+              >
+                {event.title}
+              </button>
+            ) : (
+              <div
+                className={cn(
+                  "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all duration-200",
+                  getEventColor(event),
+                )}
+                title={`${event.title} - ${event.startDate.toLocaleDateString()}`}
+              >
+                {event.title}
+              </div>
+            )}
           </div>
         );
       })}

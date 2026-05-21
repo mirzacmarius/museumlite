@@ -11,10 +11,6 @@ import {
 } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { getNextCounterValue } from "./utils/accessionCounter";
-import {
-  getCollectionsWithOpenDeaccessions,
-  shouldUseIndexedCollectionsPagination,
-} from "./utils/collectionListHelpers";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
@@ -23,6 +19,10 @@ import {
   markCollectionActive,
   markCollectionDeaccessioned,
 } from "./utils/collectionLifecycle";
+import {
+  getCollectionsWithOpenDeaccessions,
+  shouldUseIndexedCollectionsPagination,
+} from "./utils/collectionListHelpers";
 import {
   enforceObjectQuota,
   hasFeatureAccess,
@@ -158,7 +158,7 @@ const objectDetailCollectionValidator = v.object({
   lastModifiedBy: v.optional(v.id("users")),
   lastModifiedAt: v.optional(v.number()),
   collectionType: v.optional(collectionTypeValidator),
-        customFields: v.optional(v.record(v.string(), customFieldValue)),
+  customFields: v.optional(v.record(v.string(), customFieldValue)),
   verified: v.optional(v.boolean()),
   verifiedBy: v.optional(v.id("users")),
   verifiedByName: v.optional(v.string()),

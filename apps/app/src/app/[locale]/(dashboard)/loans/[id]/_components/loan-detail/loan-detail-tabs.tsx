@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
+import { useScopedI18n } from "@/locales/client";
 import { ActivityTab } from "../activity-tab";
 import { FacilityTab } from "../facility-tab";
 import { LogisticsTab } from "../logistics-tab";

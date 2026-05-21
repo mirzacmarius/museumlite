@@ -1,8 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { useScopedI18n } from "@/locales/client";
 import { LOCATION_UNIT_COUNT_FIELDS } from "../../location-custom-fields";
 
 interface LocationUnitCountFieldsProps {

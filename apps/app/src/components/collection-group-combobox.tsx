@@ -130,38 +130,24 @@ export function CollectionGroupCombobox({
           }}
         >
           {selectedGroups.map((group) => (
-            <div
+            <span
               key={group._id}
               className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.stopPropagation();
-                }
-              }}
             >
               <FolderOpen className="size-3 text-muted-foreground" />
               <span>{group.name}</span>
-              <span
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   handleRemove(group._id);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    handleRemove(group._id);
-                  }
                 }}
                 className="cursor-pointer hover:text-destructive"
                 aria-label={`Remove ${group.name}`}
               >
                 <X className="size-3" />
-              </span>
-            </div>
+              </button>
+            </span>
           ))}
 
           <input

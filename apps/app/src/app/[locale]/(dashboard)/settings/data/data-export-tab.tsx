@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,7 +20,8 @@ import {
 import { useMutation } from "convex/react";
 import { Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { type ImportType, convertToCSV, downloadCsv } from "./data-csv-utils";
+import { useScopedI18n } from "@/locales/client";
+import { convertToCSV, downloadCsv, type ImportType } from "./data-csv-utils";
 
 interface DataExportTabProps {
   organizationId: Id<"organizations">;
