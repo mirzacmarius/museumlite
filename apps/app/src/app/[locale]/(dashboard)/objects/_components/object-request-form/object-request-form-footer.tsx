@@ -2,12 +2,7 @@
 
 import { Button } from "@v1/ui/button";
 import { Archive, Save } from "lucide-react";
-import {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from "react";
+import { createContext, use, useMemo, type ReactNode } from "react";
 
 export type ObjectRequestFormFooterPhase =
   | { kind: "error"; message: string }
@@ -36,7 +31,7 @@ const ObjectRequestFormFooterContext =
   createContext<ObjectRequestFormFooterContextValue | null>(null);
 
 function useObjectRequestFormFooter() {
-  const context = useContext(ObjectRequestFormFooterContext);
+  const context = use(ObjectRequestFormFooterContext);
   if (!context) {
     throw new Error(
       "ObjectRequestFormFooter subcomponents must be used within ObjectRequestFormFooter",
@@ -111,15 +106,7 @@ function ObjectRequestFormFooterProvider({
       onNavigate,
       onSaveDraft,
     }),
-    [
-      phase,
-      draft,
-      dirty,
-      resolvedBackHref,
-      common,
-      onNavigate,
-      onSaveDraft,
-    ],
+    [phase, draft, dirty, resolvedBackHref, common, onNavigate, onSaveDraft],
   );
 
   return (

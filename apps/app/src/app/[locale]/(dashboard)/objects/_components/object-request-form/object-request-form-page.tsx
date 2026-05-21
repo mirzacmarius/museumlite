@@ -29,12 +29,10 @@ function ObjectRequestFormFallback() {
 }
 
 function ObjectRequestFormPageInner(props: ObjectRequestFormPageProps) {
-  const searchParams = useSearchParams();
-  const collectionGroupIdFromUrl = searchParams.get("collectionGroupId");
+  const { get } = useSearchParams();
+  const collectionGroupIdFromUrl = get("collectionGroupId");
   const collectionGroupId =
-    props.prefilledCollectionGroupId ||
-    collectionGroupIdFromUrl ||
-    undefined;
+    props.prefilledCollectionGroupId || collectionGroupIdFromUrl || undefined;
 
   const form = useObjectRequestForm({
     ...props,

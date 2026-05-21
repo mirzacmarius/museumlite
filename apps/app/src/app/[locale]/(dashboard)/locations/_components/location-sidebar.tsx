@@ -2,13 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ChevronRight, Lock, Thermometer } from "lucide-react";
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, use, useMemo, useState, type ReactNode } from "react";
 import {
   isStorageLocation,
   shouldShowInExhibitionSidebar,
@@ -176,18 +170,27 @@ function LocationNavTreeItem({
   const isLocationSecure = isSecure || isStorageLocation(location.type);
   const hasChildren = childLocations.length > 0;
   const isExpanded = hasChildren && expandedLocationIds.has(location._id);
+  const storage = location.type.toLowerCase().includes("cold")
+    ? "cold"
+    : isLocationSecure
+      ? "secure"
+      : "standard";
 
   return (
     <li>
       <LocationNavItem.Root
         location={location}
-        isSelected={selectedLocationId === location._id}
+        state={{
+          selection: selectedLocationId === location._id ? "selected" : "idle",
+          expansion: hasChildren
+            ? isExpanded
+              ? "expanded"
+              : "collapsed"
+            : "leaf",
+          storage,
+        }}
         onSelect={() => onSelectLocation(location._id)}
-        hasChildren={hasChildren}
-        isExpanded={isExpanded}
         onToggle={() => onToggleLocation(location._id)}
-        isSecure={isLocationSecure}
-        isColdStorage={location.type.toLowerCase().includes("cold")}
         depth={depth}
       >
         <LocationNavItem.Trigger />
@@ -217,13 +220,11 @@ function LocationNavTreeItem({
 
 interface LocationNavItemContextValue {
   location: SidebarLocation;
-  isSelected: boolean;
+  selection: "selected" | "idle";
   onSelect: () => void;
-  hasChildren: boolean;
-  isExpanded: boolean;
+  expansion: "leaf" | "expanded" | "collapsed";
   onToggle: () => void;
-  isSecure: boolean;
-  isColdStorage: boolean;
+  storage: "standard" | "secure" | "cold";
   depth: number;
 }
 
@@ -231,7 +232,7 @@ const LocationNavItemContext =
   createContext<LocationNavItemContextValue | null>(null);
 
 function useLocationNavItem() {
-  const context = useContext(LocationNavItemContext);
+  const context = use(LocationNavItemContext);
   if (!context) {
     throw new Error(
       "LocationNavItem subcomponents must be used within LocationNavItem.Root",
@@ -242,59 +243,43 @@ function useLocationNavItem() {
 
 interface LocationNavItemRootProps {
   location: SidebarLocation;
-  isSelected: boolean;
+  state: Pick<
+    LocationNavItemContextValue,
+    "selection" | "expansion" | "storage"
+  >;
   onSelect: () => void;
-  hasChildren: boolean;
-  isExpanded: boolean;
   onToggle: () => void;
-  isSecure: boolean;
-  isColdStorage?: boolean;
   depth: number;
   children: ReactNode;
 }
 
 function LocationNavItemRoot({
   location,
-  isSelected,
+  state,
   onSelect,
-  hasChildren,
-  isExpanded,
   onToggle,
-  isSecure,
-  isColdStorage = false,
   depth,
   children,
 }: LocationNavItemRootProps) {
+  const { selection, expansion, storage } = state;
   const value = useMemo(
     () => ({
       location,
-      isSelected,
+      selection,
       onSelect,
-      hasChildren,
-      isExpanded,
+      expansion,
       onToggle,
-      isSecure,
-      isColdStorage,
+      storage,
       depth,
     }),
-    [
-      location,
-      isSelected,
-      onSelect,
-      hasChildren,
-      isExpanded,
-      onToggle,
-      isSecure,
-      isColdStorage,
-      depth,
-    ],
+    [location, selection, onSelect, expansion, onToggle, storage, depth],
   );
 
   return (
     <LocationNavItemContext.Provider value={value}>
       <div
         className={`flex w-full items-center rounded-r transition-all ${
-          isSelected
+          selection === "selected"
             ? "border-l-2 border-primary bg-muted font-medium text-foreground shadow-sm"
             : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         }`}
@@ -307,9 +292,10 @@ function LocationNavItemRoot({
 }
 
 function LocationNavItemTrigger() {
-  const { location, hasChildren, isExpanded, onToggle } = useLocationNavItem();
+  const { location, expansion, onToggle } = useLocationNavItem();
+  const isExpanded = expansion === "expanded";
 
-  if (!hasChildren) {
+  if (expansion === "leaf") {
     return <span className="h-7 w-5 shrink-0" />;
   }
 
@@ -331,7 +317,9 @@ function LocationNavItemTrigger() {
 }
 
 function LocationNavItemLink() {
-  const { location, onSelect, isSecure, isColdStorage } = useLocationNavItem();
+  const { location, onSelect, storage } = useLocationNavItem();
+  const isColdStorage = storage === "cold";
+  const isSecure = storage !== "standard";
 
   const getStatusColor = () => {
     if (!location.isActive) return "bg-muted-foreground";

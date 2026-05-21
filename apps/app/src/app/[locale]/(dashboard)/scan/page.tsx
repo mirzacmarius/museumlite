@@ -85,51 +85,6 @@ function scanPageReducer(
   }
 }
 
-type AccessionLookupResult =
-  | {
-      kind: "found";
-      accessionNumber: string;
-      object: { _id: Id<"collections">; title: string };
-    }
-  | { kind: "not_found"; accessionNumber: string };
-
-function AccessionLookup({
-  accessionNumber,
-  organizationId,
-  onResolved,
-}: {
-  accessionNumber: string;
-  organizationId: Id<"organizations">;
-  onResolved: (result: AccessionLookupResult) => void;
-}) {
-  const { push } = useRouter();
-  const scannedObject = useQuery(api.collections.getByAccessionNumber, {
-    organizationId,
-    accessionNumber,
-  });
-  const handledRef = useRef(false);
-
-  useEffect(() => {
-    if (scannedObject === undefined) return;
-    if (handledRef.current) return;
-    handledRef.current = true;
-
-    if (scannedObject) {
-      onResolved({
-        kind: "found",
-        accessionNumber,
-        object: scannedObject,
-      });
-      push(`/objects/${scannedObject._id}`);
-      return;
-    }
-
-    onResolved({ kind: "not_found", accessionNumber });
-  }, [scannedObject, accessionNumber, push, onResolved]);
-
-  return null;
-}
-
 function getObjectPathFromScan(decodedText: string) {
   const trimmedText = decodedText.trim();
   const baseUrl =
@@ -157,28 +112,51 @@ export default function ScanPage() {
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { push } = useRouter();
-  const [{ scanHistory, pendingLookup }, dispatch] = useReducer(scanPageReducer, {
-    scanHistory: [],
-    pendingLookup: null,
-  });
+  const [{ scanHistory, pendingLookup }, dispatch] = useReducer(
+    scanPageReducer,
+    {
+      scanHistory: [],
+      pendingLookup: null,
+    },
+  );
+  const scannedObject = useQuery(
+    api.collections.getByAccessionNumber,
+    currentOrganizationId && pendingLookup
+      ? {
+          organizationId: currentOrganizationId,
+          accessionNumber: pendingLookup,
+        }
+      : "skip",
+  );
+  const handledLookupRef = useRef<string | null>(null);
 
-  const handleLookupResolved = useCallback((result: AccessionLookupResult) => {
-    if (result.kind === "found") {
+  useEffect(() => {
+    if (!pendingLookup) {
+      handledLookupRef.current = null;
+      return;
+    }
+    if (scannedObject === undefined) return;
+    if (handledLookupRef.current === pendingLookup) return;
+
+    handledLookupRef.current = pendingLookup;
+
+    if (scannedObject) {
       dispatch({
         type: "lookup_found",
-        accessionNumber: result.accessionNumber,
-        objectId: result.object._id,
-        objectTitle: result.object.title,
+        accessionNumber: pendingLookup,
+        objectId: scannedObject._id,
+        objectTitle: scannedObject.title,
       });
+      push(`/objects/${scannedObject._id}`);
       return;
     }
 
-    toast.error(`Object not found: ${result.accessionNumber}`);
+    toast.error(`Object not found: ${pendingLookup}`);
     dispatch({
       type: "lookup_not_found",
-      accessionNumber: result.accessionNumber,
+      accessionNumber: pendingLookup,
     });
-  }, []);
+  }, [pendingLookup, scannedObject, push]);
 
   const handleScanSuccess = useCallback(
     (decodedText: string, format: string) => {
@@ -276,15 +254,6 @@ export default function ScanPage() {
             </div>
           </div>
         </div>
-
-        {pendingLookup && (
-          <AccessionLookup
-            key={pendingLookup}
-            accessionNumber={pendingLookup}
-            organizationId={currentOrganizationId}
-            onResolved={handleLookupResolved}
-          />
-        )}
 
         {/* Scanner */}
         <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
