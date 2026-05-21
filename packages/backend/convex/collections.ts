@@ -3148,13 +3148,14 @@ export const getThumbnail = query({
       return null;
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    const primaryMedia = await ctx.db
-      .query("mediaFiles")
+    const [, primaryMedia] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("mediaFiles")
       .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
       .filter((q) => q.eq(q.field("isPrimary"), true))
-      .first();
+      .first(),
+    ] as const);
 
     let thumbnailUrl: string | null = null;
     if (primaryMedia?.storageId) {

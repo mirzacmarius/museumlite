@@ -149,18 +149,19 @@ export const upsert = mutation({
       throw new Error("Collection not found");
     }
 
-    await requirePermission(
+    const [, existing] = await Promise.all([
+      requirePermission(
       ctx,
       collection.organizationId,
       "collections.update",
-    );
-
-    const existing = await ctx.db
-      .query("naturalHistoryDetails")
+    ),
+      ctx.db
+        .query("naturalHistoryDetails")
       .withIndex("by_collection", (q) =>
         q.eq("collectionId", args.collectionId),
       )
-      .unique();
+      .unique(),
+    ] as const);
 
     const { collectionId, ...updateData } = args;
 

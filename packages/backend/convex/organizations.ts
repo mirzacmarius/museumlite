@@ -890,25 +890,26 @@ export const updateAccessionNumberFormat = mutation({
       throw new Error("Organization not found");
     }
 
-    await ctx.db.patch(args.organizationId, {
-      settings: {
-        ...org.settings,
-        accessionNumberFormat: args.format,
-        autoGenerateAccessionNumbers: args.autoGenerate,
-      },
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "updated_accession_format",
-      entityType: "organization",
-      entityId: args.organizationId,
-      changes: {
-        format: args.format,
-        autoGenerate: args.autoGenerate,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.organizationId, {
+        settings: {
+          ...org.settings,
+          accessionNumberFormat: args.format,
+          autoGenerateAccessionNumbers: args.autoGenerate,
+        },
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action: "updated_accession_format",
+        entityType: "organization",
+        entityId: args.organizationId,
+        changes: {
+          format: args.format,
+          autoGenerate: args.autoGenerate,
+        },
+      }),
+    ]);
 
     return null;
   },

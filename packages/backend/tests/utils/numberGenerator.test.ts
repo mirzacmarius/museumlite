@@ -242,6 +242,7 @@ describe("Year-based counters", () => {
         });
       });
 
+      // Sequential: each counter increment depends on the previous value.
       const rest = await collectYearBasedValues(remaining - 1);
       return [value, ...rest];
     }

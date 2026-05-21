@@ -15,13 +15,21 @@ import { ChevronRight, Grid, List, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useReducer } from "react";
+import { Suspense, useEffect, useReducer } from "react";
 import {
   createInitialPublicCollectionFiltersState,
   publicCollectionFiltersReducer,
 } from "@/lib/public-collection-filters";
 
-export function PublicPortalPageClient() {
+function PublicPortalPageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-white/60">Loading collection…</p>
+    </div>
+  );
+}
+
+function PublicPortalPageClientInner() {
   const params = useParams();
   const searchParams = useSearchParams();
   const getSearchParam = searchParams.get.bind(searchParams);
@@ -318,5 +326,13 @@ export function PublicPortalPageClient() {
         )}
       </div>
     </div>
+  );
+}
+
+export function PublicPortalPageClient() {
+  return (
+    <Suspense fallback={<PublicPortalPageFallback />}>
+      <PublicPortalPageClientInner />
+    </Suspense>
   );
 }

@@ -32,53 +32,6 @@ interface ScanHistoryItem {
   objectTitle?: string;
 }
 
-function AccessionLookup({
-  accessionNumber,
-  organizationId,
-  onComplete,
-  onFound,
-  onNotFound,
-}: {
-  accessionNumber: string;
-  organizationId: Id<"organizations">;
-  onComplete: () => void;
-  onFound: (
-    object: { _id: Id<"collections">; title: string },
-    accessionNumber: string,
-  ) => void;
-  onNotFound: (accessionNumber: string) => void;
-}) {
-  const { push } = useRouter();
-  const scannedObject = useQuery(api.collections.getByAccessionNumber, {
-    organizationId,
-    accessionNumber,
-  });
-  const handledRef = useRef(false);
-
-  useEffect(() => {
-    if (scannedObject === undefined) return;
-    if (handledRef.current) return;
-    handledRef.current = true;
-
-    if (scannedObject) {
-      onFound(scannedObject, accessionNumber);
-      push(`/objects/${scannedObject._id}`);
-    } else {
-      onNotFound(accessionNumber);
-    }
-    onComplete();
-  }, [
-    scannedObject,
-    accessionNumber,
-    push,
-    onComplete,
-    onFound,
-    onNotFound,
-  ]);
-
-  return null;
-}
-
 function getObjectPathFromScan(decodedText: string) {
   const trimmedText = decodedText.trim();
   const baseUrl =
@@ -109,41 +62,49 @@ export default function ScanPage() {
 
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [lookupAccession, setLookupAccession] = useState<string | null>(null);
+  const lookupHandledRef = useRef<string | null>(null);
 
-  const handleLookupFound = useCallback(
-    (
-      object: { _id: Id<"collections">; title: string },
-      accessionNumber: string,
-    ) => {
+  const scannedObject = useQuery(
+    api.collections.getByAccessionNumber,
+    lookupAccession && currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId,
+          accessionNumber: lookupAccession,
+        }
+      : "skip",
+  );
+
+  useEffect(() => {
+    if (!lookupAccession || scannedObject === undefined) return;
+    if (lookupHandledRef.current === lookupAccession) return;
+    lookupHandledRef.current = lookupAccession;
+
+    if (scannedObject) {
       setScanHistory((prev) =>
         prev.map((item) =>
-          item.accessionNumber === accessionNumber
+          item.accessionNumber === lookupAccession
             ? {
                 ...item,
                 found: true,
-                objectId: object._id,
-                objectTitle: object.title,
+                objectId: scannedObject._id,
+                objectTitle: scannedObject.title,
               }
             : item,
         ),
       );
-    },
-    [],
-  );
-
-  const handleLookupNotFound = useCallback(
-    (accessionNumber: string) => {
-      toast.error(`Object not found: ${accessionNumber}`);
+      push(`/objects/${scannedObject._id}`);
+    } else {
+      toast.error(`Object not found: ${lookupAccession}`);
       setScanHistory((prev) =>
         prev.map((item) =>
-          item.accessionNumber === accessionNumber
+          item.accessionNumber === lookupAccession
             ? { ...item, found: false }
             : item,
         ),
       );
-    },
-    [],
-  );
+    }
+    setLookupAccession(null);
+  }, [lookupAccession, scannedObject, push]);
 
   const handleScanSuccess = useCallback(
     (decodedText: string, format: string) => {
@@ -241,17 +202,6 @@ export default function ScanPage() {
             </div>
           </div>
         </div>
-
-        {lookupAccession && (
-          <AccessionLookup
-            key={lookupAccession}
-            accessionNumber={lookupAccession}
-            organizationId={currentOrganizationId}
-            onComplete={() => setLookupAccession(null)}
-            onFound={handleLookupFound}
-            onNotFound={handleLookupNotFound}
-          />
-        )}
 
         {/* Scanner */}
         <div className="rounded-lg border border-border bg-card p-4 sm:p-6">

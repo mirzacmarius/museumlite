@@ -1,7 +1,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { PublicCollectionPageClient } from "./public-collection-page-client";
 
 interface PageProps {
@@ -37,15 +36,5 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default function PublicCollectionPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-          <p className="text-white/60">Loading collection…</p>
-        </div>
-      }
-    >
-      <PublicCollectionPageClient />
-    </Suspense>
-  );
+  return <PublicCollectionPageClient />;
 }

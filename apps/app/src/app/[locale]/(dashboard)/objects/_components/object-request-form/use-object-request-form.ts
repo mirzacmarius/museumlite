@@ -3,9 +3,16 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -34,6 +41,58 @@ export interface UseObjectRequestFormOptions {
   backHref?: string;
 }
 
+interface ObjectRequestDraftState {
+  formData: CollectionFormData;
+  draftAccessionId: Id<"accessions"> | null;
+  persistedDraftMedia: DraftMediaItem[];
+  draftSavedAt: number | null;
+  initialized: boolean;
+}
+
+type ObjectRequestDraftAction =
+  | {
+      type: "INIT_FROM_PROPS";
+      formData: CollectionFormData;
+      draftAccessionId: Id<"accessions"> | null;
+      persistedDraftMedia: DraftMediaItem[];
+      draftSavedAt: number | null;
+    }
+  | {
+      type: "update_field";
+      field: keyof CollectionFormData;
+      value: CollectionFormData[keyof CollectionFormData];
+    }
+  | { type: "set_draft_accession_id"; value: Id<"accessions"> | null }
+  | { type: "set_persisted_draft_media"; value: DraftMediaItem[] }
+  | { type: "set_draft_saved_at"; value: number | null };
+
+function objectRequestDraftReducer(
+  state: ObjectRequestDraftState,
+  action: ObjectRequestDraftAction,
+): ObjectRequestDraftState {
+  switch (action.type) {
+    case "INIT_FROM_PROPS":
+      return {
+        formData: action.formData,
+        draftAccessionId: action.draftAccessionId,
+        persistedDraftMedia: action.persistedDraftMedia,
+        draftSavedAt: action.draftSavedAt,
+        initialized: true,
+      };
+    case "update_field":
+      return {
+        ...state,
+        formData: { ...state.formData, [action.field]: action.value },
+      };
+    case "set_draft_accession_id":
+      return { ...state, draftAccessionId: action.value };
+    case "set_persisted_draft_media":
+      return { ...state, persistedDraftMedia: action.value };
+    case "set_draft_saved_at":
+      return { ...state, draftSavedAt: action.value };
+  }
+}
+
 export function useObjectRequestForm({
   mode = "create",
   accessionId,
@@ -47,10 +106,7 @@ export function useObjectRequestForm({
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const { push } = useRouter();
-  const searchParams = useSearchParams();
-  const getSearchParam = searchParams.get.bind(searchParams);
-  const collectionGroupId =
-    prefilledCollectionGroupId || getSearchParam("collectionGroupId");
+  const collectionGroupId = prefilledCollectionGroupId;
   const { currentOrganization, currentOrganizationId } = useOrganization();
   const { enabledModules } = useFeatureAccess();
   const isLocationTrackingEnabled =
@@ -69,9 +125,23 @@ export function useObjectRequestForm({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const initialFormSignatureRef = useRef(getFormSignature(initialForm));
-  const hasInitializedRef = useRef(false);
 
-  const [formData, setFormData] = useState<CollectionFormData>(initialForm);
+  const [
+    {
+      formData,
+      draftAccessionId: currentDraftAccessionId,
+      persistedDraftMedia,
+      draftSavedAt,
+      initialized: hasDraftInitialized,
+    },
+    dispatchDraft,
+  ] = useReducer(objectRequestDraftReducer, {
+    formData: initialForm,
+    draftAccessionId: accessionId ?? null,
+    persistedDraftMedia: initialDraftMedia ?? [],
+    draftSavedAt: initialDraftSavedAt,
+    initialized: false,
+  });
   const [activeTab, setActiveTab] = useState<CollectionEditTabId>("general");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -91,12 +161,6 @@ export function useObjectRequestForm({
       fileName: string;
     }>
   >([]);
-  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-  const [currentDraftAccessionId, setCurrentDraftAccessionId] =
-    useState<Id<"accessions"> | null>(accessionId ?? null);
-  const [persistedDraftMedia, setPersistedDraftMedia] = useState<
-    DraftMediaItem[]
-  >(initialDraftMedia ?? []);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null,
@@ -117,11 +181,9 @@ export function useObjectRequestForm({
   }, [activeTab, tabs]);
 
   useEffect(() => {
-    if (hasInitializedRef.current) {
+    if (hasDraftInitialized) {
       return;
     }
-
-    hasInitializedRef.current = true;
 
     const nextFormData = initialDraftObjectData
       ? createFormDataFromDraftObject(
@@ -130,17 +192,18 @@ export function useObjectRequestForm({
         )
       : initialForm;
 
-    const draftAccessionId = accessionId ?? null;
-    const draftMedia = initialDraftMedia ?? [];
-
-    setFormData(nextFormData);
-    setCurrentDraftAccessionId(draftAccessionId);
-    setPersistedDraftMedia(draftMedia);
-    setDraftSavedAt(initialDraftSavedAt);
     initialFormSignatureRef.current = getFormSignature(nextFormData);
+    dispatchDraft({
+      type: "INIT_FROM_PROPS",
+      formData: nextFormData,
+      draftAccessionId: accessionId ?? null,
+      persistedDraftMedia: initialDraftMedia ?? [],
+      draftSavedAt: initialDraftSavedAt,
+    });
   }, [
     accessionId,
     collectionGroupId,
+    hasDraftInitialized,
     initialForm,
     initialDraftMedia,
     initialDraftObjectData,
@@ -184,7 +247,7 @@ export function useObjectRequestForm({
       field: K,
       value: CollectionFormData[K],
     ) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      dispatchDraft({ type: "update_field", field, value });
     },
     [],
   );
@@ -416,12 +479,18 @@ export function useObjectRequestForm({
             : undefined,
         });
 
-        setCurrentDraftAccessionId(savedAccessionId);
-        setPersistedDraftMedia(draftMedia ?? []);
+        dispatchDraft({
+          type: "set_draft_accession_id",
+          value: savedAccessionId,
+        });
+        dispatchDraft({
+          type: "set_persisted_draft_media",
+          value: draftMedia ?? [],
+        });
         setSelectedFiles([]);
         setSelectedDocuments([]);
         initialFormSignatureRef.current = getFormSignature(formData);
-        setDraftSavedAt(Date.now());
+        dispatchDraft({ type: "set_draft_saved_at", value: Date.now() });
 
         if (redirectToDetail) {
           push(`/accessions/${savedAccessionId}`);
