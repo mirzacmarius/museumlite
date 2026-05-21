@@ -1084,7 +1084,6 @@ function DocumentsTab({
 
 // Relationships Tab Component
 function RelationshipsTab({
-  _accountId,
   relationships,
 }: {
   accountId: Id<"accounts">;

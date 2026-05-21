@@ -36,17 +36,9 @@ export interface CollectionEditMediaTabProps extends CollectionFormTabProps {
 }
 
 export function CollectionEditMediaTab({
-  formData: _formData,
-  updateField: _updateField,
-  placeholders: _placeholders,
-  currentOrganizationId: _currentOrganizationId,
-  isLocationTrackingEnabled: _isLocationTrackingEnabled,
-  collection: _collection,
-  typedCollectionId: _typedCollectionId,
   images,
-  documents: _documents,
+  documents,
   common,
-  t: _t,
   fileInputRef,
   cameraInputRef,
   documentInputRef,
@@ -55,10 +47,6 @@ export function CollectionEditMediaTab({
   handleSetPrimary,
   handleDeleteMedia,
   setEditingImageId,
-  hasConditionChanged: _hasConditionChanged,
-  requiresConditionChangeNote: _requiresConditionChangeNote,
-  conditionChangeNote: _conditionChangeNote,
-  onConditionChangeNoteChange: _onConditionChangeNoteChange,
 }: CollectionEditMediaTabProps) {
   return (
     <div className="space-y-8">

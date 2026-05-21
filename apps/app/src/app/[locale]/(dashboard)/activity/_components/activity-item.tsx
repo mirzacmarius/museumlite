@@ -88,8 +88,6 @@ export function ActivityItem({
   action,
   entityType,
   entityId,
-  _userName,
-  _userImage,
   timestamp,
   changes,
 }: ActivityItemProps) {

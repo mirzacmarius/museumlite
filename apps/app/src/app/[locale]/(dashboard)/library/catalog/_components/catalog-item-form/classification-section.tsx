@@ -28,12 +28,7 @@ interface CatalogItemClassificationSectionProps {
 export function CatalogItemClassificationSection({
   formData,
   setFormData,
-  _getItemTypeLabel,
   getAudienceLabel,
-  _onIsbnData,
-  _addAuthor,
-  _removeAuthor,
-  _updateAuthor,
 }: CatalogItemClassificationSectionProps) {
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");

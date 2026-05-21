@@ -25,10 +25,7 @@ interface FineArtDetailsTabProps {
   organizationId: Id<"organizations">;
 }
 
-export function FineArtDetailsTab({
-  collectionId,
-  _organizationId,
-}: FineArtDetailsTabProps) {
+export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("modules.fineArt");
   const common = useScopedI18n("modules.common");

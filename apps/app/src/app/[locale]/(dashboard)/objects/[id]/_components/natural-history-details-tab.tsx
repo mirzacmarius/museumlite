@@ -17,7 +17,6 @@ interface NaturalHistoryDetailsTabProps {
 
 export function NaturalHistoryDetailsTab({
   collectionId,
-  _organizationId,
 }: NaturalHistoryDetailsTabProps) {
   const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.naturalHistory");

@@ -22,12 +22,6 @@ interface CatalogItemDescriptionSectionProps {
 export function CatalogItemDescriptionSection({
   formData,
   setFormData,
-  _getItemTypeLabel,
-  _getAudienceLabel,
-  _onIsbnData,
-  _addAuthor,
-  _removeAuthor,
-  _updateAuthor,
 }: CatalogItemDescriptionSectionProps) {
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");

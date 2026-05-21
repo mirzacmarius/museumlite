@@ -30,12 +30,11 @@ export function CollectionEditGeneralTab({
   updateField,
   placeholders,
   currentOrganizationId,
-  _isLocationTrackingEnabled,
   collection,
   typedCollectionId,
   alternateAccessionDraft,
   onAlternateAccessionDraftChange,
-  _onAddAlternateAccessionNumber,
+  onAddAlternateAccessionNumber,
   onRemoveAlternateAccessionNumber,
 }: CollectionEditGeneralTabProps) {
   return (

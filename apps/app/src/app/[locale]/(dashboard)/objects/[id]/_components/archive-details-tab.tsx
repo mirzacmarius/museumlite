@@ -15,10 +15,7 @@ interface ArchiveDetailsTabProps {
   organizationId: Id<"organizations">;
 }
 
-export function ArchiveDetailsTab({
-  collectionId,
-  _organizationId,
-}: ArchiveDetailsTabProps) {
+export function ArchiveDetailsTab({ collectionId }: ArchiveDetailsTabProps) {
   const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.archive");
   const common = useScopedI18n("modules.common");

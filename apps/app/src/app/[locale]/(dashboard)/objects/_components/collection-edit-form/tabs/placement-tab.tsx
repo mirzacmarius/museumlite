@@ -27,9 +27,8 @@ export function CollectionEditPlacementTab({
   updateField,
   placeholders,
   currentOrganizationId,
-  _collection,
   typedCollectionId,
-  _resolvedCurrentLocationId,
+  resolvedCurrentLocationId,
 }: CollectionEditPlacementTabProps) {
   return (
     <div className="space-y-8">

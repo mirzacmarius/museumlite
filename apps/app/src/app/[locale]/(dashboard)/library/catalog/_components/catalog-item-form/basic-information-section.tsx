@@ -31,10 +31,8 @@ export function CatalogItemBasicInformationSection({
   formData,
   setFormData,
   getItemTypeLabel,
-  _getAudienceLabel,
-  _onIsbnData,
-  _addAuthor,
-  _removeAuthor,
+  addAuthor,
+  removeAuthor,
   updateAuthor,
 }: CatalogItemBasicInformationSectionProps) {
   const t = useScopedI18n("library.placeholders");

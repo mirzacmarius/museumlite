@@ -19,14 +19,8 @@ interface CatalogItemIsbnLookupSectionProps {
 }
 
 export function CatalogItemIsbnLookupSection({
-  _formData,
   setFormData,
-  _getItemTypeLabel,
-  _getAudienceLabel,
   onIsbnData,
-  _addAuthor,
-  _removeAuthor,
-  _updateAuthor,
 }: CatalogItemIsbnLookupSectionProps) {
   const _t = useScopedI18n("library.placeholders");
   const _tNew = useScopedI18n("library.catalog.new");

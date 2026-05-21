@@ -25,7 +25,6 @@ interface VitrinesGridProps {
 
 export function VitrinesGrid({
   title,
-  _subtitle,
   occupancy,
   items,
 }: VitrinesGridProps) {

@@ -19,7 +19,6 @@ import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 export function AccessionDetailHeroBanner({
   accession,
   locale,
-  _accessionId,
   isDraft,
   displayStatus,
   accessionTitle,

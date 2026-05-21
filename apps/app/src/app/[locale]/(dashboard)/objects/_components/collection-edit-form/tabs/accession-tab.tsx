@@ -22,9 +22,9 @@ export interface CollectionEditAccessionTabProps
 export function CollectionEditAccessionTab({
   formData,
   updateField,
-  placeholders: _placeholders,
-  currentOrganizationId: _currentOrganizationId,
-  typedCollectionId: _typedCollectionId,
+  placeholders,
+  currentOrganizationId,
+  typedCollectionId,
 }: CollectionEditAccessionTabProps) {
   return (
     <div className="space-y-8">

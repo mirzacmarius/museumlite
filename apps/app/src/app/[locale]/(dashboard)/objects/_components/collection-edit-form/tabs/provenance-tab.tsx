@@ -40,10 +40,8 @@ export function CollectionEditProvenanceTab({
   formData,
   updateField,
   placeholders,
-  _currentOrganizationId,
-  _isLocationTrackingEnabled,
-  _editingOwnershipEntryId,
-  _setEditingOwnershipEntryId,
+  editingOwnershipEntryId,
+  setEditingOwnershipEntryId,
   createOwnershipEntry,
 }: CollectionEditProvenanceTabProps) {
   return (

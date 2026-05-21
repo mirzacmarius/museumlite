@@ -31,11 +31,6 @@ export interface ObjectRequestMediaTabProps extends CollectionFormTabProps {
 }
 
 export function ObjectRequestMediaTab({
-  _formData,
-  _updateField,
-  _placeholders,
-  _currentOrganizationId,
-  _isLocationTrackingEnabled,
   common,
   fileInputRef,
   cameraInputRef,

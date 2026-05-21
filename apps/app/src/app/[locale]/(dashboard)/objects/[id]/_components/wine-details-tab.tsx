@@ -15,10 +15,7 @@ interface WineDetailsTabProps {
   organizationId: Id<"organizations">;
 }
 
-export function WineDetailsTab({
-  collectionId,
-  _organizationId,
-}: WineDetailsTabProps) {
+export function WineDetailsTab({ collectionId }: WineDetailsTabProps) {
   const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.wine");
   const common = useScopedI18n("modules.common");

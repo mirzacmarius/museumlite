@@ -9,9 +9,6 @@ import type { CollectionFormTabProps } from "../../collection-form-shared/types"
 export function ObjectRequestDigitalTab({
   formData,
   updateField,
-  _placeholders,
-  _currentOrganizationId,
-  _isLocationTrackingEnabled,
 }: CollectionFormTabProps) {
   return (
     <div className="space-y-8">

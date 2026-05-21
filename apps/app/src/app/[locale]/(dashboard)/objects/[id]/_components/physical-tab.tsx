@@ -171,7 +171,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 <div>
                   {conditionHistory.map((entry, index) => (
                     <div
-                      key={`${entry.changedAt}-${entry.condition}-${entry.notes ?? ""}`}
+                      key={`${entry.changedAt}-${entry.condition}-${entry.note ?? ""}`}
                       className={cn(
                         "relative pl-8",
                         index < conditionHistory.length - 1 && "pb-6",

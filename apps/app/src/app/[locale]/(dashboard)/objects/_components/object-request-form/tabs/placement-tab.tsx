@@ -13,7 +13,6 @@ export function ObjectRequestPlacementTab({
   updateField,
   placeholders,
   currentOrganizationId,
-  _isLocationTrackingEnabled,
 }: CollectionFormTabProps) {
   return (
     <div className="space-y-8">

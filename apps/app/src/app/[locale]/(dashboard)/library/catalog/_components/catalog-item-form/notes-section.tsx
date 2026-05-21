@@ -20,12 +20,6 @@ interface CatalogItemNotesSectionProps {
 export function CatalogItemNotesSection({
   formData,
   setFormData,
-  _getItemTypeLabel,
-  _getAudienceLabel,
-  _onIsbnData,
-  _addAuthor,
-  _removeAuthor,
-  _updateAuthor,
 }: CatalogItemNotesSectionProps) {
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");

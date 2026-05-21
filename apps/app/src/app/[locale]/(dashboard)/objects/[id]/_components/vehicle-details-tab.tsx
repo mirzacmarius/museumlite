@@ -15,10 +15,7 @@ interface VehicleDetailsTabProps {
   organizationId: Id<"organizations">;
 }
 
-export function VehicleDetailsTab({
-  collectionId,
-  _organizationId,
-}: VehicleDetailsTabProps) {
+export function VehicleDetailsTab({ collectionId }: VehicleDetailsTabProps) {
   const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.vehicle");
   const common = useScopedI18n("modules.common");

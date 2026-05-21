@@ -233,7 +233,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
           <div className="space-y-3">
             {details.eventHistory.map((event, _index) => (
               <div
-                key={`${event.eventDate}-${event.eventType}-${event.title ?? ""}`}
+                key={`${event.eventDate}-${event.eventType}-${event.eventName ?? ""}`}
                 className="rounded-lg border border-border/60 bg-secondary/20 p-4"
               >
                 <div className="flex items-center justify-between">
