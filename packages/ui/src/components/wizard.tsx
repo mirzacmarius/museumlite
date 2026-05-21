@@ -76,7 +76,7 @@ function WizardState({
   onComplete,
   className,
 }: WizardProps) {
-  const [currentStep, setCurrentStep] = React.useState(initialStep);
+  const [currentStep, setCurrentStep] = React.useState(() => initialStep);
   const [canGoNext, setCanGoNext] = React.useState(true);
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(
     new Set(),

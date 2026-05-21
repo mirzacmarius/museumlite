@@ -3,8 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
-import { requireModuleEnabled } from "./utils/featureGates";
-import { requirePermission } from "./utils/permissions";
+import { requireModuleAndPermission } from "./utils/permissions";
 
 const documentTypeValidator = v.union(
   v.literal("contract"),
@@ -42,10 +41,12 @@ export const list = query({
     if (!account) {
       throw new Error("Account not found");
     }
-    await Promise.all([
-      requireModuleEnabled(ctx, account.organizationId, "accounts"),
-      requirePermission(ctx, account.organizationId, "accounts.read"),
-    ]);
+    await requireModuleAndPermission(
+      ctx,
+      account.organizationId,
+      "accounts",
+      "accounts.read",
+    );
     const documents = await ctx.db
       .query("accountDocuments")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -90,10 +91,12 @@ export const get = query({
     if (!account) {
       return null;
     }
-    await Promise.all([
-      requireModuleEnabled(ctx, account.organizationId, "accounts"),
-      requirePermission(ctx, account.organizationId, "accounts.read"),
-    ]);
+    await requireModuleAndPermission(
+      ctx,
+      account.organizationId,
+      "accounts",
+      "accounts.read",
+    );
     const downloadUrl = await ctx.storage.getUrl(document.storageId);
 
     return {
@@ -128,10 +131,12 @@ export const create = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
-    await Promise.all([
-      requireModuleEnabled(ctx, account.organizationId, "accounts"),
-      requirePermission(ctx, account.organizationId, "accounts.write"),
-    ]);
+    await requireModuleAndPermission(
+      ctx,
+      account.organizationId,
+      "accounts",
+      "accounts.write",
+    );
     const documentId = await ctx.db.insert("accountDocuments", {
       organizationId: account.organizationId,
       accountId: args.accountId,
@@ -183,9 +188,13 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireModuleAndPermission(
+      ctx,
+      account.organizationId,
+      "accounts",
+      "accounts.delete",
+    );
     await Promise.all([
-      requireModuleEnabled(ctx, account.organizationId, "accounts"),
-      requirePermission(ctx, account.organizationId, "accounts.delete"),
       ctx.db.delete(args.documentId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: account.organizationId,

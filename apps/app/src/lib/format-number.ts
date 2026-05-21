@@ -31,6 +31,20 @@ const NUMBER_FORMATTERS: Record<Locale, Intl.NumberFormat> = {
 };
 
 const CURRENCY_FORMATTERS = new Map<string, Intl.NumberFormat>();
+
+const COMMON_CURRENCIES = ["USD", "EUR", "GBP", "NOK"] as const;
+for (const locale of Object.keys(LOCALE_MAP) as Locale[]) {
+  for (const currency of COMMON_CURRENCIES) {
+    CURRENCY_FORMATTERS.set(
+      `${locale}:${currency}`,
+      new Intl.NumberFormat(LOCALE_MAP[locale], {
+        style: "currency",
+        currency,
+      }),
+    );
+  }
+}
+
 function getCurrencyFormatter(locale: Locale, currency: string) {
   const key = `${locale}:${currency}`;
   let formatter = CURRENCY_FORMATTERS.get(key);

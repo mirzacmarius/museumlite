@@ -304,7 +304,7 @@ export function AdvancedSearchDialog({
     toStateGroups(initialFilterGroups),
   );
   const [groupOperator, setGroupOperator] = useState<"AND" | "OR">(
-    initialGroupOperator,
+    () => initialGroupOperator,
   );
 
   const addFilterGroup = () => {

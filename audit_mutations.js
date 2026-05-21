@@ -57,9 +57,13 @@ for (const file of files) {
       "canInitiateWorkflow",
       "canApproveAtStep",
     ]);
-    const hasPermissionCheck = [...permissionMarkers].some((marker) =>
-      mutationBlock.includes(marker),
-    );
+    let hasPermissionCheck = false;
+    for (const marker of permissionMarkers) {
+      if (mutationBlock.includes(marker)) {
+        hasPermissionCheck = true;
+        break;
+      }
+    }
 
     if (hasPermissionCheck) {
       withChecks.push({ file, mutationName });

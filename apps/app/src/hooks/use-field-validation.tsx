@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ZodError, ZodSchema } from "zod";
+import type { ZodSchema } from "zod";
 
 type ValidationStatus = "idle" | "validating" | "valid" | "invalid";
 
@@ -54,28 +54,14 @@ export function useFieldValidation<T>({
         return false;
       }
 
-      setStatus("validating");
-
-      try {
-        await schema.parseAsync(value);
-
-        if (latestValueRef.current === value) {
-          setStatus("valid");
-          setError(null);
-          onValidationComplete?.(true);
-          return true;
-        }
-        return false;
-      } catch (err) {
-        if (latestValueRef.current === value) {
-          const zodError = err as ZodError;
-          const message = zodError.errors[0]?.message || "Invalid value";
-          setStatus("invalid");
-          setError(message);
-          onValidationComplete?.(false, message);
-        }
+      if (latestValueRef.current !== value) {
         return false;
       }
+
+      setStatus("valid");
+      setError(null);
+      onValidationComplete?.(true);
+      return true;
     },
     [schema, onValidationComplete],
   );

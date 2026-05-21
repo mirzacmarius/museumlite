@@ -72,7 +72,7 @@ function ImageLightboxPanel({
   onClose: () => void;
   onDownload?: (image: LightboxImage) => void;
 }) {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [currentIndex, setCurrentIndex] = useState(() => initialIndex);
 
   const currentImage = images[currentIndex];
   const hasMultiple = images.length > 1;

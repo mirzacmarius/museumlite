@@ -2108,15 +2108,16 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
         q.eq("organizationId", ctx.organizationId).eq("status", "active"),
       );
 
+    const db = ctx.db;
     for await (const coverage of activeCoverages) {
       const collectionId = coverage.collectionId;
       if (!collectionId) continue;
 
       const [policy, collection, appraisal] = await Promise.all([
-        ctx.db.get(coverage.policyId),
-        ctx.db.get(collectionId),
+        db.get(coverage.policyId),
+        db.get(collectionId),
         coverage.appraisalId
-          ? ctx.db.get(coverage.appraisalId)
+          ? db.get(coverage.appraisalId)
           : Promise.resolve(null),
       ] as const);
 

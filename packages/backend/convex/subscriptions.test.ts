@@ -72,14 +72,17 @@ test("upsertOrganizationSubscription persists entitlement and tier", async () =>
     currentPeriodEnd: Date.now() + 86_400_000,
   });
 
-  const [organization, subscription] = await t.run(async (ctx) => {
-    const org = await ctx.db.get(organizationId);
-    const sub = await ctx.db
-      .query("organizationSubscriptions")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .first();
-    return [org, sub] as const;
-  });
+  const [organization, subscription] = await t.run(async (ctx) =>
+    Promise.all([
+      ctx.db.get(organizationId),
+      ctx.db
+        .query("organizationSubscriptions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .first(),
+    ] as const),
+  );
 
   expect(organization?.subscriptionTier).toBe("pro");
   expect(subscription?.isEntitled).toBe(true);
@@ -112,14 +115,16 @@ test("getOrganizationSubscription enforces membership and returns stored entitle
         type: "museum",
         subscriptionTier: "pro",
       });
-      const memberUserId = await ctx.db.insert("users", {
-        name: "Member",
-        email: "member@example.com",
-      });
-      const outsiderUserId = await ctx.db.insert("users", {
-        name: "Outsider",
-        email: "outsider@example.com",
-      });
+      const [memberUserId, outsiderUserId] = await Promise.all([
+        ctx.db.insert("users", {
+          name: "Member",
+          email: "member@example.com",
+        }),
+        ctx.db.insert("users", {
+          name: "Outsider",
+          email: "outsider@example.com",
+        }),
+      ]);
       const roleId = await ctx.db.insert("roles", {
         organizationId,
         name: "Member",

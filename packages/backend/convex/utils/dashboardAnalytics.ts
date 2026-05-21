@@ -417,18 +417,17 @@ export async function buildOrganizationAnalytics(
       .take(6),
   ]);
 
-  const catalogWithDeaccessionExclusion = await countCatalogObjects(
-    ctx,
-    organizationId,
-    openDeaccessionCollectionIds,
-  );
-
-  const [recentCollectionGroups, recentObjects, recentActivity] =
-    await Promise.all([
-      buildRecentCollectionGroups(ctx, recentCollectionGroupDocs),
-      buildRecentObjects(ctx, recentCollectionDocs),
-      buildRecentActivity(ctx, organizationId),
-    ]);
+  const [
+    catalogWithDeaccessionExclusion,
+    recentCollectionGroups,
+    recentObjects,
+    recentActivity,
+  ] = await Promise.all([
+    countCatalogObjects(ctx, organizationId, openDeaccessionCollectionIds),
+    buildRecentCollectionGroups(ctx, recentCollectionGroupDocs),
+    buildRecentObjects(ctx, recentCollectionDocs),
+    buildRecentActivity(ctx, organizationId),
+  ]);
 
   const loanTotal =
     loanPending + loanActive + loanDispatched + loanReturned + loanCancelled;

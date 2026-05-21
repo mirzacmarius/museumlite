@@ -141,7 +141,7 @@ export function FilterSection({
   defaultOpen = true,
   className,
 }: FilterSectionProps) {
-  const [open, setOpen] = React.useState(defaultOpen);
+  const [open, setOpen] = React.useState(() => defaultOpen);
   const countLabel = count !== undefined && count > 0 ? ` (${count})` : "";
 
   return (

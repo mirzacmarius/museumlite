@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useObjectFilters } from "@/hooks/use-url-filters";
 import { exportCollectionsToCsv } from "./collection-bulk-export";
 import {
@@ -16,6 +16,61 @@ import type {
 } from "./collection-catalog-types";
 import { type ColumnConfig, useDefaultColumns } from "./column-config";
 import type { ViewMode } from "./view-toggle";
+
+interface CatalogPreferencesState {
+  viewMode: ViewMode;
+  columns: ColumnConfig[] | null;
+}
+
+type CatalogPreferencesAction =
+  | {
+      type: "syncFromServer";
+      savedViewMode: string | null | undefined;
+      savedColumns: string | null | undefined;
+      defaultColumns: ColumnConfig[];
+    }
+  | { type: "setViewMode"; viewMode: ViewMode }
+  | { type: "setColumns"; columns: ColumnConfig[] };
+
+function catalogPreferencesReducer(
+  state: CatalogPreferencesState,
+  action: CatalogPreferencesAction,
+): CatalogPreferencesState {
+  switch (action.type) {
+    case "syncFromServer": {
+      let viewMode = state.viewMode;
+      if (action.savedViewMode) {
+        viewMode = action.savedViewMode as ViewMode;
+      }
+
+      let columns = state.columns;
+      if (action.savedColumns) {
+        try {
+          const parsed = JSON.parse(action.savedColumns) as Record<
+            string,
+            boolean
+          >;
+          columns = action.defaultColumns.map((col) => ({
+            ...col,
+            visible: parsed[col.id] ?? col.visible,
+          }));
+        } catch {
+          columns = action.defaultColumns;
+        }
+      } else if (columns === null) {
+        columns = action.defaultColumns;
+      }
+
+      return { viewMode, columns };
+    }
+    case "setViewMode":
+      return { ...state, viewMode: action.viewMode };
+    case "setColumns":
+      return { ...state, columns: action.columns };
+    default:
+      return state;
+  }
+}
 
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const { filters, setFilters, resetFilters } = useObjectFilters();
@@ -44,30 +99,19 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     organizationId,
   });
   const setViewPreference = useMutation(api.userPreferences.set);
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const defaultColumns = useDefaultColumns();
-  const [columns, setColumns] = useState<ColumnConfig[] | null>(null);
+  const [{ viewMode, columns }, dispatchCatalogPreferences] = useReducer(
+    catalogPreferencesReducer,
+    { viewMode: "list" as ViewMode, columns: null as ColumnConfig[] | null },
+  );
 
   useEffect(() => {
-    if (savedViewMode) {
-      setViewMode(savedViewMode as ViewMode);
-    }
-
-    if (savedColumns) {
-      try {
-        const parsed = JSON.parse(savedColumns) as Record<string, boolean>;
-        setColumns(
-          defaultColumns.map((col) => ({
-            ...col,
-            visible: parsed[col.id] ?? col.visible,
-          })),
-        );
-      } catch {
-        setColumns(defaultColumns);
-      }
-    } else {
-      setColumns(defaultColumns);
-    }
+    dispatchCatalogPreferences({
+      type: "syncFromServer",
+      savedViewMode,
+      savedColumns,
+      defaultColumns,
+    });
   }, [defaultColumns, savedColumns, savedViewMode]);
 
   useEffect(() => {
@@ -87,7 +131,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   }, [filters.search, searchInput, setFilters]);
 
   const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode);
+    dispatchCatalogPreferences({ type: "setViewMode", viewMode: mode });
     setViewPreference({
       key: "objects.viewMode",
       value: mode,
@@ -100,7 +144,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     const newColumns = currentColumns.map((col) =>
       col.id === columnId ? { ...col, visible } : col,
     );
-    setColumns(newColumns);
+    dispatchCatalogPreferences({ type: "setColumns", columns: newColumns });
 
     const columnVisibility = Object.fromEntries(
       newColumns.map((col) => [col.id, col.visible]),

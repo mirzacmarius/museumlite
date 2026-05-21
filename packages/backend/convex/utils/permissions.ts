@@ -6,6 +6,8 @@ import {
   type FeatureId,
   hasFeatureAccess,
   requireFeatureAccess,
+  requireModuleEnabled,
+  type ModuleId,
 } from "./featureGates";
 
 /**
@@ -157,6 +159,18 @@ export async function hasPermission(
 /**
  * Assert that user has permission, throw error if not
  */
+export async function requireModuleAndPermission(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  moduleId: ModuleId,
+  permissionName: string,
+): Promise<void> {
+  await Promise.all([
+    requireModuleEnabled(ctx, organizationId, moduleId),
+    requirePermission(ctx, organizationId, permissionName),
+  ]);
+}
+
 export async function requirePermission(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,

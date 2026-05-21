@@ -698,7 +698,13 @@ function EmptyState({
   );
 }
 
-const DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+const DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>([
+  ["en-US", new Intl.DateTimeFormat("en-US")],
+  ["fr", new Intl.DateTimeFormat("fr")],
+  ["es", new Intl.DateTimeFormat("es")],
+  ["nb-NO", new Intl.DateTimeFormat("nb-NO")],
+  ["ro-RO", new Intl.DateTimeFormat("ro-RO")],
+]);
 
 function getDateFormatter(locale: string) {
   const intlLocale = locale === "no" ? "nb-NO" : locale;

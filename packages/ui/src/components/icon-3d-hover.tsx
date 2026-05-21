@@ -32,9 +32,8 @@ export const IconHover3D: React.FC<Props> = ({
   icon,
   ...restProps
 }) => {
-  const [currentVariant, setCurrentVariant] = useState<"Default" | "Hover">(
-    variant,
-  );
+  const [isHovered, setIsHovered] = useState(false);
+  const currentVariant: "Default" | "Hover" = isHovered ? "Hover" : variant;
   const isHoveredRef = useRef(false);
   const refBinding = useRef<HTMLDivElement>(null);
   const defaultLayoutId = React.useId();
@@ -44,12 +43,12 @@ export const IconHover3D: React.FC<Props> = ({
 
   const handleMouseEnter = async () => {
     isHoveredRef.current = true;
-    setCurrentVariant("Hover");
+    setIsHovered(true);
   };
 
   const handleMouseLeave = async () => {
     isHoveredRef.current = false;
-    setCurrentVariant("Default");
+    setIsHovered(false);
   };
 
   return (

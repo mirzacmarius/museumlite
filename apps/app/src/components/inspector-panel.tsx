@@ -162,7 +162,7 @@ export function InspectorSection({
   collapsible = false,
   defaultExpanded = true,
 }: InspectorSectionProps) {
-  const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
+  const [isExpanded, setIsExpanded] = React.useState(() => defaultExpanded);
 
   if (!collapsible) {
     return (
