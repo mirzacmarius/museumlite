@@ -63,11 +63,10 @@ export const listPendingInvitations = query({
     }
 
     // Check permission to view invitations (users.invite permission allows viewing pending invitations)
-    await requirePermission(ctx, args.organizationId, "users.invite");
-
-    // Get all pending invitations for the organization
-    const invitations = await ctx.db
-      .query("organizationInvitations")
+    const [, invitations] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "users.invite"),
+      ctx.db
+        .query("organizationInvitations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )

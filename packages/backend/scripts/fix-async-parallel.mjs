@@ -217,6 +217,54 @@ function fixGetAuthThenRequirePermission(content) {
   );
 }
 
+function fixGetAuthThenPromiseAllAuth(content) {
+  return content.replace(
+    /const userId = await getAuthUserId\(ctx\);\s*\n\s*if \(!userId\) \{\s*\n\s*throw new Error\("Not authenticated"\);\s*\n\s*\}\s*\n\s*await Promise\.all\(\[([\s\S]*?)\]\);/g,
+    (match, inner) => {
+      if (match.includes("const [userId]")) return match;
+      return `const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+${inner}] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }`;
+    },
+  );
+}
+
+function fixGetAuthThenRequireModuleAndPermission(content) {
+  return content.replace(
+    /const userId = await getAuthUserId\(ctx\);\s*\n\s*if \(!userId\) \{\s*\n\s*throw new Error\("Not authenticated"\);\s*\n\s*\}\s*\n\s*await requireModuleAndPermission\(([\s\S]*?)\);/g,
+    (match, args) => {
+      if (match.includes("const [userId]")) return match;
+      return `const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requireModuleAndPermission(${args}),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }`;
+    },
+  );
+}
+
+function fixAuthSessionRefreshTokenDeletes(content) {
+  return content.replace(
+    /const refreshTokens = await ctx\.db\s*\n\s*\.query\("authRefreshTokens"\)\s*\n\s*\.withIndex\("sessionId", \(q\) => q\.eq\("sessionId", authSession\._id\)\)\s*\n\s*\.collect\(\);\s*\n\s*await Promise\.all\(\s*\n\s*refreshTokens\.map\(\(refreshToken\) => ctx\.db\.delete\(refreshToken\._id\)\),\s*\n\s*\);\s*\n\s*await ctx\.db\.delete\(authSession\._id\);/g,
+    `const refreshTokens = await ctx.db
+          .query("authRefreshTokens")
+          .withIndex("sessionId", (q) => q.eq("sessionId", authSession._id))
+          .collect();
+
+        await Promise.all([
+          ...refreshTokens.map((refreshToken) =>
+            ctx.db.delete(refreshToken._id),
+          ),
+          ctx.db.delete(authSession._id),
+        ]);`,
+  );
+}
+
 function fixPermissionThenCollect(content) {
   return content.replace(
     /await requirePermission\(([^)]+)\);\s*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)\s*\n\s*\.withIndex\(([\s\S]*?)\)\s*\n\s*\.collect\(\);/g,
@@ -269,6 +317,9 @@ function apply(filePath) {
   content = fixAuthParallel(content);
   content = fixGetAuthThenDbGet(content);
   content = fixGetAuthThenRequirePermission(content);
+  content = fixGetAuthThenPromiseAllAuth(content);
+  content = fixGetAuthThenRequireModuleAndPermission(content);
+  content = fixAuthSessionRefreshTokenDeletes(content);
   content = fixPermissionThenCollect(content);
   content = fixSyncAuditParallel(content);
   content = fixConsecutiveDbGet(content);

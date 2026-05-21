@@ -2028,11 +2028,10 @@ export const getCurrentAppraisal = query({
       return null;
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    // Get most recent appraisal
-    const appraisals = await ctx.db
-      .query("appraisals")
+    const [, appraisals] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("appraisals")
       .withIndex("by_collection", (q) =>
         q.eq("collectionId", args.collectionId),
       )

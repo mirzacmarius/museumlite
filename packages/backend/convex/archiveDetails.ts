@@ -230,15 +230,15 @@ export const listExpiredRetention = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireArchiveModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await Promise.all([
-      requireArchiveModule(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "collections.read"),
-    ]);
 
     const now = Date.now();
 
@@ -281,14 +281,15 @@ export const listFlaggedForDestruction = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireArchiveModule(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requireArchiveModule(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "collections.read"),
-    ]);
     const archives = await ctx.db
       .query("archiveDetails")
       .withIndex("by_organization_and_destruction_flag", (q) =>

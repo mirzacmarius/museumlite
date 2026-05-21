@@ -1170,11 +1170,10 @@ export const getTransitForLoanWithHistory = query({
     }
 
     // Permission check: require loans.read (same as existing transit queries)
-    await requirePermission(ctx, loan.organizationId, "loans.read");
-
-    // Query transit records for loan
-    const transitRecords = await ctx.db
-      .query("transitRecords")
+    const [, transitRecords] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+      ctx.db
+        .query("transitRecords")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
       .collect();
 

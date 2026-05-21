@@ -26,11 +26,10 @@ export const createRole = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "users.manage_roles");
-
-    // Check if role name already exists for this organization
-    const existing = await ctx.db
-      .query("roles")
+    const [, existing] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "users.manage_roles"),
+      ctx.db
+        .query("roles")
       .withIndex("by_organization_and_name", (q) =>
         q.eq("organizationId", args.organizationId).eq("name", args.name),
       )
@@ -194,11 +193,10 @@ export const deleteRole = mutation({
       throw new Error("Cannot delete system roles");
     }
 
-    await requirePermission(ctx, role.organizationId, "users.manage_roles");
-
-    // Check if role is in use
-    const usersWithRole = await ctx.db
-      .query("userOrganizations")
+    const [, usersWithRole] = await Promise.all([
+      requirePermission(ctx, role.organizationId, "users.manage_roles"),
+      ctx.db
+        .query("userOrganizations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", role.organizationId),
       )

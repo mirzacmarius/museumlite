@@ -78,15 +78,15 @@ export const create = mutation({
   },
   returns: v.id("loans"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireLoansAccess(ctx, args.organizationId),
+      requirePermission(ctx, args.organizationId, "loans.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await Promise.all([
-      requireLoansAccess(ctx, args.organizationId),
-      requirePermission(ctx, args.organizationId, "loans.create"),
-    ]);
 
     // Validate account if provided
     if (args.accountId) {
@@ -1949,11 +1949,10 @@ export const deleteAllLoans = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "loans.update");
-
-    // Get all loans for the organization
-    const loans = await ctx.db
-      .query("loans")
+    const [, loans] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.update"),
+      ctx.db
+        .query("loans")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
@@ -2529,11 +2528,10 @@ export const requestExtension = mutation({
     }
 
     // Verify permission
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
-    // Check for existing pending request
-    const existingRequest = await ctx.db
-      .query("loanExtensionRequests")
+    const [, existingRequest] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+      ctx.db
+        .query("loanExtensionRequests")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
       .filter((q) => q.eq(q.field("status"), "pending"))
       .first();
@@ -3649,11 +3647,10 @@ export const bulkExport = query({
         const loan = await ctx.db.get(loanId);
         if (!loan) return;
 
-        await requirePermission(ctx, loan.organizationId, "loans.read");
-
-        // Get loan items
-        const loanItems = await ctx.db
-          .query("loanItems")
+        const [, loanItems] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+      ctx.db
+        .query("loanItems")
           .withIndex("by_loan", (q) => q.eq("loanId", loanId))
           .collect();
 

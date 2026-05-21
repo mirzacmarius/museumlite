@@ -125,11 +125,10 @@ export const generateQRCodeByAccessionNumber = query({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    // Find the collection by accession number
-    const collection = await ctx.db
-      .query("collections")
+    const [, collection] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      ctx.db
+        .query("collections")
       .withIndex("by_organization_and_accessionNumber", (q) =>
         q
           .eq("organizationId", args.organizationId)
