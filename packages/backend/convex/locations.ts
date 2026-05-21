@@ -828,7 +828,8 @@ export const deleteLocation = mutation({
         q.eq("parentLocationId", args.locationId),
       )
       .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
+      .first()
+    ] as const);
 
     if (children) {
       throw new Error("Cannot delete location with active children");
@@ -1176,7 +1177,8 @@ export const createMoveRequest = mutation({
           q.eq(q.field("status"), "approved"),
         ),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (existingRequest) {
       throw new Error("Object already has a pending move request");
@@ -2049,7 +2051,8 @@ export const listAllWithPaths = query({
         q.eq("organizationId", args.organizationId),
       )
       .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
+      .collect()
+    ] as const);
 
     // Build a map of location ID to location for quick lookup
     const locationMap = new Map(allLocations.map((loc) => [loc._id, loc]));

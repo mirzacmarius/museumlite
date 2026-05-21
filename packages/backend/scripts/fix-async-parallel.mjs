@@ -267,15 +267,13 @@ function fixAuthSessionRefreshTokenDeletes(content) {
 
 function fixPermissionThenCollect(content) {
   return content.replace(
-    /await requirePermission\(([^)]+)\);\s*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)\s*\n\s*\.withIndex\(([\s\S]*?)\)\s*\n\s*\.collect\(\);/g,
-    (match, permArgs, varName, table, indexBlock) => {
+    /await requirePermission\(([^)]+)\);\s*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)([\s\S]*?)\.collect\(\);/g,
+    (match, permArgs, varName, table, queryTail) => {
       if (match.includes("Promise.all")) return match;
       return `const [, ${varName}] = await Promise.all([
       requirePermission(${permArgs}),
       ctx.db
-        .query("${table}")
-        .withIndex(${indexBlock})
-        .collect(),
+        .query("${table}")${queryTail}.collect(),
     ] as const);`;
     },
   );
@@ -283,13 +281,14 @@ function fixPermissionThenCollect(content) {
 
 function fixRequirePermissionThenCollect(content) {
   return content.replace(
-    /await requirePermission\(([^)]+)\);\s*\n\s*\/\/[^\n]*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)/g,
-    (match, permArgs, varName, table) => {
-      if (match.includes("Promise.all")) return match;
+    /await requirePermission\(([^)]+)\);\s*\n(?:\s*\/\/[^\n]*\n)?\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)([\s\S]*?)\.(collect|first)\(\);/g,
+    (match, permArgs, varName, table, queryTail, endMethod) => {
+      if (match.includes("const [,")) return match;
       return `const [, ${varName}] = await Promise.all([
       requirePermission(${permArgs}),
       ctx.db
-        .query("${table}")`;
+        .query("${table}")${queryTail}.${endMethod}(),
+    ] as const);`;
     },
   );
 }

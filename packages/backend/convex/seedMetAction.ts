@@ -4240,45 +4240,45 @@ async function seedLibraryData(
 ): Promise<void> {
   console.log("  Seeding library data...");
 
-  await ctx.runMutation(internal.seedMet.createLibrarySettings, {
-    organizationId: orgId,
-    defaultLoanPeriodDays: 21,
-    defaultRenewalLimit: 3,
-    renewalPeriodDays: 14,
-    maxRenewalsAllowed: 5,
-    finePerDayDefault: 0.25,
-    gracePeriodDays: 1,
-    holdExpirationDays: 7,
-    maxHoldsPerPatron: 5,
-    autoGenerateCardNumbers: true,
-    classificationSystem: "dewey",
-  });
-
-  const _membershipTypeIds = await Promise.all(
-    MEMBERSHIP_TYPES_DATA.map((mt, i) =>
-      ctx.runMutation(internal.seedMet.createMembershipType, {
-        organizationId: orgId,
-        name: mt.name,
-        description: `${mt.name} membership with ${mt.maxCheckouts} max checkouts`,
-        borrowingLimit: mt.maxCheckouts,
-        holdLimit: mt.maxHolds,
-        loanPeriodDays: mt.loanPeriod,
-        renewalLimit: mt.maxRenewals,
-        finePerDay: mt.finePerDay,
-        gracePeriodDays: 1,
-        fee: mt.fee,
-        isDefault: i === 0,
-      }),
+  const [, _membershipTypeIds, [locations, patrons]] = await Promise.all([
+    ctx.runMutation(internal.seedMet.createLibrarySettings, {
+      organizationId: orgId,
+      defaultLoanPeriodDays: 21,
+      defaultRenewalLimit: 3,
+      renewalPeriodDays: 14,
+      maxRenewalsAllowed: 5,
+      finePerDayDefault: 0.25,
+      gracePeriodDays: 1,
+      holdExpirationDays: 7,
+      maxHoldsPerPatron: 5,
+      autoGenerateCardNumbers: true,
+      classificationSystem: "dewey",
+    }),
+    Promise.all(
+      MEMBERSHIP_TYPES_DATA.map((mt, i) =>
+        ctx.runMutation(internal.seedMet.createMembershipType, {
+          organizationId: orgId,
+          name: mt.name,
+          description: `${mt.name} membership with ${mt.maxCheckouts} max checkouts`,
+          borrowingLimit: mt.maxCheckouts,
+          holdLimit: mt.maxHolds,
+          loanPeriodDays: mt.loanPeriod,
+          renewalLimit: mt.maxRenewals,
+          finePerDay: mt.finePerDay,
+          gracePeriodDays: 1,
+          fee: mt.fee,
+          isDefault: i === 0,
+        }),
+      ),
     ),
-  );
-
-  const [locations, patrons] = await Promise.all([
-    ctx.runQuery(internal.seedMet.getLocations, {
-      organizationId: orgId,
-    }),
-    ctx.runQuery(internal.seedMet.getPatronAccounts, {
-      organizationId: orgId,
-    }),
+    Promise.all([
+      ctx.runQuery(internal.seedMet.getLocations, {
+        organizationId: orgId,
+      }),
+      ctx.runQuery(internal.seedMet.getPatronAccounts, {
+        organizationId: orgId,
+      }),
+    ] as const),
   ] as const);
   const locationIds = locations.map((l) => l._id);
 
@@ -5944,11 +5944,9 @@ export const resetAndSeed = internalAction({
                 return 0;
               }
 
-              const storageId = await ctx.storage.store(blob);
-
-              const collectionId = await ctx.runMutation(
-                internal.seedMet.createCollection,
-                {
+              const [storageId, collectionId] = await Promise.all([
+                ctx.storage.store(blob),
+                ctx.runMutation(internal.seedMet.createCollection, {
                   organizationId: orgId,
                   userId: seedUserId,
                   accessionNumber: `${org.prefix}-MET-${metId}`,
@@ -5962,8 +5960,8 @@ export const resetAndSeed = internalAction({
                   dimensions: obj.dimensions || "",
                   creditLine:
                     obj.creditLine || "The Metropolitan Museum of Art",
-                },
-              );
+                }),
+              ] as const);
 
               await ctx.runMutation(internal.seedMet.createMediaFile, {
                 collectionId,

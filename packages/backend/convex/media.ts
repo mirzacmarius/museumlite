@@ -1206,7 +1206,8 @@ export const setContentHash = mutation({
           .eq("contentHash", args.contentHash),
       )
       .filter((q) => q.neq(q.field("_id"), args.mediaId))
-      .first();
+      .first()
+    ] as const);
 
     const isDuplicate = !!existing;
 

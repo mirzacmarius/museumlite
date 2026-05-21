@@ -33,7 +33,8 @@ export const createRole = mutation({
       .withIndex("by_organization_and_name", (q) =>
         q.eq("organizationId", args.organizationId).eq("name", args.name),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (existing) {
       throw new Error("Role name already exists");
@@ -201,7 +202,8 @@ export const deleteRole = mutation({
         q.eq("organizationId", role.organizationId),
       )
       .filter((q) => q.eq(q.field("roleId"), args.roleId))
-      .first();
+      .first(),
+    ] as const);
 
     if (usersWithRole) {
       throw new Error("Cannot delete role that is assigned to users");

@@ -103,7 +103,8 @@ export const getEditHistory = query({
         .query("mediaEditHistory")
       .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
       .order("desc")
-      .collect();
+      .collect()
+    ] as const);
 
     return editHistory;
   },

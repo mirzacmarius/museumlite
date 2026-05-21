@@ -134,7 +134,8 @@ export const generateQRCodeByAccessionNumber = query({
           .eq("organizationId", args.organizationId)
           .eq("accessionNumber", args.accessionNumber),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (!collection) {
       throw new Error(

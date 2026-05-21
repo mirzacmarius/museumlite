@@ -71,7 +71,8 @@ export const listPendingInvitations = query({
         q.eq("organizationId", args.organizationId),
       )
       .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect();
+      .collect()
+    ] as const);
 
     // Enrich with role and inviter information
     const enrichedInvitations = await Promise.all(

@@ -151,7 +151,8 @@ export const listVersions = query({
       .withIndex("by_original_media", (q) =>
         q.eq("originalMediaId", args.mediaId),
       )
-      .collect();
+      .collect()
+    ] as const);
 
     // Get URLs for each version
     const versionsWithUrls = await Promise.all(

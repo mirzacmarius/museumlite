@@ -1327,7 +1327,8 @@ export const removeUser = mutation({
       .withIndex("by_user_and_organization", (q) =>
         q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (!userOrganization) {
       throw new Error("User is not in this organization");
@@ -1375,7 +1376,8 @@ export const updateUserRole = mutation({
       .withIndex("by_user_and_organization", (q) =>
         q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (!userOrganization) {
       throw new Error("User is not in this organization");

@@ -1956,7 +1956,8 @@ export const deleteAllLoans = mutation({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
-      .collect();
+      .collect()
+    ] as const);
 
     let deletedLoanItems = 0;
     let updatedCollections = 0;
@@ -2534,7 +2535,8 @@ export const requestExtension = mutation({
         .query("loanExtensionRequests")
       .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
       .filter((q) => q.eq(q.field("status"), "pending"))
-      .first();
+      .first(),
+    ] as const);
 
     if (existingRequest) {
       throw new Error("An extension request is already pending for this loan");
@@ -3652,7 +3654,8 @@ export const bulkExport = query({
       ctx.db
         .query("loanItems")
           .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-          .collect();
+          .collect()
+    ] as const);
 
         const collections = await batchGetByIds(
           ctx,

@@ -2035,7 +2035,8 @@ export const getCurrentAppraisal = query({
       .withIndex("by_collection", (q) =>
         q.eq("collectionId", args.collectionId),
       )
-      .collect();
+      .collect()
+    ] as const);
 
     if (appraisals.length === 0) {
       return null;
