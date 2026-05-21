@@ -1785,16 +1785,16 @@ export const requestRegulatoryApproval = mutation({
     // Generate unique token for approval link
     const token = `reg-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
-    await ctx.db.patch(args.deaccessionId, {
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
       regulatoryApprovalRequired: true,
       regulatoryApprovalStatus: "requested",
       regulatoryApproverEmail: args.approverEmail,
       regulatoryApproverName: args.approverName,
       regulatoryApprovalRequestedAt: Date.now(),
       regulatoryApprovalToken: token,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: deaccession.organizationId,
       userId,
       action: "regulatory_approval_requested",
@@ -1804,7 +1804,8 @@ export const requestRegulatoryApproval = mutation({
         approverEmail: args.approverEmail,
         approverName: args.approverName,
       },
-    });
+    }),
+    ]);
 
     // Note: In production, this URL would be your actual domain
     const approvalUrl = `/api/regulatory-approval/${token}`;

@@ -4272,16 +4272,15 @@ async function seedLibraryData(
     ),
   );
 
-  // Get locations for assigning to copies
-  const locations = await ctx.runQuery(internal.seedMet.getLocations, {
-    organizationId: orgId,
-  });
+  const [locations, patrons] = await Promise.all([
+    ctx.runQuery(internal.seedMet.getLocations, {
+      organizationId: orgId,
+    }),
+    ctx.runQuery(internal.seedMet.getPatronAccounts, {
+      organizationId: orgId,
+    }),
+  ] as const);
   const locationIds = locations.map((l) => l._id);
-
-  // Get patron accounts
-  const patrons = await ctx.runQuery(internal.seedMet.getPatronAccounts, {
-    organizationId: orgId,
-  });
 
   // Create library items and copies
   const libraryItemIds: Id<"libraryItems">[] = [];
@@ -5885,16 +5884,18 @@ export const resetAndSeed = internalAction({
           type: org.type,
           subscriptionTier: org.subscriptionTier,
         });
-        await Promise.all([
-          ctx.runMutation(internal.seedMet.assignUserToOrg, {
-            userId,
-            organizationId: orgId,
-          }),
-          seedFoundationData(ctx, orgId, userId),
-          seedAccountsData(ctx, orgId, userId),
-          seedWorkflowData(ctx, orgId, userId),
-        ]);
-        const objectIds = await fetchMetSearch(org.metQuery);
+        const [, objectIds] = await Promise.all([
+          Promise.all([
+            ctx.runMutation(internal.seedMet.assignUserToOrg, {
+              userId,
+              organizationId: orgId,
+            }),
+            seedFoundationData(ctx, orgId, userId),
+            seedAccountsData(ctx, orgId, userId),
+            seedWorkflowData(ctx, orgId, userId),
+          ]),
+          fetchMetSearch(org.metQuery),
+        ] as const);
         console.log(
           `Found ${objectIds.length} Met objects for "${org.metQuery}"`,
         );

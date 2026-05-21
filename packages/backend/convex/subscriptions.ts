@@ -1,5 +1,5 @@
-import { Polar } from "@convex-dev/polar";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { Polar } from "@convex-dev/polar";
 import { ConvexError, v } from "convex/values";
 import { api, components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -10,10 +10,10 @@ import {
   query,
 } from "./_generated/server";
 import {
+  type SubscriptionRecordSource,
   hasActiveSubscriptionAccess,
   inferSubscriptionTierFromProductName,
   toDatabaseProduct,
-  type SubscriptionRecordSource,
   toDatabaseSubscription,
 } from "./utils/polarBilling";
 
@@ -572,12 +572,16 @@ export const changeOrganizationSubscriptionPlan = action({
     await requireBillingPermission(ctx, args.organizationId);
 
     const currentUser = await ctx.runQuery(api.users.getUser, {});
-    const currentSubscription =
-      await getActiveOrganizationSubscriptionFromPolar(ctx, {
+    const [currentSubscription, product] = await Promise.all([
+      getActiveOrganizationSubscriptionFromPolar(ctx, {
         userId,
         organizationId: args.organizationId,
         email: currentUser?.email,
-      });
+      }),
+      polar.sdk.products.get({
+        id: args.productId,
+      }),
+    ]);
     if (!currentSubscription) {
       throw new ConvexError("Subscription not found");
     }
@@ -590,10 +594,6 @@ export const changeOrganizationSubscriptionPlan = action({
     if (currentSubscription.productId === args.productId) {
       throw new ConvexError("Subscription already on this plan");
     }
-
-    const product = await polar.sdk.products.get({
-      id: args.productId,
-    });
     if (!product || product.isArchived) {
       throw new ConvexError("Billing plan is not available");
     }
@@ -610,11 +610,9 @@ export const changeOrganizationSubscriptionPlan = action({
       },
     });
 
-    await upsertComponentSubscription(ctx, updatedSubscription);
-
-    await ctx.runMutation(
-      internal.subscriptions.upsertOrganizationSubscription,
-      {
+    await Promise.all([
+      upsertComponentSubscription(ctx, updatedSubscription),
+      ctx.runMutation(internal.subscriptions.upsertOrganizationSubscription, {
         organizationId: args.organizationId,
         tier,
         productId: updatedSubscription.productId,
@@ -633,8 +631,8 @@ export const changeOrganizationSubscriptionPlan = action({
             updatedSubscription.currentPeriodEnd?.toISOString() ?? null,
           ) ?? undefined,
         metadata: updatedSubscription.metadata,
-      },
-    );
+      }),
+    ]);
 
     return null;
   },

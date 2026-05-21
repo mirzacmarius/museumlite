@@ -497,31 +497,24 @@ export const deleteTransitRecord = mutation({
       "organization.manage_settings",
     );
 
-    const transitItems = await ctx.db
-      .query("transitItems")
-      .withIndex("by_transitRecord", (q) =>
-        q.eq("transitRecordId", args.transitRecordId),
-      )
-      .collect();
+    const [transitItems, statusUpdates] = await Promise.all([
+      ctx.db
+        .query("transitItems")
+        .withIndex("by_transitRecord", (q) =>
+          q.eq("transitRecordId", args.transitRecordId),
+        )
+        .collect(),
+      ctx.db
+        .query("transitStatusUpdates")
+        .withIndex("by_transitRecord", (q) =>
+          q.eq("transitRecordId", args.transitRecordId),
+        )
+        .collect(),
+    ]);
 
-    await Promise.all(
-      Array.from(transitItems).map(async (item) => {
-        await ctx.db.delete(item._id);
-      }),
-    );
-
-    const statusUpdates = await ctx.db
-      .query("transitStatusUpdates")
-      .withIndex("by_transitRecord", (q) =>
-        q.eq("transitRecordId", args.transitRecordId),
-      )
-      .collect();
     await Promise.all([
-      Promise.all(
-        Array.from(statusUpdates).map(async (update) => {
-          await ctx.db.delete(update._id);
-        }),
-      ),
+      ...transitItems.map((item) => ctx.db.delete(item._id)),
+      ...statusUpdates.map((update) => ctx.db.delete(update._id)),
       ctx.db.delete(args.transitRecordId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: transitRecord.organizationId,
@@ -531,7 +524,7 @@ export const deleteTransitRecord = mutation({
         entityId: args.transitRecordId,
         changes: { transitNumber: transitRecord.transitNumber },
       }),
-    ] as const);
+    ]);
 
     return null;
   },
@@ -1545,25 +1538,27 @@ export const checkDelayedTransitsInternal = internalMutation({
 
         await Promise.all(
           Array.from(overdueDeliveries).map(async (transit) => {
-            await Promise.all([
-              ctx.db.patch(transit._id, {
-                status: "delayed",
-                lastModifiedAt: now,
-              }),
-              ctx.db.insert("transitStatusUpdates", {
-                transitRecordId: transit._id,
-                status: "delayed",
-                description:
-                  "Automatically marked as delayed - past estimated delivery date",
-                reportedAt: now,
-              }),
+            const [, userOrgs] = await Promise.all([
+              Promise.all([
+                ctx.db.patch(transit._id, {
+                  status: "delayed",
+                  lastModifiedAt: now,
+                }),
+                ctx.db.insert("transitStatusUpdates", {
+                  transitRecordId: transit._id,
+                  status: "delayed",
+                  description:
+                    "Automatically marked as delayed - past estimated delivery date",
+                  reportedAt: now,
+                }),
+              ]),
+              ctx.db
+                .query("userOrganizations")
+                .withIndex("by_organization", (q) =>
+                  q.eq("organizationId", org._id),
+                )
+                .collect(),
             ]);
-            const userOrgs = await ctx.db
-              .query("userOrganizations")
-              .withIndex("by_organization", (q) =>
-                q.eq("organizationId", org._id),
-              )
-              .collect();
 
             await Promise.all(
               userOrgs.map((userOrg) =>

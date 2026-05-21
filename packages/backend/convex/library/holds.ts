@@ -185,9 +185,10 @@ export const fulfill = mutation({
 
     await requireModuleEnabled(ctx, hold.organizationId, "library");
 
-    await ctx.db.patch(args.holdId, { status: "fulfilled" });
-
-    await reorderHoldQueue(ctx, hold.itemId);
+    await Promise.all([
+      ctx.db.patch(args.holdId, { status: "fulfilled" }),
+      reorderHoldQueue(ctx, hold.itemId),
+    ]);
 
     return null;
   },

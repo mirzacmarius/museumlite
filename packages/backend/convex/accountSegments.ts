@@ -233,16 +233,17 @@ export const update = mutation({
       updates.description = args.description?.trim();
     if (args.filters !== undefined) updates.filters = args.filters;
 
-    await ctx.db.patch(args.segmentId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.segmentId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: segment.organizationId,
       userId,
       action: "updated_account_segment",
       entityType: "accountSegment",
       entityId: args.segmentId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },

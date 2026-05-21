@@ -1099,31 +1099,31 @@ export const createRecall = mutation({
     const finalDueDate =
       newDueDate < circulation.dueDate ? newDueDate : circulation.dueDate;
 
-    const recallId = await ctx.db.insert("libraryRecalls", {
-      organizationId: circulation.organizationId,
-      circulationId: args.circulationId,
-      itemId: circulation.itemId,
-      copyId: circulation.copyId,
-      accountId: circulation.accountId,
-      reason: args.reason,
-      recalledByAccountId: args.requestingAccountId,
-      recalledByHoldId: args.requestingHoldId,
-      status: "pending",
-      recallDate: now,
-      originalDueDate: circulation.dueDate,
-      newDueDate: finalDueDate,
-      createdBy: userId,
-    });
-
-    // Update circulation
-    await ctx.db.patch(args.circulationId, {
-      isRecalled: true,
-      recalledAt: now,
-      recalledBy: userId,
-      recallReason: args.reason,
-      originalDueDate: circulation.dueDate,
-      dueDate: finalDueDate,
-    });
+    const [recallId] = await Promise.all([
+      ctx.db.insert("libraryRecalls", {
+        organizationId: circulation.organizationId,
+        circulationId: args.circulationId,
+        itemId: circulation.itemId,
+        copyId: circulation.copyId,
+        accountId: circulation.accountId,
+        reason: args.reason,
+        recalledByAccountId: args.requestingAccountId,
+        recalledByHoldId: args.requestingHoldId,
+        status: "pending",
+        recallDate: now,
+        originalDueDate: circulation.dueDate,
+        newDueDate: finalDueDate,
+        createdBy: userId,
+      }),
+      ctx.db.patch(args.circulationId, {
+        isRecalled: true,
+        recalledAt: now,
+        recalledBy: userId,
+        recallReason: args.reason,
+        originalDueDate: circulation.dueDate,
+        dueDate: finalDueDate,
+      }),
+    ] as const);
 
     // Send notification to borrower
     const [account, item] = await Promise.all([

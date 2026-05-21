@@ -136,15 +136,15 @@ export const upsert = mutation({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         slaDays: args.slaDays,
         warningDays: args.warningDays,
         escalateToRoleId: args.escalateToRoleId,
         isActive: args.isActive,
         updatedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
         userId,
         action: "updated_workflow_sla_config",
@@ -156,7 +156,8 @@ export const upsert = mutation({
           warningDays: args.warningDays,
           isActive: args.isActive,
         },
-      });
+      }),
+    ]);
 
       return existing._id;
     }

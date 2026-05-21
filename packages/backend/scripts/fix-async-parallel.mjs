@@ -45,6 +45,7 @@ function fixAuthParallel(content) {
     ["requireSitesAccess", "requirePermission"],
     ["requireSiteAccess", "requirePermission"],
     ["requireDashboardAccess", "requirePermission"],
+    ["requireFeatureAccess", "requirePermission"],
   ];
   for (const [first, second] of pairs) {
     const re = new RegExp(
@@ -57,7 +58,6 @@ function fixAuthParallel(content) {
         `await Promise.all([\n      ${first}(${a1}),\n      ${second}(${a2}),\n    ]);`,
     );
   }
-  // Multiline requirePermission after *Access
   next = next.replace(
     /await (require\w+Access)\(([^)]+)\);\s*\n\s*await (requirePermission)\(\s*([\s\S]*?)\);/g,
     (_m, access, accessArgs, perm, permArgs) =>
@@ -93,6 +93,53 @@ function fixConsecutiveRunQuery(content) {
   );
 }
 
+function fixPatchThenAudit(content) {
+  return content.replace(
+    /await ctx\.db\.patch\(([\s\S]*?)\);\s*\n\s*await ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\);/g,
+    (match, patchArgs, auditArgs) => {
+      if (patchArgs.length > 1500 || auditArgs.length > 1500) return match;
+      return `await Promise.all([\n      ctx.db.patch(${patchArgs}),\n      ctx.runMutation(internal.audit.logAction, ${auditArgs}),\n    ]);`;
+    },
+  );
+}
+
+function fixDeleteThenAudit(content) {
+  return content.replace(
+    /await ctx\.db\.delete\(([^)]+)\);\s*\n\s*await ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\);/g,
+    (match, deleteArg, auditArgs) => {
+      if (auditArgs.length > 1500) return match;
+      return `await Promise.all([\n      ctx.db.delete(${deleteArg}),\n      ctx.runMutation(internal.audit.logAction, ${auditArgs}),\n    ]);`;
+    },
+  );
+}
+
+function fixPermissionPatchAudit(content) {
+  return content.replace(
+    /await requirePermission\(([\s\S]*?)\);\s*\n\s*await Promise\.all\(\[\s*\n\s*ctx\.db\.patch\(([\s\S]*?)\),\s*\n\s*ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\),\s*\n\s*\]\);/g,
+    (match) => match,
+  );
+}
+
+function fixPermissionThenPatchAudit(content) {
+  return content.replace(
+    /await requirePermission\(([\s\S]*?)\);\s*\n\s*await ctx\.db\.patch\(([\s\S]*?)\);\s*\n\s*await ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\);/g,
+    (match, permArgs, patchArgs, auditArgs) => {
+      if (patchArgs.length > 1500 || auditArgs.length > 1500) return match;
+      return `await requirePermission(${permArgs});\n    await Promise.all([\n      ctx.db.patch(${patchArgs}),\n      ctx.runMutation(internal.audit.logAction, ${auditArgs}),\n    ]);`;
+    },
+  );
+}
+
+function fixLogActionThenNotify(content) {
+  return content.replace(
+    /await ctx\.runMutation\(internal\.audit\.logAction, ([\s\S]*?)\);\s*\n\s*const (\w+) = await getUsersToNotifyForWorkflowStep\(([\s\S]*?)\);/g,
+    (match, auditArgs, varName, notifyArgs) => {
+      if (auditArgs.length > 800 || notifyArgs.length > 400) return match;
+      return `const [, ${varName}] = await Promise.all([\n    ctx.runMutation(internal.audit.logAction, ${auditArgs}),\n    getUsersToNotifyForWorkflowStep(${notifyArgs}),\n  ]);`;
+    },
+  );
+}
+
 function apply(filePath) {
   if (SKIP_FILES.has(path.basename(filePath))) return false;
   let content = fs.readFileSync(filePath, "utf8");
@@ -101,6 +148,11 @@ function apply(filePath) {
   content = fixSyncAuditParallel(content);
   content = fixConsecutiveDbGet(content);
   content = fixConsecutiveRunQuery(content);
+  content = fixPatchThenAudit(content);
+  content = fixDeleteThenAudit(content);
+  content = fixPermissionPatchAudit(content);
+  content = fixPermissionThenPatchAudit(content);
+  content = fixLogActionThenNotify(content);
   if (content !== original) {
     fs.writeFileSync(filePath, content);
     return true;

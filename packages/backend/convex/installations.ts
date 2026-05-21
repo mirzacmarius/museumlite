@@ -154,20 +154,21 @@ export const updateTask = mutation({
       Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
 
-    await ctx.db.patch(args.taskId, {
+    await Promise.all([
+      ctx.db.patch(args.taskId, {
       ...filteredUpdates,
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: task.organizationId,
       userId,
       action: "updated",
       entityType: "installationTask",
       entityId: args.taskId,
       changes: filteredUpdates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -435,16 +436,17 @@ export const moveTask = mutation({
       updates.blockedReason = undefined;
     }
 
-    await ctx.db.patch(args.taskId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.taskId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: task.organizationId,
       userId,
       action: "status_changed",
       entityType: "installationTask",
       entityId: args.taskId,
       changes: { from: task.status, to: args.status },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -543,20 +545,21 @@ export const unblockTask = mutation({
       requirePermission(ctx, task.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.taskId, {
+    await Promise.all([
+      ctx.db.patch(args.taskId, {
       status: "todo",
       blockedReason: undefined,
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: task.organizationId,
       userId,
       action: "unblocked",
       entityType: "installationTask",
       entityId: args.taskId,
-    });
+    }),
+    ]);
 
     return null;
   },

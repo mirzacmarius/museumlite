@@ -1237,23 +1237,24 @@ export const approveMoveRequest = mutation({
 
     await requirePermission(ctx, request.organizationId, "locations.update");
 
-    await ctx.db.patch(args.requestId, {
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
       status: "approved",
       reviewedBy: userId,
       reviewedAt: Date.now(),
       reviewNotes: args.reviewNotes,
       capacityOverride: args.overrideCapacity,
       statusOverride: args.overrideStatus,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: request.organizationId,
       userId,
       action: "approved_move_request",
       entityType: "collection",
       entityId: request.collectionId,
       changes: { requestId: args.requestId },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1285,21 +1286,22 @@ export const rejectMoveRequest = mutation({
 
     await requirePermission(ctx, request.organizationId, "locations.update");
 
-    await ctx.db.patch(args.requestId, {
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
       status: "rejected",
       reviewedBy: userId,
       reviewedAt: Date.now(),
       reviewNotes: args.reviewNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: request.organizationId,
       userId,
       action: "rejected_move_request",
       entityType: "collection",
       entityId: request.collectionId,
       changes: { requestId: args.requestId, reason: args.reviewNotes },
-    });
+    }),
+    ]);
 
     return null;
   },

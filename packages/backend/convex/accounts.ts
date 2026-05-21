@@ -341,13 +341,14 @@ export const update = mutation({
       lastModifiedAt: now,
     });
 
-    await ctx.db.patch(args.accountId, updates);
-
     if (args.roleIds !== undefined) {
-      const existingAccountRoles = await ctx.db
-        .query("accountRoles")
-        .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
-        .collect();
+      const [, existingAccountRoles] = await Promise.all([
+        ctx.db.patch(args.accountId, updates),
+        ctx.db
+          .query("accountRoles")
+          .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+          .collect(),
+      ] as const);
 
       await Promise.all(
         existingAccountRoles.map((accountRole) =>
@@ -365,16 +366,28 @@ export const update = mutation({
           }),
         ),
       );
-    }
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "updated_account",
-      entityType: "account",
-      entityId: args.accountId,
-      changes: updates,
-    });
+      await ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "updated_account",
+        entityType: "account",
+        entityId: args.accountId,
+        changes: updates,
+      });
+    } else {
+      await Promise.all([
+        ctx.db.patch(args.accountId, updates),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: account.organizationId,
+          userId,
+          action: "updated_account",
+          entityType: "account",
+          entityId: args.accountId,
+          changes: updates,
+        }),
+      ] as const);
+    }
 
     return null;
   },
@@ -598,20 +611,21 @@ export const restore = mutation({
       requirePermission(ctx, account.organizationId, "accounts.manage"),
     ]);
 
-    await ctx.db.patch(args.accountId, {
-      status: "active",
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "restored_account",
-      entityType: "account",
-      entityId: args.accountId,
-      changes: { status: "active" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.accountId, {
+        status: "active",
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "restored_account",
+        entityType: "account",
+        entityId: args.accountId,
+        changes: { status: "active" },
+      }),
+    ] as const);
 
     return null;
   },

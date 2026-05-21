@@ -112,14 +112,6 @@ export const listMyAssignments = query({
       slaBreached?: boolean;
     }> = [];
 
-    // Get SLA configs for this organization
-    const slaConfigs = await ctx.db
-      .query("workflowSlaConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
     const getSlaConfig = (workflowType: string) =>
       slaConfigs.find((c) => c.workflowType === workflowType);
 
@@ -134,12 +126,19 @@ export const listMyAssignments = query({
     };
 
     const [
+      slaConfigs,
       pendingAccessions,
       pendingDeaccessions,
       pendingLoans,
       pendingExhibitions,
       pendingConservation,
     ] = await Promise.all([
+      ctx.db
+        .query("workflowSlaConfigs")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
       ctx.db
         .query("accessions")
         .withIndex("by_organization_and_status", (q) =>
@@ -519,12 +518,29 @@ export const getAssignmentCounts = query({
     let urgentCount = 0;
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-    const pendingAccessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "pending"),
-      )
-      .collect();
+    const [pendingAccessions, pendingLoans, assignedAccessions] =
+      await Promise.all([
+        ctx.db
+          .query("accessions")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", "pending"),
+          )
+          .collect(),
+        ctx.db
+          .query("loans")
+          .withIndex("by_organization_and_status", (q) =>
+            q
+              .eq("organizationId", args.organizationId)
+              .eq("status", "pending"),
+          )
+          .collect(),
+        ctx.db
+          .query("accessions")
+          .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
+          .collect(),
+      ] as const);
 
     await Promise.all(
       Array.from(pendingAccessions).map(async (accession) => {
@@ -545,13 +561,6 @@ export const getAssignmentCounts = query({
       }),
     );
 
-    const pendingLoans = await ctx.db
-      .query("loans")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "pending"),
-      )
-      .collect();
-
     await Promise.all(
       Array.from(pendingLoans).map(async (loan) => {
         const currentStep = loan.workflowStep ?? 1;
@@ -570,11 +579,6 @@ export const getAssignmentCounts = query({
         }
       }),
     );
-
-    const assignedAccessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_assigned_to", (q) => q.eq("assignedTo", userId))
-      .collect();
 
     const assignedCount = assignedAccessions.filter(
       (a) => a.organizationId === args.organizationId && a.status === "pending",

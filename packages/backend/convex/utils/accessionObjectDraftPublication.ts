@@ -80,17 +80,19 @@ export async function publishAccessionObjectDraft(
     [...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
       const group = await ctx.db.get(collectionGroupId);
       if (group && group.organizationId === accession.organizationId) {
-        await ctx.db.insert("collectionGroupItems", {
-          collectionGroupId,
-          collectionId,
-          addedAt: catalogedAt,
-          addedBy: catalogedBy,
-        });
-        await ctx.db.patch(collectionGroupId, {
-          itemsCount: (group.itemsCount || 0) + 1,
-          lastModifiedAt: catalogedAt,
-          lastModifiedBy: catalogedBy,
-        });
+        await Promise.all([
+          ctx.db.insert("collectionGroupItems", {
+            collectionGroupId,
+            collectionId,
+            addedAt: catalogedAt,
+            addedBy: catalogedBy,
+          }),
+          ctx.db.patch(collectionGroupId, {
+            itemsCount: (group.itemsCount || 0) + 1,
+            lastModifiedAt: catalogedAt,
+            lastModifiedBy: catalogedBy,
+          }),
+        ]);
       }
     }),
   );

@@ -165,15 +165,15 @@ export const createOrganization = internalMutation({
       },
     });
 
-    await ctx.db.insert(
-      "organizationUsageCounters",
-      createEmptyUsageCounter(orgId),
-    );
-
-    // Create default roles using the existing helper
-    await ctx.runMutation(internal.organizations.createDefaultRoles, {
-      organizationId: orgId,
-    });
+    await Promise.all([
+      ctx.db.insert(
+        "organizationUsageCounters",
+        createEmptyUsageCounter(orgId),
+      ),
+      ctx.runMutation(internal.organizations.createDefaultRoles, {
+        organizationId: orgId,
+      }),
+    ]);
 
     return orgId;
   },

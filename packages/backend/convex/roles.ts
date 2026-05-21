@@ -49,27 +49,25 @@ export const createRole = mutation({
       isSystemRole: false,
     });
 
-    // Assign permissions
-    await Promise.all(
-      args.permissionIds.map((permissionId) =>
+    await Promise.all([
+      ...args.permissionIds.map((permissionId) =>
         ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
         }),
       ),
-    );
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "created_role",
-      entityType: "role",
-      entityId: roleId,
-      changes: {
-        name: args.name,
-        permissionCount: args.permissionIds.length,
-      },
-    });
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action: "created_role",
+        entityType: "role",
+        entityId: roleId,
+        changes: {
+          name: args.name,
+          permissionCount: args.permissionIds.length,
+        },
+      }),
+    ] as const);
 
     return roleId;
   },
@@ -129,17 +127,17 @@ export const updateRole = mutation({
       updates.description = args.description;
     }
 
-    if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(args.roleId, updates);
-    }
-
     // Update permissions if provided
     if (args.permissionIds !== undefined) {
-      // Remove existing permissions
-      const existingPermissions = await ctx.db
-        .query("rolePermissions")
-        .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
-        .collect();
+      const [, existingPermissions] = await Promise.all([
+        Object.keys(updates).length > 0
+          ? ctx.db.patch(args.roleId, updates)
+          : Promise.resolve(),
+        ctx.db
+          .query("rolePermissions")
+          .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
+          .collect(),
+      ] as const);
 
       await Promise.all(existingPermissions.map((rp) => ctx.db.delete(rp._id)));
 
@@ -152,6 +150,8 @@ export const updateRole = mutation({
           }),
         ),
       );
+    } else if (Object.keys(updates).length > 0) {
+      await ctx.db.patch(args.roleId, updates);
     }
 
     await ctx.runMutation(internal.audit.logAction, {

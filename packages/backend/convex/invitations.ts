@@ -378,22 +378,22 @@ export const resendInvitation = mutation({
     const newToken = generateInvitationToken();
     const newExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    await ctx.db.patch(args.invitationId, {
-      token: newToken,
-      expiresAt: newExpiresAt,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: invitation.organizationId,
-      userId,
-      action: "resent_invitation",
-      entityType: "invitation",
-      entityId: invitation._id,
-      changes: {
-        email: invitation.email,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.invitationId, {
+        token: newToken,
+        expiresAt: newExpiresAt,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: invitation.organizationId,
+        userId,
+        action: "resent_invitation",
+        entityType: "invitation",
+        entityId: invitation._id,
+        changes: {
+          email: invitation.email,
+        },
+      }),
+    ] as const);
 
     const [organization, role, inviter] = await Promise.all([
       ctx.db.get(invitation.organizationId),
@@ -445,20 +445,19 @@ export const cancelInvitation = mutation({
 
     await requirePermission(ctx, invitation.organizationId, "users.invite");
 
-    // Delete the invitation
-    await ctx.db.delete(args.invitationId);
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: invitation.organizationId,
-      userId,
-      action: "cancelled_invitation",
-      entityType: "invitation",
-      entityId: invitation._id,
-      changes: {
-        email: invitation.email,
-      },
-    });
+    await Promise.all([
+      ctx.db.delete(args.invitationId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: invitation.organizationId,
+        userId,
+        action: "cancelled_invitation",
+        entityType: "invitation",
+        entityId: invitation._id,
+        changes: {
+          email: invitation.email,
+        },
+      }),
+    ] as const);
   },
 });
 

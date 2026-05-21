@@ -173,9 +173,9 @@ export const update = mutation({
       updates.template = args.template;
     }
 
-    await ctx.db.patch(args.templateId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.templateId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: template.organizationId,
       userId,
       action: "updated_accession_template",
@@ -186,7 +186,8 @@ export const update = mutation({
         description: args.description,
         template: args.template,
       },
-    });
+    }),
+    ]);
 
     return null;
   },

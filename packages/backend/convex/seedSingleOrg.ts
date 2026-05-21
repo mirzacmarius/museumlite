@@ -375,24 +375,25 @@ export const seedOrganization = action({
             },
           );
 
-          await ctx.runMutation(internal.seedMet.createMediaFile, {
-            collectionId,
-            organizationId: orgId,
-            userId: seedUserId,
-            storageId,
-            fileName: `${org.prefix}-MET-${metId}.jpg`,
-            fileSize: blob.size,
-          });
-
-          await ctx.runMutation(internal.seedMet.createLocationHistory, {
-            collectionId,
-            toLocationId: randomLocation,
-            movedBy: seedUserId,
-            movedAt:
-              Date.now() -
-              Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000),
-            reason: "Initial cataloging",
-          });
+          await Promise.all([
+            ctx.runMutation(internal.seedMet.createMediaFile, {
+              collectionId,
+              organizationId: orgId,
+              userId: seedUserId,
+              storageId,
+              fileName: `${org.prefix}-MET-${metId}.jpg`,
+              fileSize: blob.size,
+            }),
+            ctx.runMutation(internal.seedMet.createLocationHistory, {
+              collectionId,
+              toLocationId: randomLocation,
+              movedBy: seedUserId,
+              movedAt:
+                Date.now() -
+                Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000),
+              reason: "Initial cataloging",
+            }),
+          ] as const);
 
           return 1;
         }),

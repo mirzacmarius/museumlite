@@ -215,9 +215,10 @@ export const recordUploadedFile = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "media.upload");
-
-    const job = await ctx.db.get(args.jobId);
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.upload"),
+      ctx.db.get(args.jobId),
+    ]);
     if (!job || job.organizationId !== args.organizationId) {
       throw new Error("Import job not found");
     }

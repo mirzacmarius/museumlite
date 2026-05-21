@@ -3041,22 +3041,22 @@ export const startDisputeInvestigation = mutation({
     }
 
     await requirePermission(ctx, dispute.organizationId, "loans.update");
-
-    await ctx.db.patch(args.disputeId, {
+    await Promise.all([
+      ctx.db.patch(args.disputeId, {
       status: "investigating",
       investigatorId: userId,
       investigationStartedAt: Date.now(),
       investigationNotes: args.investigationNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: dispute.organizationId,
       userId,
       action: "updated",
       entityType: "conditionDispute",
       entityId: args.disputeId,
       changes: { status: "investigating" },
-    });
+    }),
+    ]);
 
     // Notify the reporter
     if (dispute.reportedBy !== userId) {
@@ -3255,21 +3255,22 @@ export const withdrawConditionDispute = mutation({
 
     await requirePermission(ctx, dispute.organizationId, "loans.update");
 
-    await ctx.db.patch(args.disputeId, {
+    await Promise.all([
+      ctx.db.patch(args.disputeId, {
       status: "withdrawn",
       resolvedBy: userId,
       resolvedAt: Date.now(),
       resolutionNotes: args.reason ?? "Dispute withdrawn",
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: dispute.organizationId,
       userId,
       action: "withdrawn",
       entityType: "conditionDispute",
       entityId: args.disputeId,
       changes: { reason: args.reason },
-    });
+    }),
+    ]);
 
     return null;
   },

@@ -53,16 +53,16 @@ export const createVersion = mutation({
       createdAt: Date.now(),
     });
 
-    // Update the media file with the new version info
-    await ctx.db.patch(args.mediaId, {
-      currentVersionId: versionId,
-      versionCount: newVersionNumber,
-    });
-
-    await recordMediaVersionUsage(ctx, {
-      organizationId: media.organizationId,
-      storageId: args.storageId,
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, {
+        currentVersionId: versionId,
+        versionCount: newVersionNumber,
+      }),
+      recordMediaVersionUsage(ctx, {
+        organizationId: media.organizationId,
+        storageId: args.storageId,
+      }),
+    ]);
 
     return versionId;
   },

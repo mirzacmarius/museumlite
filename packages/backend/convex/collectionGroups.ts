@@ -343,9 +343,9 @@ export const update = mutation({
     if (args.managedByRoleId !== undefined)
       updates.managedByRoleId = args.managedByRoleId ?? undefined;
 
-    await ctx.db.patch(args.groupId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.groupId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: group.organizationId,
       userId,
       action: "updated_collection_group",
@@ -357,7 +357,8 @@ export const update = mutation({
         curatorId: args.curatorId,
         managedByRoleId: args.managedByRoleId,
       },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -549,13 +550,13 @@ export const removeItems = mutation({
 
     // Update items count
     if (removedCount > 0) {
-      await ctx.db.patch(args.groupId, {
+      await Promise.all([
+      ctx.db.patch(args.groupId, {
         itemsCount: Math.max(0, (group.itemsCount || 0) - removedCount),
         lastModifiedAt: Date.now(),
         lastModifiedBy: userId,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: group.organizationId,
         userId,
         action: "removed_items_from_collection_group",
@@ -565,7 +566,8 @@ export const removeItems = mutation({
           collectionIds: args.collectionIds,
           removedCount,
         },
-      });
+      }),
+    ]);
     }
 
     return null;

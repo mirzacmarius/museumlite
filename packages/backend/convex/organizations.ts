@@ -579,16 +579,17 @@ export const update = mutation({
       updates.subscriptionTier = args.subscriptionTier;
     }
 
-    await ctx.db.patch(args.organizationId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.organizationId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
       userId,
       action: "updated_organization",
       entityType: "organization",
       entityId: args.organizationId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1332,9 +1333,9 @@ export const removeUser = mutation({
       throw new Error("User is not in this organization");
     }
 
-    await ctx.db.delete(userOrganization._id);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.delete(userOrganization._id),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
       userId: currentUserId,
       action: "removed_user",
@@ -1343,7 +1344,8 @@ export const removeUser = mutation({
       changes: {
         removedUserId: args.userId,
       },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1380,11 +1382,11 @@ export const updateUserRole = mutation({
       throw new Error("User is not in this organization");
     }
 
-    await ctx.db.patch(userOrganization._id, {
+    await Promise.all([
+      ctx.db.patch(userOrganization._id, {
       roleId: args.roleId,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
       userId: currentUserId,
       action: "updated_user_role",
@@ -1394,7 +1396,8 @@ export const updateUserRole = mutation({
         previousRoleId: userOrganization.roleId,
         newRoleId: args.roleId,
       },
-    });
+    }),
+    ]);
 
     return null;
   },

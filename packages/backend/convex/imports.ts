@@ -213,9 +213,10 @@ export const importAccessionsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.create");
-
-    const job = await ctx.db.get(args.jobId);
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.create"),
+      ctx.db.get(args.jobId),
+    ]);
     if (!job || job.organizationId !== args.organizationId) {
       throw new Error("Import job not found");
     }
@@ -687,9 +688,10 @@ export const importLocationsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "locations.create");
-
-    const job = await ctx.db.get(args.jobId);
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "locations.create"),
+      ctx.db.get(args.jobId),
+    ]);
     if (!job || job.organizationId !== args.organizationId) {
       throw new Error("Import job not found");
     }
@@ -845,9 +847,10 @@ export const importAccountsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "loans.create");
-
-    const job = await ctx.db.get(args.jobId);
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.create"),
+      ctx.db.get(args.jobId),
+    ]);
     if (!job || job.organizationId !== args.organizationId) {
       throw new Error("Import job not found");
     }
@@ -1069,9 +1072,10 @@ export const importObjectsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "collections.create");
-
-    const job = await ctx.db.get(args.jobId);
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.create"),
+      ctx.db.get(args.jobId),
+    ]);
     if (!job || job.organizationId !== args.organizationId) {
       throw new Error("Import job not found");
     }
@@ -1214,9 +1218,10 @@ export const importLoansBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "loans.create");
-
-    const job = await ctx.db.get(args.jobId);
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.create"),
+      ctx.db.get(args.jobId),
+    ]);
     if (!job || job.organizationId !== args.organizationId) {
       throw new Error("Import job not found");
     }

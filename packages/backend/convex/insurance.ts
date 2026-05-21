@@ -232,20 +232,21 @@ export const updatePolicy = mutation({
       Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
 
-    await ctx.db.patch(args.policyId, {
+    await Promise.all([
+      ctx.db.patch(args.policyId, {
       ...filteredUpdates,
       lastModifiedBy: userId,
       lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: policy.organizationId,
       userId,
       action: "updated",
       entityType: "insurancePolicy",
       entityId: args.policyId,
       changes: filteredUpdates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -299,16 +300,17 @@ export const deletePolicy = mutation({
       throw new Error("Cannot delete policy with active claims");
     }
 
-    await ctx.db.delete(args.policyId);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.delete(args.policyId),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: policy.organizationId,
       userId,
       action: "deleted",
       entityType: "insurancePolicy",
       entityId: args.policyId,
       changes: { policyNumber: policy.policyNumber },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -481,9 +483,8 @@ export const getPolicy = query({
       return null;
     }
 
-    await requirePermission(ctx, policy.organizationId, "loans.read");
-
-    const [documentUrls, coverages, claims] = await Promise.all([
+    const [, documentUrls, coverages, claims] = await Promise.all([
+      requirePermission(ctx, policy.organizationId, "loans.read"),
       policy.documentIds
         ? Promise.all(policy.documentIds.map((id) => ctx.storage.getUrl(id)))
         : Promise.resolve(undefined),
@@ -792,13 +793,14 @@ export const createClaim = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const policy = await ctx.db.get(args.policyId);
+    const [, policy] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.get(args.policyId),
+    ] as const);
     if (!policy || policy.organizationId !== args.organizationId) {
       throw new Error("Policy not found or belongs to different org");
     }
@@ -908,16 +910,17 @@ export const updateClaim = mutation({
     updates.lastModifiedBy = userId;
     updates.lastModifiedAt = Date.now();
 
-    await ctx.db.patch(args.claimId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.claimId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: claim.organizationId,
       userId,
       action: "updated",
       entityType: "insuranceClaim",
       entityId: args.claimId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1666,24 +1669,25 @@ export const openDispute = mutation({
       "organization.manage_settings",
     );
 
-    await ctx.db.patch(args.claimId, {
-      status: "appealed",
-      isDisputed: true,
-      disputeReason: args.reason,
-      disputeDate: Date.now(),
-      disputeStatus: "pending",
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: claim.organizationId,
-      userId,
-      action: "opened_dispute",
-      entityType: "insuranceClaim",
-      entityId: args.claimId,
-      changes: { reason: args.reason },
-    });
+    await Promise.all([
+      ctx.db.patch(args.claimId, {
+        status: "appealed",
+        isDisputed: true,
+        disputeReason: args.reason,
+        disputeDate: Date.now(),
+        disputeStatus: "pending",
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: claim.organizationId,
+        userId,
+        action: "opened_dispute",
+        entityType: "insuranceClaim",
+        entityId: args.claimId,
+        changes: { reason: args.reason },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1732,16 +1736,17 @@ export const updateDisputeStatus = mutation({
         : `[${new Date().toISOString()}] Dispute update: ${args.notes}`;
     }
 
-    await ctx.db.patch(args.claimId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.claimId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: claim.organizationId,
       userId,
       action: "updated_dispute",
       entityType: "insuranceClaim",
       entityId: args.claimId,
       changes: { disputeStatus: args.disputeStatus },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1799,9 +1804,9 @@ export const resolveDispute = mutation({
       updates.settledAmount = args.settledAmount;
     }
 
-    await ctx.db.patch(args.claimId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.claimId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: claim.organizationId,
       userId,
       action: "resolved_dispute",
@@ -1812,7 +1817,8 @@ export const resolveDispute = mutation({
         newStatus: args.newStatus,
         settledAmount: args.settledAmount,
       },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1916,35 +1922,39 @@ export const createAutoClaimForTransitDamage = internalMutation({
       }),
     );
 
-    const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
+    const [claimNumber, createdByUser] = await Promise.all([
+      generateNextClaimNumber(ctx, args.organizationId),
+      ctx.db.query("users").first(),
+    ] as const);
     const now = Date.now();
 
-    const claimId = await ctx.db.insert("insuranceClaims", {
-      organizationId: args.organizationId,
-      policyId: policy._id,
-      claimNumber,
-      collectionIds: args.collectionIds,
-      loanId: args.loanId,
-      incidentDate: now,
-      incidentType: "transit",
-      incidentDescription: args.incidentDescription,
-      claimedAmount,
-      status: "draft",
-      reportedDate: now,
-      isAutoClaim: true,
-      autoClaimSource: "loan_return_damage",
-      conditionDisputeId: args.conditionDisputeId,
-      internalNotes:
-        "Auto-generated claim based on condition change detected during loan return.",
-      createdBy: (await ctx.db.query("users").first())?._id as Id<"users">,
-      createdAt: now,
-    });
-
-    const coordinatorUserIds = await getUserIdsWithPermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
+    const [claimId, coordinatorUserIds] = await Promise.all([
+      ctx.db.insert("insuranceClaims", {
+        organizationId: args.organizationId,
+        policyId: policy._id,
+        claimNumber,
+        collectionIds: args.collectionIds,
+        loanId: args.loanId,
+        incidentDate: now,
+        incidentType: "transit",
+        incidentDescription: args.incidentDescription,
+        claimedAmount,
+        status: "draft",
+        reportedDate: now,
+        isAutoClaim: true,
+        autoClaimSource: "loan_return_damage",
+        conditionDisputeId: args.conditionDisputeId,
+        internalNotes:
+          "Auto-generated claim based on condition change detected during loan return.",
+        createdBy: createdByUser?._id as Id<"users">,
+        createdAt: now,
+      }),
+      getUserIdsWithPermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ]);
 
     await Promise.all(
       coordinatorUserIds.map((userId) =>

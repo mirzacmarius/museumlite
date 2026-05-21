@@ -315,16 +315,17 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes?.trim();
     if (args.metadata !== undefined) updates.metadata = args.metadata;
 
-    await ctx.db.patch(args.relationshipId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.relationshipId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: relationship.organizationId,
       userId,
       action: "updated_account_relationship",
       entityType: "accountRelationship",
       entityId: args.relationshipId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },

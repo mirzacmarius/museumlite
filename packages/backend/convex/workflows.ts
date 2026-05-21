@@ -176,12 +176,12 @@ export const upsert = mutation({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         steps: args.steps,
         canInitiateRoles: args.canInitiateRoles,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
         userId,
         action: "updated_workflow_config",
@@ -192,7 +192,8 @@ export const upsert = mutation({
           stepsCount: args.steps.length,
           canInitiateRolesCount: args.canInitiateRoles.length,
         },
-      });
+      }),
+    ]);
 
       return existing._id;
     }
@@ -764,18 +765,19 @@ export const unassignDeaccession = mutation({
 
     const previousAssignee = deaccession.assignedTo;
 
-    await ctx.db.patch(args.deaccessionId, {
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
       assignedTo: undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: deaccession.organizationId,
       userId: currentUserId,
       action: "unassigned_deaccession",
       entityType: "deaccession",
       entityId: args.deaccessionId,
       changes: { previousAssignee },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -880,18 +882,19 @@ export const unassignLoan = mutation({
 
     const previousAssignee = loan.assignedTo;
 
-    await ctx.db.patch(args.loanId, {
+    await Promise.all([
+      ctx.db.patch(args.loanId, {
       assignedTo: undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: loan.organizationId,
       userId: currentUserId,
       action: "unassigned_loan",
       entityType: "loan",
       entityId: args.loanId,
       changes: { previousAssignee },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1071,13 +1074,14 @@ export const applyTemplateToOrganization = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const template = await ctx.db.get(args.templateId);
+    const [, template] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.get(args.templateId),
+    ]);
     if (!template) {
       throw new Error("Template not found");
     }
@@ -1132,15 +1136,15 @@ export const applyTemplateToOrganization = mutation({
     const canInitiateRoles = adminRole ? [adminRole._id] : [];
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         steps: configSteps,
         canInitiateRoles,
         requiredDocuments: template.requiredDocuments,
         requireSourceVerification: template.requireSourceVerification,
         templateId: args.templateId,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
         userId,
         action: "applied_workflow_template",
@@ -1150,7 +1154,8 @@ export const applyTemplateToOrganization = mutation({
           templateId: args.templateId,
           templateName: template.name,
         },
-      });
+      }),
+    ]);
 
       return existing._id;
     }

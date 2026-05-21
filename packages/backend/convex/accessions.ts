@@ -1140,14 +1140,15 @@ export const backfillSearchDocuments = mutation({
     updatedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    const accessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, accessions] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     await Promise.all(
       Array.from(accessions).map(async (accession) => {
@@ -1945,10 +1946,12 @@ export const createCollectionFromAccession = internalMutation({
       status: "active",
     });
 
-    await ctx.db.patch(args.accessionId, {
-      collectionId,
-    });
-    await syncAccessionSearchDocument(ctx, args.accessionId);
+    await Promise.all([
+      ctx.db.patch(args.accessionId, {
+        collectionId,
+      }),
+      syncAccessionSearchDocument(ctx, args.accessionId),
+    ]);
 
     return collectionId;
   },
@@ -1973,13 +1976,15 @@ export const createCollectionFromRejectedAccession = internalMutation({
     const rejectedAt = accession.approvedAt ?? Date.now();
 
     if (accession.collectionId) {
-      await markCollectionDeaccessioned(ctx, {
-        collectionId: accession.collectionId,
-        changedBy: args.rejectedBy,
-        changedAt: rejectedAt,
-        displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
-      });
-      await syncAccessionSearchDocument(ctx, args.accessionId);
+      await Promise.all([
+        markCollectionDeaccessioned(ctx, {
+          collectionId: accession.collectionId,
+          changedBy: args.rejectedBy,
+          changedAt: rejectedAt,
+          displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
+        }),
+        syncAccessionSearchDocument(ctx, args.accessionId),
+      ]);
       return accession.collectionId;
     }
 
@@ -1991,10 +1996,12 @@ export const createCollectionFromRejectedAccession = internalMutation({
       displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
     });
 
-    await ctx.db.patch(args.accessionId, {
-      collectionId,
-    });
-    await syncAccessionSearchDocument(ctx, args.accessionId);
+    await Promise.all([
+      ctx.db.patch(args.accessionId, {
+        collectionId,
+      }),
+      syncAccessionSearchDocument(ctx, args.accessionId),
+    ]);
 
     return collectionId;
   },

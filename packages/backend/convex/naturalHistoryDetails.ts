@@ -163,19 +163,20 @@ export const upsert = mutation({
     const { collectionId, ...updateData } = args;
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         ...updateData,
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "updated",
         entityType: "naturalHistoryDetails",
         entityId: existing._id,
         changes: updateData,
-      });
+      }),
+    ]);
 
       return existing._id;
     }

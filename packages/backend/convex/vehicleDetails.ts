@@ -207,19 +207,20 @@ export const upsert = mutation({
     const { collectionId, ...updateData } = args;
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         ...updateData,
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "updated",
         entityType: "vehicleDetails",
         entityId: existing._id,
         changes: updateData,
-      });
+      }),
+    ]);
 
       return existing._id;
     }
@@ -305,19 +306,20 @@ export const addServiceLogEntry = mutation({
 
     if (existing) {
       const currentLog = existing.serviceLog ?? [];
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         serviceLog: [...currentLog, args.entry],
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "added_service_log",
         entityType: "vehicleDetails",
         entityId: existing._id,
         changes: { entry: args.entry },
-      });
+      }),
+    ]);
 
       return existing._id;
     }
@@ -371,19 +373,20 @@ export const addEventHistoryEntry = mutation({
 
     if (existing) {
       const currentHistory = existing.eventHistory ?? [];
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         eventHistory: [...currentHistory, args.entry],
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "added_event_history",
         entityType: "vehicleDetails",
         entityId: existing._id,
         changes: { entry: args.entry },
-      });
+      }),
+    ]);
 
       return existing._id;
     }

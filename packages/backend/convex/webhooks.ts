@@ -226,14 +226,14 @@ export const update = mutation({
       "organization.manage_settings",
     );
 
-    await ctx.db.patch(args.webhookId, {
+    await Promise.all([
+      ctx.db.patch(args.webhookId, {
       ...(args.name !== undefined && { name: args.name }),
       ...(args.url !== undefined && { url: args.url }),
       ...(args.events !== undefined && { events: args.events }),
       ...(args.isActive !== undefined && { isActive: args.isActive }),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: webhook.organizationId,
       userId,
       action: "updated_webhook",
@@ -245,7 +245,8 @@ export const update = mutation({
         events: args.events,
         isActive: args.isActive,
       },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -272,9 +273,9 @@ export const rotateSecret = mutation({
     );
 
     const secret = generateSecret();
-    await ctx.db.patch(args.webhookId, { secret });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.webhookId, { secret }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: webhook.organizationId,
       userId,
       action: "rotated_webhook_secret",
@@ -283,7 +284,8 @@ export const rotateSecret = mutation({
       changes: {
         name: webhook.name,
       },
-    });
+    }),
+    ]);
 
     return { secret };
   },

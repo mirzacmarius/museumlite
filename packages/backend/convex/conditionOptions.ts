@@ -148,16 +148,17 @@ export const update = mutation({
       updates.description = args.description;
     }
 
-    await ctx.db.patch(args.conditionId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.conditionId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: condition.organizationId,
       userId,
       action: "updated_condition_option",
       entityType: "conditionOption",
       entityId: args.conditionId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },

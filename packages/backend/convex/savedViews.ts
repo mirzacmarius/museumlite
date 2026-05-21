@@ -206,16 +206,17 @@ export const update = mutation({
     if (args.filters !== undefined) updates.filters = args.filters;
     if (args.isDefault !== undefined) updates.isDefault = args.isDefault;
 
-    await ctx.db.patch(args.viewId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.viewId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: view.organizationId,
       userId,
       action: "updated_saved_view",
       entityType: "savedView",
       entityId: args.viewId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -263,16 +264,17 @@ export const remove = mutation({
       throw new Error("Not authorized to delete this view");
     }
 
-    await ctx.db.delete(args.viewId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: view.organizationId,
-      userId,
-      action: "deleted_saved_view",
-      entityType: "savedView",
-      entityId: args.viewId,
-      changes: { name: view.name, module: view.module },
-    });
+    await Promise.all([
+      ctx.db.delete(args.viewId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: view.organizationId,
+        userId,
+        action: "deleted_saved_view",
+        entityType: "savedView",
+        entityId: args.viewId,
+        changes: { name: view.name, module: view.module },
+      }),
+    ]);
 
     return null;
   },

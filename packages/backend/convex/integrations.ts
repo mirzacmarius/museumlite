@@ -186,13 +186,14 @@ export const disable = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const org = await ctx.db.get(args.organizationId);
+    const [, org] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.get(args.organizationId),
+    ]);
     if (!org) {
       throw new Error("Organization not found");
     }

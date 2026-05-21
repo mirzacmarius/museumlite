@@ -225,34 +225,29 @@ export async function recordWorkflowStepAdvance(
     workflowType,
   }: WorkflowStepAdvanceArgs,
 ) {
-  if (recordWorkflowHistory) {
-    await ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+  const usersToNotify = await Promise.all([
+    recordWorkflowHistory
+      ? ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+          organizationId,
+          workflowType,
+          entityId,
+          fromStep,
+          toStep,
+          action: "approved",
+          performedBy,
+          comment,
+        })
+      : Promise.resolve(),
+    ctx.runMutation(internal.audit.logAction, {
       organizationId,
-      workflowType,
+      userId: performedBy,
+      action: "step_approved",
+      entityType: workflowType,
       entityId,
-      fromStep,
-      toStep,
-      action: "approved",
-      performedBy,
-      comment,
-    });
-  }
-
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId,
-    userId: performedBy,
-    action: "step_approved",
-    entityType: workflowType,
-    entityId,
-    changes: { step: fromStep, nextStep: toStep },
-  });
-
-  const usersToNotify = await getUsersToNotifyForWorkflowStep(
-    ctx,
-    organizationId,
-    workflowType,
-    toStep,
-  );
+      changes: { step: fromStep, nextStep: toStep },
+    }),
+    getUsersToNotifyForWorkflowStep(ctx, organizationId, workflowType, toStep),
+  ]).then(([, , notifyUsers]) => notifyUsers);
 
   await Promise.all(
     usersToNotify.map((approverId) =>

@@ -150,19 +150,20 @@ export const upsert = mutation({
     const { collectionId, ...updateData } = args;
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         ...updateData,
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "updated",
         entityType: "fineArtDetails",
         entityId: existing._id,
         changes: updateData,
-      });
+      }),
+    ]);
 
       return existing._id;
     }
@@ -248,19 +249,20 @@ export const addProvenanceEntry = mutation({
 
     if (existing) {
       const currentChain = existing.provenanceChain ?? [];
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         provenanceChain: [...currentChain, args.entry],
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "added_provenance",
         entityType: "fineArtDetails",
         entityId: existing._id,
         changes: { entry: args.entry },
-      });
+      }),
+    ]);
 
       return existing._id;
     }
@@ -314,19 +316,20 @@ export const addShippingLog = mutation({
 
     if (existing) {
       const currentLogs = existing.shippingLogs ?? [];
-      await ctx.db.patch(existing._id, {
+      await Promise.all([
+      ctx.db.patch(existing._id, {
         shippingLogs: [...currentLogs, args.log],
         lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
+      }),
+      ctx.runMutation(internal.audit.logAction, {
         organizationId: collection.organizationId,
         userId,
         action: "added_shipping_log",
         entityType: "fineArtDetails",
         entityId: existing._id,
         changes: { log: args.log },
-      });
+      }),
+    ]);
 
       return existing._id;
     }

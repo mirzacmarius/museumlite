@@ -183,16 +183,17 @@ export const update = mutation({
       Object.entries(updates).filter(([_, value]) => value !== undefined),
     );
 
-    await ctx.db.patch(args.id, filteredUpdates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.id, filteredUpdates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: treatment.organizationId,
       userId,
       action: "updated",
       entityType: "conservationTreatment",
       entityId: args.id,
       changes: filteredUpdates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -510,21 +511,22 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        await ctx.db.patch(args.treatmentId, {
+        await Promise.all([
+      ctx.db.patch(args.treatmentId, {
           status: "approved",
           approvedBy: userId,
           approvedAt: Date.now(),
           workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
+        }),
+      ctx.runMutation(internal.audit.logAction, {
           organizationId: treatment.organizationId,
           userId,
           action: "approved",
           entityType: "conservationTreatment",
           entityId: args.treatmentId,
           changes: { status: "approved", step: currentStep },
-        });
+        }),
+    ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -659,19 +661,20 @@ export const reject = mutation({
       comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
     });
 
-    await ctx.db.patch(args.treatmentId, {
+    await Promise.all([
+      ctx.db.patch(args.treatmentId, {
       status: "rejected",
       workflowHistory: history,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: treatment.organizationId,
       userId,
       action: "rejected",
       entityType: "conservationTreatment",
       entityId: args.treatmentId,
       changes: { status: "rejected", comment: args.comment },
-    });
+    }),
+    ]);
 
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
@@ -771,16 +774,17 @@ export const complete = mutation({
         : args.notes;
     }
 
-    await ctx.db.patch(args.treatmentId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.treatmentId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: treatment.organizationId,
       userId,
       action: "completed",
       entityType: "conservationTreatment",
       entityId: args.treatmentId,
       changes: { status: "completed" },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1153,19 +1157,20 @@ export const updateAlertRule = mutation({
       Object.entries(updates).filter(([_, value]) => value !== undefined),
     );
 
-    await ctx.db.patch(args.ruleId, {
+    await Promise.all([
+      ctx.db.patch(args.ruleId, {
       ...filteredUpdates,
       lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: rule.organizationId,
       userId,
       action: "updated",
       entityType: "conservationAlertRule",
       entityId: args.ruleId,
       changes: filteredUpdates,
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -1954,16 +1959,17 @@ export const updateTreatmentCosts = mutation({
     if (args.currency !== undefined) updates.currency = args.currency;
     if (args.costNotes !== undefined) updates.costNotes = args.costNotes;
 
-    await ctx.db.patch(args.treatmentId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.treatmentId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: treatment.organizationId,
       userId,
       action: "costs_updated",
       entityType: "conservationTreatment",
       entityId: args.treatmentId,
       changes: { totalCost, laborCost, materialsCost },
-    });
+    }),
+    ]);
 
     return { totalCost, laborCost };
   },

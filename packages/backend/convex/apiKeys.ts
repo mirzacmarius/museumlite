@@ -150,9 +150,9 @@ export const revoke = mutation({
       throw new Error("API key not found");
     }
 
-    await ctx.db.patch(args.keyId, { isRevoked: true });
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.keyId, { isRevoked: true }),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
       userId,
       action: "revoked_api_key",
@@ -162,7 +162,8 @@ export const revoke = mutation({
         name: key.name,
         prefix: key.prefix,
       },
-    });
+    }),
+    ]);
 
     return null;
   },
@@ -189,9 +190,9 @@ export const deleteKey = mutation({
       throw new Error("API key not found");
     }
 
-    await ctx.db.delete(args.keyId);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.delete(args.keyId),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: args.organizationId,
       userId,
       action: "deleted_api_key",
@@ -201,7 +202,8 @@ export const deleteKey = mutation({
         name: key.name,
         prefix: key.prefix,
       },
-    });
+    }),
+    ]);
 
     return null;
   },

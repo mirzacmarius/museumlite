@@ -153,16 +153,17 @@ export const update = mutation({
     if (args.documents !== undefined) updates.documents = args.documents;
     if (args.validUntil !== undefined) updates.validUntil = args.validUntil;
 
-    await ctx.db.patch(args.appraisalId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.appraisalId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: appraisal.organizationId,
       userId,
       action: "updated",
       entityType: "appraisal",
       entityId: args.appraisalId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },

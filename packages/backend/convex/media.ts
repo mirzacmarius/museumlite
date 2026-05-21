@@ -323,16 +323,17 @@ export const update = mutation({
       }
     }
 
-    await ctx.db.patch(args.mediaId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
+    await Promise.all([
+      ctx.db.patch(args.mediaId, updates),
+      ctx.runMutation(internal.audit.logAction, {
       organizationId: media.organizationId,
       userId,
       action: "updated_media",
       entityType: "media",
       entityId: args.mediaId,
       changes: updates,
-    });
+    }),
+    ]);
 
     return null;
   },

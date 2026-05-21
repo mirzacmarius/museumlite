@@ -221,13 +221,15 @@ export const waive = mutation({
 
     await requireModuleEnabled(ctx, fine.organizationId, "library");
 
-    await ctx.db.patch(args.fineId, {
-      status: "waived",
-      waivedBy: userId,
-      waivedReason: args.reason,
-    });
+    const [, account] = await Promise.all([
+      ctx.db.patch(args.fineId, {
+        status: "waived",
+        waivedBy: userId,
+        waivedReason: args.reason,
+      }),
+      ctx.db.get(fine.accountId),
+    ] as const);
 
-    const account = await ctx.db.get(fine.accountId);
     if (account) {
       await ctx.db.patch(fine.accountId, {
         fineBalance: Math.max(0, (account.fineBalance || 0) - fine.balance),
@@ -261,13 +263,15 @@ export const forgive = mutation({
 
     await requireModuleEnabled(ctx, fine.organizationId, "library");
 
-    await ctx.db.patch(args.fineId, {
-      status: "forgiven",
-      waivedBy: userId,
-      waivedReason: args.reason,
-    });
+    const [, account] = await Promise.all([
+      ctx.db.patch(args.fineId, {
+        status: "forgiven",
+        waivedBy: userId,
+        waivedReason: args.reason,
+      }),
+      ctx.db.get(fine.accountId),
+    ] as const);
 
-    const account = await ctx.db.get(fine.accountId);
     if (account) {
       await ctx.db.patch(fine.accountId, {
         fineBalance: Math.max(0, (account.fineBalance || 0) - fine.balance),
