@@ -1,12 +1,12 @@
-import { useOrganization } from "@/components/organization-provider";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   type FeatureId,
+  hasFeatureTierAccess,
   type IntegrationId,
   type ModuleId,
   type SubscriptionTier,
-  hasFeatureTierAccess,
 } from "@v1/backend/convex/utils/featurePolicy";
+import { useOrganization } from "@/components/organization-provider";
 
 export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };
 

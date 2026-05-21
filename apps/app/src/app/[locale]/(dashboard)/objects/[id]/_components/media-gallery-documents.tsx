@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -16,6 +14,8 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { Edit, Trash2 } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { MediaEditDialog } from "./media-edit-dialog";
 import type { useMediaGallery } from "./use-media-gallery";
 

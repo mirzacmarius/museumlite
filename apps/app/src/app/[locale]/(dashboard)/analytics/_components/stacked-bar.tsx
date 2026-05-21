@@ -1,7 +1,5 @@
 "use client";
 
-import { formatNumber } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
 import {
   Tooltip,
   TooltipContent,
@@ -9,6 +7,8 @@ import {
   TooltipTrigger,
 } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 
 interface StackedBarProps {
   data: {

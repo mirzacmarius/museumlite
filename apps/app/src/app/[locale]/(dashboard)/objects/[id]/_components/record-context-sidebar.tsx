@@ -1,8 +1,5 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -20,7 +17,11 @@ import {
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { ImageOff, Pencil, Share2, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface RecordContextSidebarProps {
@@ -56,7 +57,7 @@ export function RecordContextSidebar({
   const locale = useCurrentLocale();
 
   // Query for related objects (same collection group or parent/child)
-  const collection = useQuery(
+  const _collection = useQuery(
     api.collections.get,
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
@@ -118,10 +119,12 @@ export function RecordContextSidebar({
       {heroImageUrl && (
         <div className="relative aspect-[4/3] w-full overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10" />
-          <img
+          <Image
             src={heroImageUrl}
             alt="Object"
-            className="size-full object-cover"
+            fill
+            sizes="320px"
+            className="object-cover"
           />
         </div>
       )}

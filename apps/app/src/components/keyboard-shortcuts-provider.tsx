@@ -1,7 +1,7 @@
 "use client";
 
-import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { type ReactNode, useState } from "react";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
 
 interface KeyboardShortcutsProviderProps {

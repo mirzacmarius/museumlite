@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -14,6 +12,8 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { Save } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { EditSection } from "./edit-accession-ui";
 
 export interface EditAccessionFormData {

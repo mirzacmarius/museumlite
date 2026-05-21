@@ -1,7 +1,7 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { Building2, MapPin } from "lucide-react";
+import { useOrganization } from "@/components/organization-provider";
 import { LocationLayout } from "./_components/location-layout";
 import { LocationsPageSkeleton } from "./location-page-skeleton";
 

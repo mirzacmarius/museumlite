@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { writeTextToClipboard } from "@/lib/clipboard";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
@@ -23,6 +21,8 @@ import {
   Share2,
 } from "lucide-react";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
 import type { ObjectDetailData } from "../types";
 
 interface ObjectDetailHeaderProps {

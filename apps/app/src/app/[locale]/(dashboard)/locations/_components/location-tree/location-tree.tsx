@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -9,6 +7,8 @@ import { useQuery } from "convex/react";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef } from "react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { AddChildLocationDialog } from "../add-child-location-dialog";
 import { DeleteLocationDialog } from "../delete-location-dialog";
 import { EditLocationDialog } from "../edit-location-dialog";
@@ -165,9 +165,7 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
           dispatch({ type: "setExpandedItems", value: items })
         }
         onEdit={(location) => dispatch({ type: "openEdit", location })}
-        onAddChild={(location) =>
-          dispatch({ type: "openAddChild", location })
-        }
+        onAddChild={(location) => dispatch({ type: "openAddChild", location })}
         onMove={(location) => dispatch({ type: "openMove", location })}
         onDelete={(location) => dispatch({ type: "openDelete", location })}
       />

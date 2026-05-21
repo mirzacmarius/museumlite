@@ -1,16 +1,43 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "organizeImports": {
+  "vcs": {
     "enabled": true,
-    "ignore": ["**/.react-email/**"]
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "assist": {
+    "enabled": true,
+    "includes": ["**", "!**/.react-email"],
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!!**/.next",
+      "!!**/node_modules",
+      "!!**/dist",
+      "!!.auto-claude",
+      "!packages/tsconfig",
+      "!tooling/typescript",
+      "!**/.react-email",
+      "!aura-html-pages",
+      "!*.html",
+      "!convex",
+      "!audit_mutations.js",
+      "!packages/backend/convex/_generated"
+    ]
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    }
   },
   "linter": {
-    "ignore": [
-      "node_modules",
-      ".next",
-      "packages/tsconfig",
-      "**/.react-email/**"
-    ],
     "enabled": true,
     "rules": {
       "recommended": true,
@@ -21,15 +48,22 @@
         "noNonNullAssertion": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "off",
+        "noUnusedFunctionParameters": "warn"
       },
       "complexity": {
         "noForEach": "off"
+      },
+      "performance": {
+        "noImgElement": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
       }
     }
   },
   "formatter": {
     "indentStyle": "space",
-    "ignore": ["**/.react-email/**"]
+    "includes": ["**", "!**/.react-email"]
   }
 }

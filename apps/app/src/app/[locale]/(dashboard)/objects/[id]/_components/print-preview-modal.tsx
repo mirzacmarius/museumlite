@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -10,6 +9,7 @@ import {
 } from "@v1/ui/dialog";
 import { Printer } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useScopedI18n } from "@/locales/client";
 import { PrintPreviewDocument } from "./print-preview-document";
 import type { CollectionData, HeroImageData, LocationPathItem } from "./types";
 

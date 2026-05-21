@@ -1,44 +1,5 @@
 "use client";
 
-import {
-  Activity,
-  BookOpen,
-  Building2,
-  Check,
-  ChevronRight,
-  ChevronsUpDown,
-  Container,
-  Database,
-  FileCheck,
-  FileX,
-  GalleryVerticalEnd,
-  Globe,
-  Hammer,
-  IdCard,
-  Image,
-  LayoutGrid,
-  Library,
-  Lock,
-  LogOut,
-  MapPin,
-  Plus,
-  QrCode,
-  Search,
-  Settings2,
-  Shield,
-  ShoppingCart,
-  SlidersHorizontal,
-  Ticket,
-  Truck,
-  Users,
-} from "lucide-react";
-import * as React from "react";
-
-import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
-import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
-import { useCommandPalette } from "@/components/command-palette-provider";
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
@@ -79,8 +40,46 @@ import {
 } from "@v1/ui/sidebar";
 import { cn } from "@v1/ui/utils";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import {
+  Activity,
+  BookOpen,
+  Building2,
+  Check,
+  ChevronRight,
+  ChevronsUpDown,
+  Container,
+  Database,
+  FileCheck,
+  FileX,
+  GalleryVerticalEnd,
+  Globe,
+  Hammer,
+  IdCard,
+  Image,
+  LayoutGrid,
+  Library,
+  Lock,
+  LogOut,
+  MapPin,
+  Plus,
+  QrCode,
+  Search,
+  Settings2,
+  Shield,
+  ShoppingCart,
+  SlidersHorizontal,
+  Ticket,
+  Truck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import * as React from "react";
+import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
+import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
+import { useCommandPalette } from "@/components/command-palette-provider";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 
 function getUserInitials(user: {
   name?: string | null;

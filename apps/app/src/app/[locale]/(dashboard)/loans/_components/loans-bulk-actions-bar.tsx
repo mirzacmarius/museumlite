@@ -1,9 +1,9 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { CheckCircle, Download, X, XCircle } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface LoansBulkActionsBarProps {
   selectedCount: number;

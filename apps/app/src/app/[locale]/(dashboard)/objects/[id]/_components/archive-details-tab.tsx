@@ -1,25 +1,15 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import {
-  AlertTriangle,
-  Calendar,
-  Clock,
-  FileText,
-  Lock,
-  Plus,
-  Shield,
-  Trash2,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ArchiveDetailsContent } from "./archive-details-content";
+
 interface ArchiveDetailsTabProps {
   collectionId: string;
   organizationId: Id<"organizations">;
@@ -27,9 +17,9 @@ interface ArchiveDetailsTabProps {
 
 export function ArchiveDetailsTab({
   collectionId,
-  organizationId,
+  _organizationId,
 }: ArchiveDetailsTabProps) {
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.archive");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();

@@ -1,9 +1,9 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { KpiCard } from "@v1/ui/kpi-card";
 import { ErrorBoundary } from "react-error-boundary";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { KpiActiveLoans } from "./kpi-active-loans";
 import { KpiInTransit } from "./kpi-in-transit";
 import { KpiOverdue } from "./kpi-overdue";

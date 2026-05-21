@@ -1,7 +1,6 @@
+import { cn } from "@v1/ui/utils";
 import { Loader2 } from "lucide-react";
 import type * as React from "react";
-
-import { cn } from "@v1/ui/utils";
 
 interface InlineLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: "sm" | "md" | "lg";

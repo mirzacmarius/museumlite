@@ -57,6 +57,7 @@ function EntityPreview({
     <div className={cn("space-y-3", className)}>
       {image && (
         <div className="aspect-video w-full overflow-hidden rounded-md bg-muted">
+          {/* biome-ignore lint/performance/noImgElement: shared UI package has no Next.js Image dependency */}
           <img src={image} alt={title} className="size-full object-cover" />
         </div>
       )}
@@ -91,4 +92,4 @@ function EntityPreview({
   );
 }
 
-export { HoverCard, HoverCardTrigger, HoverCardContent, EntityPreview };
+export { EntityPreview, HoverCard, HoverCardContent, HoverCardTrigger };

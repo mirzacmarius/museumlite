@@ -48,5 +48,5 @@ function TagList({ className, tags, maxVisible, ...props }: TagListProps) {
   );
 }
 
-export { TagChip, TagList };
 export type { TagChipProps, TagListProps };
+export { TagChip, TagList };

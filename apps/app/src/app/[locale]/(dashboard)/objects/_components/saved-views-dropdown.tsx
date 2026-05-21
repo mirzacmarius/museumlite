@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientRelativeTime } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -34,6 +32,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ClientRelativeTime } from "@/components/client-date";
+import { useCurrentLocale } from "@/locales/client";
 
 interface ObjectFilters {
   search: string;
@@ -161,7 +161,7 @@ export function SavedViewsDropdown({
   };
 
   const handleUpdate = async () => {
-    if (!editingView || !editingView.name.trim()) return;
+    if (!editingView?.name.trim()) return;
     try {
       await updateView({
         viewId: editingView.id,

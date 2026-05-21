@@ -1,8 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Input } from "@v1/ui/input";
 import { Search } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { LoanStatus, LoanType } from "./types";
 
 interface LoanListFiltersProps {

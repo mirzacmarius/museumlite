@@ -12,8 +12,8 @@ import { cn } from "@v1/ui/utils";
 import { Check, Edit3, Trash2 } from "lucide-react";
 import {
   type ConditionOption,
-  STANDARD_CONDITIONS,
   formatConditionName,
+  STANDARD_CONDITIONS,
 } from "./condition-combobox-types";
 
 interface ConditionComboboxListContentProps {

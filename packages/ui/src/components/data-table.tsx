@@ -107,11 +107,10 @@ export function DataTable<T extends Record<string, unknown>>({
           </div>
         ))}
       </div>
-      <div role="list">
+      <ul className="m-0 list-none p-0">
         {data.map((row, rowIndex) => {
           const href = rowHref?.(row);
           const ariaLabel = rowAriaLabel?.(row);
-          const isClickable = href || onRowClick;
           const rowKey =
             (row as { _id?: string; id?: string })?._id ??
             (row as { _id?: string; id?: string })?.id ??
@@ -135,50 +134,49 @@ export function DataTable<T extends Record<string, unknown>>({
 
           if (href) {
             return (
-              <Link
-                key={rowKey}
-                href={href}
-                aria-label={ariaLabel}
-                className={cn(
-                  "border-b border-border/50 flex transition-colors",
-                  "cursor-pointer hover:bg-muted/50 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                )}
-                role="listitem"
-              >
-                {rowContent}
-              </Link>
+              <li key={rowKey}>
+                <Link
+                  href={href}
+                  aria-label={ariaLabel}
+                  className={cn(
+                    "border-b border-border/50 flex transition-colors",
+                    "cursor-pointer hover:bg-muted/50 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                  )}
+                >
+                  {rowContent}
+                </Link>
+              </li>
+            );
+          }
+
+          if (onRowClick) {
+            return (
+              <li key={rowKey}>
+                <button
+                  type="button"
+                  onClick={() => onRowClick(row)}
+                  aria-label={ariaLabel}
+                  className={cn(
+                    "flex w-full border-b border-border/50 bg-transparent text-left transition-colors",
+                    "cursor-pointer hover:bg-card/20 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                  )}
+                >
+                  {rowContent}
+                </button>
+              </li>
             );
           }
 
           return (
-            <div
+            <li
               key={rowKey}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              onKeyDown={
-                onRowClick
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onRowClick(row);
-                      }
-                    }
-                  : undefined
-              }
-              tabIndex={onRowClick ? 0 : undefined}
-              role={onRowClick ? "button" : "listitem"}
-              aria-label={ariaLabel}
-              className={cn(
-                "border-b border-border/50 flex transition-colors",
-                isClickable
-                  ? "cursor-pointer hover:bg-card/20 focus-visible:bg-card/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                  : "",
-              )}
+              className="flex border-b border-border/50 transition-colors"
             >
               {rowContent}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

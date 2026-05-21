@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -18,6 +14,10 @@ import {
   Shield,
   Truck,
 } from "lucide-react";
+import { ClientDateFns } from "@/components/client-date";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatCurrency } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface FineArtDetailsTabProps {
@@ -27,7 +27,7 @@ interface FineArtDetailsTabProps {
 
 export function FineArtDetailsTab({
   collectionId,
-  organizationId,
+  _organizationId,
 }: FineArtDetailsTabProps) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("modules.fineArt");
@@ -177,7 +177,10 @@ export function FineArtDetailsTab({
         {details.provenanceChain && details.provenanceChain.length > 0 ? (
           <div className="relative space-y-4 border-l border-border pl-8">
             {details.provenanceChain.map((entry, index) => (
-              <div key={`${entry.owner}-${index}`} className="relative">
+              <div
+                key={`${entry.owner}-${entry.eventType}-${entry.startYear ?? ""}-${entry.endYear ?? ""}`}
+                className="relative"
+              >
                 <div
                   className={cn(
                     "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",
@@ -272,9 +275,9 @@ export function FineArtDetailsTab({
 
         {details.shippingLogs && details.shippingLogs.length > 0 ? (
           <div className="space-y-3">
-            {details.shippingLogs.map((log, index) => (
+            {details.shippingLogs.map((log, _index) => (
               <div
-                key={`${log.fromLocation}-${log.toLocation}-${index}`}
+                key={`${log.fromLocation}-${log.toLocation}-${log.departedAt ?? log.arrivedAt ?? ""}`}
                 className="rounded-lg border border-border/60 bg-secondary/20 p-4"
               >
                 <div className="flex items-center justify-between">

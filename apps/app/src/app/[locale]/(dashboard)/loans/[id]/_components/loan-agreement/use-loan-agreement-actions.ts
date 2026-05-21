@@ -1,8 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale } from "@/locales/client";
-import { useRef } from "react";
 import type { LoanAgreementItem, LoanAgreementLoan } from "./types";
 
 interface UseLoanAgreementActionsOptions {

@@ -16,7 +16,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
   const [email, setEmail] = useState(defaultEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFocused, setIsFocused] = useState(true);
+  const [isFocused, _setIsFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasEmailError = useMemo(

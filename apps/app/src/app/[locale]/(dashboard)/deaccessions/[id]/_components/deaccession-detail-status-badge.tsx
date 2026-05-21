@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 export function DeaccessionDetailStatusBadge({ status }: { status: string }) {
   const t = useScopedI18n("deaccessions");

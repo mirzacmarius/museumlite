@@ -1,12 +1,12 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { useOrganization } from "@/components/organization-provider";
 import {
   type EditMetadata,
   MediaEditor,

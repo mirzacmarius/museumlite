@@ -27,6 +27,7 @@ import {
   Search,
   Settings,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useCommandPalette } from "./command-palette-provider";
@@ -56,10 +57,12 @@ const CommandObjectItem = React.memo(
       >
         {imageUrl ? (
           <div className="relative size-7 overflow-hidden rounded-[4px] border border-border/50 shrink-0 bg-muted/20">
-            <img
+            <Image
               src={imageUrl}
               alt={obj.title}
-              className="size-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover"
             />
           </div>
         ) : (

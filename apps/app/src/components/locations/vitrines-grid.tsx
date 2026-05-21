@@ -25,7 +25,7 @@ interface VitrinesGridProps {
 
 export function VitrinesGrid({
   title,
-  subtitle,
+  _subtitle,
   occupancy,
   items,
 }: VitrinesGridProps) {
@@ -62,7 +62,7 @@ function VitrineCard({ item }: VitrineCardProps) {
     empty: "bg-zinc-700",
   };
 
-  const borderColors = {
+  const _borderColors = {
     active: "hover:border-primary/40",
     warning: "hover:border-amber-500/40",
     maintenance: "hover:border-zinc-600/40",

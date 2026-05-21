@@ -1,8 +1,7 @@
 "use client";
 
-import * as React from "react";
-
 import { cn } from "@v1/ui/utils";
+import * as React from "react";
 
 export interface RackItem {
   id: string;
@@ -70,20 +69,41 @@ export function RackVisualization({
         const status = item?.status ?? "empty";
         const isInteractive = item && onItemClick;
 
+        const cellClassName = cn(
+          "border rounded-md p-2 transition-all duration-200 flex items-center justify-center min-h-[60px]",
+          getStatusClasses(status),
+          isInteractive &&
+            "cursor-pointer hover:border-primary/50 hover:shadow-sm",
+        );
+
+        if (isInteractive) {
+          return (
+            <button
+              key={`${row}-${column}`}
+              type="button"
+              onClick={() => item && onItemClick?.(item)}
+              className={cellClassName}
+              title={item?.label}
+            >
+              {item?.label && (
+                <span className="text-xs font-medium truncate">
+                  {item.label}
+                </span>
+              )}
+              {!item && (
+                <span className="text-xs opacity-50">
+                  {row + 1}-{column + 1}
+                </span>
+              )}
+            </button>
+          );
+        }
+
         return (
           <div
             key={`${row}-${column}`}
-            onClick={() => item && onItemClick?.(item)}
-            onKeyDown={(e) => e.key === "Enter" && item && onItemClick?.(item)}
-            className={cn(
-              "border rounded-md p-2 transition-all duration-200 flex items-center justify-center min-h-[60px]",
-              getStatusClasses(status),
-              isInteractive &&
-                "cursor-pointer hover:border-primary/50 hover:shadow-sm",
-            )}
+            className={cellClassName}
             title={item?.label}
-            role="button"
-            tabIndex={isInteractive ? 0 : -1}
           >
             {item?.label && (
               <span className="text-xs font-medium truncate">{item.label}</span>

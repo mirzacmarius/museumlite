@@ -1,16 +1,18 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Plus } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
 import { useWebhooksTab } from "./use-webhooks-tab";
 import { WebhooksCreateDialog } from "./webhooks-create-dialog";
 import { WebhooksList } from "./webhooks-list";
 
 export function WebhooksTab({
   organizationId,
-}: { organizationId: Id<"organizations"> }) {
+}: {
+  organizationId: Id<"organizations">;
+}) {
   const {
     t,
     webhooks,

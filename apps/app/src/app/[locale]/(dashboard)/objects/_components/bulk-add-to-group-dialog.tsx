@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -24,6 +23,7 @@ import { useMutation, useQuery } from "convex/react";
 import { FolderPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 
 interface BulkAddToGroupDialogProps {
   open: boolean;

@@ -3,6 +3,7 @@ import { Switch as SwitchPrimitive } from "radix-ui";
 import type * as React from "react";
 
 import { cn } from "../utils";
+
 function Switch({
   className,
   size = "default",
@@ -27,4 +28,5 @@ function Switch({
     </SwitchPrimitive.Root>
   );
 }
+
 export { Switch };

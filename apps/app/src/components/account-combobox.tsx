@@ -1,7 +1,5 @@
 "use client";
 
-import { parseDateInputValue } from "@/lib/account-holder";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -11,12 +9,14 @@ import { useMutation, useQuery } from "convex/react";
 import { Building2, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { parseDateInputValue } from "@/lib/account-holder";
+import { useScopedI18n } from "@/locales/client";
 import { AccountComboboxCreateDialog } from "./account-combobox-create-dialog";
 import { AccountComboboxListContent } from "./account-combobox-list-content";
 import {
   type AccountComboboxProps,
-  type NewAccountForm,
   initialAccountFormState,
+  type NewAccountForm,
 } from "./account-combobox-types";
 
 export type { AccountComboboxProps } from "./account-combobox-types";
@@ -90,8 +90,7 @@ export function AccountCombobox({
     (value: React.SetStateAction<NewAccountForm>) => {
       dispatch({
         type: "setFormData",
-        value:
-          typeof value === "function" ? value(state.formData) : value,
+        value: typeof value === "function" ? value(state.formData) : value,
       });
     },
     [state.formData],
@@ -262,9 +261,7 @@ export function AccountCombobox({
 
       <AccountComboboxCreateDialog
         open={state.dialogOpen}
-        onOpenChange={(value) =>
-          dispatch({ type: "setDialogOpen", value })
-        }
+        onOpenChange={(value) => dispatch({ type: "setDialogOpen", value })}
         formData={state.formData}
         setFormData={setFormData}
         isSubmitting={state.isSubmitting}

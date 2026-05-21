@@ -1,10 +1,5 @@
 "use client";
 
-import type {
-  FilterCondition,
-  FilterGroup,
-  FilterOperator,
-} from "@/hooks/use-url-filters";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -25,6 +20,11 @@ import {
 } from "@v1/ui/select";
 import { Filter, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import type {
+  FilterCondition,
+  FilterGroup,
+  FilterOperator,
+} from "@/hooks/use-url-filters";
 
 interface AdvancedSearchDialogProps {
   open: boolean;

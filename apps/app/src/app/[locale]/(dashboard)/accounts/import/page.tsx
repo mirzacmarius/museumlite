@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -33,6 +30,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface ParsedRow {
   accountNumber?: string;
@@ -127,7 +127,7 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
-    if (!line || !line.trim()) continue;
+    if (!line?.trim()) continue;
 
     const values = parseCSVLine(line);
 
@@ -261,19 +261,15 @@ function AccountImportUploadStep({
         className="hidden"
       />
 
-      <div
+      <button
+        type="button"
         onClick={() => fileInputRef.current?.click()}
-        onKeyDown={(event) =>
-          event.key === "Enter" && fileInputRef.current?.click()
-        }
-        role="button"
-        tabIndex={0}
-        className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
+        className="flex min-h-[200px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
       >
         <Upload className="mb-4 size-10 text-muted-foreground" />
         <p className="font-medium">{labels.dropZone}</p>
         <p className="mt-1 text-sm text-muted-foreground">{labels.maxRows}</p>
-      </div>
+      </button>
 
       <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
         <h3 className="mb-2 font-medium">{labels.formatRequirements}</h3>
@@ -397,7 +393,9 @@ function AccountImportPreviewStep({
           </TableHeader>
           <TableBody>
             {state.rows.slice(0, 20).map((row, rowIndex) => (
-              <TableRow key={`${row.accountType}-${rowIndex}`}>
+              <TableRow
+                key={`${row.accountType}-${row.email ?? ""}-${row.businessName ?? ""}-${row.firstName ?? ""}-${row.lastName ?? ""}`}
+              >
                 <TableCell className="text-muted-foreground">
                   {rowIndex + 1}
                 </TableCell>
@@ -504,7 +502,7 @@ function AccountImportCompleteStep({
 export default function ImportAccountsPage() {
   const t = useScopedI18n("accounts.csvImport");
   const tAccounts = useScopedI18n("accounts");
-  const tCommon = useScopedI18n("common");
+  const _tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -1,10 +1,5 @@
 "use client";
 
-import { ExportCSVButton } from "@/components/export-csv-button";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
@@ -12,6 +7,11 @@ import { useMutation } from "convex/react";
 import { Building2, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { ExportCSVButton } from "@/components/export-csv-button";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { LoanList } from "./_components/loan-list";
 import type { LoanStatus, LoanType } from "./_components/types";
 import { LoansPageSkeleton } from "./loans-page-skeleton";

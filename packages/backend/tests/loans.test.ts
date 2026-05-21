@@ -16,8 +16,8 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import {
-  type ConvexTest,
   authedForUser,
+  type ConvexTest,
   createConvexTest,
   createOrgUserWithPermissions as createOrgUserWithBasePermissions,
 } from "./testHarness";
@@ -148,7 +148,7 @@ test("loan workflows advance through configured approval steps before activation
 });
 
 test("should approve pending loan and change status to active", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
 
   // 1. Create a pending loan
   // const loanId = await t.mutation(api.loans.create, {
@@ -251,7 +251,7 @@ test("should return active loan directly (without dispatch)", async () => {
 });
 
 test("should prevent invalid status transitions", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
 
   // 1. Create and approve loan
   // const loanId = await t.mutation(api.loans.create, { /* ... */ });
@@ -267,7 +267,7 @@ test("should prevent invalid status transitions", async () => {
 });
 
 test("should enforce permissions", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
 
   // Test that users without loans.update permission cannot dispatch
   // Test that users without loans.approve permission cannot approve

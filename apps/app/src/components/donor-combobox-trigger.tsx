@@ -27,6 +27,9 @@ export function DonorComboboxTrigger({
 }: DonorComboboxTriggerProps) {
   return (
     <div
+      role="combobox"
+      aria-expanded={open}
+      tabIndex={disabled ? -1 : 0}
       className="flex flex-wrap items-center gap-1 w-full min-h-[2.25rem] rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text"
       onClick={() => !disabled && onOpenChange(true)}
       onKeyDown={(e) => {
@@ -40,39 +43,23 @@ export function DonorComboboxTrigger({
       }}
     >
       {selectedValues.map((donor) => (
-        <div
+        <span
           key={donor}
           className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.stopPropagation();
-            }
-          }}
         >
           <span>{donor}</span>
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
               onRemove(donor);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.stopPropagation();
-                e.preventDefault();
-                onRemove(donor);
-              }
             }}
             className="hover:text-destructive cursor-pointer"
             aria-label={`Remove ${donor}`}
           >
             <X className="size-3" />
-          </span>
-        </div>
+          </button>
+        </span>
       ))}
 
       <input

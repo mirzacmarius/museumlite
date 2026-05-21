@@ -1,19 +1,18 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { EmptyState } from "@v1/ui/empty-state";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import type { FunctionReturnType } from "convex/server";
 import { Building2, Package, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { ObjectCatalogTableSkeleton } from "../loading";
 import { OBJECTS_SCROLL_PRELOAD_MARGIN } from "./collection-catalog-constants";
 import type { ColumnConfig } from "./column-config";
@@ -259,7 +258,7 @@ function CollectionTableRow({
   onSelect: (selected: boolean) => void;
   shouldEagerLoad?: boolean;
 }) {
-  const isColumnVisible = (columnId: string) =>
+  const _isColumnVisible = (columnId: string) =>
     columns.find((c) => c.id === columnId)?.visible ?? true;
 
   const getStatusBadge = (status: string) => {
@@ -293,82 +292,80 @@ function CollectionTableRow({
   };
 
   return (
-    <>
-      <tr
-        className={`group transition-colors hover:bg-accent/50 ${isSelected ? "bg-accent" : ""}`}
-      >
-        <td className="px-4 py-3">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => onSelect(!!checked)}
-            onClick={(e) => e.stopPropagation()}
-            className="border-input"
-          />
-        </td>
-        <td className="px-4 py-3">
-          <div className="relative size-10 overflow-hidden rounded-lg border border-border bg-muted">
-            {item.primaryImageUrl ? (
-              <Image
-                src={item.primaryImageUrl}
-                alt={item.title}
-                fill
-                sizes="40px"
-                loading={shouldEagerLoad ? "eager" : "lazy"}
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center">
-                <Building2 className="size-4 text-muted-foreground/60" />
-              </div>
-            )}
-          </div>
-        </td>
-        <td className="px-4 py-3">
-          <Link
-            href={`/objects/${item._id}`}
-            className="flex flex-col group-hover:cursor-pointer"
-          >
-            <span className="max-w-[200px] truncate font-medium text-foreground transition-colors">
-              {item.title}
-            </span>
-            <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-              {item.accessionNumber}
-            </span>
-          </Link>
-        </td>
-        <td className="px-4 py-3">
-          <span className="inline-block max-w-[120px] truncate rounded-full border border-border bg-muted px-2 py-0.5 text-muted-foreground">
-            {(() => {
-              if (!item.objectType) return "General";
-              try {
-                const parsed = JSON.parse(item.objectType);
-                return Array.isArray(parsed) ? parsed[0] : item.objectType;
-              } catch {
-                return item.objectType;
-              }
-            })()}
-          </span>
-        </td>
-        <td className="max-w-[150px] truncate px-4 py-3 text-muted-foreground">
-          {item.locationPath ? (
-            <span className="flex items-center gap-1">{item.locationPath}</span>
+    <tr
+      className={`group transition-colors hover:bg-accent/50 ${isSelected ? "bg-accent" : ""}`}
+    >
+      <td className="px-4 py-3">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(!!checked)}
+          onClick={(e) => e.stopPropagation()}
+          className="border-input"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <div className="relative size-10 overflow-hidden rounded-lg border border-border bg-muted">
+          {item.primaryImageUrl ? (
+            <Image
+              src={item.primaryImageUrl}
+              alt={item.title}
+              fill
+              sizes="40px"
+              loading={shouldEagerLoad ? "eager" : "lazy"}
+              className="object-cover"
+            />
           ) : (
-            <span className="text-muted-foreground/60">-</span>
+            <div className="flex size-full items-center justify-center">
+              <Building2 className="size-4 text-muted-foreground/60" />
+            </div>
           )}
-        </td>
-        <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
-          <ClientDate timestamp={item._creationTime} locale="en-US" />
-        </td>
-        <td className="px-4 py-3 text-right">{getStatusBadge(item.status)}</td>
-        <td className="px-4 py-3 text-right">
-          <ObjectActionsMenu
-            item={item}
-            organizationId={organizationId}
-            triggerClassName="size-8 border-none bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
-            iconClassName="size-4"
-          />
-        </td>
-      </tr>
-    </>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <Link
+          href={`/objects/${item._id}`}
+          className="flex flex-col group-hover:cursor-pointer"
+        >
+          <span className="max-w-[200px] truncate font-medium text-foreground transition-colors">
+            {item.title}
+          </span>
+          <span className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+            {item.accessionNumber}
+          </span>
+        </Link>
+      </td>
+      <td className="px-4 py-3">
+        <span className="inline-block max-w-[120px] truncate rounded-full border border-border bg-muted px-2 py-0.5 text-muted-foreground">
+          {(() => {
+            if (!item.objectType) return "General";
+            try {
+              const parsed = JSON.parse(item.objectType);
+              return Array.isArray(parsed) ? parsed[0] : item.objectType;
+            } catch {
+              return item.objectType;
+            }
+          })()}
+        </span>
+      </td>
+      <td className="max-w-[150px] truncate px-4 py-3 text-muted-foreground">
+        {item.locationPath ? (
+          <span className="flex items-center gap-1">{item.locationPath}</span>
+        ) : (
+          <span className="text-muted-foreground/60">-</span>
+        )}
+      </td>
+      <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
+        <ClientDate timestamp={item._creationTime} locale="en-US" />
+      </td>
+      <td className="px-4 py-3 text-right">{getStatusBadge(item.status)}</td>
+      <td className="px-4 py-3 text-right">
+        <ObjectActionsMenu
+          item={item}
+          organizationId={organizationId}
+          triggerClassName="size-8 border-none bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+          iconClassName="size-4"
+        />
+      </td>
+    </tr>
   );
 }

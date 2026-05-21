@@ -232,9 +232,7 @@ export function DeaccessionDialog({
         {!state.removalType && (
           <DeaccessionTypePicker
             deaccessionWorkflow={deaccessionWorkflow}
-            onSelect={(value) =>
-              dispatch({ type: "setRemovalType", value })
-            }
+            onSelect={(value) => dispatch({ type: "setRemovalType", value })}
           />
         )}
 
@@ -250,12 +248,8 @@ export function DeaccessionDialog({
             notes={state.notes}
             onBack={() => dispatch({ type: "setRemovalType", value: null })}
             onDateChange={(value) => dispatch({ type: "setDate", value })}
-            onReasonChange={(value) =>
-              dispatch({ type: "setReason", value })
-            }
-            onMethodChange={(value) =>
-              dispatch({ type: "setMethod", value })
-            }
+            onReasonChange={(value) => dispatch({ type: "setReason", value })}
+            onMethodChange={(value) => dispatch({ type: "setMethod", value })}
             onDispositionChange={(value) =>
               dispatch({ type: "setDisposition", value })
             }
@@ -283,9 +277,7 @@ export function DeaccessionDialog({
             onManualAccessionNumberChange={(value) =>
               dispatch({ type: "setManualAccessionNumber", value })
             }
-            onReasonChange={(value) =>
-              dispatch({ type: "setReason", value })
-            }
+            onReasonChange={(value) => dispatch({ type: "setReason", value })}
             onNotesChange={(value) => dispatch({ type: "setNotes", value })}
           />
         )}
@@ -296,9 +288,7 @@ export function DeaccessionDialog({
             isDirectRemovalFlow={isDirectRemovalFlow}
             reason={state.reason}
             onBack={() => dispatch({ type: "setRemovalType", value: null })}
-            onReasonChange={(value) =>
-              dispatch({ type: "setReason", value })
-            }
+            onReasonChange={(value) => dispatch({ type: "setReason", value })}
           />
         )}
 
@@ -308,9 +298,7 @@ export function DeaccessionDialog({
             isDirectRemovalFlow={isDirectRemovalFlow}
             reason={state.reason}
             onBack={() => dispatch({ type: "setRemovalType", value: null })}
-            onReasonChange={(value) =>
-              dispatch({ type: "setReason", value })
-            }
+            onReasonChange={(value) => dispatch({ type: "setReason", value })}
           />
         )}
 

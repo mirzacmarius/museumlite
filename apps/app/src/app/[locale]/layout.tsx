@@ -1,15 +1,14 @@
 import "../globals.css";
-import { I18nProviderClient } from "@/locales/client";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { MotionProvider } from "@v1/ui/motion-provider";
 import { Toaster } from "@v1/ui/sonner";
 import { TooltipProvider } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
-import { ThemeProvider } from "next-themes";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
+import { I18nProviderClient } from "@/locales/client";
 import { ConvexClientProvider } from "../convex-client-provider";
 
 const inter = Inter({

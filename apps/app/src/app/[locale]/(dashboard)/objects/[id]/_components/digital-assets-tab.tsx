@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
@@ -12,6 +11,7 @@ import {
   Globe,
   Link as LinkIcon,
 } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { CollectionData } from "./types";
 
 interface DigitalAssetsTabProps {

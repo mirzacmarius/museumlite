@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +13,8 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { Trash2 } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface EditCollectionDeleteZoneProps {
   groupName: string;

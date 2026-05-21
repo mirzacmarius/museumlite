@@ -1,9 +1,8 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
 import {
-  type ConvexTest,
   authedForUser,
+  type ConvexTest,
   createConvexTest,
   createOrgUserWithPermissions as createOrgUserWithBasePermissions,
 } from "./testHarness";
@@ -18,32 +17,32 @@ async function createOrgUserWithPermissions(
 }
 
 test("should create accession record", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should generate accession number", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should link accession to collection object", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should track accession workflow status", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should attach donor information", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 
 test("should complete accession process", async () => {
-  const t = createConvexTest();
+  const _t = createConvexTest();
   expect(true).toBe(true);
 });
 

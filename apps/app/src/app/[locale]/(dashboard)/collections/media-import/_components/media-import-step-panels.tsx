@@ -1,6 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import {
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { RefObject } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import type { MediaImportState } from "./media-import-types";
 
 interface MediaImportJob {

@@ -1,11 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   formatDate,
   formatDateFns,
   formatDistanceLocale,
 } from "@/lib/format-date";
-import { useEffect, useState } from "react";
 
 export function useClientRelativeTime(
   timestamp: number | undefined,

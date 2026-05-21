@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -29,6 +27,8 @@ import { BookOpen, Check, ChevronRight, Loader2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 
 interface IntegrationsSettingsState {
   disableDialogOpen: boolean;
@@ -99,6 +99,7 @@ function integrationsSettingsReducer(
       };
   }
 }
+
 import { toast } from "sonner";
 
 const INTEGRATION_ICONS: Record<string, ReactNode> = {
@@ -303,7 +304,7 @@ function SubscribeIntegrationDialog({
                 {redirectingLabel}
               </>
             ) : (
-              <>{subscribeLabel}</>
+              subscribeLabel
             )}
           </Button>
         </div>

@@ -2,10 +2,9 @@
 
 import type { DialogProps } from "@radix-ui/react-dialog";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Command as CommandPrimitive } from "cmdk";
 import type * as React from "react";
-
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "../utils";
 import {
   Dialog,
@@ -170,11 +169,11 @@ CommandShortcut.displayName = "CommandShortcut";
 export {
   Command,
   CommandDialog,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
+  CommandList,
   CommandSeparator,
   CommandShortcut,
 };

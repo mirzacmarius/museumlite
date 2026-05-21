@@ -10,6 +10,7 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Building2, Check, Mail, Phone, Plus, User } from "lucide-react";
+
 interface AccountListItem {
   _id: string;
   businessName?: string;

@@ -1,12 +1,12 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { DeaccessionDetailBoardReportDialog } from "./deaccession-detail-board-report-dialog";
 import { DeaccessionDetailMainContent } from "./deaccession-detail-main-content";
 import {

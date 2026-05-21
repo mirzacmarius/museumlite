@@ -1,10 +1,10 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { Doc } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback } from "@v1/ui/avatar";
 import { cn } from "@v1/ui/utils";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
 interface NewLoanSummarySidebarProps {

@@ -1,12 +1,12 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Stethoscope } from "lucide-react";
+import { ClientDate } from "@/components/client-date";
 
 interface ConservationTabProps {
   collectionId: string;

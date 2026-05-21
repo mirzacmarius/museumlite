@@ -1,11 +1,11 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { useForm } from "@tanstack/react-form";
 import * as validators from "@v1/backend/convex/utils/validators";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface UsernameStepProps {
   onContinue: (username: string) => Promise<void>;

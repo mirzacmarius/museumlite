@@ -1,8 +1,8 @@
 "use client";
 
+import { Calendar, GalleryVerticalEnd, Info, MapPin } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useScopedI18n } from "@/locales/client";
-import { Calendar, GalleryVerticalEnd, Info, MapPin } from "lucide-react";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 
 export function ExhibitionDetailOverviewPanel({
@@ -21,18 +21,18 @@ export function ExhibitionDetailOverviewPanel({
 
         <div className="grid grid-cols-1 gap-x-12 gap-y-6 md:grid-cols-2">
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {t("detail.location")}
-            </label>
+            </p>
             <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
               <MapPin className="size-3.5 text-muted-foreground" />
               {exhibition.location || "—"}
             </p>
           </div>
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {t("detail.dateRange")}
-            </label>
+            </p>
             <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
               <Calendar className="size-3.5 text-muted-foreground" />
               <ClientDate timestamp={exhibition.startDate} locale={locale} />
@@ -49,9 +49,9 @@ export function ExhibitionDetailOverviewPanel({
 
           {exhibition.isLoan ? (
             <div className="md:col-span-2">
-              <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("detail.loanVenue")}
-              </label>
+              </p>
               <p className="mt-1 text-sm text-foreground">
                 {exhibition.loanVenue || "—"}
               </p>

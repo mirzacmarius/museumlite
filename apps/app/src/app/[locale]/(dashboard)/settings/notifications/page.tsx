@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -16,6 +14,8 @@ import {
 import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 
 export default function NotificationSettingsPage() {
   const tCommon = useScopedI18n("common");

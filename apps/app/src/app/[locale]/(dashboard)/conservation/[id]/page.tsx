@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -32,6 +28,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { toast } from "sonner";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 const TREATMENT_TYPE_STYLES: Record<string, string> = {
   routine: "bg-muted text-muted-foreground border-border",

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactElement, Suspense, lazy } from "react";
+import { lazy, type ReactElement, Suspense } from "react";
 import { cn } from "../../utils";
 
 // Lazy load ResponsiveContainer from recharts to reduce initial bundle size

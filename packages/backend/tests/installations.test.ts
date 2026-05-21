@@ -5,7 +5,7 @@ import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
 test("should create installation task linked to exhibition", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create an exhibition (setup)
   // 2. Create an installation task
@@ -27,7 +27,7 @@ test("should create installation task linked to exhibition", async () => {
 });
 
 test("should move task through status workflow", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create task in todo status
   // const taskId = await t.mutation(api.installations.createTask, { /* ... */ });
@@ -50,7 +50,7 @@ test("should move task through status workflow", async () => {
 });
 
 test("should create task from template", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create template
   // const templateId = await t.mutation(api.installations.createTemplate, {
@@ -82,7 +82,7 @@ test("should create task from template", async () => {
 });
 
 test("should manage task dependencies", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create two tasks
   // const task1Id = await t.mutation(api.installations.createTask, {
@@ -113,7 +113,7 @@ test("should manage task dependencies", async () => {
 });
 
 test("should block task with reason and unblock", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create task
   // const taskId = await t.mutation(api.installations.createTask, { /* ... */ });
@@ -137,7 +137,7 @@ test("should block task with reason and unblock", async () => {
 });
 
 test("should get tasks grouped by status for board view", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create multiple tasks in different statuses
   // await t.mutation(api.installations.createTask, { /* todo */ });

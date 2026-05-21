@@ -5,7 +5,7 @@ import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
 test("should create conservation treatment with workflow", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // Treatment should start in proposed status when workflow configured
   // const treatmentId = await t.mutation(api.conservationTreatments.create, {
@@ -21,7 +21,7 @@ test("should create conservation treatment with workflow", async () => {
 });
 
 test("should move treatment through workflow stages", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create treatment (proposed)
   // 2. Approve (approved)
@@ -37,7 +37,7 @@ test("should move treatment through workflow stages", async () => {
 });
 
 test("should add before/after attachments to treatment", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // const attachmentId = await t.mutation(api.conservationTreatments.addAttachment, {
   //   organizationId,
@@ -57,7 +57,7 @@ test("should add before/after attachments to treatment", async () => {
 });
 
 test("should create and trigger conservation alerts", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // Create alert rule for overdue treatments
   // const ruleId = await t.mutation(api.conservationTreatments.createAlertRule, {
@@ -86,7 +86,7 @@ test("should create and trigger conservation alerts", async () => {
 });
 
 test("should acknowledge and resolve alerts", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // Create alert
   // const alertId = await t.mutation(api.conservationTreatments.createAlert, { ... });
@@ -108,7 +108,7 @@ test("should acknowledge and resolve alerts", async () => {
 });
 
 test("should get active alerts by priority", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // Create alerts at different priorities
   // await t.mutation(api.conservationTreatments.createAlert, { priority: "low", ... });

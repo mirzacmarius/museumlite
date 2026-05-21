@@ -1,7 +1,7 @@
-import { parseStringListField } from "@/lib/string-list-field";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
+import { parseStringListField } from "@/lib/string-list-field";
 import type {
   CollectionFormData,
   DraftMediaItem,

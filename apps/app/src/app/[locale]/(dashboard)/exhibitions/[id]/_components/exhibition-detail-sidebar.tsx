@@ -1,9 +1,9 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
 import { ArrowLeft, Box, Clock } from "lucide-react";
 import Link from "next/link";
+import { ClientDate } from "@/components/client-date";
+import { useScopedI18n } from "@/locales/client";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 
 export function ExhibitionDetailSidebar({

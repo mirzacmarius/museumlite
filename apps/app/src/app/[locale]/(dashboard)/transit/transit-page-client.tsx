@@ -1,11 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -35,6 +29,12 @@ import { Building2, Container, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ClientDate } from "@/components/client-date";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale } from "@/locales/client";
 
 type TransitStatus =
   | "all"

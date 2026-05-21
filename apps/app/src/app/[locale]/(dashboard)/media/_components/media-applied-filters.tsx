@@ -1,8 +1,8 @@
 "use client";
 
+import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
 import type { MediaFileType } from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
-import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
 
 export interface MediaAppliedFiltersValue {
   search: string;

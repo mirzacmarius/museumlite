@@ -2,7 +2,9 @@ import Image from "next/image";
 
 export default async function Layout({
   children,
-}: { children: React.ReactNode }) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="relative flex h-screen w-full bg-card">
       <div className="absolute left-1/2 top-8 mx-auto -translate-x-1/2 transform justify-center">

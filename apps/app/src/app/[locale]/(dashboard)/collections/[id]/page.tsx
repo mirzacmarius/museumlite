@@ -1,12 +1,7 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,9 +42,14 @@ import {
   User,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function CollectionGroupDetailPage() {
   const t = useScopedI18n("collections");
@@ -62,7 +62,7 @@ export default function CollectionGroupDetailPage() {
 
   const resolved = useQuery(api.collections.resolveId, { id: rawId });
 
-  const collection = useQuery(
+  const _collection = useQuery(
     api.collections.get,
     resolved?.type === "collection" ? { collectionId: resolved.id } : "skip",
   );
@@ -78,7 +78,7 @@ export default function CollectionGroupDetailPage() {
     }
   }, [resolved, replace]);
 
-  const groupId =
+  const _groupId =
     resolved?.type === "collectionGroup"
       ? resolved.id
       : (rawId as Id<"collectionGroups">);
@@ -593,11 +593,12 @@ function CollectionListItem({
       >
         <div className="flex size-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
           {imageUrl ? (
-            <img
+            <Image
               src={imageUrl}
               alt={item.title}
-              className="size-full object-cover"
-              loading="lazy"
+              fill
+              sizes="64px"
+              className="object-cover"
             />
           ) : (
             <div className="flex size-full items-center justify-center">

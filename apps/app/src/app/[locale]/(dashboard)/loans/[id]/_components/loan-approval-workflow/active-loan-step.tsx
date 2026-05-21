@@ -1,9 +1,9 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Truck } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
 import { LoanReturnControls } from "./loan-return-controls";
 import type { LoanApprovalWorkflowState } from "./use-loan-approval-workflow";
 import { WorkflowErrorBanner } from "./workflow-error-banner";

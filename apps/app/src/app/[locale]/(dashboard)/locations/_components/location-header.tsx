@@ -1,6 +1,7 @@
 "use client";
 
 import { Droplets, Image as ImageIcon, Thermometer } from "lucide-react";
+import Image from "next/image";
 
 interface LocationHeaderProps {
   location: {
@@ -81,10 +82,12 @@ export function LocationHeader({
       <div className="relative order-2 aspect-square w-44 max-w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm xl:order-1">
         {location.imageUrl ? (
           <>
-            <img
+            <Image
               src={location.imageUrl}
               alt={location.name}
-              className="size-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
           </>

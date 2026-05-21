@@ -1,7 +1,6 @@
-import type React from "react";
-
 import { GridPattern } from "@v1/ui/grid-pattern";
 import { cn } from "@v1/ui/utils";
+import type React from "react";
 
 type FeatureType = {
   title: string;

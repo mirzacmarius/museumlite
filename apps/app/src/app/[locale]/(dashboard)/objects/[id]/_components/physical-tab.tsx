@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
+import { Hammer, Ruler, Search, Shapes } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
-import { cn } from "@v1/ui/utils";
-import { Hammer, Ruler, Search, Shapes } from "lucide-react";
 import type { CollectionData } from "./types";
 
 interface PhysicalTabProps {
@@ -171,7 +171,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                 <div>
                   {conditionHistory.map((entry, index) => (
                     <div
-                      key={`${entry.changedAt}-${entry.condition}-${index}`}
+                      key={`${entry.changedAt}-${entry.condition}-${entry.notes ?? ""}`}
                       className={cn(
                         "relative pl-8",
                         index < conditionHistory.length - 1 && "pb-6",

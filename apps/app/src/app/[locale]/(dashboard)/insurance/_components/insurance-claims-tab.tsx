@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { Badge } from "@v1/ui/badge";
 import { DataTable } from "@v1/ui/data-table";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -14,6 +12,8 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Search, Shield } from "lucide-react";
+import { ClientDate } from "@/components/client-date";
+import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import {
   type ClaimStatus,
   claimStatusColor,

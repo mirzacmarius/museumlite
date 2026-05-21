@@ -1,8 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { PermissionGate } from "@/components/permission-gate";
-import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { Button } from "@v1/ui/button";
 import {
   ArrowLeft,
@@ -13,13 +10,16 @@ import {
   Package,
 } from "lucide-react";
 import Link from "next/link";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
+import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import { StatusTile } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 
 export function AccessionDetailHeroBanner({
   accession,
   locale,
-  accessionId,
+  _accessionId,
   isDraft,
   displayStatus,
   accessionTitle,

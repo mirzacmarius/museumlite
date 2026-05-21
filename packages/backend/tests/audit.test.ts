@@ -18,7 +18,11 @@ describe("auditLog", () => {
     test("should list audit log entries for organization", async () => {
       const t = convexTest(schema, modules);
 
-      const { orgId, userId, roleId } = await t.run(async (ctx) => {
+      const {
+        orgId,
+        userId,
+        roleId: _roleId,
+      } = await t.run(async (ctx) => {
         // Create organization
         const [orgId, userId] = await Promise.all([
           ctx.db.insert("organizations", {
@@ -844,7 +848,9 @@ describe("auditLog", () => {
       });
 
       expect(logs).toHaveLength(3);
-      expect(logs[0]?.timestamp).toBeGreaterThanOrEqual(logs[1]?.timestamp!);
+      const secondTimestamp = logs[1]?.timestamp;
+      expect(secondTimestamp).toBeDefined();
+      expect(logs[0]?.timestamp).toBeGreaterThanOrEqual(secondTimestamp);
     });
 
     test("should respect limit parameter", async () => {

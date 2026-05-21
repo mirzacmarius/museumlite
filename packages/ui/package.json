@@ -74,7 +74,11 @@
     "./utils": "./src/utils/index.ts",
     "./wizard": "./src/components/wizard.tsx"
   },
-  "files": ["tailwind.config.ts", "postcss.config.js", "globals.css"],
+  "files": [
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "globals.css"
+  ],
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "format": "biome format --write .",

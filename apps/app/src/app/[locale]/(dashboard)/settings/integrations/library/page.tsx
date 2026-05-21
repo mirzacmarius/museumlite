@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -9,6 +7,8 @@ import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import {
   LibraryCardSettingsSection,
   LibraryCatalogingSection,
@@ -18,8 +18,8 @@ import {
   LibrarySettingsHeader,
 } from "./library-settings-sections";
 import {
-  type LibrarySettingsFormData,
   defaultLibrarySettingsFormData,
+  type LibrarySettingsFormData,
 } from "./library-settings-types";
 
 export default function LibrarySettingsPage() {

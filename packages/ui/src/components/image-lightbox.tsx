@@ -9,7 +9,6 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "../utils";
 
@@ -193,6 +192,7 @@ export function ImageLightbox({
               setIsZoomed(!isZoomed);
             }}
           >
+            {/* biome-ignore lint/performance/noImgElement: shared UI package has no Next.js Image dependency */}
             <img
               src={currentImage.url}
               alt={currentImage.title || "Image"}
@@ -258,6 +258,7 @@ export function ImageLightbox({
                       : "border-transparent opacity-60 hover:opacity-100",
                   )}
                 >
+                  {/* biome-ignore lint/performance/noImgElement: shared UI package has no Next.js Image dependency */}
                   <img
                     src={img.thumbnailUrl || img.url}
                     alt={img.title || `Thumbnail ${idx + 1}`}

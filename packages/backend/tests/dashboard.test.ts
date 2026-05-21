@@ -505,7 +505,7 @@ describe("Dashboard: getAnalytics", () => {
     const { organizationId, userId } = await createTestOrg(t);
 
     await t.run(async (ctx) => {
-      const collectionGroupId = await ctx.db.insert("collectionGroups", {
+      const _collectionGroupId = await ctx.db.insert("collectionGroups", {
         organizationId,
         name: "Test Collection Group",
         description: "A test collection group",

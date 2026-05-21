@@ -10,4 +10,3 @@ export function seededRandom(seed: number): number {
   // Convert uint32 -> [0, 1)
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
-

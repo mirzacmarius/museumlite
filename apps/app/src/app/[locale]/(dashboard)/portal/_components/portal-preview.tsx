@@ -1,7 +1,7 @@
 "use client";
 
-import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { Globe } from "lucide-react";
+import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 
 interface PortalPreviewProps {
   isEnabled: boolean;

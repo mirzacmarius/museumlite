@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Button, type ButtonProps } from "@v1/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +10,7 @@ import {
 import { ChevronDown, Download, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useI18n } from "@/locales/client";
 
 export type ExportFormat = "csv" | "json" | "xml" | "dublin-core" | "spectrum";
 
@@ -113,7 +113,7 @@ export function ExportButtonWithFormat({
         URL.revokeObjectURL(url);
 
         toast.success(t("common.toast.exportSuccess"));
-      } catch (error) {
+      } catch (_error) {
         toast.error(t("common.toast.exportFailed"));
       } finally {
         setIsExporting(false);

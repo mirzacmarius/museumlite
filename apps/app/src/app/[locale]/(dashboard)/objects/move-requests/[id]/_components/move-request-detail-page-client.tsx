@@ -1,9 +1,9 @@
 "use client";
 
-import { useCurrentLocale } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useCurrentLocale } from "@/locales/client";
 import { MoveRequestActionsPanel } from "./move-request-actions-panel";
 import { MoveRequestDetailCard } from "./move-request-detail-card";
 import { MoveRequestObjectLink } from "./move-request-object-link";

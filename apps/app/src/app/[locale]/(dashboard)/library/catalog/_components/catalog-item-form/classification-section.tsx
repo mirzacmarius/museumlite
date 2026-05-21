@@ -1,11 +1,5 @@
 "use client";
 
-import {
-  IsbnLookup,
-  type IsbnLookupData,
-} from "@/components/library/isbn-lookup";
-import { useScopedI18n } from "@/locales/client";
-import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -15,10 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Textarea } from "@v1/ui/textarea";
-import { Loader2, Plus, Save, Trash2 } from "lucide-react";
-import type { CatalogItemFormData, ItemType, TargetAudience } from "./types";
-import { ITEM_TYPE_VALUES, TARGET_AUDIENCE_VALUES } from "./types";
+import type { IsbnLookupData } from "@/components/library/isbn-lookup";
+import { useScopedI18n } from "@/locales/client";
+import type { CatalogItemFormData, TargetAudience } from "./types";
+import { TARGET_AUDIENCE_VALUES } from "./types";
 
 interface CatalogItemClassificationSectionProps {
   formData: CatalogItemFormData;
@@ -34,16 +28,16 @@ interface CatalogItemClassificationSectionProps {
 export function CatalogItemClassificationSection({
   formData,
   setFormData,
-  getItemTypeLabel,
+  _getItemTypeLabel,
   getAudienceLabel,
-  onIsbnData,
-  addAuthor,
-  removeAuthor,
-  updateAuthor,
+  _onIsbnData,
+  _addAuthor,
+  _removeAuthor,
+  _updateAuthor,
 }: CatalogItemClassificationSectionProps) {
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");
-  const tLib = useScopedI18n("library");
+  const _tLib = useScopedI18n("library");
 
   return (
     <>

@@ -1,7 +1,7 @@
 "use client";
 
-import { SignInMethodDivider } from "@/auth/SignInMethodDivider";
 import { SignInWithGoogle } from "@/auth/oauth/SignInWithGoogle";
+import { SignInMethodDivider } from "@/auth/SignInMethodDivider";
 
 interface SignInWithOAuthProps {
   redirectTo?: string;

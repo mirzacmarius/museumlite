@@ -1,9 +1,5 @@
 "use client";
 
-import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
-import { useMediaFilters } from "@/hooks/use-url-filters";
-import type { MediaFileType } from "@/hooks/use-url-filters";
-import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { CursorPagination } from "@v1/ui/cursor-pagination";
@@ -13,6 +9,10 @@ import { Image as ImageIcon, Search, Star } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { useCursorStackPagination } from "@/hooks/use-cursor-stack-pagination";
+import type { MediaFileType } from "@/hooks/use-url-filters";
+import { useMediaFilters } from "@/hooks/use-url-filters";
+import { useI18n } from "@/locales/client";
 import { MediaAppliedFilters } from "./_components/media-applied-filters";
 import { MediaGridSkeleton } from "./media-skeletons";
 
@@ -193,17 +193,11 @@ export function MediaPageClient({
         {media && media.page.length > 0 && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {media.page.map((item) => (
-              <div
+              <button
                 key={item._id}
+                type="button"
                 onClick={() => setSelectedMediaId(item._id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    setSelectedMediaId(item._id);
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                className="group relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-zinc-600 hover:shadow-xl"
+                className="group relative w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 text-left transition-all duration-300 hover:border-zinc-600 hover:shadow-xl"
               >
                 <div className="relative aspect-square overflow-hidden bg-zinc-950">
                   {item.fileType === "image" &&
@@ -237,7 +231,7 @@ export function MediaPageClient({
                     <span>{getFileExtension(item.fileName)}</span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}

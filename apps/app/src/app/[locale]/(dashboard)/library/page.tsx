@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -16,9 +13,11 @@ import {
   Library,
   RefreshCw,
   ShoppingCart,
-  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { LibraryPageSkeleton } from "./library-page-skeleton";
 
 export default function LibraryDashboardPage() {

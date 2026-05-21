@@ -2,9 +2,9 @@
 
 import {
   type CollectionType,
-  type ModuleId,
   getAvailableCollectionTypeOptions,
   isCollectionType,
+  type ModuleId,
 } from "@v1/backend/convex/utils/moduleCatalog";
 import { Label } from "@v1/ui/label";
 import {

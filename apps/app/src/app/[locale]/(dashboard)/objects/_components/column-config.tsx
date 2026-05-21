@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@v1/ui/dropdown-menu";
 import { Settings2 } from "lucide-react";
 import { useMemo } from "react";
+import { useScopedI18n } from "@/locales/client";
 
 export interface ColumnConfig {
   id: string;
@@ -95,9 +95,11 @@ export function ColumnConfigDropdown({
           {columns.map((column) => (
             <label
               key={column.id}
+              htmlFor={`column-toggle-${column.id}`}
               className="flex items-center gap-2 cursor-pointer"
             >
               <Checkbox
+                id={`column-toggle-${column.id}`}
                 checked={column.visible}
                 onCheckedChange={(checked) =>
                   onColumnToggle(column.id, !!checked)

@@ -1,7 +1,5 @@
 "use client";
 
-import type { ObjectStatus } from "@/hooks/use-url-filters";
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   FilterOptionRow,
@@ -10,6 +8,8 @@ import {
   FiltersSearchInput,
 } from "@v1/ui/filters-dropdown";
 import { useMemo, useState } from "react";
+import type { ObjectStatus } from "@/hooks/use-url-filters";
+import { useScopedI18n } from "@/locales/client";
 
 interface LocationPathItem {
   name: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { useCallback } from "react";
+import { useScopedI18n } from "@/locales/client";
 import type { ParseError } from "../../import/import-csv";
 
 export function useTranslatedParseError() {

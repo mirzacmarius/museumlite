@@ -220,7 +220,9 @@ describe("Year-based counters", () => {
       });
     });
 
-    async function collectYearBasedValues(remaining: number): Promise<number[]> {
+    async function collectYearBasedValues(
+      remaining: number,
+    ): Promise<number[]> {
       if (remaining === 0) {
         return [];
       }

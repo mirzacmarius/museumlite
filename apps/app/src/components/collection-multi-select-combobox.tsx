@@ -14,8 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
-import { Box } from "lucide-react";
+import { Box, Check, ChevronsUpDown, Search } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 

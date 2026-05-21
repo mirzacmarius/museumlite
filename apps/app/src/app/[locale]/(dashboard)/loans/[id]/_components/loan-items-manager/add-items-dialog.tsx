@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -15,6 +13,8 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Plus, Search, X } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { useLoanItemsManager } from "./use-loan-items-manager";
 
 type LoanItemsManagerState = ReturnType<typeof useLoanItemsManager>;

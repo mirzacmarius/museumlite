@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 export function DeaccessionDetailToolbar({

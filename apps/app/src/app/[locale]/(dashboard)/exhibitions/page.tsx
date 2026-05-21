@@ -1,15 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import {
-  DashboardListPageSkeleton,
-  GridCardsSkeleton,
-} from "@/components/dashboard-list-page-skeleton";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useClientNow } from "@/hooks/use-client-date-format";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -36,6 +26,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ClientDate } from "@/components/client-date";
+import {
+  DashboardListPageSkeleton,
+  GridCardsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useClientNow } from "@/hooks/use-client-date-format";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ExhibitionTimeline } from "./_components/exhibition-timeline";
 import {
   type ExhibitionViewMode,

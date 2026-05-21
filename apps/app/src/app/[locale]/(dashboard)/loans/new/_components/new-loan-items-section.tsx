@@ -1,10 +1,10 @@
 "use client";
 
-import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
-import { useScopedI18n } from "@/locales/client";
 import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
+import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
+import { useScopedI18n } from "@/locales/client";
 import { SelectedCollectionItem } from "./selected-collection-item";
 
 interface CollectionInActiveLoan {

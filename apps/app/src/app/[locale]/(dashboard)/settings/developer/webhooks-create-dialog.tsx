@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -14,6 +13,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Check, Copy, Loader2 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { useScopedI18n } from "@/locales/client";
 
 interface NewWebhookState {
   name: string;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import {
@@ -11,6 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Building2, Loader2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { OrganizationFormData } from "./onboarding-types";
 
 interface OrganizationStepProps {

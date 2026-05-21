@@ -1,10 +1,10 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { AlertTriangle, Key, Webhook } from "lucide-react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { ApiKeysTab } from "./api-keys-tab";
 import { UtilitiesTab } from "./utilities-tab";
 import { WebhooksTab } from "./webhooks-tab";

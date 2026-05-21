@@ -1,6 +1,5 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@v1/ui/table";
 import { cn } from "@v1/ui/utils";
 import { ArrowDownLeft, ArrowUpRight, CalendarClock } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface LoanCalendarCardProps {
   data: {
