@@ -65,8 +65,7 @@ export const listByOrganization = query({
       collectionTitle: v.optional(v.string()),
     }),
   ),
-  handler: async (ctx, args) =>
-    listExhibitionsByOrganizationHandler(ctx, args),
+  handler: async (ctx, args) => listExhibitionsByOrganizationHandler(ctx, args),
 });
 
 export const get = query({
@@ -153,8 +152,7 @@ export const list = query({
       notes: v.optional(v.string()),
     }),
   ),
-  handler: async (ctx, args) =>
-    listExhibitionsForCollectionHandler(ctx, args),
+  handler: async (ctx, args) => listExhibitionsForCollectionHandler(ctx, args),
 });
 
 export const create = mutation({

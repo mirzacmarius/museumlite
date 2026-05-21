@@ -16,7 +16,10 @@ export async function addExhibitionObjectHandler(
     exhibitionLocationId?: Id<"locations">;
   },
 ) {
-  const { userId, exhibition } = await loadExhibitionMutationContext(ctx, args.exhibitionId);
+  const { userId, exhibition } = await loadExhibitionMutationContext(
+    ctx,
+    args.exhibitionId,
+  );
   const collection = await ctx.db.get(args.collectionId);
   if (!collection) {
     throw new Error("Collection object not found");
@@ -245,7 +248,9 @@ export async function listExhibitionObjectsHandler(
       const exhibitionLocation = obj.exhibitionLocationId
         ? await ctx.db.get(obj.exhibitionLocationId)
         : null;
-      const installer = obj.installedBy ? await ctx.db.get(obj.installedBy) : null;
+      const installer = obj.installedBy
+        ? await ctx.db.get(obj.installedBy)
+        : null;
       const deinstaller = obj.deinstalledBy
         ? await ctx.db.get(obj.deinstalledBy)
         : null;
@@ -277,7 +282,10 @@ export async function bulkInstallObjectsHandler(
   ctx: MutationCtx,
   args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const { userId, exhibition } = await loadExhibitionMutationContext(ctx, args.exhibitionId);
+  const { userId, exhibition } = await loadExhibitionMutationContext(
+    ctx,
+    args.exhibitionId,
+  );
 
   const pendingObjects = await ctx.db
     .query("exhibitionObjects")
@@ -319,7 +327,10 @@ export async function bulkReturnObjectsHandler(
   ctx: MutationCtx,
   args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const { userId, exhibition } = await loadExhibitionMutationContext(ctx, args.exhibitionId);
+  const { userId, exhibition } = await loadExhibitionMutationContext(
+    ctx,
+    args.exhibitionId,
+  );
 
   const deinstalledObjects = await ctx.db
     .query("exhibitionObjects")

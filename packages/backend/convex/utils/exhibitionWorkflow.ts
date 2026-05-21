@@ -77,8 +77,7 @@ export async function approveExhibitionHandler(
       });
     }
 
-    const isLastStep =
-      workflowState.isPastLastStep || workflowState.isLastStep;
+    const isLastStep = workflowState.isPastLastStep || workflowState.isLastStep;
 
     if (isLastStep) {
       await Promise.all([
@@ -362,10 +361,7 @@ export async function closeExhibitionHandler(
     throw new Error("Exhibition not found");
   }
 
-  if (
-    exhibition.status !== "active" &&
-    exhibition.status !== "deinstalling"
-  ) {
+  if (exhibition.status !== "active" && exhibition.status !== "deinstalling") {
     throw new Error("Exhibition must be active or deinstalling to close");
   }
 

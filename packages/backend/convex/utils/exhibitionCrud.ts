@@ -96,8 +96,8 @@ export async function getExhibitionHandler(
     status: exhibition.status,
     workflowStep: exhibition.workflowStep,
     totalWorkflowSteps: workflowConfig
-      ? resolveWorkflowStepState(workflowConfig.steps, undefined)
-          .approvalSteps.length
+      ? resolveWorkflowStepState(workflowConfig.steps, undefined).approvalSteps
+          .length
       : undefined,
     approvedBy: exhibition.approvedBy,
     approvedAt: exhibition.approvedAt,

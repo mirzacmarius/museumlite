@@ -121,10 +121,7 @@ export async function completeInstallationTaskHandler(
     throw new Error("Exhibition not found");
   }
 
-  if (
-    exhibition.status !== "installing" &&
-    exhibition.status !== "approved"
-  ) {
+  if (exhibition.status !== "installing" && exhibition.status !== "approved") {
     throw new Error("Exhibition is not in installation phase");
   }
 
@@ -184,10 +181,7 @@ export async function uncompleteInstallationTaskHandler(
     throw new Error("Exhibition not found");
   }
 
-  if (
-    exhibition.status !== "installing" &&
-    exhibition.status !== "approved"
-  ) {
+  if (exhibition.status !== "installing" && exhibition.status !== "approved") {
     throw new Error("Exhibition is not in installation phase");
   }
 
