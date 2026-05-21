@@ -9,8 +9,13 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "../utils";
+
+function isUnoptimizedSrc(src: string) {
+  return src.startsWith("blob:") || src.startsWith("data:");
+}
 
 export interface LightboxImage {
   id: string;
@@ -183,7 +188,7 @@ export function ImageLightbox({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "relative flex max-h-[85vh] max-w-[90vw] items-center justify-center",
+              "relative flex h-[85vh] w-[90vw] max-h-[85vh] max-w-[90vw] items-center justify-center",
               isZoomed && "cursor-zoom-out",
               !isZoomed && "cursor-zoom-in",
             )}
@@ -192,12 +197,14 @@ export function ImageLightbox({
               setIsZoomed(!isZoomed);
             }}
           >
-            {/* biome-ignore lint/performance/noImgElement: shared UI package has no Next.js Image dependency */}
-            <img
+            <Image
               src={currentImage.url}
               alt={currentImage.title || "Image"}
+              fill
+              sizes="90vw"
+              unoptimized={isUnoptimizedSrc(currentImage.url)}
               className={cn(
-                "max-h-[85vh] rounded-lg object-contain transition-transform duration-300",
+                "rounded-lg object-contain transition-transform duration-300",
                 isZoomed ? "scale-150" : "scale-100",
               )}
             />
@@ -252,17 +259,19 @@ export function ImageLightbox({
                     setCurrentIndex(idx);
                   }}
                   className={cn(
-                    "size-12 overflow-hidden rounded border-2 transition-all",
+                    "relative size-12 overflow-hidden rounded border-2 transition-all",
                     idx === currentIndex
                       ? "border-white"
                       : "border-transparent opacity-60 hover:opacity-100",
                   )}
                 >
-                  {/* biome-ignore lint/performance/noImgElement: shared UI package has no Next.js Image dependency */}
-                  <img
+                  <Image
                     src={img.thumbnailUrl || img.url}
                     alt={img.title || `Thumbnail ${idx + 1}`}
-                    className="size-full object-cover"
+                    fill
+                    sizes="48px"
+                    unoptimized={isUnoptimizedSrc(img.thumbnailUrl || img.url)}
+                    className="object-cover"
                   />
                 </button>
               ))}

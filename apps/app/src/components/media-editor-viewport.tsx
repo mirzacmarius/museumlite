@@ -47,6 +47,7 @@ export function MediaEditorViewport({
     >
       <div className="relative">
         <ReactCrop crop={crop} onChange={onCropChange} aspect={undefined}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- react-image-crop requires a native img ref */}
           {/* biome-ignore lint/performance/noImgElement: react-image-crop requires a native img ref */}
           <img
             ref={imageRef}
