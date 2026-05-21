@@ -27,8 +27,8 @@ export default function PortalLayout({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col overflow-auto">
-      <header className="border-b border-white/10 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-10">
+    <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col overflow-auto">
+      <header className="border-b border-white/10 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
             <Link

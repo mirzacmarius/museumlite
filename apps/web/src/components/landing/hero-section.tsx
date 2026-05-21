@@ -8,7 +8,7 @@ import { seededRandom } from "./seeded-rng";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-gray-950 selection:bg-neon-purple/30">
+    <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-zinc-950 selection:bg-neon-purple/30">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
 
@@ -145,7 +145,7 @@ export function HeroSection() {
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
-            className="absolute top-[20%] left-[5%] hidden md:block p-4 rounded-2xl bg-gray-950/40 border border-white/10 backdrop-blur-xl rotate-[-6deg] w-64"
+            className="absolute top-[20%] left-[5%] hidden md:block p-4 rounded-2xl bg-zinc-950/40 border border-white/10 backdrop-blur-xl rotate-[-6deg] w-64"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="size-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
@@ -164,7 +164,7 @@ export function HeroSection() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.7 }}
-            className="absolute bottom-[30%] right-[5%] hidden md:block p-4 rounded-2xl bg-gray-950/40 border border-white/10 backdrop-blur-xl rotate-[6deg] w-64"
+            className="absolute bottom-[30%] right-[5%] hidden md:block p-4 rounded-2xl bg-zinc-950/40 border border-white/10 backdrop-blur-xl rotate-[6deg] w-64"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="h-2 w-24 bg-white/20 rounded" />

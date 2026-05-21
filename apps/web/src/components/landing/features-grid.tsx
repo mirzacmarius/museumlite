@@ -50,7 +50,7 @@ const features = [
 
 export function FeaturesGrid() {
   return (
-    <section className="py-32 px-4 relative bg-gray-950">
+    <section className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2

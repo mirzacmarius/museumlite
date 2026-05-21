@@ -69,14 +69,14 @@ export default function PublicCollectionPage() {
 
   if (collections === undefined) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <p className="text-white/60">Loading collection...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-zinc-950">
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="mb-8">
           <h1 className="text-4xl font-semibold text-white mb-2">Collection</h1>

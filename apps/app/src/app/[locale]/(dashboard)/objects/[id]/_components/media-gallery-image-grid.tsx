@@ -152,13 +152,13 @@ export function MediaGalleryImageGrid({
                     )}
                   </div>
 
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-gray-950/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <Maximize2 className="size-6 text-white" />
                   </div>
 
                   {editable && !file.isPrimary && (
                     <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                      <div className="flex size-7 items-center justify-center rounded bg-gray-950/50 cursor-grab active:cursor-grabbing">
+                      <div className="flex size-7 items-center justify-center rounded bg-zinc-950/50 cursor-grab active:cursor-grabbing">
                         <GripVertical className="size-3.5 text-white" />
                       </div>
                     </div>

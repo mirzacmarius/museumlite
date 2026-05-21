@@ -23,7 +23,7 @@ export function FeatureGuard({
 }: FeatureGuardProps) {
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] w-full border border-white/10 rounded-lg bg-gray-950/20 p-8 text-center animate-in fade-in duration-500">
+      <div className="flex flex-col items-center justify-center min-h-[400px] w-full border border-white/10 rounded-lg bg-zinc-950/20 p-8 text-center animate-in fade-in duration-500">
         <div className="size-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
           <Lock className="size-6 text-white/40" />
         </div>
