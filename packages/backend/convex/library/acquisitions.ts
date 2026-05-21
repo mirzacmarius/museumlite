@@ -54,14 +54,15 @@ export const create = mutation({
   },
   returns: v.id("libraryAcquisitionRequests"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requireModuleEnabled(ctx, args.organizationId, "library"),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requireModuleEnabled(ctx, args.organizationId, "library"),
-      requirePermission(ctx, args.organizationId, "collections.create"),
-    ]);
     const canInitiate = await canInitiateWorkflow(
       ctx,
       args.organizationId,

@@ -87,7 +87,10 @@ export const get = query({
       return null;
     }
 
-    const account = await ctx.db.get(document.accountId);
+    const [account, downloadUrl] = await Promise.all([
+      ctx.db.get(document.accountId),
+      ctx.storage.getUrl(document.storageId),
+    ] as const);
     if (!account) {
       return null;
     }
@@ -97,7 +100,6 @@ export const get = query({
       "accounts",
       "accounts.read",
     );
-    const downloadUrl = await ctx.storage.getUrl(document.storageId);
 
     return {
       ...document,
@@ -173,9 +175,15 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, document] = await Promise.all([
+    const [userId, document, account] = await Promise.all([
       getAuthUserId(ctx),
       ctx.db.get(args.documentId),
+      ctx.db.get(args.documentId).then(async (doc) => {
+        if (!doc) {
+          return null;
+        }
+        return ctx.db.get(doc.accountId);
+      }),
     ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -183,8 +191,6 @@ export const remove = mutation({
     if (!document) {
       throw new Error("Document not found");
     }
-
-    const account = await ctx.db.get(document.accountId);
     if (!account) {
       throw new Error("Account not found");
     }

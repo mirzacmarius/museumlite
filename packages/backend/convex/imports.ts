@@ -426,14 +426,15 @@ export const exportLocations = mutation({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "locations.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
@@ -504,14 +505,15 @@ export const exportAccounts = mutation({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -592,14 +594,15 @@ export const exportObjects = mutation({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const objects = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -980,14 +983,15 @@ export const exportLoans = mutation({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>
@@ -1450,14 +1454,15 @@ export const exportObjectsWithFormat = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const objects = await ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -1602,14 +1607,15 @@ export const exportLocationsWithFormat = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "locations.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const locations = await ctx.db
       .query("locations")
       .withIndex("by_organization", (q) =>
@@ -1694,14 +1700,15 @@ export const exportAccountsWithFormat = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
@@ -1806,14 +1813,15 @@ export const exportLoansWithFormat = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      enforceExportQuota(ctx, args.organizationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.read"),
-      enforceExportQuota(ctx, args.organizationId),
-    ]);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_organization", (q) =>

@@ -1745,13 +1745,12 @@ export const reject = mutation({
       throw new Error("Accession is not pending");
     }
 
-    await requirePermission(
-      ctx,
-      accession.organizationId,
-      "collections.approve_accession",
-    );
-
     await Promise.all([
+      requirePermission(
+        ctx,
+        accession.organizationId,
+        "collections.approve_accession",
+      ),
       ctx.db.patch(args.accessionId, {
         status: "rejected",
         workflowStep: -2,

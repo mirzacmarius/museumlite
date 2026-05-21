@@ -820,16 +820,16 @@ export const deleteLocation = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, location.organizationId, "locations.delete");
-
-    // Check if location has children
-    const children = await ctx.db
-      .query("locations")
+    const [, children] = await Promise.all([
+      requirePermission(ctx, location.organizationId, "locations.delete"),
+      ctx.db
+        .query("locations")
       .withIndex("by_parentLocation", (q) =>
         q.eq("parentLocationId", args.locationId),
       )
       .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
+      .first()
+    ] as const);
 
     if (children) {
       throw new Error("Cannot delete location with active children");
@@ -1164,11 +1164,10 @@ export const createMoveRequest = mutation({
       throw new Error("Location belongs to different organization");
     }
 
-    await requirePermission(ctx, collection.organizationId, "locations.update");
-
-    // Check for pending requests for same object
-    const existingRequest = await ctx.db
-      .query("locationMoveRequests")
+    const [, existingRequest] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "locations.update"),
+      ctx.db
+        .query("locationMoveRequests")
       .withIndex("by_collection", (q) =>
         q.eq("collectionId", args.collectionId),
       )
@@ -1178,7 +1177,8 @@ export const createMoveRequest = mutation({
           q.eq(q.field("status"), "approved"),
         ),
       )
-      .first();
+      .first()
+    ] as const);
 
     if (existingRequest) {
       throw new Error("Object already has a pending move request");
@@ -2035,16 +2035,16 @@ export const listAllWithPaths = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "locations.read");
-
-    // Get all active locations for the organization
-    const allLocations = await ctx.db
-      .query("locations")
+    const [, allLocations] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "locations.read"),
+      ctx.db
+        .query("locations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
+      .collect()
+    ] as const);
 
     // Build a map of location ID to location for quick lookup
     const locationMap = new Map(allLocations.map((loc) => [loc._id, loc]));

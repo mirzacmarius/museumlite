@@ -1196,18 +1196,18 @@ export const setContentHash = mutation({
       throw new Error("Media not found");
     }
 
-    await requirePermission(ctx, media.organizationId, "media.upload");
-
-    // Check for existing files with this hash
-    const existing = await ctx.db
-      .query("mediaFiles")
+    const [, existing] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.upload"),
+      ctx.db
+        .query("mediaFiles")
       .withIndex("by_content_hash", (q) =>
         q
           .eq("organizationId", media.organizationId)
           .eq("contentHash", args.contentHash),
       )
       .filter((q) => q.neq(q.field("_id"), args.mediaId))
-      .first();
+      .first()
+    ] as const);
 
     const isDuplicate = !!existing;
 

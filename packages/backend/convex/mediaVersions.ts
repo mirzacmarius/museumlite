@@ -144,15 +144,15 @@ export const listVersions = query({
     }
 
     // Check permission
-    await requirePermission(ctx, media.organizationId, "media.read");
-
-    // Query all versions for this media file
-    const versions = await ctx.db
-      .query("mediaVersions")
+    const [, versions] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.read"),
+      ctx.db
+        .query("mediaVersions")
       .withIndex("by_original_media", (q) =>
         q.eq("originalMediaId", args.mediaId),
       )
-      .collect();
+      .collect()
+    ] as const);
 
     // Get URLs for each version
     const versionsWithUrls = await Promise.all(
