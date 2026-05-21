@@ -108,6 +108,8 @@ import type * as utils_convexAuth from "../utils/convexAuth.js";
 import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_dublinCore from "../utils/dublinCore.js";
 import type * as utils_exhibitionAccess from "../utils/exhibitionAccess.js";
+import type * as utils_exhibitionContext from "../utils/exhibitionContext.js";
+import type * as utils_exhibitionInstallation from "../utils/exhibitionInstallation.js";
 import type * as utils_exhibitionObjectLocation from "../utils/exhibitionObjectLocation.js";
 import type * as utils_featureGates from "../utils/featureGates.js";
 import type * as utils_featurePolicy from "../utils/featurePolicy.js";
@@ -251,6 +253,8 @@ declare const fullApi: ApiFromModules<{
   "utils/dashboardAnalytics": typeof utils_dashboardAnalytics;
   "utils/dublinCore": typeof utils_dublinCore;
   "utils/exhibitionAccess": typeof utils_exhibitionAccess;
+  "utils/exhibitionContext": typeof utils_exhibitionContext;
+  "utils/exhibitionInstallation": typeof utils_exhibitionInstallation;
   "utils/exhibitionObjectLocation": typeof utils_exhibitionObjectLocation;
   "utils/featureGates": typeof utils_featureGates;
   "utils/featurePolicy": typeof utils_featurePolicy;
