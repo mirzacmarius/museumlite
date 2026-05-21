@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { useOrganization } from "@/components/organization-provider";
@@ -30,6 +30,104 @@ interface ScanHistoryItem {
   found: boolean;
   objectId?: Id<"collections">;
   objectTitle?: string;
+}
+
+interface ScanPageState {
+  scanHistory: ScanHistoryItem[];
+  pendingLookup: string | null;
+}
+
+type ScanPageAction =
+  | { type: "scan"; item: ScanHistoryItem; lookupAccession: string | null }
+  | {
+      type: "lookup_found";
+      accessionNumber: string;
+      objectId: Id<"collections">;
+      objectTitle: string;
+    }
+  | { type: "lookup_not_found"; accessionNumber: string };
+
+function scanPageReducer(
+  state: ScanPageState,
+  action: ScanPageAction,
+): ScanPageState {
+  switch (action.type) {
+    case "scan":
+      return {
+        scanHistory: [action.item, ...state.scanHistory.slice(0, 9)],
+        pendingLookup: action.lookupAccession,
+      };
+    case "lookup_found":
+      return {
+        pendingLookup: null,
+        scanHistory: state.scanHistory.map((item) =>
+          item.accessionNumber === action.accessionNumber
+            ? {
+                ...item,
+                found: true,
+                objectId: action.objectId,
+                objectTitle: action.objectTitle,
+              }
+            : item,
+        ),
+      };
+    case "lookup_not_found":
+      return {
+        pendingLookup: null,
+        scanHistory: state.scanHistory.map((item) =>
+          item.accessionNumber === action.accessionNumber
+            ? { ...item, found: false }
+            : item,
+        ),
+      };
+    default:
+      return state;
+  }
+}
+
+type AccessionLookupResult =
+  | {
+      kind: "found";
+      accessionNumber: string;
+      object: { _id: Id<"collections">; title: string };
+    }
+  | { kind: "not_found"; accessionNumber: string };
+
+function AccessionLookup({
+  accessionNumber,
+  organizationId,
+  onResolved,
+}: {
+  accessionNumber: string;
+  organizationId: Id<"organizations">;
+  onResolved: (result: AccessionLookupResult) => void;
+}) {
+  const { push } = useRouter();
+  const scannedObject = useQuery(api.collections.getByAccessionNumber, {
+    organizationId,
+    accessionNumber,
+  });
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    if (scannedObject === undefined) return;
+    if (handledRef.current) return;
+    handledRef.current = true;
+
+    if (scannedObject) {
+      onResolved({
+        kind: "found",
+        accessionNumber,
+        object: scannedObject,
+      });
+      push(`/objects/${scannedObject._id}`);
+      return;
+    }
+
+    onResolved({ kind: "not_found", accessionNumber });
+  }, [scannedObject, accessionNumber, push, onResolved]);
+
+  return null;
 }
 
 function getObjectPathFromScan(decodedText: string) {
@@ -59,52 +157,28 @@ export default function ScanPage() {
   const common = useScopedI18n("common");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { push } = useRouter();
+  const [{ scanHistory, pendingLookup }, dispatch] = useReducer(scanPageReducer, {
+    scanHistory: [],
+    pendingLookup: null,
+  });
 
-  const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
-  const [lookupAccession, setLookupAccession] = useState<string | null>(null);
-  const lookupHandledRef = useRef<string | null>(null);
-
-  const scannedObject = useQuery(
-    api.collections.getByAccessionNumber,
-    lookupAccession && currentOrganizationId
-      ? {
-          organizationId: currentOrganizationId,
-          accessionNumber: lookupAccession,
-        }
-      : "skip",
-  );
-
-  useEffect(() => {
-    if (!lookupAccession || scannedObject === undefined) return;
-    if (lookupHandledRef.current === lookupAccession) return;
-    lookupHandledRef.current = lookupAccession;
-
-    if (scannedObject) {
-      setScanHistory((prev) =>
-        prev.map((item) =>
-          item.accessionNumber === lookupAccession
-            ? {
-                ...item,
-                found: true,
-                objectId: scannedObject._id,
-                objectTitle: scannedObject.title,
-              }
-            : item,
-        ),
-      );
-      push(`/objects/${scannedObject._id}`);
-    } else {
-      toast.error(`Object not found: ${lookupAccession}`);
-      setScanHistory((prev) =>
-        prev.map((item) =>
-          item.accessionNumber === lookupAccession
-            ? { ...item, found: false }
-            : item,
-        ),
-      );
+  const handleLookupResolved = useCallback((result: AccessionLookupResult) => {
+    if (result.kind === "found") {
+      dispatch({
+        type: "lookup_found",
+        accessionNumber: result.accessionNumber,
+        objectId: result.object._id,
+        objectTitle: result.object.title,
+      });
+      return;
     }
-    setLookupAccession(null);
-  }, [lookupAccession, scannedObject, push]);
+
+    toast.error(`Object not found: ${result.accessionNumber}`);
+    dispatch({
+      type: "lookup_not_found",
+      accessionNumber: result.accessionNumber,
+    });
+  }, []);
 
   const handleScanSuccess = useCallback(
     (decodedText: string, format: string) => {
@@ -116,7 +190,6 @@ export default function ScanPage() {
       const objectPath = getObjectPathFromScan(decodedText);
       toast.success(`Scanned: ${decodedText}`);
 
-      // Add to history
       const historyItem: ScanHistoryItem = {
         id: `${Date.now()}-${decodedText}`,
         accessionNumber: decodedText,
@@ -125,14 +198,15 @@ export default function ScanPage() {
         found: objectPath !== null,
       };
 
-      setScanHistory((prev) => [historyItem, ...prev.slice(0, 9)]);
+      dispatch({
+        type: "scan",
+        item: historyItem,
+        lookupAccession: objectPath ? null : decodedText,
+      });
 
       if (objectPath) {
         push(objectPath);
-        return;
       }
-
-      setLookupAccession(decodedText);
     },
     [currentOrganizationId, push],
   );
@@ -202,6 +276,15 @@ export default function ScanPage() {
             </div>
           </div>
         </div>
+
+        {pendingLookup && (
+          <AccessionLookup
+            key={pendingLookup}
+            accessionNumber={pendingLookup}
+            organizationId={currentOrganizationId}
+            onResolved={handleLookupResolved}
+          />
+        )}
 
         {/* Scanner */}
         <div className="rounded-lg border border-border bg-card p-4 sm:p-6">

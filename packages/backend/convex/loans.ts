@@ -1307,25 +1307,21 @@ export const returnLoan = mutation({
       );
     } else {
       // Partial return - log action but don't change loan status
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: loan.organizationId,
-        userId,
-        action: "items_returned",
-        entityType: "loan",
-        entityId: args.loanId,
-        changes: {
-          itemsReturned: movement.returnedItemCount,
-          totalItems: movement.totalItemCount,
-          returnedItemIds: movement.returnedItemIds,
-        },
-      });
-
-      // Notify about partial return
-      const recipients = await getOrganizationNotificationRecipients(
-        ctx,
-        loan.organizationId,
-        userId,
-      );
+      const [, recipients] = await Promise.all([
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: loan.organizationId,
+          userId,
+          action: "items_returned",
+          entityType: "loan",
+          entityId: args.loanId,
+          changes: {
+            itemsReturned: movement.returnedItemCount,
+            totalItems: movement.totalItemCount,
+            returnedItemIds: movement.returnedItemIds,
+          },
+        }),
+        getOrganizationNotificationRecipients(ctx, loan.organizationId, userId),
+      ] as const);
 
       await Promise.all(
         Array.from(recipients).map(async (recipientId) => {
@@ -2993,23 +2989,22 @@ export const createConditionDispute = mutation({
       claimAmount: args.claimAmount,
     });
 
-    // Log the action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "created",
-      entityType: "conditionDispute",
-      entityId: disputeId,
-      changes: { loanId: args.loanId, collectionId: args.collectionId },
-    });
-
-    // Notify relevant users
-    const orgMembers = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", loan.organizationId),
-      )
-      .collect();
+    const [, orgMembers] = await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "created",
+        entityType: "conditionDispute",
+        entityId: disputeId,
+        changes: { loanId: args.loanId, collectionId: args.collectionId },
+      }),
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", loan.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     await Promise.all(
       Array.from(orgMembers).map(async (member) => {
