@@ -15,6 +15,13 @@ import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
+  archiveCollectionHandler,
+  countDeletedCollectionsHandler,
+  deleteCollectionHandler,
+  restoreCollectionHandler,
+  softDeleteCollectionHandler,
+} from "./utils/collectionDisposition";
+import {
   applyCollectionDisposition,
   markCollectionActive,
   markCollectionDeaccessioned,
@@ -2408,39 +2415,7 @@ export const deleteCollection = mutation({
     collectionId: v.id("collections"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-    await Promise.all([
-      requirePermission(ctx, collection.organizationId, "collections.delete"),
-      markCollectionDeaccessioned(ctx, {
-        collectionId: args.collectionId,
-        changedBy: userId,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "deaccessioned_collection",
-        entityType: "collection",
-        entityId: args.collectionId,
-        changes: {
-          accessionNumber: collection.accessionNumber,
-          title: collection.title,
-          previousStatus: collection.status,
-        },
-      }),
-    ] as const);
-
-    return null;
-  },
+  handler: async (ctx, args) => deleteCollectionHandler(ctx, args),
 });
 
 /**
@@ -2452,51 +2427,7 @@ export const archiveCollection = mutation({
     reason: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-
-    if (collection.status === "loaned") {
-      throw new Error("Cannot archive an object that is currently on loan");
-    }
-
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.delete",
-    );
-
-    await Promise.all([
-      applyCollectionDisposition(ctx, {
-        collectionId: args.collectionId,
-        changedBy: userId,
-        targetStatus: "archived",
-        reason: args.reason,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "archived_collection",
-        entityType: "collection",
-        entityId: args.collectionId,
-        changes: {
-          reason: args.reason,
-          accessionNumber: collection.accessionNumber,
-          title: collection.title,
-        },
-      }),
-    ] as const);
-
-    return null;
-  },
+  handler: async (ctx, args) => archiveCollectionHandler(ctx, args),
 });
 
 /**
@@ -2508,51 +2439,7 @@ export const softDeleteCollection = mutation({
     reason: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-
-    if (collection.status === "loaned") {
-      throw new Error("Cannot delete an object that is currently on loan");
-    }
-
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.delete",
-    );
-
-    await Promise.all([
-      applyCollectionDisposition(ctx, {
-        collectionId: args.collectionId,
-        changedBy: userId,
-        targetStatus: "deleted",
-        reason: args.reason,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "deleted_collection",
-        entityType: "collection",
-        entityId: args.collectionId,
-        changes: {
-          reason: args.reason,
-          accessionNumber: collection.accessionNumber,
-          title: collection.title,
-        },
-      }),
-    ] as const);
-
-    return null;
-  },
+  handler: async (ctx, args) => softDeleteCollectionHandler(ctx, args),
 });
 
 export const countDeletedCollections = query({
@@ -2560,19 +2447,7 @@ export const countDeletedCollections = query({
     organizationId: v.id("organizations"),
   },
   returns: v.number(),
-  handler: async (ctx, args) => {
-    const [, deletedCollections] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.read"),
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", "deleted"),
-        )
-        .collect(),
-    ] as const);
-
-    return deletedCollections.length;
-  },
+  handler: async (ctx, args) => countDeletedCollectionsHandler(ctx, args),
 });
 
 export const emptyDeletedCollections = mutation({
@@ -2629,50 +2504,7 @@ export const restoreCollection = mutation({
     collectionId: v.id("collections"),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-
-    if (collection.status !== "archived" && collection.status !== "deleted") {
-      throw new Error("Can only restore archived or deleted objects");
-    }
-
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
-    await Promise.all([
-      markCollectionActive(ctx, {
-        collectionId: args.collectionId,
-        changedBy: userId,
-        clearDisposition: true,
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "restored_collection",
-        entityType: "collection",
-        entityId: args.collectionId,
-        changes: {
-          previousStatus: collection.status,
-          accessionNumber: collection.accessionNumber,
-          title: collection.title,
-        },
-      }),
-    ] as const);
-
-    return null;
-  },
+  handler: async (ctx, args) => restoreCollectionHandler(ctx, args),
 });
 
 /**
@@ -3152,9 +2984,9 @@ export const getThumbnail = query({
       requirePermission(ctx, collection.organizationId, "collections.read"),
       ctx.db
         .query("mediaFiles")
-      .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
-      .filter((q) => q.eq(q.field("isPrimary"), true))
-      .first(),
+        .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+        .filter((q) => q.eq(q.field("isPrimary"), true))
+        .first(),
     ] as const);
 
     let thumbnailUrl: string | null = null;
