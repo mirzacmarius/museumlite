@@ -2,7 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ChevronRight, Lock, Thermometer } from "lucide-react";
-import { createContext, use, useMemo, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, use, useMemo, useState } from "react";
 import {
   isStorageLocation,
   shouldShowInExhibitionSidebar,
