@@ -1,9 +1,9 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { AccessionsPageClient } from "./accessions-page-client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 

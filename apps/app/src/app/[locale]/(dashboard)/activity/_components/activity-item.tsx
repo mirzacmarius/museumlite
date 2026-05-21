@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { GitBranch, User } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 interface ActivityItemProps {
   action: string;
@@ -88,8 +88,8 @@ export function ActivityItem({
   action,
   entityType,
   entityId,
-  userName,
-  userImage,
+  _userName,
+  _userImage,
   timestamp,
   changes,
 }: ActivityItemProps) {

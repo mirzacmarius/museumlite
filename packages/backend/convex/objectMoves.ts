@@ -4,13 +4,14 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
-  type QueryCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { NOTIFICATION_TYPES } from "./notifications";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
+import { batchGetByIds } from "./utils/batchLookup";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
   getCurrentUserOrganization,
@@ -254,20 +255,43 @@ async function ensureAccessionNumberAvailable(
   }
 }
 
+async function resolveGeneratedAccessionNumberAttempt(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  attempt: number,
+): Promise<string | null> {
+  if (attempt >= 5) {
+    return null;
+  }
+
+  const accessionNumber = await generateAccessionNumber(ctx, organizationId);
+  const conflict = await findAccessionConflict(
+    ctx,
+    organizationId,
+    accessionNumber,
+  );
+  if (!conflict) {
+    return accessionNumber;
+  }
+
+  return resolveGeneratedAccessionNumberAttempt(
+    ctx,
+    organizationId,
+    attempt + 1,
+  );
+}
+
 async function resolveGeneratedAccessionNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const accessionNumber = await generateAccessionNumber(ctx, organizationId);
-    const conflict = await findAccessionConflict(
-      ctx,
-      organizationId,
-      accessionNumber,
-    );
-    if (!conflict) {
-      return accessionNumber;
-    }
+  const accessionNumber = await resolveGeneratedAccessionNumberAttempt(
+    ctx,
+    organizationId,
+    0,
+  );
+  if (accessionNumber) {
+    return accessionNumber;
   }
 
   throw new Error(
@@ -387,15 +411,18 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  for (const loanItem of loanItems) {
-    const loan = await ctx.db.get(loanItem.loanId);
-    if (loan && ACTIVE_LOAN_STATUSES.has(loan.status)) {
-      blockers.push({
-        code: "active_loan",
-        message: "This object is currently on loan and cannot be moved.",
-      });
-      break;
-    }
+  const loans = await batchGetByIds(
+    ctx,
+    loanItems.map((loanItem) => loanItem.loanId),
+    "loans",
+  );
+  if (
+    loans.some((loan) => loan !== null && ACTIVE_LOAN_STATUSES.has(loan.status))
+  ) {
+    blockers.push({
+      code: "active_loan",
+      message: "This object is currently on loan and cannot be moved.",
+    });
   }
 
   const locationMoveRequests = await ctx.db
@@ -458,16 +485,23 @@ async function buildEligibilityBlockers(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
 
-  for (const transitItem of transitItems) {
-    const transitRecord = await ctx.db.get(transitItem.transitRecordId);
-    if (transitRecord && ACTIVE_TRANSIT_STATUSES.has(transitRecord.status)) {
-      blockers.push({
-        code: "active_transit",
-        message:
-          "This object is part of an active transit record and cannot be moved.",
-      });
-      break;
-    }
+  const transitRecords = await batchGetByIds(
+    ctx,
+    transitItems.map((transitItem) => transitItem.transitRecordId),
+    "transitRecords",
+  );
+  if (
+    transitRecords.some(
+      (transitRecord) =>
+        transitRecord !== null &&
+        ACTIVE_TRANSIT_STATUSES.has(transitRecord.status),
+    )
+  ) {
+    blockers.push({
+      code: "active_transit",
+      message:
+        "This object is part of an active transit record and cannot be moved.",
+    });
   }
 
   const exhibitions = await ctx.db
@@ -585,50 +619,43 @@ async function moveMediaRecords(
 
   await Promise.all(
     Array.from(mediaFiles).map(async (mediaFile) => {
-      await ctx.db.patch(mediaFile._id, {
-        organizationId: targetOrganizationId,
-      });
-
-      const mediaVersions = await ctx.db
-        .query("mediaVersions")
-        .withIndex("by_original_media", (q) =>
-          q.eq("originalMediaId", mediaFile._id),
-        )
-        .collect();
-
-      await Promise.all(
-        Array.from(mediaVersions).map(async (version) => {
-          await ctx.db.patch(version._id, {
-            organizationId: targetOrganizationId,
-          });
+      const [, mediaVersions, editHistory, downloads] = await Promise.all([
+        ctx.db.patch(mediaFile._id, {
+          organizationId: targetOrganizationId,
         }),
-      );
+        ctx.db
+          .query("mediaVersions")
+          .withIndex("by_original_media", (q) =>
+            q.eq("originalMediaId", mediaFile._id),
+          )
+          .collect(),
+        ctx.db
+          .query("mediaEditHistory")
+          .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
+          .collect(),
+        ctx.db
+          .query("mediaDownloads")
+          .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
+          .collect(),
+      ]);
 
-      const editHistory = await ctx.db
-        .query("mediaEditHistory")
-        .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
-        .collect();
-
-      await Promise.all(
-        Array.from(editHistory).map(async (historyEntry) => {
-          await ctx.db.patch(historyEntry._id, {
+      await Promise.all([
+        ...mediaVersions.map((version) =>
+          ctx.db.patch(version._id, {
             organizationId: targetOrganizationId,
-          });
-        }),
-      );
-
-      const downloads = await ctx.db
-        .query("mediaDownloads")
-        .withIndex("by_media", (q) => q.eq("mediaId", mediaFile._id))
-        .collect();
-
-      await Promise.all(
-        Array.from(downloads).map(async (download) => {
-          await ctx.db.patch(download._id, {
+          }),
+        ),
+        ...editHistory.map((historyEntry) =>
+          ctx.db.patch(historyEntry._id, {
             organizationId: targetOrganizationId,
-          });
-        }),
-      );
+          }),
+        ),
+        ...downloads.map((download) =>
+          ctx.db.patch(download._id, {
+            organizationId: targetOrganizationId,
+          }),
+        ),
+      ]);
     }),
   );
 }
@@ -638,57 +665,52 @@ async function moveConservationRecords(
   collectionId: Id<"collections">,
   targetOrganizationId: Id<"organizations">,
 ) {
-  const treatments = await ctx.db
-    .query("conservationTreatments")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
+  const [treatments, schedules, alerts] = await Promise.all([
+    ctx.db
+      .query("conservationTreatments")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+      .collect(),
+    ctx.db
+      .query("assessmentSchedules")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+      .collect(),
+    ctx.db
+      .query("conservationAlerts")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+      .collect(),
+  ]);
 
-  await Promise.all(
-    Array.from(treatments).map(async (treatment) => {
-      await ctx.db.patch(treatment._id, {
-        organizationId: targetOrganizationId,
-      });
-
-      const attachments = await ctx.db
-        .query("conservationAttachments")
-        .withIndex("by_treatment", (q) => q.eq("treatmentId", treatment._id))
-        .collect();
+  await Promise.all([
+    ...treatments.map(async (treatment) => {
+      const [, attachments] = await Promise.all([
+        ctx.db.patch(treatment._id, {
+          organizationId: targetOrganizationId,
+        }),
+        ctx.db
+          .query("conservationAttachments")
+          .withIndex("by_treatment", (q) => q.eq("treatmentId", treatment._id))
+          .collect(),
+      ]);
 
       await Promise.all(
-        Array.from(attachments).map(async (attachment) => {
-          await ctx.db.patch(attachment._id, {
+        attachments.map((attachment) =>
+          ctx.db.patch(attachment._id, {
             organizationId: targetOrganizationId,
-          });
-        }),
+          }),
+        ),
       );
     }),
-  );
-
-  const schedules = await ctx.db
-    .query("assessmentSchedules")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-
-  await Promise.all(
-    Array.from(schedules).map(async (schedule) => {
-      await ctx.db.patch(schedule._id, {
+    ...schedules.map((schedule) =>
+      ctx.db.patch(schedule._id, {
         organizationId: targetOrganizationId,
-      });
-    }),
-  );
-
-  const alerts = await ctx.db
-    .query("conservationAlerts")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-
-  await Promise.all(
-    Array.from(alerts).map(async (alert) => {
-      await ctx.db.patch(alert._id, {
+      }),
+    ),
+    ...alerts.map((alert) =>
+      ctx.db.patch(alert._id, {
         organizationId: targetOrganizationId,
-      });
-    }),
-  );
+      }),
+    ),
+  ]);
 }
 
 async function executeMove(
@@ -722,31 +744,29 @@ async function executeMove(
     moveCollectionDetailRecords(ctx, collection._id, targetOrganizationId),
     moveConservationRecords(ctx, collection._id, targetOrganizationId),
   ]);
-  const comments = await ctx.db
-    .query("objectComments")
-    .withIndex("by_object", (q) => q.eq("objectId", collection._id))
-    .collect();
+  const [comments, appraisals] = await Promise.all([
+    ctx.db
+      .query("objectComments")
+      .withIndex("by_object", (q) => q.eq("objectId", collection._id))
+      .collect(),
+    ctx.db
+      .query("appraisals")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+      .collect(),
+  ]);
 
-  await Promise.all(
-    Array.from(comments).map(async (comment) => {
-      await ctx.db.patch(comment._id, {
+  await Promise.all([
+    ...comments.map((comment) =>
+      ctx.db.patch(comment._id, {
         organizationId: targetOrganizationId,
-      });
-    }),
-  );
-
-  const appraisals = await ctx.db
-    .query("appraisals")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
-    .collect();
-
-  await Promise.all(
-    Array.from(appraisals).map(async (appraisal) => {
-      await ctx.db.patch(appraisal._id, {
+      }),
+    ),
+    ...appraisals.map((appraisal) =>
+      ctx.db.patch(appraisal._id, {
         organizationId: targetOrganizationId,
-      });
-    }),
-  );
+      }),
+    ),
+  ]);
 
   await ctx.db.patch(collection._id, {
     organizationId: targetOrganizationId,
@@ -837,26 +857,24 @@ export const listEligibleTargetOrganizations = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       return [];
     }
 
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
-    const memberships = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    const [, memberships] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect(),
+    ] as const);
 
     const organizations = await Promise.all(
       memberships.map(async (membership) => {
@@ -1017,45 +1035,34 @@ export const createRequest = mutation({
   },
   returns: v.id("organizationMoveRequests"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-    await requirePermission(
-      ctx,
-      args.targetOrganizationId,
-      "collections.create",
-    );
-    await getTransferHierarchy(
-      ctx,
-      collection.organizationId,
-      args.targetOrganizationId,
-    );
-    const membership = await getCurrentUserOrganization(
-      ctx,
-      args.targetOrganizationId,
-    );
+    await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+      requirePermission(ctx, args.targetOrganizationId, "collections.create"),
+    ]);
+    const [, membership, blockers] = await Promise.all([
+      getTransferHierarchy(
+        ctx,
+        collection.organizationId,
+        args.targetOrganizationId,
+      ),
+      getCurrentUserOrganization(ctx, args.targetOrganizationId),
+      buildEligibilityBlockers(ctx, collection, args.targetOrganizationId),
+    ]);
     if (!membership) {
       throw new Error(
         "You must be a member of the destination organization to move an object there.",
       );
     }
-
-    const blockers = await buildEligibilityBlockers(
-      ctx,
-      collection,
-      args.targetOrganizationId,
-    );
 
     if (blockers.length > 0) {
       throw new Error(blockers.map((blocker) => blocker.message).join(" "));
@@ -1105,30 +1112,31 @@ export const createRequest = mutation({
       requestedAt: Date.now(),
     });
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "created_organization_move_request",
-      entityType: "organizationMoveRequest",
-      entityId: requestId,
-      changes: {
-        collectionId: args.collectionId,
-        targetOrganizationId: args.targetOrganizationId,
-        accessionMode: args.accessionMode,
-        requestedAccessionNumber,
-      },
-    });
-
-    await ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
-      organizationId: collection.organizationId,
-      permission: "organization.manage_settings",
-      type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
-      title: `Object Move Request: ${collection.accessionNumber}`,
-      message: `${collection.title} requires administrator approval before it can be moved to another organization.`,
-      relatedEntityType: "move_request",
-      relatedEntityId: requestId,
-      excludeUserId: userId,
-    });
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: collection.organizationId,
+        userId,
+        action: "created_organization_move_request",
+        entityType: "organizationMoveRequest",
+        entityId: requestId,
+        changes: {
+          collectionId: args.collectionId,
+          targetOrganizationId: args.targetOrganizationId,
+          accessionMode: args.accessionMode,
+          requestedAccessionNumber,
+        },
+      }),
+      ctx.runMutation(internal.notifications.notifyUsersWithPermission, {
+        organizationId: collection.organizationId,
+        permission: "organization.manage_settings",
+        type: NOTIFICATION_TYPES.MOVE_REQUEST_CREATED,
+        title: `Object Move Request: ${collection.accessionNumber}`,
+        message: `${collection.title} requires administrator approval before it can be moved to another organization.`,
+        relatedEntityType: "move_request",
+        relatedEntityId: requestId,
+        excludeUserId: userId,
+      }),
+    ]);
 
     return requestId;
   },
@@ -1140,12 +1148,13 @@ export const get = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       return null;
     }
@@ -1360,14 +1369,15 @@ export const getPendingForCollection = query({
       return null;
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    const request = await ctx.db
-      .query("organizationMoveRequests")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, request] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const pendingRequest =
       request.find((entry) => ACTIVE_REQUEST_STATUSES.has(entry.status)) ??
@@ -1401,12 +1411,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1496,12 +1507,13 @@ export const accept = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1638,12 +1650,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1673,35 +1686,36 @@ export const reject = mutation({
     }
 
     const now = Date.now();
-    await ctx.db.patch(args.requestId, {
-      status: "rejected",
-      reviewedBy: isTargetReview ? request.reviewedBy : userId,
-      reviewedAt: isTargetReview ? request.reviewedAt : now,
-      reviewNotes: isTargetReview ? request.reviewNotes : reviewNotes,
-      sourceReviewedBy: isTargetReview ? request.sourceReviewedBy : userId,
-      sourceReviewedAt: isTargetReview ? request.sourceReviewedAt : now,
-      sourceReviewNotes: isTargetReview
-        ? request.sourceReviewNotes
-        : reviewNotes,
-      targetReviewedBy: isTargetReview ? userId : undefined,
-      targetReviewedAt: isTargetReview ? now : undefined,
-      targetReviewNotes: isTargetReview ? reviewNotes : undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: isTargetReview
-        ? request.targetOrganizationId
-        : request.sourceOrganizationId,
-      userId,
-      action: isTargetReview
-        ? "rejected_incoming_organization_move_request"
-        : "rejected_organization_move_request",
-      entityType: "organizationMoveRequest",
-      entityId: args.requestId,
-      changes: {
-        reviewNotes,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "rejected",
+        reviewedBy: isTargetReview ? request.reviewedBy : userId,
+        reviewedAt: isTargetReview ? request.reviewedAt : now,
+        reviewNotes: isTargetReview ? request.reviewNotes : reviewNotes,
+        sourceReviewedBy: isTargetReview ? request.sourceReviewedBy : userId,
+        sourceReviewedAt: isTargetReview ? request.sourceReviewedAt : now,
+        sourceReviewNotes: isTargetReview
+          ? request.sourceReviewNotes
+          : reviewNotes,
+        targetReviewedBy: isTargetReview ? userId : undefined,
+        targetReviewedAt: isTargetReview ? now : undefined,
+        targetReviewNotes: isTargetReview ? reviewNotes : undefined,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: isTargetReview
+          ? request.targetOrganizationId
+          : request.sourceOrganizationId,
+        userId,
+        action: isTargetReview
+          ? "rejected_incoming_organization_move_request"
+          : "rejected_organization_move_request",
+        entityType: "organizationMoveRequest",
+        entityId: args.requestId,
+        changes: {
+          reviewNotes,
+        },
+      }),
+    ]);
 
     if (request.requestedBy !== userId) {
       await ctx.runMutation(internal.audit.createNotificationInternal, {
@@ -1727,12 +1741,13 @@ export const cancel = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1753,22 +1768,23 @@ export const cancel = mutation({
       );
     }
 
-    await ctx.db.patch(args.requestId, {
-      status: "cancelled",
-      reviewedBy: isSourceAdmin ? userId : undefined,
-      reviewedAt: Date.now(),
-      sourceReviewedBy: isSourceAdmin ? userId : undefined,
-      sourceReviewedAt: isSourceAdmin ? Date.now() : undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.sourceOrganizationId,
-      userId,
-      action: "cancelled_organization_move_request",
-      entityType: "organizationMoveRequest",
-      entityId: args.requestId,
-      changes: {},
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "cancelled",
+        reviewedBy: isSourceAdmin ? userId : undefined,
+        reviewedAt: Date.now(),
+        sourceReviewedBy: isSourceAdmin ? userId : undefined,
+        sourceReviewedAt: isSourceAdmin ? Date.now() : undefined,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.sourceOrganizationId,
+        userId,
+        action: "cancelled_organization_move_request",
+        entityType: "organizationMoveRequest",
+        entityId: args.requestId,
+        changes: {},
+      }),
+    ]);
 
     return null;
   },

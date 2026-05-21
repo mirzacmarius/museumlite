@@ -33,12 +33,13 @@ export const create = mutation({
   },
   returns: v.id("appraisals"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -120,12 +121,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, appraisal] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.appraisalId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const appraisal = await ctx.db.get(args.appraisalId);
     if (!appraisal) {
       throw new Error("Appraisal not found");
     }
@@ -153,16 +155,17 @@ export const update = mutation({
     if (args.documents !== undefined) updates.documents = args.documents;
     if (args.validUntil !== undefined) updates.validUntil = args.validUntil;
 
-    await ctx.db.patch(args.appraisalId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: appraisal.organizationId,
-      userId,
-      action: "updated",
-      entityType: "appraisal",
-      entityId: args.appraisalId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.appraisalId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: appraisal.organizationId,
+        userId,
+        action: "updated",
+        entityType: "appraisal",
+        entityId: args.appraisalId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -177,12 +180,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, appraisal] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.appraisalId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const appraisal = await ctx.db.get(args.appraisalId);
     if (!appraisal) {
       throw new Error("Appraisal not found");
     }
@@ -212,39 +216,34 @@ export const setAsCurrent = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, appraisal] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.appraisalId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const appraisal = await ctx.db.get(args.appraisalId);
     if (!appraisal) {
       throw new Error("Appraisal not found");
     }
 
-    await requirePermission(
-      ctx,
-      appraisal.organizationId,
-      "collections.update",
-    );
+    const [, existingAppraisals] = await Promise.all([
+      requirePermission(ctx, appraisal.organizationId, "collections.update"),
+      ctx.db
+        .query("appraisals")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", appraisal.collectionId),
+        )
+        .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
+        .collect(),
+    ] as const);
 
-    // Unset any existing current appraisals for this collection
-    const existingAppraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", appraisal.collectionId),
-      )
-      .filter((q) => q.eq(q.field("isCurrentAppraisal"), true))
-      .collect();
-
-    await Promise.all(
-      existingAppraisals.map((existing) =>
+    await Promise.all([
+      ...existingAppraisals.map((existing) =>
         ctx.db.patch(existing._id, { isCurrentAppraisal: false }),
       ),
-    );
-
-    // Set this one as current
-    await ctx.db.patch(args.appraisalId, { isCurrentAppraisal: true });
+      ctx.db.patch(args.appraisalId, { isCurrentAppraisal: true }),
+    ]);
 
     return null;
   },
@@ -328,14 +327,15 @@ export const listByCollection = query({
       return [];
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    const appraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, appraisals] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("appraisals")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const maxAgeMs = 730 * 24 * 60 * 60 * 1000;
 
@@ -389,14 +389,15 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    const appraisals = await ctx.db
-      .query("appraisals")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, appraisals] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      ctx.db
+        .query("appraisals")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     const maxAgeMs = 730 * 24 * 60 * 60 * 1000; // 2 years
     const expiryWarningMs = 90 * 24 * 60 * 60 * 1000; // 90 days

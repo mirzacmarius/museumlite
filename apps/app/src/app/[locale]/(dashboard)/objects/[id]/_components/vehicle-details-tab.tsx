@@ -1,26 +1,13 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatCurrency, formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import {
-  Award,
-  Calendar,
-  Car,
-  DollarSign,
-  Gauge,
-  Plus,
-  Settings,
-  Trophy,
-  Wrench,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { VehicleDetailsContent } from "./vehicle-details-content";
 
 interface VehicleDetailsTabProps {
@@ -30,9 +17,9 @@ interface VehicleDetailsTabProps {
 
 export function VehicleDetailsTab({
   collectionId,
-  organizationId,
+  _organizationId,
 }: VehicleDetailsTabProps) {
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.vehicle");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();

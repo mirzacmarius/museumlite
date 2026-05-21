@@ -1,10 +1,10 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { cn } from "@v1/ui/utils";
 import { Building2, Lock } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
 import type { EditLoanFormData } from "./types";
 

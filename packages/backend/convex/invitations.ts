@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -378,22 +378,22 @@ export const resendInvitation = mutation({
     const newToken = generateInvitationToken();
     const newExpiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    await ctx.db.patch(args.invitationId, {
-      token: newToken,
-      expiresAt: newExpiresAt,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: invitation.organizationId,
-      userId,
-      action: "resent_invitation",
-      entityType: "invitation",
-      entityId: invitation._id,
-      changes: {
-        email: invitation.email,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.invitationId, {
+        token: newToken,
+        expiresAt: newExpiresAt,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: invitation.organizationId,
+        userId,
+        action: "resent_invitation",
+        entityType: "invitation",
+        entityId: invitation._id,
+        changes: {
+          email: invitation.email,
+        },
+      }),
+    ] as const);
 
     const [organization, role, inviter] = await Promise.all([
       ctx.db.get(invitation.organizationId),
@@ -429,12 +429,13 @@ export const cancelInvitation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, invitation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.invitationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const invitation = await ctx.db.get(args.invitationId);
     if (!invitation) {
       throw new Error("Invitation not found");
     }
@@ -445,20 +446,19 @@ export const cancelInvitation = mutation({
 
     await requirePermission(ctx, invitation.organizationId, "users.invite");
 
-    // Delete the invitation
-    await ctx.db.delete(args.invitationId);
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: invitation.organizationId,
-      userId,
-      action: "cancelled_invitation",
-      entityType: "invitation",
-      entityId: invitation._id,
-      changes: {
-        email: invitation.email,
-      },
-    });
+    await Promise.all([
+      ctx.db.delete(args.invitationId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: invitation.organizationId,
+        userId,
+        action: "cancelled_invitation",
+        entityType: "invitation",
+        entityId: invitation._id,
+        changes: {
+          email: invitation.email,
+        },
+      }),
+    ] as const);
   },
 });
 

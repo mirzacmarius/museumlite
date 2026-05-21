@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -10,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { useScopedI18n } from "@/locales/client";
 import { AddChildLocationForm } from "./add-child-location-form";
 import type { AddChildLocationDialogProps } from "./types";
 import { useAddChildLocationForm } from "./use-add-child-location-form";

@@ -473,7 +473,7 @@ export const get = query({
         ? (location.customFields.locationImageId as Id<"_storage">)
         : undefined;
     const imageUrl = locationImageId
-      ? (await ctx.storage.getUrl(locationImageId)) ?? undefined
+      ? ((await ctx.storage.getUrl(locationImageId)) ?? undefined)
       : undefined;
 
     // Get children
@@ -541,12 +541,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, location] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.locationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const location = await ctx.db.get(args.locationId);
     if (!location) {
       throw new Error("Location not found");
     }
@@ -686,14 +687,15 @@ export const getOccupancy = query({
       return null;
     }
 
-    await requirePermission(ctx, location.organizationId, "locations.read");
-
-    const objects = await ctx.db
-      .query("collections")
-      .withIndex("by_currentLocation", (q) =>
-        q.eq("currentLocationId", args.locationId),
-      )
-      .collect();
+    const [, objects] = await Promise.all([
+      requirePermission(ctx, location.organizationId, "locations.read"),
+      ctx.db
+        .query("collections")
+        .withIndex("by_currentLocation", (q) =>
+          q.eq("currentLocationId", args.locationId),
+        )
+        .collect(),
+    ] as const);
 
     const objectCount = objects.length;
     const occupancyPercent = location.capacity
@@ -806,12 +808,13 @@ export const deleteLocation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, location] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.locationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const location = await ctx.db.get(args.locationId);
     if (!location) {
       throw new Error("Location not found");
     }
@@ -919,12 +922,13 @@ export const moveObject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -1140,12 +1144,13 @@ export const createMoveRequest = mutation({
   },
   returns: v.id("locationMoveRequests"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -1221,12 +1226,13 @@ export const approveMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1237,23 +1243,24 @@ export const approveMoveRequest = mutation({
 
     await requirePermission(ctx, request.organizationId, "locations.update");
 
-    await ctx.db.patch(args.requestId, {
-      status: "approved",
-      reviewedBy: userId,
-      reviewedAt: Date.now(),
-      reviewNotes: args.reviewNotes,
-      capacityOverride: args.overrideCapacity,
-      statusOverride: args.overrideStatus,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "approved_move_request",
-      entityType: "collection",
-      entityId: request.collectionId,
-      changes: { requestId: args.requestId },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "approved",
+        reviewedBy: userId,
+        reviewedAt: Date.now(),
+        reviewNotes: args.reviewNotes,
+        capacityOverride: args.overrideCapacity,
+        statusOverride: args.overrideStatus,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "approved_move_request",
+        entityType: "collection",
+        entityId: request.collectionId,
+        changes: { requestId: args.requestId },
+      }),
+    ]);
 
     return null;
   },
@@ -1269,12 +1276,13 @@ export const rejectMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1285,21 +1293,22 @@ export const rejectMoveRequest = mutation({
 
     await requirePermission(ctx, request.organizationId, "locations.update");
 
-    await ctx.db.patch(args.requestId, {
-      status: "rejected",
-      reviewedBy: userId,
-      reviewedAt: Date.now(),
-      reviewNotes: args.reviewNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "rejected_move_request",
-      entityType: "collection",
-      entityId: request.collectionId,
-      changes: { requestId: args.requestId, reason: args.reviewNotes },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "rejected",
+        reviewedBy: userId,
+        reviewedAt: Date.now(),
+        reviewNotes: args.reviewNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "rejected_move_request",
+        entityType: "collection",
+        entityId: request.collectionId,
+        changes: { requestId: args.requestId, reason: args.reviewNotes },
+      }),
+    ]);
 
     return null;
   },
@@ -1315,12 +1324,13 @@ export const executeMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1415,12 +1425,13 @@ export const cancelMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1599,12 +1610,13 @@ export const updateStatus = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, location] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.locationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const location = await ctx.db.get(args.locationId);
     if (!location) {
       throw new Error("Location not found");
     }
@@ -1706,12 +1718,13 @@ export const reorder = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, location] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.locationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const location = await ctx.db.get(args.locationId);
     if (!location) {
       throw new Error("Location not found");
     }
@@ -1772,24 +1785,28 @@ export const reorder = mutation({
     // Insert the moved location at the new position
     sortedSiblings.splice(args.newSortOrder, 0, location);
 
-    // Update sortOrder for all affected siblings
-    for (let i = 0; i < sortedSiblings.length; i++) {
-      const sibling = sortedSiblings[i];
-      if (!sibling) continue;
+    await Promise.all(
+      sortedSiblings.map((sibling, i) => {
+        if (!sibling) {
+          return Promise.resolve();
+        }
 
-      if (sibling._id === args.locationId) {
-        // Update the moved location with new parent and sortOrder
-        await ctx.db.patch(args.locationId, {
-          parentLocationId: newParentId,
-          sortOrder: i,
-        });
-      } else if (sibling.sortOrder !== i) {
-        // Only update if sortOrder changed
-        await ctx.db.patch(sibling._id, {
-          sortOrder: i,
-        });
-      }
-    }
+        if (sibling._id === args.locationId) {
+          return ctx.db.patch(args.locationId, {
+            parentLocationId: newParentId,
+            sortOrder: i,
+          });
+        }
+
+        if (sibling.sortOrder !== i) {
+          return ctx.db.patch(sibling._id, {
+            sortOrder: i,
+          });
+        }
+
+        return Promise.resolve();
+      }),
+    );
 
     // If parent changed, re-normalize sortOrder in old parent
     if (oldParentId !== newParentId) {
@@ -1864,30 +1881,34 @@ export const getObjectsAtLocation = query({
       const pendingLocationIds: Id<"locations">[] = [args.locationId];
 
       while (pendingLocationIds.length > 0) {
-        const currentLocationId = pendingLocationIds.shift();
-        if (!currentLocationId) {
-          continue;
-        }
+        const waveIds = [...pendingLocationIds];
+        pendingLocationIds.length = 0;
 
-        const children = await ctx.db
-          .query("locations")
-          .withIndex("by_parentLocation", (q) =>
-            q.eq("parentLocationId", currentLocationId),
-          )
-          .collect();
+        const childrenByParent = await Promise.all(
+          waveIds.map((parentId) =>
+            ctx.db
+              .query("locations")
+              .withIndex("by_parentLocation", (q) =>
+                q.eq("parentLocationId", parentId),
+              )
+              .collect(),
+          ),
+        );
 
-        for (const child of children) {
-          if (
-            !child.isActive ||
-            child.organizationId !== location.organizationId ||
-            visitedLocationIds.has(child._id)
-          ) {
-            continue;
+        for (const children of childrenByParent) {
+          for (const child of children) {
+            if (
+              !child.isActive ||
+              child.organizationId !== location.organizationId ||
+              visitedLocationIds.has(child._id)
+            ) {
+              continue;
+            }
+
+            visitedLocationIds.add(child._id);
+            locationIds.add(child._id);
+            pendingLocationIds.push(child._id);
           }
-
-          visitedLocationIds.add(child._id);
-          locationIds.add(child._id);
-          pendingLocationIds.push(child._id);
         }
       }
     }
@@ -2207,15 +2228,16 @@ export const getCollectionLocationHistory = query({
       throw new Error("Collection not found");
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    const history = await ctx.db
-      .query("locationHistory")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .order("desc")
-      .collect();
+    const [, history] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("locationHistory")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .order("desc")
+        .collect(),
+    ] as const);
 
     const enrichedHistory = await Promise.all(
       history.map(async (entry) => {
@@ -2650,9 +2672,9 @@ export const seedLocationsForOrg = internalMutation({
       .collect();
 
     await Promise.all(
-      Array.from(existingLocations).map(async (loc) => {
-        await ctx.db.patch(loc._id, { isActive: false });
-      }),
+      Array.from(existingLocations).map((loc) =>
+        ctx.db.patch(loc._id, { isActive: false }),
+      ),
     );
 
     await buildLocationHierarchy(ctx, org._id, locations);

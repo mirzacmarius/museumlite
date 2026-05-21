@@ -26,10 +26,7 @@ export async function getStorageUsageFromMedia(
     [...storageIds].map((id) => ctx.db.system.get(id)),
   );
 
-  const totalSize = storageDocs.reduce(
-    (sum, doc) => sum + (doc?.size ?? 0),
-    0,
-  );
+  const totalSize = storageDocs.reduce((sum, doc) => sum + (doc?.size ?? 0), 0);
 
   return {
     totalSize,

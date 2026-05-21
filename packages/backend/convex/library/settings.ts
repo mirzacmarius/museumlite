@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
 
@@ -286,12 +286,13 @@ export const updateMembershipType = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, membershipType] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.membershipTypeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const membershipType = await ctx.db.get(args.membershipTypeId);
     if (!membershipType) {
       throw new Error("Membership type not found");
     }
@@ -345,12 +346,13 @@ export const deleteMembershipType = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, membershipType] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.membershipTypeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const membershipType = await ctx.db.get(args.membershipTypeId);
     if (!membershipType) {
       throw new Error("Membership type not found");
     }

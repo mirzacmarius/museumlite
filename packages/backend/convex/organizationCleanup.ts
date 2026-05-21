@@ -3,11 +3,11 @@ import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
 import {
-  type MutationCtx,
-  type QueryCtx,
   internalMutation,
   internalQuery,
+  type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import {
@@ -773,11 +773,9 @@ export const purgeOrganizationsInternal = internalMutation({
             ),
             deleteDocuments(ctx, snapshot.childDocuments.userPreferences),
             Promise.all(
-              Array.from(snapshot.organizationDocuments).map(async (entry) => {
-                for (const doc of entry.docs) {
-                  await ctx.db.delete(doc._id);
-                }
-              }),
+              Array.from(snapshot.organizationDocuments).flatMap((entry) =>
+                entry.docs.map((doc) => ctx.db.delete(doc._id)),
+              ),
             ),
             ctx.db.delete(snapshot.organization._id),
           ] as const);

@@ -1,6 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -15,6 +14,7 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
 import type { LoanApprovalWorkflowState } from "./use-loan-approval-workflow";
 import { WorkflowErrorBanner } from "./workflow-error-banner";
 

@@ -1,9 +1,9 @@
 "use client";
-import { useScopedI18n } from "@/locales/client";
 import { buttonVariants } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useScopedI18n } from "@/locales/client";
 
 const LayoutContainer = ({ children }: { children: React.ReactNode }) => {
   const t = useScopedI18n("settings.sidebar");

@@ -2,7 +2,6 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
 import {
@@ -116,7 +115,7 @@ export const create = mutation({
       vendorId: args.vendorId,
       fundSource: args.fundSource,
       status: "submitted",
-      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       notes: args.notes,
     });
@@ -232,12 +231,13 @@ export const updateStatus = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -254,7 +254,7 @@ export const updateStatus = mutation({
     };
 
     const allowed = validTransitions[request.status];
-    if (!allowed || !allowed.includes(args.status)) {
+    if (!allowed?.includes(args.status)) {
       throw new Error(
         `Invalid status transition from ${request.status} to ${args.status}`,
       );
@@ -269,16 +269,17 @@ export const updateStatus = mutation({
       updates.receivedDate = now;
     }
 
-    await ctx.db.patch(args.requestId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "status_changed",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { from: request.status, to: args.status },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "status_changed",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { from: request.status, to: args.status },
+      }),
+    ]);
 
     return null;
   },
@@ -298,12 +299,13 @@ export const updateOrderInfo = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -332,16 +334,17 @@ export const updateOrderInfo = mutation({
       updates.status = "ordered";
     }
 
-    await ctx.db.patch(args.requestId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "updated",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "updated",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -357,12 +360,13 @@ export const linkToItem = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -376,19 +380,20 @@ export const linkToItem = mutation({
       requirePermission(ctx, request.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.requestId, {
-      libraryItemId: args.libraryItemId,
-      status: "cataloged",
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "linked_to_item",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { libraryItemId: args.libraryItemId, status: "cataloged" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        libraryItemId: args.libraryItemId,
+        status: "cataloged",
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "linked_to_item",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { libraryItemId: args.libraryItemId, status: "cataloged" },
+      }),
+    ]);
 
     return null;
   },
@@ -415,12 +420,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -450,16 +456,17 @@ export const update = mutation({
     if (args.fundSource !== undefined) updates.fundSource = args.fundSource;
     if (args.notes !== undefined) updates.notes = args.notes;
 
-    await ctx.db.patch(args.requestId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "updated",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "updated",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -474,12 +481,13 @@ export const cancel = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -493,16 +501,17 @@ export const cancel = mutation({
       requirePermission(ctx, request.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.requestId, { status: "cancelled" });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "cancelled",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { status: "cancelled" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, { status: "cancelled" }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "cancelled",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { status: "cancelled" },
+      }),
+    ]);
 
     return null;
   },
@@ -514,12 +523,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -533,16 +543,17 @@ export const remove = mutation({
       requirePermission(ctx, request.organizationId, "collections.delete"),
     ]);
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { title: request.title },
-    });
-
-    await ctx.db.delete(args.requestId);
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { title: request.title },
+      }),
+      ctx.db.delete(args.requestId),
+    ]);
 
     return null;
   },
@@ -649,12 +660,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -712,22 +724,23 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        await ctx.db.patch(args.requestId, {
-          status: "approved",
-          reviewedBy: userId,
-          reviewedAt: now,
-          reviewNotes: args.comment,
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: request.organizationId,
-          userId,
-          action: "approved",
-          entityType: "libraryAcquisitionRequest",
-          entityId: args.requestId,
-          changes: { status: "approved", step: currentStep },
-        });
+        await Promise.all([
+          ctx.db.patch(args.requestId, {
+            status: "approved",
+            reviewedBy: userId,
+            reviewedAt: now,
+            reviewNotes: args.comment,
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: request.organizationId,
+            userId,
+            action: "approved",
+            entityType: "libraryAcquisitionRequest",
+            entityId: args.requestId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -786,21 +799,22 @@ export const approve = mutation({
         );
       }
     } else {
-      await ctx.db.patch(args.requestId, {
-        status: "approved",
-        reviewedBy: userId,
-        reviewedAt: now,
-        reviewNotes: args.comment,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: request.organizationId,
-        userId,
-        action: "approved",
-        entityType: "libraryAcquisitionRequest",
-        entityId: args.requestId,
-        changes: { status: "approved" },
-      });
+      await Promise.all([
+        ctx.db.patch(args.requestId, {
+          status: "approved",
+          reviewedBy: userId,
+          reviewedAt: now,
+          reviewNotes: args.comment,
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: request.organizationId,
+          userId,
+          action: "approved",
+          entityType: "libraryAcquisitionRequest",
+          entityId: args.requestId,
+          changes: { status: "approved" },
+        }),
+      ]);
     }
 
     return null;
@@ -814,12 +828,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Request not found");
     }
@@ -860,22 +875,23 @@ export const reject = mutation({
       comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
     });
 
-    await ctx.db.patch(args.requestId, {
-      status: "rejected",
-      reviewedBy: userId,
-      reviewedAt: now,
-      reviewNotes: args.comment,
-      workflowHistory: history,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: request.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "libraryAcquisitionRequest",
-      entityId: args.requestId,
-      changes: { status: "rejected", comment: args.comment },
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "rejected",
+        reviewedBy: userId,
+        reviewedAt: now,
+        reviewNotes: args.comment,
+        workflowHistory: history,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "libraryAcquisitionRequest",
+        entityId: args.requestId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
+    ]);
 
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy ?? request.requestedBy;

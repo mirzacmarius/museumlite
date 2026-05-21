@@ -1,64 +1,19 @@
 "use client";
 
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
-import { ConditionCombobox } from "@/components/condition-combobox";
-import { DonationDetailsField } from "@/components/donation-details-field";
-import { LocationSelector } from "@/components/location-selector";
-import { MaterialsCombobox } from "@/components/materials-combobox";
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { ObjectCombobox } from "@/components/object-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
-import { TypeCombobox } from "@/components/type-combobox";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
-import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
-import {
-  AlertOctagon,
-  Camera,
-  CheckCircle,
-  Edit,
-  Image as ImageIcon,
-  Plus,
-  Star,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import type React from "react";
-import { formatOwnershipDateRange } from "../../../[id]/_components/format-ownership-date-range";
-import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
+import { ConditionCombobox } from "@/components/condition-combobox";
+import { MaterialsCombobox } from "@/components/materials-combobox";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type {
-  CollectionFormTabProps,
-  LinkEntry,
-  OwnershipEntry,
-} from "../../collection-form-shared/types";
-import {
-  createLinkEntryLocalId,
-  createOwnershipEntryLocalId,
-  normalizeOptionalString,
-} from "../../collection-form-shared/utils";
+import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
 type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
 >;
-type MediaItem = NonNullable<FunctionReturnType<typeof api.media.list>>[number];
 
 export interface CollectionEditPhysicalTabProps extends CollectionFormTabProps {
   collection: CollectionDoc;
@@ -74,9 +29,9 @@ export function CollectionEditPhysicalTab({
   updateField,
   placeholders,
   currentOrganizationId,
-  collection,
+  _collection,
   typedCollectionId,
-  hasConditionChanged,
+  _hasConditionChanged,
   requiresConditionChangeNote,
   conditionChangeNote,
   onConditionChangeNoteChange,

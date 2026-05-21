@@ -1,9 +1,9 @@
 "use client";
 
-import { useI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Database, FolderPlus, Plus, Upload } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 
 interface FirstDataStepProps {
   onSkip: () => void;

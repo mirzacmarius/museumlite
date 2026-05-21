@@ -1,12 +1,11 @@
 "use client";
 
-import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Archive, ArrowLeft, Image as ImageIcon, Save } from "lucide-react";
 import Image from "next/image";
-import type { CollectionEditTabId } from "../collection-form-shared";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { ObjectRequestAccessionTab } from "./tabs/accession-tab";
 import { ObjectRequestDigitalTab } from "./tabs/digital-tab";
 import { ObjectRequestGeneralTab } from "./tabs/general-tab";
@@ -143,7 +142,7 @@ export function ObjectRequestFormLayout({
                     <ImageIcon className="size-12 text-muted-foreground" />
                   </div>
                 )}
-                <div className="absolute inset-x-0 bottom-0 bg-gray-950/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 bg-zinc-950/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                   Open media tab
                 </div>
               </button>

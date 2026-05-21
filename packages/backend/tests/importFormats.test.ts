@@ -605,7 +605,7 @@ describe("Import E2E Verification (manual)", () => {
     const asUser = authedForUser(t, userId);
 
     // Create multiple field mappings
-    const [mapping1, mapping2, allMappings] = await Promise.all([
+    const [mapping1, _mapping2, allMappings] = await Promise.all([
       asUser.mutation(api.imports.saveFieldMapping, {
         organizationId: orgId as Id<"organizations">,
         name: "Test Mapping 1",

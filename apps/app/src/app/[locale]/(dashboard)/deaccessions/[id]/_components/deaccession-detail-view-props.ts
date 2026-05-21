@@ -1,4 +1,4 @@
-import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
+import type { Doc } from "@v1/backend/convex/_generated/dataModel";
 
 export interface DeaccessionWorkflowHistoryEntry {
   step: number;

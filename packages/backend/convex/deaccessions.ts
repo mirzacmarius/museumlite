@@ -4,8 +4,8 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
   query,
 } from "./_generated/server";
@@ -279,7 +279,7 @@ async function createDeaccessionRecord(
     notes: args.notes,
     status: workflowConfig ? "pending" : "approved",
     targetCollectionStatus: args.targetCollectionStatus ?? "deaccessioned",
-    workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+    workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
     workflowHistory,
     proceedsAmount: args.proceedsAmount,
     proceedsCurrency: args.proceedsCurrency,
@@ -740,14 +740,15 @@ export const backfillSearchDocuments = mutation({
     updatedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    const deaccessions = await ctx.db
-      .query("deaccessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, deaccessions] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     await Promise.all(
       Array.from(deaccessions).map(async (deaccession) => {
@@ -935,12 +936,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1004,12 +1006,13 @@ export const submitForApproval = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1058,12 +1061,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1272,12 +1276,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1656,12 +1661,13 @@ export const recordProceeds = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1699,12 +1705,13 @@ export const verifyProceeds = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1766,12 +1773,13 @@ export const requestRegulatoryApproval = mutation({
     approvalUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }
@@ -1785,26 +1793,27 @@ export const requestRegulatoryApproval = mutation({
     // Generate unique token for approval link
     const token = `reg-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
-    await ctx.db.patch(args.deaccessionId, {
-      regulatoryApprovalRequired: true,
-      regulatoryApprovalStatus: "requested",
-      regulatoryApproverEmail: args.approverEmail,
-      regulatoryApproverName: args.approverName,
-      regulatoryApprovalRequestedAt: Date.now(),
-      regulatoryApprovalToken: token,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: deaccession.organizationId,
-      userId,
-      action: "regulatory_approval_requested",
-      entityType: "deaccession",
-      entityId: args.deaccessionId,
-      changes: {
-        approverEmail: args.approverEmail,
-        approverName: args.approverName,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
+        regulatoryApprovalRequired: true,
+        regulatoryApprovalStatus: "requested",
+        regulatoryApproverEmail: args.approverEmail,
+        regulatoryApproverName: args.approverName,
+        regulatoryApprovalRequestedAt: Date.now(),
+        regulatoryApprovalToken: token,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: "regulatory_approval_requested",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: {
+          approverEmail: args.approverEmail,
+          approverName: args.approverName,
+        },
+      }),
+    ]);
 
     // Note: In production, this URL would be your actual domain
     const approvalUrl = `/api/regulatory-approval/${token}`;
@@ -1925,12 +1934,13 @@ export const linkAppraisal = mutation({
     appraisalAge: v.optional(v.number()), // Age in days
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, deaccession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.deaccessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const deaccession = await ctx.db.get(args.deaccessionId);
     if (!deaccession) {
       throw new Error("Deaccession not found");
     }

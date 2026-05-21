@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { SidebarProvider } from "@v1/ui/sidebar";
+import { useScopedI18n } from "@/locales/client";
 import { LoanContextSidebar } from "./_components";
 import { LoanDetailHeader } from "./_components/loan-detail/loan-detail-header";
 import { LoanDetailHero } from "./_components/loan-detail/loan-detail-hero";

@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import {
   Select,
   SelectContent,
@@ -9,6 +8,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Filter } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import {
   useAcquisitionPriorityLabel,
   useAcquisitionStatusLabel,

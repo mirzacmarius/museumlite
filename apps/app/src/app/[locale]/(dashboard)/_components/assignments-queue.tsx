@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -10,6 +8,8 @@ import { SkeletonCard } from "@v1/ui/skeleton-variants";
 import { useQuery } from "convex/react";
 import { ClipboardList } from "lucide-react";
 import Link from "next/link";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 
 export function AssignmentsQueue() {
   const { currentOrganizationId } = useOrganization();

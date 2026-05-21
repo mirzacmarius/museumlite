@@ -193,13 +193,11 @@ export function FilterOptionRow({
   className,
 }: FilterOptionRowProps) {
   const indicatorShape = kind === "single" ? "rounded-full" : "rounded-sm";
-  const role = kind === "single" ? "radio" : "checkbox";
 
   return (
     <button
       type="button"
-      role={role}
-      aria-checked={isChecked}
+      aria-pressed={isChecked}
       disabled={disabled}
       onClick={onClick}
       className={cn(

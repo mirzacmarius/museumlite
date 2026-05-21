@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   requireAuthenticatedUser,
   requireAuthorizedOrganization,
@@ -360,16 +359,17 @@ export const update = mutation({
     if (args.isActive !== undefined) updates.isActive = args.isActive;
     if (args.notes !== undefined) updates.notes = args.notes?.trim();
 
-    await ctx.db.patch(args.contactId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "updated_contact",
-      entityType: "contact",
-      entityId: args.contactId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.contactId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: account.organizationId,
+        userId,
+        action: "updated_contact",
+        entityType: "contact",
+        entityId: args.contactId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },

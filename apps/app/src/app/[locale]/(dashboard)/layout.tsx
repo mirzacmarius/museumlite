@@ -1,3 +1,10 @@
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
+import { api } from "@v1/backend/convex/_generated/api";
+import { SidebarInset, SidebarProvider } from "@v1/ui/sidebar";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { fetchQuery, preloadQuery } from "convex/nextjs";
+import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette } from "@/components/command-palette";
 import { CommandPaletteProvider } from "@/components/command-palette-provider";
@@ -7,13 +14,6 @@ import { NotificationBell } from "@/components/notification-bell";
 import { OrganizationProvider } from "@/components/organization-provider";
 import { PermissionProvider } from "@/components/permission-gate";
 import { SkipNavigation } from "@/components/skip-navigation";
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
-import { api } from "@v1/backend/convex/_generated/api";
-import { SidebarInset, SidebarProvider } from "@v1/ui/sidebar";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { fetchQuery, preloadQuery } from "convex/nextjs";
-import { redirect } from "next/navigation";
 import { DashboardHeader } from "./dashboard-header";
 
 export default async function Layout({

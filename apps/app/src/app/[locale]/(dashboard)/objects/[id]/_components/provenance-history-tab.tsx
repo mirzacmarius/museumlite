@@ -1,8 +1,8 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { cn } from "@v1/ui/utils";
 import { FileCheck, History, Link as LinkIcon } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 import type { CollectionData } from "./types";
 
@@ -89,7 +89,10 @@ export function ProvenanceHistoryTab({
                 </h3>
                 <div className="relative space-y-8 border-l border-border pl-8">
                   {collection.ownershipHistory.map((entry, index) => (
-                    <div key={`${entry.owner}-${index}`} className="relative">
+                    <div
+                      key={`${entry.owner}-${entry.startYear ?? ""}-${entry.endYear ?? ""}`}
+                      className="relative"
+                    >
                       <div
                         className={cn(
                           "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",

@@ -1,5 +1,5 @@
-import { formatDate } from "@/lib/format-date";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { formatDate } from "@/lib/format-date";
 import type { LoanListRow } from "./types";
 
 export function getLoanStatusLabel(

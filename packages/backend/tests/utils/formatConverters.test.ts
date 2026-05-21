@@ -8,13 +8,13 @@
 
 import { describe, expect, test } from "vitest";
 import {
-  toJSON,
+  detectFormat,
   fromJSON,
-  toXML,
   fromXML,
   isValidJSON,
   isValidXML,
-  detectFormat,
+  toJSON,
+  toXML,
 } from "../../convex/utils/formatConverters";
 
 describe("JSON conversion", () => {

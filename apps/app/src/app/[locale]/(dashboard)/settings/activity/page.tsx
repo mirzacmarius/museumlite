@@ -1,9 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -20,7 +16,60 @@ import {
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
 import { Calendar, Filter, RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import { useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useClientRelativeTime } from "@/hooks/use-client-date-format";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+
+interface ActivityPageState {
+  selectedUserId: string;
+  selectedEntityType: string;
+  actionFilter: string;
+  fromDate: string;
+  toDate: string;
+  cursor: string | undefined;
+}
+
+type ActivityPageAction =
+  | { type: "setSelectedUserId"; value: string }
+  | { type: "setSelectedEntityType"; value: string }
+  | { type: "setActionFilter"; value: string }
+  | { type: "setFromDate"; value: string }
+  | { type: "setToDate"; value: string }
+  | { type: "setCursor"; value: string | undefined }
+  | { type: "clearFilters" };
+
+const initialActivityPageState: ActivityPageState = {
+  selectedUserId: "",
+  selectedEntityType: "",
+  actionFilter: "",
+  fromDate: "",
+  toDate: "",
+  cursor: undefined,
+};
+
+function activityPageReducer(
+  state: ActivityPageState,
+  action: ActivityPageAction,
+): ActivityPageState {
+  switch (action.type) {
+    case "setSelectedUserId":
+      return { ...state, selectedUserId: action.value, cursor: undefined };
+    case "setSelectedEntityType":
+      return { ...state, selectedEntityType: action.value, cursor: undefined };
+    case "setActionFilter":
+      return { ...state, actionFilter: action.value, cursor: undefined };
+    case "setFromDate":
+      return { ...state, fromDate: action.value, cursor: undefined };
+    case "setToDate":
+      return { ...state, toDate: action.value, cursor: undefined };
+    case "setCursor":
+      return { ...state, cursor: action.value };
+    case "clearFilters":
+      return initialActivityPageState;
+  }
+}
 
 function ActivityTimestamp({ timestamp }: { timestamp: number }) {
   const locale = useCurrentLocale();
@@ -393,12 +442,10 @@ export default function ActivityPage() {
   const { hasFeature } = useFeatureAccess();
   const t = useScopedI18n("activityLog");
 
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedEntityType, setSelectedEntityType] = useState<string>("");
-  const [actionFilter, setActionFilter] = useState<string>("");
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [state, dispatch] = useReducer(
+    activityPageReducer,
+    initialActivityPageState,
+  );
 
   const entityTypes = useQuery(api.auditLog.getEntityTypes, {});
 
@@ -419,39 +466,39 @@ export default function ActivityPage() {
   const queryArgs = currentOrganizationId
     ? {
         organizationId: currentOrganizationId as Id<"organizations">,
-        userId: selectedUserId ? (selectedUserId as Id<"users">) : undefined,
-        entityType: selectedEntityType || undefined,
-        action: actionFilter || undefined,
-        fromDate: fromDate ? new Date(fromDate).getTime() : undefined,
-        toDate: toDate ? new Date(toDate).setHours(23, 59, 59, 999) : undefined,
+        userId: state.selectedUserId
+          ? (state.selectedUserId as Id<"users">)
+          : undefined,
+        entityType: state.selectedEntityType || undefined,
+        action: state.actionFilter || undefined,
+        fromDate: state.fromDate
+          ? new Date(state.fromDate).getTime()
+          : undefined,
+        toDate: state.toDate
+          ? new Date(state.toDate).setHours(23, 59, 59, 999)
+          : undefined,
         limit: 50,
-        cursor,
+        cursor: state.cursor,
       }
     : "skip";
 
   const auditLogData = useQuery(api.auditLog.list, queryArgs);
 
   const hasFilters =
-    selectedUserId || selectedEntityType || actionFilter || fromDate || toDate;
+    state.selectedUserId ||
+    state.selectedEntityType ||
+    state.actionFilter ||
+    state.fromDate ||
+    state.toDate;
 
   const clearFilters = () => {
-    setSelectedUserId("");
-    setSelectedEntityType("");
-    setActionFilter("");
-    setFromDate("");
-    setToDate("");
-    setCursor(undefined);
+    dispatch({ type: "clearFilters" });
   };
 
   const loadMore = () => {
     if (auditLogData?.nextCursor) {
-      setCursor(auditLogData.nextCursor);
+      dispatch({ type: "setCursor", value: auditLogData.nextCursor });
     }
-  };
-
-  const handleFilterChange = <T,>(setter: (value: T) => void, value: T) => {
-    setCursor(undefined);
-    setter(value);
   };
 
   if (isLoading) {
@@ -487,12 +534,12 @@ export default function ActivityPage() {
         <ActivityPageHeader title={t("title")} description={t("description")} />
 
         <ActivityFilters
-          actionFilter={actionFilter}
+          actionFilter={state.actionFilter}
           activeUsers={activeUsers}
           availableActions={availableActions}
           clearFilters={clearFilters}
           entityTypes={entityTypes}
-          fromDate={fromDate}
+          fromDate={state.fromDate}
           hasFilters={Boolean(hasFilters)}
           labels={{
             action: t("action"),
@@ -504,16 +551,20 @@ export default function ActivityPage() {
             unknownUser: t("unknownUser"),
             user: t("user"),
           }}
-          onActionChange={(value) => handleFilterChange(setActionFilter, value)}
-          onEntityTypeChange={(value) =>
-            handleFilterChange(setSelectedEntityType, value)
+          onActionChange={(value) =>
+            dispatch({ type: "setActionFilter", value })
           }
-          onFromDateChange={(value) => handleFilterChange(setFromDate, value)}
-          onToDateChange={(value) => handleFilterChange(setToDate, value)}
-          onUserChange={(value) => handleFilterChange(setSelectedUserId, value)}
-          selectedEntityType={selectedEntityType}
-          selectedUserId={selectedUserId}
-          toDate={toDate}
+          onEntityTypeChange={(value) =>
+            dispatch({ type: "setSelectedEntityType", value })
+          }
+          onFromDateChange={(value) => dispatch({ type: "setFromDate", value })}
+          onToDateChange={(value) => dispatch({ type: "setToDate", value })}
+          onUserChange={(value) =>
+            dispatch({ type: "setSelectedUserId", value })
+          }
+          selectedEntityType={state.selectedEntityType}
+          selectedUserId={state.selectedUserId}
+          toDate={state.toDate}
         />
 
         <ActivityResultCount

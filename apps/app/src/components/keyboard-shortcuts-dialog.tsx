@@ -1,6 +1,5 @@
 "use client";
 
-import { KEYBOARD_SHORTCUTS } from "@/hooks/use-keyboard-shortcuts";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
+import { KEYBOARD_SHORTCUTS } from "@/hooks/use-keyboard-shortcuts";
 
 interface KeyboardShortcutsDialogProps {
   open: boolean;
@@ -83,9 +83,9 @@ function ShortcutRow({
     <div className="flex items-center justify-between py-1">
       <span className="text-sm text-foreground/80">{shortcut.description}</span>
       <div className="flex items-center gap-1">
-        {shortcut.keys.map((key, i) => (
+        {shortcut.keys.map((key, _i) => (
           <kbd
-            key={`${shortcut.key}-${i}`}
+            key={`${shortcut.description}-${key}`}
             className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium"
           >
             {key}

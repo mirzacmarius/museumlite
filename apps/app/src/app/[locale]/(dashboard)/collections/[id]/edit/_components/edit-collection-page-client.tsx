@@ -1,10 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
-import { useAutoSave } from "@/hooks/use-auto-save";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -12,12 +7,81 @@ import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useReducer,
+} from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
+import { useAutoSave } from "@/hooks/use-auto-save";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { useScopedI18n } from "@/locales/client";
 import { EditCollectionDeleteZone } from "./edit-collection-delete-zone";
 import {
   type EditCollectionFormData,
   EditCollectionFormFields,
 } from "./edit-collection-form-fields";
+
+interface EditCollectionPageState {
+  isDeleting: boolean;
+  error: string | null;
+  showUnsavedDialog: boolean;
+  pendingNavigation: string | null;
+  formData: EditCollectionFormData;
+  isInitialized: boolean;
+}
+
+type EditCollectionPageAction =
+  | { type: "setDeleting"; value: boolean }
+  | { type: "setError"; value: string | null }
+  | { type: "setShowUnsavedDialog"; value: boolean }
+  | { type: "setPendingNavigation"; value: string | null }
+  | { type: "setFormData"; value: EditCollectionFormData }
+  | { type: "initializeFormData"; value: EditCollectionFormData }
+  | { type: "closeUnsavedDialog" };
+
+const initialEditCollectionPageState: EditCollectionPageState = {
+  isDeleting: false,
+  error: null,
+  showUnsavedDialog: false,
+  pendingNavigation: null,
+  formData: {
+    name: "",
+    description: "",
+    curatorId: "",
+    managedByRoleId: "",
+  },
+  isInitialized: false,
+};
+
+function editCollectionPageReducer(
+  state: EditCollectionPageState,
+  action: EditCollectionPageAction,
+): EditCollectionPageState {
+  switch (action.type) {
+    case "setDeleting":
+      return { ...state, isDeleting: action.value };
+    case "setError":
+      return { ...state, error: action.value };
+    case "setShowUnsavedDialog":
+      return { ...state, showUnsavedDialog: action.value };
+    case "setPendingNavigation":
+      return { ...state, pendingNavigation: action.value };
+    case "setFormData":
+      return { ...state, formData: action.value };
+    case "initializeFormData":
+      return { ...state, formData: action.value, isInitialized: true };
+    case "closeUnsavedDialog":
+      return {
+        ...state,
+        showUnsavedDialog: false,
+        pendingNavigation: null,
+      };
+  }
+}
 
 export function EditCollectionPageClient() {
   const t = useScopedI18n("collections");
@@ -41,31 +105,35 @@ export function EditCollectionPageClient() {
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
-    null,
+  const [state, dispatch] = useReducer(
+    editCollectionPageReducer,
+    initialEditCollectionPageState,
   );
-  const [formData, setFormData] = useState<EditCollectionFormData>({
-    name: "",
-    description: "",
-    curatorId: "",
-    managedByRoleId: "",
-  });
-  const [isInitialized, setIsInitialized] = useState(false);
+
+  const setFormData: Dispatch<SetStateAction<EditCollectionFormData>> =
+    useCallback(
+      (value) => {
+        dispatch({
+          type: "setFormData",
+          value: typeof value === "function" ? value(state.formData) : value,
+        });
+      },
+      [state.formData],
+    );
 
   useEffect(() => {
-    if (group && !isInitialized) {
-      setFormData({
-        name: group.name || "",
-        description: group.description || "",
-        curatorId: group.curatorId || "",
-        managedByRoleId: group.managedByRoleId || "",
+    if (group && !state.isInitialized) {
+      dispatch({
+        type: "initializeFormData",
+        value: {
+          name: group.name || "",
+          description: group.description || "",
+          curatorId: group.curatorId || "",
+          managedByRoleId: group.managedByRoleId || "",
+        },
       });
-      setIsInitialized(true);
     }
-  }, [group, isInitialized]);
+  }, [group, state.isInitialized]);
 
   const handleAutoSave = useCallback(
     async (data: EditCollectionFormData) => {
@@ -85,11 +153,11 @@ export function EditCollectionPageClient() {
   );
 
   const { status, lastSaved, isDirty, save } = useAutoSave({
-    data: formData,
+    data: state.formData,
     onSave: handleAutoSave,
-    enabled: isInitialized && !!formData.name.trim(),
+    enabled: state.isInitialized && !!state.formData.name.trim(),
     debounceMs: 2000,
-    onError: (err) => setError(err.message),
+    onError: (err) => dispatch({ type: "setError", value: err.message }),
   });
 
   useBeforeUnload(isDirty);
@@ -97,8 +165,8 @@ export function EditCollectionPageClient() {
   const handleNavigate = useCallback(
     (href: string) => {
       if (isDirty) {
-        setPendingNavigation(href);
-        setShowUnsavedDialog(true);
+        dispatch({ type: "setPendingNavigation", value: href });
+        dispatch({ type: "setShowUnsavedDialog", value: true });
       } else {
         push(href);
       }
@@ -107,22 +175,20 @@ export function EditCollectionPageClient() {
   );
 
   const handleDiscardAndNavigate = useCallback(() => {
-    if (pendingNavigation) {
-      push(pendingNavigation);
+    if (state.pendingNavigation) {
+      push(state.pendingNavigation);
     }
-    setShowUnsavedDialog(false);
-    setPendingNavigation(null);
-  }, [pendingNavigation, push]);
+    dispatch({ type: "closeUnsavedDialog" });
+  }, [state.pendingNavigation, push]);
 
   const handleSaveAndNavigate = useCallback(async () => {
     await save();
-    if (pendingNavigation) {
-      push(pendingNavigation);
+    if (state.pendingNavigation) {
+      push(state.pendingNavigation);
     }
-    setShowUnsavedDialog(false);
-    setPendingNavigation(null);
+    dispatch({ type: "closeUnsavedDialog" });
     return true;
-  }, [pendingNavigation, push, save]);
+  }, [state.pendingNavigation, push, save]);
 
   if (!currentOrganizationId) {
     return (
@@ -149,13 +215,13 @@ export function EditCollectionPageClient() {
   }
 
   const handleDelete = async () => {
-    setIsDeleting(true);
+    dispatch({ type: "setDeleting", value: true });
     try {
       await deleteGroup({ groupId });
       push("/collections");
     } catch (err) {
       console.error("Failed to delete collection:", err);
-      setIsDeleting(false);
+      dispatch({ type: "setDeleting", value: false });
     }
   };
 
@@ -173,34 +239,36 @@ export function EditCollectionPageClient() {
           </div>
 
           <div className="p-6">
-            {error && (
+            {state.error && (
               <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+                {state.error}
               </div>
             )}
             <EditCollectionFormFields
               groupId={groupId}
-              formData={formData}
+              formData={state.formData}
               setFormData={setFormData}
               members={members}
               roles={roles}
               status={status}
               lastSaved={lastSaved}
               isDirty={isDirty}
-              error={error}
+              error={state.error}
               onNavigate={handleNavigate}
               onSave={save}
             />
             <EditCollectionDeleteZone
               groupName={group.name}
-              isDeleting={isDeleting}
+              isDeleting={state.isDeleting}
               onDelete={handleDelete}
             />
           </div>
 
           <UnsavedChangesDialog
-            open={showUnsavedDialog}
-            onOpenChange={setShowUnsavedDialog}
+            open={state.showUnsavedDialog}
+            onOpenChange={(value) =>
+              dispatch({ type: "setShowUnsavedDialog", value })
+            }
             onDiscard={handleDiscardAndNavigate}
             onSave={handleSaveAndNavigate}
             isSaving={status === "saving"}

@@ -4,12 +4,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
-  type QueryCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
+import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
   markCollectionDeaccessioned,
@@ -28,7 +29,6 @@ import {
 import { generateNextLoanNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
-  canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
   hasPermission,
   requirePermission,
@@ -148,7 +148,7 @@ export const create = mutation({
       insuranceValue: args.insuranceValue,
       notes: args.notes,
       useDetailedConditionReports: args.useDetailedConditionReports ?? false,
-      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
     });
 
@@ -312,12 +312,13 @@ export const addItems = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -401,12 +402,13 @@ export const removeItems = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -683,7 +685,7 @@ export const get = query({
           contactPhone: string | undefined;
           contactEmail: string | undefined;
         }
-      | undefined = undefined;
+      | undefined;
 
     if (loan.accountId) {
       const accountData = await ctx.db.get(loan.accountId);
@@ -784,12 +786,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -837,12 +840,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1042,15 +1046,13 @@ export const approve = mutation({
           changes: { status: "active" },
         }),
       ]);
-      const recipients = await getOrganizationNotificationRecipients(
-        ctx,
-        loan.organizationId,
-        userId,
-      );
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-        .collect();
+      const [recipients, loanItems] = await Promise.all([
+        getOrganizationNotificationRecipients(ctx, loan.organizationId, userId),
+        ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+          .collect(),
+      ] as const);
 
       // Get item names from collections
       let itemName = "Loan items";
@@ -1113,12 +1115,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1236,12 +1239,13 @@ export const returnLoan = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1351,12 +1355,13 @@ export const dispatch = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1420,12 +1425,13 @@ export const cancel = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1496,12 +1502,13 @@ export const returnItem = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1603,12 +1610,13 @@ export const createConditionReport = mutation({
   },
   returns: v.id("conditionReports"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loanItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanItemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loanItem = await ctx.db.get(args.loanItemId);
     if (!loanItem) {
       throw new Error("Loan item not found");
     }
@@ -1667,12 +1675,13 @@ export const updateConditionReport = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, report] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.reportId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const report = await ctx.db.get(args.reportId);
     if (!report) {
       throw new Error("Condition report not found");
     }
@@ -1802,12 +1811,13 @@ export const uploadLoanDocument = mutation({
   },
   returns: v.id("loanDocuments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -1894,12 +1904,13 @@ export const deleteLoanDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, document] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.documentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const document = await ctx.db.get(args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -1961,15 +1972,14 @@ export const deleteAllLoans = mutation({
 
         await Promise.all(
           Array.from(loanItems).map(async (item) => {
-            // Update collection status back to active
-            await markCollectionActive(ctx, {
-              collectionId: item.collectionId,
-              changedBy: userId,
-            });
+            await Promise.all([
+              markCollectionActive(ctx, {
+                collectionId: item.collectionId,
+                changedBy: userId,
+              }),
+              ctx.db.delete(item._id),
+            ]);
             updatedCollections++;
-
-            // Delete loan item
-            await ctx.db.delete(item._id);
             deletedLoanItems++;
           }),
         );
@@ -2033,29 +2043,42 @@ export const checkCollectionsInActiveLoans = query({
       status: "pending" | "active" | "dispatched" | "returned" | "cancelled";
     }> = [];
 
-    // Check each collection for active loans
-    for (const collectionId of args.collectionIds) {
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
+    const perCollectionResults = await Promise.all(
+      args.collectionIds.map(async (collectionId) => {
+        const loanItems = await ctx.db
+          .query("loanItems")
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .collect();
 
-      for (const loanItem of loanItems) {
-        const loan = await ctx.db.get(loanItem.loanId);
-        if (
-          loan &&
-          (loan.status === "pending" ||
-            loan.status === "active" ||
-            loan.status === "dispatched")
-        ) {
-          results.push({
-            collectionId,
-            loanId: loan._id,
-            loanNumber: loan.loanNumber,
-            status: loan.status,
-          });
-          break; // Only need one active loan per collection
+        const loans = await batchGetByIds(
+          ctx,
+          loanItems.map((loanItem) => loanItem.loanId),
+          "loans",
+        );
+
+        for (let i = 0; i < loanItems.length; i++) {
+          const loan = loans[i];
+          if (
+            loan &&
+            (loan.status === "pending" ||
+              loan.status === "active" ||
+              loan.status === "dispatched")
+          ) {
+            return {
+              collectionId,
+              loanId: loan._id,
+              loanNumber: loan.loanNumber,
+              status: loan.status,
+            };
+          }
         }
+        return null;
+      }),
+    );
+
+    for (const entry of perCollectionResults) {
+      if (entry) {
+        results.push(entry);
       }
     }
 
@@ -2431,35 +2454,33 @@ export const bulkCancel = mutation({
           return;
         }
 
-        // Update loan status
-        await ctx.db.patch(loanId, {
-          status: "cancelled",
-        });
+        // Update loan status and load items in parallel
+        const [, loanItems] = await Promise.all([
+          ctx.db.patch(loanId, {
+            status: "cancelled",
+          }),
+          ctx.db
+            .query("loanItems")
+            .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+            .collect(),
+        ]);
 
-        // Update collection statuses back to active
-        const loanItems = await ctx.db
-          .query("loanItems")
-          .withIndex("by_loan", (q) => q.eq("loanId", loanId))
-          .collect();
-
-        await Promise.all(
-          Array.from(loanItems).map(async (item) => {
-            await markCollectionActive(ctx, {
+        await Promise.all([
+          ...Array.from(loanItems).map((item) =>
+            markCollectionActive(ctx, {
               collectionId: item.collectionId,
               changedBy: userId,
-            });
+            }),
+          ),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: loan.organizationId,
+            userId,
+            action: "cancelled",
+            entityType: "loan",
+            entityId: loanId,
+            changes: { status: "cancelled", bulkAction: true },
           }),
-        );
-
-        // Log audit action
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: loan.organizationId,
-          userId,
-          action: "cancelled",
-          entityType: "loan",
-          entityId: loanId,
-          changes: { status: "cancelled", bulkAction: true },
-        });
+        ]);
 
         cancelled++;
       }),
@@ -2484,12 +2505,13 @@ export const requestExtension = mutation({
   },
   returns: v.id("loanExtensionRequests"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
@@ -2577,12 +2599,13 @@ export const approveExtension = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Extension request not found");
     }
@@ -2644,12 +2667,13 @@ export const rejectExtension = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Extension request not found");
     }
@@ -2730,13 +2754,14 @@ export const listExtensionRequests = query({
       return [];
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.read");
-
-    const requests = await ctx.db
-      .query("loanExtensionRequests")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .order("desc")
-      .collect();
+    const [, requests] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+      ctx.db
+        .query("loanExtensionRequests")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .order("desc")
+        .collect(),
+    ] as const);
 
     // Enrich with user names
     return await Promise.all(
@@ -2800,43 +2825,54 @@ export const checkLoanRemindersInternal = internalMutation({
       )
       .collect();
 
-    for (const loan of activeLoans) {
-      if (!loan.endDate) continue;
-      loansChecked++;
+    const reminderOutcomes = await Promise.all(
+      activeLoans.map(async (loan) => {
+        if (!loan.endDate) {
+          return { checked: false, created: false };
+        }
 
-      const daysUntilDue = Math.floor((loan.endDate - now) / oneDay);
+        const daysUntilDue = Math.floor((loan.endDate - now) / oneDay);
 
-      for (const threshold of thresholds) {
-        // Check if we should send this type of reminder
-        const shouldSend =
-          threshold.type === "overdue"
-            ? daysUntilDue < 0
-            : daysUntilDue <= threshold.days &&
-              daysUntilDue >
-                (thresholds[thresholds.indexOf(threshold) + 1]?.days ?? -1);
+        const existingReminders = await Promise.all(
+          thresholds.map((threshold) =>
+            ctx.db
+              .query("loanReminders")
+              .withIndex("by_loan_and_type", (q) =>
+                q.eq("loanId", loan._id).eq("reminderType", threshold.type),
+              )
+              .first(),
+          ),
+        );
 
-        if (!shouldSend) continue;
+        let matchedThreshold: (typeof thresholds)[number] | null = null;
+        for (let i = 0; i < thresholds.length; i++) {
+          const threshold = thresholds[i];
+          if (!threshold) continue;
 
-        // Check if reminder already sent
-        const existingReminder = await ctx.db
-          .query("loanReminders")
-          .withIndex("by_loan_and_type", (q) =>
-            q.eq("loanId", loan._id).eq("reminderType", threshold.type),
-          )
-          .first();
+          const shouldSend =
+            threshold.type === "overdue"
+              ? daysUntilDue < 0
+              : daysUntilDue <= threshold.days &&
+                daysUntilDue > (thresholds[i + 1]?.days ?? -1);
 
-        if (existingReminder) continue;
+          if (!shouldSend || existingReminders[i]) continue;
 
-        // Create reminder record
+          matchedThreshold = threshold;
+          break;
+        }
+
+        if (!matchedThreshold) {
+          return { checked: true, created: false };
+        }
+
         await ctx.db.insert("loanReminders", {
           loanId: loan._id,
           organizationId: loan.organizationId,
-          reminderType: threshold.type,
+          reminderType: matchedThreshold.type,
           sentAt: now,
           dueDate: loan.endDate,
         });
 
-        // Get users to notify (loan creator and org admins)
         const orgMembers = await ctx.db
           .query("userOrganizations")
           .withIndex("by_organization", (q) =>
@@ -2845,34 +2881,42 @@ export const checkLoanRemindersInternal = internalMutation({
           .collect();
 
         const notificationTitle =
-          threshold.type === "overdue"
+          matchedThreshold.type === "overdue"
             ? "Loan Overdue"
-            : `Loan Due in ${threshold.days} ${threshold.days === 1 ? "Day" : "Days"}`;
+            : `Loan Due in ${matchedThreshold.days} ${matchedThreshold.days === 1 ? "Day" : "Days"}`;
 
         const notificationMessage =
-          threshold.type === "overdue"
+          matchedThreshold.type === "overdue"
             ? `Loan ${loan.loanNumber} is overdue for return`
-            : `Loan ${loan.loanNumber} is due in ${threshold.days} ${threshold.days === 1 ? "day" : "days"}`;
+            : `Loan ${loan.loanNumber} is due in ${matchedThreshold.days} ${matchedThreshold.days === 1 ? "day" : "days"}`;
 
         await Promise.all(
-          Array.from(orgMembers).map(async (member) => {
-            await ctx.runMutation(internal.audit.createNotificationInternal, {
+          orgMembers.map((member) =>
+            ctx.runMutation(internal.audit.createNotificationInternal, {
               organizationId: loan.organizationId,
               userId: member.userId,
               type:
-                threshold.type === "overdue"
+                matchedThreshold.type === "overdue"
                   ? "loan_overdue"
                   : "loan_return_due_soon",
               title: notificationTitle,
               message: notificationMessage,
               relatedEntityType: "loan",
               relatedEntityId: loan._id,
-            });
-          }),
+            }),
+          ),
         );
 
+        return { checked: true, created: true };
+      }),
+    );
+
+    for (const outcome of reminderOutcomes) {
+      if (outcome.checked) {
+        loansChecked++;
+      }
+      if (outcome.created) {
         remindersCreated++;
-        break; // Only send one reminder type per loan per cron run
       }
     }
 
@@ -2908,24 +2952,25 @@ export const createConditionDispute = mutation({
   },
   returns: v.id("conditionDisputes"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, loan] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.loanId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const loan = await ctx.db.get(args.loanId);
     if (!loan) {
       throw new Error("Loan not found");
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.update");
-
-    // Verify the collection item is part of this loan
-    const loanItem = await ctx.db
-      .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
-      .first();
+    const [, loanItem] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.update"),
+      ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .filter((q) => q.eq(q.field("collectionId"), args.collectionId))
+        .first(),
+    ] as const);
 
     if (!loanItem) {
       throw new Error("Item is not part of this loan");
@@ -2993,12 +3038,13 @@ export const startDisputeInvestigation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3008,22 +3054,22 @@ export const startDisputeInvestigation = mutation({
     }
 
     await requirePermission(ctx, dispute.organizationId, "loans.update");
-
-    await ctx.db.patch(args.disputeId, {
-      status: "investigating",
-      investigatorId: userId,
-      investigationStartedAt: Date.now(),
-      investigationNotes: args.investigationNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: dispute.organizationId,
-      userId,
-      action: "updated",
-      entityType: "conditionDispute",
-      entityId: args.disputeId,
-      changes: { status: "investigating" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.disputeId, {
+        status: "investigating",
+        investigatorId: userId,
+        investigationStartedAt: Date.now(),
+        investigationNotes: args.investigationNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: dispute.organizationId,
+        userId,
+        action: "updated",
+        entityType: "conditionDispute",
+        entityId: args.disputeId,
+        changes: { status: "investigating" },
+      }),
+    ]);
 
     // Notify the reporter
     if (dispute.reportedBy !== userId) {
@@ -3050,12 +3096,13 @@ export const updateDisputeInvestigation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3094,12 +3141,13 @@ export const resolveConditionDispute = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3158,19 +3206,20 @@ export const resolveConditionDispute = mutation({
       }
     }
 
-    await ctx.db.patch(args.disputeId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: dispute.organizationId,
-      userId,
-      action: "resolved",
-      entityType: "conditionDispute",
-      entityId: args.disputeId,
-      changes: {
-        status: args.resolution,
-        resolutionNotes: args.resolutionNotes,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.disputeId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: dispute.organizationId,
+        userId,
+        action: "resolved",
+        entityType: "conditionDispute",
+        entityId: args.disputeId,
+        changes: {
+          status: args.resolution,
+          resolutionNotes: args.resolutionNotes,
+        },
+      }),
+    ]);
 
     // Notify the reporter
     if (dispute.reportedBy !== userId) {
@@ -3196,12 +3245,13 @@ export const withdrawConditionDispute = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, dispute] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.disputeId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) {
       throw new Error("Dispute not found");
     }
@@ -3222,21 +3272,22 @@ export const withdrawConditionDispute = mutation({
 
     await requirePermission(ctx, dispute.organizationId, "loans.update");
 
-    await ctx.db.patch(args.disputeId, {
-      status: "withdrawn",
-      resolvedBy: userId,
-      resolvedAt: Date.now(),
-      resolutionNotes: args.reason ?? "Dispute withdrawn",
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: dispute.organizationId,
-      userId,
-      action: "withdrawn",
-      entityType: "conditionDispute",
-      entityId: args.disputeId,
-      changes: { reason: args.reason },
-    });
+    await Promise.all([
+      ctx.db.patch(args.disputeId, {
+        status: "withdrawn",
+        resolvedBy: userId,
+        resolvedAt: Date.now(),
+        resolutionNotes: args.reason ?? "Dispute withdrawn",
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: dispute.organizationId,
+        userId,
+        action: "withdrawn",
+        entityType: "conditionDispute",
+        entityId: args.disputeId,
+        changes: { reason: args.reason },
+      }),
+    ]);
 
     return null;
   },
@@ -3300,25 +3351,26 @@ export const listConditionDisputes = query({
       throw new Error("Either loanId or organizationId is required");
     }
 
-    let disputesQuery;
-    if (args.loanId) {
-      const loanId = args.loanId;
-      const loan = await ctx.db.get(loanId);
-      if (!loan) {
-        throw new Error("Loan not found");
+    const disputesQuery = await (async () => {
+      if (args.loanId) {
+        const loanId = args.loanId;
+        const loan = await ctx.db.get(loanId);
+        if (!loan) {
+          throw new Error("Loan not found");
+        }
+        await requirePermission(ctx, loan.organizationId, "loans.read");
+        return ctx.db
+          .query("conditionDisputes")
+          .withIndex("by_loan", (q) => q.eq("loanId", loanId));
       }
-      await requirePermission(ctx, loan.organizationId, "loans.read");
-      disputesQuery = ctx.db
-        .query("conditionDisputes")
-        .withIndex("by_loan", (q) => q.eq("loanId", loanId));
-    } else {
+
       const organizationId = args.organizationId;
       if (!organizationId) {
         throw new Error("Either loanId or organizationId is required");
       }
       await requirePermission(ctx, organizationId, "loans.read");
       const status = args.status;
-      disputesQuery = status
+      return status
         ? ctx.db
             .query("conditionDisputes")
             .withIndex("by_organization_and_status", (q) =>
@@ -3329,7 +3381,7 @@ export const listConditionDisputes = query({
             .withIndex("by_organization", (q) =>
               q.eq("organizationId", organizationId),
             );
-    }
+    })();
 
     const result = await disputesQuery.paginate(args.paginationOpts);
 
@@ -3605,14 +3657,14 @@ export const bulkExport = query({
           .withIndex("by_loan", (q) => q.eq("loanId", loanId))
           .collect();
 
-        // Get accession numbers for items
-        const accessionNumbers: string[] = [];
-        for (const item of loanItems) {
-          const collection = await ctx.db.get(item.collectionId);
-          if (collection) {
-            accessionNumbers.push(collection.accessionNumber);
-          }
-        }
+        const collections = await batchGetByIds(
+          ctx,
+          loanItems.map((item) => item.collectionId),
+          "collections",
+        );
+        const accessionNumbers = collections.flatMap((collection) =>
+          collection === null ? [] : [collection.accessionNumber],
+        );
 
         // Get approver name
         let approvedByName: string | undefined;

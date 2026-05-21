@@ -1,3 +1,3 @@
 export { ChartContainer } from "./chart-container";
+export { CHART_COLOR_ARRAY, CHART_COLORS, ChartLegend } from "./chart-legend";
 export { ChartTooltipContent } from "./chart-tooltip";
-export { ChartLegend, CHART_COLORS, CHART_COLOR_ARRAY } from "./chart-legend";

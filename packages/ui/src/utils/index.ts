@@ -9,7 +9,9 @@ export * from "./use-double-check";
 export function callAll<Args extends unknown[]>(
   ...fns: (((...args: Args) => unknown) | undefined)[]
 ) {
-  return (...args: Args) => fns.forEach((fn) => fn?.(...args));
+  return (...args: Args) => {
+    for (const fn of fns) fn?.(...args);
+  };
 }
 
 export function cn(...inputs: ClassValue[]) {

@@ -22,12 +22,13 @@ export const place = mutation({
   },
   returns: v.id("libraryHolds"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -125,12 +126,13 @@ export const cancel = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, hold] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.holdId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const hold = await ctx.db.get(args.holdId);
     if (!hold) {
       throw new Error("Hold not found");
     }
@@ -169,12 +171,13 @@ export const fulfill = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, hold] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.holdId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const hold = await ctx.db.get(args.holdId);
     if (!hold) {
       throw new Error("Hold not found");
     }
@@ -185,9 +188,10 @@ export const fulfill = mutation({
 
     await requireModuleEnabled(ctx, hold.organizationId, "library");
 
-    await ctx.db.patch(args.holdId, { status: "fulfilled" });
-
-    await reorderHoldQueue(ctx, hold.itemId);
+    await Promise.all([
+      ctx.db.patch(args.holdId, { status: "fulfilled" }),
+      reorderHoldQueue(ctx, hold.itemId),
+    ]);
 
     return null;
   },
@@ -200,12 +204,13 @@ export const updatePickupLocation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, hold] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.holdId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const hold = await ctx.db.get(args.holdId);
     if (!hold) {
       throw new Error("Hold not found");
     }

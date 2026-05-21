@@ -15,7 +15,11 @@ import { ChevronRight, Grid, List, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
+import {
+  createInitialPublicCollectionFiltersState,
+  publicCollectionFiltersReducer,
+} from "@/lib/public-collection-filters";
 
 export default function PublicPortalPage() {
   const params = useParams();
@@ -25,11 +29,12 @@ export default function PublicPortalPage() {
   const orgSlug = params.orgSlug as string;
   const portalSlug = params.portalSlug as string;
 
-  const [search, setSearch] = useState(getSearchParam("search") ?? "");
-  const [objectType, setObjectType] = useState(getSearchParam("type") ?? "all");
-  const [culture, setCulture] = useState(getSearchParam("culture") ?? "all");
-  const [period, setPeriod] = useState(getSearchParam("period") ?? "all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [filtersState, dispatch] = useReducer(
+    publicCollectionFiltersReducer,
+    getSearchParam,
+    createInitialPublicCollectionFiltersState,
+  );
+  const { search, objectType, culture, period, viewMode } = filtersState;
 
   const filters = useQuery(api.collections.getPublicFilters, {
     organizationSlug: orgSlug,
@@ -62,10 +67,7 @@ export default function PublicPortalPage() {
   }, [search, objectType, culture, period]);
 
   const clearFilters = () => {
-    setSearch("");
-    setObjectType("all");
-    setCulture("all");
-    setPeriod("all");
+    dispatch({ type: "clearFilters" });
   };
 
   const hasActiveFilters =
@@ -89,7 +91,9 @@ export default function PublicPortalPage() {
               <Input
                 placeholder="Search by title, artist, or accession number..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) =>
+                  dispatch({ type: "setSearch", value: e.target.value })
+                }
                 className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
               />
             </div>
@@ -98,7 +102,7 @@ export default function PublicPortalPage() {
               <Button
                 variant={viewMode === "grid" ? "secondary" : "outline"}
                 size="icon"
-                onClick={() => setViewMode("grid")}
+                onClick={() => dispatch({ type: "setViewMode", value: "grid" })}
                 className="border-white/10"
               >
                 <Grid className="size-4" />
@@ -106,7 +110,7 @@ export default function PublicPortalPage() {
               <Button
                 variant={viewMode === "list" ? "secondary" : "outline"}
                 size="icon"
-                onClick={() => setViewMode("list")}
+                onClick={() => dispatch({ type: "setViewMode", value: "list" })}
                 className="border-white/10"
               >
                 <List className="size-4" />
@@ -116,7 +120,12 @@ export default function PublicPortalPage() {
 
           <div className="flex flex-wrap gap-4">
             {filters?.objectTypes && filters.objectTypes.length > 0 && (
-              <Select value={objectType} onValueChange={setObjectType}>
+              <Select
+                value={objectType}
+                onValueChange={(value) =>
+                  dispatch({ type: "setObjectType", value })
+                }
+              >
                 <SelectTrigger className="w-[180px] bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Object Type" />
                 </SelectTrigger>
@@ -132,7 +141,12 @@ export default function PublicPortalPage() {
             )}
 
             {filters?.cultures && filters.cultures.length > 0 && (
-              <Select value={culture} onValueChange={setCulture}>
+              <Select
+                value={culture}
+                onValueChange={(value) =>
+                  dispatch({ type: "setCulture", value })
+                }
+              >
                 <SelectTrigger className="w-[180px] bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Culture" />
                 </SelectTrigger>
@@ -148,7 +162,12 @@ export default function PublicPortalPage() {
             )}
 
             {filters?.periods && filters.periods.length > 0 && (
-              <Select value={period} onValueChange={setPeriod}>
+              <Select
+                value={period}
+                onValueChange={(value) =>
+                  dispatch({ type: "setPeriod", value })
+                }
+              >
                 <SelectTrigger className="w-[180px] bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Period" />
                 </SelectTrigger>

@@ -10,7 +10,7 @@ import {
 
 // Tables to clear - hardcoded list (NOT using TableNames to avoid as any)
 // These are verified to exist in schema.ts
-const TABLES_TO_CLEAR = [
+const _TABLES_TO_CLEAR = [
   "auditLog",
   "notifications",
   "loanReminders",
@@ -165,15 +165,15 @@ export const createOrganization = internalMutation({
       },
     });
 
-    await ctx.db.insert(
-      "organizationUsageCounters",
-      createEmptyUsageCounter(orgId),
-    );
-
-    // Create default roles using the existing helper
-    await ctx.runMutation(internal.organizations.createDefaultRoles, {
-      organizationId: orgId,
-    });
+    await Promise.all([
+      ctx.db.insert(
+        "organizationUsageCounters",
+        createEmptyUsageCounter(orgId),
+      ),
+      ctx.runMutation(internal.organizations.createDefaultRoles, {
+        organizationId: orgId,
+      }),
+    ]);
 
     return orgId;
   },

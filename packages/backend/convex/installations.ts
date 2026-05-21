@@ -3,10 +3,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
-  type QueryCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { env } from "./env";
@@ -154,20 +154,21 @@ export const updateTask = mutation({
       Object.entries(updates).filter(([_, v]) => v !== undefined),
     );
 
-    await ctx.db.patch(args.taskId, {
-      ...filteredUpdates,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "updated",
-      entityType: "installationTask",
-      entityId: args.taskId,
-      changes: filteredUpdates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.taskId, {
+        ...filteredUpdates,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "updated",
+        entityType: "installationTask",
+        entityId: args.taskId,
+        changes: filteredUpdates,
+      }),
+    ]);
 
     return null;
   },
@@ -179,25 +180,27 @@ export const deleteTask = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, task] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.taskId),
+    ] as const);
     if (!userId) throw new Error("Not authenticated");
-
-    const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
     await Promise.all([
       requireInstallationAccess(ctx, task.organizationId),
       requirePermission(ctx, task.organizationId, "collections.delete"),
     ]);
-    const comments = await ctx.db
-      .query("installationTaskComments")
-      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
-      .collect();
+    const [comments, checklists] = await Promise.all([
+      ctx.db
+        .query("installationTaskComments")
+        .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+        .collect(),
+      ctx.db
+        .query("installationTaskChecklists")
+        .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+        .collect(),
+    ] as const);
     await Promise.all(comments.map((comment) => ctx.db.delete(comment._id)));
-
-    const checklists = await ctx.db
-      .query("installationTaskChecklists")
-      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
-      .collect();
     await Promise.all([
       Promise.all(checklists.map((item) => ctx.db.delete(item._id))),
       ctx.db.delete(args.taskId),
@@ -435,16 +438,17 @@ export const moveTask = mutation({
       updates.blockedReason = undefined;
     }
 
-    await ctx.db.patch(args.taskId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "status_changed",
-      entityType: "installationTask",
-      entityId: args.taskId,
-      changes: { from: task.status, to: args.status },
-    });
+    await Promise.all([
+      ctx.db.patch(args.taskId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "status_changed",
+        entityType: "installationTask",
+        entityId: args.taskId,
+        changes: { from: task.status, to: args.status },
+      }),
+    ]);
 
     return null;
   },
@@ -543,20 +547,21 @@ export const unblockTask = mutation({
       requirePermission(ctx, task.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.taskId, {
-      status: "todo",
-      blockedReason: undefined,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: task.organizationId,
-      userId,
-      action: "unblocked",
-      entityType: "installationTask",
-      entityId: args.taskId,
-    });
+    await Promise.all([
+      ctx.db.patch(args.taskId, {
+        status: "todo",
+        blockedReason: undefined,
+        lastModifiedBy: userId,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: task.organizationId,
+        userId,
+        action: "unblocked",
+        entityType: "installationTask",
+        entityId: args.taskId,
+      }),
+    ]);
 
     return null;
   },
@@ -1541,7 +1546,7 @@ export const notifyAssignee = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const task = await ctx.db.get(args.taskId);
-    if (!task || !task.assigneeId) return null;
+    if (!task?.assigneeId) return null;
 
     await ctx.runMutation(internal.audit.createNotificationInternal, {
       organizationId: task.organizationId,
@@ -1564,7 +1569,7 @@ export const notifyDueDate = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const task = await ctx.db.get(args.taskId);
-    if (!task || !task.assigneeId || !task.dueDate) return null;
+    if (!task?.assigneeId || !task.dueDate) return null;
 
     const now = Date.now();
     const hoursUntilDue = (task.dueDate - now) / (1000 * 60 * 60);

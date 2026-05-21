@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -45,16 +44,17 @@ export const create = mutation({
   },
   returns: v.id("materialOptions"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     // Check if material already exists (case-insensitive)
     const existing = await ctx.db
@@ -164,12 +164,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, material] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.materialId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const material = await ctx.db.get(args.materialId);
     if (!material) {
       throw new Error("Material not found");
     }

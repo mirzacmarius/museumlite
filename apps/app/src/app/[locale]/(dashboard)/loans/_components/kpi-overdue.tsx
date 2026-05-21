@@ -1,14 +1,14 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
 import { useQuery } from "convex/react";
 import { AlertCircle } from "lucide-react";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 
 export function KpiOverdue() {
   const { currentOrganizationId } = useOrganization();

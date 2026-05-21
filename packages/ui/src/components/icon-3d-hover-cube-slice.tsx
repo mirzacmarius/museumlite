@@ -18,165 +18,42 @@ export function Icon3DHoverCubeSlice({
   return (
     <Transition value={transition2}>
       <motion.div
-        className={`slice-${sliceIndex}`}
+        className={`slice-${sliceIndex} icon-3d-slice`}
         data-framer-name={`Slice ${sliceIndex}`}
-        style={{
-          alignContent: "center",
-          alignItems: "center",
-          display: "flex",
-          flex: "none",
-          flexDirection: "row",
-          flexWrap: "nowrap",
-          gap: "10px",
-          height: "min-content",
-          justifyContent: "center",
-          overflow: "visible",
-          padding: "0px",
-          position: "relative",
-          transformStyle: "preserve-3d",
-          width: "min-content",
-        }}
       >
         <motion.div
-          className="slice-1-front"
+          className="slice-1-front icon-3d-slice-face icon-3d-slice-face-front"
           data-framer-name="Front"
-          style={{
-            alignContent: "center",
-            alignItems: "center",
-            display: "flex",
-            flex: "none",
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            gap: "10px",
-            height: "34px",
-            justifyContent: "center",
-            overflow: "hidden",
-            padding: "0px",
-            position: "relative",
-            width: "240px",
-            border: "4px solid hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--background))",
-            zIndex: 120,
-          }}
           variants={cubeSliceVariants}
           animate={animateState}
         />
         <motion.div
-          className="slice-1-back"
+          className="slice-1-back icon-3d-slice-face icon-3d-slice-face-back"
           data-framer-name="Back"
-          style={{
-            alignContent: "center",
-            alignItems: "center",
-            bottom: "0px",
-            display: "flex",
-            flex: "none",
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            gap: "10px",
-            justifyContent: "center",
-            overflow: "hidden",
-            padding: "0px",
-            position: "absolute",
-            right: "0px",
-            top: "0px",
-            width: "240px",
-            zIndex: 1,
-            border: "4px solid hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--background))",
-            rotateY: 180,
-          }}
           variants={cubeSliceVariants}
           animate={animateState}
         />
         <motion.div
-          className="slice-1-right"
+          className="slice-1-right icon-3d-slice-face icon-3d-slice-face-right"
           data-framer-name="Right"
-          style={{
-            alignContent: "center",
-            alignItems: "center",
-            bottom: "0px",
-            display: "flex",
-            flex: "none",
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            gap: "10px",
-            justifyContent: "center",
-            left: "120px",
-            overflow: "hidden",
-            padding: "0px",
-            position: "absolute",
-            top: "0px",
-            width: "240px",
-            zIndex: 1,
-            border: "4px solid hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--background))",
-            rotateY: 90,
-          }}
           variants={cubeSliceVariants}
           animate={animateState}
         />
         <motion.div
-          className="slice-1-left"
+          className="slice-1-left icon-3d-slice-face icon-3d-slice-face-left"
           data-framer-name="Left"
-          style={{
-            alignContent: "center",
-            alignItems: "center",
-            bottom: "0px",
-            display: "flex",
-            flex: "none",
-            flexDirection: "column",
-            flexWrap: "nowrap",
-            gap: "10px",
-            justifyContent: "center",
-            overflow: "hidden",
-            padding: "0px",
-            position: "absolute",
-            right: "120px",
-            top: "0px",
-            width: "240px",
-            zIndex: 1,
-            border: "4px solid hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--background))",
-            rotateY: -90,
-          }}
           variants={cubeSliceVariants}
           animate={animateState}
         />
         <motion.div
-          className="slice-1-top"
+          className="slice-1-top icon-3d-slice-face icon-3d-slice-face-top"
           data-framer-name="Top"
-          style={{
-            flex: "none",
-            height: "240px",
-            left: "0px",
-            overflow: "hidden",
-            position: "absolute",
-            right: "0px",
-            top: "-120px",
-            zIndex: 1,
-            border: "4px solid hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--background))",
-            rotateX: 90,
-          }}
           variants={cubeSliceVariants}
           animate={animateState}
         />
         <motion.div
-          className="slice-1-bottom"
+          className="slice-1-bottom icon-3d-slice-face icon-3d-slice-face-bottom"
           data-framer-name="Bottom"
-          style={{
-            flex: "none",
-            height: "240px",
-            left: "0px",
-            overflow: "hidden",
-            position: "absolute",
-            right: "0px",
-            top: "-86px",
-            zIndex: 1,
-            border: "4px solid hsl(var(--foreground))",
-            backgroundColor: "hsl(var(--background))",
-            rotateX: 90,
-          }}
           variants={cubeSliceVariants}
           animate={animateState}
         />

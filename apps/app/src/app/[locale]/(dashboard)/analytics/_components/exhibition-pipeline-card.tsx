@@ -1,10 +1,10 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Calendar, MapPin, Presentation } from "lucide-react";
+import { ClientDate } from "@/components/client-date";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { StackedBar } from "./stacked-bar";
 
 interface ExhibitionPipelineCardProps {

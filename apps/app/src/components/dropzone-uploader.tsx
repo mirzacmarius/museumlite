@@ -10,7 +10,7 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface UploadFile {
   id: string;
@@ -191,23 +191,40 @@ export function DropzoneUploader({
   const hasActiveUploads = uploadingFiles.some(
     (f) => f.status === "uploading" || f.status === "pending",
   );
+  const dropzoneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = dropzoneRef.current;
+    if (!element) return;
+
+    const onDragOver = (event: DragEvent) => {
+      handleDragOver(event as unknown as React.DragEvent);
+    };
+    const onDragLeave = (event: DragEvent) => {
+      handleDragLeave(event as unknown as React.DragEvent);
+    };
+    const onDrop = (event: DragEvent) => {
+      handleDrop(event as unknown as React.DragEvent);
+    };
+
+    element.addEventListener("dragover", onDragOver);
+    element.addEventListener("dragleave", onDragLeave);
+    element.addEventListener("drop", onDrop);
+
+    return () => {
+      element.removeEventListener("dragover", onDragOver);
+      element.removeEventListener("dragleave", onDragLeave);
+      element.removeEventListener("drop", onDrop);
+    };
+  }, [handleDragOver, handleDragLeave, handleDrop]);
 
   return (
     <div className={cn("space-y-3", className)}>
       <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleClick}
-        onKeyDown={(e) => e.key === "Enter" && handleClick()}
-        role="button"
-        tabIndex={disabled ? -1 : 0}
+        ref={dropzoneRef}
         className={cn(
-          "relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-all",
-          isDragOver
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary/50 hover:bg-muted/30",
-          disabled && "cursor-not-allowed opacity-50",
+          "relative rounded-lg border-2 border-dashed transition-all",
+          isDragOver ? "border-primary bg-primary/5" : "border-border",
           hasActiveUploads && "pointer-events-none opacity-70",
         )}
       >
@@ -220,30 +237,40 @@ export function DropzoneUploader({
           className="hidden"
           disabled={disabled}
         />
-
-        {hasActiveUploads ? (
-          <Loader2 className="mb-2 size-8 animate-spin text-muted-foreground" />
-        ) : (
-          <Upload
-            className={cn(
-              "mb-2 size-8",
-              isDragOver ? "text-primary" : "text-muted-foreground",
-            )}
-          />
-        )}
-
-        <p
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={disabled || hasActiveUploads}
           className={cn(
-            "text-sm font-medium",
-            isDragOver ? "text-primary" : "text-foreground",
+            "flex min-h-[120px] w-full cursor-pointer flex-col items-center justify-center rounded-lg p-6 transition-all",
+            "hover:border-primary/50 hover:bg-muted/30",
+            disabled && "cursor-not-allowed opacity-50",
           )}
         >
-          {hasActiveUploads ? "Uploading..." : label}
-        </p>
+          {hasActiveUploads ? (
+            <Loader2 className="mb-2 size-8 animate-spin text-muted-foreground" />
+          ) : (
+            <Upload
+              className={cn(
+                "mb-2 size-8",
+                isDragOver ? "text-primary" : "text-muted-foreground",
+              )}
+            />
+          )}
 
-        <p className="mt-1 text-xs text-muted-foreground">
-          {sublabel || `Up to ${formatFileSize(maxSizeBytes)} per file`}
-        </p>
+          <p
+            className={cn(
+              "text-sm font-medium",
+              isDragOver ? "text-primary" : "text-foreground",
+            )}
+          >
+            {hasActiveUploads ? "Uploading..." : label}
+          </p>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            {sublabel || `Up to ${formatFileSize(maxSizeBytes)} per file`}
+          </p>
+        </button>
       </div>
 
       {validationErrors.length > 0 && (

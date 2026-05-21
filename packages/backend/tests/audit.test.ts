@@ -18,7 +18,11 @@ describe("auditLog", () => {
     test("should list audit log entries for organization", async () => {
       const t = convexTest(schema, modules);
 
-      const { orgId, userId, roleId } = await t.run(async (ctx) => {
+      const {
+        orgId,
+        userId,
+        roleId: _roleId,
+      } = await t.run(async (ctx) => {
         // Create organization
         const [orgId, userId] = await Promise.all([
           ctx.db.insert("organizations", {
@@ -361,16 +365,18 @@ describe("auditLog", () => {
 
       // Create multiple entries
       await t.run(async (ctx) => {
-        for (let i = 0; i < 5; i++) {
-          await ctx.db.insert("auditLog", {
-            organizationId: orgId,
-            userId,
-            action: "create",
-            entityType: "accession",
-            entityId: `acc_${i}`,
-            timestamp: Date.now() + i,
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 5 }, (_, i) =>
+            ctx.db.insert("auditLog", {
+              organizationId: orgId,
+              userId,
+              action: "create",
+              entityType: "accession",
+              entityId: `acc_${i}`,
+              timestamp: Date.now() + i,
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -753,16 +759,18 @@ describe("auditLog", () => {
       });
 
       await t.run(async (ctx) => {
-        for (let i = 0; i < 5; i++) {
-          await ctx.db.insert("auditLog", {
-            organizationId: orgId,
-            userId,
-            action: "update",
-            entityType: "accession",
-            entityId: "acc_123",
-            timestamp: Date.now() + i,
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 5 }, (_, i) =>
+            ctx.db.insert("auditLog", {
+              organizationId: orgId,
+              userId,
+              action: "update",
+              entityType: "accession",
+              entityId: "acc_123",
+              timestamp: Date.now() + i,
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -820,16 +828,18 @@ describe("auditLog", () => {
       });
 
       await t.run(async (ctx) => {
-        for (let i = 0; i < 3; i++) {
-          await ctx.db.insert("auditLog", {
-            organizationId: orgId,
-            userId,
-            action: "create",
-            entityType: "accession",
-            entityId: `acc_${i}`,
-            timestamp: Date.now() + i,
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 3 }, (_, i) =>
+            ctx.db.insert("auditLog", {
+              organizationId: orgId,
+              userId,
+              action: "create",
+              entityType: "accession",
+              entityId: `acc_${i}`,
+              timestamp: Date.now() + i,
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -838,7 +848,9 @@ describe("auditLog", () => {
       });
 
       expect(logs).toHaveLength(3);
-      expect(logs[0]?.timestamp).toBeGreaterThanOrEqual(logs[1]?.timestamp!);
+      const secondTimestamp = logs[1]?.timestamp;
+      expect(secondTimestamp).toBeDefined();
+      expect(logs[0]?.timestamp).toBeGreaterThanOrEqual(secondTimestamp);
     });
 
     test("should respect limit parameter", async () => {
@@ -883,16 +895,18 @@ describe("auditLog", () => {
       });
 
       await t.run(async (ctx) => {
-        for (let i = 0; i < 10; i++) {
-          await ctx.db.insert("auditLog", {
-            organizationId: orgId,
-            userId,
-            action: "create",
-            entityType: "accession",
-            entityId: `acc_${i}`,
-            timestamp: Date.now() + i,
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 10 }, (_, i) =>
+            ctx.db.insert("auditLog", {
+              organizationId: orgId,
+              userId,
+              action: "create",
+              entityType: "accession",
+              entityId: `acc_${i}`,
+              timestamp: Date.now() + i,
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -1426,17 +1440,19 @@ describe("audit (notifications & activity)", () => {
 
       // Create multiple notifications
       await t.run(async (ctx) => {
-        for (let i = 0; i < 3; i++) {
-          await ctx.db.insert("notifications", {
-            organizationId: orgId,
-            userId,
-            type: "info",
-            title: `Notification ${i}`,
-            message: `Message ${i}`,
-            read: false,
-            createdAt: Date.now(),
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 3 }, (_, i) =>
+            ctx.db.insert("notifications", {
+              organizationId: orgId,
+              userId,
+              type: "info",
+              title: `Notification ${i}`,
+              message: `Message ${i}`,
+              read: false,
+              createdAt: Date.now(),
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -1475,17 +1491,19 @@ describe("audit (notifications & activity)", () => {
       });
 
       await t.run(async (ctx) => {
-        for (let i = 0; i < 3; i++) {
-          await ctx.db.insert("notifications", {
-            organizationId: orgId,
-            userId,
-            type: "info",
-            title: `Notification ${i}`,
-            message: `Message ${i}`,
-            read: i === 0, // First one is read
-            createdAt: Date.now() + i,
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 3 }, (_, i) =>
+            ctx.db.insert("notifications", {
+              organizationId: orgId,
+              userId,
+              type: "info",
+              title: `Notification ${i}`,
+              message: `Message ${i}`,
+              read: i === 0,
+              createdAt: Date.now() + i,
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);
@@ -1566,17 +1584,19 @@ describe("audit (notifications & activity)", () => {
       });
 
       await t.run(async (ctx) => {
-        for (let i = 0; i < 10; i++) {
-          await ctx.db.insert("notifications", {
-            organizationId: orgId,
-            userId,
-            type: "info",
-            title: `Notification ${i}`,
-            message: `Message ${i}`,
-            read: false,
-            createdAt: Date.now() + i,
-          });
-        }
+        await Promise.all(
+          Array.from({ length: 10 }, (_, i) =>
+            ctx.db.insert("notifications", {
+              organizationId: orgId,
+              userId,
+              type: "info",
+              title: `Notification ${i}`,
+              message: `Message ${i}`,
+              read: false,
+              createdAt: Date.now() + i,
+            }),
+          ),
+        );
       });
 
       const authed = authedForUser(t, userId);

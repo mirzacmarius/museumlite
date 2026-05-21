@@ -4,9 +4,8 @@
  * Handles atomic counter incrementation with scope support
  */
 
-import type { GenericQueryCtx, GenericMutationCtx } from "convex/server";
-import type { DataModel } from "../_generated/dataModel";
-import type { Id } from "../_generated/dataModel";
+import type { GenericMutationCtx, GenericQueryCtx } from "convex/server";
+import type { DataModel, Id } from "../_generated/dataModel";
 
 type QueryCtx = GenericQueryCtx<DataModel>;
 type MutationCtx = GenericMutationCtx<DataModel>;

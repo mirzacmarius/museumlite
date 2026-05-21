@@ -6,8 +6,6 @@
  * from legacy systems by providing pre-configured field mappings.
  */
 
-import type { Doc } from "../_generated/dataModel";
-
 /**
  * Field mapping definition - maps a source field to a target field
  */

@@ -43,7 +43,7 @@ import type { QueryCtx } from "../_generated/server";
 export async function batchGetByIds<TableName extends TableNames>(
   ctx: QueryCtx,
   ids: Array<Id<TableName>>,
-  table: TableName,
+  _table: TableName,
 ): Promise<Array<Doc<TableName> | null>> {
   // Remove duplicates by converting to Set and back
   const uniqueIds = Array.from(new Set(ids));

@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { auditLogChanges } from "./schema";
 import { requirePermission } from "./utils/permissions";
@@ -82,7 +81,7 @@ export const listOrganizationActivity = query({
       logs.map(async (log) => {
         const user = await ctx.db.get(log.userId);
         const userImage = user?.imageId
-          ? (await ctx.storage.getUrl(user.imageId)) ?? undefined
+          ? ((await ctx.storage.getUrl(user.imageId)) ?? undefined)
           : undefined;
 
         return {
@@ -223,12 +222,13 @@ export const markRead = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }

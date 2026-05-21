@@ -1,7 +1,10 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { insertCompletedMediaAsset } from "./mediaAssets";
-import { applyUsageCounterDelta } from "./organizationUsageCounters";
+import {
+  applyUsageCounterDelta,
+  ensureUsageCounter,
+} from "./organizationUsageCounters";
 
 function serializeStringList(values?: string[]) {
   return values && values.length > 0 ? JSON.stringify(values) : undefined;
@@ -76,45 +79,46 @@ export async function publishAccessionObjectDraft(
     lastModifiedAt: catalogedAt,
   });
 
+  await ensureUsageCounter(ctx, accession.organizationId);
+
   await Promise.all([
-    applyUsageCounterDelta(ctx, accession.organizationId, {
-      objectCount: 1,
-    }),
-    Promise.all(
-      [...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
-        const group = await ctx.db.get(collectionGroupId);
-        if (group && group.organizationId === accession.organizationId) {
-          await ctx.db.insert("collectionGroupItems", {
+    ...[...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
+      const group = await ctx.db.get(collectionGroupId);
+      if (group && group.organizationId === accession.organizationId) {
+        await Promise.all([
+          ctx.db.insert("collectionGroupItems", {
             collectionGroupId,
             collectionId,
             addedAt: catalogedAt,
             addedBy: catalogedBy,
-          });
-          await ctx.db.patch(collectionGroupId, {
+          }),
+          ctx.db.patch(collectionGroupId, {
             itemsCount: (group.itemsCount || 0) + 1,
             lastModifiedAt: catalogedAt,
             lastModifiedBy: catalogedBy,
-          });
-        }
+          }),
+        ]);
+      }
+    }),
+    ...(accession.draftMedia ?? []).map((draftMediaItem) =>
+      insertCompletedMediaAsset(ctx, {
+        collectionId,
+        organizationId: accession.organizationId,
+        storageId: draftMediaItem.storageId,
+        fileName: draftMediaItem.fileName,
+        fileSize: draftMediaItem.fileSize,
+        mimeType: draftMediaItem.mimeType,
+        mediaCategory: draftMediaItem.mediaCategory,
+        isPrimary: draftMediaItem.isPrimary,
+        uploadedBy: catalogedBy,
+        uploadedAt: catalogedAt,
       }),
     ),
-    Promise.all(
-      (accession.draftMedia || []).map((draftMediaItem) =>
-        insertCompletedMediaAsset(ctx, {
-          collectionId,
-          organizationId: accession.organizationId,
-          storageId: draftMediaItem.storageId,
-          fileName: draftMediaItem.fileName,
-          fileSize: draftMediaItem.fileSize,
-          mimeType: draftMediaItem.mimeType,
-          mediaCategory: draftMediaItem.mediaCategory,
-          isPrimary: draftMediaItem.isPrimary,
-          uploadedBy: catalogedBy,
-          uploadedAt: catalogedAt,
-        }),
-      ),
-    ),
   ]);
+
+  await applyUsageCounterDelta(ctx, accession.organizationId, {
+    objectCount: 1,
+  });
 
   return collectionId;
 }

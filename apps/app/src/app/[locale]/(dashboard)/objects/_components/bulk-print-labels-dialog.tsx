@@ -1,10 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { QRLabelSheet } from "@/components/qr-label-generator";
-import type { LabelData, LabelSize } from "@/components/qr-label-generator";
-import { useScopedI18n } from "@/locales/client";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -21,6 +16,10 @@ import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { useQuery } from "convex/react";
 import { Printer } from "lucide-react";
 import { useRef, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import type { LabelData, LabelSize } from "@/components/qr-label-generator";
+import { QRLabelSheet } from "@/components/qr-label-generator";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface BulkPrintLabelsDialogProps {
   open: boolean;

@@ -1,10 +1,10 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { CollectionFiltersAndList } from "./_components/collection-filters-and-list";
 import { ObjectCatalogSkeleton } from "./loading";
 

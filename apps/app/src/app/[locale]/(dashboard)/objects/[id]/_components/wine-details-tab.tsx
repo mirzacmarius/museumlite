@@ -1,24 +1,13 @@
 "use client";
 
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import {
-  Calendar,
-  DollarSign,
-  Droplets,
-  GlassWater,
-  Grape,
-  MapPin,
-  Plus,
-  Wine,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { WineDetailsContent } from "./wine-details-content";
 
 interface WineDetailsTabProps {
@@ -28,9 +17,9 @@ interface WineDetailsTabProps {
 
 export function WineDetailsTab({
   collectionId,
-  organizationId,
+  _organizationId,
 }: WineDetailsTabProps) {
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const t = useScopedI18n("modules.wine");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();

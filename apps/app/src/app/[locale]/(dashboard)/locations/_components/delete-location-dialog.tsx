@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -23,7 +22,8 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
+import { useScopedI18n } from "@/locales/client";
 
 interface DeleteLocationDialogProps {
   locationId: string;
@@ -34,6 +34,50 @@ interface DeleteLocationDialogProps {
 }
 
 type DeaccessionMethod = "sale" | "donation" | "destruction" | "transfer";
+
+interface DeleteLocationDialogState {
+  reason: string;
+  notes: string;
+  method: DeaccessionMethod;
+  error: string | null;
+  isSubmitting: boolean;
+}
+
+type DeleteLocationDialogAction =
+  | { type: "setReason"; value: string }
+  | { type: "setNotes"; value: string }
+  | { type: "setMethod"; value: DeaccessionMethod }
+  | { type: "setError"; value: string | null }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "resetForm" };
+
+const initialDeleteLocationDialogState: DeleteLocationDialogState = {
+  reason: "",
+  notes: "",
+  method: "destruction",
+  error: null,
+  isSubmitting: false,
+};
+
+function deleteLocationDialogReducer(
+  state: DeleteLocationDialogState,
+  action: DeleteLocationDialogAction,
+): DeleteLocationDialogState {
+  switch (action.type) {
+    case "setReason":
+      return { ...state, reason: action.value };
+    case "setNotes":
+      return { ...state, notes: action.value };
+    case "setMethod":
+      return { ...state, method: action.value };
+    case "setError":
+      return { ...state, error: action.value };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "resetForm":
+      return initialDeleteLocationDialogState;
+  }
+}
 
 const RETIRED_OBJECT_STATUSES = new Set([
   "deaccessioned",
@@ -50,11 +94,10 @@ export function DeleteLocationDialog({
 }: DeleteLocationDialogProps) {
   const t = useScopedI18n("locations");
   const tCommon = useScopedI18n("common");
-  const [reason, setReason] = useState("");
-  const [notes, setNotes] = useState("");
-  const [method, setMethod] = useState<DeaccessionMethod>("destruction");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, dispatch] = useReducer(
+    deleteLocationDialogReducer,
+    initialDeleteLocationDialogState,
+  );
 
   const location = useQuery(
     api.locations.get,
@@ -68,11 +111,7 @@ export function DeleteLocationDialog({
 
   useEffect(() => {
     if (!open) {
-      setReason("");
-      setNotes("");
-      setMethod("destruction");
-      setError(null);
-      setIsSubmitting(false);
+      dispatch({ type: "resetForm" });
     }
   }, [open]);
 
@@ -87,24 +126,24 @@ export function DeleteLocationDialog({
   const hasActiveChildren = (location?.children.length ?? 0) > 0;
   const requiresDeaccession = blockingObjects.length > 0;
   const canDelete =
-    !hasActiveChildren && (!requiresDeaccession || !!reason.trim());
+    !hasActiveChildren && (!requiresDeaccession || !!state.reason.trim());
 
   const handleDelete = async () => {
     if (!locationId || !canDelete) {
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
+    dispatch({ type: "setIsSubmitting", value: true });
+    dispatch({ type: "setError", value: null });
 
     try {
       await deleteLocation({
         locationId: locationId as Id<"locations">,
         ...(requiresDeaccession
           ? {
-              deaccessionReason: reason.trim(),
-              deaccessionMethod: method,
-              deaccessionNotes: notes.trim() || undefined,
+              deaccessionReason: state.reason.trim(),
+              deaccessionMethod: state.method,
+              deaccessionNotes: state.notes.trim() || undefined,
               dateDeaccessioned: Date.now(),
             }
           : {}),
@@ -112,12 +151,15 @@ export function DeleteLocationDialog({
       onDeleted?.({ sentToDeaccessions: requiresDeaccession });
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("deleteFailed"));
-      setIsSubmitting(false);
+      dispatch({
+        type: "setError",
+        value: err instanceof Error ? err.message : t("deleteFailed"),
+      });
+      dispatch({ type: "setIsSubmitting", value: false });
       return;
     }
 
-    setIsSubmitting(false);
+    dispatch({ type: "setIsSubmitting", value: false });
   };
 
   return (
@@ -130,9 +172,9 @@ export function DeleteLocationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {error ? (
+        {state.error ? (
           <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+            {state.error}
           </div>
         ) : null}
 
@@ -170,9 +212,9 @@ export function DeleteLocationDialog({
                     {t("deleteDialog.methodLabel")}
                   </Label>
                   <Select
-                    value={method}
+                    value={state.method}
                     onValueChange={(value: DeaccessionMethod) =>
-                      setMethod(value)
+                      dispatch({ type: "setMethod", value })
                     }
                   >
                     <SelectTrigger id="deaccession-method">
@@ -201,8 +243,10 @@ export function DeleteLocationDialog({
                   </Label>
                   <Textarea
                     id="deaccession-reason"
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
+                    value={state.reason}
+                    onChange={(event) =>
+                      dispatch({ type: "setReason", value: event.target.value })
+                    }
                     placeholder={t("deleteDialog.reasonPlaceholder")}
                     rows={3}
                   />
@@ -214,8 +258,10 @@ export function DeleteLocationDialog({
                   </Label>
                   <Textarea
                     id="deaccession-notes"
-                    value={notes}
-                    onChange={(event) => setNotes(event.target.value)}
+                    value={state.notes}
+                    onChange={(event) =>
+                      dispatch({ type: "setNotes", value: event.target.value })
+                    }
                     placeholder={t("deleteDialog.notesPlaceholder")}
                     rows={3}
                   />
@@ -229,7 +275,7 @@ export function DeleteLocationDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
+            disabled={state.isSubmitting}
           >
             {tCommon("cancel")}
           </Button>
@@ -237,13 +283,13 @@ export function DeleteLocationDialog({
             variant="destructive"
             onClick={handleDelete}
             disabled={
-              isSubmitting ||
+              state.isSubmitting ||
               location === undefined ||
               objects === undefined ||
               !canDelete
             }
           >
-            {isSubmitting ? (
+            {state.isSubmitting ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
               <Trash2 className="mr-2 size-4" />

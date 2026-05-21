@@ -61,18 +61,19 @@ export const list = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const webhooks = await ctx.db
-      .query("webhooks")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, webhooks] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db
+        .query("webhooks")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     return webhooks.map((wh) => ({
       _id: wh._id,
@@ -226,26 +227,27 @@ export const update = mutation({
       "organization.manage_settings",
     );
 
-    await ctx.db.patch(args.webhookId, {
-      ...(args.name !== undefined && { name: args.name }),
-      ...(args.url !== undefined && { url: args.url }),
-      ...(args.events !== undefined && { events: args.events }),
-      ...(args.isActive !== undefined && { isActive: args.isActive }),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: webhook.organizationId,
-      userId,
-      action: "updated_webhook",
-      entityType: "webhook",
-      entityId: args.webhookId,
-      changes: {
-        name: args.name,
-        url: args.url,
-        events: args.events,
-        isActive: args.isActive,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.webhookId, {
+        ...(args.name !== undefined && { name: args.name }),
+        ...(args.url !== undefined && { url: args.url }),
+        ...(args.events !== undefined && { events: args.events }),
+        ...(args.isActive !== undefined && { isActive: args.isActive }),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: webhook.organizationId,
+        userId,
+        action: "updated_webhook",
+        entityType: "webhook",
+        entityId: args.webhookId,
+        changes: {
+          name: args.name,
+          url: args.url,
+          events: args.events,
+          isActive: args.isActive,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -272,18 +274,19 @@ export const rotateSecret = mutation({
     );
 
     const secret = generateSecret();
-    await ctx.db.patch(args.webhookId, { secret });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: webhook.organizationId,
-      userId,
-      action: "rotated_webhook_secret",
-      entityType: "webhook",
-      entityId: args.webhookId,
-      changes: {
-        name: webhook.name,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.webhookId, { secret }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: webhook.organizationId,
+        userId,
+        action: "rotated_webhook_secret",
+        entityType: "webhook",
+        entityId: args.webhookId,
+        changes: {
+          name: webhook.name,
+        },
+      }),
+    ]);
 
     return { secret };
   },

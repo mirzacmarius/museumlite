@@ -3,21 +3,21 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type QueryCtx,
   internalMutation,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
-  MAX_SMALL_MEDIA_FILE_SIZE,
   completeChunkedMediaAsset,
   deleteMediaAsset,
   getDefaultMediaCategory,
   getMediaFileType,
   insertCompletedMediaAsset,
   isSupportedMediaMimeType,
+  MAX_SMALL_MEDIA_FILE_SIZE,
   shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
 import {
@@ -218,14 +218,15 @@ export const list = query({
       throw new Error("Collection not found");
     }
 
-    await requirePermission(ctx, collection.organizationId, "media.read");
-
-    const mediaFiles = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, mediaFiles] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const mediaWithUrls = await Promise.all(
       mediaFiles.map(async (media) => {
@@ -280,12 +281,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -323,16 +325,17 @@ export const update = mutation({
       }
     }
 
-    await ctx.db.patch(args.mediaId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "updated_media",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: media.organizationId,
+        userId,
+        action: "updated_media",
+        entityType: "media",
+        entityId: args.mediaId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -347,12 +350,13 @@ export const deleteMedia = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -378,38 +382,36 @@ export const setPrimary = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, media.organizationId, "media.upload");
+    const [, otherMedia] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.upload"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", media.collectionId),
+        )
+        .filter((q) => q.eq(q.field("isPrimary"), true))
+        .collect(),
+    ] as const);
 
-    // Unset other primary images for this collection
-    const otherMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", media.collectionId),
-      )
-      .filter((q) => q.eq(q.field("isPrimary"), true))
-      .collect();
-
-    await Promise.all(
-      otherMedia.map((m) =>
+    await Promise.all([
+      ...otherMedia.map((m) =>
         m._id !== args.mediaId
           ? ctx.db.patch(m._id, { isPrimary: false })
           : Promise.resolve(),
       ),
-    );
-
-    // Set this as primary
-    await ctx.db.patch(args.mediaId, { isPrimary: true });
+      ctx.db.patch(args.mediaId, { isPrimary: true }),
+    ]);
 
     // Generate thumbnail if image <50MB
     if (
@@ -809,7 +811,7 @@ export const checkFileType = query({
     mimeType: v.string(),
   },
   returns: v.boolean(),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     return isSupportedMediaMimeType(args.mimeType);
   },
 });
@@ -836,24 +838,24 @@ export const updateOrder = mutation({
 
     await requirePermission(ctx, firstMedia.organizationId, "media.upload");
 
-    for (let i = 0; i < args.mediaIds.length; i++) {
-      const mediaId = args.mediaIds[i];
-      if (mediaId) {
-        await ctx.db.patch(mediaId, { displayOrder: i });
-      }
-    }
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: firstMedia.organizationId,
-      userId,
-      action: "reordered_media",
-      entityType: "media",
-      entityId: args.mediaIds[0] as Id<"mediaFiles">,
-      changes: {
-        mediaCount: args.mediaIds.length,
-        collectionId: firstMedia.collectionId,
-      },
-    });
+    await Promise.all([
+      ...args.mediaIds.map((mediaId, i) =>
+        mediaId
+          ? ctx.db.patch(mediaId, { displayOrder: i })
+          : Promise.resolve(),
+      ),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: firstMedia.organizationId,
+        userId,
+        action: "reordered_media",
+        entityType: "media",
+        entityId: args.mediaIds[0] as Id<"mediaFiles">,
+        changes: {
+          mediaCount: args.mediaIds.length,
+          collectionId: firstMedia.collectionId,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -1078,12 +1080,13 @@ export const updateMetadata = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1094,21 +1097,22 @@ export const updateMetadata = mutation({
     const existingMetadata = media.metadata || {};
     const updatedMetadata = { ...existingMetadata, ...args.metadata };
 
-    await ctx.db.patch(args.mediaId, {
-      metadata: updatedMetadata,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "updated_media_metadata",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: {
-        fileName: media.fileName,
-        metadataFields: Object.keys(args.metadata),
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, {
+        metadata: updatedMetadata,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: media.organizationId,
+        userId,
+        action: "updated_media_metadata",
+        entityType: "media",
+        entityId: args.mediaId,
+        changes: {
+          fileName: media.fileName,
+          metadataFields: Object.keys(args.metadata),
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -1181,12 +1185,13 @@ export const setContentHash = mutation({
     duplicateOfMediaId: v.optional(v.id("mediaFiles")),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1322,12 +1327,13 @@ export const updateRights = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1349,16 +1355,17 @@ export const updateRights = mutation({
     if (args.acknowledgmentText !== undefined)
       updates.acknowledgmentText = args.acknowledgmentText;
 
-    await ctx.db.patch(args.mediaId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId,
-      action: "updated_media_rights",
-      entityType: "media",
-      entityId: args.mediaId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: media.organizationId,
+        userId,
+        action: "updated_media_rights",
+        entityType: "media",
+        entityId: args.mediaId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -1379,12 +1386,13 @@ export const trackDownload = mutation({
     url: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, media] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mediaId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const media = await ctx.db.get(args.mediaId);
     if (!media) {
       throw new Error("Media not found");
     }
@@ -1498,12 +1506,13 @@ export const listDownloads = query({
       return [];
     }
 
-    await requirePermission(ctx, media.organizationId, "media.read");
-
-    const downloads = await ctx.db
-      .query("mediaDownloads")
-      .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
-      .collect();
+    const [, downloads] = await Promise.all([
+      requirePermission(ctx, media.organizationId, "media.read"),
+      ctx.db
+        .query("mediaDownloads")
+        .withIndex("by_media", (q) => q.eq("mediaId", args.mediaId))
+        .collect(),
+    ] as const);
 
     const enriched = await Promise.all(
       downloads.map(async (download) => {
@@ -1545,16 +1554,17 @@ export const listByRightsStatus = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const media = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_rights_status", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("rightsStatus", args.rightsStatus),
-      )
-      .collect();
+    const [, media] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_rights_status", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("rightsStatus", args.rightsStatus),
+        )
+        .collect(),
+    ] as const);
 
     const enriched = await Promise.all(
       media.map(async (m) => {
@@ -1666,33 +1676,42 @@ export const bulkUpdateRights = mutation({
     let updated = 0;
     let failed = 0;
 
-    for (const mediaId of args.mediaIds) {
-      try {
-        const media = await ctx.db.get(mediaId);
-        if (!media) {
-          failed++;
-          continue;
+    const outcomes = await Promise.all(
+      args.mediaIds.map(async (mediaId) => {
+        try {
+          const media = await ctx.db.get(mediaId);
+          if (!media) {
+            return "failed" as const;
+          }
+
+          await requirePermission(ctx, media.organizationId, "media.upload");
+
+          const updates: Record<string, unknown> = {};
+          if (args.rightsStatus !== undefined)
+            updates.rightsStatus = args.rightsStatus;
+          if (args.licenseType !== undefined)
+            updates.licenseType = args.licenseType;
+          if (args.licenseExpiry !== undefined)
+            updates.licenseExpiry = args.licenseExpiry;
+          if (args.rightsHolder !== undefined)
+            updates.rightsHolder = args.rightsHolder;
+          if (args.requiresAcknowledgment !== undefined)
+            updates.requiresAcknowledgment = args.requiresAcknowledgment;
+          if (args.acknowledgmentText !== undefined)
+            updates.acknowledgmentText = args.acknowledgmentText;
+
+          await ctx.db.patch(mediaId, updates);
+          return "updated" as const;
+        } catch {
+          return "failed" as const;
         }
+      }),
+    );
 
-        await requirePermission(ctx, media.organizationId, "media.upload");
-
-        const updates: Record<string, unknown> = {};
-        if (args.rightsStatus !== undefined)
-          updates.rightsStatus = args.rightsStatus;
-        if (args.licenseType !== undefined)
-          updates.licenseType = args.licenseType;
-        if (args.licenseExpiry !== undefined)
-          updates.licenseExpiry = args.licenseExpiry;
-        if (args.rightsHolder !== undefined)
-          updates.rightsHolder = args.rightsHolder;
-        if (args.requiresAcknowledgment !== undefined)
-          updates.requiresAcknowledgment = args.requiresAcknowledgment;
-        if (args.acknowledgmentText !== undefined)
-          updates.acknowledgmentText = args.acknowledgmentText;
-
-        await ctx.db.patch(mediaId, updates);
+    for (const outcome of outcomes) {
+      if (outcome === "updated") {
         updated++;
-      } catch {
+      } else if (outcome === "failed") {
         failed++;
       }
     }
@@ -1721,14 +1740,15 @@ export const getRightsSummary = query({
     unknownRights: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
-    const allMedia = await ctx.db
-      .query("mediaFiles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, allMedia] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "media.read"),
+      ctx.db
+        .query("mediaFiles")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     const totalMedia = allMedia.length;
 

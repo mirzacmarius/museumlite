@@ -42,12 +42,13 @@ export const create = mutation({
   },
   returns: v.id("libraryFines"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -89,12 +90,13 @@ export const recordPayment = mutation({
   },
   returns: v.id("libraryPayments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -110,27 +112,39 @@ export const recordPayment = mutation({
     const paidFineIds: Id<"libraryFines">[] = [];
 
     if (args.fineIds && args.fineIds.length > 0) {
-      for (const fineId of args.fineIds) {
+      const fines = await Promise.all(
+        args.fineIds.map((fineId) => ctx.db.get(fineId)),
+      );
+      const patchPromises: Array<Promise<void>> = [];
+
+      for (let i = 0; i < args.fineIds.length; i++) {
         if (remainingPayment <= 0) break;
 
-        const fine = await ctx.db.get(fineId);
-        if (!fine || fine.accountId !== args.accountId) continue;
+        const fineId = args.fineIds[i];
+        const fine = fines[i];
+        if (!fineId || !fine || fine.accountId !== args.accountId) continue;
         if (fine.status !== "outstanding") continue;
 
         const paymentForFine = Math.min(remainingPayment, fine.balance);
         const newAmountPaid = fine.amountPaid + paymentForFine;
         const newBalance = fine.amount - newAmountPaid;
 
-        await ctx.db.patch(fineId, {
-          amountPaid: newAmountPaid,
-          balance: newBalance,
-          status: newBalance <= 0 ? "paid" : "outstanding",
-          paidAt: newBalance <= 0 ? now : undefined,
-        });
+        patchPromises.push(
+          ctx.db
+            .patch(fineId, {
+              amountPaid: newAmountPaid,
+              balance: newBalance,
+              status: newBalance <= 0 ? "paid" : "outstanding",
+              paidAt: newBalance <= 0 ? now : undefined,
+            })
+            .then(() => undefined),
+        );
 
         remainingPayment -= paymentForFine;
         paidFineIds.push(fineId);
       }
+
+      await Promise.all(patchPromises);
     } else {
       const outstandingFines = await ctx.db
         .query("libraryFines")
@@ -141,6 +155,7 @@ export const recordPayment = mutation({
 
       outstandingFines.sort((a, b) => a.createdAt - b.createdAt);
 
+      const patchPromises: Array<Promise<void>> = [];
       for (const fine of outstandingFines) {
         if (remainingPayment <= 0) break;
 
@@ -148,16 +163,22 @@ export const recordPayment = mutation({
         const newAmountPaid = fine.amountPaid + paymentForFine;
         const newBalance = fine.amount - newAmountPaid;
 
-        await ctx.db.patch(fine._id, {
-          amountPaid: newAmountPaid,
-          balance: newBalance,
-          status: newBalance <= 0 ? "paid" : "outstanding",
-          paidAt: newBalance <= 0 ? now : undefined,
-        });
+        patchPromises.push(
+          ctx.db
+            .patch(fine._id, {
+              amountPaid: newAmountPaid,
+              balance: newBalance,
+              status: newBalance <= 0 ? "paid" : "outstanding",
+              paidAt: newBalance <= 0 ? now : undefined,
+            })
+            .then(() => undefined),
+        );
 
         remainingPayment -= paymentForFine;
         paidFineIds.push(fine._id);
       }
+
+      await Promise.all(patchPromises);
     }
 
     const paymentId = await ctx.db.insert("libraryPayments", {
@@ -186,12 +207,13 @@ export const waive = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, fine] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.fineId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const fine = await ctx.db.get(args.fineId);
     if (!fine) {
       throw new Error("Fine not found");
     }
@@ -202,13 +224,15 @@ export const waive = mutation({
 
     await requireModuleEnabled(ctx, fine.organizationId, "library");
 
-    await ctx.db.patch(args.fineId, {
-      status: "waived",
-      waivedBy: userId,
-      waivedReason: args.reason,
-    });
+    const [, account] = await Promise.all([
+      ctx.db.patch(args.fineId, {
+        status: "waived",
+        waivedBy: userId,
+        waivedReason: args.reason,
+      }),
+      ctx.db.get(fine.accountId),
+    ] as const);
 
-    const account = await ctx.db.get(fine.accountId);
     if (account) {
       await ctx.db.patch(fine.accountId, {
         fineBalance: Math.max(0, (account.fineBalance || 0) - fine.balance),
@@ -226,12 +250,13 @@ export const forgive = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, fine] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.fineId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const fine = await ctx.db.get(args.fineId);
     if (!fine) {
       throw new Error("Fine not found");
     }
@@ -242,13 +267,15 @@ export const forgive = mutation({
 
     await requireModuleEnabled(ctx, fine.organizationId, "library");
 
-    await ctx.db.patch(args.fineId, {
-      status: "forgiven",
-      waivedBy: userId,
-      waivedReason: args.reason,
-    });
+    const [, account] = await Promise.all([
+      ctx.db.patch(args.fineId, {
+        status: "forgiven",
+        waivedBy: userId,
+        waivedReason: args.reason,
+      }),
+      ctx.db.get(fine.accountId),
+    ] as const);
 
-    const account = await ctx.db.get(fine.accountId);
     if (account) {
       await ctx.db.patch(fine.accountId, {
         fineBalance: Math.max(0, (account.fineBalance || 0) - fine.balance),

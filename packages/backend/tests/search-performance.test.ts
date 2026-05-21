@@ -55,27 +55,29 @@ async function createTestOrg(
     accessions: "collections",
   };
 
-  for (const permName of permissions) {
-    const permissionId = await t.run(async (ctx) => {
-      const existing = await ctx.db
-        .query("permissions")
-        .filter((q) => q.eq(q.field("name"), permName))
-        .first();
-      if (existing) return existing._id;
-      const prefix = permName.split(".")[0] ?? "collections";
-      return await ctx.db.insert("permissions", {
-        name: permName,
-        category: categoryMap[prefix] ?? "collections",
+  await Promise.all(
+    permissions.map(async (permName) => {
+      const permissionId = await t.run(async (ctx) => {
+        const existing = await ctx.db
+          .query("permissions")
+          .filter((q) => q.eq(q.field("name"), permName))
+          .first();
+        if (existing) return existing._id;
+        const prefix = permName.split(".")[0] ?? "collections";
+        return await ctx.db.insert("permissions", {
+          name: permName,
+          category: categoryMap[prefix] ?? "collections",
+        });
       });
-    });
 
-    await t.run(async (ctx) => {
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId,
+      await t.run(async (ctx) => {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
       });
-    });
-  }
+    }),
+  );
 
   await t.run(async (ctx) => {
     await ctx.db.insert("userOrganizations", {
@@ -161,22 +163,24 @@ async function seedLargeDataset(
     "Victorian",
   ];
 
-  // Create objects in batches for better performance
   const batchSize = 100;
-  for (let i = 0; i < count; i += batchSize) {
-    const batch = Math.min(batchSize, count - i);
-    const batchPromises = [];
 
-    for (let j = 0; j < batch; j++) {
-      const idx = i + j;
-      const artist = artists[idx % artists.length]!;
-      const objectType = objectTypes[idx % objectTypes.length]!;
-      const material = materials[idx % materials.length]!;
-      const culture = cultures[idx % cultures.length]!;
-      const period = periods[idx % periods.length]!;
+  async function seedCollectionBatch(startIndex: number) {
+    if (startIndex >= count) {
+      return;
+    }
 
-      batchPromises.push(
-        t.run(async (ctx) => {
+    const batch = Math.min(batchSize, count - startIndex);
+    const batchIds = await Promise.all(
+      Array.from({ length: batch }, (_, j) => {
+        const idx = startIndex + j;
+        const artist = artists[idx % artists.length]!;
+        const objectType = objectTypes[idx % objectTypes.length]!;
+        const material = materials[idx % materials.length]!;
+        const culture = cultures[idx % cultures.length]!;
+        const period = periods[idx % periods.length]!;
+
+        return t.run(async (ctx) => {
           return await ctx.db.insert("collections", {
             organizationId,
             accessionNumber: `PERF-${String(idx + 1).padStart(6, "0")}`,
@@ -195,13 +199,15 @@ async function seedLargeDataset(
               Date.now() -
               Math.floor(Math.random() * 365 * 24 * 60 * 60 * 1000),
           });
-        }),
-      );
-    }
+        });
+      }),
+    );
 
-    const batchIds = await Promise.all(batchPromises);
     collectionIds.push(...batchIds);
+    await seedCollectionBatch(startIndex + batchSize);
   }
+
+  await seedCollectionBatch(0);
 
   return collectionIds;
 }
@@ -391,16 +397,18 @@ describe("Search Performance with Large Dataset", () => {
 
     // Add some deaccessioned items
     await t.run(async (ctx) => {
-      for (let i = 0; i < 50; i++) {
-        await ctx.db.insert("collections", {
-          organizationId,
-          accessionNumber: `DEACC-${String(i + 1).padStart(4, "0")}`,
-          title: `Deaccessioned Item ${i + 1}`,
-          status: "deaccessioned",
-          catalogedBy: userId,
-          catalogedAt: Date.now(),
-        });
-      }
+      await Promise.all(
+        Array.from({ length: 50 }, (_, i) =>
+          ctx.db.insert("collections", {
+            organizationId,
+            accessionNumber: `DEACC-${String(i + 1).padStart(4, "0")}`,
+            title: `Deaccessioned Item ${i + 1}`,
+            status: "deaccessioned",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+          }),
+        ),
+      );
     });
 
     // #when - search (should exclude deaccessioned by default)

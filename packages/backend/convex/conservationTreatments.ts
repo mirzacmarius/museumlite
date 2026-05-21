@@ -3,10 +3,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
-  type QueryCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
@@ -158,12 +158,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.id);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -183,16 +184,17 @@ export const update = mutation({
       Object.entries(updates).filter(([_, value]) => value !== undefined),
     );
 
-    await ctx.db.patch(args.id, filteredUpdates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "updated",
-      entityType: "conservationTreatment",
-      entityId: args.id,
-      changes: filteredUpdates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.id, filteredUpdates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "updated",
+        entityType: "conservationTreatment",
+        entityId: args.id,
+        changes: filteredUpdates,
+      }),
+    ]);
 
     return null;
   },
@@ -204,12 +206,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.id);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -224,16 +227,17 @@ export const remove = mutation({
       "collections.delete",
     );
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "conservationTreatment",
-      entityId: args.id,
-      changes: { title: treatment.title },
-    });
-
-    await ctx.db.delete(args.id);
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "conservationTreatment",
+        entityId: args.id,
+        changes: { title: treatment.title },
+      }),
+      ctx.db.delete(args.id),
+    ]);
     return null;
   },
 });
@@ -339,12 +343,13 @@ export const create = mutation({
   },
   returns: v.id("conservationTreatments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -398,7 +403,7 @@ export const create = mutation({
       performedAt: args.performedAt ?? Date.now(),
       notes: args.notes,
       status: workflowConfig ? "proposed" : "completed",
-      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -451,12 +456,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -510,21 +516,22 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        await ctx.db.patch(args.treatmentId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: treatment.organizationId,
-          userId,
-          action: "approved",
-          entityType: "conservationTreatment",
-          entityId: args.treatmentId,
-          changes: { status: "approved", step: currentStep },
-        });
+        await Promise.all([
+          ctx.db.patch(args.treatmentId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: treatment.organizationId,
+            userId,
+            action: "approved",
+            entityType: "conservationTreatment",
+            entityId: args.treatmentId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -611,12 +618,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -659,19 +667,20 @@ export const reject = mutation({
       comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
     });
 
-    await ctx.db.patch(args.treatmentId, {
-      status: "rejected",
-      workflowHistory: history,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { status: "rejected", comment: args.comment },
-    });
+    await Promise.all([
+      ctx.db.patch(args.treatmentId, {
+        status: "rejected",
+        workflowHistory: history,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
+    ]);
 
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
@@ -697,12 +706,13 @@ export const startProgress = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -736,12 +746,13 @@ export const complete = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Conservation treatment not found");
     }
@@ -771,16 +782,17 @@ export const complete = mutation({
         : args.notes;
     }
 
-    await ctx.db.patch(args.treatmentId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "completed",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { status: "completed" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.treatmentId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "completed",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { status: "completed" },
+      }),
+    ]);
 
     return null;
   },
@@ -856,12 +868,13 @@ export const addAttachment = mutation({
   },
   returns: v.id("conservationAttachments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -895,12 +908,13 @@ export const removeAttachment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, attachment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.attachmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const attachment = await ctx.db.get(args.attachmentId);
     if (!attachment) {
       throw new Error("Attachment not found");
     }
@@ -1129,12 +1143,13 @@ export const updateAlertRule = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, rule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.ruleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const rule = await ctx.db.get(args.ruleId);
     if (!rule) {
       throw new Error("Alert rule not found");
     }
@@ -1142,10 +1157,10 @@ export const updateAlertRule = mutation({
     await Promise.all([
       requireConservationAccess(ctx, rule.organizationId),
       requirePermission(
-      ctx,
-      rule.organizationId,
-      "organization.manage_settings",
-    ),
+        ctx,
+        rule.organizationId,
+        "organization.manage_settings",
+      ),
     ]);
 
     const { ruleId, ...updates } = args;
@@ -1153,19 +1168,20 @@ export const updateAlertRule = mutation({
       Object.entries(updates).filter(([_, value]) => value !== undefined),
     );
 
-    await ctx.db.patch(args.ruleId, {
-      ...filteredUpdates,
-      lastModifiedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: rule.organizationId,
-      userId,
-      action: "updated",
-      entityType: "conservationAlertRule",
-      entityId: args.ruleId,
-      changes: filteredUpdates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.ruleId, {
+        ...filteredUpdates,
+        lastModifiedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: rule.organizationId,
+        userId,
+        action: "updated",
+        entityType: "conservationAlertRule",
+        entityId: args.ruleId,
+        changes: filteredUpdates,
+      }),
+    ]);
 
     return null;
   },
@@ -1177,12 +1193,13 @@ export const deleteAlertRule = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, rule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.ruleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const rule = await ctx.db.get(args.ruleId);
     if (!rule) {
       throw new Error("Alert rule not found");
     }
@@ -1323,12 +1340,13 @@ export const acknowledgeAlert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, alert] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.alertId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const alert = await ctx.db.get(args.alertId);
     if (!alert) {
       throw new Error("Alert not found");
     }
@@ -1365,12 +1383,13 @@ export const resolveAlert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, alert] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.alertId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const alert = await ctx.db.get(args.alertId);
     if (!alert) {
       throw new Error("Alert not found");
     }
@@ -1408,12 +1427,13 @@ export const dismissAlert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, alert] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.alertId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const alert = await ctx.db.get(args.alertId);
     if (!alert) {
       throw new Error("Alert not found");
     }
@@ -1640,87 +1660,96 @@ export const checkOverdueTreatmentsInternal = internalMutation({
           .filter((q) => q.eq(q.field("triggerType"), "treatment_overdue"))
           .collect();
 
-        for (const rule of rules) {
-          const daysOverdue = rule.daysOverdue ?? 7;
-          const threshold = now - daysOverdue * 24 * 60 * 60 * 1000;
+        await Promise.all(
+          rules.map(async (rule) => {
+            const daysOverdue = rule.daysOverdue ?? 7;
+            const threshold = now - daysOverdue * 24 * 60 * 60 * 1000;
 
-          const overdueTreatments = await ctx.db
-            .query("conservationTreatments")
-            .withIndex("by_organization_and_status", (q) =>
-              q.eq("organizationId", org._id).eq("status", "approved"),
-            )
-            .filter((q) => q.lt(q.field("performedAt"), threshold))
-            .collect();
-
-          for (const treatment of overdueTreatments) {
-            const existingAlert = await ctx.db
-              .query("conservationAlerts")
-              .withIndex("by_treatment", (q) =>
-                q.eq("treatmentId", treatment._id),
+            const overdueTreatments = await ctx.db
+              .query("conservationTreatments")
+              .withIndex("by_organization_and_status", (q) =>
+                q.eq("organizationId", org._id).eq("status", "approved"),
               )
-              .filter((q) =>
-                q.and(
-                  q.eq(q.field("alertType"), "treatment_overdue"),
-                  q.eq(q.field("status"), "active"),
-                ),
-              )
-              .first();
+              .filter((q) => q.lt(q.field("performedAt"), threshold))
+              .collect();
 
-            if (existingAlert) return;
+            await Promise.all(
+              overdueTreatments.map(async (treatment) => {
+                const existingAlert = await ctx.db
+                  .query("conservationAlerts")
+                  .withIndex("by_treatment", (q) =>
+                    q.eq("treatmentId", treatment._id),
+                  )
+                  .filter((q) =>
+                    q.and(
+                      q.eq(q.field("alertType"), "treatment_overdue"),
+                      q.eq(q.field("status"), "active"),
+                    ),
+                  )
+                  .first();
 
-            const alertId = await ctx.db.insert("conservationAlerts", {
-              organizationId: org._id,
-              ruleId: rule._id,
-              treatmentId: treatment._id,
-              collectionId: treatment.collectionId,
-              alertType: "treatment_overdue",
-              title: `Overdue Treatment: ${treatment.title}`,
-              description: `Treatment "${treatment.title}" has been approved but not started for over ${daysOverdue} days.`,
-              priority: rule.priority,
-              status: "active",
-              createdAt: now,
-            });
-
-            if (rule.inAppNotification) {
-              const usersToNotify: string[] = [];
-
-              if (rule.notifyUsers?.length) {
-                usersToNotify.push(...rule.notifyUsers);
-              }
-
-              if (rule.notifyRoles?.length) {
-                for (const roleId of rule.notifyRoles) {
-                  const userOrgs = await ctx.db
-                    .query("userOrganizations")
-                    .withIndex("by_organization", (q) =>
-                      q.eq("organizationId", org._id),
-                    )
-                    .filter((q) => q.eq(q.field("roleId"), roleId))
-                    .collect();
-                  usersToNotify.push(...userOrgs.map((uo) => uo.userId));
+                if (existingAlert) {
+                  return;
                 }
-              }
 
-              const uniqueUsers = [...new Set(usersToNotify)];
-              await Promise.all(
-                Array.from(uniqueUsers).map(async (userId) => {
-                  await ctx.runMutation(
-                    internal.audit.createNotificationInternal,
-                    {
+                const alertId = await ctx.db.insert("conservationAlerts", {
+                  organizationId: org._id,
+                  ruleId: rule._id,
+                  treatmentId: treatment._id,
+                  collectionId: treatment.collectionId,
+                  alertType: "treatment_overdue",
+                  title: `Overdue Treatment: ${treatment.title}`,
+                  description: `Treatment "${treatment.title}" has been approved but not started for over ${daysOverdue} days.`,
+                  priority: rule.priority,
+                  status: "active",
+                  createdAt: now,
+                });
+
+                if (!rule.inAppNotification) {
+                  return;
+                }
+
+                const usersToNotify: string[] = [];
+
+                if (rule.notifyUsers?.length) {
+                  usersToNotify.push(...rule.notifyUsers);
+                }
+
+                if (rule.notifyRoles?.length) {
+                  const roleUserGroups = await Promise.all(
+                    rule.notifyRoles.map((roleId) =>
+                      ctx.db
+                        .query("userOrganizations")
+                        .withIndex("by_organization", (q) =>
+                          q.eq("organizationId", org._id),
+                        )
+                        .filter((q) => q.eq(q.field("roleId"), roleId))
+                        .collect(),
+                    ),
+                  );
+                  for (const userOrgs of roleUserGroups) {
+                    usersToNotify.push(...userOrgs.map((uo) => uo.userId));
+                  }
+                }
+
+                const uniqueUsers = [...new Set(usersToNotify)];
+                await Promise.all(
+                  uniqueUsers.map((notifyUserId) =>
+                    ctx.runMutation(internal.audit.createNotificationInternal, {
                       organizationId: org._id,
-                      userId: userId as typeof treatment.performedBy,
+                      userId: notifyUserId as typeof treatment.performedBy,
                       type: "conservation_alert",
                       title: "Overdue Treatment Alert",
                       message: `Treatment "${treatment.title}" is overdue and requires attention.`,
                       relatedEntityType: "conservationAlert",
                       relatedEntityId: alertId,
-                    },
-                  );
-                }),
-              );
-            }
-          }
-        }
+                    }),
+                  ),
+                );
+              }),
+            );
+          }),
+        );
       }),
     );
 
@@ -1745,64 +1774,74 @@ export const checkAssessmentsDueInternal = internalMutation({
           .filter((q) => q.eq(q.field("triggerType"), "assessment_due"))
           .collect();
 
-        for (const rule of rules) {
-          const intervalDays = rule.assessmentIntervalDays ?? 365;
-          const threshold = now - intervalDays * 24 * 60 * 60 * 1000;
+        await Promise.all(
+          rules.map(async (rule) => {
+            const intervalDays = rule.assessmentIntervalDays ?? 365;
+            const threshold = now - intervalDays * 24 * 60 * 60 * 1000;
 
-          const collections = await ctx.db
-            .query("collections")
-            .withIndex("by_organization_and_status", (q) =>
-              q.eq("organizationId", org._id).eq("status", "active"),
-            )
-            .collect();
-
-          for (const collection of collections) {
-            const lastAssessment = await ctx.db
-              .query("conservationTreatments")
-              .withIndex("by_collection", (q) =>
-                q.eq("collectionId", collection._id),
+            const collections = await ctx.db
+              .query("collections")
+              .withIndex("by_organization_and_status", (q) =>
+                q.eq("organizationId", org._id).eq("status", "active"),
               )
-              .filter((q) => q.eq(q.field("treatmentType"), "assessment"))
-              .order("desc")
-              .first();
+              .collect();
 
-            const lastAssessmentTime = lastAssessment?.performedAt ?? 0;
+            await Promise.all(
+              collections.map(async (collection) => {
+                const lastAssessment = await ctx.db
+                  .query("conservationTreatments")
+                  .withIndex("by_collection", (q) =>
+                    q.eq("collectionId", collection._id),
+                  )
+                  .filter((q) => q.eq(q.field("treatmentType"), "assessment"))
+                  .order("desc")
+                  .first();
 
-            if (lastAssessmentTime < threshold) {
-              const existingAlert = await ctx.db
-                .query("conservationAlerts")
-                .withIndex("by_collection", (q) =>
-                  q.eq("collectionId", collection._id),
-                )
-                .filter((q) =>
-                  q.and(
-                    q.eq(q.field("alertType"), "assessment_due"),
-                    q.eq(q.field("status"), "active"),
-                  ),
-                )
-                .first();
+                const lastAssessmentTime = lastAssessment?.performedAt ?? 0;
 
-              if (existingAlert) return;
+                if (lastAssessmentTime >= threshold) {
+                  return;
+                }
 
-              const daysSinceAssessment = Math.floor(
-                (now - lastAssessmentTime) / (24 * 60 * 60 * 1000),
-              );
+                const existingAlert = await ctx.db
+                  .query("conservationAlerts")
+                  .withIndex("by_collection", (q) =>
+                    q.eq("collectionId", collection._id),
+                  )
+                  .filter((q) =>
+                    q.and(
+                      q.eq(q.field("alertType"), "assessment_due"),
+                      q.eq(q.field("status"), "active"),
+                    ),
+                  )
+                  .first();
 
-              const alertId = await ctx.db.insert("conservationAlerts", {
-                organizationId: org._id,
-                ruleId: rule._id,
-                collectionId: collection._id,
-                alertType: "assessment_due",
-                title: `Assessment Due: ${collection.title}`,
-                description: lastAssessment
-                  ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
-                  : "No assessment record found. Initial assessment recommended.",
-                priority: rule.priority,
-                status: "active",
-                createdAt: now,
-              });
+                if (existingAlert) {
+                  return;
+                }
 
-              if (rule.inAppNotification) {
+                const daysSinceAssessment = Math.floor(
+                  (now - lastAssessmentTime) / (24 * 60 * 60 * 1000),
+                );
+
+                const alertId = await ctx.db.insert("conservationAlerts", {
+                  organizationId: org._id,
+                  ruleId: rule._id,
+                  collectionId: collection._id,
+                  alertType: "assessment_due",
+                  title: `Assessment Due: ${collection.title}`,
+                  description: lastAssessment
+                    ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
+                    : "No assessment record found. Initial assessment recommended.",
+                  priority: rule.priority,
+                  status: "active",
+                  createdAt: now,
+                });
+
+                if (!rule.inAppNotification) {
+                  return;
+                }
+
                 const usersToNotify: string[] = [];
 
                 if (rule.notifyUsers?.length) {
@@ -1810,39 +1849,40 @@ export const checkAssessmentsDueInternal = internalMutation({
                 }
 
                 if (rule.notifyRoles?.length) {
-                  for (const roleId of rule.notifyRoles) {
-                    const userOrgs = await ctx.db
-                      .query("userOrganizations")
-                      .withIndex("by_organization", (q) =>
-                        q.eq("organizationId", org._id),
-                      )
-                      .filter((q) => q.eq(q.field("roleId"), roleId))
-                      .collect();
+                  const roleUserGroups = await Promise.all(
+                    rule.notifyRoles.map((roleId) =>
+                      ctx.db
+                        .query("userOrganizations")
+                        .withIndex("by_organization", (q) =>
+                          q.eq("organizationId", org._id),
+                        )
+                        .filter((q) => q.eq(q.field("roleId"), roleId))
+                        .collect(),
+                    ),
+                  );
+                  for (const userOrgs of roleUserGroups) {
                     usersToNotify.push(...userOrgs.map((uo) => uo.userId));
                   }
                 }
 
                 const uniqueUsers = [...new Set(usersToNotify)];
                 await Promise.all(
-                  Array.from(uniqueUsers).map(async (notifyUserId) => {
-                    await ctx.runMutation(
-                      internal.audit.createNotificationInternal,
-                      {
-                        organizationId: org._id,
-                        userId: notifyUserId as typeof collection.catalogedBy,
-                        type: "conservation_alert",
-                        title: "Assessment Due Alert",
-                        message: `Object "${collection.title}" requires a conservation assessment.`,
-                        relatedEntityType: "conservationAlert",
-                        relatedEntityId: alertId,
-                      },
-                    );
-                  }),
+                  uniqueUsers.map((notifyUserId) =>
+                    ctx.runMutation(internal.audit.createNotificationInternal, {
+                      organizationId: org._id,
+                      userId: notifyUserId as typeof collection.catalogedBy,
+                      type: "conservation_alert",
+                      title: "Assessment Due Alert",
+                      message: `Object "${collection.title}" requires a conservation assessment.`,
+                      relatedEntityType: "conservationAlert",
+                      relatedEntityId: alertId,
+                    }),
+                  ),
                 );
-              }
-            }
-          }
-        }
+              }),
+            );
+          }),
+        );
       }),
     );
 
@@ -1880,12 +1920,13 @@ export const updateTreatmentCosts = mutation({
     laborCost: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const treatment = await ctx.db.get(args.treatmentId);
     if (!treatment) {
       throw new Error("Treatment not found");
     }
@@ -1900,13 +1941,13 @@ export const updateTreatmentCosts = mutation({
     const laborCost =
       args.laborHours && args.laborRate
         ? args.laborHours * args.laborRate
-        : treatment.laborCost ?? 0;
+        : (treatment.laborCost ?? 0);
 
     const materialsCost =
       args.materialsCost ??
       (args.materials
         ? args.materials.reduce((sum, m) => sum + m.totalCost, 0)
-        : treatment.materialsCost ?? 0);
+        : (treatment.materialsCost ?? 0));
 
     const externalServicesCost =
       args.externalServicesCost ?? treatment.externalServicesCost ?? 0;
@@ -1928,16 +1969,17 @@ export const updateTreatmentCosts = mutation({
     if (args.currency !== undefined) updates.currency = args.currency;
     if (args.costNotes !== undefined) updates.costNotes = args.costNotes;
 
-    await ctx.db.patch(args.treatmentId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: treatment.organizationId,
-      userId,
-      action: "costs_updated",
-      entityType: "conservationTreatment",
-      entityId: args.treatmentId,
-      changes: { totalCost, laborCost, materialsCost },
-    });
+    await Promise.all([
+      ctx.db.patch(args.treatmentId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: treatment.organizationId,
+        userId,
+        action: "costs_updated",
+        entityType: "conservationTreatment",
+        entityId: args.treatmentId,
+        changes: { totalCost, laborCost, materialsCost },
+      }),
+    ]);
 
     return { totalCost, laborCost };
   },
@@ -2108,12 +2150,13 @@ export const updateAssessmentSchedule = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, schedule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.scheduleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const schedule = await ctx.db.get(args.scheduleId);
     if (!schedule) {
       throw new Error("Schedule not found");
     }
@@ -2141,12 +2184,13 @@ export const completeScheduledAssessment = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, schedule] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.scheduleId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const schedule = await ctx.db.get(args.scheduleId);
     if (!schedule) {
       throw new Error("Schedule not found");
     }

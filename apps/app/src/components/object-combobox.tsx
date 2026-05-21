@@ -13,7 +13,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 
 interface ObjectComboboxProps {

@@ -1,7 +1,5 @@
 "use client";
 
-import { formatDateFns } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Calendar } from "@v1/ui/calendar";
 import {
@@ -15,6 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { Calendar as CalendarIcon, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { formatDateFns } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface ActivityFiltersProps {
   selectedEntityType: string | undefined;

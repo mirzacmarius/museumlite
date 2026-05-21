@@ -157,8 +157,8 @@ async function lookupOpenLibrary(isbn: string): Promise<IsbnLookupResult> {
 
     // Try to get author info
     if (editionData.authors && editionData.authors.length > 0) {
-      const authorPromises = editionData.authors.map(
-        async (author: { key?: string }) => {
+      const authorNames = await Promise.all(
+        editionData.authors.map(async (author: { key?: string }) => {
           if (author.key) {
             try {
               const authorResponse = await fetch(
@@ -173,10 +173,8 @@ async function lookupOpenLibrary(isbn: string): Promise<IsbnLookupResult> {
             }
           }
           return null;
-        },
+        }),
       );
-
-      const authorNames = await Promise.all(authorPromises);
       result.authors = authorNames.filter((name): name is string => !!name);
     }
 
@@ -206,27 +204,27 @@ async function lookupOpenLibrary(isbn: string): Promise<IsbnLookupResult> {
           // If we didn't get authors from edition, try from work
           if (!result.authors || result.authors.length === 0) {
             if (workData.authors && workData.authors.length > 0) {
-              const authorPromises = workData.authors.map(
-                async (author: { author?: { key?: string } }) => {
-                  const authorKey = author.author?.key;
-                  if (authorKey) {
-                    try {
-                      const authorResponse = await fetch(
-                        `https://openlibrary.org${authorKey}.json`,
-                      );
-                      if (authorResponse.ok) {
-                        const authorData = await authorResponse.json();
-                        return authorData.name || authorData.personal_name;
+              const authorNames = await Promise.all(
+                workData.authors.map(
+                  async (author: { author?: { key?: string } }) => {
+                    const authorKey = author.author?.key;
+                    if (authorKey) {
+                      try {
+                        const authorResponse = await fetch(
+                          `https://openlibrary.org${authorKey}.json`,
+                        );
+                        if (authorResponse.ok) {
+                          const authorData = await authorResponse.json();
+                          return authorData.name || authorData.personal_name;
+                        }
+                      } catch {
+                        // Ignore author fetch errors
                       }
-                    } catch {
-                      // Ignore author fetch errors
                     }
-                  }
-                  return null;
-                },
+                    return null;
+                  },
+                ),
               );
-
-              const authorNames = await Promise.all(authorPromises);
               result.authors = authorNames.filter(
                 (name): name is string => !!name,
               );

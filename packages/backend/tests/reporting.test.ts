@@ -1,6 +1,5 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
@@ -142,25 +141,27 @@ describe("scheduledReports CRUD", () => {
       "loan_performance",
     ] as const;
 
-    for (const reportType of reportTypes) {
-      const reportId = await t.run(async (ctx) => {
-        return await ctx.db.insert("scheduledReports", {
-          organizationId: orgId,
-          name: `${reportType} Report`,
-          reportType: reportType,
-          schedule: "weekly",
-          isActive: true,
-          createdBy: userId,
-          createdAt: Date.now(),
+    await Promise.all(
+      reportTypes.map(async (reportType) => {
+        const reportId = await t.run(async (ctx) => {
+          return await ctx.db.insert("scheduledReports", {
+            organizationId: orgId,
+            name: `${reportType} Report`,
+            reportType: reportType,
+            schedule: "weekly",
+            isActive: true,
+            createdBy: userId,
+            createdAt: Date.now(),
+          });
         });
-      });
 
-      const report = await t.run(async (ctx) => {
-        return await ctx.db.get(reportId);
-      });
+        const report = await t.run(async (ctx) => {
+          return await ctx.db.get(reportId);
+        });
 
-      expect(report?.reportType).toBe(reportType);
-    }
+        expect(report?.reportType).toBe(reportType);
+      }),
+    );
   });
 
   test("listScheduledReports - should return all reports for organization", async () => {
@@ -828,27 +829,29 @@ describe("report schedules", () => {
       "UTC",
     ];
 
-    for (const timezone of timezones) {
-      const reportId = await t.run(async (ctx) => {
-        return await ctx.db.insert("scheduledReports", {
-          organizationId: orgId,
-          name: `Report ${timezone}`,
-          reportType: "operational_kpis",
-          schedule: "daily",
-          scheduledTime: "09:00",
-          timezone: timezone,
-          isActive: true,
-          createdBy: userId,
-          createdAt: Date.now(),
+    await Promise.all(
+      timezones.map(async (timezone) => {
+        const reportId = await t.run(async (ctx) => {
+          return await ctx.db.insert("scheduledReports", {
+            organizationId: orgId,
+            name: `Report ${timezone}`,
+            reportType: "operational_kpis",
+            schedule: "daily",
+            scheduledTime: "09:00",
+            timezone: timezone,
+            isActive: true,
+            createdBy: userId,
+            createdAt: Date.now(),
+          });
         });
-      });
 
-      const report = await t.run(async (ctx) => {
-        return await ctx.db.get(reportId);
-      });
+        const report = await t.run(async (ctx) => {
+          return await ctx.db.get(reportId);
+        });
 
-      expect(report?.timezone).toBe(timezone);
-    }
+        expect(report?.timezone).toBe(timezone);
+      }),
+    );
   });
 });
 
@@ -2123,28 +2126,30 @@ describe("email recipient management", () => {
     ]);
     const formats = ["pdf", "csv", "excel"] as const;
 
-    for (const format of formats) {
-      const reportId = await t.run(async (ctx) => {
-        return await ctx.db.insert("scheduledReports", {
-          organizationId: orgId,
-          name: `${format.toUpperCase()} Format Report`,
-          reportType: "operational_kpis",
-          schedule: "weekly",
-          emailRecipients: ["data@museum.com"],
-          includeAttachment: true,
-          attachmentFormat: format,
-          isActive: true,
-          createdBy: userId,
-          createdAt: Date.now(),
+    await Promise.all(
+      formats.map(async (format) => {
+        const reportId = await t.run(async (ctx) => {
+          return await ctx.db.insert("scheduledReports", {
+            organizationId: orgId,
+            name: `${format.toUpperCase()} Format Report`,
+            reportType: "operational_kpis",
+            schedule: "weekly",
+            emailRecipients: ["data@museum.com"],
+            includeAttachment: true,
+            attachmentFormat: format,
+            isActive: true,
+            createdBy: userId,
+            createdAt: Date.now(),
+          });
         });
-      });
 
-      const report = await t.run(async (ctx) => {
-        return await ctx.db.get(reportId);
-      });
+        const report = await t.run(async (ctx) => {
+          return await ctx.db.get(reportId);
+        });
 
-      expect(report?.attachmentFormat).toBe(format);
-      expect(report?.includeAttachment).toBe(true);
-    }
+        expect(report?.attachmentFormat).toBe(format);
+        expect(report?.includeAttachment).toBe(true);
+      }),
+    );
   });
 });

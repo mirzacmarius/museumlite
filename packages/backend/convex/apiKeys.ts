@@ -47,18 +47,19 @@ export const list = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const keys = await ctx.db
-      .query("apiKeys")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, keys] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db
+        .query("apiKeys")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     return keys.map((key) => ({
       _id: key._id,
@@ -150,19 +151,20 @@ export const revoke = mutation({
       throw new Error("API key not found");
     }
 
-    await ctx.db.patch(args.keyId, { isRevoked: true });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "revoked_api_key",
-      entityType: "apiKey",
-      entityId: args.keyId,
-      changes: {
-        name: key.name,
-        prefix: key.prefix,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.keyId, { isRevoked: true }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action: "revoked_api_key",
+        entityType: "apiKey",
+        entityId: args.keyId,
+        changes: {
+          name: key.name,
+          prefix: key.prefix,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -189,19 +191,20 @@ export const deleteKey = mutation({
       throw new Error("API key not found");
     }
 
-    await ctx.db.delete(args.keyId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "deleted_api_key",
-      entityType: "apiKey",
-      entityId: args.keyId,
-      changes: {
-        name: key.name,
-        prefix: key.prefix,
-      },
-    });
+    await Promise.all([
+      ctx.db.delete(args.keyId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: args.organizationId,
+        userId,
+        action: "deleted_api_key",
+        entityType: "apiKey",
+        entityId: args.keyId,
+        changes: {
+          name: key.name,
+          prefix: key.prefix,
+        },
+      }),
+    ]);
 
     return null;
   },

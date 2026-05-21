@@ -1,12 +1,12 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Timeline } from "@v1/ui/timeline";
 import { useQuery } from "convex/react";
+import { ClientDate } from "@/components/client-date";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface TransportStatusProps {
   loanId: Id<"loans">;
@@ -46,7 +46,7 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
 
   if (transitRecords.length === 0) {
     return (
-      <div className="rounded-lg border border-white/10 bg-gray-950 p-6">
+      <div className="rounded-lg border border-white/10 bg-zinc-950 p-6">
         <h3 className="text-sm font-medium text-white/80 mb-4">
           {t("transportStatus")}
         </h3>
@@ -56,7 +56,7 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
   }
 
   return (
-    <div className="rounded-lg border border-white/10 bg-gray-950 p-6">
+    <div className="rounded-lg border border-white/10 bg-zinc-950 p-6">
       <h3 className="text-sm font-medium text-white/80 mb-4">
         {t("transportStatus")}
       </h3>
@@ -90,7 +90,7 @@ function TransportStatusContent({ loanId }: TransportStatusProps) {
 
 function TransportStatusSkeleton() {
   return (
-    <div className="rounded-lg border border-white/10 bg-gray-950 p-6">
+    <div className="rounded-lg border border-white/10 bg-zinc-950 p-6">
       <div className="h-4 w-32 bg-white/10 rounded animate-pulse mb-4" />
       <div className="space-y-3">
         <div className="h-3 w-full bg-white/10 rounded animate-pulse" />

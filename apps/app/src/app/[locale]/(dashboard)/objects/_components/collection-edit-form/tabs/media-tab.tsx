@@ -1,59 +1,13 @@
 "use client";
-
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
-import { ConditionCombobox } from "@/components/condition-combobox";
-import { DonationDetailsField } from "@/components/donation-details-field";
-import { LocationSelector } from "@/components/location-selector";
-import { MaterialsCombobox } from "@/components/materials-combobox";
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { ObjectCombobox } from "@/components/object-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
-import { TypeCombobox } from "@/components/type-combobox";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
-import { Input } from "@v1/ui/input";
-import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
-import { Textarea } from "@v1/ui/textarea";
-import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
-import {
-  AlertOctagon,
-  Camera,
-  CheckCircle,
-  Edit,
-  Image as ImageIcon,
-  Plus,
-  Star,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+import { Camera, Edit, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import type React from "react";
-import { formatOwnershipDateRange } from "../../../[id]/_components/format-ownership-date-range";
-import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
-import type {
-  CollectionFormTabProps,
-  LinkEntry,
-  OwnershipEntry,
-} from "../../collection-form-shared/types";
-import {
-  createLinkEntryLocalId,
-  createOwnershipEntryLocalId,
-  normalizeOptionalString,
-} from "../../collection-form-shared/utils";
+import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
 type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
@@ -82,17 +36,17 @@ export interface CollectionEditMediaTabProps extends CollectionFormTabProps {
 }
 
 export function CollectionEditMediaTab({
-  formData,
-  updateField,
-  placeholders,
-  currentOrganizationId,
-  isLocationTrackingEnabled,
-  collection,
-  typedCollectionId,
+  formData: _formData,
+  updateField: _updateField,
+  placeholders: _placeholders,
+  currentOrganizationId: _currentOrganizationId,
+  isLocationTrackingEnabled: _isLocationTrackingEnabled,
+  collection: _collection,
+  typedCollectionId: _typedCollectionId,
   images,
-  documents,
+  documents: _documents,
   common,
-  t,
+  t: _t,
   fileInputRef,
   cameraInputRef,
   documentInputRef,
@@ -101,10 +55,10 @@ export function CollectionEditMediaTab({
   handleSetPrimary,
   handleDeleteMedia,
   setEditingImageId,
-  hasConditionChanged,
-  requiresConditionChangeNote,
-  conditionChangeNote,
-  onConditionChangeNoteChange,
+  hasConditionChanged: _hasConditionChanged,
+  requiresConditionChangeNote: _requiresConditionChangeNote,
+  conditionChangeNote: _conditionChangeNote,
+  onConditionChangeNoteChange: _onConditionChangeNoteChange,
 }: CollectionEditMediaTabProps) {
   return (
     <div className="space-y-8">
@@ -175,7 +129,7 @@ export function CollectionEditMediaTab({
                   )}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gray-950/65 p-3">
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-zinc-950/65 p-3">
                   <div className="truncate text-xs text-white">
                     {file.fileName}
                   </div>

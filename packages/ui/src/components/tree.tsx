@@ -200,4 +200,4 @@ function TreeDragLine({
   );
 }
 
-export { Tree, TreeItem, TreeItemLabel, TreeDragLine };
+export { Tree, TreeDragLine, TreeItem, TreeItemLabel };

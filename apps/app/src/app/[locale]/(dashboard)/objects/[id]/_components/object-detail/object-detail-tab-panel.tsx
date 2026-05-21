@@ -3,8 +3,10 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import dynamic from "next/dynamic";
-import type { ObjectTabDefinition } from "../object-tab-config";
-import type { ObjectTabId as TabId } from "../object-tab-config";
+import type {
+  ObjectTabDefinition,
+  ObjectTabId as TabId,
+} from "../object-tab-config";
 import type { ObjectDetailData } from "../types";
 
 const LoadingPanel = () => (

@@ -27,7 +27,7 @@ const useCases = [
 
 export function UseCases() {
   return (
-    <section id="use-cases" className="py-32 px-4 relative bg-gray-950">
+    <section id="use-cases" className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2

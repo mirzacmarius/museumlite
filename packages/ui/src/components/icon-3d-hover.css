@@ -1,0 +1,331 @@
+.icon-hover-3d-card {
+  align-content: center;
+  align-items: center;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 24px;
+  height: 100%;
+  justify-content: flex-start;
+  overflow: visible;
+  padding: 24px;
+  position: relative;
+  width: 100%;
+}
+
+.icon-3d-content {
+  align-content: center;
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 12px;
+  height: min-content;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.icon-3d-text-container {
+  align-content: center;
+  align-items: center;
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  height: 32px;
+  justify-content: center;
+  overflow: visible;
+  padding: 0;
+  position: relative;
+}
+
+.icon-3d-bg-fill {
+  background-color: transparent;
+  flex: none;
+  height: 32px;
+  left: 0;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  top: calc(50% - 16px);
+  width: 1px;
+  z-index: 0;
+}
+
+.icon-3d-heading-wrap {
+  align-items: center;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  display: flex;
+  flex: none;
+  font-family: "Inter", "Inter Placeholder", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  height: auto;
+  justify-content: center;
+  overflow: hidden;
+  padding-bottom: 8px;
+  padding-top: 8px;
+  position: relative;
+  user-select: none;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.icon-3d-heading-base {
+  position: relative;
+  z-index: 1;
+}
+
+.icon-3d-heading-reveal {
+  color: hsl(var(--background));
+  left: 50%;
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.icon-3d-heading-bg {
+  background-color: hsl(var(--foreground));
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform-origin: left center;
+  width: 100%;
+  z-index: 1;
+}
+
+.icon-3d-description {
+  color: hsl(var(--muted-foreground));
+  flex: none;
+  font-family: "Inter", "Inter Placeholder", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  height: auto;
+  line-height: 1.6em;
+  max-width: 100%;
+  position: relative;
+  text-align: center;
+  user-select: none;
+  white-space: pre-wrap;
+  width: 100%;
+  word-break: break-word;
+  word-wrap: break-word;
+}
+
+.icon-3d-icon-container {
+  align-content: center;
+  align-items: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  height: 80px;
+  justify-content: center;
+  overflow: visible;
+  padding: 0;
+  position: relative;
+  width: 80px;
+  z-index: 1;
+}
+
+.icon-3d-icon-overlay {
+  align-items: center;
+  color: hsl(var(--foreground));
+  display: flex;
+  font-size: 32px;
+  justify-content: center;
+  position: absolute;
+  z-index: 10;
+}
+
+.icon-3d-cube-bg {
+  flex: none;
+  height: 348px;
+  opacity: 0.8;
+  overflow: visible;
+  position: relative;
+  scale: 0.23;
+  width: 348px;
+  z-index: 2;
+}
+
+.icon-3d-cube-bg-with-icon {
+  opacity: 0.3;
+}
+
+.icon-3d-slice-cube {
+  align-content: center;
+  align-items: center;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 28px;
+  height: min-content;
+  justify-content: center;
+  left: 50%;
+  overflow: visible;
+  padding: 0;
+  position: absolute;
+  top: 50%;
+  transform-style: preserve-3d;
+  width: min-content;
+  z-index: 3;
+}
+
+.icon-3d-slice {
+  align-content: center;
+  align-items: center;
+  display: flex;
+  flex: none;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  height: min-content;
+  justify-content: center;
+  overflow: visible;
+  padding: 0;
+  position: relative;
+  transform-style: preserve-3d;
+  width: min-content;
+}
+
+.icon-3d-slice-face {
+  align-content: center;
+  align-items: center;
+  background-color: hsl(var(--background));
+  border: 4px solid hsl(var(--foreground));
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  width: 240px;
+  z-index: 1;
+}
+
+.icon-3d-slice-face-front {
+  height: 34px;
+  z-index: 120;
+}
+
+.icon-3d-slice-face-back {
+  bottom: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: rotateY(180deg);
+}
+
+.icon-3d-slice-face-right {
+  bottom: 0;
+  left: 120px;
+  position: absolute;
+  top: 0;
+  transform: rotateY(90deg);
+}
+
+.icon-3d-slice-face-left {
+  bottom: 0;
+  position: absolute;
+  right: 120px;
+  top: 0;
+  transform: rotateY(-90deg);
+}
+
+.icon-3d-slice-face-top {
+  flex: none;
+  height: 240px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: -120px;
+  transform: rotateX(90deg);
+}
+
+.icon-3d-slice-face-bottom {
+  flex: none;
+  height: 240px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: -86px;
+  transform: rotateX(90deg);
+}
+
+.icon-3d-corner {
+  flex: none;
+  height: 24px;
+  overflow: hidden;
+  position: absolute;
+  scale: 1;
+  width: 24px;
+  z-index: 2;
+}
+
+.icon-3d-corner-tl {
+  border-left: 4px solid hsl(var(--foreground));
+  border-top: 4px solid hsl(var(--foreground));
+  left: 14px;
+  top: 14px;
+}
+
+.icon-3d-corner-tl[data-hover="true"] {
+  left: -6px;
+  top: -6px;
+}
+
+.icon-3d-corner-bl {
+  border-bottom: 4px solid hsl(var(--foreground));
+  border-left: 4px solid hsl(var(--foreground));
+  left: 14px;
+  top: 310px;
+}
+
+.icon-3d-corner-bl[data-hover="true"] {
+  left: -6px;
+  top: 330px;
+}
+
+.icon-3d-corner-br {
+  border-bottom: 4px solid hsl(var(--foreground));
+  border-right: 4px solid hsl(var(--foreground));
+  bottom: 14px;
+  right: 14px;
+}
+
+.icon-3d-corner-br[data-hover="true"] {
+  bottom: -6px;
+  right: -6px;
+}
+
+.icon-3d-corner-tr {
+  border-right: 4px solid hsl(var(--foreground));
+  border-top: 4px solid hsl(var(--foreground));
+  right: 14px;
+  top: 14px;
+}
+
+.icon-3d-corner-tr[data-hover="true"] {
+  right: -6px;
+  top: -6px;
+}

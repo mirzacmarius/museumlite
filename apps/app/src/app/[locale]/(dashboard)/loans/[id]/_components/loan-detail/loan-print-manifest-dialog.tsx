@@ -1,6 +1,5 @@
 "use client";
 
-import { ClientCurrentDate } from "@/components/client-date";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -9,6 +8,7 @@ import {
   DialogTitle,
 } from "@v1/ui/dialog";
 import { Printer } from "lucide-react";
+import { ClientCurrentDate } from "@/components/client-date";
 import type { Loan } from "../types";
 
 interface LoanPrintManifestDialogProps {

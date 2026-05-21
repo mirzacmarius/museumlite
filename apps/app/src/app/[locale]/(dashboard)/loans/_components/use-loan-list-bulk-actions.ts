@@ -1,11 +1,11 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 import { buildSelectedLoansCsv } from "./loan-list-utils";
 import type { LoanListRow } from "./types";
 

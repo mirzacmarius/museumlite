@@ -2,7 +2,7 @@
 
 import { Button } from "@v1/ui/button";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { SpotlightCard } from "../spotlight-card";
 
@@ -56,7 +56,7 @@ export function PricingSection() {
   return (
     <section
       id="pricing"
-      className="py-32 px-4 relative bg-gray-950 overflow-hidden"
+      className="py-32 px-4 relative bg-zinc-950 overflow-hidden"
     >
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-20">

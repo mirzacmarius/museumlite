@@ -1,10 +1,10 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@v1/ui/button";
 import { CheckCircle } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
 import type { WorkflowStepInfo } from "./accession-detail-types";
-import { SectionCard, formatWorkflowStepDetails } from "./accession-detail-ui";
+import { formatWorkflowStepDetails, SectionCard } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 import { ApprovalWorkflow } from "./approval-workflow";
 

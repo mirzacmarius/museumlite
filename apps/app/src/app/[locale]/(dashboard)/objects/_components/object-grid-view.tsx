@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  DeaccessionDialog,
-  type RemovalType,
-} from "@/components/deaccession-dialog";
-import { PermissionGate } from "@/components/permission-gate";
-import { writeTextToClipboard } from "@/lib/clipboard";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -35,7 +28,14 @@ import {
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useReducer } from "react";
+import {
+  DeaccessionDialog,
+  type RemovalType,
+} from "@/components/deaccession-dialog";
+import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useCurrentLocale } from "@/locales/client";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -60,23 +60,91 @@ interface ObjectActionsMenuProps {
   iconClassName?: string;
 }
 
+interface ObjectActionsMenuState {
+  isDeaccessionDialogOpen: boolean;
+  selectedRemovalType: RemovalType | null;
+  isPrintModalOpen: boolean;
+  shouldPrintWhenReady: boolean;
+  linkCopied: boolean;
+}
+
+type ObjectActionsMenuAction =
+  | { type: "setDeaccessionDialogOpen"; value: boolean }
+  | { type: "openRemovalFlow"; removalType: RemovalType }
+  | { type: "closeRemovalFlow" }
+  | { type: "openPrintPreview" }
+  | { type: "openExportToPdf" }
+  | { type: "closePrintModal" }
+  | { type: "clearPrintWhenReady" }
+  | { type: "setLinkCopied"; value: boolean };
+
+const initialObjectActionsMenuState: ObjectActionsMenuState = {
+  isDeaccessionDialogOpen: false,
+  selectedRemovalType: null,
+  isPrintModalOpen: false,
+  shouldPrintWhenReady: false,
+  linkCopied: false,
+};
+
+function objectActionsMenuReducer(
+  state: ObjectActionsMenuState,
+  action: ObjectActionsMenuAction,
+): ObjectActionsMenuState {
+  switch (action.type) {
+    case "setDeaccessionDialogOpen":
+      return { ...state, isDeaccessionDialogOpen: action.value };
+    case "openRemovalFlow":
+      return {
+        ...state,
+        selectedRemovalType: action.removalType,
+        isDeaccessionDialogOpen: true,
+      };
+    case "closeRemovalFlow":
+      return {
+        ...state,
+        isDeaccessionDialogOpen: false,
+        selectedRemovalType: null,
+      };
+    case "openPrintPreview":
+      return {
+        ...state,
+        shouldPrintWhenReady: false,
+        isPrintModalOpen: true,
+      };
+    case "openExportToPdf":
+      return {
+        ...state,
+        shouldPrintWhenReady: true,
+        isPrintModalOpen: true,
+      };
+    case "closePrintModal":
+      return {
+        ...state,
+        isPrintModalOpen: false,
+        shouldPrintWhenReady: false,
+      };
+    case "clearPrintWhenReady":
+      return { ...state, shouldPrintWhenReady: false };
+    case "setLinkCopied":
+      return { ...state, linkCopied: action.value };
+  }
+}
+
 export function ObjectActionsMenu({
   item,
   organizationId,
   triggerClassName,
   iconClassName,
 }: ObjectActionsMenuProps) {
-  const [isDeaccessionDialogOpen, setIsDeaccessionDialogOpen] = useState(false);
-  const [selectedRemovalType, setSelectedRemovalType] =
-    useState<RemovalType | null>(null);
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [shouldPrintWhenReady, setShouldPrintWhenReady] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [state, dispatch] = useReducer(
+    objectActionsMenuReducer,
+    initialObjectActionsMenuState,
+  );
   const locale = useCurrentLocale();
   const canDeaccession = item.status !== "deaccessioned";
   const objectDetail = useQuery(
     api.collections.getObjectDetail,
-    isPrintModalOpen ? { collectionId: item._id } : "skip",
+    state.isPrintModalOpen ? { collectionId: item._id } : "skip",
   );
   const heroImageForPrint = objectDetail?.heroImage?.url
     ? {
@@ -95,23 +163,20 @@ export function ObjectActionsMenu({
       return;
     }
 
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
+    dispatch({ type: "setLinkCopied", value: true });
+    setTimeout(() => dispatch({ type: "setLinkCopied", value: false }), 2000);
   };
 
   const handleOpenPrintPreview = () => {
-    setShouldPrintWhenReady(false);
-    setIsPrintModalOpen(true);
+    dispatch({ type: "openPrintPreview" });
   };
 
   const handleExportToPdf = () => {
-    setShouldPrintWhenReady(true);
-    setIsPrintModalOpen(true);
+    dispatch({ type: "openExportToPdf" });
   };
 
   const handleOpenRemovalFlow = (removalType: RemovalType) => {
-    setSelectedRemovalType(removalType);
-    setIsDeaccessionDialogOpen(true);
+    dispatch({ type: "openRemovalFlow", removalType });
   };
 
   return (
@@ -147,12 +212,12 @@ export function ObjectActionsMenu({
               handleCopyLink();
             }}
           >
-            {linkCopied ? (
+            {state.linkCopied ? (
               <Check className="mr-2 size-4 text-green-500" />
             ) : (
               <Link2 className="mr-2 size-4" />
             )}
-            {linkCopied ? "Link copied" : "Copy Link"}
+            {state.linkCopied ? "Link copied" : "Copy Link"}
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
@@ -231,31 +296,31 @@ export function ObjectActionsMenu({
       </DropdownMenu>
 
       <DeaccessionDialog
-        open={isDeaccessionDialogOpen}
+        open={state.isDeaccessionDialogOpen}
         onOpenChange={(open) => {
-          setIsDeaccessionDialogOpen(open);
-          if (!open) {
-            setSelectedRemovalType(null);
+          if (open) {
+            dispatch({ type: "setDeaccessionDialogOpen", value: true });
+            return;
           }
+          dispatch({ type: "closeRemovalFlow" });
         }}
         collectionId={item._id}
         collectionTitle={item.title}
         organizationId={organizationId}
-        initialRemovalType={selectedRemovalType}
+        initialRemovalType={state.selectedRemovalType}
       />
       {objectDetail?.collection ? (
         <PrintPreviewModal
-          isOpen={isPrintModalOpen}
-          onClose={() => {
-            setIsPrintModalOpen(false);
-            setShouldPrintWhenReady(false);
-          }}
+          isOpen={state.isPrintModalOpen}
+          onClose={() => dispatch({ type: "closePrintModal" })}
           collection={objectDetail.collection}
           heroImage={heroImageForPrint}
           locationPath={objectDetail.locationPath}
           locale={locale}
-          printOnOpen={shouldPrintWhenReady}
-          onPrintOnOpenComplete={() => setShouldPrintWhenReady(false)}
+          printOnOpen={state.shouldPrintWhenReady}
+          onPrintOnOpenComplete={() =>
+            dispatch({ type: "clearPrintWhenReady" })
+          }
         />
       ) : null}
     </>
@@ -315,93 +380,91 @@ function ObjectGridItem({
   };
 
   return (
-    <>
-      <div
-        className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:border-ring/50 hover:shadow-xl ${
-          isSelected ? "border-primary ring-1 ring-primary" : ""
-        }`}
-      >
-        {onSelect && (
-          <div
-            className={`absolute top-2 left-2 z-20 transition-opacity ${
-              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            }`}
-          >
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelect(!!checked)}
-              onClick={(e) => e.stopPropagation()}
-              className="border-input bg-background/80"
-            />
-          </div>
-        )}
-        <Link href={`/objects/${item._id}`} className="block">
-          <div className="relative aspect-square overflow-hidden bg-background">
-            {item.primaryImageUrl ? (
-              <Image
-                src={item.primaryImageUrl}
-                alt={item.title}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                loading={shouldEagerLoad ? "eager" : "lazy"}
-                className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
-                <Building2 className="size-12" />
-              </div>
-            )}
-
-            {/* Status Badge Top Right */}
-            <div className="absolute top-2 right-2 z-10">
-              {getStatusBadge(item.status)}
-            </div>
-          </div>
-          <div className="p-3">
-            <h3 className="truncate text-xs font-medium text-card-foreground">
-              {item.title}
-            </h3>
-            <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
-              {item.accessionNumber}
-            </p>
-            {item.objectType && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {(() => {
-                  try {
-                    const types = JSON.parse(item.objectType);
-                    if (Array.isArray(types) && types.length > 0) {
-                      return types.slice(0, 2).map((type: string) => (
-                        <span
-                          key={type}
-                          className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
-                        >
-                          {type}
-                        </span>
-                      ));
-                    }
-                    return (
-                      <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                        {item.objectType}
-                      </span>
-                    );
-                  } catch {
-                    return (
-                      <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                        {item.objectType}
-                      </span>
-                    );
-                  }
-                })()}
-              </div>
-            )}
-          </div>
-        </Link>
-
-        <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-          <ObjectActionsMenu item={item} organizationId={organizationId} />
+    <div
+      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:border-ring/50 hover:shadow-xl ${
+        isSelected ? "border-primary ring-1 ring-primary" : ""
+      }`}
+    >
+      {onSelect && (
+        <div
+          className={`absolute top-2 left-2 z-20 transition-opacity ${
+            isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelect(!!checked)}
+            onClick={(e) => e.stopPropagation()}
+            className="border-input bg-background/80"
+          />
         </div>
+      )}
+      <Link href={`/objects/${item._id}`} className="block">
+        <div className="relative aspect-square overflow-hidden bg-background">
+          {item.primaryImageUrl ? (
+            <Image
+              src={item.primaryImageUrl}
+              alt={item.title}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              loading={shouldEagerLoad ? "eager" : "lazy"}
+              className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center text-muted-foreground/50 transition-colors group-hover:text-muted-foreground">
+              <Building2 className="size-12" />
+            </div>
+          )}
+
+          {/* Status Badge Top Right */}
+          <div className="absolute top-2 right-2 z-10">
+            {getStatusBadge(item.status)}
+          </div>
+        </div>
+        <div className="p-3">
+          <h3 className="truncate text-xs font-medium text-card-foreground">
+            {item.title}
+          </h3>
+          <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+            {item.accessionNumber}
+          </p>
+          {item.objectType && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(() => {
+                try {
+                  const types = JSON.parse(item.objectType);
+                  if (Array.isArray(types) && types.length > 0) {
+                    return types.slice(0, 2).map((type: string) => (
+                      <span
+                        key={type}
+                        className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
+                      >
+                        {type}
+                      </span>
+                    ));
+                  }
+                  return (
+                    <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                      {item.objectType}
+                    </span>
+                  );
+                } catch {
+                  return (
+                    <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+                      {item.objectType}
+                    </span>
+                  );
+                }
+              })()}
+            </div>
+          )}
+        </div>
+      </Link>
+
+      <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
+        <ObjectActionsMenu item={item} organizationId={organizationId} />
       </div>
-    </>
+    </div>
   );
 }
 

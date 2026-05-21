@@ -12,24 +12,26 @@ export const deleteUserAccount = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userOrganizations = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
+    const [userOrganizations, authSessions, authAccounts] = await Promise.all([
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .collect(),
+      ctx.db
+        .query("authSessions")
+        .withIndex("userId", (q) => q.eq("userId", args.userId))
+        .collect(),
+      ctx.db
+        .query("authAccounts")
+        .withIndex("userIdAndProvider", (q) => q.eq("userId", args.userId))
+        .collect(),
+    ]);
 
-    await Promise.all(
-      userOrganizations.map((userOrganization) =>
+    await Promise.all([
+      ...userOrganizations.map((userOrganization) =>
         ctx.db.delete(userOrganization._id),
       ),
-    );
-
-    const authSessions = await ctx.db
-      .query("authSessions")
-      .withIndex("userId", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    await Promise.all(
-      authSessions.map(async (authSession) => {
+      ...authSessions.map(async (authSession) => {
         const refreshTokens = await ctx.db
           .query("authRefreshTokens")
           .withIndex("sessionId", (q) => q.eq("sessionId", authSession._id))
@@ -38,30 +40,22 @@ export const deleteUserAccount = internalMutation({
         await Promise.all(
           refreshTokens.map((refreshToken) => ctx.db.delete(refreshToken._id)),
         );
-
         await ctx.db.delete(authSession._id);
       }),
-    );
-
-    const authAccounts = await ctx.db
-      .query("authAccounts")
-      .withIndex("userIdAndProvider", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    await Promise.all(
-      authAccounts.map(async (authAccount) => {
+      ...authAccounts.map(async (authAccount) => {
         const verificationCode = await ctx.db
           .query("authVerificationCodes")
           .withIndex("accountId", (q) => q.eq("accountId", authAccount._id))
           .unique();
 
-        if (verificationCode) {
-          await ctx.db.delete(verificationCode._id);
-        }
-
-        await ctx.db.delete(authAccount._id);
+        await Promise.all([
+          verificationCode
+            ? ctx.db.delete(verificationCode._id)
+            : Promise.resolve(),
+          ctx.db.delete(authAccount._id),
+        ]);
       }),
-    );
+    ]);
 
     await ctx.db.delete(args.userId);
     return null;
@@ -78,15 +72,18 @@ export const relinkUserAuthRecords = internalMutation({
     userOrganizationsUpdated: v.number(),
   }),
   handler: async (ctx, args) => {
-    const targetUser = await ctx.db.get(args.targetUserId);
+    const [targetUser, authAccounts] = await Promise.all([
+      ctx.db.get(args.targetUserId),
+      ctx.db
+        .query("authAccounts")
+        .withIndex("userIdAndProvider", (q) =>
+          q.eq("userId", args.sourceUserId),
+        )
+        .collect(),
+    ]);
     if (!targetUser) {
       throw new Error("Target user not found");
     }
-
-    const authAccounts = await ctx.db
-      .query("authAccounts")
-      .withIndex("userIdAndProvider", (q) => q.eq("userId", args.sourceUserId))
-      .collect();
 
     await Promise.all(
       authAccounts.map((authAccount) =>

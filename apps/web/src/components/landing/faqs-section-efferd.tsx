@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 
 export function FaqsSectionEfferd() {
   return (
-    <section id="faq" className="py-32 px-4 relative bg-gray-950">
+    <section id="faq" className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <motion.h2

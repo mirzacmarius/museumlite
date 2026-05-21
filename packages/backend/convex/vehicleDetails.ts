@@ -4,8 +4,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
-  type QueryCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
@@ -89,12 +89,13 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       return null;
     }
@@ -144,8 +145,10 @@ export const getByVin = query({
       return null;
     }
 
-    await requireAutomotiveModule(ctx, details.organizationId);
-    await requirePermission(ctx, details.organizationId, "collections.read");
+    await Promise.all([
+      requireAutomotiveModule(ctx, details.organizationId),
+      requirePermission(ctx, details.organizationId, "collections.read"),
+    ]);
 
     return {
       _id: details._id,
@@ -184,12 +187,13 @@ export const upsert = mutation({
   },
   returns: v.id("vehicleDetails"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -207,19 +211,20 @@ export const upsert = mutation({
     const { collectionId, ...updateData } = args;
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        ...updateData,
-        lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "updated",
-        entityType: "vehicleDetails",
-        entityId: existing._id,
-        changes: updateData,
-      });
+      await Promise.all([
+        ctx.db.patch(existing._id, {
+          ...updateData,
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "updated",
+          entityType: "vehicleDetails",
+          entityId: existing._id,
+          changes: updateData,
+        }),
+      ]);
 
       return existing._id;
     }
@@ -250,12 +255,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, details] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.vehicleDetailsId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const details = await ctx.db.get(args.vehicleDetailsId);
     if (!details) {
       throw new Error("Vehicle details not found");
     }
@@ -283,12 +289,13 @@ export const addServiceLogEntry = mutation({
   },
   returns: v.id("vehicleDetails"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -305,19 +312,20 @@ export const addServiceLogEntry = mutation({
 
     if (existing) {
       const currentLog = existing.serviceLog ?? [];
-      await ctx.db.patch(existing._id, {
-        serviceLog: [...currentLog, args.entry],
-        lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "added_service_log",
-        entityType: "vehicleDetails",
-        entityId: existing._id,
-        changes: { entry: args.entry },
-      });
+      await Promise.all([
+        ctx.db.patch(existing._id, {
+          serviceLog: [...currentLog, args.entry],
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "added_service_log",
+          entityType: "vehicleDetails",
+          entityId: existing._id,
+          changes: { entry: args.entry },
+        }),
+      ]);
 
       return existing._id;
     }
@@ -349,12 +357,13 @@ export const addEventHistoryEntry = mutation({
   },
   returns: v.id("vehicleDetails"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -371,19 +380,20 @@ export const addEventHistoryEntry = mutation({
 
     if (existing) {
       const currentHistory = existing.eventHistory ?? [];
-      await ctx.db.patch(existing._id, {
-        eventHistory: [...currentHistory, args.entry],
-        lastModifiedAt: Date.now(),
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "added_event_history",
-        entityType: "vehicleDetails",
-        entityId: existing._id,
-        changes: { entry: args.entry },
-      });
+      await Promise.all([
+        ctx.db.patch(existing._id, {
+          eventHistory: [...currentHistory, args.entry],
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "added_event_history",
+          entityType: "vehicleDetails",
+          entityId: existing._id,
+          changes: { entry: args.entry },
+        }),
+      ]);
 
       return existing._id;
     }

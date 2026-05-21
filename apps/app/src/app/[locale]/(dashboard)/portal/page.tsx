@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -10,6 +7,9 @@ import { FeatureGuard } from "@v1/ui/feature-guard";
 import { useQuery } from "convex/react";
 import { Building2, Plus } from "lucide-react";
 import Link from "next/link";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import { PortalPreview } from "./_components/portal-preview";
 import { PortalSettingsSidebar } from "./_components/portal-settings-sidebar";
 import { PortalPageSkeleton } from "./portal-page-skeleton";

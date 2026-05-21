@@ -209,12 +209,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, segment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.segmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const segment = await ctx.db.get(args.segmentId);
     if (!segment) {
       throw new Error("Segment not found");
     }
@@ -233,16 +234,17 @@ export const update = mutation({
       updates.description = args.description?.trim();
     if (args.filters !== undefined) updates.filters = args.filters;
 
-    await ctx.db.patch(args.segmentId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: segment.organizationId,
-      userId,
-      action: "updated_account_segment",
-      entityType: "accountSegment",
-      entityId: args.segmentId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.segmentId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: segment.organizationId,
+        userId,
+        action: "updated_account_segment",
+        entityType: "accountSegment",
+        entityId: args.segmentId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -254,12 +256,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, segment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.segmentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const segment = await ctx.db.get(args.segmentId);
     if (!segment) {
       throw new Error("Segment not found");
     }

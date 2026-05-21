@@ -1,8 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { writeTextToClipboard } from "@/lib/clipboard";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -28,58 +25,112 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { useMutation, useQuery } from "convex/react";
-import { Check, Copy, Key, Loader2, Plus, Trash2, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Check, Copy, Loader2, Plus, Trash2 } from "lucide-react";
+import { useCallback, useReducer } from "react";
+import { PermissionGate } from "@/components/permission-gate";
+import { writeTextToClipboard } from "@/lib/clipboard";
+import { useScopedI18n } from "@/locales/client";
+
+interface ApiKeysTabState {
+  showCreate: boolean;
+  newKeyName: string;
+  createdKey: string | null;
+  isCreating: boolean;
+  copied: boolean;
+}
+
+type ApiKeysTabAction =
+  | { type: "openCreateDialog" }
+  | { type: "closeDialog" }
+  | { type: "setNewKeyName"; value: string }
+  | { type: "setCreatedKey"; value: string }
+  | { type: "setCreating"; value: boolean }
+  | { type: "setCopied"; value: boolean };
+
+const initialApiKeysTabState: ApiKeysTabState = {
+  showCreate: false,
+  newKeyName: "",
+  createdKey: null,
+  isCreating: false,
+  copied: false,
+};
+
+function apiKeysTabReducer(
+  state: ApiKeysTabState,
+  action: ApiKeysTabAction,
+): ApiKeysTabState {
+  switch (action.type) {
+    case "openCreateDialog":
+      return { ...state, showCreate: true };
+    case "closeDialog":
+      return {
+        ...state,
+        showCreate: false,
+        createdKey: null,
+        newKeyName: "",
+      };
+    case "setNewKeyName":
+      return { ...state, newKeyName: action.value };
+    case "setCreatedKey":
+      return { ...state, createdKey: action.value };
+    case "setCreating":
+      return { ...state, isCreating: action.value };
+    case "setCopied":
+      return { ...state, copied: action.value };
+  }
+}
+
 import { ClientDateText } from "./developer-shared";
 
 export function ApiKeysTab({
   organizationId,
-}: { organizationId: Id<"organizations"> }) {
+}: {
+  organizationId: Id<"organizations">;
+}) {
   const t = useScopedI18n("settings");
   const apiKeys = useQuery(api.apiKeys.list, { organizationId });
   const createKey = useMutation(api.apiKeys.create);
   const revokeKey = useMutation(api.apiKeys.revoke);
   const deleteKey = useMutation(api.apiKeys.deleteKey);
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [newKeyName, setNewKeyName] = useState("");
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [state, dispatch] = useReducer(
+    apiKeysTabReducer,
+    initialApiKeysTabState,
+  );
 
   const handleCreate = async () => {
-    if (!newKeyName.trim()) return;
-    setIsCreating(true);
+    if (!state.newKeyName.trim()) return;
+    dispatch({ type: "setCreating", value: true });
     try {
       const result = await createKey({
         organizationId,
-        name: newKeyName.trim(),
+        name: state.newKeyName.trim(),
         permissions: ["read", "write"],
       });
-      setCreatedKey(result.key);
-      setNewKeyName("");
+      dispatch({ type: "setCreatedKey", value: result.key });
+      dispatch({ type: "setNewKeyName", value: "" });
     } catch (error) {
       alert(
         error instanceof Error ? error.message : t("errors.failedToCreateKey"),
       );
     } finally {
-      setIsCreating(false);
+      dispatch({ type: "setCreating", value: false });
     }
   };
 
   const handleCopy = useCallback(async () => {
-    if (!createdKey) {
+    if (!state.createdKey) {
       return;
     }
 
-    const didCopy = await writeTextToClipboard(createdKey);
+    const didCopy = await writeTextToClipboard(state.createdKey);
     if (!didCopy) {
       return;
     }
 
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [createdKey]);
+    dispatch({ type: "setCopied", value: true });
+    setTimeout(() => dispatch({ type: "setCopied", value: false }), 2000);
+  }, [state.createdKey]);
 
   const handleRevoke = async (keyId: Id<"apiKeys">) => {
     try {
@@ -102,9 +153,7 @@ export function ApiKeysTab({
   };
 
   const closeDialog = () => {
-    setShowCreate(false);
-    setCreatedKey(null);
-    setNewKeyName("");
+    dispatch({ type: "closeDialog" });
   };
 
   return (
@@ -117,7 +166,7 @@ export function ApiKeysTab({
               {t("apiKeys.description")}
             </p>
           </div>
-          <Button onClick={() => setShowCreate(true)}>
+          <Button onClick={() => dispatch({ type: "openCreateDialog" })}>
             <Plus className="mr-2 size-4" />
             {t("apiKeys.createButton")}
           </Button>
@@ -230,30 +279,30 @@ export function ApiKeysTab({
           )}
         </div>
 
-        <Dialog open={showCreate} onOpenChange={closeDialog}>
+        <Dialog open={state.showCreate} onOpenChange={closeDialog}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {createdKey
+                {state.createdKey
                   ? t("apiKeys.createDialog.createdTitle")
                   : t("apiKeys.createDialog.title")}
               </DialogTitle>
               <DialogDescription>
-                {createdKey
+                {state.createdKey
                   ? t("apiKeys.createDialog.createdDescription")
                   : t("apiKeys.createDialog.description")}
               </DialogDescription>
             </DialogHeader>
 
-            {createdKey ? (
+            {state.createdKey ? (
               <div className="space-y-4">
                 <div className="rounded-lg border border-border bg-muted p-4">
                   <div className="flex items-center justify-between gap-4">
                     <code className="flex-1 break-all text-sm">
-                      {createdKey}
+                      {state.createdKey}
                     </code>
                     <Button variant="outline" size="icon" onClick={handleCopy}>
-                      {copied ? (
+                      {state.copied ? (
                         <Check className="size-4 text-green-500" />
                       ) : (
                         <Copy className="size-4" />
@@ -274,15 +323,17 @@ export function ApiKeysTab({
                   <Input
                     id="key-name"
                     placeholder={t("apiKeys.createDialog.namePlaceholder")}
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
+                    value={state.newKeyName}
+                    onChange={(e) =>
+                      dispatch({ type: "setNewKeyName", value: e.target.value })
+                    }
                   />
                 </div>
               </div>
             )}
 
             <DialogFooter>
-              {createdKey ? (
+              {state.createdKey ? (
                 <Button onClick={closeDialog}>
                   {t("apiKeys.createDialog.done")}
                 </Button>
@@ -293,9 +344,9 @@ export function ApiKeysTab({
                   </Button>
                   <Button
                     onClick={handleCreate}
-                    disabled={!newKeyName.trim() || isCreating}
+                    disabled={!state.newKeyName.trim() || state.isCreating}
                   >
-                    {isCreating ? (
+                    {state.isCreating ? (
                       <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : null}
                     {t("apiKeys.createDialog.create")}

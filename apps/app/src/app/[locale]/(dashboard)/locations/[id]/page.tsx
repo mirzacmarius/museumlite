@@ -1,8 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -13,6 +10,9 @@ import { Archive, ArrowLeft, Clock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { DeleteLocationDialog } from "../_components/delete-location-dialog";
 import { formatLocationLabel } from "../location-label";
 import { LocationTimeline } from "./_components/location-timeline";
@@ -84,36 +84,36 @@ export default function LocationDetailPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground">
                   {t("locationName")}
-                </label>
+                </p>
                 <p className="mt-1 text-lg font-medium">{location.name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground">
                   {t("form.locationIdLabel")}
-                </label>
+                </p>
                 <p className="mt-1 font-medium">{location.locationCode}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground">
                   {t("type")}
-                </label>
+                </p>
                 <p className="mt-1 capitalize">{location.type}</p>
               </div>
               {location.address && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {t("address")}
-                  </label>
+                  </p>
                   <p className="mt-1">{location.address}</p>
                 </div>
               )}
               {location.coordinates && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {t("coordinates")}
-                  </label>
+                  </p>
                   <p className="mt-1">
                     {location.coordinates.latitude.toFixed(6)},
                     {location.coordinates.longitude.toFixed(6)}
@@ -123,9 +123,9 @@ export default function LocationDetailPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground">
                   {t("childrenLocations")}
-                </label>
+                </p>
                 <p className="mt-1">
                   {location.children.length}{" "}
                   {location.children.length !== 1
@@ -149,9 +149,9 @@ export default function LocationDetailPage() {
               </div>
               {location.notes && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {t("notes")}
-                  </label>
+                  </p>
                   <p className="mt-1 whitespace-pre-wrap">{location.notes}</p>
                 </div>
               )}

@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientRelativeTime } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
@@ -14,6 +12,8 @@ import { useMutation, useQuery } from "convex/react";
 import { AtSign, Loader2, MessageSquare, Send, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ClientRelativeTime } from "@/components/client-date";
+import { useCurrentLocale } from "@/locales/client";
 
 type CommentItem = {
   _id: Id<"objectComments">;
@@ -43,7 +43,7 @@ interface ObjectCommentsProps {
   organizationId: Id<"organizations">;
 }
 
-const mentionPattern = /@([a-zA-Z0-9._-]*)$/;
+const _mentionPattern = /@([a-zA-Z0-9._-]*)$/;
 
 function normalizeHandle(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9._-]/g, "");

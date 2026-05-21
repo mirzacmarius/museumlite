@@ -1,10 +1,10 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { redirect, useParams } from "next/navigation";
+import { useScopedI18n } from "@/locales/client";
 import { ObjectRequestFormPage } from "../../../objects/new/page";
 
 export default function EditAccessionObjectPage() {

@@ -1,10 +1,5 @@
 "use client";
 
-import {
-  type FieldMapping,
-  ImportFieldMapper,
-} from "@/components/import-field-mapper";
-import { PermissionGate } from "@/components/permission-gate";
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import {
@@ -27,6 +22,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { RefObject } from "react";
+import {
+  type FieldMapping,
+  ImportFieldMapper,
+} from "@/components/import-field-mapper";
+import { PermissionGate } from "@/components/permission-gate";
 import { type ImportState, TARGET_FIELDS } from "./import-accessions-types";
 
 export interface ImportAccessionsStepPanelsProps {
@@ -79,21 +79,17 @@ export function ImportAccessionsStepPanels({
             className="hidden"
           />
 
-          <div
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
-            onKeyDown={(e) =>
-              e.key === "Enter" && fileInputRef.current?.click()
-            }
-            role="button"
-            tabIndex={0}
-            className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
+            className="flex min-h-[200px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
           >
             <Upload className="mb-4 size-10 text-muted-foreground" />
             <p className="font-medium">{t("import.dropZone")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("import.maxRows")}
             </p>
-          </div>
+          </button>
 
           <div className="mt-8 rounded-lg border border-border bg-muted/30 p-4">
             <h3 className="mb-2 font-medium">{t("import.formatTitle")}</h3>

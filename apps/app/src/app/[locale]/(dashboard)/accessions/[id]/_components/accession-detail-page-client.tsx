@@ -1,18 +1,18 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Archive, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 import { AccessionDetailHeroBanner } from "./accession-detail-hero-banner";
 import { AccessionDetailMainContent } from "./accession-detail-main-content";
 import type { WorkflowStepInfo } from "./accession-detail-types";
-import { StatusTile, formatWorkflowStepDetails } from "./accession-detail-ui";
+import { formatWorkflowStepDetails } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 
 export function AccessionDetailPageClient() {
@@ -94,7 +94,7 @@ export function AccessionDetailPageClient() {
   const workflowSummary = currentWorkflowStep
     ? formatWorkflowStepDetails(currentWorkflowStep)
     : "No active workflow step.";
-  const reviewStateLabel = isDraft
+  const _reviewStateLabel = isDraft
     ? "Draft must be submitted before review can begin."
     : accession.status === "pending"
       ? "Pending review"
@@ -109,7 +109,7 @@ export function AccessionDetailPageClient() {
       : displayStatus === "pending"
         ? "warning"
         : "default";
-  const sourceVerificationState = requiresSourceVerification
+  const _sourceVerificationState = requiresSourceVerification
     ? isSourceVerified
       ? "Verified"
       : "Required before approval"

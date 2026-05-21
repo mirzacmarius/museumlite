@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { EmptyState } from "@v1/ui/empty-state";
@@ -13,6 +9,10 @@ import { StatusBadge } from "@v1/ui/status-badge";
 import { useQuery } from "convex/react";
 import { Package } from "lucide-react";
 import Link from "next/link";
+import { ClientDate } from "@/components/client-date";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export function NewArrivalsFeed() {
   const locale = useCurrentLocale();

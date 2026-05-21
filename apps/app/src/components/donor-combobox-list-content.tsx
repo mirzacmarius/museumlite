@@ -11,8 +11,8 @@ import { cn } from "@v1/ui/utils";
 import { Check } from "lucide-react";
 import {
   type DonorOption,
-  UNKNOWN_DONORS_VALUE,
   formatDonorName,
+  UNKNOWN_DONORS_VALUE,
 } from "./donor-combobox-types";
 
 interface DonorComboboxListContentProps {

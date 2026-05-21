@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -14,6 +12,8 @@ import {
 } from "@v1/ui/dialog";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 
 export function ExhibitionDetailHeader({

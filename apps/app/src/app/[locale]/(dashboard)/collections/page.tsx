@@ -1,17 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import {
-  DashboardListPageSkeleton,
-  GridCardsSkeleton,
-} from "@/components/dashboard-list-page-skeleton";
-import {
-  ExportButtonWithFormat,
-  type ExportFormat,
-} from "@/components/export-button-with-format";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -28,6 +16,18 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { ClientDate } from "@/components/client-date";
+import {
+  DashboardListPageSkeleton,
+  GridCardsSkeleton,
+} from "@/components/dashboard-list-page-skeleton";
+import {
+  ExportButtonWithFormat,
+  type ExportFormat,
+} from "@/components/export-button-with-format";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function CollectionsPage() {
   const t = useScopedI18n("collections");

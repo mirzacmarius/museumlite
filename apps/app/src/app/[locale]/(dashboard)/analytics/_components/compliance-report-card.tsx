@@ -1,7 +1,5 @@
 "use client";
 
-import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -22,6 +20,8 @@ import {
   XCircle,
 } from "lucide-react";
 import type * as React from "react";
+import { formatDate } from "@/lib/format-date";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface ComplianceReportCardProps {
   data: {
@@ -90,7 +90,7 @@ function formatDateShort(timestamp: number, locale: string): string {
   });
 }
 
-function formatRelativeTime(timestamp: number, todayLabel: string): string {
+function _formatRelativeTime(timestamp: number, todayLabel: string): string {
   const now = Date.now();
   const diff = now - timestamp;
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));

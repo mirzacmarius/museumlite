@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { AlertCircle, ArrowRightLeft, Boxes, ShieldCheck } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 interface LoanListKpisProps {
   activeLoansCount: number;

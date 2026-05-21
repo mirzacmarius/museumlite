@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -21,6 +19,8 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 
 interface ApprovalWorkflowProps {
   accessionId: string;

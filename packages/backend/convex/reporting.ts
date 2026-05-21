@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { loadCatalogGrowthSnapshot } from "./utils/reportingCatalogAnalytics";
 
 // ============================================
 // VALIDATORS
@@ -96,11 +97,10 @@ export const createScheduledReport = mutation({
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
       requirePermission(
-ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    
-    ),
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
     ]);
 
     const nextRunAt = calculateNextRun(
@@ -173,12 +173,13 @@ export const updateScheduledReport = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, report] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.reportId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const report = await ctx.db.get(args.reportId);
     if (!report) {
       throw new Error("Report not found");
     }
@@ -186,11 +187,10 @@ export const updateScheduledReport = mutation({
     await Promise.all([
       requireFeatureAccess(ctx, report.organizationId, "reporting"),
       requirePermission(
-ctx,
-      report.organizationId,
-      "organization.manage_settings",
-    
-    ),
+        ctx,
+        report.organizationId,
+        "organization.manage_settings",
+      ),
     ]);
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
@@ -245,12 +245,13 @@ export const deleteScheduledReport = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, report] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.reportId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const report = await ctx.db.get(args.reportId);
     if (!report) {
       throw new Error("Report not found");
     }
@@ -417,12 +418,13 @@ export const runReportManually = mutation({
   },
   returns: v.id("reportRuns"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, report] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.reportId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const report = await ctx.db.get(args.reportId);
     if (!report) {
       throw new Error("Report not found");
     }
@@ -486,11 +488,10 @@ export const listReportRuns = query({
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
       requirePermission(
-ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    
-    ),
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
     ]);
 
     const runs = args.scheduledReportId
@@ -668,35 +669,17 @@ export const getCollectionTrends = query({
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
       requirePermission(
-ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    
-    ),
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
     ]);
 
-    const [collections, accessions, deaccessions] = await Promise.all([
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("accessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "approved"))
-        .collect(),
-      ctx.db
-        .query("deaccessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .filter((q) => q.eq(q.field("status"), "approved"))
-        .collect(),
-    ] as const);
+    const snapshot = await loadCatalogGrowthSnapshot(
+      ctx,
+      args.organizationId,
+    );
+    const { collections, accessions, deaccessions } = snapshot;
     // Generate date buckets
     const buckets = generateDateBuckets(
       args.startDate,
@@ -1039,11 +1022,10 @@ export const getCollectionHealthDashboard = query({
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
       requirePermission(
-ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    
-    ),
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
     ]);
 
     const now = Date.now();

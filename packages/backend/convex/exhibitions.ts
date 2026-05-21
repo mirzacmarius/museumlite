@@ -4,8 +4,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
-  type QueryCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
@@ -190,12 +190,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.id);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -206,11 +207,7 @@ export const update = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const { id, ...updates } = args;
@@ -236,16 +233,17 @@ export const update = mutation({
       );
     }
 
-    await ctx.db.patch(args.id, filteredUpdates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "updated",
-      entityType: "exhibition",
-      entityId: args.id,
-      changes: filteredUpdates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.id, filteredUpdates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "updated",
+        entityType: "exhibition",
+        entityId: args.id,
+        changes: filteredUpdates,
+      }),
+    ]);
 
     return null;
   },
@@ -257,12 +255,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.id);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -273,23 +272,20 @@ export const remove = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.delete",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.delete"),
     ]);
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "exhibition",
-      entityId: args.id,
-      changes: { title: exhibition.title },
-    });
-
-    await ctx.db.delete(args.id);
+    await Promise.all([
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "deleted",
+        entityType: "exhibition",
+        entityId: args.id,
+        changes: { title: exhibition.title },
+      }),
+      ctx.db.delete(args.id),
+    ]);
     return null;
   },
 });
@@ -377,12 +373,13 @@ export const create = mutation({
   },
   returns: v.id("exhibitions"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -413,9 +410,9 @@ export const create = mutation({
         .collect();
 
       await Promise.all(
-        Array.from(currentExhibitions).map(async (exhibition) => {
-          await ctx.db.patch(exhibition._id, { isCurrent: false });
-        }),
+        currentExhibitions.map((exhibition) =>
+          ctx.db.patch(exhibition._id, { isCurrent: false }),
+        ),
       );
     }
 
@@ -456,7 +453,7 @@ export const create = mutation({
       loanVenue: args.loanVenue,
       notes: args.notes,
       status: workflowConfig ? "proposed" : "active",
-      workflowStep: workflowConfig ? workflowState.firstStep ?? 1 : undefined,
+      workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
     });
@@ -509,12 +506,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -570,21 +568,22 @@ export const approve = mutation({
         workflowState.isPastLastStep || workflowState.isLastStep;
 
       if (isLastStep) {
-        await ctx.db.patch(args.exhibitionId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-          workflowHistory: history,
-        });
-
-        await ctx.runMutation(internal.audit.logAction, {
-          organizationId: exhibition.organizationId,
-          userId,
-          action: "approved",
-          entityType: "exhibition",
-          entityId: args.exhibitionId,
-          changes: { status: "approved", step: currentStep },
-        });
+        await Promise.all([
+          ctx.db.patch(args.exhibitionId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: exhibition.organizationId,
+            userId,
+            action: "approved",
+            entityType: "exhibition",
+            entityId: args.exhibitionId,
+            changes: { status: "approved", step: currentStep },
+          }),
+        ]);
 
         const creatorEntry = history.find((h) => h.step === 0);
         const creatorId = creatorEntry?.approvedBy;
@@ -671,12 +670,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -721,19 +721,20 @@ export const reject = mutation({
       comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
     });
 
-    await ctx.db.patch(args.exhibitionId, {
-      status: "rejected",
-      workflowHistory: history,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "rejected", comment: args.comment },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        status: "rejected",
+        workflowHistory: history,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
+    ]);
 
     const creatorEntry = history.find((h) => h.step === 0);
     const creatorId = creatorEntry?.approvedBy;
@@ -760,12 +761,13 @@ export const activate = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -790,11 +792,7 @@ export const activate = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     // Move all exhibition objects to installed status and update their locations
@@ -855,12 +853,13 @@ export const close = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -888,11 +887,7 @@ export const close = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     // Handle objects - return them to original locations if requested
@@ -1199,12 +1194,13 @@ export const uploadDocument = mutation({
   },
   returns: v.id("exhibitionDocuments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1231,12 +1227,13 @@ export const deleteDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, document] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.documentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const document = await ctx.db.get(args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }
@@ -1280,7 +1277,7 @@ export const generateUploadUrl = mutation({
 // Installation Phase Management
 // ============================================================================
 
-const installationTaskValidator = v.object({
+const _installationTaskValidator = v.object({
   taskId: v.string(),
   task: v.string(),
   required: v.boolean(),
@@ -1306,12 +1303,13 @@ export const setInstallationChecklist = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1322,11 +1320,7 @@ export const setInstallationChecklist = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const checklistItems = args.checklist.map((item) => ({
@@ -1339,18 +1333,19 @@ export const setInstallationChecklist = mutation({
       notes: undefined,
     }));
 
-    await ctx.db.patch(args.exhibitionId, {
-      installationChecklist: checklistItems,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "set_installation_checklist",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskCount: args.checklist.length },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        installationChecklist: checklistItems,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "set_installation_checklist",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskCount: args.checklist.length },
+      }),
+    ]);
 
     return null;
   },
@@ -1365,12 +1360,13 @@ export const startInstallation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1383,26 +1379,23 @@ export const startInstallation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.exhibitionId, {
-      status: "installing",
-      installationStartedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "started_installation",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "installing" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        status: "installing",
+        installationStartedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "started_installation",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "installing" },
+      }),
+    ]);
 
     return null;
   },
@@ -1419,12 +1412,13 @@ export const completeInstallationTask = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1450,11 +1444,7 @@ export const completeInstallationTask = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     checklist[taskIndex] = {
@@ -1467,18 +1457,19 @@ export const completeInstallationTask = mutation({
       notes: args.notes,
     };
 
-    await ctx.db.patch(args.exhibitionId, {
-      installationChecklist: checklist,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "completed_installation_task",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskId: args.taskId, task: existingTask.task },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        installationChecklist: checklist,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "completed_installation_task",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskId: args.taskId, task: existingTask.task },
+      }),
+    ]);
 
     return null;
   },
@@ -1494,12 +1485,13 @@ export const uncompleteInstallationTask = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1525,11 +1517,7 @@ export const uncompleteInstallationTask = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     checklist[taskIndex] = {
@@ -1542,18 +1530,19 @@ export const uncompleteInstallationTask = mutation({
       notes: undefined,
     };
 
-    await ctx.db.patch(args.exhibitionId, {
-      installationChecklist: checklist,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "uncompleted_installation_task",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskId: args.taskId },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        installationChecklist: checklist,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "uncompleted_installation_task",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskId: args.taskId },
+      }),
+    ]);
 
     return null;
   },
@@ -1639,12 +1628,13 @@ export const completeInstallation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1667,26 +1657,23 @@ export const completeInstallation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.exhibitionId, {
-      status: "approved", // Back to approved, ready for activation
-      installationCompletedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "completed_installation",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "approved" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        status: "approved", // Back to approved, ready for activation
+        installationCompletedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "completed_installation",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "approved" },
+      }),
+    ]);
 
     return null;
   },
@@ -1712,23 +1699,20 @@ export const setDeinstallationChecklist = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const checklistItems = args.checklist.map((item) => ({
@@ -1741,18 +1725,19 @@ export const setDeinstallationChecklist = mutation({
       notes: undefined,
     }));
 
-    await ctx.db.patch(args.exhibitionId, {
-      deinstallationChecklist: checklistItems,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "set_deinstallation_checklist",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskCount: args.checklist.length },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        deinstallationChecklist: checklistItems,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "set_deinstallation_checklist",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskCount: args.checklist.length },
+      }),
+    ]);
 
     return null;
   },
@@ -1768,12 +1753,13 @@ export const startDeinstallation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1784,27 +1770,24 @@ export const startDeinstallation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.patch(args.exhibitionId, {
-      status: "deinstalling",
-      deinstallationStartedAt: Date.now(),
-      deinstallationNotes: args.notes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "started_deinstallation",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { status: "deinstalling" },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        status: "deinstalling",
+        deinstallationStartedAt: Date.now(),
+        deinstallationNotes: args.notes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "started_deinstallation",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { status: "deinstalling" },
+      }),
+    ]);
 
     return null;
   },
@@ -1821,12 +1804,13 @@ export const completeDeinstallationTask = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -1849,11 +1833,7 @@ export const completeDeinstallationTask = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     checklist[taskIndex] = {
@@ -1866,18 +1846,19 @@ export const completeDeinstallationTask = mutation({
       notes: args.notes,
     };
 
-    await ctx.db.patch(args.exhibitionId, {
-      deinstallationChecklist: checklist,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "completed_deinstallation_task",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { taskId: args.taskId, task: existingTask.task },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionId, {
+        deinstallationChecklist: checklist,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "completed_deinstallation_task",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { taskId: args.taskId, task: existingTask.task },
+      }),
+    ]);
 
     return null;
   },
@@ -1984,12 +1965,13 @@ export const addExhibitionObject = mutation({
   },
   returns: v.id("exhibitionObjects"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -2054,12 +2036,13 @@ export const removeExhibitionObject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibitionObject] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionObjectId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
     if (!exhibitionObject) {
       throw new Error("Exhibition object not found");
     }
@@ -2075,23 +2058,20 @@ export const removeExhibitionObject = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
-    await ctx.db.delete(args.exhibitionObjectId);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "removed_exhibition_object",
-      entityType: "exhibition",
-      entityId: exhibitionObject.exhibitionId,
-      changes: { collectionId: exhibitionObject.collectionId },
-    });
+    await Promise.all([
+      ctx.db.delete(args.exhibitionObjectId),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "removed_exhibition_object",
+        entityType: "exhibition",
+        entityId: exhibitionObject.exhibitionId,
+        changes: { collectionId: exhibitionObject.collectionId },
+      }),
+    ]);
 
     return null;
   },
@@ -2108,12 +2088,13 @@ export const installObject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibitionObject] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionObjectId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
     if (!exhibitionObject) {
       throw new Error("Exhibition object not found");
     }
@@ -2129,11 +2110,7 @@ export const installObject = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     // Update exhibition object status
@@ -2186,12 +2163,13 @@ export const deinstallObject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibitionObject] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionObjectId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
     if (!exhibitionObject) {
       throw new Error("Exhibition object not found");
     }
@@ -2207,31 +2185,27 @@ export const deinstallObject = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
-
-    await ctx.db.patch(args.exhibitionObjectId, {
-      status: "deinstalled",
-      deinstalledAt: Date.now(),
-      deinstalledBy: userId,
-      conditionAtDeinstallation: args.conditionNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deinstalled_exhibition_object",
-      entityType: "exhibition",
-      entityId: exhibitionObject.exhibitionId,
-      changes: {
-        collectionId: exhibitionObject.collectionId,
-        conditionNotes: args.conditionNotes,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionObjectId, {
+        status: "deinstalled",
+        deinstalledAt: Date.now(),
+        deinstalledBy: userId,
+        conditionAtDeinstallation: args.conditionNotes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "deinstalled_exhibition_object",
+        entityType: "exhibition",
+        entityId: exhibitionObject.exhibitionId,
+        changes: {
+          collectionId: exhibitionObject.collectionId,
+          conditionNotes: args.conditionNotes,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -2247,12 +2221,13 @@ export const returnObjectToOriginalLocation = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibitionObject] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionObjectId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibitionObject = await ctx.db.get(args.exhibitionObjectId);
     if (!exhibitionObject) {
       throw new Error("Exhibition object not found");
     }
@@ -2273,11 +2248,7 @@ export const returnObjectToOriginalLocation = mutation({
 
     await Promise.all([
       requireExhibitionAccess(ctx, exhibition.organizationId),
-      requirePermission(
-      ctx,
-      exhibition.organizationId,
-      "collections.update",
-    ),
+      requirePermission(ctx, exhibition.organizationId, "collections.update"),
     ]);
 
     const returnLocation =
@@ -2290,23 +2261,24 @@ export const returnObjectToOriginalLocation = mutation({
       });
     }
 
-    await ctx.db.patch(args.exhibitionObjectId, {
-      status: "returned",
-      returnedToOriginalLocation: true,
-      returnedAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "returned_exhibition_object",
-      entityType: "exhibition",
-      entityId: exhibitionObject.exhibitionId,
-      changes: {
-        collectionId: exhibitionObject.collectionId,
-        returnedToLocationId: returnLocation,
-      },
-    });
+    await Promise.all([
+      ctx.db.patch(args.exhibitionObjectId, {
+        status: "returned",
+        returnedToOriginalLocation: true,
+        returnedAt: Date.now(),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "returned_exhibition_object",
+        entityType: "exhibition",
+        entityId: exhibitionObject.exhibitionId,
+        changes: {
+          collectionId: exhibitionObject.collectionId,
+          returnedToLocationId: returnLocation,
+        },
+      }),
+    ]);
 
     return null;
   },
@@ -2413,12 +2385,13 @@ export const bulkInstallObjects = mutation({
     installedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -2434,32 +2407,32 @@ export const bulkInstallObjects = mutation({
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
-    await Promise.all(
-      Array.from(pendingObjects).map(async (obj) => {
+    await Promise.all([
+      ...pendingObjects.map(async (obj) => {
         const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
 
-        await ctx.db.patch(obj._id, {
-          status: "installed",
-          installedAt: Date.now(),
-          installedBy: userId,
-        });
-
-        if (newLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: newLocationId,
-          });
-        }
+        await Promise.all([
+          ctx.db.patch(obj._id, {
+            status: "installed",
+            installedAt: Date.now(),
+            installedBy: userId,
+          }),
+          newLocationId
+            ? ctx.db.patch(obj.collectionId, {
+                currentLocationId: newLocationId,
+              })
+            : Promise.resolve(),
+        ]);
       }),
-    );
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "bulk_installed_exhibition_objects",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { count: pendingObjects.length },
-    });
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "bulk_installed_exhibition_objects",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { count: pendingObjects.length },
+      }),
+    ]);
 
     return { installedCount: pendingObjects.length };
   },
@@ -2476,12 +2449,13 @@ export const bulkReturnObjects = mutation({
     returnedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, exhibition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.exhibitionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const exhibition = await ctx.db.get(args.exhibitionId);
     if (!exhibition) {
       throw new Error("Exhibition not found");
     }
@@ -2497,8 +2471,8 @@ export const bulkReturnObjects = mutation({
       .filter((q) => q.eq(q.field("status"), "deinstalled"))
       .collect();
 
-    await Promise.all(
-      Array.from(deinstalledObjects).map(async (obj) => {
+    await Promise.all([
+      ...deinstalledObjects.map(async (obj) => {
         if (obj.originalLocationId) {
           await ctx.db.patch(obj.collectionId, {
             currentLocationId: obj.originalLocationId,
@@ -2511,16 +2485,15 @@ export const bulkReturnObjects = mutation({
           returnedAt: Date.now(),
         });
       }),
-    );
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "bulk_returned_exhibition_objects",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { count: deinstalledObjects.length },
-    });
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: exhibition.organizationId,
+        userId,
+        action: "bulk_returned_exhibition_objects",
+        entityType: "exhibition",
+        entityId: args.exhibitionId,
+        changes: { count: deinstalledObjects.length },
+      }),
+    ]);
 
     return { returnedCount: deinstalledObjects.length };
   },

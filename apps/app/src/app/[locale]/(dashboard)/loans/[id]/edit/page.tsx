@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -9,6 +7,8 @@ import { useQuery } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { EditLoanForm, EditLoanLockedView } from "../_components/edit-loan";
 import type { Loan } from "../_components/types";
 

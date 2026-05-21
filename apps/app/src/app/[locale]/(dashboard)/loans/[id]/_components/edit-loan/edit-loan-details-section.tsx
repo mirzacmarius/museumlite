@@ -1,9 +1,9 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { FileText } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
 interface EditLoanDetailsSectionProps {

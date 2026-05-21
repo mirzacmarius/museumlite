@@ -86,24 +86,24 @@ export async function returnLoanItems(
       });
 
       const conditionInValue = conditionIn || item.conditionIn || "Returned";
-      await ctx.db.patch(item._id, {
-        conditionIn: conditionInValue,
-      });
-
-      returnedItemIds.push(item._id);
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId,
-        userId: changedBy,
-        action: "item_returned",
-        entityType: "loanItem",
-        entityId: item._id,
-        changes: {
-          loanId,
-          collectionId: item.collectionId,
+      await Promise.all([
+        ctx.db.patch(item._id, {
           conditionIn: conditionInValue,
-        },
-      });
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId,
+          userId: changedBy,
+          action: "item_returned",
+          entityType: "loanItem",
+          entityId: item._id,
+          changes: {
+            loanId,
+            collectionId: item.collectionId,
+            conditionIn: conditionInValue,
+          },
+        }),
+      ]);
+      returnedItemIds.push(item._id);
     }),
   );
 

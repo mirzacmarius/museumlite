@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -47,16 +46,17 @@ export const create = mutation({
   },
   returns: v.id("conditionOptions"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     // Check if condition already exists (case-insensitive)
     const existing = await ctx.db
@@ -104,12 +104,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, condition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.conditionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const condition = await ctx.db.get(args.conditionId);
     if (!condition) {
       throw new Error("Condition not found");
     }
@@ -148,16 +149,17 @@ export const update = mutation({
       updates.description = args.description;
     }
 
-    await ctx.db.patch(args.conditionId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: condition.organizationId,
-      userId,
-      action: "updated_condition_option",
-      entityType: "conditionOption",
-      entityId: args.conditionId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.conditionId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: condition.organizationId,
+        userId,
+        action: "updated_condition_option",
+        entityType: "conditionOption",
+        entityId: args.conditionId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -212,12 +214,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, condition] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.conditionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const condition = await ctx.db.get(args.conditionId);
     if (!condition) {
       throw new Error("Condition not found");
     }

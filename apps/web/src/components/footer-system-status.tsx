@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@v1/ui/tooltip";
+import { useEffect, useState } from "react";
 
 export function FooterSystemStatus() {
   const [isMounted, setIsMounted] = useState(false);

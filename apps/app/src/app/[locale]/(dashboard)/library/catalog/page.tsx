@@ -1,10 +1,5 @@
 "use client";
 
-import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
-import { useI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
@@ -29,8 +24,13 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skeleton";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 
 const ITEM_TYPE_VALUES = [
   "all",
@@ -249,10 +249,12 @@ function CatalogItemRow({
     >
       <div className="flex h-20 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
         {item.coverImageUrl ? (
-          <img
+          <Image
             src={item.coverImageUrl}
             alt={item.title}
-            className="size-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 400px"
+            className="object-cover"
           />
         ) : (
           <BookOpen className="size-6 text-muted-foreground" />

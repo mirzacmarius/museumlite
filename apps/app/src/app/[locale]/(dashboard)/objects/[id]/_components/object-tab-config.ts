@@ -3,9 +3,9 @@
 import {
   COLLECTION_MODULE_TAB_LABELS,
   type CollectionModuleId,
-  type ModuleId,
   isCollectionModuleId,
   isCollectionTypeEnabled,
+  type ModuleId,
 } from "@v1/backend/convex/utils/moduleCatalog";
 
 export type ObjectTabId =

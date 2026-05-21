@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -20,6 +19,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Loader2, Plus } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import { CONDITION_VALUES, type Condition } from "./catalog-item-detail-types";
 import type { CatalogItemDetailViewProps } from "./catalog-item-detail-view-props";
 

@@ -4,8 +4,8 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
   query,
 } from "./_generated/server";
@@ -177,58 +177,95 @@ async function ensureAccessionNumberAvailable(
   }
 }
 
+async function tryGeneratedAccessionNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  attempt: number,
+  lastGeneratedAccessionNumber: string | null,
+): Promise<string | null> {
+  if (attempt >= 5) {
+    return lastGeneratedAccessionNumber;
+  }
+
+  const nextAccessionNumber = await generateAccessionNumber(
+    ctx,
+    organizationId,
+  );
+  try {
+    await ensureAccessionNumberAvailable(
+      ctx,
+      organizationId,
+      nextAccessionNumber,
+    );
+    return nextAccessionNumber;
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "Accession number already exists"
+    ) {
+      throw error;
+    }
+  }
+
+  return tryGeneratedAccessionNumber(
+    ctx,
+    organizationId,
+    attempt + 1,
+    nextAccessionNumber,
+  );
+}
+
+async function tryFallbackAccessionNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  fallbackBase: string,
+  suffixAttempt: number,
+): Promise<string> {
+  if (suffixAttempt > 20) {
+    throw new Error("Could not generate a unique accession number");
+  }
+
+  const fallbackAccessionNumber = `${fallbackBase}-${suffixAttempt}`;
+  try {
+    await ensureAccessionNumberAvailable(
+      ctx,
+      organizationId,
+      fallbackAccessionNumber,
+    );
+    return fallbackAccessionNumber;
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      error.message !== "Accession number already exists"
+    ) {
+      throw error;
+    }
+  }
+
+  return tryFallbackAccessionNumber(
+    ctx,
+    organizationId,
+    fallbackBase,
+    suffixAttempt + 1,
+  );
+}
+
 async function generateUniqueAccessionNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  let lastGeneratedAccessionNumber: string | null = null;
-
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const nextAccessionNumber = await generateAccessionNumber(
-      ctx,
-      organizationId,
-    );
-    lastGeneratedAccessionNumber = nextAccessionNumber;
-    try {
-      await ensureAccessionNumberAvailable(
-        ctx,
-        organizationId,
-        nextAccessionNumber,
-      );
-      return nextAccessionNumber;
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== "Accession number already exists"
-      ) {
-        throw error;
-      }
-    }
+  const generated = await tryGeneratedAccessionNumber(
+    ctx,
+    organizationId,
+    0,
+    null,
+  );
+  if (generated) {
+    return generated;
   }
 
-  const fallbackBase =
-    lastGeneratedAccessionNumber || `ACC-${new Date().getFullYear()}`;
-
-  for (let suffixAttempt = 1; suffixAttempt <= 20; suffixAttempt += 1) {
-    const fallbackAccessionNumber = `${fallbackBase}-${suffixAttempt}`;
-    try {
-      await ensureAccessionNumberAvailable(
-        ctx,
-        organizationId,
-        fallbackAccessionNumber,
-      );
-      return fallbackAccessionNumber;
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== "Accession number already exists"
-      ) {
-        throw error;
-      }
-    }
-  }
-
-  throw new Error("Could not generate a unique accession number");
+  const fallbackBase = `ACC-${new Date().getFullYear()}`;
+  return tryFallbackAccessionNumber(ctx, organizationId, fallbackBase, 1);
 }
 
 async function findReusablePendingDraftAccession(
@@ -466,12 +503,13 @@ export const generateDraftUploadUrl = mutation({
     uploadUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "media.upload"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "media.upload");
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     return {
@@ -544,7 +582,7 @@ export const upsertObjectDraft = mutation({
 
     const nextWorkflowStep =
       args.saveMode === "submit" && workflowConfig
-        ? workflowState.firstStep ?? 1
+        ? (workflowState.firstStep ?? 1)
         : 0;
     const shouldAutoApproveSubmit =
       args.saveMode === "submit" && !workflowConfig;
@@ -1103,14 +1141,15 @@ export const backfillSearchDocuments = mutation({
     updatedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.read");
-
-    const accessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, accessions] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.read"),
+      ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     await Promise.all(
       Array.from(accessions).map(async (accession) => {
@@ -1279,12 +1318,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1342,12 +1382,13 @@ export const updateWorkflowStep = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1383,12 +1424,13 @@ export const submitForApproval = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1435,12 +1477,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1687,12 +1730,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1727,23 +1771,23 @@ export const reject = mutation({
       },
     );
 
-    await ctx.runMutation(internal.deaccessions.createRejectedFromAccession, {
-      organizationId: accession.organizationId,
-      collectionId,
-      createdByUserId: userId,
-      accessionNumber: accession.accessionNumber,
-      comment: args.comment,
-    });
-
-    // Log audit action
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: accession.organizationId,
-      userId,
-      action: "rejected",
-      entityType: "accession",
-      entityId: args.accessionId,
-      changes: { status: "rejected", comment: args.comment },
-    });
+    await Promise.all([
+      ctx.runMutation(internal.deaccessions.createRejectedFromAccession, {
+        organizationId: accession.organizationId,
+        collectionId,
+        createdByUserId: userId,
+        accessionNumber: accession.accessionNumber,
+        comment: args.comment,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: accession.organizationId,
+        userId,
+        action: "rejected",
+        entityType: "accession",
+        entityId: args.accessionId,
+        changes: { status: "rejected", comment: args.comment },
+      }),
+    ]);
 
     // Notify users who were involved in the workflow (from history)
     const history = accession.workflowHistory ?? [];
@@ -1773,12 +1817,13 @@ export const emptyRejected = mutation({
     deletedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.delete"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.delete");
 
     const rejectedAccessions = await ctx.db
       .query("accessions")
@@ -1908,10 +1953,12 @@ export const createCollectionFromAccession = internalMutation({
       status: "active",
     });
 
-    await ctx.db.patch(args.accessionId, {
-      collectionId,
-    });
-    await syncAccessionSearchDocument(ctx, args.accessionId);
+    await Promise.all([
+      ctx.db.patch(args.accessionId, {
+        collectionId,
+      }),
+      syncAccessionSearchDocument(ctx, args.accessionId),
+    ]);
 
     return collectionId;
   },
@@ -1936,13 +1983,15 @@ export const createCollectionFromRejectedAccession = internalMutation({
     const rejectedAt = accession.approvedAt ?? Date.now();
 
     if (accession.collectionId) {
-      await markCollectionDeaccessioned(ctx, {
-        collectionId: accession.collectionId,
-        changedBy: args.rejectedBy,
-        changedAt: rejectedAt,
-        displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
-      });
-      await syncAccessionSearchDocument(ctx, args.accessionId);
+      await Promise.all([
+        markCollectionDeaccessioned(ctx, {
+          collectionId: accession.collectionId,
+          changedBy: args.rejectedBy,
+          changedAt: rejectedAt,
+          displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
+        }),
+        syncAccessionSearchDocument(ctx, args.accessionId),
+      ]);
       return accession.collectionId;
     }
 
@@ -1954,10 +2003,12 @@ export const createCollectionFromRejectedAccession = internalMutation({
       displayStatus: REJECTED_OBJECT_DISPLAY_STATUS,
     });
 
-    await ctx.db.patch(args.accessionId, {
-      collectionId,
-    });
-    await syncAccessionSearchDocument(ctx, args.accessionId);
+    await Promise.all([
+      ctx.db.patch(args.accessionId, {
+        collectionId,
+      }),
+      syncAccessionSearchDocument(ctx, args.accessionId),
+    ]);
 
     return collectionId;
   },
@@ -2212,12 +2263,13 @@ export const verifySource = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2253,12 +2305,13 @@ export const unverifySource = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2295,12 +2348,13 @@ export const initializeDocumentChecklist = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2347,12 +2401,13 @@ export const uploadChecklistDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2426,12 +2481,13 @@ export const removeChecklistDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2599,12 +2655,13 @@ export const validateBulkImport = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const validMethods = [
       "purchase",
@@ -2771,6 +2828,7 @@ export const processBulkImport = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    const importingUserId = userId;
 
     await requirePermission(ctx, args.organizationId, "collections.create");
 
@@ -2787,81 +2845,85 @@ export const processBulkImport = mutation({
     let imported = 0;
     let failed = 0;
 
-    for (let i = 0; i < args.items.length; i++) {
-      const item = args.items[i];
-      if (!item) continue;
-
-      try {
-        // Generate accession number if not provided
-        let accessionNumber = item.accessionNumber?.trim();
-        if (!accessionNumber) {
-          accessionNumber = await generateAccessionNumber(
-            ctx,
-            args.organizationId,
-          );
-        }
-
-        // Check for duplicate accession number
-        const existing = await ctx.db
-          .query("accessions")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
-          .first();
-
-        if (existing) {
-          throw new Error(`Duplicate accession number: ${accessionNumber}`);
-        }
-
-        // Create workflow history
-        const workflowHistory = workflowConfig
-          ? [
-              {
-                step: 0,
-                approvedBy: userId,
-                approvedAt: Date.now(),
-                comment: "Bulk import",
-              },
-            ]
-          : [];
-
-        const accessionId = await ctx.db.insert("accessions", {
-          organizationId: args.organizationId,
-          accessionNumber,
-          dateReceived: item.dateReceived,
-          source: item.source,
-          method: item.method,
-          cost: item.cost,
-          notes: item.notes,
-          status: workflowConfig ? "pending" : "approved",
-          workflowStep: workflowConfig ? 0 : undefined,
-          workflowHistory,
-        });
-
-        await syncAccessionSearchDocument(ctx, accessionId);
-
-        accessionIds.push(accessionId);
-        imported++;
-
-        // If no workflow, auto-create collection
-        if (!workflowConfig) {
-          await ctx.runMutation(
-            internal.accessions.createCollectionFromAccession,
-            { accessionId },
-          );
-        }
-      } catch (error) {
-        if (!args.skipValidationErrors) {
-          throw error;
-        }
-        errors.push({
-          row: i + 1,
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-        failed++;
+    async function importBulkItemAt(index: number): Promise<void> {
+      if (index >= args.items.length) {
+        return;
       }
+
+      const item = args.items[index];
+      if (item) {
+        try {
+          let accessionNumber = item.accessionNumber?.trim();
+          if (!accessionNumber) {
+            accessionNumber = await generateAccessionNumber(
+              ctx,
+              args.organizationId,
+            );
+          }
+
+          const existing = await ctx.db
+            .query("accessions")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", args.organizationId),
+            )
+            .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
+            .first();
+
+          if (existing) {
+            throw new Error(`Duplicate accession number: ${accessionNumber}`);
+          }
+
+          const workflowHistory = workflowConfig
+            ? [
+                {
+                  step: 0,
+                  approvedBy: importingUserId,
+                  approvedAt: Date.now(),
+                  comment: "Bulk import",
+                },
+              ]
+            : [];
+
+          const accessionId = await ctx.db.insert("accessions", {
+            organizationId: args.organizationId,
+            accessionNumber,
+            dateReceived: item.dateReceived,
+            source: item.source,
+            method: item.method,
+            cost: item.cost,
+            notes: item.notes,
+            status: workflowConfig ? "pending" : "approved",
+            workflowStep: workflowConfig ? 0 : undefined,
+            workflowHistory,
+          });
+
+          await syncAccessionSearchDocument(ctx, accessionId);
+
+          accessionIds.push(accessionId);
+          imported++;
+
+          if (!workflowConfig) {
+            await ctx.runMutation(
+              internal.accessions.createCollectionFromAccession,
+              { accessionId },
+            );
+          }
+        } catch (error) {
+          if (!args.skipValidationErrors) {
+            throw error;
+          }
+          errors.push({
+            row: index + 1,
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+          failed++;
+        }
+      }
+
+      await importBulkItemAt(index + 1);
     }
+
+    await importBulkItemAt(0);
 
     // Log audit action
     await ctx.runMutation(internal.audit.logAction, {

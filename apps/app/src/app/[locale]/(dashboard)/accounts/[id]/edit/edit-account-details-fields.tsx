@@ -1,6 +1,5 @@
 "use client";
 
-import type { useScopedI18n } from "@/locales/client";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -13,6 +12,7 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { UserCog } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import type { useScopedI18n } from "@/locales/client";
 import type { EditAccountFormData } from "./edit-account-form-types";
 
 interface EditAccountDetailsFieldsProps {

@@ -196,22 +196,25 @@ export const backfillLocationCodes = internalMutation({
           return left._creationTime - right._creationTime;
         });
 
-        for (let i = 0; i < sortedLocations.length; i++) {
-          const location = sortedLocations[i];
+        const locationPatches = sortedLocations.flatMap((location, i) => {
           if (!location || location.locationCode) {
-            continue;
+            return [];
           }
 
           const prefix = getLocationCodePrefix(location.type);
           const sequence = String(i + 1).padStart(3, "0");
           const locationCode = `${prefix}-${sequence}`;
 
-          await ctx.db.patch(location._id, {
-            locationCode,
-            locationCodeNormalized: locationCode.toLowerCase(),
-          });
-          updatedCount++;
-        }
+          return [
+            ctx.db.patch(location._id, {
+              locationCode,
+              locationCodeNormalized: locationCode.toLowerCase(),
+            }),
+          ];
+        });
+
+        await Promise.all(locationPatches);
+        updatedCount += locationPatches.length;
 
         console.log(`✓ Updated ${locations.length} locations in group ${key}`);
       } catch (error) {
@@ -671,33 +674,37 @@ export const backfillLoanAdminPermissions = internalMutation({
           { role: registrarRole, name: "registrar" },
         ];
 
-        for (const { role, name } of rolesToUpdate) {
-          if (!role) {
-            console.warn(`No ${name} role found for organization ${org.name}`);
-            return;
-          }
+        await Promise.all(
+          rolesToUpdate.map(async ({ role, name }) => {
+            if (!role) {
+              console.warn(
+                `No ${name} role found for organization ${org.name}`,
+              );
+              return;
+            }
 
-          await Promise.all(
-            Array.from(permissionIds).map(async ([permName, permId]) => {
-              const existing = await ctx.db
-                .query("rolePermissions")
-                .withIndex("by_role", (q) => q.eq("roleId", role._id))
-                .filter((q) => q.eq(q.field("permissionId"), permId))
-                .first();
+            await Promise.all(
+              Array.from(permissionIds).map(async ([permName, permId]) => {
+                const existing = await ctx.db
+                  .query("rolePermissions")
+                  .withIndex("by_role", (q) => q.eq("roleId", role._id))
+                  .filter((q) => q.eq(q.field("permissionId"), permId))
+                  .first();
 
-              if (!existing) {
-                await ctx.db.insert("rolePermissions", {
-                  roleId: role._id,
-                  permissionId: permId,
-                });
-                rolePermissionsAdded++;
-                console.log(
-                  `Added ${permName} to ${name} role for ${org.name}`,
-                );
-              }
-            }),
-          );
-        }
+                if (!existing) {
+                  await ctx.db.insert("rolePermissions", {
+                    roleId: role._id,
+                    permissionId: permId,
+                  });
+                  rolePermissionsAdded++;
+                  console.log(
+                    `Added ${permName} to ${name} role for ${org.name}`,
+                  );
+                }
+              }),
+            );
+          }),
+        );
       }),
     );
 
@@ -953,26 +960,28 @@ export const addCollectionWorkflowApprovalPermissions = internalMutation({
             return;
           }
 
-          for (const permissionName of assignment.permissionNames) {
-            const permissionId = permissionIds.get(permissionName);
-            if (!permissionId) {
-              return;
-            }
+          await Promise.all(
+            assignment.permissionNames.map(async (permissionName) => {
+              const permissionId = permissionIds.get(permissionName);
+              if (!permissionId) {
+                return;
+              }
 
-            const existing = await ctx.db
-              .query("rolePermissions")
-              .withIndex("by_role", (q) => q.eq("roleId", role._id))
-              .filter((q) => q.eq(q.field("permissionId"), permissionId))
-              .first();
+              const existing = await ctx.db
+                .query("rolePermissions")
+                .withIndex("by_role", (q) => q.eq("roleId", role._id))
+                .filter((q) => q.eq(q.field("permissionId"), permissionId))
+                .first();
 
-            if (!existing) {
-              await ctx.db.insert("rolePermissions", {
-                roleId: role._id,
-                permissionId,
-              });
-              rolePermissionsAdded++;
-            }
-          }
+              if (!existing) {
+                await ctx.db.insert("rolePermissions", {
+                  roleId: role._id,
+                  permissionId,
+                });
+                rolePermissionsAdded++;
+              }
+            }),
+          );
         }
       }),
     );

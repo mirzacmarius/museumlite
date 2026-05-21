@@ -1,20 +1,20 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { LightboxImage } from "@v1/ui/image-lightbox";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ObjectDetailHeader } from "./_components/object-detail/object-detail-header";
 import { ObjectDetailHero } from "./_components/object-detail/object-detail-hero";
 import { ObjectDetailTabPanel } from "./_components/object-detail/object-detail-tab-panel";
 import {
-  type ObjectTabId as TabId,
   getObjectViewTabs,
+  type ObjectTabId as TabId,
 } from "./_components/object-tab-config";
 import type { ObjectDetailData } from "./_components/types";
 
@@ -54,6 +54,52 @@ export function ObjectDetailClient(props: ObjectDetailClientProps) {
   );
 }
 
+interface ObjectDetailViewState {
+  activeTab: TabId;
+  isHeroLightboxOpen: boolean;
+  isPrintModalOpen: boolean;
+  isQrLabelModalOpen: boolean;
+  linkCopied: boolean;
+  qrCodeUrl: string;
+}
+
+type ObjectDetailViewAction =
+  | { type: "setActiveTab"; value: TabId }
+  | { type: "setHeroLightboxOpen"; value: boolean }
+  | { type: "setPrintModalOpen"; value: boolean }
+  | { type: "setQrLabelModalOpen"; value: boolean }
+  | { type: "setLinkCopied"; value: boolean }
+  | { type: "setQrCodeUrl"; value: string };
+
+const initialObjectDetailViewState: ObjectDetailViewState = {
+  activeTab: "general",
+  isHeroLightboxOpen: false,
+  isPrintModalOpen: false,
+  isQrLabelModalOpen: false,
+  linkCopied: false,
+  qrCodeUrl: "",
+};
+
+function objectDetailViewReducer(
+  state: ObjectDetailViewState,
+  action: ObjectDetailViewAction,
+): ObjectDetailViewState {
+  switch (action.type) {
+    case "setActiveTab":
+      return { ...state, activeTab: action.value };
+    case "setHeroLightboxOpen":
+      return { ...state, isHeroLightboxOpen: action.value };
+    case "setPrintModalOpen":
+      return { ...state, isPrintModalOpen: action.value };
+    case "setQrLabelModalOpen":
+      return { ...state, isQrLabelModalOpen: action.value };
+    case "setLinkCopied":
+      return { ...state, linkCopied: action.value };
+    case "setQrCodeUrl":
+      return { ...state, qrCodeUrl: action.value };
+  }
+}
+
 function PreloadedObjectDetailClient({
   collectionId,
   preloadedObjectDetail,
@@ -83,7 +129,10 @@ function ObjectDetailView({
   const collectionGroup = objectDetail?.collectionGroup ?? null;
   const locationPath = objectDetail?.locationPath ?? [];
   const heroImage = objectDetail?.heroImage ?? null;
-  const [activeTab, setActiveTab] = useState<TabId>("general");
+  const [state, dispatch] = useReducer(
+    objectDetailViewReducer,
+    initialObjectDetailViewState,
+  );
   const featureOrganizationId =
     collection?.organizationId ?? currentOrganizationId ?? undefined;
   const hasConservationFeature = featureOrganizationId
@@ -123,26 +172,25 @@ function ObjectDetailView({
   ]);
 
   useEffect(() => {
-    if (!tabs.some((tab) => tab.id === activeTab)) {
-      setActiveTab(tabs[0]?.id ?? "general");
+    if (!tabs.some((tab) => tab.id === state.activeTab)) {
+      dispatch({
+        type: "setActiveTab",
+        value: tabs[0]?.id ?? "general",
+      });
     }
-  }, [activeTab, tabs]);
-
-  const [isHeroLightboxOpen, setIsHeroLightboxOpen] = useState(false);
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [isQrLabelModalOpen, setIsQrLabelModalOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  }, [state.activeTab, tabs]);
 
   useEffect(() => {
-    setQrCodeUrl(
-      typeof window === "undefined"
-        ? ""
-        : new URL(
-            `/objects/${collectionId}`,
-            window.location.origin,
-          ).toString(),
-    );
+    dispatch({
+      type: "setQrCodeUrl",
+      value:
+        typeof window === "undefined"
+          ? ""
+          : new URL(
+              `/objects/${collectionId}`,
+              window.location.origin,
+            ).toString(),
+    });
   }, [collectionId]);
 
   const heroLightboxImages: LightboxImage[] = useMemo(() => {
@@ -192,10 +240,16 @@ function ObjectDetailView({
           collection={collection}
           collectionGroupName={collectionGroup?.name}
           collectionId={collectionId}
-          linkCopied={linkCopied}
-          onLinkCopiedChange={setLinkCopied}
-          onPrintClick={() => setIsPrintModalOpen(true)}
-          onQrLabelClick={() => setIsQrLabelModalOpen(true)}
+          linkCopied={state.linkCopied}
+          onLinkCopiedChange={(value) =>
+            dispatch({ type: "setLinkCopied", value })
+          }
+          onPrintClick={() =>
+            dispatch({ type: "setPrintModalOpen", value: true })
+          }
+          onQrLabelClick={() =>
+            dispatch({ type: "setQrLabelModalOpen", value: true })
+          }
           collectionsLabel={t("detail.collections")}
           copyLinkLabel={t("detail.copyObjectLink")}
           linkCopiedLabel={t("detail.linkCopied")}
@@ -211,8 +265,10 @@ function ObjectDetailView({
             collection={collection}
             heroImage={heroImage}
             heroLightboxImages={heroLightboxImages}
-            isHeroLightboxOpen={isHeroLightboxOpen}
-            onHeroLightboxOpenChange={setIsHeroLightboxOpen}
+            isHeroLightboxOpen={state.isHeroLightboxOpen}
+            onHeroLightboxOpenChange={(value) =>
+              dispatch({ type: "setHeroLightboxOpen", value })
+            }
             pendingMoveRequest={pendingMoveRequest ?? null}
             locationString={locationString}
             isOnDisplay={isOnDisplay}
@@ -223,8 +279,10 @@ function ObjectDetailView({
 
           <ObjectDetailTabPanel
             tabs={tabs}
-            activeTab={activeTab}
-            onActiveTabChange={setActiveTab}
+            activeTab={state.activeTab}
+            onActiveTabChange={(value) =>
+              dispatch({ type: "setActiveTab", value })
+            }
             collection={collection}
             collectionId={collectionId}
             collectionGroupName={collectionGroup?.name}
@@ -240,17 +298,17 @@ function ObjectDetailView({
 
       <PrintPreviewModal
         collection={collection}
-        isOpen={isPrintModalOpen}
-        onClose={() => setIsPrintModalOpen(false)}
+        isOpen={state.isPrintModalOpen}
+        onClose={() => dispatch({ type: "setPrintModalOpen", value: false })}
         heroImage={heroImageForPrint}
         locationPath={locationPath ?? undefined}
         locale={locale}
       />
       <QRLabelModal
         collection={collection}
-        isOpen={isQrLabelModalOpen}
-        onClose={() => setIsQrLabelModalOpen(false)}
-        qrCodeUrl={qrCodeUrl}
+        isOpen={state.isQrLabelModalOpen}
+        onClose={() => dispatch({ type: "setQrLabelModalOpen", value: false })}
+        qrCodeUrl={state.qrCodeUrl}
       />
     </>
   );

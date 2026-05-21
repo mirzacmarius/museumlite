@@ -1,13 +1,5 @@
 "use client";
 
-import { AccountCombobox } from "@/components/account-combobox";
-import {
-  DropzoneUploader,
-  type UploadFile,
-} from "@/components/dropzone-uploader";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -31,8 +23,16 @@ import {
   type FormEvent,
   type SetStateAction,
   useCallback,
-  useState,
+  useReducer,
 } from "react";
+import { AccountCombobox } from "@/components/account-combobox";
+import {
+  DropzoneUploader,
+  type UploadFile,
+} from "@/components/dropzone-uploader";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 type AccessionMethod =
   | "purchase"
@@ -59,6 +59,81 @@ interface UploadedDocument {
 }
 
 type SetFormData = Dispatch<SetStateAction<NewAccessionFormData>>;
+
+interface NewAccessionPageState {
+  isSubmitting: boolean;
+  error: string | null;
+  uploadingFiles: UploadFile[];
+  uploadedDocuments: UploadedDocument[];
+  formData: NewAccessionFormData;
+}
+
+type NewAccessionPageAction =
+  | { type: "setFormData"; value: NewAccessionFormData }
+  | { type: "setError"; value: string | null }
+  | { type: "clearError" }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "appendUploadingFiles"; files: UploadFile[] }
+  | {
+      type: "patchUploadingFiles";
+      patch: (files: UploadFile[]) => UploadFile[];
+    }
+  | { type: "addUploadedDocument"; document: UploadedDocument }
+  | { type: "removeUploadedDocument"; storageId: Id<"_storage"> };
+
+const initialNewAccessionPageState: NewAccessionPageState = {
+  isSubmitting: false,
+  error: null,
+  uploadingFiles: [],
+  uploadedDocuments: [],
+  formData: {
+    accessionNumber: "",
+    dateReceived: new Date(),
+    source: "",
+    donorAccountId: undefined,
+    method: "purchase",
+    cost: "",
+    notes: "",
+  },
+};
+
+function newAccessionPageReducer(
+  state: NewAccessionPageState,
+  action: NewAccessionPageAction,
+): NewAccessionPageState {
+  switch (action.type) {
+    case "setFormData":
+      return { ...state, formData: action.value };
+    case "setError":
+      return { ...state, error: action.value };
+    case "clearError":
+      return { ...state, error: null };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "appendUploadingFiles":
+      return {
+        ...state,
+        uploadingFiles: [...state.uploadingFiles, ...action.files],
+      };
+    case "patchUploadingFiles":
+      return {
+        ...state,
+        uploadingFiles: action.patch(state.uploadingFiles),
+      };
+    case "addUploadedDocument":
+      return {
+        ...state,
+        uploadedDocuments: [...state.uploadedDocuments, action.document],
+      };
+    case "removeUploadedDocument":
+      return {
+        ...state,
+        uploadedDocuments: state.uploadedDocuments.filter(
+          (doc) => doc.storageId !== action.storageId,
+        ),
+      };
+  }
+}
 
 function NewAccessionHeader({ backLabel }: { backLabel: string }) {
   return (
@@ -369,21 +444,20 @@ export default function NewAccessionPage() {
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [uploadingFiles, setUploadingFiles] = useState<UploadFile[]>([]);
-  const [uploadedDocuments, setUploadedDocuments] = useState<
-    UploadedDocument[]
-  >([]);
-  const [formData, setFormData] = useState<NewAccessionFormData>({
-    accessionNumber: "",
-    dateReceived: new Date(),
-    source: "",
-    donorAccountId: undefined,
-    method: "purchase",
-    cost: "",
-    notes: "",
-  });
+  const [state, dispatch] = useReducer(
+    newAccessionPageReducer,
+    initialNewAccessionPageState,
+  );
+
+  const setFormData: SetFormData = useCallback(
+    (value) => {
+      dispatch({
+        type: "setFormData",
+        value: typeof value === "function" ? value(state.formData) : value,
+      });
+    },
+    [state.formData],
+  );
 
   const handleDocumentUpload = useCallback(
     async (files: File[]) => {
@@ -394,16 +468,18 @@ export default function NewAccessionPage() {
         status: "pending" as const,
       }));
 
-      setUploadingFiles((prev) => [...prev, ...newUploads]);
+      dispatch({ type: "appendUploadingFiles", files: newUploads });
 
       await Promise.all(
         newUploads.map(async (upload) => {
           try {
-            setUploadingFiles((prev) =>
-              prev.map((u) =>
-                u.id === upload.id ? { ...u, status: "uploading" } : u,
-              ),
-            );
+            dispatch({
+              type: "patchUploadingFiles",
+              patch: (prev) =>
+                prev.map((u) =>
+                  u.id === upload.id ? { ...u, status: "uploading" } : u,
+                ),
+            });
 
             const uploadUrl = await generateUploadUrl({
               mimeType: upload.file.type || "application/octet-stream",
@@ -421,47 +497,50 @@ export default function NewAccessionPage() {
 
             const { storageId } = await response.json();
 
-            setUploadedDocuments((prev) => [
-              ...prev,
-              {
+            dispatch({
+              type: "addUploadedDocument",
+              document: {
                 storageId: storageId as Id<"_storage">,
                 name: upload.file.name,
               },
-            ]);
+            });
 
-            setUploadingFiles((prev) =>
-              prev.map((u) =>
-                u.id === upload.id
-                  ? { ...u, status: "complete", progress: 100 }
-                  : u,
-              ),
-            );
+            dispatch({
+              type: "patchUploadingFiles",
+              patch: (prev) =>
+                prev.map((u) =>
+                  u.id === upload.id
+                    ? { ...u, status: "complete", progress: 100 }
+                    : u,
+                ),
+            });
           } catch (err) {
             console.error("Upload error:", err);
-            setUploadingFiles((prev) =>
-              prev.map((u) =>
-                u.id === upload.id
-                  ? { ...u, status: "error", error: "Upload failed" }
-                  : u,
-              ),
-            );
+            dispatch({
+              type: "patchUploadingFiles",
+              patch: (prev) =>
+                prev.map((u) =>
+                  u.id === upload.id
+                    ? { ...u, status: "error", error: "Upload failed" }
+                    : u,
+                ),
+            });
           }
         }),
       );
 
       setTimeout(() => {
-        setUploadingFiles((prev) =>
-          prev.filter((u) => u.status !== "complete"),
-        );
+        dispatch({
+          type: "patchUploadingFiles",
+          patch: (prev) => prev.filter((u) => u.status !== "complete"),
+        });
       }, 2000);
     },
     [generateUploadUrl],
   );
 
   const handleRemoveDocument = useCallback((storageId: Id<"_storage">) => {
-    setUploadedDocuments((prev) =>
-      prev.filter((doc) => doc.storageId !== storageId),
-    );
+    dispatch({ type: "removeUploadedDocument", storageId });
   }, []);
 
   if (!currentOrganizationId) {
@@ -476,37 +555,41 @@ export default function NewAccessionPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    if (!formData.source.trim() && !formData.donorAccountId) {
-      setError(t("form.sourceRequiredError"));
+    dispatch({ type: "clearError" });
+    if (!state.formData.source.trim() && !state.formData.donorAccountId) {
+      dispatch({ type: "setError", value: t("form.sourceRequiredError") });
       return;
     }
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", value: true });
     try {
       await createAccession({
         organizationId: currentOrganizationId as Id<"organizations">,
-        accessionNumber: formData.accessionNumber || undefined,
-        dateReceived: formData.dateReceived.getTime(),
-        source: formData.source || "See linked account",
-        donorAccountId: formData.donorAccountId
-          ? (formData.donorAccountId as Id<"accounts">)
+        accessionNumber: state.formData.accessionNumber || undefined,
+        dateReceived: state.formData.dateReceived.getTime(),
+        source: state.formData.source || "See linked account",
+        donorAccountId: state.formData.donorAccountId
+          ? (state.formData.donorAccountId as Id<"accounts">)
           : undefined,
         documents:
-          uploadedDocuments.length > 0
-            ? uploadedDocuments.map((d) => d.storageId)
+          state.uploadedDocuments.length > 0
+            ? state.uploadedDocuments.map((d) => d.storageId)
             : undefined,
-        method: formData.method,
-        cost: formData.cost ? Number.parseFloat(formData.cost) : undefined,
-        notes: formData.notes || undefined,
+        method: state.formData.method,
+        cost: state.formData.cost
+          ? Number.parseFloat(state.formData.cost)
+          : undefined,
+        notes: state.formData.notes || undefined,
       });
       push("/accessions");
     } catch (err) {
       console.error("Error creating accession:", err);
-      setError(
-        err instanceof Error ? err.message : t("form.sourceRequiredError"),
-      );
-      setIsSubmitting(false);
+      dispatch({
+        type: "setError",
+        value:
+          err instanceof Error ? err.message : t("form.sourceRequiredError"),
+      });
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
@@ -517,10 +600,10 @@ export default function NewAccessionPage() {
           <NewAccessionHeader backLabel={t("backToAccessions")} />
 
           <form onSubmit={handleSubmit} className="p-6">
-            <FormError message={error} />
+            <FormError message={state.error} />
             <div className="mx-auto max-w-2xl space-y-6">
               <AccessionIdentityFields
-                formData={formData}
+                formData={state.formData}
                 labels={{
                   accessionNumber: t("form.accessionNumber"),
                   accessionNumberPlaceholder: t(
@@ -542,7 +625,7 @@ export default function NewAccessionPage() {
               />
 
               <AccessionSourceFields
-                formData={formData}
+                formData={state.formData}
                 labels={{
                   donorAccount: t("form.donorAccount"),
                   donorAccountPlaceholder: t("form.donorAccountPlaceholder"),
@@ -558,7 +641,7 @@ export default function NewAccessionPage() {
               />
 
               <AccessionFinancialAndNotesFields
-                formData={formData}
+                formData={state.formData}
                 labels={{
                   cost: t("form.cost"),
                   costPlaceholder: t("form.costPlaceholder"),
@@ -576,15 +659,15 @@ export default function NewAccessionPage() {
                 }}
                 onDocumentUpload={handleDocumentUpload}
                 onRemoveDocument={handleRemoveDocument}
-                uploadedDocuments={uploadedDocuments}
-                uploadingFiles={uploadingFiles}
+                uploadedDocuments={state.uploadedDocuments}
+                uploadingFiles={state.uploadingFiles}
               />
 
               <NewAccessionActions
                 cancelLabel={t("form.cancel")}
                 createLabel={t("form.createAccession")}
                 creatingLabel={t("form.creating")}
-                isSubmitting={isSubmitting}
+                isSubmitting={state.isSubmitting}
                 onCancel={back}
               />
             </div>

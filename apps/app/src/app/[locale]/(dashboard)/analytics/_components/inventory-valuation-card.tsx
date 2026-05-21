@@ -1,10 +1,10 @@
 "use client";
 
-import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
-import { useCurrentLocale, useI18n } from "@/locales/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Separator } from "@v1/ui/separator";
 import { Car, DollarSign, Palette, Wine } from "lucide-react";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { StackedBar } from "./stacked-bar";
 
 interface InventoryValuationCardProps {

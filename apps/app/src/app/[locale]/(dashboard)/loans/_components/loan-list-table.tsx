@@ -1,13 +1,13 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { DataTable } from "@v1/ui/data-table";
 import { ChevronRight, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import {
   formatLoanDateRange,
   getLoanStatusLabel,
@@ -63,17 +63,12 @@ export function LoanListTable({
               const loanId = loan._id;
               const isSelected = selectedIds.has(loanId);
               return (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  role="presentation"
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => onToggleSelection(loanId)}
-                    aria-label={`Select loan ${loan.loanNumber}`}
-                  />
-                </div>
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => onToggleSelection(loanId)}
+                  onClick={(event) => event.stopPropagation()}
+                  aria-label={`Select loan ${loan.loanNumber}`}
+                />
               );
             },
           },

@@ -53,18 +53,19 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const configs = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, configs] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db
+        .query("workflowConfigs")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     return configs.map((config) => ({
       _id: config._id,
@@ -176,23 +177,24 @@ export const upsert = mutation({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        steps: args.steps,
-        canInitiateRoles: args.canInitiateRoles,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: args.organizationId,
-        userId,
-        action: "updated_workflow_config",
-        entityType: "workflowConfig",
-        entityId: existing._id,
-        changes: {
-          workflowType: args.workflowType,
-          stepsCount: args.steps.length,
-          canInitiateRolesCount: args.canInitiateRoles.length,
-        },
-      });
+      await Promise.all([
+        ctx.db.patch(existing._id, {
+          steps: args.steps,
+          canInitiateRoles: args.canInitiateRoles,
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: args.organizationId,
+          userId,
+          action: "updated_workflow_config",
+          entityType: "workflowConfig",
+          entityId: existing._id,
+          changes: {
+            workflowType: args.workflowType,
+            stepsCount: args.steps.length,
+            canInitiateRolesCount: args.canInitiateRoles.length,
+          },
+        }),
+      ]);
 
       return existing._id;
     }
@@ -227,12 +229,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, config] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const config = await ctx.db.get(args.id);
     if (!config) {
       throw new Error("Workflow config not found");
     }
@@ -764,18 +767,19 @@ export const unassignDeaccession = mutation({
 
     const previousAssignee = deaccession.assignedTo;
 
-    await ctx.db.patch(args.deaccessionId, {
-      assignedTo: undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: deaccession.organizationId,
-      userId: currentUserId,
-      action: "unassigned_deaccession",
-      entityType: "deaccession",
-      entityId: args.deaccessionId,
-      changes: { previousAssignee },
-    });
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
+        assignedTo: undefined,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId: currentUserId,
+        action: "unassigned_deaccession",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: { previousAssignee },
+      }),
+    ]);
 
     return null;
   },
@@ -880,18 +884,19 @@ export const unassignLoan = mutation({
 
     const previousAssignee = loan.assignedTo;
 
-    await ctx.db.patch(args.loanId, {
-      assignedTo: undefined,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: loan.organizationId,
-      userId: currentUserId,
-      action: "unassigned_loan",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: { previousAssignee },
-    });
+    await Promise.all([
+      ctx.db.patch(args.loanId, {
+        assignedTo: undefined,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: loan.organizationId,
+        userId: currentUserId,
+        action: "unassigned_loan",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: { previousAssignee },
+      }),
+    ]);
 
     return null;
   },
@@ -1002,16 +1007,17 @@ export const createTemplateFromConfig = mutation({
   },
   returns: v.id("workflowTemplates"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     const config = await getWorkflowConfig(
       ctx,
@@ -1071,13 +1077,14 @@ export const applyTemplateToOrganization = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const template = await ctx.db.get(args.templateId);
+    const [, template] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.get(args.templateId),
+    ]);
     if (!template) {
       throw new Error("Template not found");
     }
@@ -1132,25 +1139,26 @@ export const applyTemplateToOrganization = mutation({
     const canInitiateRoles = adminRole ? [adminRole._id] : [];
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        steps: configSteps,
-        canInitiateRoles,
-        requiredDocuments: template.requiredDocuments,
-        requireSourceVerification: template.requireSourceVerification,
-        templateId: args.templateId,
-      });
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: args.organizationId,
-        userId,
-        action: "applied_workflow_template",
-        entityType: "workflowConfig",
-        entityId: existing._id,
-        changes: {
+      await Promise.all([
+        ctx.db.patch(existing._id, {
+          steps: configSteps,
+          canInitiateRoles,
+          requiredDocuments: template.requiredDocuments,
+          requireSourceVerification: template.requireSourceVerification,
           templateId: args.templateId,
-          templateName: template.name,
-        },
-      });
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: args.organizationId,
+          userId,
+          action: "applied_workflow_template",
+          entityType: "workflowConfig",
+          entityId: existing._id,
+          changes: {
+            templateId: args.templateId,
+            templateName: template.name,
+          },
+        }),
+      ]);
 
       return existing._id;
     }

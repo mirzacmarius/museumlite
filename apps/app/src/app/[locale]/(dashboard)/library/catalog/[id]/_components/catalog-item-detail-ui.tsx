@@ -1,7 +1,7 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Badge } from "@v1/ui/badge";
+import { useScopedI18n } from "@/locales/client";
 import type { CatalogItemDetailItem } from "./catalog-item-detail-view-props";
 
 export function CatalogItemStatusBadge({

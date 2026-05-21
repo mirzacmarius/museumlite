@@ -5,7 +5,9 @@ import type { OnboardingStep } from "./onboarding-types";
 
 export function StepIndicator({
   currentStep,
-}: { currentStep: OnboardingStep }) {
+}: {
+  currentStep: OnboardingStep;
+}) {
   const steps = [
     { id: "username" as const, icon: User },
     { id: "organization" as const, icon: Building2 },

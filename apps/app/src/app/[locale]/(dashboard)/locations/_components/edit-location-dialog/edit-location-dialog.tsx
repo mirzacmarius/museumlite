@@ -1,6 +1,5 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Dialog,
@@ -11,6 +10,7 @@ import {
   DialogTitle,
 } from "@v1/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import { EditLocationForm } from "./edit-location-form";
 import type { EditLocationDialogProps } from "./types";
 import { useEditLocationForm } from "./use-edit-location-form";

@@ -1,4 +1,4 @@
-const a = {
+const _a = {
   accounts: {
     title: "Accounts",
     patronsTitle: "Library Patrons",

@@ -24,40 +24,13 @@ export function Icon3DHoverCubeBg({
 
   return (
     <motion.div
-      className="bg-container"
+      className={`bg-container icon-3d-cube-bg${icon ? " icon-3d-cube-bg-with-icon" : ""}`}
       data-framer-name="BG"
-      style={{
-        flex: "none",
-        height: "348px",
-        overflow: "visible",
-        position: "relative",
-        width: "348px",
-        zIndex: 2,
-        scale: 0.23,
-        opacity: icon ? 0.3 : 0.8,
-      }}
     >
       <motion.div
-        className="slice-cube"
+        className="slice-cube icon-3d-slice-cube"
         data-framer-name="Slice Cube"
         style={{
-          alignContent: "center",
-          alignItems: "center",
-          display: "flex",
-          flex: "none",
-          flexDirection: "column",
-          flexWrap: "nowrap",
-          gap: "28px",
-          height: "min-content",
-          justifyContent: "center",
-          left: "50%",
-          overflow: "visible",
-          padding: "0px",
-          position: "absolute",
-          top: "50%",
-          transformStyle: "preserve-3d",
-          width: "min-content",
-          zIndex: 3,
           rotate: 49,
           rotateX: 23,
           rotateY: 33,

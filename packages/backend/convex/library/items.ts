@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
 
@@ -442,12 +442,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, item] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.itemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }
@@ -536,12 +537,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, item] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.itemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }
@@ -586,12 +588,13 @@ export const publish = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, item] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.itemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }
@@ -621,12 +624,13 @@ export const archive = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, item] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.itemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }
@@ -738,12 +742,13 @@ export const setCoverImage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, item] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.itemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }

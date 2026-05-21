@@ -205,9 +205,7 @@ export const getComplianceReport = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "compliance"),
-      requirePermission(
-ctx, args.organizationId, "collections.read"
-    ),
+      requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     const now = Date.now();
@@ -490,9 +488,7 @@ export const getLocationUtilization = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(
-ctx, args.organizationId, "locations.read"
-    ),
+      requirePermission(ctx, args.organizationId, "locations.read"),
     ]);
 
     const now = Date.now();
@@ -848,9 +844,7 @@ export const getOperationalKpis = query({
   handler: async (ctx, args) => {
     await Promise.all([
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
-      requirePermission(
-ctx, args.organizationId, "collections.read"
-    ),
+      requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     const now = Date.now();

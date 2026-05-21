@@ -906,7 +906,7 @@ describe("Workflow Approval Modes", () => {
       "settings.read",
     ]);
 
-    const [userId2, userId3] = await Promise.all([
+    const [userId2, _userId3] = await Promise.all([
       t.run(async (ctx) => {
         const newUserId = await ctx.db.insert("users", {
           name: "Second Reviewer",

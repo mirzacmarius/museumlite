@@ -1,24 +1,12 @@
 "use client";
 
-import {
-  IsbnLookup,
-  type IsbnLookupData,
-} from "@/components/library/isbn-lookup";
-import { useScopedI18n } from "@/locales/client";
-import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
-import { Loader2, Plus, Save, Trash2 } from "lucide-react";
-import type { CatalogItemFormData, ItemType, TargetAudience } from "./types";
-import { ITEM_TYPE_VALUES } from "./types";
+import Image from "next/image";
+import type { IsbnLookupData } from "@/components/library/isbn-lookup";
+import { useScopedI18n } from "@/locales/client";
+import type { CatalogItemFormData } from "./types";
 
 interface CatalogItemDescriptionSectionProps {
   formData: CatalogItemFormData;
@@ -34,16 +22,16 @@ interface CatalogItemDescriptionSectionProps {
 export function CatalogItemDescriptionSection({
   formData,
   setFormData,
-  getItemTypeLabel,
-  getAudienceLabel,
-  onIsbnData,
-  addAuthor,
-  removeAuthor,
-  updateAuthor,
+  _getItemTypeLabel,
+  _getAudienceLabel,
+  _onIsbnData,
+  _addAuthor,
+  _removeAuthor,
+  _updateAuthor,
 }: CatalogItemDescriptionSectionProps) {
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");
-  const tLib = useScopedI18n("library");
+  const _tLib = useScopedI18n("library");
 
   return (
     <>
@@ -83,9 +71,12 @@ export function CatalogItemDescriptionSection({
             />
             {formData.coverImageUrl && (
               <div className="mt-2">
-                <img
+                <Image
                   src={formData.coverImageUrl}
                   alt={tNew("coverPreview")}
+                  width={160}
+                  height={160}
+                  unoptimized
                   className="h-40 w-auto rounded border object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";

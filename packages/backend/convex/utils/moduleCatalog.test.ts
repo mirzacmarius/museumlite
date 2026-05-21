@@ -6,17 +6,17 @@ import {
   COLLECTION_TYPE_IDS,
   COLLECTION_TYPE_MODULE_REQUIREMENTS,
   COLLECTION_TYPE_OPTIONS,
-  MODULE_IDS,
-  SETTINGS_MODULE_IDS,
   getAvailableCollectionTypeOptions,
   isCollectionModuleId,
   isCollectionType,
   isCollectionTypeEnabled,
+  MODULE_IDS,
+  SETTINGS_MODULE_IDS,
 } from "./moduleCatalog";
 import {
   COLLECTION_TYPE_VALIDATOR_IDS,
-  ENABLED_MODULE_VALIDATOR_IDS,
   collectionTypeValidator,
+  ENABLED_MODULE_VALIDATOR_IDS,
   enabledModuleValidator,
 } from "./moduleValidators";
 

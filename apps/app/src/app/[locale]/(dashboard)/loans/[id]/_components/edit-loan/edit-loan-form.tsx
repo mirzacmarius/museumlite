@@ -1,9 +1,9 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import { Info, Save } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
 import { EditLoanCoreInfoSection } from "./edit-loan-core-info-section";
 import { EditLoanDetailsSection } from "./edit-loan-details-section";

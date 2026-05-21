@@ -1,13 +1,13 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
-import { EMPTY_EDIT_LOAN_FORM, type EditLoanFormData } from "./types";
+import { type EditLoanFormData, EMPTY_EDIT_LOAN_FORM } from "./types";
 
 interface UseEditLoanFormOptions {
   loanId: string;

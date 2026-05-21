@@ -1,10 +1,10 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { EmptyState } from "@v1/ui/empty-state";
 import { Edit, Shield, Trash2 } from "lucide-react";
+import { PermissionGate } from "@/components/permission-gate";
 
 interface RolePermission {
   _id: Id<"permissions">;

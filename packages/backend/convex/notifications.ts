@@ -3,11 +3,12 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type QueryCtx,
   internalMutation,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
+import { getUserIdsWithPermission } from "./utils/permissions";
 
 // ============================================
 // Notification Type Constants
@@ -283,12 +284,13 @@ export const markRead = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
@@ -344,12 +346,13 @@ export const markUnread = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
@@ -373,12 +376,13 @@ export const deleteNotification = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
@@ -620,39 +624,12 @@ export const notifyUsersWithPermission = internalMutation({
   },
   returns: v.number(),
   handler: async (ctx, args) => {
-    // Get all organization members
-    const members = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const userIds: Id<"users">[] = [];
-
-    for (const member of members) {
-      if (args.excludeUserId && member.userId === args.excludeUserId) {
-        continue;
-      }
-
-      // Get role and check permissions through rolePermissions join table
-      const rolePerms = await ctx.db
-        .query("rolePermissions")
-        .withIndex("by_role", (q) => q.eq("roleId", member.roleId))
-        .collect();
-
-      // Get the permission IDs for this role
-      const permissionIds = rolePerms.map((rp) => rp.permissionId);
-
-      // Check if any of the role's permissions match the required permission
-      for (const permId of permissionIds) {
-        const permission = await ctx.db.get(permId);
-        if (permission && permission.name === args.permission) {
-          userIds.push(member.userId);
-          break;
-        }
-      }
-    }
+    const userIds = await getUserIdsWithPermission(
+      ctx,
+      args.organizationId,
+      args.permission,
+      { excludeUserId: args.excludeUserId },
+    );
 
     if (userIds.length === 0) {
       return 0;

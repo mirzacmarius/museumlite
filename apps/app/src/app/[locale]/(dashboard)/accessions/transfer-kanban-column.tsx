@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientDateFns } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
 import type { api } from "@v1/backend/convex/_generated/api";
 import { ScrollArea } from "@v1/ui/scroll-area";
 import type { FunctionReturnType } from "convex/server";
@@ -13,6 +11,8 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { ClientDateFns } from "@/components/client-date";
+import { useCurrentLocale } from "@/locales/client";
 
 type TransferRequest = FunctionReturnType<
   typeof api.objectMoves.listForOrganization
@@ -213,7 +213,7 @@ export function TransferKanbanColumn({
                     </div>
                   </div>
 
-                  <div className="mt-3 rounded-lg border border-white/10 bg-gray-950/20 px-3 py-2">
+                  <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                       Accession handling
                     </p>
@@ -223,7 +223,7 @@ export function TransferKanbanColumn({
                   </div>
 
                   {request.targetReviewNotes || request.sourceReviewNotes ? (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-gray-950/20 px-3 py-2">
+                    <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/20 px-3 py-2">
                       <p className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                         Review notes
                       </p>

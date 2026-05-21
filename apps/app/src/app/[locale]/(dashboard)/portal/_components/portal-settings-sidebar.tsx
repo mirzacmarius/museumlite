@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -10,18 +8,86 @@ import { Label } from "@v1/ui/label";
 import { Switch } from "@v1/ui/switch";
 import { useMutation, useQuery } from "convex/react";
 import { ExternalLink, Loader2, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { getPublicPortalBaseUrl } from "@/lib/portal-url";
+
+interface PortalSettingsSidebarState {
+  isSubmitting: boolean;
+  showSuccess: boolean;
+  isEnabled: boolean;
+  isSearchEnabled: boolean;
+  isHighResEnabled: boolean;
+  isValuationVisible: boolean;
+  portalSlug: string;
+}
+
+type PortalSettingsSidebarAction =
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "setShowSuccess"; value: boolean }
+  | { type: "setIsEnabled"; value: boolean }
+  | { type: "setIsSearchEnabled"; value: boolean }
+  | { type: "setIsHighResEnabled"; value: boolean }
+  | { type: "setIsValuationVisible"; value: boolean }
+  | { type: "setPortalSlug"; value: string }
+  | {
+      type: "syncFromPortalSettings";
+      settings: {
+        isEnabled: boolean;
+        isSearchEnabled: boolean;
+        isHighResEnabled: boolean;
+        isValuationVisible: boolean;
+        portalSlug: string;
+      };
+    };
+
+const initialPortalSettingsSidebarState: PortalSettingsSidebarState = {
+  isSubmitting: false,
+  showSuccess: false,
+  isEnabled: false,
+  isSearchEnabled: false,
+  isHighResEnabled: false,
+  isValuationVisible: false,
+  portalSlug: "gallery",
+};
+
+function portalSettingsSidebarReducer(
+  state: PortalSettingsSidebarState,
+  action: PortalSettingsSidebarAction,
+): PortalSettingsSidebarState {
+  switch (action.type) {
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "setShowSuccess":
+      return { ...state, showSuccess: action.value };
+    case "setIsEnabled":
+      return { ...state, isEnabled: action.value };
+    case "setIsSearchEnabled":
+      return { ...state, isSearchEnabled: action.value };
+    case "setIsHighResEnabled":
+      return { ...state, isHighResEnabled: action.value };
+    case "setIsValuationVisible":
+      return { ...state, isValuationVisible: action.value };
+    case "setPortalSlug":
+      return { ...state, portalSlug: action.value };
+    case "syncFromPortalSettings":
+      return {
+        ...state,
+        isEnabled: action.settings.isEnabled,
+        isSearchEnabled: action.settings.isSearchEnabled,
+        isHighResEnabled: action.settings.isHighResEnabled,
+        isValuationVisible: action.settings.isValuationVisible,
+        portalSlug: action.settings.portalSlug,
+      };
+  }
+}
 
 export function PortalSettingsSidebar() {
   const { currentOrganizationId } = useOrganization();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [isSearchEnabled, setIsSearchEnabled] = useState(false);
-  const [isHighResEnabled, setIsHighResEnabled] = useState(false);
-  const [isValuationVisible, setIsValuationVisible] = useState(false);
-  const [portalSlug, setPortalSlug] = useState("gallery");
+  const [state, dispatch] = useReducer(
+    portalSettingsSidebarReducer,
+    initialPortalSettingsSidebarState,
+  );
 
   const portalSettings = useQuery(
     api.organizations.getPortalSettings,
@@ -36,43 +102,53 @@ export function PortalSettingsSidebar() {
 
   useEffect(() => {
     if (portalSettings) {
-      setIsEnabled(portalSettings.isEnabled);
-      setIsSearchEnabled(portalSettings.isSearchEnabled);
-      setIsHighResEnabled(portalSettings.isHighResEnabled);
-      setIsValuationVisible(portalSettings.isValuationVisible);
-      setPortalSlug(portalSettings.portalSlug);
+      dispatch({
+        type: "syncFromPortalSettings",
+        settings: {
+          isEnabled: portalSettings.isEnabled,
+          isSearchEnabled: portalSettings.isSearchEnabled,
+          isHighResEnabled: portalSettings.isHighResEnabled,
+          isValuationVisible: portalSettings.isValuationVisible,
+          portalSlug: portalSettings.portalSlug,
+        },
+      });
     }
   }, [portalSettings]);
 
   const handleSave = async () => {
     if (!currentOrganizationId) return;
 
-    setIsSubmitting(true);
-    setShowSuccess(false);
+    dispatch({ type: "setIsSubmitting", value: true });
+    dispatch({ type: "setShowSuccess", value: false });
 
     try {
       await updatePortalSettings({
         organizationId: currentOrganizationId as Id<"organizations">,
         portalSettings: {
-          isEnabled,
-          isSearchEnabled,
-          isHighResEnabled,
-          isValuationVisible,
-          portalSlug: portalSlug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+          isEnabled: state.isEnabled,
+          isSearchEnabled: state.isSearchEnabled,
+          isHighResEnabled: state.isHighResEnabled,
+          isValuationVisible: state.isValuationVisible,
+          portalSlug: state.portalSlug
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, "-"),
         },
       });
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      dispatch({ type: "setShowSuccess", value: true });
+      setTimeout(
+        () => dispatch({ type: "setShowSuccess", value: false }),
+        3000,
+      );
     } catch (error) {
       console.error("Failed to update portal settings:", error);
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
   const webUrl = getPublicPortalBaseUrl();
   const fullPortalUrl = portalSettings?.orgSlug
-    ? `${webUrl}/${portalSettings.orgSlug}/${portalSlug}`
+    ? `${webUrl}/${portalSettings.orgSlug}/${state.portalSlug}`
     : "";
 
   if (portalSettings === undefined) {
@@ -109,8 +185,10 @@ export function PortalSettingsSidebar() {
             </div>
             <Input
               id="portal-slug"
-              value={portalSlug}
-              onChange={(e) => setPortalSlug(e.target.value)}
+              value={state.portalSlug}
+              onChange={(e) =>
+                dispatch({ type: "setPortalSlug", value: e.target.value })
+              }
               placeholder="gallery"
               className="code-text"
             />
@@ -122,7 +200,7 @@ export function PortalSettingsSidebar() {
               <div className="code-text flex-1 truncate rounded-md border border-border bg-secondary/50 px-3 py-2 text-muted-foreground">
                 {fullPortalUrl || "Not configured"}
               </div>
-              {fullPortalUrl && isEnabled && (
+              {fullPortalUrl && state.isEnabled && (
                 <a
                   href={fullPortalUrl}
                   target="_blank"
@@ -148,8 +226,10 @@ export function PortalSettingsSidebar() {
             </div>
             <Switch
               id="portal-enabled"
-              checked={isEnabled}
-              onCheckedChange={setIsEnabled}
+              checked={state.isEnabled}
+              onCheckedChange={(value) =>
+                dispatch({ type: "setIsEnabled", value })
+              }
             />
           </div>
 
@@ -164,9 +244,11 @@ export function PortalSettingsSidebar() {
             </div>
             <Switch
               id="search-enabled"
-              checked={isSearchEnabled}
-              onCheckedChange={setIsSearchEnabled}
-              disabled={!isEnabled}
+              checked={state.isSearchEnabled}
+              onCheckedChange={(value) =>
+                dispatch({ type: "setIsSearchEnabled", value })
+              }
+              disabled={!state.isEnabled}
             />
           </div>
 
@@ -181,9 +263,11 @@ export function PortalSettingsSidebar() {
             </div>
             <Switch
               id="highres-enabled"
-              checked={isHighResEnabled}
-              onCheckedChange={setIsHighResEnabled}
-              disabled={!isEnabled}
+              checked={state.isHighResEnabled}
+              onCheckedChange={(value) =>
+                dispatch({ type: "setIsHighResEnabled", value })
+              }
+              disabled={!state.isEnabled}
             />
           </div>
 
@@ -198,9 +282,11 @@ export function PortalSettingsSidebar() {
             </div>
             <Switch
               id="valuations-visible"
-              checked={isValuationVisible}
-              onCheckedChange={setIsValuationVisible}
-              disabled={!isEnabled}
+              checked={state.isValuationVisible}
+              onCheckedChange={(value) =>
+                dispatch({ type: "setIsValuationVisible", value })
+              }
+              disabled={!state.isEnabled}
             />
           </div>
         </div>
@@ -208,15 +294,15 @@ export function PortalSettingsSidebar() {
         <div className="pt-2">
           <Button
             onClick={handleSave}
-            disabled={isSubmitting}
+            disabled={state.isSubmitting}
             className="w-full"
           >
-            {isSubmitting ? (
+            {state.isSubmitting ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
                 Saving...
               </>
-            ) : showSuccess ? (
+            ) : state.showSuccess ? (
               <>
                 <Save className="mr-2 size-4" />
                 Saved!

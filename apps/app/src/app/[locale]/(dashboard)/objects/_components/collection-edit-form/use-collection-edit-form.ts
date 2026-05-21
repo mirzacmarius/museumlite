@@ -1,47 +1,32 @@
 "use client";
 
-import { DeaccessionDialog } from "@/components/deaccession-dialog";
-import { MediaEditorDialog } from "@/components/media-editor-dialog";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
-import { useBeforeUnload } from "@/hooks/use-before-unload";
-import {
-  parseStringListField,
-  serializeStringListField,
-} from "@/lib/string-list-field";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useUploadFiles } from "@xixixao/uploadstuff/react";
 import { useMutation, useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
+import { serializeStringListField } from "@/lib/string-list-field";
+import { useScopedI18n } from "@/locales/client";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
 import {
   type CollectionEditTabId,
   type CollectionFormData,
-  EMPTY_EDIT_FORM,
-  type OwnershipEntry,
   createInitialFormData,
-  createLinkEntryLocalId,
   createOwnershipEntryLocalId,
+  EMPTY_EDIT_FORM,
   getFormSignature,
   getMediaSignature,
   getStatusBadgeClass,
   normalizeOptionalString,
+  type OwnershipEntry,
   parseOptionalWeight,
   withLinkEntryLocalIds,
   withOwnershipEntryLocalIds,
 } from "../collection-form-shared";
-
-type CollectionDoc = NonNullable<
-  FunctionReturnType<typeof api.collections.get>
->;
-type MediaItem = NonNullable<FunctionReturnType<typeof api.media.list>>[number];
 
 export function useCollectionEditForm() {
   const t = useScopedI18n("objects");

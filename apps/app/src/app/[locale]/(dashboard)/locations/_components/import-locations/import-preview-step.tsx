@@ -1,7 +1,5 @@
 "use client";
 
-import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
 import { Button } from "@v1/ui/button";
 import {
   Table,
@@ -12,7 +10,9 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { AlertCircle, Upload, X } from "lucide-react";
-import type { ParseError, ParsedRow } from "../../import/import-csv";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
+import type { ParsedRow, ParseError } from "../../import/import-csv";
 
 interface ImportPreviewStepProps {
   rows: ParsedRow[];
@@ -106,7 +106,9 @@ export function ImportPreviewStep({
           </TableHeader>
           <TableBody>
             {rows.slice(0, 20).map((row, rowIndex) => (
-              <TableRow key={`${row.name}-${rowIndex}`}>
+              <TableRow
+                key={`${row.name}-${row.locationCode}-${row.type}-${row.parentLocation ?? ""}`}
+              >
                 <TableCell className="text-muted-foreground">
                   {rowIndex + 1}
                 </TableCell>

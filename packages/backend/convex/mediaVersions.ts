@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { recordMediaVersionUsage } from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
@@ -53,16 +52,16 @@ export const createVersion = mutation({
       createdAt: Date.now(),
     });
 
-    // Update the media file with the new version info
-    await ctx.db.patch(args.mediaId, {
-      currentVersionId: versionId,
-      versionCount: newVersionNumber,
-    });
-
-    await recordMediaVersionUsage(ctx, {
-      organizationId: media.organizationId,
-      storageId: args.storageId,
-    });
+    await Promise.all([
+      ctx.db.patch(args.mediaId, {
+        currentVersionId: versionId,
+        versionCount: newVersionNumber,
+      }),
+      recordMediaVersionUsage(ctx, {
+        organizationId: media.organizationId,
+        storageId: args.storageId,
+      }),
+    ]);
 
     return versionId;
   },

@@ -1,7 +1,5 @@
 "use client";
 
-import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
@@ -9,12 +7,64 @@ import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useReducer } from "react";
+import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { CatalogItemAddCopyDialog } from "./catalog-item-add-copy-dialog";
 import { CatalogItemDetailBody } from "./catalog-item-detail-body";
 import { CatalogItemDetailHeader } from "./catalog-item-detail-header";
 import type { Condition } from "./catalog-item-detail-types";
 import type { CatalogItemDetailItem } from "./catalog-item-detail-view-props";
+
+interface CatalogItemDetailPageState {
+  isAddCopyOpen: boolean;
+  newCopyBarcode: string;
+  newCopyCondition: Condition;
+  newCopyShelfLocation: string;
+  isAddingCopy: boolean;
+}
+
+type CatalogItemDetailPageAction =
+  | { type: "setAddCopyOpen"; value: boolean }
+  | { type: "setNewCopyBarcode"; value: string }
+  | { type: "setNewCopyCondition"; value: Condition }
+  | { type: "setNewCopyShelfLocation"; value: string }
+  | { type: "setAddingCopy"; value: boolean }
+  | { type: "closeAddCopyDialog" };
+
+const initialCatalogItemDetailPageState: CatalogItemDetailPageState = {
+  isAddCopyOpen: false,
+  newCopyBarcode: "",
+  newCopyCondition: "good",
+  newCopyShelfLocation: "",
+  isAddingCopy: false,
+};
+
+function catalogItemDetailPageReducer(
+  state: CatalogItemDetailPageState,
+  action: CatalogItemDetailPageAction,
+): CatalogItemDetailPageState {
+  switch (action.type) {
+    case "setAddCopyOpen":
+      return { ...state, isAddCopyOpen: action.value };
+    case "setNewCopyBarcode":
+      return { ...state, newCopyBarcode: action.value };
+    case "setNewCopyCondition":
+      return { ...state, newCopyCondition: action.value };
+    case "setNewCopyShelfLocation":
+      return { ...state, newCopyShelfLocation: action.value };
+    case "setAddingCopy":
+      return { ...state, isAddingCopy: action.value };
+    case "closeAddCopyDialog":
+      return {
+        ...state,
+        isAddCopyOpen: false,
+        newCopyBarcode: "",
+        newCopyCondition: "good",
+        newCopyShelfLocation: "",
+      };
+  }
+}
 
 export function CatalogItemDetailPageClient() {
   const params = useParams();
@@ -24,11 +74,10 @@ export function CatalogItemDetailPageClient() {
   const tDetail = useScopedI18n("library.catalog.detail");
   const tLib = useScopedI18n("library");
 
-  const [isAddCopyOpen, setIsAddCopyOpen] = useState(false);
-  const [newCopyBarcode, setNewCopyBarcode] = useState("");
-  const [newCopyCondition, setNewCopyCondition] = useState<Condition>("good");
-  const [newCopyShelfLocation, setNewCopyShelfLocation] = useState("");
-  const [isAddingCopy, setIsAddingCopy] = useState(false);
+  const [state, dispatch] = useReducer(
+    catalogItemDetailPageReducer,
+    initialCatalogItemDetailPageState,
+  );
 
   const item = useQuery(api.library.items.get, { itemId });
   const copies = useQuery(api.library.copies.listByItem, { itemId });
@@ -63,24 +112,21 @@ export function CatalogItemDetailPageClient() {
   };
 
   const handleAddCopy = async () => {
-    if (!newCopyBarcode.trim()) return;
+    if (!state.newCopyBarcode.trim()) return;
 
-    setIsAddingCopy(true);
+    dispatch({ type: "setAddingCopy", value: true });
     try {
       await createCopy({
         itemId,
-        barcode: newCopyBarcode.trim(),
-        condition: newCopyCondition,
-        shelfLocation: newCopyShelfLocation || undefined,
+        barcode: state.newCopyBarcode.trim(),
+        condition: state.newCopyCondition,
+        shelfLocation: state.newCopyShelfLocation || undefined,
       });
-      setIsAddCopyOpen(false);
-      setNewCopyBarcode("");
-      setNewCopyCondition("good");
-      setNewCopyShelfLocation("");
+      dispatch({ type: "closeAddCopyDialog" });
     } catch (error) {
       console.error("Failed to add copy:", error);
     } finally {
-      setIsAddingCopy(false);
+      dispatch({ type: "setAddingCopy", value: false });
     }
   };
 
@@ -126,18 +172,28 @@ export function CatalogItemDetailPageClient() {
           copies={copies}
           getConditionLabel={getConditionLabel}
           handleDeleteCopy={handleDeleteCopy}
-          setIsAddCopyOpen={setIsAddCopyOpen}
+          setIsAddCopyOpen={(value) =>
+            dispatch({ type: "setAddCopyOpen", value })
+          }
         />
         <CatalogItemAddCopyDialog
-          isAddCopyOpen={isAddCopyOpen}
-          setIsAddCopyOpen={setIsAddCopyOpen}
-          newCopyBarcode={newCopyBarcode}
-          setNewCopyBarcode={setNewCopyBarcode}
-          newCopyCondition={newCopyCondition}
-          setNewCopyCondition={setNewCopyCondition}
-          newCopyShelfLocation={newCopyShelfLocation}
-          setNewCopyShelfLocation={setNewCopyShelfLocation}
-          isAddingCopy={isAddingCopy}
+          isAddCopyOpen={state.isAddCopyOpen}
+          setIsAddCopyOpen={(value) =>
+            dispatch({ type: "setAddCopyOpen", value })
+          }
+          newCopyBarcode={state.newCopyBarcode}
+          setNewCopyBarcode={(value) =>
+            dispatch({ type: "setNewCopyBarcode", value })
+          }
+          newCopyCondition={state.newCopyCondition}
+          setNewCopyCondition={(value) =>
+            dispatch({ type: "setNewCopyCondition", value })
+          }
+          newCopyShelfLocation={state.newCopyShelfLocation}
+          setNewCopyShelfLocation={(value) =>
+            dispatch({ type: "setNewCopyShelfLocation", value })
+          }
+          isAddingCopy={state.isAddingCopy}
           handleAddCopy={handleAddCopy}
           generateBarcode={generateBarcode}
           getConditionLabel={getConditionLabel}

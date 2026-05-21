@@ -6,7 +6,7 @@ import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
 test("should create transit record with auto-generated number", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create a transit record
   // const transitId = await t.mutation(api.transit.createTransitRecord, {
@@ -25,7 +25,7 @@ test("should create transit record with auto-generated number", async () => {
 });
 
 test("should update transit status and create status history", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create transit record
   // const transitId = await t.mutation(api.transit.createTransitRecord, { /* ... */ });
@@ -46,7 +46,7 @@ test("should update transit status and create status history", async () => {
 });
 
 test("should link transit to loan and retrieve via getTransitForLoan", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create transit record linked to loan
   // const transitId = await t.mutation(api.transit.createTransitRecord, {
@@ -63,7 +63,7 @@ test("should link transit to loan and retrieve via getTransitForLoan", async () 
 });
 
 test("should add and remove items from transit", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create transit record
   // const transitId = await t.mutation(api.transit.createTransitRecord, { /* ... */ });
@@ -89,7 +89,7 @@ test("should add and remove items from transit", async () => {
 });
 
 test("should update transit item status on delivery", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   // 1. Create transit with items
   // const transitId = await t.mutation(api.transit.createTransitRecord, {
@@ -112,7 +112,7 @@ test("should update transit item status on delivery", async () => {
 });
 
 test("should prevent deletion of in-transit records", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   expect(true).toBe(true);
 });
@@ -147,13 +147,13 @@ test("should require permission for getTransitForLoanWithHistory", async () => {
 });
 
 test("should return empty array when no transit records exist", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   expect(true).toBe(true);
 });
 
 test("should return transit records with status history", async () => {
-  const t = convexTest(schema, modules);
+  const _t = convexTest(schema, modules);
 
   expect(true).toBe(true);
 });

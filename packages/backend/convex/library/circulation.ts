@@ -22,12 +22,13 @@ export const checkout = mutation({
   },
   returns: v.id("circulations"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -120,12 +121,13 @@ export const checkin = mutation({
     fineAmount: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation record not found");
     }
@@ -225,12 +227,13 @@ export const markLost = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation record not found");
     }
@@ -290,12 +293,13 @@ export const markClaimedReturned = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation record not found");
     }
@@ -608,12 +612,13 @@ export const renew = mutation({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       return { success: false, error: "Circulation not found" };
     }
@@ -746,97 +751,99 @@ export const autoRenewEligibleItems = mutation({
       )
       .collect();
 
+    const renewalOutcomes = await Promise.all(
+      circulations.map(async (circulation) => {
+        const account = await ctx.db.get(circulation.accountId);
+        if (!account?.autoRenewalEnabled) {
+          return "skipped" as const;
+        }
+
+        if (circulation.isRecalled) {
+          await ctx.db.patch(circulation._id, {
+            lastAutoRenewalAttempt: now,
+            autoRenewalFailureReason: "Item recalled",
+          });
+          return "failed" as const;
+        }
+
+        const holds = await ctx.db
+          .query("libraryHolds")
+          .withIndex("by_item_and_status", (q) =>
+            q.eq("itemId", circulation.itemId).eq("status", "pending"),
+          )
+          .first();
+
+        if (holds) {
+          await ctx.db.patch(circulation._id, {
+            lastAutoRenewalAttempt: now,
+            autoRenewalFailureReason: "Pending holds on item",
+          });
+          return "failed" as const;
+        }
+
+        const item = await ctx.db.get(circulation.itemId);
+        const membershipType = account.membershipTypeId
+          ? await ctx.db.get(account.membershipTypeId)
+          : null;
+
+        const maxRenewals =
+          item?.maxRenewals ??
+          membershipType?.renewalLimit ??
+          settings.maxRenewalsAllowed ??
+          3;
+
+        if (circulation.renewalCount >= maxRenewals) {
+          await ctx.db.patch(circulation._id, {
+            lastAutoRenewalAttempt: now,
+            autoRenewalFailureReason: `Maximum renewals (${maxRenewals}) reached`,
+          });
+          return "failed" as const;
+        }
+
+        const renewalPeriodDays =
+          item?.loanPeriodDays ??
+          membershipType?.loanPeriodDays ??
+          settings.renewalPeriodDays ??
+          settings.defaultLoanPeriodDays;
+
+        const newDueDate = now + renewalPeriodDays * 24 * 60 * 60 * 1000;
+
+        await ctx.db.patch(circulation._id, {
+          dueDate: newDueDate,
+          renewalCount: circulation.renewalCount + 1,
+          lastRenewalDate: now,
+          autoRenewed: true,
+          lastAutoRenewalAttempt: now,
+          autoRenewalFailureReason: undefined,
+        });
+
+        if (account.userId) {
+          await ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: args.organizationId,
+            userId: account.userId,
+            type: "library_auto_renewal",
+            title: "Item Auto-Renewed",
+            message: `Your checkout of "${item?.title}" has been automatically renewed. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
+            relatedEntityType: "circulation",
+            relatedEntityId: circulation._id,
+          });
+        }
+
+        return "renewed" as const;
+      }),
+    );
+
     let renewedCount = 0;
     let failedCount = 0;
     let skippedCount = 0;
-
-    for (const circulation of circulations) {
-      const account = await ctx.db.get(circulation.accountId);
-      if (!account || !account.autoRenewalEnabled) {
+    for (const outcome of renewalOutcomes) {
+      if (outcome === "renewed") {
+        renewedCount++;
+      } else if (outcome === "failed") {
+        failedCount++;
+      } else {
         skippedCount++;
-        continue;
       }
-
-      // Check if item is recalled
-      if (circulation.isRecalled) {
-        await ctx.db.patch(circulation._id, {
-          lastAutoRenewalAttempt: now,
-          autoRenewalFailureReason: "Item recalled",
-        });
-        failedCount++;
-        continue;
-      }
-
-      // Check for holds
-      const holds = await ctx.db
-        .query("libraryHolds")
-        .withIndex("by_item_and_status", (q) =>
-          q.eq("itemId", circulation.itemId).eq("status", "pending"),
-        )
-        .first();
-
-      if (holds) {
-        await ctx.db.patch(circulation._id, {
-          lastAutoRenewalAttempt: now,
-          autoRenewalFailureReason: "Pending holds on item",
-        });
-        failedCount++;
-        continue;
-      }
-
-      // Check renewal limit
-      const item = await ctx.db.get(circulation.itemId);
-      const membershipType = account.membershipTypeId
-        ? await ctx.db.get(account.membershipTypeId)
-        : null;
-
-      const maxRenewals =
-        item?.maxRenewals ??
-        membershipType?.renewalLimit ??
-        settings.maxRenewalsAllowed ??
-        3;
-
-      if (circulation.renewalCount >= maxRenewals) {
-        await ctx.db.patch(circulation._id, {
-          lastAutoRenewalAttempt: now,
-          autoRenewalFailureReason: `Maximum renewals (${maxRenewals}) reached`,
-        });
-        failedCount++;
-        continue;
-      }
-
-      // Perform renewal
-      const renewalPeriodDays =
-        item?.loanPeriodDays ??
-        membershipType?.loanPeriodDays ??
-        settings.renewalPeriodDays ??
-        settings.defaultLoanPeriodDays;
-
-      const newDueDate = now + renewalPeriodDays * 24 * 60 * 60 * 1000;
-
-      await ctx.db.patch(circulation._id, {
-        dueDate: newDueDate,
-        renewalCount: circulation.renewalCount + 1,
-        lastRenewalDate: now,
-        autoRenewed: true,
-        lastAutoRenewalAttempt: now,
-        autoRenewalFailureReason: undefined,
-      });
-
-      // Send notification
-      if (account.userId) {
-        await ctx.runMutation(internal.audit.createNotificationInternal, {
-          organizationId: args.organizationId,
-          userId: account.userId,
-          type: "library_auto_renewal",
-          title: "Item Auto-Renewed",
-          message: `Your checkout of "${item?.title}" has been automatically renewed. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
-          relatedEntityType: "circulation",
-          relatedEntityId: circulation._id,
-        });
-      }
-
-      renewedCount++;
     }
 
     return { renewedCount, failedCount, skippedCount };
@@ -972,12 +979,13 @@ export const checkoutWithOverride = mutation({
   },
   returns: v.id("circulations"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -1061,12 +1069,13 @@ export const createRecall = mutation({
   },
   returns: v.id("libraryRecalls"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation not found");
     }
@@ -1097,31 +1106,31 @@ export const createRecall = mutation({
     const finalDueDate =
       newDueDate < circulation.dueDate ? newDueDate : circulation.dueDate;
 
-    const recallId = await ctx.db.insert("libraryRecalls", {
-      organizationId: circulation.organizationId,
-      circulationId: args.circulationId,
-      itemId: circulation.itemId,
-      copyId: circulation.copyId,
-      accountId: circulation.accountId,
-      reason: args.reason,
-      recalledByAccountId: args.requestingAccountId,
-      recalledByHoldId: args.requestingHoldId,
-      status: "pending",
-      recallDate: now,
-      originalDueDate: circulation.dueDate,
-      newDueDate: finalDueDate,
-      createdBy: userId,
-    });
-
-    // Update circulation
-    await ctx.db.patch(args.circulationId, {
-      isRecalled: true,
-      recalledAt: now,
-      recalledBy: userId,
-      recallReason: args.reason,
-      originalDueDate: circulation.dueDate,
-      dueDate: finalDueDate,
-    });
+    const [recallId] = await Promise.all([
+      ctx.db.insert("libraryRecalls", {
+        organizationId: circulation.organizationId,
+        circulationId: args.circulationId,
+        itemId: circulation.itemId,
+        copyId: circulation.copyId,
+        accountId: circulation.accountId,
+        reason: args.reason,
+        recalledByAccountId: args.requestingAccountId,
+        recalledByHoldId: args.requestingHoldId,
+        status: "pending",
+        recallDate: now,
+        originalDueDate: circulation.dueDate,
+        newDueDate: finalDueDate,
+        createdBy: userId,
+      }),
+      ctx.db.patch(args.circulationId, {
+        isRecalled: true,
+        recalledAt: now,
+        recalledBy: userId,
+        recallReason: args.reason,
+        originalDueDate: circulation.dueDate,
+        dueDate: finalDueDate,
+      }),
+    ] as const);
 
     // Send notification to borrower
     const [account, item] = await Promise.all([
@@ -1160,12 +1169,13 @@ export const cancelRecall = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, recall] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.recallId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const recall = await ctx.db.get(args.recallId);
     if (!recall) {
       throw new Error("Recall not found");
     }
@@ -1306,12 +1316,13 @@ export const updateAutoRenewalPreference = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }

@@ -42,8 +42,10 @@ async function deleteFineArtDetails(
       const provenanceDocumentIds =
         detail.provenanceChain?.flatMap((entry) => entry.documentIds ?? []) ??
         [];
-      await deleteStorageIds(ctx, provenanceDocumentIds);
-      await ctx.db.delete(detail._id);
+      await Promise.all([
+        deleteStorageIds(ctx, provenanceDocumentIds),
+        ctx.db.delete(detail._id),
+      ]);
     }),
   );
 }
@@ -103,8 +105,10 @@ async function deleteVehicleDetails(
     vehicleDetails.map(async (detail) => {
       const serviceDocumentIds =
         detail.serviceLog?.flatMap((entry) => entry.documentIds ?? []) ?? [];
-      await deleteStorageIds(ctx, serviceDocumentIds);
-      await ctx.db.delete(detail._id);
+      await Promise.all([
+        deleteStorageIds(ctx, serviceDocumentIds),
+        ctx.db.delete(detail._id),
+      ]);
     }),
   );
 }

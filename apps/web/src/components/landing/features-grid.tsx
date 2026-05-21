@@ -1,16 +1,12 @@
 "use client";
 
-import { cn } from "@v1/ui/utils";
 import { motion } from "framer-motion";
 import {
   Archive,
-  FileCheck,
   Globe,
   Image as ImageIcon,
   MapPinned,
-  Repeat,
   Search,
-  ShieldCheck,
 } from "lucide-react";
 import { SpotlightCard } from "../spotlight-card";
 
@@ -50,7 +46,7 @@ const features = [
 
 export function FeaturesGrid() {
   return (
-    <section className="py-32 px-4 relative bg-gray-950">
+    <section className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2

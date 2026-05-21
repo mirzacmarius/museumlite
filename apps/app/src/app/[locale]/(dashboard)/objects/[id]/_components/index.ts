@@ -1,6 +1,6 @@
 export { ArchiveDetailsTab } from "./archive-details-tab";
-export { ConservationTab } from "./conservation-tab";
 export { CommentsTab } from "./comments-tab";
+export { ConservationTab } from "./conservation-tab";
 export { DigitalAssetsTab } from "./digital-assets-tab";
 export { ExhibitionsTab } from "./exhibitions-tab";
 export { FineArtDetailsTab } from "./fine-art-details-tab";
@@ -14,12 +14,11 @@ export { PhysicalTab } from "./physical-tab";
 export { PrintPreviewModal } from "./print-preview-modal";
 export { QRLabelModal } from "./qr-label-modal";
 export { RecordContextSidebar } from "./record-context-sidebar";
-export { VehicleDetailsTab } from "./vehicle-details-tab";
-export { WineDetailsTab } from "./wine-details-tab";
-
 export type {
   CollectionData,
   HeroImageData,
   LoanForCollection,
   LocationPathItem,
 } from "./types";
+export { VehicleDetailsTab } from "./vehicle-details-tab";
+export { WineDetailsTab } from "./wine-details-tab";

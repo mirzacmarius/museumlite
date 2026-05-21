@@ -1,9 +1,5 @@
 "use client";
 
-import { ClientDate } from "@/components/client-date";
-import { useOrganization } from "@/components/organization-provider";
-import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import {
@@ -52,23 +48,24 @@ import {
   MapPin,
   Phone,
   Plus,
-  Shield,
   Trash2,
   Upload,
   User,
-  UserCog,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ClientDate } from "@/components/client-date";
+import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function AccountDetailPage() {
-  const locale = useCurrentLocale();
+  const _locale = useCurrentLocale();
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
-  const tToast = useScopedI18n("accounts.detail.toasts");
+  const _tToast = useScopedI18n("accounts.detail.toasts");
   const params = useParams();
   const { push } = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -96,7 +93,7 @@ export default function AccountDetailPage() {
   const timeline = timelineResult?.events;
 
   const deleteAccount = useMutation(api.accounts.remove);
-  const roles = useQuery(
+  const _roles = useQuery(
     api.roles.listRoles,
     currentOrganizationId
       ? { organizationId: currentOrganizationId as Id<"organizations"> }
@@ -565,7 +562,7 @@ function ContactsTab({
                             try {
                               await deleteContact({ contactId: contact._id });
                               toast.success(tToast("contactDeleted"));
-                            } catch (error) {
+                            } catch (_error) {
                               toast.error(tToast("contactDeleteFailed"));
                             }
                           }}
@@ -664,7 +661,7 @@ function ContactForm({
         toast.success(tToast("contactAdded"));
       }
       onSuccess();
-    } catch (error) {
+    } catch (_error) {
       toast.error(
         contact ? tToast("contactUpdateFailed") : tToast("contactAddFailed"),
       );
@@ -765,7 +762,9 @@ function ContactForm({
 
 function DownloadDocumentButton({
   documentId,
-}: { documentId: Id<"accountDocuments"> }) {
+}: {
+  documentId: Id<"accountDocuments">;
+}) {
   const documentWithUrl = useQuery(api.accountDocuments.get, { documentId });
 
   return (
@@ -784,6 +783,62 @@ function DownloadDocumentButton({
   );
 }
 
+type AccountDocumentType = AccountDocument["documentType"];
+
+interface DocumentsTabState {
+  isUploading: boolean;
+  showUploadDialog: boolean;
+  selectedFile: File | null;
+  documentType: AccountDocumentType;
+  description: string;
+}
+
+type DocumentsTabAction =
+  | { type: "setIsUploading"; value: boolean }
+  | { type: "setShowUploadDialog"; value: boolean }
+  | { type: "openUploadDialog"; file: File }
+  | { type: "closeUploadDialog" }
+  | { type: "setDocumentType"; value: AccountDocumentType }
+  | { type: "setDescription"; value: string };
+
+const initialDocumentsTabState: DocumentsTabState = {
+  isUploading: false,
+  showUploadDialog: false,
+  selectedFile: null,
+  documentType: "other",
+  description: "",
+};
+
+function documentsTabReducer(
+  state: DocumentsTabState,
+  action: DocumentsTabAction,
+): DocumentsTabState {
+  switch (action.type) {
+    case "setIsUploading":
+      return { ...state, isUploading: action.value };
+    case "setShowUploadDialog":
+      return { ...state, showUploadDialog: action.value };
+    case "openUploadDialog":
+      return {
+        ...state,
+        selectedFile: action.file,
+        showUploadDialog: true,
+      };
+    case "closeUploadDialog":
+      return {
+        ...state,
+        showUploadDialog: false,
+        selectedFile: null,
+        description: "",
+        documentType: "other",
+      };
+    case "setDocumentType":
+      return { ...state, documentType: action.value };
+    case "setDescription":
+      return { ...state, description: action.value };
+  }
+}
+
 function DocumentsTab({
   accountId,
   documents,
@@ -794,14 +849,11 @@ function DocumentsTab({
   const t = useScopedI18n("accounts.detail");
   const tCommon = useScopedI18n("common");
   const tToast = useScopedI18n("accounts.detail.toasts");
-  const [isUploading, setIsUploading] = useState(false);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [state, dispatch] = useReducer(
+    documentsTabReducer,
+    initialDocumentsTabState,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<
-    "contract" | "agreement" | "invoice" | "correspondence" | "other"
-  >("other");
-  const [description, setDescription] = useState("");
 
   const generateUploadUrl = useAction(api.accountDocuments.generateUploadUrl);
   const createDocument = useMutation(api.accountDocuments.create);
@@ -810,21 +862,20 @@ function DocumentsTab({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      setShowUploadDialog(true);
+      dispatch({ type: "openUploadDialog", file });
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!state.selectedFile) return;
 
-    setIsUploading(true);
+    dispatch({ type: "setIsUploading", value: true });
     try {
       const uploadUrl = await generateUploadUrl({});
       const uploadResult = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": selectedFile.type },
-        body: selectedFile,
+        headers: { "Content-Type": state.selectedFile.type },
+        body: state.selectedFile,
       });
 
       if (!uploadResult.ok) {
@@ -836,25 +887,22 @@ function DocumentsTab({
       await createDocument({
         accountId,
         storageId,
-        filename: selectedFile.name,
-        mimeType: selectedFile.type,
-        size: selectedFile.size,
-        documentType,
-        description: description || undefined,
+        filename: state.selectedFile.name,
+        mimeType: state.selectedFile.type,
+        size: state.selectedFile.size,
+        documentType: state.documentType,
+        description: state.description || undefined,
       });
 
       toast.success(tToast("documentUploaded"));
-      setShowUploadDialog(false);
-      setSelectedFile(null);
-      setDescription("");
-      setDocumentType("other");
+      dispatch({ type: "closeUploadDialog" });
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error(tToast("documentUploadFailed"));
     } finally {
-      setIsUploading(false);
+      dispatch({ type: "setIsUploading", value: false });
     }
   };
 
@@ -874,7 +922,7 @@ function DocumentsTab({
             <Button
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              disabled={state.isUploading}
             >
               <Upload className="mr-2 size-4" />
               {t("uploadDocument")}
@@ -931,7 +979,7 @@ function DocumentsTab({
                             try {
                               await deleteDocument({ documentId: doc._id });
                               toast.success(tToast("documentDeleted"));
-                            } catch (error) {
+                            } catch (_error) {
                               toast.error(tToast("documentDeleteFailed"));
                             }
                           }}
@@ -949,7 +997,12 @@ function DocumentsTab({
         </div>
       )}
 
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+      <Dialog
+        open={state.showUploadDialog}
+        onOpenChange={(open) =>
+          dispatch({ type: "setShowUploadDialog", value: open })
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("uploadDocument")}</DialogTitle>
@@ -959,15 +1012,18 @@ function DocumentsTab({
             <div>
               <Label>{t("file")}</Label>
               <p className="text-sm text-muted-foreground">
-                {selectedFile?.name}
+                {state.selectedFile?.name}
               </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="documentType">{t("documentType")}</Label>
               <Select
-                value={documentType}
+                value={state.documentType}
                 onValueChange={(value) =>
-                  setDocumentType(value as typeof documentType)
+                  dispatch({
+                    type: "setDocumentType",
+                    value: value as AccountDocumentType,
+                  })
                 }
               >
                 <SelectTrigger>
@@ -996,8 +1052,10 @@ function DocumentsTab({
               <Label htmlFor="description">{t("descriptionOptional")}</Label>
               <Textarea
                 id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={state.description}
+                onChange={(e) =>
+                  dispatch({ type: "setDescription", value: e.target.value })
+                }
                 placeholder={t("descriptionOptional")}
               />
             </div>
@@ -1006,9 +1064,7 @@ function DocumentsTab({
             <Button
               variant="outline"
               onClick={() => {
-                setShowUploadDialog(false);
-                setSelectedFile(null);
-                setDescription("");
+                dispatch({ type: "closeUploadDialog" });
                 if (fileInputRef.current) {
                   fileInputRef.current.value = "";
                 }
@@ -1016,8 +1072,8 @@ function DocumentsTab({
             >
               {tCommon("cancel")}
             </Button>
-            <Button onClick={handleUpload} disabled={isUploading}>
-              {isUploading ? t("uploading") : t("upload")}
+            <Button onClick={handleUpload} disabled={state.isUploading}>
+              {state.isUploading ? t("uploading") : t("upload")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1028,7 +1084,7 @@ function DocumentsTab({
 
 // Relationships Tab Component
 function RelationshipsTab({
-  accountId,
+  _accountId,
   relationships,
 }: {
   accountId: Id<"accounts">;
@@ -1096,7 +1152,10 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
       ) : (
         <div className="space-y-4">
           {timeline.map((event, index) => (
-            <div key={`${event.timestamp}-${index}`} className="flex gap-4">
+            <div
+              key={`${event.timestamp}-${event.type}`}
+              className="flex gap-4"
+            >
               <div className="flex flex-col items-center">
                 <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
                   <History className="size-4 text-primary" />

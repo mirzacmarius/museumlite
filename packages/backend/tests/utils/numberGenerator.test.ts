@@ -220,9 +220,13 @@ describe("Year-based counters", () => {
       });
     });
 
-    // Get three sequential values
-    const values: number[] = [];
-    for (let i = 0; i < 3; i++) {
+    async function collectYearBasedValues(
+      remaining: number,
+    ): Promise<number[]> {
+      if (remaining === 0) {
+        return [];
+      }
+
       const value = await t.run(async (ctx) => {
         const counter = await ctx.db
           .query("loanCounters")
@@ -237,8 +241,12 @@ describe("Year-based counters", () => {
           year: 2026,
         });
       });
-      values.push(value);
+
+      const rest = await collectYearBasedValues(remaining - 1);
+      return [value, ...rest];
     }
+
+    const values = await collectYearBasedValues(3);
 
     // Verify sequential values
     expect(values).toEqual([1, 2, 3]);
@@ -456,9 +464,11 @@ describe("Global counters", () => {
       });
     });
 
-    // Get five sequential values
-    const values: number[] = [];
-    for (let i = 0; i < 5; i++) {
+    async function collectGlobalValues(remaining: number): Promise<number[]> {
+      if (remaining === 0) {
+        return [];
+      }
+
       const value = await t.run(async (ctx) => {
         const counter = await ctx.db
           .query("accountCounters")
@@ -470,8 +480,12 @@ describe("Global counters", () => {
           organizationId: orgId,
         });
       });
-      values.push(value);
+
+      const rest = await collectGlobalValues(remaining - 1);
+      return [value, ...rest];
     }
+
+    const values = await collectGlobalValues(5);
 
     // Verify sequential values
     expect(values).toEqual([1, 2, 3, 4, 5]);

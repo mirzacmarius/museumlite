@@ -119,16 +119,17 @@ export const enable = mutation({
   },
   returns: enableResultValidator,
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     const validIntegration = AVAILABLE_INTEGRATIONS.find(
       (i) => i.id === args.integrationId,
@@ -186,13 +187,14 @@ export const disable = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const org = await ctx.db.get(args.organizationId);
+    const [, org] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db.get(args.organizationId),
+    ]);
     if (!org) {
       throw new Error("Organization not found");
     }
@@ -558,94 +560,108 @@ export const backfillIntegrationSubscriptions = internalAction({
       ? [args.integrationId]
       : [...PAID_INTEGRATIONS];
 
-    let processedOrganizations = 0;
-    let created = 0;
-    let skipped = 0;
+    const orgResults = await Promise.all(
+      organizations.map(async (organization) => {
+        const enabledTargets = integrations.filter((integrationId) =>
+          organization.enabledIntegrations.includes(integrationId),
+        );
 
-    for (const organization of organizations) {
-      const enabledIntegrations = organization.enabledIntegrations;
-      const enabledTargets = integrations.filter((integrationId) =>
-        enabledIntegrations.includes(integrationId),
-      );
-
-      if (enabledTargets.length === 0) {
-        continue;
-      }
-
-      processedOrganizations += 1;
-
-      const userIds = await ctx.runQuery(
-        internal.organizations.listOrganizationUserIds,
-        { organizationId: organization._id },
-      );
-
-      for (const integrationId of enabledTargets) {
-        const existing = await ctx.runQuery(api.integrations.getSubscription, {
-          organizationId: organization._id,
-          integrationId,
-        });
-
-        if (existing) {
-          skipped += 1;
-          continue;
+        if (enabledTargets.length === 0) {
+          return { processed: false, created: 0, skipped: 0 };
         }
 
-        const productId =
-          process.env[`INTEGRATION_PRODUCT_${integrationId.toUpperCase()}`];
-        if (!productId) {
-          skipped += 1;
-          continue;
-        }
+        const userIds = await ctx.runQuery(
+          internal.organizations.listOrganizationUserIds,
+          { organizationId: organization._id },
+        );
 
-        let matched = false;
-
-        for (const userId of userIds) {
-          const subscription = await polar.getCurrentSubscription(ctx, {
-            userId,
-          });
-          if (!subscription) {
-            continue;
-          }
-
-          if (subscription.productId !== productId) {
-            continue;
-          }
-
-          const currentPeriodEnd = subscription.currentPeriodEnd
-            ? Date.parse(subscription.currentPeriodEnd)
-            : 0;
-
-          const status =
-            subscriptionStatusMap[
-              subscription.status as keyof typeof subscriptionStatusMap
-            ] ?? "incomplete";
-
-          if (!args.dryRun) {
-            await ctx.runMutation(
-              internal.integrations.upsertIntegrationSubscription,
+        const integrationResults = await Promise.all(
+          enabledTargets.map(async (integrationId) => {
+            const existing = await ctx.runQuery(
+              api.integrations.getSubscription,
               {
                 organizationId: organization._id,
                 integrationId,
-                productId: subscription.productId,
-                subscriptionId: subscription.id,
-                customerId: subscription.customerId,
-                status,
-                cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-                currentPeriodEnd,
-                metadata: subscription.metadata ?? {},
               },
             );
-          }
 
-          created += 1;
-          matched = true;
-          break;
-        }
+            if (existing) {
+              return { created: 0, skipped: 1 };
+            }
 
-        if (!matched) {
-          skipped += 1;
-        }
+            const productId =
+              process.env[`INTEGRATION_PRODUCT_${integrationId.toUpperCase()}`];
+            if (!productId) {
+              return { created: 0, skipped: 1 };
+            }
+
+            const subscriptions = await Promise.all(
+              userIds.map((userId) =>
+                polar.getCurrentSubscription(ctx, { userId }),
+              ),
+            );
+
+            const subscription = subscriptions.find(
+              (entry) => entry && entry.productId === productId,
+            );
+
+            if (!subscription) {
+              return { created: 0, skipped: 1 };
+            }
+
+            const currentPeriodEnd = subscription.currentPeriodEnd
+              ? Date.parse(subscription.currentPeriodEnd)
+              : 0;
+
+            const status =
+              subscriptionStatusMap[
+                subscription.status as keyof typeof subscriptionStatusMap
+              ] ?? "incomplete";
+
+            if (!args.dryRun) {
+              await ctx.runMutation(
+                internal.integrations.upsertIntegrationSubscription,
+                {
+                  organizationId: organization._id,
+                  integrationId,
+                  productId: subscription.productId,
+                  subscriptionId: subscription.id,
+                  customerId: subscription.customerId,
+                  status,
+                  cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+                  currentPeriodEnd,
+                  metadata: subscription.metadata ?? {},
+                },
+              );
+            }
+
+            return { created: 1, skipped: 0 };
+          }),
+        );
+
+        return {
+          processed: true,
+          created: integrationResults.reduce(
+            (sum, result) => sum + result.created,
+            0,
+          ),
+          skipped: integrationResults.reduce(
+            (sum, result) => sum + result.skipped,
+            0,
+          ),
+        };
+      }),
+    );
+
+    let processedOrganizations = 0;
+    let created = 0;
+    let skipped = 0;
+    for (const result of orgResults) {
+      if (result.processed) {
+        processedOrganizations++;
       }
+      created += result.created;
+      skipped += result.skipped;
     }
 
     return { processedOrganizations, created, skipped };

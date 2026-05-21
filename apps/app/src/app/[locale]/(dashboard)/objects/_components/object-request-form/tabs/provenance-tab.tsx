@@ -1,36 +1,14 @@
 "use client";
 
-import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
-import { CollectionTypeSelector } from "@/components/collection-type-selector";
-import { ConditionCombobox } from "@/components/condition-combobox";
-import { DonationDetailsField } from "@/components/donation-details-field";
-import { LocationSelector } from "@/components/location-selector";
-import { MaterialsCombobox } from "@/components/materials-combobox";
-import { ObjectCombobox } from "@/components/object-combobox";
-import { RepeatableTextField } from "@/components/repeatable-text-field";
-import { TypeCombobox } from "@/components/type-combobox";
-import type { useFeatureAccess } from "@/hooks/use-feature-access";
 import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@v1/ui/select";
-import { Switch } from "@v1/ui/switch";
 import { Textarea } from "@v1/ui/textarea";
-import { Camera, CheckCircle, Plus, Star, Upload, X } from "lucide-react";
-import Image from "next/image";
-import type React from "react";
-import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
+import { CheckCircle, Plus, X } from "lucide-react";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type {
   CollectionFormTabProps,
-  DraftMediaItem,
   OwnershipEntry,
 } from "../../collection-form-shared/types";
 
@@ -38,8 +16,8 @@ export function ObjectRequestProvenanceTab({
   formData,
   updateField,
   placeholders,
-  currentOrganizationId,
-  isLocationTrackingEnabled,
+  _currentOrganizationId,
+  _isLocationTrackingEnabled,
 }: CollectionFormTabProps) {
   return (
     <div className="space-y-8">
@@ -121,7 +99,7 @@ export function ObjectRequestProvenanceTab({
             <div className="space-y-4">
               {(formData.ownershipHistory || []).map((entry, index) => (
                 <div
-                  key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${index}`}
+                  key={`ownership-${entry.owner || ""}-${entry.startYear || ""}-${entry.endYear || ""}`}
                   className="rounded-xl border border-border/60 bg-secondary/20 p-4"
                 >
                   <div className="mb-4 flex items-start justify-between gap-4">
@@ -288,7 +266,7 @@ export function ObjectRequestProvenanceTab({
         <div className="space-y-3">
           {(formData.links || []).map((link, index) => (
             <div
-              key={`${link.url}-${link.label || ""}-${index}`}
+              key={`${link.url}-${link.label || ""}`}
               className="grid gap-3 rounded-xl border border-border/50 p-4 md:grid-cols-[1fr_1fr_auto]"
             >
               <div className="space-y-2">

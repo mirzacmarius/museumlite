@@ -1,15 +1,15 @@
 import "@v1/ui/globals.css";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
 import { Provider as AnalyticsProvider } from "@v1/analytics/client";
 import { MotionProvider } from "@v1/ui/motion-provider";
 import { cn } from "@v1/ui/utils";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
+import { Footer } from "@/components/footer";
+import { Header } from "@/components/header";
 import { ConvexClientProvider } from "./convex-client-provider";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://museumlite.com"),
@@ -58,7 +58,7 @@ export default function RootLayout({
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "antialiased dark min-h-screen bg-gray-950 text-white selection:bg-neon-purple/30",
+          "antialiased dark min-h-screen bg-zinc-950 text-white selection:bg-neon-purple/30",
         )}
       >
         <MotionProvider>

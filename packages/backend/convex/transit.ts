@@ -4,8 +4,8 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
   query,
 } from "./_generated/server";
@@ -92,12 +92,13 @@ export const createTransitRecord = mutation({
   },
   returns: v.id("transitRecords"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "loans.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "loans.create");
 
     if (args.loanId) {
       const loan = await ctx.db.get(args.loanId);
@@ -250,12 +251,13 @@ export const updateTransitRecord = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, transitRecord] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitRecordId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const transitRecord = await ctx.db.get(args.transitRecordId);
     if (!transitRecord) {
       throw new Error("Transit record not found");
     }
@@ -312,12 +314,13 @@ export const updateTransitStatus = mutation({
   },
   returns: v.id("transitStatusUpdates"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, transitRecord] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitRecordId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const transitRecord = await ctx.db.get(args.transitRecordId);
     if (!transitRecord) {
       throw new Error("Transit record not found");
     }
@@ -474,12 +477,13 @@ export const deleteTransitRecord = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, transitRecord] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitRecordId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const transitRecord = await ctx.db.get(args.transitRecordId);
     if (!transitRecord) {
       throw new Error("Transit record not found");
     }
@@ -491,37 +495,29 @@ export const deleteTransitRecord = mutation({
       throw new Error("Can only delete draft or cancelled transit records");
     }
 
-    await requirePermission(
-      ctx,
-      transitRecord.organizationId,
-      "organization.manage_settings",
-    );
-
-    const transitItems = await ctx.db
-      .query("transitItems")
-      .withIndex("by_transitRecord", (q) =>
-        q.eq("transitRecordId", args.transitRecordId),
-      )
-      .collect();
-
-    await Promise.all(
-      Array.from(transitItems).map(async (item) => {
-        await ctx.db.delete(item._id);
-      }),
-    );
-
-    const statusUpdates = await ctx.db
-      .query("transitStatusUpdates")
-      .withIndex("by_transitRecord", (q) =>
-        q.eq("transitRecordId", args.transitRecordId),
-      )
-      .collect();
-    await Promise.all([
-      Promise.all(
-        Array.from(statusUpdates).map(async (update) => {
-          await ctx.db.delete(update._id);
-        }),
+    const [, transitItems, statusUpdates] = await Promise.all([
+      requirePermission(
+        ctx,
+        transitRecord.organizationId,
+        "organization.manage_settings",
       ),
+      ctx.db
+        .query("transitItems")
+        .withIndex("by_transitRecord", (q) =>
+          q.eq("transitRecordId", args.transitRecordId),
+        )
+        .collect(),
+      ctx.db
+        .query("transitStatusUpdates")
+        .withIndex("by_transitRecord", (q) =>
+          q.eq("transitRecordId", args.transitRecordId),
+        )
+        .collect(),
+    ] as const);
+
+    await Promise.all([
+      ...transitItems.map((item) => ctx.db.delete(item._id)),
+      ...statusUpdates.map((update) => ctx.db.delete(update._id)),
       ctx.db.delete(args.transitRecordId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: transitRecord.organizationId,
@@ -531,7 +527,7 @@ export const deleteTransitRecord = mutation({
         entityId: args.transitRecordId,
         changes: { transitNumber: transitRecord.transitNumber },
       }),
-    ] as const);
+    ]);
 
     return null;
   },
@@ -639,8 +635,7 @@ export const getTransitRecord = query({
 
     await requirePermission(ctx, transitRecord.organizationId, "loans.read");
 
-    let originLocation: { _id: Id<"locations">; name: string } | undefined =
-      undefined;
+    let originLocation: { _id: Id<"locations">; name: string } | undefined;
     if (transitRecord.originLocationId) {
       const loc = await ctx.db.get(transitRecord.originLocationId);
       if (loc) {
@@ -648,9 +643,7 @@ export const getTransitRecord = query({
       }
     }
 
-    let destinationLocation:
-      | { _id: Id<"locations">; name: string }
-      | undefined = undefined;
+    let destinationLocation: { _id: Id<"locations">; name: string } | undefined;
     if (transitRecord.destinationLocationId) {
       const loc = await ctx.db.get(transitRecord.destinationLocationId);
       if (loc) {
@@ -658,7 +651,7 @@ export const getTransitRecord = query({
       }
     }
 
-    let loan: { _id: Id<"loans">; loanNumber: string } | undefined = undefined;
+    let loan: { _id: Id<"loans">; loanNumber: string } | undefined;
     if (transitRecord.loanId) {
       const loanDoc = await ctx.db.get(transitRecord.loanId);
       if (loanDoc) {
@@ -666,8 +659,7 @@ export const getTransitRecord = query({
       }
     }
 
-    let exhibition: { _id: Id<"exhibitions">; title: string } | undefined =
-      undefined;
+    let exhibition: { _id: Id<"exhibitions">; title: string } | undefined;
     if (transitRecord.exhibitionId) {
       const exhibitionDoc = await ctx.db.get(transitRecord.exhibitionId);
       if (exhibitionDoc) {
@@ -884,13 +876,13 @@ export const listTransitRecords = query({
           )
           .collect();
 
-        let loanNumber: string | undefined = undefined;
+        let loanNumber: string | undefined;
         if (record.loanId) {
           const loan = await ctx.db.get(record.loanId);
           loanNumber = loan?.loanNumber;
         }
 
-        let exhibitionTitle: string | undefined = undefined;
+        let exhibitionTitle: string | undefined;
         if (record.exhibitionId) {
           const exhibition = await ctx.db.get(record.exhibitionId);
           exhibitionTitle = exhibition?.title;
@@ -930,12 +922,13 @@ export const addItemsToTransit = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, transitRecord] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitRecordId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const transitRecord = await ctx.db.get(args.transitRecordId);
     if (!transitRecord) {
       throw new Error("Transit record not found");
     }
@@ -949,14 +942,15 @@ export const addItemsToTransit = mutation({
       );
     }
 
-    await requirePermission(ctx, transitRecord.organizationId, "loans.update");
-
-    const existingItems = await ctx.db
-      .query("transitItems")
-      .withIndex("by_transitRecord", (q) =>
-        q.eq("transitRecordId", args.transitRecordId),
-      )
-      .collect();
+    const [, existingItems] = await Promise.all([
+      requirePermission(ctx, transitRecord.organizationId, "loans.update"),
+      ctx.db
+        .query("transitItems")
+        .withIndex("by_transitRecord", (q) =>
+          q.eq("transitRecordId", args.transitRecordId),
+        )
+        .collect(),
+    ] as const);
     const existingCollectionIds = new Set(
       existingItems.map((i) => i.collectionId),
     );
@@ -1012,12 +1006,13 @@ export const removeItemFromTransit = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, transitItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitItemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const transitItem = await ctx.db.get(args.transitItemId);
     if (!transitItem) {
       throw new Error("Transit item not found");
     }
@@ -1067,12 +1062,13 @@ export const updateTransitItemCondition = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, transitItem] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.transitItemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const transitItem = await ctx.db.get(args.transitItemId);
     if (!transitItem) {
       throw new Error("Transit item not found");
     }
@@ -1123,12 +1119,13 @@ export const getTransitForLoan = query({
       return [];
     }
 
-    await requirePermission(ctx, loan.organizationId, "loans.read");
-
-    const transitRecords = await ctx.db
-      .query("transitRecords")
-      .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-      .collect();
+    const [, transitRecords] = await Promise.all([
+      requirePermission(ctx, loan.organizationId, "loans.read"),
+      ctx.db
+        .query("transitRecords")
+        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+        .collect(),
+    ] as const);
 
     return transitRecords.map((record) => ({
       _id: record._id,
@@ -1247,14 +1244,15 @@ export const getTransitForExhibition = query({
       return [];
     }
 
-    await requirePermission(ctx, exhibition.organizationId, "loans.read");
-
-    const transitRecords = await ctx.db
-      .query("transitRecords")
-      .withIndex("by_exhibition", (q) =>
-        q.eq("exhibitionId", args.exhibitionId),
-      )
-      .collect();
+    const [, transitRecords] = await Promise.all([
+      requirePermission(ctx, exhibition.organizationId, "loans.read"),
+      ctx.db
+        .query("transitRecords")
+        .withIndex("by_exhibition", (q) =>
+          q.eq("exhibitionId", args.exhibitionId),
+        )
+        .collect(),
+    ] as const);
 
     return transitRecords.map((record) => ({
       _id: record._id,
@@ -1294,14 +1292,15 @@ export const getTransitForCollection = query({
       return [];
     }
 
-    await requirePermission(ctx, collection.organizationId, "loans.read");
-
-    const transitItems = await ctx.db
-      .query("transitItems")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, transitItems] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "loans.read"),
+      ctx.db
+        .query("transitItems")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const results = await Promise.all(
       transitItems.map(async (item) => {
@@ -1421,16 +1420,17 @@ export const getTransitStats = query({
     deliveredThisMonth: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "loans.read");
+    const [, allRecords] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "loans.read"),
+      ctx.db
+        .query("transitRecords")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
-    const allRecords = await ctx.db
-      .query("transitRecords")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-
-    const now = Date.now();
+    const _now = Date.now();
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -1497,22 +1497,19 @@ export const checkUpcomingDeliveriesInternal = internalMutation({
             .collect();
 
           await Promise.all(
-            Array.from(userOrgs).map(async (userOrg) => {
-              for (const transit of upcomingDeliveries) {
-                await ctx.runMutation(
-                  internal.audit.createNotificationInternal,
-                  {
-                    organizationId: org._id,
-                    userId: userOrg.userId,
-                    type: "transit_delivery_reminder",
-                    title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
-                    message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
-                    relatedEntityType: "transitRecord",
-                    relatedEntityId: transit._id,
-                  },
-                );
-              }
-            }),
+            userOrgs.flatMap((userOrg) =>
+              upcomingDeliveries.map((transit) =>
+                ctx.runMutation(internal.audit.createNotificationInternal, {
+                  organizationId: org._id,
+                  userId: userOrg.userId,
+                  type: "transit_delivery_reminder",
+                  title: `Delivery Expected Tomorrow: ${transit.transitNumber}`,
+                  message: `Transit ${transit.transitNumber} to ${transit.destinationName} is expected to arrive tomorrow.`,
+                  relatedEntityType: "transitRecord",
+                  relatedEntityId: transit._id,
+                }),
+              ),
+            ),
           );
         }
       }),
@@ -1548,37 +1545,41 @@ export const checkDelayedTransitsInternal = internalMutation({
 
         await Promise.all(
           Array.from(overdueDeliveries).map(async (transit) => {
-            await Promise.all([
-              ctx.db.patch(transit._id, {
-                status: "delayed",
-                lastModifiedAt: now,
-              }),
-              ctx.db.insert("transitStatusUpdates", {
-                transitRecordId: transit._id,
-                status: "delayed",
-                description:
-                  "Automatically marked as delayed - past estimated delivery date",
-                reportedAt: now,
-              }),
+            const [, userOrgs] = await Promise.all([
+              Promise.all([
+                ctx.db.patch(transit._id, {
+                  status: "delayed",
+                  lastModifiedAt: now,
+                }),
+                ctx.db.insert("transitStatusUpdates", {
+                  transitRecordId: transit._id,
+                  status: "delayed",
+                  description:
+                    "Automatically marked as delayed - past estimated delivery date",
+                  reportedAt: now,
+                }),
+              ]),
+              ctx.db
+                .query("userOrganizations")
+                .withIndex("by_organization", (q) =>
+                  q.eq("organizationId", org._id),
+                )
+                .collect(),
             ]);
-            const userOrgs = await ctx.db
-              .query("userOrganizations")
-              .withIndex("by_organization", (q) =>
-                q.eq("organizationId", org._id),
-              )
-              .collect();
 
-            for (const userOrg of userOrgs) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: org._id,
-                userId: userOrg.userId,
-                type: "transit_delayed",
-                title: `Transit Delayed: ${transit.transitNumber}`,
-                message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
-                relatedEntityType: "transitRecord",
-                relatedEntityId: transit._id,
-              });
-            }
+            await Promise.all(
+              userOrgs.map((userOrg) =>
+                ctx.runMutation(internal.audit.createNotificationInternal, {
+                  organizationId: org._id,
+                  userId: userOrg.userId,
+                  type: "transit_delayed",
+                  title: `Transit Delayed: ${transit.transitNumber}`,
+                  message: `Transit ${transit.transitNumber} is past its estimated delivery date and has been marked as delayed.`,
+                  relatedEntityType: "transitRecord",
+                  relatedEntityId: transit._id,
+                }),
+              ),
+            );
           }),
         );
       }),

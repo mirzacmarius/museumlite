@@ -1,5 +1,4 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
@@ -101,16 +100,8 @@ export const listByEntity = query({
     }
 
     await Promise.all([
-      requireModuleEnabled(
-      ctx,
-      firstRelationship.organizationId,
-      "accounts",
-    ),
-      requirePermission(
-      ctx,
-      firstRelationship.organizationId,
-      "accounts.read",
-    ),
+      requireModuleEnabled(ctx, firstRelationship.organizationId, "accounts"),
+      requirePermission(ctx, firstRelationship.organizationId, "accounts.read"),
     ]);
 
     return relationships;
@@ -237,12 +228,13 @@ export const create = mutation({
   },
   returns: v.id("accountRelationships"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -291,12 +283,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, relationship] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.relationshipId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const relationship = await ctx.db.get(args.relationshipId);
     if (!relationship) {
       throw new Error("Relationship not found");
     }
@@ -315,16 +308,17 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes?.trim();
     if (args.metadata !== undefined) updates.metadata = args.metadata;
 
-    await ctx.db.patch(args.relationshipId, updates);
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: relationship.organizationId,
-      userId,
-      action: "updated_account_relationship",
-      entityType: "accountRelationship",
-      entityId: args.relationshipId,
-      changes: updates,
-    });
+    await Promise.all([
+      ctx.db.patch(args.relationshipId, updates),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: relationship.organizationId,
+        userId,
+        action: "updated_account_relationship",
+        entityType: "accountRelationship",
+        entityId: args.relationshipId,
+        changes: updates,
+      }),
+    ]);
 
     return null;
   },
@@ -336,12 +330,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, relationship] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.relationshipId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const relationship = await ctx.db.get(args.relationshipId);
     if (!relationship) {
       throw new Error("Relationship not found");
     }
