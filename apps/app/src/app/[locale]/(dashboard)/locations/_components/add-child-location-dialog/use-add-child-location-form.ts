@@ -55,13 +55,15 @@ export function useAddChildLocationForm({
   const generateUploadUrl = useMutation(api.users.generateUploadUrl);
 
   useEffect(() => {
-    if (open && parentLocationId) {
-      setType(parentLocationType || "");
-      setAddress(parentLocationAddress || "");
-    } else if (open && !parentLocationId) {
-      setType("");
-      setAddress("");
+    if (!open) {
+      return;
     }
+
+    const nextType = parentLocationId ? parentLocationType || "" : "";
+    const nextAddress = parentLocationId ? parentLocationAddress || "" : "";
+
+    setType(nextType);
+    setAddress(nextAddress);
   }, [open, parentLocationId, parentLocationType, parentLocationAddress]);
 
   useEffect(() => {

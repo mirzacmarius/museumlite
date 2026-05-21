@@ -983,12 +983,11 @@ export const addItemsToTransit = mutation({
     );
 
     const currentCollectionIds = transitRecord.collectionIds ?? [];
-    const newCollectionIds = [...currentCollectionIds];
+    const newCollectionIdSet = new Set(currentCollectionIds);
     for (const collectionId of args.collectionIds) {
-      if (!newCollectionIds.includes(collectionId)) {
-        newCollectionIds.push(collectionId);
-      }
+      newCollectionIdSet.add(collectionId);
     }
+    const newCollectionIds = [...newCollectionIdSet];
 
     await ctx.db.patch(args.transitRecordId, {
       collectionIds: newCollectionIds,

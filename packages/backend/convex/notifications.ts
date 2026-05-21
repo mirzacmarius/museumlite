@@ -77,6 +77,12 @@ export const NOTIFICATION_CATEGORIES = {
   system: ["batch_job_completed", "report_ready", "system_announcement"],
 };
 
+const NOTIFICATION_TYPE_TO_CATEGORY = new Map<string, string>(
+  Object.entries(NOTIFICATION_CATEGORIES).flatMap(([category, types]) =>
+    types.map((type) => [type, category]),
+  ),
+);
+
 // ============================================
 // Enhanced Notification Queries
 // ============================================
@@ -235,6 +241,7 @@ export const getNotificationsByCategory = query({
     }
 
     const categoryTypes = NOTIFICATION_CATEGORIES[args.category] ?? [];
+    const categoryTypeSet = new Set(categoryTypes);
     const limit = args.limit ?? 50;
 
     let notificationsQuery = ctx.db
@@ -255,7 +262,7 @@ export const getNotificationsByCategory = query({
 
     // Filter by category types
     const filtered = notifications
-      .filter((n) => categoryTypes.includes(n.type))
+      .filter((n) => categoryTypeSet.has(n.type))
       .slice(0, limit);
 
     return filtered.map((n) => ({
@@ -1016,12 +1023,7 @@ export const shouldSendNotification = internalMutation({
 // ============================================
 
 function getCategoryForType(type: string): string {
-  for (const [category, types] of Object.entries(NOTIFICATION_CATEGORIES)) {
-    if (types.includes(type)) {
-      return category;
-    }
-  }
-  return "system";
+  return NOTIFICATION_TYPE_TO_CATEGORY.get(type) ?? "system";
 }
 
 /**

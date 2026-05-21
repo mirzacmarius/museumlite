@@ -6,7 +6,7 @@ import { Tree, TreeDragLine, TreeItem, TreeItemLabel } from "@v1/ui/tree";
 import { useQuery } from "convex/react";
 import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect, useEffectEvent } from "react";
 import { useScopedI18n } from "@/locales/client";
 import { TREE_INDENT } from "./constants";
 import { LocationTreeItemActions } from "./location-tree-item-actions";
@@ -59,14 +59,28 @@ export function LocationTreeInner({
     }
   }, [rootChildren, initialExpandedItems.length, tree]);
 
+  const navigateToLocation = useCallback(
+    (locationId: string, event: React.MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest("[data-action-button]")) {
+        return;
+      }
+      push(`/locations/${locationId}`);
+    },
+    [push],
+  );
+
+  const syncExpandedItems = useEffectEvent(() => {
+    onExpandedItemsChange(tree.getState().expandedItems);
+  });
+
   useEffect(() => {
     const timer = setInterval(() => {
-      const currentExpanded = tree.getState().expandedItems;
-      onExpandedItemsChange(currentExpanded);
+      syncExpandedItems();
     }, 500);
 
     return () => clearInterval(timer);
-  }, [tree, onExpandedItemsChange]);
+  }, [tree]);
 
   if (allLocations === undefined) {
     return (
@@ -110,13 +124,7 @@ export function LocationTreeInner({
               <TreeItem
                 item={item}
                 className="flex-1 not-last:pb-0 cursor-grab active:cursor-grabbing"
-                onClick={(e) => {
-                  const target = e.target as HTMLElement;
-                  if (target.closest("[data-action-button]")) {
-                    return;
-                  }
-                  push(`/locations/${itemData._id}`);
-                }}
+                onClick={(e) => navigateToLocation(itemData._id, e)}
               >
                 <TreeItemLabel className="relative flex items-center gap-2 before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background data-[drag-target=true]:ring-2 data-[drag-target=true]:ring-primary">
                   <LocationTreeTypeIcon

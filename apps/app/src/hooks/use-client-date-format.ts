@@ -1,29 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   formatDate,
   formatDateFns,
   formatDistanceLocale,
 } from "@/lib/format-date";
 
+function subscribeNoop() {
+  return () => {};
+}
+
+function useClientSnapshot<T>(
+  getSnapshot: () => T,
+  getServerSnapshot: () => T,
+): T {
+  return useSyncExternalStore(subscribeNoop, getSnapshot, getServerSnapshot);
+}
+
 export function useClientRelativeTime(
   timestamp: number | undefined,
   locale: string,
   options?: { addSuffix?: boolean },
 ) {
-  const [formatted, setFormatted] = useState("");
-
-  useEffect(() => {
-    if (timestamp === undefined) {
-      setFormatted("");
-      return;
-    }
-
-    setFormatted(formatDistanceLocale(new Date(timestamp), locale, options));
-  }, [timestamp, locale, options?.addSuffix]);
-
-  return formatted;
+  return useClientSnapshot(
+    () =>
+      timestamp === undefined
+        ? ""
+        : formatDistanceLocale(new Date(timestamp), locale, options),
+    () => "",
+  );
 }
 
 export function useClientDate(
@@ -31,18 +37,16 @@ export function useClientDate(
   locale: string,
   options?: Intl.DateTimeFormatOptions,
 ) {
-  const [formatted, setFormatted] = useState("");
+  return useClientSnapshot(
+    () => {
+      if (timestamp === null || timestamp === undefined) {
+        return "";
+      }
 
-  useEffect(() => {
-    if (timestamp === null || timestamp === undefined) {
-      setFormatted("");
-      return;
-    }
-
-    setFormatted(formatDate(new Date(timestamp), locale, options));
-  }, [timestamp, locale, options]);
-
-  return formatted;
+      return formatDate(new Date(timestamp), locale, options);
+    },
+    () => "",
+  );
 }
 
 export function useClientDateFns(
@@ -50,18 +54,16 @@ export function useClientDateFns(
   format: string,
   locale: string,
 ) {
-  const [formatted, setFormatted] = useState("");
+  return useClientSnapshot(
+    () => {
+      if (timestamp === null || timestamp === undefined) {
+        return "";
+      }
 
-  useEffect(() => {
-    if (timestamp === null || timestamp === undefined) {
-      setFormatted("");
-      return;
-    }
-
-    setFormatted(formatDateFns(new Date(timestamp), format, locale));
-  }, [timestamp, format, locale]);
-
-  return formatted;
+      return formatDateFns(new Date(timestamp), format, locale);
+    },
+    () => "",
+  );
 }
 
 export function useClientTime(
@@ -69,59 +71,45 @@ export function useClientTime(
   locale: string | undefined,
   options?: Intl.DateTimeFormatOptions,
 ) {
-  const [formatted, setFormatted] = useState("");
+  return useClientSnapshot(
+    () => {
+      if (timestamp === null || timestamp === undefined) {
+        return "";
+      }
 
-  useEffect(() => {
-    if (timestamp === null || timestamp === undefined) {
-      setFormatted("");
-      return;
-    }
-
-    setFormatted(new Date(timestamp).toLocaleTimeString(locale, options));
-  }, [timestamp, locale, options]);
-
-  return formatted;
+      return new Date(timestamp).toLocaleTimeString(locale, options);
+    },
+    () => "",
+  );
 }
 
 export function useClientCurrentDate(
   locale: string,
   options?: Intl.DateTimeFormatOptions,
 ) {
-  const [formatted, setFormatted] = useState("");
-
-  useEffect(() => {
-    setFormatted(formatDate(new Date(), locale, options));
-  }, [locale, options]);
-
-  return formatted;
+  return useClientSnapshot(
+    () => formatDate(new Date(), locale, options),
+    () => "",
+  );
 }
 
 export function useClientCurrentDateFns(format: string, locale: string) {
-  const [formatted, setFormatted] = useState("");
-
-  useEffect(() => {
-    setFormatted(formatDateFns(new Date(), format, locale));
-  }, [format, locale]);
-
-  return formatted;
+  return useClientSnapshot(
+    () => formatDateFns(new Date(), format, locale),
+    () => "",
+  );
 }
 
 export function useClientCurrentYear() {
-  const [year, setYear] = useState("");
-
-  useEffect(() => {
-    setYear(String(new Date().getFullYear()));
-  }, []);
-
-  return year;
+  return useClientSnapshot(
+    () => String(new Date().getFullYear()),
+    () => "",
+  );
 }
 
 export function useClientNow() {
-  const [now, setNow] = useState<number | undefined>();
-
-  useEffect(() => {
-    setNow(Date.now());
-  }, []);
-
-  return now;
+  return useClientSnapshot(
+    () => Date.now(),
+    () => undefined,
+  );
 }

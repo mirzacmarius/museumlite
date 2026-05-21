@@ -30,12 +30,9 @@ export function TemplateCombobox({
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
   const [showQuickInsert, setShowQuickInsert] = React.useState(false);
-  const [editValue, setEditValue] = React.useState(value || "");
+  const [draftValue, setDraftValue] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    setEditValue(value || "");
-  }, [value]);
+  const editValue = draftValue ?? value ?? "";
 
   const allOptions = [...systemPresets, ...customTemplates];
   const selectedOption = allOptions.find((option) => option.value === value);
@@ -43,7 +40,7 @@ export function TemplateCombobox({
   const handleSelect = (selectedValue: string) => {
     const newValue = selectedValue === value ? "" : selectedValue;
     onValueChange?.(newValue);
-    setEditValue(newValue);
+    setDraftValue(null);
     setInputValue("");
   };
 
@@ -56,7 +53,7 @@ export function TemplateCombobox({
     const newValue =
       editValue.substring(0, start) + token + editValue.substring(end);
 
-    setEditValue(newValue);
+    setDraftValue(newValue);
     onValueChange?.(newValue);
 
     setTimeout(() => {
@@ -126,7 +123,7 @@ export function TemplateCombobox({
             setShowQuickInsert={setShowQuickInsert}
             validation={validation}
             onEditValueChange={(nextValue) => {
-              setEditValue(nextValue);
+              setDraftValue(nextValue);
               onValueChange?.(nextValue);
             }}
             onSave={onSaveTemplate ? handleSave : undefined}

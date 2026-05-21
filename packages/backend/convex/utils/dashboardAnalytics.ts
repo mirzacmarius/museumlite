@@ -81,19 +81,19 @@ async function loadSiteCollections(
     .collect();
 
   const locationIds = locations.map((loc) => loc._id);
-  const collections: Array<Doc<"collections">> = [];
-
-  for (const locationId of locationIds) {
-    const atLocation = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_location", (q) =>
-        q
-          .eq("organizationId", organizationId)
-          .eq("currentLocationId", locationId),
-      )
-      .collect();
-    collections.push(...atLocation);
-  }
+  const collectionsByLocation = await Promise.all(
+    locationIds.map((locationId) =>
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_location", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("currentLocationId", locationId),
+        )
+        .collect(),
+    ),
+  );
+  const collections = collectionsByLocation.flat();
 
   const uniqueById = new Map(collections.map((c) => [c._id, c]));
   return [...uniqueById.values()];
@@ -490,11 +490,15 @@ async function buildSiteScopedAnalytics(
     .collect();
 
   const groupIdsForSite = new Set<Id<"collectionGroups">>();
-  for (const collectionId of collectionIds) {
-    const items = await ctx.db
-      .query("collectionGroupItems")
-      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-      .collect();
+  const groupItemsByCollection = await Promise.all(
+    [...collectionIds].map((collectionId) =>
+      ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .collect(),
+    ),
+  );
+  for (const items of groupItemsByCollection) {
     for (const item of items) {
       groupIdsForSite.add(item.collectionGroupId);
     }
@@ -533,11 +537,15 @@ async function buildSiteScopedAnalytics(
   );
 
   const loanIdsForSite = new Set<Id<"loans">>();
-  for (const collectionId of collectionIds) {
-    const items = await ctx.db
-      .query("loanItems")
-      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-      .collect();
+  const loanItemsByCollection = await Promise.all(
+    [...collectionIds].map((collectionId) =>
+      ctx.db
+        .query("loanItems")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .collect(),
+    ),
+  );
+  for (const items of loanItemsByCollection) {
     for (const item of items) {
       loanIdsForSite.add(item.loanId);
     }

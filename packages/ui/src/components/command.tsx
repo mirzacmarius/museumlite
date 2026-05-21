@@ -56,7 +56,10 @@ const CommandInput = ({
   ...props
 }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> &
   React.RefAttributes<React.ElementRef<typeof CommandPrimitive.Input>>) => (
-  <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+  <div
+    className="flex items-center border-b px-3"
+    data-slot="command-input-wrapper"
+  >
     <MagnifyingGlassIcon className="mr-2 size-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}

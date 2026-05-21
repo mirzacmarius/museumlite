@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { SpotlightCard } from "../spotlight-card";
@@ -60,14 +60,14 @@ export function PricingSection() {
     >
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-20">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-bold mb-6 text-white"
+            className="text-4xl md:text-6xl font-semibold mb-6 text-white"
           >
             Simple Pricing
-          </motion.h2>
+          </m.h2>
           <p className="text-zinc-400 text-lg">
             Choose the plan that fits your collection.
           </p>
@@ -75,7 +75,7 @@ export function PricingSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
-            <motion.div
+            <m.div
               key={plan.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -150,7 +150,7 @@ export function PricingSection() {
                   </Button>
                 </Link>
               </SpotlightCard>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </div>

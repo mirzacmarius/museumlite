@@ -300,7 +300,7 @@ export function PortalSettingsSidebar() {
             {state.isSubmitting ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Saving...
+                Saving…
               </>
             ) : state.showSuccess ? (
               <>

@@ -7,7 +7,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { useAction } from "convex/react";
 import { Loader2, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useOrganization } from "@/components/organization-provider";
 
 export interface IsbnLookupData {
@@ -37,13 +37,13 @@ interface IsbnLookupProps {
 
 export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
   const [isbn, setIsbn] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const { currentOrganizationId } = useOrganization();
 
   const lookupIsbn = useAction(api.library.isbnLookup.lookupIsbn);
 
-  const handleLookup = async () => {
+  const handleLookup = () => {
     if (!isbn.trim()) {
       setError("Please enter an ISBN");
       return;
@@ -54,48 +54,47 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
       return;
     }
 
-    setIsLoading(true);
     setError(null);
 
-    try {
-      const result = await lookupIsbn({
-        isbn: isbn.trim(),
-        organizationId: currentOrganizationId as Id<"organizations">,
-      });
-
-      if (result.found) {
-        onDataFound({
-          title: result.title,
-          subtitle: result.subtitle,
-          authors: result.authors,
-          publisher: result.publisher,
-          publicationYear: result.publicationYear,
-          publicationPlace: result.publicationPlace,
-          pages: result.pages,
-          description: result.description,
-          coverImageUrl: result.coverImageUrl,
-          isbn10: result.isbn10,
-          isbn13: result.isbn13,
-          subjects: result.subjects,
-          language: result.language,
-          edition: result.edition,
-          series: result.series,
-          deweyDecimal: result.deweyDecimal,
-          lcClassification: result.lcClassification,
+    startTransition(async () => {
+      try {
+        const result = await lookupIsbn({
+          isbn: isbn.trim(),
+          organizationId: currentOrganizationId as Id<"organizations">,
         });
-        setError(null);
-      } else {
+
+        if (result.found) {
+          onDataFound({
+            title: result.title,
+            subtitle: result.subtitle,
+            authors: result.authors,
+            publisher: result.publisher,
+            publicationYear: result.publicationYear,
+            publicationPlace: result.publicationPlace,
+            pages: result.pages,
+            description: result.description,
+            coverImageUrl: result.coverImageUrl,
+            isbn10: result.isbn10,
+            isbn13: result.isbn13,
+            subjects: result.subjects,
+            language: result.language,
+            edition: result.edition,
+            series: result.series,
+            deweyDecimal: result.deweyDecimal,
+            lcClassification: result.lcClassification,
+          });
+          setError(null);
+        } else {
+          setError(
+            "No book found with this ISBN. Please enter details manually.",
+          );
+        }
+      } catch (_err) {
         setError(
-          "No book found with this ISBN. Please enter details manually.",
+          "Failed to look up ISBN. Please try again or enter details manually.",
         );
       }
-    } catch (_err) {
-      setError(
-        "Failed to look up ISBN. Please try again or enter details manually.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -129,9 +128,9 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
         <Button
           type="button"
           onClick={handleLookup}
-          disabled={isLoading || !isbn.trim()}
+          disabled={isPending || !isbn.trim()}
         >
-          {isLoading ? (
+          {isPending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <>

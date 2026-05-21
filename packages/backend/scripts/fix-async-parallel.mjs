@@ -6,7 +6,9 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const CONVEX_DIR = path.resolve(import.meta.dirname, "../convex");
+const BACKEND_DIR = path.resolve(import.meta.dirname, "..");
+const CONVEX_DIR = path.join(BACKEND_DIR, "convex");
+const TESTS_DIR = path.join(BACKEND_DIR, "tests");
 const SKIP_FILES = new Set([]);
 
 function walkTs(dir, files = []) {
@@ -275,7 +277,7 @@ function apply(filePath) {
   return false;
 }
 
-const files = walkTs(CONVEX_DIR);
+const files = [...walkTs(CONVEX_DIR), ...walkTs(TESTS_DIR)];
 let changed = 0;
 for (const f of files) {
   if (apply(f)) {

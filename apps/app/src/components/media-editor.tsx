@@ -1,7 +1,13 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { AnimatePresence, m } from "framer-motion";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useReducer,
+  useRef,
+} from "react";
 import type { Crop, PixelCrop } from "react-image-crop";
 import { toast } from "sonner";
 import { applyMediaEditsToCanvas } from "./media-editor-canvas-utils";
@@ -136,18 +142,22 @@ export function MediaEditor({
     }
   }, [isOpen, image.id, watermarkSettings]);
 
+  const onEscapeClose = useEffectEvent(() => {
+    onClose();
+  });
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onEscapeClose();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -257,7 +267,7 @@ export function MediaEditor({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -311,7 +321,7 @@ export function MediaEditor({
           />
 
           <canvas ref={canvasRef} className="hidden" />
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

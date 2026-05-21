@@ -4,11 +4,9 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useScopedI18n } from "@/locales/client";
-import {
-  LocationImageField,
-  LocationTypeSelect,
-  LocationUnitCountFields,
-} from "../location-form-shared";
+import { LocationImageField } from "../location-form-shared/location-image-field";
+import { LocationTypeSelect } from "../location-form-shared/location-type-select";
+import { LocationUnitCountFields } from "../location-form-shared/location-unit-count-fields";
 import type { useAddChildLocationForm } from "./use-add-child-location-form";
 
 type AddChildLocationFormState = ReturnType<typeof useAddChildLocationForm>;

@@ -31,7 +31,7 @@ function TreeNode({ node, level, selectedId, onSelect }: TreeNodeProps) {
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedId === node.id;
 
-  const handleClick = () => {
+  const onTreeNodeActivate = () => {
     if (hasChildren) {
       setIsExpanded(!isExpanded);
     }
@@ -43,7 +43,7 @@ function TreeNode({ node, level, selectedId, onSelect }: TreeNodeProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      handleClick();
+      onTreeNodeActivate();
     } else if (e.key === "ArrowRight" && hasChildren && !isExpanded) {
       setIsExpanded(true);
     } else if (e.key === "ArrowLeft" && hasChildren && isExpanded) {
@@ -55,7 +55,7 @@ function TreeNode({ node, level, selectedId, onSelect }: TreeNodeProps) {
     <div>
       <button
         type="button"
-        onClick={handleClick}
+        onClick={onTreeNodeActivate}
         onKeyDown={handleKeyDown}
         className={cn(
           "flex w-full items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-200 text-left",

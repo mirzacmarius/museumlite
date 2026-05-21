@@ -24,7 +24,7 @@ export function MediaGallery({
   if (gallery.isMediaLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading media...</p>
+        <p className="text-muted-foreground">Loading media…</p>
       </div>
     );
   }

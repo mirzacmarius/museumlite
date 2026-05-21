@@ -117,10 +117,7 @@ export function PartialDateField({
   onChange,
   disabled = false,
 }: PartialDateFieldProps) {
-  const parsedValue = React.useMemo(() => parsePartialDate(value), [value]);
-  const [year, setYear] = React.useState(parsedValue.year);
-  const [month, setMonth] = React.useState(parsedValue.month);
-  const [day, setDay] = React.useState(parsedValue.day);
+  const { year, month, day } = parsePartialDate(value);
   const yearOptions = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: currentYear - 1499 }, (_, index) => {
@@ -128,12 +125,6 @@ export function PartialDateField({
       return { value: nextYear, label: nextYear };
     });
   }, []);
-
-  React.useEffect(() => {
-    setYear(parsedValue.year);
-    setMonth(parsedValue.month);
-    setDay(parsedValue.day);
-  }, [parsedValue]);
 
   const dayOptions = React.useMemo(() => {
     const daysInMonth = getDaysInMonth(year, month);
@@ -148,12 +139,6 @@ export function PartialDateField({
     const normalizedMonth = normalizedYear ? month : "";
     const normalizedDay = normalizedYear ? day : "";
 
-    setYear(normalizedYear);
-    if (!normalizedYear) {
-      setMonth("");
-      setDay("");
-    }
-
     onChange(
       formatPartialDate({
         year: normalizedYear,
@@ -166,13 +151,11 @@ export function PartialDateField({
   const handleMonthChange = (nextMonth: string) => {
     const normalizedMonth = nextMonth === EMPTY_SELECT_VALUE ? "" : nextMonth;
 
-    setMonth(normalizedMonth);
     if (
       day &&
       normalizedMonth &&
       Number(day) > getDaysInMonth(year, normalizedMonth)
     ) {
-      setDay("");
       onChange(
         formatPartialDate({
           year,
@@ -181,10 +164,6 @@ export function PartialDateField({
         }),
       );
       return;
-    }
-
-    if (!normalizedMonth) {
-      setDay("");
     }
 
     onChange(
@@ -198,7 +177,6 @@ export function PartialDateField({
 
   const handleDayChange = (nextDay: string) => {
     const normalizedDay = nextDay === EMPTY_SELECT_VALUE ? "" : nextDay;
-    setDay(normalizedDay);
     onChange(
       formatPartialDate({
         year,

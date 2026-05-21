@@ -3,15 +3,185 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import {
   getNumericCustomFieldValue,
+  type LocationCustomFields,
   setOptionalNumberCustomField,
 } from "../../location-custom-fields";
 import { getAvailableParentLocationOptions } from "../../location-parent-options";
-import { LOCATION_IMAGE_CUSTOM_FIELD } from "../location-form-shared";
+import { LOCATION_IMAGE_CUSTOM_FIELD } from "../location-form-shared/constants";
+
+interface EditLocationFormState {
+  name: string;
+  locationCode: string;
+  type: string;
+  address: string;
+  notes: string;
+  parentLocationId: string;
+  capacity: string;
+  temperature: string;
+  humidity: string;
+  vitrineCount: string;
+  wallCount: string;
+  wallItemsPerWall: string;
+  cabinetCount: string;
+  shelfCount: string;
+  locationImageId: string | null;
+  locationImagePreviewUrl: string | null;
+  isSubmitting: boolean;
+  isUploadingImage: boolean;
+  error: string | null;
+}
+
+const initialEditLocationFormState: EditLocationFormState = {
+  name: "",
+  locationCode: "",
+  type: "",
+  address: "",
+  notes: "",
+  parentLocationId: "root",
+  capacity: "",
+  temperature: "",
+  humidity: "",
+  vitrineCount: "",
+  wallCount: "",
+  wallItemsPerWall: "",
+  cabinetCount: "",
+  shelfCount: "",
+  locationImageId: null,
+  locationImagePreviewUrl: null,
+  isSubmitting: false,
+  isUploadingImage: false,
+  error: null,
+};
+
+interface LocationHydrationSource {
+  name: string;
+  locationCode: string;
+  type: string;
+  address?: string;
+  notes?: string;
+  parentLocationId?: Id<"locations">;
+  capacity?: number;
+  customFields?: LocationCustomFields;
+}
+
+type EditLocationFormAction =
+  | { type: "hydrate"; location: LocationHydrationSource }
+  | { type: "setName"; value: string }
+  | { type: "setLocationCode"; value: string }
+  | { type: "setType"; value: string }
+  | { type: "setAddress"; value: string }
+  | { type: "setNotes"; value: string }
+  | { type: "setParentLocationId"; value: string }
+  | { type: "setCapacity"; value: string }
+  | { type: "setTemperature"; value: string }
+  | { type: "setHumidity"; value: string }
+  | { type: "setVitrineCount"; value: string }
+  | { type: "setWallCount"; value: string }
+  | { type: "setWallItemsPerWall"; value: string }
+  | { type: "setCabinetCount"; value: string }
+  | { type: "setShelfCount"; value: string }
+  | { type: "setLocationImageId"; value: string | null }
+  | { type: "setLocationImagePreviewUrl"; value: string | null }
+  | { type: "setIsSubmitting"; value: boolean }
+  | { type: "setIsUploadingImage"; value: boolean }
+  | { type: "setError"; value: string | null };
+
+function editLocationFormReducer(
+  state: EditLocationFormState,
+  action: EditLocationFormAction,
+): EditLocationFormState {
+  switch (action.type) {
+    case "hydrate":
+      return {
+        ...state,
+        name: action.location.name,
+        locationCode: action.location.locationCode,
+        type: action.location.type,
+        address: action.location.address || "",
+        notes: action.location.notes || "",
+        parentLocationId: action.location.parentLocationId ?? "root",
+        capacity: action.location.capacity?.toString() || "",
+        temperature: getNumericCustomFieldValue(
+          action.location.customFields,
+          "temperature",
+        ),
+        humidity: getNumericCustomFieldValue(
+          action.location.customFields,
+          "humidity",
+        ),
+        vitrineCount: getNumericCustomFieldValue(
+          action.location.customFields,
+          "vitrineCount",
+        ),
+        wallCount: getNumericCustomFieldValue(
+          action.location.customFields,
+          "wallCount",
+        ),
+        wallItemsPerWall: getNumericCustomFieldValue(
+          action.location.customFields,
+          "wallItemsPerWall",
+        ),
+        cabinetCount: getNumericCustomFieldValue(
+          action.location.customFields,
+          "cabinetCount",
+        ),
+        shelfCount: getNumericCustomFieldValue(
+          action.location.customFields,
+          "shelfCount",
+        ),
+        locationImageId:
+          typeof action.location.customFields?.[LOCATION_IMAGE_CUSTOM_FIELD] ===
+          "string"
+            ? action.location.customFields[LOCATION_IMAGE_CUSTOM_FIELD]
+            : null,
+        locationImagePreviewUrl: null,
+        error: null,
+      };
+    case "setName":
+      return { ...state, name: action.value };
+    case "setLocationCode":
+      return { ...state, locationCode: action.value };
+    case "setType":
+      return { ...state, type: action.value };
+    case "setAddress":
+      return { ...state, address: action.value };
+    case "setNotes":
+      return { ...state, notes: action.value };
+    case "setParentLocationId":
+      return { ...state, parentLocationId: action.value };
+    case "setCapacity":
+      return { ...state, capacity: action.value };
+    case "setTemperature":
+      return { ...state, temperature: action.value };
+    case "setHumidity":
+      return { ...state, humidity: action.value };
+    case "setVitrineCount":
+      return { ...state, vitrineCount: action.value };
+    case "setWallCount":
+      return { ...state, wallCount: action.value };
+    case "setWallItemsPerWall":
+      return { ...state, wallItemsPerWall: action.value };
+    case "setCabinetCount":
+      return { ...state, cabinetCount: action.value };
+    case "setShelfCount":
+      return { ...state, shelfCount: action.value };
+    case "setLocationImageId":
+      return { ...state, locationImageId: action.value };
+    case "setLocationImagePreviewUrl":
+      return { ...state, locationImagePreviewUrl: action.value };
+    case "setIsSubmitting":
+      return { ...state, isSubmitting: action.value };
+    case "setIsUploadingImage":
+      return { ...state, isUploadingImage: action.value };
+    case "setError":
+      return { ...state, error: action.value };
+  }
+}
 
 export function useEditLocationForm(
   locationId: string,
@@ -20,27 +190,10 @@ export function useEditLocationForm(
 ) {
   const t = useScopedI18n("locations.form");
   const { currentOrganizationId } = useOrganization();
-  const [name, setName] = useState("");
-  const [locationCode, setLocationCode] = useState("");
-  const [type, setType] = useState("");
-  const [address, setAddress] = useState("");
-  const [notes, setNotes] = useState("");
-  const [parentLocationId, setParentLocationId] = useState("root");
-  const [capacity, setCapacity] = useState<string>("");
-  const [temperature, setTemperature] = useState<string>("");
-  const [humidity, setHumidity] = useState<string>("");
-  const [vitrineCount, setVitrineCount] = useState("");
-  const [wallCount, setWallCount] = useState("");
-  const [wallItemsPerWall, setWallItemsPerWall] = useState("");
-  const [cabinetCount, setCabinetCount] = useState("");
-  const [shelfCount, setShelfCount] = useState("");
-  const [locationImageId, setLocationImageId] = useState<string | null>(null);
-  const [locationImagePreviewUrl, setLocationImagePreviewUrl] = useState<
-    string | null
-  >(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(
+    editLocationFormReducer,
+    initialEditLocationFormState,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const location = useQuery(
@@ -59,48 +212,16 @@ export function useEditLocationForm(
 
   useEffect(() => {
     if (!location) return;
-
-    setName(location.name);
-    setLocationCode(location.locationCode);
-    setType(location.type);
-    setAddress(location.address || "");
-    setNotes(location.notes || "");
-    setParentLocationId(location.parentLocationId ?? "root");
-    setCapacity(location.capacity?.toString() || "");
-    setTemperature(
-      getNumericCustomFieldValue(location.customFields, "temperature"),
-    );
-    setHumidity(getNumericCustomFieldValue(location.customFields, "humidity"));
-    setVitrineCount(
-      getNumericCustomFieldValue(location.customFields, "vitrineCount"),
-    );
-    setWallCount(
-      getNumericCustomFieldValue(location.customFields, "wallCount"),
-    );
-    setWallItemsPerWall(
-      getNumericCustomFieldValue(location.customFields, "wallItemsPerWall"),
-    );
-    setCabinetCount(
-      getNumericCustomFieldValue(location.customFields, "cabinetCount"),
-    );
-    setShelfCount(
-      getNumericCustomFieldValue(location.customFields, "shelfCount"),
-    );
-    setLocationImageId(
-      typeof location.customFields?.[LOCATION_IMAGE_CUSTOM_FIELD] === "string"
-        ? location.customFields[LOCATION_IMAGE_CUSTOM_FIELD]
-        : null,
-    );
-    setLocationImagePreviewUrl(null);
+    dispatch({ type: "hydrate", location });
   }, [location]);
 
   useEffect(() => {
     return () => {
-      if (locationImagePreviewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(locationImagePreviewUrl);
+      if (state.locationImagePreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(state.locationImagePreviewUrl);
       }
     };
-  }, [locationImagePreviewUrl]);
+  }, [state.locationImagePreviewUrl]);
 
   const availableParentLocations =
     open && locationId
@@ -113,18 +234,18 @@ export function useEditLocationForm(
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!location) return;
-    setError(null);
+    dispatch({ type: "setError", value: null });
 
-    if (!locationCode.trim()) {
-      setError(t("errors.locationIdRequired"));
+    if (!state.locationCode.trim()) {
+      dispatch({ type: "setError", value: t("errors.locationIdRequired") });
       return;
     }
-    if (locationCode.trim().length > 50) {
-      setError(t("errors.locationIdTooLong"));
+    if (state.locationCode.trim().length > 50) {
+      dispatch({ type: "setError", value: t("errors.locationIdTooLong") });
       return;
     }
 
-    setIsSubmitting(true);
+    dispatch({ type: "setIsSubmitting", value: true });
     try {
       const customFields: Record<
         string,
@@ -138,49 +259,65 @@ export function useEditLocationForm(
       setOptionalNumberCustomField(
         customFields,
         "temperature",
-        temperature,
+        state.temperature,
         Number.parseFloat,
       );
       setOptionalNumberCustomField(
         customFields,
         "humidity",
-        humidity,
+        state.humidity,
         Number.parseFloat,
       );
-      setOptionalNumberCustomField(customFields, "vitrineCount", vitrineCount);
-      setOptionalNumberCustomField(customFields, "wallCount", wallCount);
+      setOptionalNumberCustomField(
+        customFields,
+        "vitrineCount",
+        state.vitrineCount,
+      );
+      setOptionalNumberCustomField(customFields, "wallCount", state.wallCount);
       setOptionalNumberCustomField(
         customFields,
         "wallItemsPerWall",
-        wallItemsPerWall,
+        state.wallItemsPerWall,
       );
-      setOptionalNumberCustomField(customFields, "cabinetCount", cabinetCount);
-      setOptionalNumberCustomField(customFields, "shelfCount", shelfCount);
-      customFields[LOCATION_IMAGE_CUSTOM_FIELD] = locationImageId;
+      setOptionalNumberCustomField(
+        customFields,
+        "cabinetCount",
+        state.cabinetCount,
+      );
+      setOptionalNumberCustomField(
+        customFields,
+        "shelfCount",
+        state.shelfCount,
+      );
+      customFields[LOCATION_IMAGE_CUSTOM_FIELD] = state.locationImageId;
 
       await updateLocation({
         locationId: locationId as Id<"locations">,
-        name,
-        locationCode: locationCode.trim(),
-        type,
+        name: state.name,
+        locationCode: state.locationCode.trim(),
+        type: state.type,
         parentLocationId:
-          parentLocationId === "root"
+          state.parentLocationId === "root"
             ? undefined
-            : (parentLocationId as Id<"locations">),
-        address: address || undefined,
-        notes: notes || undefined,
-        capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
+            : (state.parentLocationId as Id<"locations">),
+        address: state.address || undefined,
+        notes: state.notes || undefined,
+        capacity: state.capacity
+          ? Number.parseInt(state.capacity, 10)
+          : undefined,
         customFields,
       });
       onOpenChange(false);
     } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : t("errors.createFailed"),
-      );
+      dispatch({
+        type: "setError",
+        value:
+          submitError instanceof Error
+            ? submitError.message
+            : t("errors.createFailed"),
+      });
     } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "setIsSubmitting", value: false });
     }
   };
 
@@ -190,16 +327,14 @@ export function useEditLocationForm(
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploadingImage(true);
-    setError(null);
+    dispatch({ type: "setIsUploadingImage", value: true });
+    dispatch({ type: "setError", value: null });
 
     const nextPreviewUrl = URL.createObjectURL(file);
-    setLocationImagePreviewUrl((previousPreviewUrl) => {
-      if (previousPreviewUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(previousPreviewUrl);
-      }
-      return nextPreviewUrl;
-    });
+    if (state.locationImagePreviewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(state.locationImagePreviewUrl);
+    }
+    dispatch({ type: "setLocationImagePreviewUrl", value: nextPreviewUrl });
 
     try {
       const uploadUrl = await generateUploadUrl({ mimeType: file.type });
@@ -221,17 +356,19 @@ export function useEditLocationForm(
         throw new Error("No storage ID returned for uploaded image");
       }
 
-      setLocationImageId(storageId);
+      dispatch({ type: "setLocationImageId", value: storageId });
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : "Failed to upload location image",
-      );
+      dispatch({
+        type: "setError",
+        value:
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Failed to upload location image",
+      });
       URL.revokeObjectURL(nextPreviewUrl);
-      setLocationImagePreviewUrl(null);
+      dispatch({ type: "setLocationImagePreviewUrl", value: null });
     } finally {
-      setIsUploadingImage(false);
+      dispatch({ type: "setIsUploadingImage", value: false });
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -239,11 +376,11 @@ export function useEditLocationForm(
   };
 
   const removeLocationImage = () => {
-    if (locationImagePreviewUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(locationImagePreviewUrl);
+    if (state.locationImagePreviewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(state.locationImagePreviewUrl);
     }
-    setLocationImagePreviewUrl(null);
-    setLocationImageId(null);
+    dispatch({ type: "setLocationImagePreviewUrl", value: null });
+    dispatch({ type: "setLocationImageId", value: null });
   };
 
   const existingImageUrl =
@@ -251,40 +388,47 @@ export function useEditLocationForm(
 
   return {
     location,
-    name,
-    setName,
-    locationCode,
-    setLocationCode,
-    type,
-    setType,
-    address,
-    setAddress,
-    notes,
-    setNotes,
-    parentLocationId,
-    setParentLocationId,
-    capacity,
-    setCapacity,
-    temperature,
-    setTemperature,
-    humidity,
-    setHumidity,
-    vitrineCount,
-    setVitrineCount,
-    wallCount,
-    setWallCount,
-    wallItemsPerWall,
-    setWallItemsPerWall,
-    cabinetCount,
-    setCabinetCount,
-    shelfCount,
-    setShelfCount,
-    locationImageId,
-    locationImagePreviewUrl,
+    name: state.name,
+    setName: (value: string) => dispatch({ type: "setName", value }),
+    locationCode: state.locationCode,
+    setLocationCode: (value: string) =>
+      dispatch({ type: "setLocationCode", value }),
+    type: state.type,
+    setType: (value: string) => dispatch({ type: "setType", value }),
+    address: state.address,
+    setAddress: (value: string) => dispatch({ type: "setAddress", value }),
+    notes: state.notes,
+    setNotes: (value: string) => dispatch({ type: "setNotes", value }),
+    parentLocationId: state.parentLocationId,
+    setParentLocationId: (value: string) =>
+      dispatch({ type: "setParentLocationId", value }),
+    capacity: state.capacity,
+    setCapacity: (value: string) => dispatch({ type: "setCapacity", value }),
+    temperature: state.temperature,
+    setTemperature: (value: string) =>
+      dispatch({ type: "setTemperature", value }),
+    humidity: state.humidity,
+    setHumidity: (value: string) => dispatch({ type: "setHumidity", value }),
+    vitrineCount: state.vitrineCount,
+    setVitrineCount: (value: string) =>
+      dispatch({ type: "setVitrineCount", value }),
+    wallCount: state.wallCount,
+    setWallCount: (value: string) => dispatch({ type: "setWallCount", value }),
+    wallItemsPerWall: state.wallItemsPerWall,
+    setWallItemsPerWall: (value: string) =>
+      dispatch({ type: "setWallItemsPerWall", value }),
+    cabinetCount: state.cabinetCount,
+    setCabinetCount: (value: string) =>
+      dispatch({ type: "setCabinetCount", value }),
+    shelfCount: state.shelfCount,
+    setShelfCount: (value: string) =>
+      dispatch({ type: "setShelfCount", value }),
+    locationImageId: state.locationImageId,
+    locationImagePreviewUrl: state.locationImagePreviewUrl,
     existingImageUrl,
-    isSubmitting,
-    isUploadingImage,
-    error,
+    isSubmitting: state.isSubmitting,
+    isUploadingImage: state.isUploadingImage,
+    error: state.error,
     fileInputRef,
     availableParentLocations,
     handleSubmit,

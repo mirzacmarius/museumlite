@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { seededRandom } from "./seeded-rng";
@@ -27,7 +27,7 @@ export function HeroSection() {
           const randomDuration = seededRandom(baseSeed + 6) * 10 + 10;
 
           return (
-            <motion.div
+            <m.div
               key={particleId}
               className="absolute bg-white rounded-full opacity-20"
               initial={{
@@ -61,7 +61,7 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 text-center">
         {/* Badge */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -71,24 +71,22 @@ export function HeroSection() {
           <span className="text-sm font-medium text-zinc-300">
             The Future of Collection Management
           </span>
-        </motion.div>
+        </m.div>
 
         {/* Main Heading */}
-        <motion.h1
+        <m.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-8xl font-bold tracking-tighter mb-6 drop-shadow-2xl"
+          className="text-5xl md:text-8xl font-semibold tracking-tighter mb-6 drop-shadow-2xl"
         >
           <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             Museum
           </span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-white to-neon-purple animate-gradient-x drop-shadow-[0_0_25px_rgba(0,243,255,0.4)]">
-            Lite
-          </span>
-        </motion.h1>
+          <span className="text-neon-blue">Lite</span>
+        </m.h1>
 
-        <motion.p
+        <m.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -110,10 +108,10 @@ export function HeroSection() {
             beautifully designed
           </span>{" "}
           for the modern curator.
-        </motion.p>
+        </m.p>
 
         {/* Buttons */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -136,12 +134,12 @@ export function HeroSection() {
             <PlayCircle className="mr-2 size-5" />
             Watch Demo
           </Button>
-        </motion.div>
+        </m.div>
 
         {/* Floating UI Elements (Decorative) */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-full max-w-6xl pointer-events-none z-[-1]">
           {/* Left Card */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
@@ -157,10 +155,10 @@ export function HeroSection() {
               </div>
             </div>
             <div className="h-20 bg-white/5 rounded-lg border border-white/5" />
-          </motion.div>
+          </m.div>
 
           {/* Right Card */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.7 }}
@@ -175,7 +173,7 @@ export function HeroSection() {
               <div className="h-2 w-[80%] bg-white/5 rounded" />
               <div className="h-2 w-[60%] bg-white/5 rounded" />
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </div>
 

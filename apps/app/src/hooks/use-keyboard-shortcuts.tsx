@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export interface KeyboardShortcut {
   key: string;
@@ -65,7 +65,7 @@ export function useKeyboardShortcuts({
     routerRef.current = router;
   }, [onShowHelp, router]);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  const handleKeyDownRef = useRef((e: KeyboardEvent) => {
     const target = e.target as HTMLElement;
     const isInput =
       target.tagName === "INPUT" ||
@@ -117,12 +117,13 @@ export function useKeyboardShortcuts({
           break;
       }
     }
-  }, []);
+  });
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    const listener = (event: KeyboardEvent) => handleKeyDownRef.current(event);
+    document.addEventListener("keydown", listener);
+    return () => document.removeEventListener("keydown", listener);
+  }, []);
 
   return { shortcuts: KEYBOARD_SHORTCUTS };
 }

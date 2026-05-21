@@ -52,9 +52,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     if (savedViewMode) {
       setViewMode(savedViewMode as ViewMode);
     }
-  }, [savedViewMode]);
 
-  useEffect(() => {
     if (savedColumns) {
       try {
         const parsed = JSON.parse(savedColumns) as Record<string, boolean>;
@@ -70,7 +68,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     } else {
       setColumns(defaultColumns);
     }
-  }, [savedColumns, defaultColumns]);
+  }, [defaultColumns, savedColumns, savedViewMode]);
 
   useEffect(() => {
     setSearchInput(filters.search);

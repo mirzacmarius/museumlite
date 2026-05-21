@@ -16,6 +16,7 @@ import {
 } from "./donor-combobox-types";
 
 interface DonorComboboxListContentProps {
+  listId: string;
   inputValue: string;
   organizationId?: string;
   selectedValues: string[];
@@ -26,6 +27,7 @@ interface DonorComboboxListContentProps {
 }
 
 export function DonorComboboxListContent({
+  listId,
   inputValue,
   organizationId,
   selectedValues,
@@ -35,7 +37,7 @@ export function DonorComboboxListContent({
   onCreateDonorClick,
 }: DonorComboboxListContentProps) {
   return (
-    <CommandList className="max-h-[300px]">
+    <CommandList id={listId} className="max-h-[300px]">
       <CommandEmpty>
         {inputValue ? (
           <div className="p-4 text-sm text-center">

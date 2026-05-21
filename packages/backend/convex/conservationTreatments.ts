@@ -1692,6 +1692,22 @@ export const checkOverdueTreatmentsInternal = internalMutation({
                   return;
                 }
 
+                if (!rule.inAppNotification) {
+                  await ctx.db.insert("conservationAlerts", {
+                    organizationId: org._id,
+                    ruleId: rule._id,
+                    treatmentId: treatment._id,
+                    collectionId: treatment.collectionId,
+                    alertType: "treatment_overdue",
+                    title: `Overdue Treatment: ${treatment.title}`,
+                    description: `Treatment "${treatment.title}" has been approved but not started for over ${daysOverdue} days.`,
+                    priority: rule.priority,
+                    status: "active",
+                    createdAt: now,
+                  });
+                  return;
+                }
+
                 const alertId = await ctx.db.insert("conservationAlerts", {
                   organizationId: org._id,
                   ruleId: rule._id,
@@ -1704,10 +1720,6 @@ export const checkOverdueTreatmentsInternal = internalMutation({
                   status: "active",
                   createdAt: now,
                 });
-
-                if (!rule.inAppNotification) {
-                  return;
-                }
 
                 const usersToNotify: string[] = [];
 
@@ -1823,6 +1835,24 @@ export const checkAssessmentsDueInternal = internalMutation({
                 const daysSinceAssessment = Math.floor(
                   (now - lastAssessmentTime) / (24 * 60 * 60 * 1000),
                 );
+                const alertDescription = lastAssessment
+                  ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
+                  : "No assessment record found. Initial assessment recommended.";
+
+                if (!rule.inAppNotification) {
+                  await ctx.db.insert("conservationAlerts", {
+                    organizationId: org._id,
+                    ruleId: rule._id,
+                    collectionId: collection._id,
+                    alertType: "assessment_due",
+                    title: `Assessment Due: ${collection.title}`,
+                    description: alertDescription,
+                    priority: rule.priority,
+                    status: "active",
+                    createdAt: now,
+                  });
+                  return;
+                }
 
                 const alertId = await ctx.db.insert("conservationAlerts", {
                   organizationId: org._id,
@@ -1830,17 +1860,11 @@ export const checkAssessmentsDueInternal = internalMutation({
                   collectionId: collection._id,
                   alertType: "assessment_due",
                   title: `Assessment Due: ${collection.title}`,
-                  description: lastAssessment
-                    ? `Last assessment was ${daysSinceAssessment} days ago. Periodic assessment recommended.`
-                    : "No assessment record found. Initial assessment recommended.",
+                  description: alertDescription,
                   priority: rule.priority,
                   status: "active",
                   createdAt: now,
                 });
-
-                if (!rule.inAppNotification) {
-                  return;
-                }
 
                 const usersToNotify: string[] = [];
 

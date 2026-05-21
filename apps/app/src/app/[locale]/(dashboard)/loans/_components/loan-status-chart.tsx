@@ -9,7 +9,7 @@ import {
 } from "@v1/ui/charts";
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
-import { Cell, Legend, Pie, PieChart, Tooltip } from "recharts";
+import dynamic from "next/dynamic";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 
@@ -20,6 +20,56 @@ const STATUS_COLORS: Record<string, string> = {
   returned: CHART_COLOR_ARRAY[0] ?? "#818cf8",
   cancelled: CHART_COLOR_ARRAY[4] ?? "#fb7185",
 };
+
+interface StatusChartEntry {
+  status: string;
+  count: number;
+  name: string;
+}
+
+const LazyStatusPieChart = dynamic(
+  () =>
+    import("recharts").then((mod) => {
+      const { PieChart, Pie, Cell, Tooltip, Legend } = mod;
+      return {
+        default: ({ chartData }: { chartData: StatusChartEntry[] }) => (
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={50}
+              outerRadius={70}
+              paddingAngle={2}
+              dataKey="count"
+              nameKey="name"
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={entry.status}
+                  fill={
+                    STATUS_COLORS[entry.status] ??
+                    CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length] ??
+                    "#818cf8"
+                  }
+                />
+              ))}
+            </Pie>
+            <Tooltip content={<ChartTooltipContent />} />
+            <Legend
+              formatter={(value) => (
+                <span className="text-xs text-muted-foreground">{value}</span>
+              )}
+            />
+          </PieChart>
+        ),
+      };
+    }),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[200px] w-full rounded-xl" />,
+  },
+);
 
 export function LoanStatusChart() {
   const t = useScopedI18n("loans");
@@ -55,35 +105,7 @@ export function LoanStatusChart() {
         {t("charts.statusDistribution")}
       </h3>
       <ChartContainer height={200}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={50}
-            outerRadius={70}
-            paddingAngle={2}
-            dataKey="count"
-            nameKey="name"
-          >
-            {chartData.map((entry, index) => (
-              <Cell
-                key={entry.status}
-                fill={
-                  STATUS_COLORS[entry.status] ??
-                  CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length] ??
-                  "#818cf8"
-                }
-              />
-            ))}
-          </Pie>
-          <Tooltip content={<ChartTooltipContent />} />
-          <Legend
-            formatter={(value) => (
-              <span className="text-xs text-muted-foreground">{value}</span>
-            )}
-          />
-        </PieChart>
+        <LazyStatusPieChart chartData={chartData} />
       </ChartContainer>
     </div>
   );

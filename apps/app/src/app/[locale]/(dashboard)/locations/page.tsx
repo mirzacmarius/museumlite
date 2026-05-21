@@ -2,7 +2,7 @@
 
 import { Building2, MapPin } from "lucide-react";
 import { useOrganization } from "@/components/organization-provider";
-import { LocationLayout } from "./_components/location-layout";
+import { LocationLayout } from "./_components/location-layout/location-layout";
 import { LocationsPageSkeleton } from "./location-page-skeleton";
 
 export default function LocationsPage() {

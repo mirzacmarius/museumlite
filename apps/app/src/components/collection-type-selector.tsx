@@ -14,7 +14,7 @@ import {
   SelectTrigger,
 } from "@v1/ui/select";
 import { Archive, Car, Coins, Gem, Leaf, Package, Wine } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import type { ReactNode } from "react";
 
 export type { CollectionType };
 
@@ -58,10 +58,12 @@ const allCollectionTypes: Array<{
   "coins_stamps",
 ]);
 
+const EMPTY_ENABLED_MODULES: ModuleId[] = [];
+
 export function CollectionTypeSelector({
   value,
   onValueChange,
-  enabledModules = [],
+  enabledModules = EMPTY_ENABLED_MODULES,
   disabled,
 }: CollectionTypeSelectorProps) {
   const collectionTypes = getCollectionTypes(enabledModules);
@@ -69,12 +71,6 @@ export function CollectionTypeSelector({
     value && collectionTypes.some((type) => type.value === value)
       ? value
       : "general";
-
-  useEffect(() => {
-    if ((value ?? "general") !== selectedType) {
-      onValueChange(selectedType);
-    }
-  }, [onValueChange, selectedType, value]);
 
   return (
     <div className="space-y-2">

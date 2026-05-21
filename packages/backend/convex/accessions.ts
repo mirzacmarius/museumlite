@@ -2671,7 +2671,8 @@ export const validateBulkImport = mutation({
       "donation",
       "other",
       "bequest",
-    ];
+    ] as const;
+    const validMethodSet = new Set<string>(validMethods);
 
     const errors: { row: number; field: string; message: string }[] = [];
     const preview: {
@@ -2737,7 +2738,7 @@ export const validateBulkImport = mutation({
 
       // Validate method
       const method = item.method?.toLowerCase().trim();
-      if (!validMethods.includes(method)) {
+      if (!validMethodSet.has(method)) {
         errors.push({
           row: rowNumber,
           field: "method",
@@ -2765,15 +2766,22 @@ export const validateBulkImport = mutation({
         accessionNumber: accessionNumber || "[Auto-generated]",
         dateReceived,
         source: item.source,
-        method: validMethods.includes(method) ? method : "other",
+        method: validMethodSet.has(method) ? method : "other",
         cost,
         notes: item.notes,
         isValid,
       });
     }
 
-    const validCount = preview.filter((p) => p.isValid).length;
-    const errorCount = preview.filter((p) => !p.isValid).length;
+    let validCount = 0;
+    let errorCount = 0;
+    for (const row of preview) {
+      if (row.isValid) {
+        validCount += 1;
+      } else {
+        errorCount += 1;
+      }
+    }
 
     return {
       valid: errors.length === 0,

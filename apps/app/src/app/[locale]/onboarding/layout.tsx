@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
 import Image from "next/image";
+import { getI18n } from "@/locales/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getI18n();
+
+  return {
+    title: t("onboardingPage.welcome"),
+    description: t("onboardingPage.description"),
+  };
+}
 
 export default async function Layout({
   children,

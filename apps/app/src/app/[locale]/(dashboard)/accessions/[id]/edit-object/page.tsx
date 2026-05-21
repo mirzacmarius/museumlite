@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { redirect, useParams } from "next/navigation";
+import { Suspense } from "react";
 import { useScopedI18n } from "@/locales/client";
 import { ObjectRequestFormPage } from "../../../objects/new/page";
 
@@ -55,13 +56,21 @@ export default function EditAccessionObjectPage() {
   }
 
   return (
-    <ObjectRequestFormPage
-      mode="draft-edit"
-      accessionId={accession._id}
-      initialDraftObjectData={accession.draftObjectData}
-      initialDraftMedia={accession.draftMedia}
-      initialDraftSavedAt={accession._creationTime}
-      backHref={`/accessions/${accessionId}`}
-    />
+    <Suspense
+      fallback={
+        <div className="flex size-full items-center justify-center">
+          <p className="text-muted-foreground">{tCommon("loading")}</p>
+        </div>
+      }
+    >
+      <ObjectRequestFormPage
+        mode="draft-edit"
+        accessionId={accession._id}
+        initialDraftObjectData={accession.draftObjectData}
+        initialDraftMedia={accession.draftMedia}
+        initialDraftSavedAt={accession._creationTime}
+        backHref={`/accessions/${accessionId}`}
+      />
+    </Suspense>
   );
 }

@@ -695,20 +695,21 @@ function parseCost(value: string): number | undefined {
  * @param value - Method string
  * @returns Standardized method value
  */
+const VALID_ACCESSION_METHODS = new Set([
+  "purchase",
+  "gift",
+  "loan",
+  "transfer",
+  "donation",
+  "bequest",
+  "other",
+]);
+
 function parseMethod(value: string): string {
   const normalized = value.toLowerCase().trim();
-  const validMethods = [
-    "purchase",
-    "gift",
-    "loan",
-    "transfer",
-    "donation",
-    "bequest",
-    "other",
-  ];
 
   // Direct match - return as-is if it's already a valid method
-  if (validMethods.includes(normalized)) {
+  if (VALID_ACCESSION_METHODS.has(normalized)) {
     return normalized;
   }
 

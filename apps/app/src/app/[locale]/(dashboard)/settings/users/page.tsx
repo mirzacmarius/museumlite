@@ -698,12 +698,23 @@ function EmptyState({
   );
 }
 
+const DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function getDateFormatter(locale: string) {
+  const intlLocale = locale === "no" ? "nb-NO" : locale;
+  let formatter = DATE_FORMATTERS.get(intlLocale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(intlLocale);
+    DATE_FORMATTERS.set(intlLocale, formatter);
+  }
+  return formatter;
+}
+
 function useClientFormattedDate(timestamp: number, locale: string) {
   const [formattedDate, setFormattedDate] = useState("");
 
   useEffect(() => {
-    const intlLocale = locale === "no" ? "nb-NO" : locale;
-    setFormattedDate(new Intl.DateTimeFormat(intlLocale).format(timestamp));
+    setFormattedDate(getDateFormatter(locale).format(timestamp));
   }, [locale, timestamp]);
 
   return formattedDate;

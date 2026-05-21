@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  AnimatePresence,
-  motion,
-  useScroll,
-  useTransform,
-} from "framer-motion";
+import { AnimatePresence, m, useScroll, useTransform } from "framer-motion";
 import { X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
@@ -59,14 +54,14 @@ const ImageModal = ({
   onClose: () => void;
 }) => {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm"
       onClick={onClose}
     >
-      <motion.div
+      <m.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -83,7 +78,7 @@ const ImageModal = ({
             priority
           />
         </div>
-      </motion.div>
+      </m.div>
       <button
         type="button"
         onClick={onClose}
@@ -92,7 +87,7 @@ const ImageModal = ({
       >
         <X size={24} />
       </button>
-    </motion.div>
+    </m.div>
   );
 };
 
@@ -143,7 +138,7 @@ export const InteractiveImageBentoGallery: React.FC<
       <div className="relative w-full">
         <div className="grid grid-cols-3 gap-2">
           {imageItems.slice(0, 9).map((item) => (
-            <motion.div
+            <m.div
               key={item.id}
               className="group relative aspect-square cursor-pointer overflow-hidden rounded-md border bg-card shadow-sm transition-shadow duration-300 ease-in-out hover:shadow-lg"
               whileHover={{ scale: 1.05 }}
@@ -166,7 +161,7 @@ export const InteractiveImageBentoGallery: React.FC<
                   {item.title}
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           ))}
         </div>
 
@@ -195,7 +190,7 @@ export const InteractiveImageBentoGallery: React.FC<
       className="relative w-full overflow-hidden bg-background py-16 sm:py-24"
     >
       {(title || description) && (
-        <motion.div
+        <m.div
           style={{ opacity, y }}
           className="container mx-auto px-4 text-center"
         >
@@ -209,20 +204,20 @@ export const InteractiveImageBentoGallery: React.FC<
               {description}
             </p>
           )}
-        </motion.div>
+        </m.div>
       )}
 
       <div
         ref={containerRef}
         className="relative mt-12 w-full cursor-grab active:cursor-grabbing"
       >
-        <motion.div
+        <m.div
           className="w-max"
           drag="x"
           dragConstraints={{ left: dragConstraint, right: 0 }}
           dragElastic={0.05}
         >
-          <motion.div
+          <m.div
             ref={gridRef}
             className="grid auto-cols-[minmax(15rem,1fr)] grid-flow-col gap-4 px-4 md:px-8"
             variants={containerVariants}
@@ -231,7 +226,7 @@ export const InteractiveImageBentoGallery: React.FC<
             viewport={{ once: true, amount: 0.2 }}
           >
             {imageItems.map((item) => (
-              <motion.div
+              <m.div
                 key={item.id}
                 variants={itemVariants}
                 className={cn(
@@ -259,10 +254,10 @@ export const InteractiveImageBentoGallery: React.FC<
                   </h3>
                   <p className="mt-1 text-sm text-white/80">{item.desc}</p>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       </div>
 
       <AnimatePresence>

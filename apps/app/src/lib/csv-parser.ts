@@ -71,10 +71,13 @@ export function parseCSV<T>({
     };
   }
 
+  const headerIndexByLowerName = new Map(
+    headers.map((header, index) => [header.toLowerCase(), index]),
+  );
   const columnMap = new Map<string, number>();
   for (const col of allColumns) {
-    const idx = headers.findIndex((h) => h.toLowerCase() === col.toLowerCase());
-    if (idx !== -1) {
+    const idx = headerIndexByLowerName.get(col.toLowerCase());
+    if (idx !== undefined) {
       columnMap.set(col, idx);
     }
   }

@@ -78,10 +78,11 @@ export function useNewLoanForm() {
 
   const handleSelectionChange = (ids: string[]) => {
     setSelectedCollectionIds(ids);
+    const selectedIdSet = new Set(ids);
     setItemConditions((prev) => {
       const updated = { ...prev };
       for (const id of Object.keys(updated)) {
-        if (!ids.includes(id)) {
+        if (!selectedIdSet.has(id)) {
           delete updated[id];
         }
       }

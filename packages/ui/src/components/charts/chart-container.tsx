@@ -25,7 +25,7 @@ export function ChartContainer({
         fallback={
           <div className="size-full flex items-center justify-center">
             <div className="animate-pulse text-sm text-muted-foreground">
-              Loading chart...
+              Loading chart…
             </div>
           </div>
         }

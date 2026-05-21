@@ -11,16 +11,18 @@ import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
+import type {
+  CollectionEditTabId,
+  CollectionFormData,
+  DraftMediaItem,
+} from "../collection-form-shared/types";
 import {
   buildDraftMediaPayload,
   buildObjectDraftPayload,
-  type CollectionEditTabId,
-  type CollectionFormData,
   createEmptyFormData,
   createFormDataFromDraftObject,
-  type DraftMediaItem,
   getFormSignature,
-} from "../collection-form-shared";
+} from "../collection-form-shared/utils";
 
 export interface UseObjectRequestFormOptions {
   mode?: "create" | "draft-edit";
@@ -128,9 +130,12 @@ export function useObjectRequestForm({
         )
       : initialForm;
 
+    const draftAccessionId = accessionId ?? null;
+    const draftMedia = initialDraftMedia ?? [];
+
     setFormData(nextFormData);
-    setCurrentDraftAccessionId(accessionId ?? null);
-    setPersistedDraftMedia(initialDraftMedia ?? []);
+    setCurrentDraftAccessionId(draftAccessionId);
+    setPersistedDraftMedia(draftMedia);
     setDraftSavedAt(initialDraftSavedAt);
     initialFormSignatureRef.current = getFormSignature(nextFormData);
   }, [

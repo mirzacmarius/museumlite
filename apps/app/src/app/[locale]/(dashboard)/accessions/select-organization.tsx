@@ -25,7 +25,7 @@ export function SelectOrganization({
         className="appearance-none bg-muted/50 border border-border/60 rounded-md px-3 py-2 pr-8 text-sm text-foreground focus:border-border/60 focus:outline-none cursor-pointer"
       >
         <option value="" disabled>
-          Select organization...
+          Select organization…
         </option>
         {organizations.map((org) => (
           <option key={org._id} value={org._id}>

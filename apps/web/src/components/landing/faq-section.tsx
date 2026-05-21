@@ -5,7 +5,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@v1/ui/collapsible";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
@@ -54,7 +54,7 @@ function FAQItem({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -73,7 +73,7 @@ function FAQItem({
           {answer}
         </CollapsibleContent>
       </Collapsible>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -82,7 +82,7 @@ export function FAQSection() {
     <section id="faq" className="py-24 px-4 relative bg-accent/30 scroll-mt-20">
       <div className="max-w-4xl mx-auto">
         {/* Section Header */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -95,7 +95,7 @@ export function FAQSection() {
           <p className="text-muted-foreground md:text-lg">
             Everything you need to know about MuseumLite
           </p>
-        </motion.div>
+        </m.div>
 
         {/* FAQ List */}
         <div className="space-y-0">
@@ -110,7 +110,7 @@ export function FAQSection() {
         </div>
 
         {/* Contact Support */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -126,7 +126,7 @@ export function FAQSection() {
           >
             Contact Support →
           </a>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

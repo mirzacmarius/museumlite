@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribeNoop() {
+  return () => {};
+}
+
+function useClientSnapshot<T>(
+  getSnapshot: () => T,
+  getServerSnapshot: () => T,
+): T {
+  return useSyncExternalStore(subscribeNoop, getSnapshot, getServerSnapshot);
+}
 
 export function ClientCurrentYear() {
-  const [year, setYear] = useState("");
-
-  useEffect(() => {
-    setYear(String(new Date().getFullYear()));
-  }, []);
-
-  return year;
+  return useClientSnapshot(
+    () => String(new Date().getFullYear()),
+    () => "",
+  );
 }
 
 interface ClientDateProps {
@@ -19,16 +27,14 @@ interface ClientDateProps {
 }
 
 export function ClientDate({ timestamp, locale, options }: ClientDateProps) {
-  const [formatted, setFormatted] = useState("");
+  return useClientSnapshot(
+    () => {
+      if (timestamp === null || timestamp === undefined) {
+        return "";
+      }
 
-  useEffect(() => {
-    if (timestamp === null || timestamp === undefined) {
-      setFormatted("");
-      return;
-    }
-
-    setFormatted(new Date(timestamp).toLocaleDateString(locale, options));
-  }, [timestamp, locale, options]);
-
-  return formatted;
+      return new Date(timestamp).toLocaleDateString(locale, options);
+    },
+    () => "",
+  );
 }

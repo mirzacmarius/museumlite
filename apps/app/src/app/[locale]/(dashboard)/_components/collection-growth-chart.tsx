@@ -60,7 +60,7 @@ const LazyLineChart = dynamic(
     loading: () => (
       <div className="flex h-[300px] items-center justify-center">
         <div className="animate-pulse text-sm text-muted-foreground">
-          Loading chart...
+          Loading chart…
         </div>
       </div>
     ),

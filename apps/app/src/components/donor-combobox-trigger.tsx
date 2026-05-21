@@ -3,6 +3,7 @@
 import { ChevronsUpDown, X } from "lucide-react";
 
 interface DonorComboboxTriggerProps {
+  listId: string;
   disabled: boolean;
   placeholder: string;
   selectedValues: string[];
@@ -15,6 +16,7 @@ interface DonorComboboxTriggerProps {
 }
 
 export function DonorComboboxTrigger({
+  listId,
   disabled,
   placeholder,
   selectedValues,
@@ -29,6 +31,7 @@ export function DonorComboboxTrigger({
     <div
       role="combobox"
       aria-expanded={open}
+      aria-controls={listId}
       tabIndex={disabled ? -1 : 0}
       className="flex flex-wrap items-center gap-1 w-full min-h-[2.25rem] rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 cursor-text"
       onClick={() => !disabled && onOpenChange(true)}
@@ -66,7 +69,7 @@ export function DonorComboboxTrigger({
         type="text"
         className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
         placeholder={
-          selectedValues.length === 0 ? placeholder : "Search or add..."
+          selectedValues.length === 0 ? placeholder : "Search or add…"
         }
         value={inputValue}
         onChange={(e) => {

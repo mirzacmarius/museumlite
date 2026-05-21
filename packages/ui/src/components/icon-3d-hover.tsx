@@ -1,12 +1,14 @@
 "use client";
 
-import { LayoutGroup, motion } from "framer-motion";
+import { LayoutGroup, m } from "framer-motion";
 import React, { useRef, useState } from "react";
 import { Icon3DHoverContent } from "./icon-3d-hover-content";
 import { Icon3DHoverCube } from "./icon-3d-hover-cube";
 import "./icon-3d-hover.css";
 import { Transition, Variants } from "./icon-3d-hover-motion";
 import { transition1 } from "./icon-3d-hover-variants";
+
+const EMPTY_ICON_STYLE: React.CSSProperties = {};
 
 interface Props {
   heading?: string;
@@ -24,7 +26,7 @@ export const IconHover3D: React.FC<Props> = ({
   text = "A comprehensive collection of digital books and resources for learning and research. ",
   variant = "Default",
   className = "",
-  style = {},
+  style = EMPTY_ICON_STYLE,
   width,
   height,
   icon,
@@ -33,7 +35,7 @@ export const IconHover3D: React.FC<Props> = ({
   const [currentVariant, setCurrentVariant] = useState<"Default" | "Hover">(
     variant,
   );
-  const [_gestureState, setGestureState] = useState({ isHovered: false });
+  const isHoveredRef = useRef(false);
   const refBinding = useRef<HTMLDivElement>(null);
   const defaultLayoutId = React.useId();
 
@@ -41,12 +43,12 @@ export const IconHover3D: React.FC<Props> = ({
   const variants = [currentVariant === "Default" ? "GPnJri30y" : "zEwHlJ7zp"];
 
   const handleMouseEnter = async () => {
-    setGestureState({ isHovered: true });
+    isHoveredRef.current = true;
     setCurrentVariant("Hover");
   };
 
   const handleMouseLeave = async () => {
-    setGestureState({ isHovered: false });
+    isHoveredRef.current = false;
     setCurrentVariant("Default");
   };
 
@@ -55,7 +57,7 @@ export const IconHover3D: React.FC<Props> = ({
       <LayoutGroup id={defaultLayoutId}>
         <Variants animate={variants} initial={false}>
           <Transition value={transition1}>
-            <motion.div
+            <m.div
               {...restProps}
               className={`icon-hover-3d icon-hover-3d-card ${className}`}
               data-framer-name="Default"
@@ -73,7 +75,7 @@ export const IconHover3D: React.FC<Props> = ({
                 heading={heading}
                 text={text}
               />
-            </motion.div>
+            </m.div>
           </Transition>
         </Variants>
       </LayoutGroup>

@@ -38,10 +38,12 @@ interface ImportFieldMapperProps {
   onSave?: (mappings: FieldMapping[]) => void;
 }
 
+const EMPTY_FIELD_MAPPINGS: FieldMapping[] = [];
+
 export function ImportFieldMapper({
   sourceFields,
   targetFields,
-  initialMappings = [],
+  initialMappings = EMPTY_FIELD_MAPPINGS,
   onMappingsChange,
   onSave,
 }: ImportFieldMapperProps) {

@@ -111,7 +111,11 @@ export default function ScanPage() {
   }, []);
 
   useEffect(() => {
-    if (!currentScan || scannedObject === undefined) return;
+    if (!currentScan) {
+      handledScanRef.current = null;
+      return;
+    }
+    if (scannedObject === undefined) return;
     if (handledScanRef.current === currentScan) return;
     handledScanRef.current = currentScan;
 
@@ -141,12 +145,6 @@ export default function ScanPage() {
     );
     setCurrentScan(null);
   }, [currentScan, scannedObject, push]);
-
-  useEffect(() => {
-    if (!currentScan) {
-      handledScanRef.current = null;
-    }
-  }, [currentScan]);
 
   if (isLoading) {
     return <ScanPageSkeleton />;

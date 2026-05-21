@@ -140,7 +140,7 @@ export default function DashboardSettings() {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          nameForm.handleSubmit();
+          void nameForm.handleSubmit();
         }}
       >
         <div className="flex w-full flex-col gap-4 rounded-lg p-4 sm:p-6">
@@ -182,7 +182,7 @@ export default function DashboardSettings() {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          usernameForm.handleSubmit();
+          void usernameForm.handleSubmit();
         }}
       >
         <div className="flex w-full flex-col gap-4 rounded-lg p-4 sm:p-6">

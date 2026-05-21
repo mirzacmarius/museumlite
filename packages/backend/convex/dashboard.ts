@@ -99,17 +99,16 @@ export const getAnalytics = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
+    const [, analytics] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+      buildOrganizationAnalytics(ctx, args.organizationId, args.siteId),
+    ] as const);
 
-    return await buildOrganizationAnalytics(
-      ctx,
-      args.organizationId,
-      args.siteId,
-    );
+    return analytics;
   },
 });
 
@@ -656,18 +655,19 @@ export const getCollectionGrowth = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
-
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, collections] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     const now = new Date();
     const months: { month: string; count: number }[] = [];
@@ -711,36 +711,37 @@ export const getKpiTrends = query({
     pendingAccessions: v.array(v.number()),
   }),
   handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.view_analytics",
-    );
-
     const days = 7;
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const [collections, loans, accessions] = await Promise.all([
-      ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-      ctx.db
-        .query("accessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ]);
+    const [, [collections, loans, accessions]] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.view_analytics",
+      ),
+      Promise.all([
+        ctx.db
+          .query("collections")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("loans")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+        ctx.db
+          .query("accessions")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .collect(),
+      ]),
+    ] as const);
     const totalObjects: number[] = [];
     const objectsOnLoan: number[] = [];
     const activeLoans: number[] = [];

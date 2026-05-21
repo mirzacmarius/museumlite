@@ -18,14 +18,17 @@ import { useDonorCreate } from "./use-donor-create";
 export type { DonorComboboxProps } from "./donor-combobox-types";
 export { UNKNOWN_DONORS_VALUE } from "./donor-combobox-types";
 
+const EMPTY_DONOR_VALUES: string[] = [];
+
 export function DonorCombobox({
   organizationId,
-  value = [],
+  value = EMPTY_DONOR_VALUES,
   onValueChange,
   placeholder = "Select or add donors...",
   disabled = false,
   includeUnknownOption = false,
 }: DonorComboboxProps) {
+  const listId = React.useId();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
@@ -129,6 +132,7 @@ export function DonorCombobox({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <DonorComboboxTrigger
+            listId={listId}
             disabled={disabled}
             placeholder={placeholder}
             selectedValues={selectedValues}
@@ -149,6 +153,7 @@ export function DonorCombobox({
         <PopoverContent className="w-[400px] p-0" align="start">
           <Command shouldFilter={false}>
             <DonorComboboxListContent
+              listId={listId}
               inputValue={inputValue}
               organizationId={organizationId}
               selectedValues={selectedValues}

@@ -3,6 +3,12 @@
 import { Droplets, Image as ImageIcon, Thermometer } from "lucide-react";
 import Image from "next/image";
 
+const LAST_AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 interface LocationHeaderProps {
   location: {
     name: string;
@@ -173,11 +179,7 @@ export function LocationHeader({
             </div>
             <div className="text-xl font-semibold text-foreground">
               {lastAuditDate
-                ? new Intl.DateTimeFormat("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }).format(lastAuditDate)
+                ? LAST_AUDIT_DATE_FORMATTER.format(lastAuditDate)
                 : "Never"}
             </div>
           </div>

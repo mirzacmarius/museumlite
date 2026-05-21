@@ -14,21 +14,22 @@ test("batchGetByIds should fetch multiple documents", async () => {
   const t = convexTest(schema, modules);
 
   // Create test organizations
-  const org1Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum 1",
-      slug: "test-museum-1",
-      type: "museum",
-    });
-  });
-
-  const org2Id = await t.run(async (ctx) => {
-    return await ctx.db.insert("organizations", {
-      name: "Test Museum 2",
-      slug: "test-museum-2",
-      type: "gallery",
-    });
-  });
+  const [org1Id, org2Id] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum 1",
+        slug: "test-museum-1",
+        type: "museum",
+      });
+    }),
+    t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Museum 2",
+        slug: "test-museum-2",
+        type: "gallery",
+      });
+    }),
+  ]);
 
   // Fetch documents using batchGetByIds
   const results = await t.run(async (ctx) => {

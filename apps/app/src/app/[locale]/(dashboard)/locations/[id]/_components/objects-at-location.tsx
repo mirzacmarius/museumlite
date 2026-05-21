@@ -18,7 +18,7 @@ export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
   if (objects === undefined) {
     return (
       <div className="flex h-32 items-center justify-center">
-        <p className="text-sm text-muted-foreground">Loading objects...</p>
+        <p className="text-sm text-muted-foreground">Loading objects…</p>
       </div>
     );
   }

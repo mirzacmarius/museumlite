@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import type { RefObject } from "react";
 import ReactCrop, { type Crop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
@@ -37,7 +37,7 @@ export function MediaEditorViewport({
   onCropChange,
 }: MediaEditorViewportProps) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -97,6 +97,6 @@ export function MediaEditorViewport({
           </div>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

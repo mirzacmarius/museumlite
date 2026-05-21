@@ -10,7 +10,13 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 
 export interface UploadFile {
   id: string;
@@ -35,6 +41,7 @@ interface DropzoneUploaderProps {
 
 const DEFAULT_MAX_SIZE = 50 * 1024 * 1024;
 const DEFAULT_MAX_FILES = 20;
+const EMPTY_UPLOADING_FILES: UploadFile[] = [];
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -60,7 +67,7 @@ export function DropzoneUploader({
   maxSizeBytes = DEFAULT_MAX_SIZE,
   maxFiles = DEFAULT_MAX_FILES,
   onFilesSelected,
-  uploadingFiles = [],
+  uploadingFiles = EMPTY_UPLOADING_FILES,
   disabled = false,
   className,
   label = "Drop files here or click to upload",
@@ -169,7 +176,7 @@ export function DropzoneUploader({
     [disabled, handleFiles],
   );
 
-  const handleClick = useCallback(() => {
+  const openFilePicker = useCallback(() => {
     if (!disabled) {
       fileInputRef.current?.click();
     }
@@ -193,30 +200,30 @@ export function DropzoneUploader({
   );
   const dropzoneRef = useRef<HTMLDivElement>(null);
 
+  const onNativeDragOver = useEffectEvent((event: DragEvent) => {
+    handleDragOver(event as unknown as React.DragEvent);
+  });
+  const onNativeDragLeave = useEffectEvent((event: DragEvent) => {
+    handleDragLeave(event as unknown as React.DragEvent);
+  });
+  const onNativeDrop = useEffectEvent((event: DragEvent) => {
+    handleDrop(event as unknown as React.DragEvent);
+  });
+
   useEffect(() => {
     const element = dropzoneRef.current;
     if (!element) return;
 
-    const onDragOver = (event: DragEvent) => {
-      handleDragOver(event as unknown as React.DragEvent);
-    };
-    const onDragLeave = (event: DragEvent) => {
-      handleDragLeave(event as unknown as React.DragEvent);
-    };
-    const onDrop = (event: DragEvent) => {
-      handleDrop(event as unknown as React.DragEvent);
-    };
-
-    element.addEventListener("dragover", onDragOver);
-    element.addEventListener("dragleave", onDragLeave);
-    element.addEventListener("drop", onDrop);
+    element.addEventListener("dragover", onNativeDragOver);
+    element.addEventListener("dragleave", onNativeDragLeave);
+    element.addEventListener("drop", onNativeDrop);
 
     return () => {
-      element.removeEventListener("dragover", onDragOver);
-      element.removeEventListener("dragleave", onDragLeave);
-      element.removeEventListener("drop", onDrop);
+      element.removeEventListener("dragover", onNativeDragOver);
+      element.removeEventListener("dragleave", onNativeDragLeave);
+      element.removeEventListener("drop", onNativeDrop);
     };
-  }, [handleDragOver, handleDragLeave, handleDrop]);
+  }, []);
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -239,7 +246,7 @@ export function DropzoneUploader({
         />
         <button
           type="button"
-          onClick={handleClick}
+          onClick={openFilePicker}
           disabled={disabled || hasActiveUploads}
           className={cn(
             "flex min-h-[120px] w-full cursor-pointer flex-col items-center justify-center rounded-lg p-6 transition-all",

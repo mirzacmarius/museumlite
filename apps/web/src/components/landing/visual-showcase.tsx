@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { seededRandom } from "./seeded-rng";
 
 export function VisualShowcase() {
@@ -11,15 +11,15 @@ export function VisualShowcase() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-20">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-bold mb-6 text-white"
+            className="text-4xl md:text-6xl font-semibold mb-6 text-white"
           >
             Immersive Interface
-          </motion.h2>
-          <motion.p
+          </m.h2>
+          <m.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -27,10 +27,10 @@ export function VisualShowcase() {
             className="text-zinc-400 text-lg max-w-2xl mx-auto"
           >
             Experience a workspace that feels like the future.
-          </motion.p>
+          </m.p>
         </div>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 40, rotateX: 10 }}
           whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
           viewport={{ once: true }}
@@ -65,9 +65,9 @@ export function VisualShowcase() {
 
                   {/* Grid */}
                   <div className="flex-1 grid grid-cols-3 gap-6">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                    {[1, 2, 3, 4, 5, 6].map((cardIndex) => (
                       <div
-                        key={i}
+                        key={`showcase-card-${cardIndex}`}
                         className="rounded-lg bg-white/5 border border-white/5 relative overflow-hidden group/card"
                       >
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
@@ -75,17 +75,17 @@ export function VisualShowcase() {
                         {/* Animated Content Inside Cards */}
                         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-2">
                           <div className="h-2 w-12 bg-white/10 rounded" />
-                          <motion.div
+                          <m.div
                             initial={{ height: "20%" }}
                             whileInView={{
-                              height: `${(seededRandom(i + 1000) * 60 + 20).toFixed(3)}%`,
+                              height: `${(seededRandom(cardIndex + 1000) * 60 + 20).toFixed(3)}%`,
                             }}
                             transition={{
                               duration: 2,
                               repeat: Number.POSITIVE_INFINITY,
                               repeatType: "reverse",
                               ease: "easeInOut",
-                              delay: i * 0.2,
+                              delay: cardIndex * 0.2,
                             }}
                             className="w-2 bg-neon-blue/40 rounded-t"
                           />
@@ -103,7 +103,7 @@ export function VisualShowcase() {
 
           {/* Glow Underneath */}
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[90%] h-20 bg-neon-blue/20 blur-[60px] -z-10" />
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

@@ -219,8 +219,15 @@ export const getStatistics = query({
       )
       .collect();
 
-    const activeCount = vendors.filter((v) => v.isActive).length;
-    const inactiveCount = vendors.filter((v) => !v.isActive).length;
+    let activeCount = 0;
+    let inactiveCount = 0;
+    for (const vendor of vendors) {
+      if (vendor.isActive) {
+        activeCount += 1;
+      } else {
+        inactiveCount += 1;
+      }
+    }
 
     // Get all requests to calculate spending per vendor
     const requests = await ctx.db
@@ -230,12 +237,13 @@ export const getStatistics = query({
       )
       .collect();
 
+    const receivedStatuses = new Set(["received", "cataloged"]);
     const vendorSpending = new Map<string, number>();
     for (const request of requests) {
       if (
         request.vendorId &&
         request.actualPrice &&
-        ["received", "cataloged"].includes(request.status)
+        receivedStatuses.has(request.status)
       ) {
         const current = vendorSpending.get(request.vendorId) || 0;
         vendorSpending.set(

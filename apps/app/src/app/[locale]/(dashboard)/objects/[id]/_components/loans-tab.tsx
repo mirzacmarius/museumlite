@@ -45,7 +45,7 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
       </h3>
 
       {loans === undefined ? (
-        <p className="text-muted-foreground">Loading loans...</p>
+        <p className="text-muted-foreground">Loading loans…</p>
       ) : loans.length > 0 ? (
         <div className="space-y-4">
           {loans.map((loan: LoanForCollection) => (

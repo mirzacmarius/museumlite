@@ -42,18 +42,19 @@ const DEFAULT_WALL_ITEMS_PER_WALL = 3;
 const DEFAULT_CABINET_COUNT = 0;
 const DEFAULT_SHELF_COUNT = 0;
 const VITRINE_TYPES = ["Roman", "Greek", "Busts", "Tools", "Ceramics", "Coins"];
+const EMPTY_DISPLAY_UNIT_LOCATIONS: DisplayUnitLocation[] = [];
 
 export function GalleryView({
   objects,
   vitrineCount = DEFAULT_VITRINE_COUNT,
-  vitrineLocations = [],
+  vitrineLocations = EMPTY_DISPLAY_UNIT_LOCATIONS,
   wallCount = DEFAULT_WALL_COUNT,
-  wallLocations = [],
+  wallLocations = EMPTY_DISPLAY_UNIT_LOCATIONS,
   wallItemsPerWall = DEFAULT_WALL_ITEMS_PER_WALL,
   cabinetCount = DEFAULT_CABINET_COUNT,
-  cabinetLocations = [],
+  cabinetLocations = EMPTY_DISPLAY_UNIT_LOCATIONS,
   shelfCount = DEFAULT_SHELF_COUNT,
-  shelfLocations = [],
+  shelfLocations = EMPTY_DISPLAY_UNIT_LOCATIONS,
   backgroundImageUrl,
 }: GalleryViewProps) {
   const normalizedVitrineCount = Math.max(0, vitrineCount);

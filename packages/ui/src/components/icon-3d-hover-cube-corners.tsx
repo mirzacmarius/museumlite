@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cornerScaleVariants } from "./icon-3d-hover-variants";
 
 interface Icon3DHoverCubeCornersProps {
@@ -15,25 +15,25 @@ export function Icon3DHoverCubeCorners({
 
   return (
     <>
-      <motion.div
+      <m.div
         className="icon-3d-corner icon-3d-corner-tl"
         data-hover={hoverState}
         variants={cornerScaleVariants}
         animate={animateState}
       />
-      <motion.div
+      <m.div
         className="icon-3d-corner icon-3d-corner-bl"
         data-hover={hoverState}
         variants={cornerScaleVariants}
         animate={animateState}
       />
-      <motion.div
+      <m.div
         className="icon-3d-corner icon-3d-corner-br"
         data-hover={hoverState}
         variants={cornerScaleVariants}
         animate={animateState}
       />
-      <motion.div
+      <m.div
         className="icon-3d-corner icon-3d-corner-tr"
         data-hover={hoverState}
         variants={cornerScaleVariants}

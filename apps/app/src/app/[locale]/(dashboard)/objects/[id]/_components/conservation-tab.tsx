@@ -49,7 +49,7 @@ export function ConservationTab({
       </div>
 
       {treatments === undefined ? (
-        <p className="text-muted-foreground">Loading treatments...</p>
+        <p className="text-muted-foreground">Loading treatments…</p>
       ) : treatments && treatments.length > 0 ? (
         <div className="space-y-4">
           {treatments.map((treatment) => (

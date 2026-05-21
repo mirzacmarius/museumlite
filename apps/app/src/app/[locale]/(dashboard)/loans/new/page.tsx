@@ -1,15 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  NewLoanBasicsSection,
-  NewLoanFormActions,
-  NewLoanItemsSection,
-  NewLoanPageHeader,
-  NewLoanScheduleSection,
-  NewLoanSummarySidebar,
-  useNewLoanForm,
-} from "./_components";
+import { NewLoanBasicsSection } from "./_components/new-loan-basics-section";
+import { NewLoanFormActions } from "./_components/new-loan-form-actions";
+import { NewLoanItemsSection } from "./_components/new-loan-items-section";
+import { NewLoanPageHeader } from "./_components/new-loan-page-header";
+import { NewLoanScheduleSection } from "./_components/new-loan-schedule-section";
+import { NewLoanSummarySidebar } from "./_components/new-loan-summary-sidebar";
+import { useNewLoanForm } from "./_components/use-new-loan-form";
 
 export default function NewLoanPage() {
   const { back } = useRouter();

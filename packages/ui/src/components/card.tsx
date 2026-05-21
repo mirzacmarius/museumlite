@@ -35,6 +35,7 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = ({
   className,
+  children,
   ref,
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement> &
@@ -43,7 +44,9 @@ const CardTitle = ({
     ref={ref}
     className={cn("font-semibold leading-none tracking-tight", className)}
     {...props}
-  />
+  >
+    {children ?? <span className="sr-only">Card title</span>}
+  </h3>
 );
 CardTitle.displayName = "CardTitle";
 

@@ -83,7 +83,9 @@ const VALID_ACCOUNT_TYPES = [
   "both",
   "institution",
   "patron",
-];
+] as const;
+
+const VALID_ACCOUNT_TYPE_SET = new Set<string>(VALID_ACCOUNT_TYPES);
 
 function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
@@ -114,10 +116,13 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
     };
   }
 
+  const headerIndexByLowerName = new Map(
+    headers.map((header, index) => [header.toLowerCase(), index]),
+  );
   const columnMap = new Map<string, number>();
   for (const col of ALL_COLUMNS) {
-    const idx = headers.findIndex((h) => h.toLowerCase() === col.toLowerCase());
-    if (idx !== -1) {
+    const idx = headerIndexByLowerName.get(col.toLowerCase());
+    if (idx !== undefined) {
       columnMap.set(col, idx);
     }
   }
@@ -139,7 +144,7 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
 
     const accountType = getValue("accountType").toLowerCase();
 
-    if (!accountType || !VALID_ACCOUNT_TYPES.includes(accountType)) {
+    if (!accountType || !VALID_ACCOUNT_TYPE_SET.has(accountType)) {
       errors.push(
         `Row ${i + 1}: Invalid accountType "${getValue("accountType")}". Use: lender, borrower, both, institution, or patron`,
       );
@@ -440,7 +445,7 @@ function AccountImportProgressStep({
   return (
     <div className="mx-auto max-w-md text-center">
       <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
-      <h2 className="text-xl font-semibold">Importing Accounts...</h2>
+      <h2 className="text-xl font-semibold">Importing Accounts…</h2>
       <p className="mt-2 text-muted-foreground">
         {importJob?.processedItems || 0} of {importJob?.totalItems || totalRows}{" "}
         processed

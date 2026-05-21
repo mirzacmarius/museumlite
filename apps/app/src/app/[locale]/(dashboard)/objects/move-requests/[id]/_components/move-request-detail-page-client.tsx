@@ -39,7 +39,7 @@ export function MoveRequestDetailPageClient() {
   if (request === undefined || currentUser === undefined) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">Loading move request...</p>
+        <p className="text-muted-foreground">Loading move request…</p>
       </div>
     );
   }

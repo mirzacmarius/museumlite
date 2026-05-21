@@ -17,9 +17,9 @@ import {
   isStorageLocation,
   shouldAutoDisplayChildLocations,
 } from "../../location-view-helpers";
-import { AddChildLocationDialog } from "../add-child-location-dialog";
+import { AddChildLocationDialog } from "../add-child-location-dialog/add-child-location-dialog";
 import { DeleteLocationDialog } from "../delete-location-dialog";
-import { EditLocationDialog } from "../edit-location-dialog";
+import { EditLocationDialog } from "../edit-location-dialog/edit-location-dialog";
 import { LocationSidebar } from "../location-sidebar";
 import { LocationLayoutContent } from "./location-layout-content";
 import { LocationLayoutHeader } from "./location-layout-header";

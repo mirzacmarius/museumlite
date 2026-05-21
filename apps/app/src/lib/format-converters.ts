@@ -1,3 +1,12 @@
+const CSV_QUOTE_CHARS = new Set([",", '"', "\n"]);
+
+function csvValueNeedsQuoting(value: string) {
+  for (const char of value) {
+    if (CSV_QUOTE_CHARS.has(char)) return true;
+  }
+  return false;
+}
+
 /**
  * Converts an array of objects to CSV format
  * @param data Array of objects to convert
@@ -25,11 +34,7 @@ export function convertToCSV(data: Record<string, unknown>[]): string {
         return String(value);
       }
       const stringValue = String(value);
-      if (
-        stringValue.includes(",") ||
-        stringValue.includes('"') ||
-        stringValue.includes("\n")
-      ) {
+      if (csvValueNeedsQuoting(stringValue)) {
         return `"${stringValue.replace(/"/g, '""')}"`;
       }
       return stringValue;

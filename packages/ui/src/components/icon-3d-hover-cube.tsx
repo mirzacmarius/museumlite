@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import type React from "react";
 import { Icon3DHoverCubeBg } from "./icon-3d-hover-cube-bg";
 
@@ -17,7 +17,7 @@ function Icon3DHoverCubeIconOverlay({
   isHoverVariant: boolean;
 }) {
   return (
-    <motion.div
+    <m.div
       className="icon-3d-icon-overlay"
       animate={{
         scale: isHoverVariant ? 1.1 : 1,
@@ -26,7 +26,7 @@ function Icon3DHoverCubeIconOverlay({
       transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
     >
       {icon}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -35,7 +35,7 @@ export function Icon3DHoverCube({
   icon,
 }: Icon3DHoverCubeProps) {
   return (
-    <motion.div
+    <m.div
       className="icon-container icon-3d-icon-container"
       data-framer-name="Icon"
     >
@@ -46,6 +46,6 @@ export function Icon3DHoverCube({
         />
       ) : null}
       <Icon3DHoverCubeBg isHoverVariant={isHoverVariant} icon={icon} />
-    </motion.div>
+    </m.div>
   );
 }

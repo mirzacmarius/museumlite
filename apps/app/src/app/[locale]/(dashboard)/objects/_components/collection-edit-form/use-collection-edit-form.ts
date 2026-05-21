@@ -12,9 +12,12 @@ import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { serializeStringListField } from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
 import { getObjectEditTabs } from "../../[id]/_components/object-tab-config";
+import type {
+  CollectionEditTabId,
+  CollectionFormData,
+  OwnershipEntry,
+} from "../collection-form-shared/types";
 import {
-  type CollectionEditTabId,
-  type CollectionFormData,
   createInitialFormData,
   createOwnershipEntryLocalId,
   EMPTY_EDIT_FORM,
@@ -22,11 +25,10 @@ import {
   getMediaSignature,
   getStatusBadgeClass,
   normalizeOptionalString,
-  type OwnershipEntry,
   parseOptionalWeight,
   withLinkEntryLocalIds,
   withOwnershipEntryLocalIds,
-} from "../collection-form-shared";
+} from "../collection-form-shared/utils";
 
 export function useCollectionEditForm() {
   const t = useScopedI18n("objects");
@@ -190,8 +192,8 @@ export function useCollectionEditForm() {
     const nextSignature = getFormSignature(nextFormData);
 
     if (!isInitialized) {
-      setFormData(nextFormData);
       initialFormSignatureRef.current = nextSignature;
+      setFormData(nextFormData);
       setIsInitialized(true);
       return;
     }

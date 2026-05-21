@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   Archive,
   Globe,
@@ -49,15 +49,15 @@ export function FeaturesGrid() {
     <section className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500"
+            className="text-4xl md:text-6xl font-semibold mb-6 text-white"
           >
             Powering the Future
-          </motion.h2>
-          <motion.p
+          </m.h2>
+          <m.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -66,12 +66,12 @@ export function FeaturesGrid() {
           >
             Advanced tools designed for the next generation of museums and
             galleries.
-          </motion.p>
+          </m.p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, i) => (
-            <motion.div
+            <m.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -92,7 +92,7 @@ export function FeaturesGrid() {
                   </p>
                 </div>
               </SpotlightCard>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </div>

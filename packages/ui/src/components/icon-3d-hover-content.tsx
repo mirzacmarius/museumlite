@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { titleTransition } from "./icon-3d-hover-variants";
 
 interface Icon3DHoverContentProps {
@@ -15,18 +15,15 @@ export function Icon3DHoverContent({
   text,
 }: Icon3DHoverContentProps) {
   return (
-    <motion.div className="content icon-3d-content" data-framer-name="Content">
-      <motion.div
+    <m.div className="content icon-3d-content" data-framer-name="Content">
+      <m.div
         className="text-container icon-3d-text-container"
         data-framer-name="Text"
       >
-        <motion.div
-          className="bg-fill icon-3d-bg-fill"
-          data-framer-name="BG Fill"
-        />{" "}
-        <motion.div className="icon-3d-heading-wrap">
+        <m.div className="bg-fill icon-3d-bg-fill" data-framer-name="BG Fill" />{" "}
+        <m.div className="icon-3d-heading-wrap">
           <span className="icon-3d-heading-base">{heading}</span>
-          <motion.span
+          <m.span
             className="icon-3d-heading-reveal"
             animate={{
               clipPath: `inset(0 ${isHoverVariant ? "0%" : "100%"} 0 0)`,
@@ -34,19 +31,19 @@ export function Icon3DHoverContent({
             transition={titleTransition}
           >
             {heading}
-          </motion.span>
+          </m.span>
 
-          <motion.div
+          <m.div
             className="icon-3d-heading-bg"
             animate={{
               scaleX: isHoverVariant ? 1 : 0,
             }}
             transition={titleTransition}
           />
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
 
-      <motion.div className="icon-3d-description">{text}</motion.div>
-    </motion.div>
+      <m.div className="icon-3d-description">{text}</m.div>
+    </m.div>
   );
 }

@@ -675,10 +675,7 @@ export const getCollectionTrends = query({
       ),
     ]);
 
-    const snapshot = await loadCatalogGrowthSnapshot(
-      ctx,
-      args.organizationId,
-    );
+    const snapshot = await loadCatalogGrowthSnapshot(ctx, args.organizationId);
     const { collections, accessions, deaccessions } = snapshot;
     // Generate date buckets
     const buckets = generateDateBuckets(

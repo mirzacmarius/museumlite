@@ -4,7 +4,7 @@ import { Button } from "@v1/ui/button";
 import { AlertCircle, ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { useScopedI18n } from "@/locales/client";
-import { LoanAgreement } from "../loan-agreement";
+import { LoanAgreement } from "../loan-agreement/loan-agreement";
 import type { Loan } from "../types";
 
 interface LoanDetailHeaderProps {

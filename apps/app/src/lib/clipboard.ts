@@ -15,9 +15,11 @@ export async function writeTextToClipboard(text: string) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  textarea.style.pointerEvents = "none";
+  Object.assign(textarea.style, {
+    position: "fixed",
+    opacity: "0",
+    pointerEvents: "none",
+  });
 
   document.body.append(textarea);
   textarea.select();

@@ -35,6 +35,37 @@ function toDateString(date: Date) {
   return format(date, "yyyy-MM-dd");
 }
 
+function getInitialPickerState(
+  value: string | undefined,
+  defaultDate: Date | undefined,
+) {
+  const parsedDate = parseStoredDate(value);
+  if (parsedDate) {
+    return {
+      open: false,
+      inputValue: formatDate(parsedDate),
+      date: parsedDate,
+      month: parsedDate,
+    };
+  }
+
+  if (defaultDate) {
+    return {
+      open: false,
+      inputValue: formatDate(defaultDate),
+      date: defaultDate,
+      month: defaultDate,
+    };
+  }
+
+  return {
+    open: false,
+    inputValue: "",
+    date: undefined,
+    month: undefined,
+  };
+}
+
 interface NaturalLanguageDatePickerProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -44,6 +75,58 @@ interface NaturalLanguageDatePickerProps {
   id?: string;
   required?: boolean;
   defaultDate?: Date;
+}
+
+interface PickerState {
+  open: boolean;
+  inputValue: string;
+  date: Date | undefined;
+  month: Date | undefined;
+}
+
+type PickerAction =
+  | { type: "setOpen"; value: boolean }
+  | { type: "setInputValue"; value: string }
+  | { type: "setDate"; value: Date | undefined }
+  | { type: "setMonth"; value: Date | undefined }
+  | { type: "applyParsedInput"; value: string }
+  | { type: "selectCalendarDate"; value: Date };
+
+function pickerReducer(state: PickerState, action: PickerAction): PickerState {
+  switch (action.type) {
+    case "setOpen":
+      return { ...state, open: action.value };
+    case "setInputValue":
+      return { ...state, inputValue: action.value };
+    case "setDate":
+      return { ...state, date: action.value };
+    case "setMonth":
+      return { ...state, month: action.value };
+    case "applyParsedInput": {
+      const newValue = action.value;
+      if (!newValue.trim()) {
+        return { ...state, inputValue: newValue, date: undefined };
+      }
+      const parsedDate = parseDate(newValue);
+      if (parsedDate && isValidDate(parsedDate)) {
+        return {
+          ...state,
+          inputValue: newValue,
+          date: parsedDate,
+          month: parsedDate,
+        };
+      }
+      return { ...state, inputValue: newValue };
+    }
+    case "selectCalendarDate":
+      return {
+        ...state,
+        date: action.value,
+        month: action.value,
+        inputValue: formatDate(action.value),
+        open: false,
+      };
+  }
 }
 
 export function NaturalLanguageDatePicker({
@@ -56,61 +139,57 @@ export function NaturalLanguageDatePicker({
   required = false,
   defaultDate,
 }: NaturalLanguageDatePickerProps) {
-  const initialDate = React.useMemo(
-    () => parseStoredDate(value) ?? defaultDate,
-    [value, defaultDate],
+  return (
+    <NaturalLanguageDatePickerInner
+      key={`${value ?? ""}:${defaultDate?.getTime() ?? ""}`}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={className}
+      id={id}
+      required={required}
+      defaultDate={defaultDate}
+    />
   );
-  const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(
-    initialDate ? formatDate(initialDate) : "",
+}
+
+function NaturalLanguageDatePickerInner({
+  value: _value,
+  onChange,
+  placeholder = "today",
+  disabled,
+  className,
+  id,
+  required = false,
+  defaultDate,
+}: NaturalLanguageDatePickerProps) {
+  const [state, dispatch] = React.useReducer(
+    pickerReducer,
+    { value: _value, defaultDate },
+    ({ value, defaultDate: fallbackDate }) =>
+      getInitialPickerState(value, fallbackDate),
   );
-  const [date, setDate] = React.useState<Date | undefined>(initialDate);
-  const [month, setMonth] = React.useState<Date | undefined>(initialDate);
-
-  // Sync date with value prop changes
-  React.useEffect(() => {
-    const nextDate = parseStoredDate(value);
-
-    if (nextDate) {
-      setDate(nextDate);
-      setMonth(nextDate);
-      setInputValue(formatDate(nextDate));
-    } else {
-      // Show defaultDate in UI but don't auto-set value
-      if (defaultDate) {
-        setDate(defaultDate);
-        setMonth(defaultDate);
-        setInputValue(formatDate(defaultDate));
-      } else {
-        setDate(undefined);
-        setInputValue("");
-      }
-    }
-  }, [value, defaultDate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setInputValue(newValue);
+    dispatch({ type: "applyParsedInput", value: newValue });
 
-    if (newValue.trim()) {
-      const parsedDate = parseDate(newValue);
-      if (parsedDate && isValidDate(parsedDate)) {
-        setDate(parsedDate);
-        setMonth(parsedDate);
-        onChange?.(toDateString(parsedDate));
-      }
-    } else {
-      setDate(undefined);
+    if (!newValue.trim()) {
       onChange?.("");
+      return;
+    }
+
+    const parsedDate = parseDate(newValue);
+    if (parsedDate && isValidDate(parsedDate)) {
+      onChange?.(toDateString(parsedDate));
     }
   };
 
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
-      setDate(selectedDate);
-      setInputValue(formatDate(selectedDate));
+      dispatch({ type: "selectCalendarDate", value: selectedDate });
       onChange?.(toDateString(selectedDate));
-      setOpen(false);
     }
   };
 
@@ -118,20 +197,25 @@ export function NaturalLanguageDatePicker({
     <div className="relative">
       <Input
         id={id}
-        value={inputValue}
+        value={state.inputValue}
         placeholder={placeholder}
         className={`bg-background pr-10 ${className || ""}`}
         onChange={handleInputChange}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {
             e.preventDefault();
-            setOpen(true);
+            dispatch({ type: "setOpen", value: true });
           }
         }}
         disabled={disabled}
         required={required}
       />
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={state.open}
+        onOpenChange={(nextOpen) =>
+          dispatch({ type: "setOpen", value: nextOpen })
+        }
+      >
         <PopoverTrigger asChild>
           <Button
             id={`${id}-picker`}
@@ -151,10 +235,12 @@ export function NaturalLanguageDatePicker({
         >
           <Calendar
             mode="single"
-            selected={date}
+            selected={state.date}
             captionLayout="dropdown"
-            month={month}
-            onMonthChange={setMonth}
+            month={state.month}
+            onMonthChange={(nextMonth) =>
+              dispatch({ type: "setMonth", value: nextMonth })
+            }
             onSelect={handleCalendarSelect}
           />
         </PopoverContent>

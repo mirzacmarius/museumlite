@@ -1,12 +1,43 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 
 interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   spotlightColor?: string;
+}
+
+interface SpotlightState {
+  x: number;
+  y: number;
+  opacity: number;
+}
+
+type SpotlightAction =
+  | { type: "move"; x: number; y: number }
+  | { type: "show" }
+  | { type: "hide" };
+
+const initialSpotlightState: SpotlightState = {
+  x: 0,
+  y: 0,
+  opacity: 0,
+};
+
+function spotlightReducer(
+  state: SpotlightState,
+  action: SpotlightAction,
+): SpotlightState {
+  switch (action.type) {
+    case "move":
+      return { ...state, x: action.x, y: action.y };
+    case "show":
+      return { ...state, opacity: 1 };
+    case "hide":
+      return { ...state, opacity: 0 };
+  }
 }
 
 export function SpotlightCard({
@@ -16,8 +47,7 @@ export function SpotlightCard({
   ...props
 }: SpotlightCardProps) {
   const divRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState(0);
+  const [state, dispatch] = useReducer(spotlightReducer, initialSpotlightState);
 
   useEffect(() => {
     const element = divRef.current;
@@ -25,23 +55,27 @@ export function SpotlightCard({
 
     const handleMouseMove = (e: globalThis.MouseEvent) => {
       const rect = element.getBoundingClientRect();
-      setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      dispatch({
+        type: "move",
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
     };
 
     const handleFocus = () => {
-      setOpacity(1);
+      dispatch({ type: "show" });
     };
 
     const handleBlur = () => {
-      setOpacity(0);
+      dispatch({ type: "hide" });
     };
 
     const handleMouseEnter = () => {
-      setOpacity(1);
+      dispatch({ type: "show" });
     };
 
     const handleMouseLeave = () => {
-      setOpacity(0);
+      dispatch({ type: "hide" });
     };
 
     element.addEventListener("mousemove", handleMouseMove);
@@ -71,8 +105,8 @@ export function SpotlightCard({
       <div
         className="pointer-events-none absolute -inset-px opacity-0 transition duration-300"
         style={{
-          opacity,
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 40%)`,
+          opacity: state.opacity,
+          background: `radial-gradient(600px circle at ${state.x}px ${state.y}px, ${spotlightColor}, transparent 40%)`,
         }}
       />
       {children}

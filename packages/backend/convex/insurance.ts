@@ -2150,12 +2150,10 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
         .query("appraisals")
         .withIndex("by_collection", (q) => q.eq("collectionId", collectionId));
       for await (const appraisal of appraisals) {
-        if (
-          latestAppraisalDate === undefined ||
-          appraisal.appraisalDate > latestAppraisalDate
-        ) {
-          latestAppraisalDate = appraisal.appraisalDate;
-        }
+        latestAppraisalDate =
+          latestAppraisalDate === undefined
+            ? appraisal.appraisalDate
+            : Math.max(latestAppraisalDate, appraisal.appraisalDate);
       }
 
       if (latestAppraisalDate === undefined) {

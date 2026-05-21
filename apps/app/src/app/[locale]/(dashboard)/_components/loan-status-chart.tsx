@@ -54,7 +54,7 @@ const LazyPieChart = dynamic(
     loading: () => (
       <div className="flex h-[200px] items-center justify-center">
         <div className="animate-pulse text-sm text-muted-foreground">
-          Loading chart...
+          Loading chart…
         </div>
       </div>
     ),

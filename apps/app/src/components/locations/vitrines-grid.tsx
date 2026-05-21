@@ -23,11 +23,7 @@ interface VitrinesGridProps {
   items: VitrineItem[];
 }
 
-export function VitrinesGrid({
-  title,
-  occupancy,
-  items,
-}: VitrinesGridProps) {
+export function VitrinesGrid({ title, occupancy, items }: VitrinesGridProps) {
   return (
     <div>
       <div className="flex justify-between items-end mb-4">

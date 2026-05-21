@@ -16,6 +16,16 @@ import { useScopedI18n } from "@/locales/client";
 import type { CatalogItemFormData, ItemType } from "./types";
 import { ITEM_TYPE_VALUES } from "./types";
 
+function buildAuthorRows(authors: string[]) {
+  return authors.map((author, position, allAuthors) => {
+    const label = author || "author-empty";
+    const occurrence =
+      allAuthors.slice(0, position).filter((value) => value === author)
+        .length + 1;
+    return { author, key: `${label}-${occurrence}`, position };
+  });
+}
+
 interface CatalogItemBasicInformationSectionProps {
   formData: CatalogItemFormData;
   setFormData: React.Dispatch<React.SetStateAction<CatalogItemFormData>>;
@@ -114,14 +124,13 @@ export function CatalogItemBasicInformationSection({
 
           <div className="space-y-2 sm:col-span-2">
             <Label>{tNew("authors")}</Label>
-            {formData.authors.map((author, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: Index needed for editable form array
-              <div key={index} className="flex gap-2">
+            {buildAuthorRows(formData.authors).map(({ author, key, position }) => (
+              <div key={key} className="flex gap-2">
                 <Input
                   value={author}
-                  onChange={(e) => updateAuthor?.(index, e.target.value)}
+                  onChange={(e) => updateAuthor?.(position, e.target.value)}
                   placeholder={tNew("authorPlaceholder", {
-                    number: index + 1,
+                    number: position + 1,
                   })}
                 />
                 {formData.authors.length > 1 && (
@@ -129,7 +138,7 @@ export function CatalogItemBasicInformationSection({
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={() => removeAuthor?.(index)}
+                    onClick={() => removeAuthor?.(position)}
                   >
                     <Trash2 className="size-4" />
                   </Button>

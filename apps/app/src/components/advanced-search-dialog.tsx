@@ -274,11 +274,13 @@ function FilterGroupEditor({
   );
 }
 
+const EMPTY_FILTER_GROUPS: FilterGroup[] = [];
+
 export function AdvancedSearchDialog({
   open,
   onOpenChange,
   onApply,
-  initialFilterGroups = [],
+  initialFilterGroups = EMPTY_FILTER_GROUPS,
   initialGroupOperator = "AND",
 }: AdvancedSearchDialogProps) {
   const createId = () => {

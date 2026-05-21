@@ -11,9 +11,9 @@ export function KanbanColumnSkeleton() {
       <div className="flex-1 rounded-lg border-2 border-dashed border-border/60">
         <ScrollArea className="h-full p-2">
           <div className="flex flex-col gap-3">
-            {[1, 2, 3].map((i) => (
+            {["one", "two", "three"].map((slot) => (
               <div
-                key={i}
+                key={slot}
                 className="rounded-lg border border-border/60 bg-muted p-3"
               >
                 <div className="mb-2 h-3 w-16 rounded bg-muted" />

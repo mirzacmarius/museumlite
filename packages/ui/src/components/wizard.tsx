@@ -54,6 +54,28 @@ function Wizard({
   onComplete,
   className,
 }: WizardProps) {
+  return (
+    <WizardState
+      key={initialStep}
+      steps={steps}
+      initialStep={initialStep}
+      onStepChange={onStepChange}
+      onComplete={onComplete}
+      className={className}
+    >
+      {children}
+    </WizardState>
+  );
+}
+
+function WizardState({
+  steps,
+  children,
+  initialStep = 0,
+  onStepChange,
+  onComplete,
+  className,
+}: WizardProps) {
   const [currentStep, setCurrentStep] = React.useState(initialStep);
   const [canGoNext, setCanGoNext] = React.useState(true);
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(

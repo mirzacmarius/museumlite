@@ -6,27 +6,27 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@v1/ui/accordion";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 export function FaqsSectionEfferd() {
   return (
     <section id="faq" className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold mb-6 text-white"
+            className="text-4xl md:text-5xl font-semibold mb-6 text-white"
           >
             Frequently Asked Questions
-          </motion.h2>
+          </m.h2>
           <p className="text-zinc-400 text-lg">
             Everything you need to know about MuseumLite.
           </p>
         </div>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -53,7 +53,7 @@ export function FaqsSectionEfferd() {
               </AccordionItem>
             ))}
           </Accordion>
-        </motion.div>
+        </m.div>
 
         <div className="mt-16 text-center">
           <p className="text-zinc-500">

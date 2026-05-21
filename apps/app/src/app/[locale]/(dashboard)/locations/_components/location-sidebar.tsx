@@ -2,7 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ChevronRight, Lock, Thermometer } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   isStorageLocation,
   shouldShowInExhibitionSidebar,
@@ -32,9 +32,9 @@ export function LocationSidebar({
   selectedLocationId,
   onSelectLocation,
 }: LocationSidebarProps) {
-  const [expandedLocationIds, setExpandedLocationIds] = useState(
-    () => new Set<Id<"locations">>(),
-  );
+  const [expandedOverrides, setExpandedOverrides] = useState<Set<
+    Id<"locations">
+  > | null>(null);
 
   const getChildren = (parentLocationId: Id<"locations">) =>
     allLocations.filter(
@@ -46,8 +46,9 @@ export function LocationSidebar({
     );
 
   const toggleLocation = (locationId: Id<"locations">) => {
-    setExpandedLocationIds((currentLocationIds) => {
-      const nextLocationIds = new Set(currentLocationIds);
+    setExpandedOverrides((currentLocationIds) => {
+      const baseLocationIds = currentLocationIds ?? initialExpandedLocationIds;
+      const nextLocationIds = new Set(baseLocationIds);
 
       if (nextLocationIds.has(locationId)) {
         nextLocationIds.delete(locationId);
@@ -81,12 +82,13 @@ export function LocationSidebar({
     [locationsStructureKey],
   );
 
-  useEffect(() => {
-    setExpandedLocationIds(initialExpandedLocationIds);
-  }, [initialExpandedLocationIds]);
+  const expandedLocationIds = expandedOverrides ?? initialExpandedLocationIds;
 
   return (
-    <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-border bg-card p-4 custom-scrollbar">
+    <div
+      key={locationsStructureKey}
+      className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-border bg-card p-4 custom-scrollbar"
+    >
       {exhibitionLocations.length > 0 && (
         <>
           <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

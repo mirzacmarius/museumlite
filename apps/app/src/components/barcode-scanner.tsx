@@ -216,7 +216,7 @@ export function BarcodeScanner({
           <div className="flex flex-col items-center justify-center p-8">
             <Loader2 className="mb-4 size-12 animate-spin text-primary" />
             <p className="text-sm font-medium text-foreground">
-              Initializing camera...
+              Initializing camera…
             </p>
           </div>
         )}

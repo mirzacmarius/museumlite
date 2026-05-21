@@ -4,7 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { DeaccessionDetailBoardReportDialog } from "./deaccession-detail-board-report-dialog";
@@ -17,6 +17,20 @@ import {
 export function DeaccessionDetailPageClient() {
   const params = useParams();
   const deaccessionId = params.id as string;
+
+  return (
+    <DeaccessionDetailPageInner
+      key={deaccessionId}
+      deaccessionId={deaccessionId}
+    />
+  );
+}
+
+function DeaccessionDetailPageInner({
+  deaccessionId,
+}: {
+  deaccessionId: string;
+}) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("deaccessions");
   const tCommon = useScopedI18n("common");
@@ -58,12 +72,6 @@ export function DeaccessionDetailPageClient() {
       ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
       : "skip",
   );
-
-  useEffect(() => {
-    setComment("");
-    setIsApproving(false);
-    setIsRejecting(false);
-  }, [deaccessionId]);
 
   if (!currentOrganizationId) {
     return (

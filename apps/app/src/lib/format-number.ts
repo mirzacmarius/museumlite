@@ -22,6 +22,28 @@ const LOCALE_MAP: Record<Locale, string> = {
   ro: "ro-RO", // Romanian
 };
 
+const NUMBER_FORMATTERS: Record<Locale, Intl.NumberFormat> = {
+  en: new Intl.NumberFormat(LOCALE_MAP.en),
+  fr: new Intl.NumberFormat(LOCALE_MAP.fr),
+  es: new Intl.NumberFormat(LOCALE_MAP.es),
+  no: new Intl.NumberFormat(LOCALE_MAP.no),
+  ro: new Intl.NumberFormat(LOCALE_MAP.ro),
+};
+
+const CURRENCY_FORMATTERS = new Map<string, Intl.NumberFormat>();
+function getCurrencyFormatter(locale: Locale, currency: string) {
+  const key = `${locale}:${currency}`;
+  let formatter = CURRENCY_FORMATTERS.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(LOCALE_MAP[locale], {
+      style: "currency",
+      currency,
+    });
+    CURRENCY_FORMATTERS.set(key, formatter);
+  }
+  return formatter;
+}
+
 /**
  * Formats a number with locale-specific thousand separators and decimals.
  *
@@ -30,7 +52,7 @@ const LOCALE_MAP: Record<Locale, string> = {
  * formatNumber(1234.56, "no") // "1 234,56"
  */
 export function formatNumber(value: number, locale: Locale): string {
-  return new Intl.NumberFormat(LOCALE_MAP[locale]).format(value);
+  return NUMBER_FORMATTERS[locale].format(value);
 }
 
 /**
@@ -45,8 +67,5 @@ export function formatCurrency(
   locale: Locale,
   currency: string,
 ): string {
-  return new Intl.NumberFormat(LOCALE_MAP[locale], {
-    style: "currency",
-    currency,
-  }).format(value);
+  return getCurrencyFormatter(locale, currency).format(value);
 }

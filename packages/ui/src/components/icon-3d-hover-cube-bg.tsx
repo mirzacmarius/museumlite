@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import type React from "react";
 import { Icon3DHoverCubeCorners } from "./icon-3d-hover-cube-corners";
 import { Icon3DHoverCubeSlice } from "./icon-3d-hover-cube-slice";
@@ -23,11 +23,11 @@ export function Icon3DHoverCubeBg({
   const animateState = isHoverVariant ? "zEwHlJ7zp" : "default";
 
   return (
-    <motion.div
+    <m.div
       className={`bg-container icon-3d-cube-bg${icon ? " icon-3d-cube-bg-with-icon" : ""}`}
       data-framer-name="BG"
     >
-      <motion.div
+      <m.div
         className="slice-cube icon-3d-slice-cube"
         data-framer-name="Slice Cube"
         style={{
@@ -48,8 +48,8 @@ export function Icon3DHoverCubeBg({
             sliceIndex={sliceIndex}
           />
         ))}
-      </motion.div>
+      </m.div>
       <Icon3DHoverCubeCorners isHoverVariant={isHoverVariant} />
-    </motion.div>
+    </m.div>
   );
 }

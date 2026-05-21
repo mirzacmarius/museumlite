@@ -201,9 +201,9 @@ function CollectionGroupKPIs({ groupId }: { groupId: Id<"collectionGroups"> }) {
     return (
       <div className="p-6 border-b border-border/60">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {["total", "active", "on-loan", "value"].map((metric) => (
             <div
-              key={i}
+              key={metric}
               className="bg-muted/30 border border-border/60 rounded-lg p-3 animate-pulse h-16"
             />
           ))}

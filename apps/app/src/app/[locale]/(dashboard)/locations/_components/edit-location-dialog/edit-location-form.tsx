@@ -11,11 +11,9 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useScopedI18n } from "@/locales/client";
-import {
-  LocationImageField,
-  LocationTypeSelect,
-  LocationUnitCountFields,
-} from "../location-form-shared";
+import { LocationImageField } from "../location-form-shared/location-image-field";
+import { LocationTypeSelect } from "../location-form-shared/location-type-select";
+import { LocationUnitCountFields } from "../location-form-shared/location-unit-count-fields";
 import type { useEditLocationForm } from "./use-edit-location-form";
 
 type EditLocationFormState = ReturnType<typeof useEditLocationForm>;

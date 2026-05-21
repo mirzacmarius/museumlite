@@ -258,7 +258,7 @@ export function CollectionMultiSelectCombobox({
 
             {collectionsResult && !collectionsResult.isDone && (
               <div className="p-2 text-center text-xs text-muted-foreground">
-                Scroll for more...
+                Scroll for more…
               </div>
             )}
           </CommandList>

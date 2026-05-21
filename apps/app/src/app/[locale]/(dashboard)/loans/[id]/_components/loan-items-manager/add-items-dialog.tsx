@@ -64,7 +64,7 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
               </div>
               {manager.collections === undefined ? (
                 <p className="text-sm text-muted-foreground">
-                  Loading collections...
+                  Loading collections…
                 </p>
               ) : manager.availableCollections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">

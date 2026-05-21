@@ -38,7 +38,7 @@ export function UsernameStep({ onContinue }: UsernameStepProps) {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          usernameForm.handleSubmit();
+          void usernameForm.handleSubmit();
         }}
       >
         <div className="flex w-full flex-col gap-1.5">
@@ -48,8 +48,8 @@ export function UsernameStep({ onContinue }: UsernameStepProps) {
           <usernameForm.Field
             name="username"
             validators={{ onSubmit: validators.username }}
-            // biome-ignore lint/correctness/noChildrenProp: tanstack best practice
-            children={(field) => (
+          >
+            {(field) => (
               <Input
                 placeholder={t("onboardingPage.usernameLabel")}
                 autoComplete="off"
@@ -63,7 +63,7 @@ export function UsernameStep({ onContinue }: UsernameStepProps) {
                 }`}
               />
             )}
-          />
+          </usernameForm.Field>
         </div>
 
         {usernameForm.state.fieldMeta.username?.errors.length > 0 && (

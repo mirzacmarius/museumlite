@@ -9,7 +9,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
-import { EditLoanForm, EditLoanLockedView } from "../_components/edit-loan";
+import { EditLoanForm } from "../_components/edit-loan/edit-loan-form";
+import { EditLoanLockedView } from "../_components/edit-loan/edit-loan-locked-view";
 import type { Loan } from "../_components/types";
 
 export default function EditLoanPage() {

@@ -67,6 +67,8 @@ export function SavedViewsDropdown({
     name: string;
   } | null>(null);
   const hasLoadedDefault = useRef(false);
+  const onApplyViewRef = useRef(onApplyView);
+  onApplyViewRef.current = onApplyView;
   const locale = useCurrentLocale();
 
   const savedViews = useQuery(api.savedViews.list, {
@@ -90,7 +92,7 @@ export function SavedViewsDropdown({
         const filters = JSON.parse(
           defaultView.filters,
         ) as Partial<ObjectFilters>;
-        onApplyView({
+        onApplyViewRef.current({
           search: filters.search || "",
           status: filters.status || "all",
           objectType: filters.objectType || "",
@@ -106,7 +108,7 @@ export function SavedViewsDropdown({
         void 0;
       }
     }
-  }, [defaultView, onApplyView]);
+  }, [defaultView]);
 
   const handleSave = async () => {
     if (!viewName.trim()) return;

@@ -2,7 +2,7 @@
 
 import { SidebarProvider } from "@v1/ui/sidebar";
 import { useScopedI18n } from "@/locales/client";
-import { LoanContextSidebar } from "./_components";
+import { LoanContextSidebar } from "./_components/loan-context-sidebar";
 import { LoanDetailHeader } from "./_components/loan-detail/loan-detail-header";
 import { LoanDetailHero } from "./_components/loan-detail/loan-detail-hero";
 import { LoanDetailTabs } from "./_components/loan-detail/loan-detail-tabs";

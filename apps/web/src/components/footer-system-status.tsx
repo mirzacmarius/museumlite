@@ -6,18 +6,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@v1/ui/tooltip";
-import { useEffect, useState } from "react";
+import { useIsClient } from "@/hooks/use-is-client";
 
-export function FooterSystemStatus() {
-  const [isMounted, setIsMounted] = useState(false);
+function FooterSystemStatusPlaceholder() {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="size-2 rounded-full bg-green-500/40" />
+      <p className="text-xs text-muted-foreground">All systems normal</p>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Avoid SSR/client hydration mismatches by rendering nothing until mounted.
-  if (!isMounted) return null;
-
+function FooterSystemStatusContent() {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -67,4 +67,14 @@ export function FooterSystemStatus() {
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+export function FooterSystemStatus() {
+  const isClient = useIsClient();
+
+  if (!isClient) {
+    return <FooterSystemStatusPlaceholder />;
+  }
+
+  return <FooterSystemStatusContent />;
 }

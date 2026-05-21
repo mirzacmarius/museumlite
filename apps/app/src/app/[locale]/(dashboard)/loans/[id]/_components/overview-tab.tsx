@@ -3,7 +3,7 @@
 import { Check, FileText, Shield, Upload } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { LoanApprovalWorkflow } from "./index";
+import { LoanApprovalWorkflow } from "./loan-approval-workflow/loan-approval-workflow";
 import type { Loan, LoanDocument } from "./types";
 
 interface OverviewTabProps {

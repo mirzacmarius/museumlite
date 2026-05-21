@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Building2, Heart, Palette } from "lucide-react";
 import { SpotlightCard } from "../spotlight-card";
 
@@ -30,14 +30,14 @@ export function UseCases() {
     <section id="use-cases" className="py-32 px-4 relative bg-zinc-950">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-bold mb-6 text-white"
+            className="text-4xl md:text-6xl font-semibold mb-6 text-white"
           >
             Built for Everyone
-          </motion.h2>
+          </m.h2>
           <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
             Scalable solutions for every type of collection.
           </p>
@@ -45,7 +45,7 @@ export function UseCases() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {useCases.map((useCase, i) => (
-            <motion.div
+            <m.div
               key={useCase.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ export function UseCases() {
                   {useCase.description}
                 </p>
               </SpotlightCard>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </div>
