@@ -165,12 +165,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, view] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.viewId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const view = await ctx.db.get(args.viewId);
     if (!view) {
       throw new Error("View not found");
     }
@@ -209,13 +210,13 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.viewId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: view.organizationId,
-      userId,
-      action: "updated_saved_view",
-      entityType: "savedView",
-      entityId: args.viewId,
-      changes: updates,
-    }),
+        organizationId: view.organizationId,
+        userId,
+        action: "updated_saved_view",
+        entityType: "savedView",
+        entityId: args.viewId,
+        changes: updates,
+      }),
     ]);
 
     return null;
@@ -228,12 +229,13 @@ export const markUsed = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, view] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.viewId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const view = await ctx.db.get(args.viewId);
     if (!view || view.userId !== userId) {
       return null;
     }
@@ -250,12 +252,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, view] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.viewId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const view = await ctx.db.get(args.viewId);
     if (!view) {
       throw new Error("View not found");
     }

@@ -4,8 +4,8 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
   internalMutation,
+  type MutationCtx,
   mutation,
   query,
 } from "./_generated/server";
@@ -503,12 +503,13 @@ export const generateDraftUploadUrl = mutation({
     uploadUrl: v.string(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "media.upload"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "media.upload");
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     return {
@@ -581,7 +582,7 @@ export const upsertObjectDraft = mutation({
 
     const nextWorkflowStep =
       args.saveMode === "submit" && workflowConfig
-        ? workflowState.firstStep ?? 1
+        ? (workflowState.firstStep ?? 1)
         : 0;
     const shouldAutoApproveSubmit =
       args.saveMode === "submit" && !workflowConfig;
@@ -1317,12 +1318,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1380,12 +1382,13 @@ export const updateWorkflowStep = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1421,12 +1424,13 @@ export const submitForApproval = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1473,12 +1477,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1725,12 +1730,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -1811,12 +1817,13 @@ export const emptyRejected = mutation({
     deletedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.delete"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.delete");
 
     const rejectedAccessions = await ctx.db
       .query("accessions")
@@ -2256,12 +2263,13 @@ export const verifySource = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2297,12 +2305,13 @@ export const unverifySource = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2339,12 +2348,13 @@ export const initializeDocumentChecklist = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2391,12 +2401,13 @@ export const uploadChecklistDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2470,12 +2481,13 @@ export const removeChecklistDocument = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, accession] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accessionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const accession = await ctx.db.get(args.accessionId);
     if (!accession) {
       throw new Error("Accession not found");
     }
@@ -2643,12 +2655,13 @@ export const validateBulkImport = mutation({
     ),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const validMethods = [
       "purchase",

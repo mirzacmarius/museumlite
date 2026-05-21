@@ -1,11 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
 
 // Copy status validator
-const copyStatusValidator = v.union(
+const _copyStatusValidator = v.union(
   v.literal("available"),
   v.literal("checked_out"),
   v.literal("on_hold"),
@@ -47,12 +46,13 @@ export const create = mutation({
   },
   returns: v.id("itemCopies"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, item] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.itemId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const item = await ctx.db.get(args.itemId);
     if (!item) {
       throw new Error("Library item not found");
     }
@@ -240,12 +240,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, copy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.copyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const copy = await ctx.db.get(args.copyId);
     if (!copy) {
       throw new Error("Copy not found");
     }
@@ -293,12 +294,13 @@ export const markLost = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, copy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.copyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const copy = await ctx.db.get(args.copyId);
     if (!copy) {
       throw new Error("Copy not found");
     }
@@ -332,12 +334,13 @@ export const withdraw = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, copy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.copyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const copy = await ctx.db.get(args.copyId);
     if (!copy) {
       throw new Error("Copy not found");
     }
@@ -384,12 +387,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, copy] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.copyId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const copy = await ctx.db.get(args.copyId);
     if (!copy) {
       throw new Error("Copy not found");
     }

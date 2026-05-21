@@ -42,12 +42,13 @@ export const create = mutation({
   },
   returns: v.id("libraryFines"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -89,12 +90,13 @@ export const recordPayment = mutation({
   },
   returns: v.id("libraryPayments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -205,12 +207,13 @@ export const waive = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, fine] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.fineId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const fine = await ctx.db.get(args.fineId);
     if (!fine) {
       throw new Error("Fine not found");
     }
@@ -247,12 +250,13 @@ export const forgive = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, fine] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.fineId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const fine = await ctx.db.get(args.fineId);
     if (!fine) {
       throw new Error("Fine not found");
     }

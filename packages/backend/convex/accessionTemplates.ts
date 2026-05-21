@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { requirePermission } from "./utils/permissions";
@@ -51,16 +50,17 @@ export const create = mutation({
   },
   returns: v.id("accessionTemplates"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     // Validate template
     const org = await ctx.db.get(args.organizationId);
@@ -126,12 +126,13 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, template] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.templateId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const template = await ctx.db.get(args.templateId);
     if (!template) {
       throw new Error("Template not found");
     }
@@ -176,17 +177,17 @@ export const update = mutation({
     await Promise.all([
       ctx.db.patch(args.templateId, updates),
       ctx.runMutation(internal.audit.logAction, {
-      organizationId: template.organizationId,
-      userId,
-      action: "updated_accession_template",
-      entityType: "accessionTemplate",
-      entityId: args.templateId,
-      changes: {
-        name: args.name,
-        description: args.description,
-        template: args.template,
-      },
-    }),
+        organizationId: template.organizationId,
+        userId,
+        action: "updated_accession_template",
+        entityType: "accessionTemplate",
+        entityId: args.templateId,
+        changes: {
+          name: args.name,
+          description: args.description,
+          template: args.template,
+        },
+      }),
     ]);
 
     return null;
@@ -202,12 +203,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, template] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.templateId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const template = await ctx.db.get(args.templateId);
     if (!template) {
       throw new Error("Template not found");
     }
@@ -244,12 +246,13 @@ export const setDefault = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, template] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.templateId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const template = await ctx.db.get(args.templateId);
     if (!template) {
       throw new Error("Template not found");
     }

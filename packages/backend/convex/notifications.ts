@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
-  type QueryCtx,
   internalMutation,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { getUserIdsWithPermission } from "./utils/permissions";
@@ -284,12 +284,13 @@ export const markRead = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
@@ -345,12 +346,13 @@ export const markUnread = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
@@ -374,12 +376,13 @@ export const deleteNotification = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, notification] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.notificationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }

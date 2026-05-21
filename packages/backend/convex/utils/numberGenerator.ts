@@ -11,10 +11,9 @@
  */
 
 import type { GenericMutationCtx, GenericQueryCtx } from "convex/server";
-import type { DataModel } from "../_generated/dataModel";
-import type { Id } from "../_generated/dataModel";
+import type { DataModel, Id } from "../_generated/dataModel";
 
-type QueryCtx = GenericQueryCtx<DataModel>;
+type _QueryCtx = GenericQueryCtx<DataModel>;
 type MutationCtx = GenericMutationCtx<DataModel>;
 
 /**

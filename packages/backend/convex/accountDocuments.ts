@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalQuery, mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -118,12 +118,13 @@ export const create = mutation({
   },
   returns: v.id("accountDocuments"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -167,12 +168,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, document] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.documentId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const document = await ctx.db.get(args.documentId);
     if (!document) {
       throw new Error("Document not found");
     }

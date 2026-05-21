@@ -123,7 +123,9 @@ export async function applyUsageCounterDelta(
   );
 
   await ctx.db.patch(counter._id, {
-    objectCount: clampToNonNegative(counter.objectCount + (delta.objectCount ?? 0)),
+    objectCount: clampToNonNegative(
+      counter.objectCount + (delta.objectCount ?? 0),
+    ),
     mediaFileCount: clampToNonNegative(
       counter.mediaFileCount + (delta.mediaFileCount ?? 0),
     ),

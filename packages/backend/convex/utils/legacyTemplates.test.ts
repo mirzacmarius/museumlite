@@ -1,12 +1,12 @@
 import { describe, expect, test } from "vitest";
 import {
-  type FieldMapping,
-  PASTPERFECT_TEMPLATE,
-  TMS_TEMPLATE,
   applyMappings,
+  type FieldMapping,
   findMapping,
   getTemplate,
   listTemplates,
+  PASTPERFECT_TEMPLATE,
+  TMS_TEMPLATE,
   validateMappings,
 } from "./legacyTemplates";
 

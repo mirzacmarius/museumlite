@@ -2,13 +2,13 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
   type FeatureId,
-  type IntegrationId,
-  type ModuleId,
-  type SubscriptionTier,
   getFeatureRequiredTier,
   getTierLimits as getPolicyTierLimits,
   hasFeatureTierAccess,
+  type IntegrationId,
+  type ModuleId,
   normalizeSubscriptionTier,
+  type SubscriptionTier,
 } from "./featurePolicy";
 
 export type { FeatureId, IntegrationId, ModuleId, SubscriptionTier };

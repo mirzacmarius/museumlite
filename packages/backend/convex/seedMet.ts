@@ -10,7 +10,7 @@ import {
 
 // Tables to clear - hardcoded list (NOT using TableNames to avoid as any)
 // These are verified to exist in schema.ts
-const TABLES_TO_CLEAR = [
+const _TABLES_TO_CLEAR = [
   "auditLog",
   "notifications",
   "loanReminders",

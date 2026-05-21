@@ -119,16 +119,17 @@ export const enable = mutation({
   },
   returns: enableResultValidator,
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     const validIntegration = AVAILABLE_INTEGRATIONS.find(
       (i) => i.id === args.integrationId,

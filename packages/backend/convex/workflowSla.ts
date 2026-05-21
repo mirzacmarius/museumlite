@@ -8,7 +8,6 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { NOTIFICATION_TYPES } from "./notifications";
 import { requirePermission } from "./utils/permissions";
 
 const workflowTypeValidator = v.union(
@@ -35,18 +34,19 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const configs = await ctx.db
-      .query("workflowSlaConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const [, configs] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db
+        .query("workflowSlaConfigs")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+    ] as const);
 
     return configs.map((c) => ({
       _id: c._id,
@@ -115,16 +115,17 @@ export const upsert = mutation({
   },
   returns: v.id("workflowSlaConfigs"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
 
     const existing = await ctx.db
       .query("workflowSlaConfigs")
@@ -137,27 +138,27 @@ export const upsert = mutation({
 
     if (existing) {
       await Promise.all([
-      ctx.db.patch(existing._id, {
-        slaDays: args.slaDays,
-        warningDays: args.warningDays,
-        escalateToRoleId: args.escalateToRoleId,
-        isActive: args.isActive,
-        updatedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: args.organizationId,
-        userId,
-        action: "updated_workflow_sla_config",
-        entityType: "workflowSlaConfig",
-        entityId: existing._id,
-        changes: {
-          workflowType: args.workflowType,
+        ctx.db.patch(existing._id, {
           slaDays: args.slaDays,
           warningDays: args.warningDays,
+          escalateToRoleId: args.escalateToRoleId,
           isActive: args.isActive,
-        },
-      }),
-    ]);
+          updatedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: args.organizationId,
+          userId,
+          action: "updated_workflow_sla_config",
+          entityType: "workflowSlaConfig",
+          entityId: existing._id,
+          changes: {
+            workflowType: args.workflowType,
+            slaDays: args.slaDays,
+            warningDays: args.warningDays,
+            isActive: args.isActive,
+          },
+        }),
+      ]);
 
       return existing._id;
     }
@@ -197,12 +198,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, config] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.id),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const config = await ctx.db.get(args.id);
     if (!config) {
       throw new Error("SLA config not found");
     }
@@ -322,7 +324,7 @@ export const checkSlaBreaches = internalMutation({
     const now = Date.now();
     const oneDayMs = 24 * 60 * 60 * 1000;
 
-    const workflowQueries: Array<{
+    const _workflowQueries: Array<{
       type: string;
       items: Array<{ id: string; createdAt: number }>;
     }> = [];

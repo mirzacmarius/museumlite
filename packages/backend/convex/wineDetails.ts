@@ -4,8 +4,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
-  type QueryCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { requireModuleEnabled } from "./utils/featureGates";
@@ -80,12 +80,13 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       return null;
     }
@@ -132,12 +133,13 @@ export const upsert = mutation({
   },
   returns: v.id("wineDetails"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -158,19 +160,19 @@ export const upsert = mutation({
 
     if (existing) {
       await Promise.all([
-      ctx.db.patch(existing._id, {
-        ...updateData,
-        lastModifiedAt: Date.now(),
-      }),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: collection.organizationId,
-        userId,
-        action: "updated",
-        entityType: "wineDetails",
-        entityId: existing._id,
-        changes: updateData,
-      }),
-    ]);
+        ctx.db.patch(existing._id, {
+          ...updateData,
+          lastModifiedAt: Date.now(),
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: collection.organizationId,
+          userId,
+          action: "updated",
+          entityType: "wineDetails",
+          entityId: existing._id,
+          changes: updateData,
+        }),
+      ]);
 
       return existing._id;
     }
@@ -201,12 +203,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, details] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.wineDetailsId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const details = await ctx.db.get(args.wineDetailsId);
     if (!details) {
       throw new Error("Wine details not found");
     }

@@ -52,12 +52,13 @@ export const create = mutation({
   },
   returns: v.id("donors"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const trimmedName = args.name.trim();
     if (!trimmedName) {
@@ -195,12 +196,13 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, donor] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.donorId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const donor = await ctx.db.get(args.donorId);
     if (!donor) {
       throw new Error("Donor not found");
     }

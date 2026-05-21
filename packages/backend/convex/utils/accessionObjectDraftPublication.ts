@@ -1,7 +1,10 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { insertCompletedMediaAsset } from "./mediaAssets";
-import { applyUsageCounterDelta } from "./organizationUsageCounters";
+import {
+  applyUsageCounterDelta,
+  ensureUsageCounter,
+} from "./organizationUsageCounters";
 
 function serializeStringList(values?: string[]) {
   return values && values.length > 0 ? JSON.stringify(values) : undefined;
@@ -76,8 +79,10 @@ export async function publishAccessionObjectDraft(
     lastModifiedAt: catalogedAt,
   });
 
-  await Promise.all(
-    [...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
+  await ensureUsageCounter(ctx, accession.organizationId);
+
+  await Promise.all([
+    ...[...new Set(collectionGroupIds)].map(async (collectionGroupId) => {
       const group = await ctx.db.get(collectionGroupId);
       if (group && group.organizationId === accession.organizationId) {
         await Promise.all([
@@ -95,26 +100,21 @@ export async function publishAccessionObjectDraft(
         ]);
       }
     }),
-  );
-
-  await (accession.draftMedia ?? []).reduce(
-    (chain, draftMediaItem) =>
-      chain.then(async () => {
-        await insertCompletedMediaAsset(ctx, {
-          collectionId,
-          organizationId: accession.organizationId,
-          storageId: draftMediaItem.storageId,
-          fileName: draftMediaItem.fileName,
-          fileSize: draftMediaItem.fileSize,
-          mimeType: draftMediaItem.mimeType,
-          mediaCategory: draftMediaItem.mediaCategory,
-          isPrimary: draftMediaItem.isPrimary,
-          uploadedBy: catalogedBy,
-          uploadedAt: catalogedAt,
-        });
+    ...(accession.draftMedia ?? []).map((draftMediaItem) =>
+      insertCompletedMediaAsset(ctx, {
+        collectionId,
+        organizationId: accession.organizationId,
+        storageId: draftMediaItem.storageId,
+        fileName: draftMediaItem.fileName,
+        fileSize: draftMediaItem.fileSize,
+        mimeType: draftMediaItem.mimeType,
+        mediaCategory: draftMediaItem.mediaCategory,
+        isPrimary: draftMediaItem.isPrimary,
+        uploadedBy: catalogedBy,
+        uploadedAt: catalogedAt,
       }),
-    Promise.resolve(),
-  );
+    ),
+  ]);
 
   await applyUsageCounterDelta(ctx, accession.organizationId, {
     objectCount: 1,

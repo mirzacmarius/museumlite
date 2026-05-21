@@ -1,5 +1,4 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
@@ -52,9 +51,7 @@ export async function getUserIdsWithPermission(
     }),
   );
 
-  return matchingUserIds.flatMap((userId) =>
-    userId === null ? [] : [userId],
-  );
+  return matchingUserIds.flatMap((userId) => (userId === null ? [] : [userId]));
 }
 
 function getFeatureForPermission(permissionName: string): FeatureId | null {

@@ -4,8 +4,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
-  type QueryCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
 import { NOTIFICATION_TYPES } from "./notifications";
@@ -857,26 +857,24 @@ export const listEligibleTargetOrganizations = query({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       return [];
     }
 
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.update",
-    );
-
-    const memberships = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    const [, memberships] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.update"),
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect(),
+    ] as const);
 
     const organizations = await Promise.all(
       memberships.map(async (membership) => {
@@ -1037,12 +1035,13 @@ export const createRequest = mutation({
   },
   returns: v.id("organizationMoveRequests"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
       throw new Error("Collection not found");
     }
@@ -1149,12 +1148,13 @@ export const get = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       return null;
     }
@@ -1369,14 +1369,15 @@ export const getPendingForCollection = query({
       return null;
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-
-    const request = await ctx.db
-      .query("organizationMoveRequests")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", args.collectionId),
-      )
-      .collect();
+    const [, request] = await Promise.all([
+      requirePermission(ctx, collection.organizationId, "collections.read"),
+      ctx.db
+        .query("organizationMoveRequests")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect(),
+    ] as const);
 
     const pendingRequest =
       request.find((entry) => ACTIVE_REQUEST_STATUSES.has(entry.status)) ??
@@ -1410,12 +1411,13 @@ export const approve = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1505,12 +1507,13 @@ export const accept = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1647,12 +1650,13 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }
@@ -1737,12 +1741,13 @@ export const cancel = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, request] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.requestId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error("Move request not found");
     }

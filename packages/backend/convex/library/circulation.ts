@@ -22,12 +22,13 @@ export const checkout = mutation({
   },
   returns: v.id("circulations"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -120,12 +121,13 @@ export const checkin = mutation({
     fineAmount: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation record not found");
     }
@@ -225,12 +227,13 @@ export const markLost = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation record not found");
     }
@@ -290,12 +293,13 @@ export const markClaimedReturned = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation record not found");
     }
@@ -608,12 +612,13 @@ export const renew = mutation({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       return { success: false, error: "Circulation not found" };
     }
@@ -749,7 +754,7 @@ export const autoRenewEligibleItems = mutation({
     const renewalOutcomes = await Promise.all(
       circulations.map(async (circulation) => {
         const account = await ctx.db.get(circulation.accountId);
-        if (!account || !account.autoRenewalEnabled) {
+        if (!account?.autoRenewalEnabled) {
           return "skipped" as const;
         }
 
@@ -974,12 +979,13 @@ export const checkoutWithOverride = mutation({
   },
   returns: v.id("circulations"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }
@@ -1063,12 +1069,13 @@ export const createRecall = mutation({
   },
   returns: v.id("libraryRecalls"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, circulation] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.circulationId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const circulation = await ctx.db.get(args.circulationId);
     if (!circulation) {
       throw new Error("Circulation not found");
     }
@@ -1162,12 +1169,13 @@ export const cancelRecall = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, recall] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.recallId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const recall = await ctx.db.get(args.recallId);
     if (!recall) {
       throw new Error("Recall not found");
     }
@@ -1308,12 +1316,13 @@ export const updateAutoRenewalPreference = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, account] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.accountId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const account = await ctx.db.get(args.accountId);
     if (!account) {
       throw new Error("Account not found");
     }

@@ -92,11 +92,11 @@ export class AccessionNumberParser {
 
     // Organization replacements
     result = result.replace(/\{ORG:(\d+)\}/g, (_, length) => {
-      return organizationSlug.toUpperCase().substring(0, parseInt(length));
+      return organizationSlug.toUpperCase().substring(0, parseInt(length, 10));
     });
     result = result.replace(/\{ORG\}/g, organizationSlug.toUpperCase());
     result = result.replace(/\{org:(\d+)\}/g, (_, length) => {
-      return organizationSlug.toLowerCase().substring(0, parseInt(length));
+      return organizationSlug.toLowerCase().substring(0, parseInt(length, 10));
     });
     result = result.replace(/\{org\}/g, organizationSlug.toLowerCase());
 
@@ -104,11 +104,11 @@ export class AccessionNumberParser {
     result = result.replace(
       /\{COUNTER:(\d+)(?::(?:YEAR|MONTH|DAY|GLOBAL))?\}/g,
       (_, padding) => {
-        return this.formatCounter(counterValue, parseInt(padding));
+        return this.formatCounter(counterValue, parseInt(padding, 10));
       },
     );
     // Handle dynamic # patterns (1-10 digits)
-    result = result.replace(/\{(#{1,10})\}/g, (match, hashes) => {
+    result = result.replace(/\{(#{1,10})\}/g, (_match, hashes) => {
       return this.formatCounter(counterValue, hashes.length);
     });
 
@@ -164,7 +164,7 @@ export class AccessionNumberParser {
     let preview = "";
     try {
       preview = this.parse(template, testContext);
-    } catch (err) {
+    } catch (_err) {
       errors.push("Failed to generate preview");
     }
 
@@ -214,7 +214,7 @@ export class AccessionNumberParser {
     const scopeMatch = template.match(
       /\{COUNTER:\d+:(YEAR|MONTH|DAY|GLOBAL)\}/,
     );
-    if (scopeMatch && scopeMatch[1]) {
+    if (scopeMatch?.[1]) {
       return scopeMatch[1].toLowerCase() as "global" | "year" | "month" | "day";
     }
     // Default scope based on template content

@@ -6,12 +6,7 @@ import { collectionsToDublinCore, toDublinCoreXML } from "./utils/dublinCore";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { toJSON, toXML } from "./utils/formatConverters";
 import { normalizeAccessionImportRow } from "./utils/importRows";
-import {
-  type FieldMapping,
-  type ImportTemplate,
-  getTemplate,
-  listTemplates,
-} from "./utils/legacyTemplates";
+import { getTemplate, listTemplates } from "./utils/legacyTemplates";
 import { requirePermission } from "./utils/permissions";
 import {
   accessionsToSpectrumEntries,
@@ -74,12 +69,13 @@ export const createImportJob = mutation({
   },
   returns: v.id("importJobs"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     const jobId = await ctx.db.insert("importJobs", {
       organizationId: args.organizationId,
@@ -310,12 +306,13 @@ export const cancelImportJob = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, job] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.jobId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const job = await ctx.db.get(args.jobId);
     if (!job) {
       throw new Error("Import job not found");
     }
@@ -364,12 +361,13 @@ export const exportAccessions = mutation({
     }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.read");
 
     await enforceExportQuota(ctx, args.organizationId);
 
@@ -1346,12 +1344,13 @@ export const exportAccessionsWithFormat = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.read"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.read");
     await enforceExportQuota(ctx, args.organizationId);
 
     const accessionsQuery = ctx.db
@@ -2138,12 +2137,13 @@ export const saveFieldMapping = mutation({
   },
   returns: v.id("importFieldMappings"),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId] = await Promise.all([
+      getAuthUserId(ctx),
+      requirePermission(ctx, args.organizationId, "collections.create"),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    await requirePermission(ctx, args.organizationId, "collections.create");
 
     // If marking as default, unset any existing defaults for this entity type
     if (args.isDefault) {
@@ -2209,12 +2209,13 @@ export const updateFieldMapping = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, mapping] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mappingId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const mapping = await ctx.db.get(args.mappingId);
     if (!mapping) {
       throw new Error("Field mapping not found");
     }
@@ -2395,12 +2396,13 @@ export const deleteFieldMapping = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const [userId, mapping] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.mappingId),
+    ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
     }
-
-    const mapping = await ctx.db.get(args.mappingId);
     if (!mapping) {
       throw new Error("Field mapping not found");
     }

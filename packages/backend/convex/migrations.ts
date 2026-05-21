@@ -677,7 +677,9 @@ export const backfillLoanAdminPermissions = internalMutation({
         await Promise.all(
           rolesToUpdate.map(async ({ role, name }) => {
             if (!role) {
-              console.warn(`No ${name} role found for organization ${org.name}`);
+              console.warn(
+                `No ${name} role found for organization ${org.name}`,
+              );
               return;
             }
 

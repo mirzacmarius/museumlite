@@ -1,6 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
@@ -231,9 +230,7 @@ export const archive = mutation({
 
     await Promise.all([
       requireFeatureAccess(ctx, site.organizationId, "public_portal"),
-      requirePermission(
-ctx, site.organizationId, "sites.delete"
-    ),
+      requirePermission(ctx, site.organizationId, "sites.delete"),
     ]);
 
     // TODO: Add validation for active locations once siteId is added to locations table
