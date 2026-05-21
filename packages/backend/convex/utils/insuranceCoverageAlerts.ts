@@ -144,7 +144,7 @@ export async function computeCoverageAlerts(
       q.eq("organizationId", organizationId),
     );
   for await (const claim of claims) {
-    if (claim.disputeStatus === "open") {
+    if (claim.isDisputed && claim.disputeStatus !== "resolved") {
       disputedClaimsCount += 1;
     }
   }

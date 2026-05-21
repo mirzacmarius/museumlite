@@ -346,7 +346,7 @@ export const listPolicies = insuranceReadQuery({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    const allPolicies: Array<Doc<"insurancePolicies">> = [];
+    let allPolicies: Array<Doc<"insurancePolicies">> = [];
 
     const policiesQuery = args.status
       ? ctx.db
@@ -2111,11 +2111,12 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
       );
 
     for await (const coverage of activeCoverages) {
-        if (!coverage.collectionId) continue;
+      const collectionId = coverage.collectionId;
+      if (!collectionId) continue;
 
       const [policy, collection] = await Promise.all([
         ctx.db.get(coverage.policyId),
-        ctx.db.get(coverage.collectionId),
+        ctx.db.get(collectionId),
       ] as const);
 
       // Check for linked appraisal
@@ -2130,7 +2131,7 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
               _id: coverage._id,
               policyId: coverage.policyId,
               policyNumber: policy?.policyNumber ?? "Unknown",
-              collectionId: coverage.collectionId,
+              collectionId,
               collectionTitle: collection?.title,
               coveredValue: coverage.coveredValue,
               appraisalId: coverage.appraisalId,
@@ -2147,9 +2148,7 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
       let latestAppraisalDate: number | undefined;
       const appraisals = ctx.db
         .query("appraisals")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", coverage.collectionId),
-        );
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId));
       for await (const appraisal of appraisals) {
         if (
           latestAppraisalDate === undefined ||
@@ -2164,7 +2163,7 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
           _id: coverage._id,
           policyId: coverage.policyId,
           policyNumber: policy?.policyNumber ?? "Unknown",
-          collectionId: coverage.collectionId,
+          collectionId,
           collectionTitle: collection?.title,
           coveredValue: coverage.coveredValue,
           issue: "No appraisal on file",
@@ -2178,7 +2177,7 @@ export const getCoveragesWithStaleAppraisals = insuranceReadQuery({
           _id: coverage._id,
           policyId: coverage.policyId,
           policyNumber: policy?.policyNumber ?? "Unknown",
-          collectionId: coverage.collectionId,
+          collectionId,
           collectionTitle: collection?.title,
           coveredValue: coverage.coveredValue,
           appraisalDate: latestAppraisalDate,

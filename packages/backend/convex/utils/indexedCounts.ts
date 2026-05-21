@@ -1,4 +1,4 @@
-import type { Id } from "../_generated/dataModel";
+import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 
 type CountCtx = Pick<QueryCtx, "db">;
@@ -6,7 +6,7 @@ type CountCtx = Pick<QueryCtx, "db">;
 /**
  * Count documents matching an indexed query without loading full documents.
  */
-export async function countIndexedQuery<TableName extends string>(
+export async function countIndexedQuery<TableName extends TableNames>(
   query: AsyncIterable<{ _id: Id<TableName> }>,
 ): Promise<number> {
   let count = 0;
@@ -75,7 +75,7 @@ export async function countAccessionsByStatus(
 export async function countDeaccessionsByStatus(
   ctx: CountCtx,
   organizationId: Id<"organizations">,
-  status: "pending" | "approved" | "rejected" | "cancelled",
+  status: "pending" | "approved" | "rejected",
 ) {
   return countIndexedQuery(
     ctx.db
