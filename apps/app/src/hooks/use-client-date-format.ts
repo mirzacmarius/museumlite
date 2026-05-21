@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   formatDate,
   formatDateFns,
@@ -108,8 +108,11 @@ export function useClientCurrentYear() {
 }
 
 export function useClientNow() {
-  return useClientSnapshot(
-    () => Date.now(),
-    () => undefined,
-  );
+  const [now, setNow] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
+
+  return now;
 }
