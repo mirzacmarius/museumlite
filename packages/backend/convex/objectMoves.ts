@@ -1025,15 +1025,20 @@ async function searchPublicTransferTargets(
     )
     .take(20);
 
-  return searchResults
-    .filter((organization) => organization._id !== sourceOrganizationId)
-    .map((organization) => ({
+  const destinations: Array<TransferDestinationSummary> = [];
+  for (const organization of searchResults) {
+    if (organization._id === sourceOrganizationId) {
+      continue;
+    }
+    destinations.push({
       _id: organization._id,
       name: organization.name,
       slug: organization.slug,
       accountNumber: organization.accountNumber,
-      source: "public" as const,
-    }));
+      source: "public",
+    });
+  }
+  return destinations;
 }
 
 export const searchTransferDestinations = query({

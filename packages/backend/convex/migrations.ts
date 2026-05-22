@@ -1033,7 +1033,12 @@ export const backfillOrganizationTransferFields = internalMutation({
     let accountNumbersAssigned = 0;
     let transferFlagsSynced = 0;
 
-    for (const organization of sortedOrganizations) {
+    for (let index = 0; index < sortedOrganizations.length; index++) {
+      const organization = sortedOrganizations[index];
+      if (!organization) {
+        continue;
+      }
+
       const hadAccountNumber = Boolean(organization.accountNumber);
       const hadTransferFlag =
         organization.allowsIncomingTransferRequests !== undefined;

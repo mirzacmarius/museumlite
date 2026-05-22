@@ -107,14 +107,14 @@ export function TransferDestinationPicker({
     }
   }
 
-  React.useEffect(() => {
-    if (
-      accountLookup?.status === "valid" &&
-      value !== accountLookup.organization._id
-    ) {
+  function applyValidAccountLookup() {
+    if (accountLookup?.status !== "valid") {
+      return;
+    }
+    if (value !== accountLookup.organization._id) {
       onValueChange(accountLookup.organization._id);
     }
-  }, [accountLookup, onValueChange, value]);
+  }
 
   const accountFeedback = (() => {
     if (!normalizedAccountNumber) return null;
@@ -226,8 +226,11 @@ export function TransferDestinationPicker({
           value={accountNumberInput}
           onChange={(event) => {
             setAccountNumberInput(event.target.value.toUpperCase());
-            if (!event.target.value.trim()) {
-              return;
+          }}
+          onBlur={applyValidAccountLookup}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              applyValidAccountLookup();
             }
           }}
           placeholder="ORG-00000"
