@@ -9,7 +9,8 @@
         ],
         "rules": [
           "react-doctor/async-parallel",
-          "react-doctor/server-sequential-independent-await"
+          "react-doctor/server-sequential-independent-await",
+          "react-doctor/async-await-in-loop"
         ]
       }
     ]
