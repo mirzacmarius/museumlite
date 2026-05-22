@@ -3,20 +3,13 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  type QueryCtx,
-  query,
-} from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
-  markCollectionDeaccessioned,
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
-import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
+import { hasFeatureAccess } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
 import {
   cancelLoanHandler,

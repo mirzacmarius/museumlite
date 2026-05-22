@@ -6,7 +6,6 @@ import {
   requireExhibitionReadPermission,
   requireExhibitionUpdatePermission,
 } from "./exhibitionContext";
-import { requirePermission } from "./permissions";
 
 export async function setInstallationChecklistHandler(
   ctx: MutationCtx,
