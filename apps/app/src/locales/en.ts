@@ -1749,6 +1749,21 @@ export default {
     emptyState: {
       noObjectsFound: "No objects found",
       addFirstObject: "Add Your First Object",
+      noObjectsInCollection: "No objects in this collection yet",
+      addObjectsToCollection: "Add objects to the collection",
+      addObjectsToCollectionDescription:
+        "Select existing catalog objects to include in this collection. Objects can belong to multiple collections.",
+    },
+    collectionGroup: {
+      addObjectsTitle: "Add objects to collection",
+      addObjectsDescription:
+        "Choose which objects belong in the “{name}” collection. Checked objects are included.",
+      searchAndSelectObjects: "Search and select objects…",
+      multiCollectionHint:
+        "Objects can belong to several collections at once. Uncheck to remove from this collection only.",
+      saveMembership: "Save selection",
+      addObjectsButton: "Add objects",
+      viewingCollection: "Collection: {name}",
     },
     table: {
       selectAllItems: "Select all items",
