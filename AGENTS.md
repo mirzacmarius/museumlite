@@ -221,3 +221,7 @@ Lint, typecheck, and backend tests all work without Convex authentication:
 - The `postinstall` script runs `node scripts/apply-patches.js` to patch `@xixixao/uploadstuff` for React 19 compatibility. This runs automatically on `bun install`.
 - `bun run typecheck` for `@v1/app` uses `--max-old-space-size=8192` — it can be memory-intensive.
 - Backend tests are in both `packages/backend/tests/` and `packages/backend/convex/` directories.
+
+## Linear handoff
+
+When finishing work delegated from a MUS Linear issue: post a review comment on the issue (PR link, test steps), set status to **In Review**, and do **not** mark **Done**. See `.cursor/rules/linear-delegation-handoff.mdc` and `docs/agents/issue-tracker.md`.
