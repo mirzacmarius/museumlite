@@ -7,45 +7,42 @@ import Link from "next/link";
 
 export function CTASection() {
   return (
-    <section className="py-32 px-4 relative bg-zinc-950 overflow-hidden">
-      {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-neon-blue/10 via-transparent to-transparent pointer-events-none" />
-
-      {/* Glowing Orb */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-neon-blue/20 rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto text-center relative z-10">
+    <section className="py-28 md:py-36 px-6 md:px-12 relative bg-zinc-950 overflow-hidden">
+      <div className="max-w-[1400px] mx-auto relative z-10">
         <m.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-12 md:p-20"
         >
-          <h2 className="text-5xl md:text-7xl font-semibold mb-8 text-white tracking-tight">
-            Ready to step into the <br />
-            <span className="text-neon-blue">future?</span>
-          </h2>
+          <div className="max-w-2xl">
+            <h2 className="text-3xl md:text-5xl font-semibold tracking-tighter text-white mb-6">
+              Start managing your collection today
+            </h2>
 
-          <p className="text-xl text-zinc-400 mb-12 max-w-2xl mx-auto">
-            Join the revolution in collection management. Start your free trial
-            today.
-          </p>
+            <p className="text-zinc-400 text-base md:text-lg leading-relaxed mb-10 max-w-[50ch]">
+              Free for small collections. No credit card required. Set up in
+              under two minutes.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <Link href="https://app.museumlite.com/register">
-              <Button className="h-14 px-10 rounded-full bg-white text-black hover:bg-zinc-200 text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                Get Started Now
-                <ArrowRight className="ml-2 size-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <Link href="https://app.museumlite.com/register">
+                <Button className="h-12 px-8 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 text-sm font-semibold transition-all active:scale-[0.98] group">
+                  Get started free
+                  <ArrowRight className="ml-2 size-4 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </Link>
 
-            <Link href="#pricing">
-              <Button
-                variant="outline"
-                className="h-14 px-10 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm"
-              >
-                View Pricing
-              </Button>
-            </Link>
+              <Link href="#pricing">
+                <Button
+                  variant="ghost"
+                  className="h-12 px-8 rounded-full text-zinc-400 hover:text-white text-sm font-medium transition-colors"
+                >
+                  Compare plans
+                </Button>
+              </Link>
+            </div>
           </div>
         </m.div>
       </div>

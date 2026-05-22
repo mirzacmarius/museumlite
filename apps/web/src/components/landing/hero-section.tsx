@@ -2,183 +2,197 @@
 
 import { Button } from "@v1/ui/button";
 import { m } from "framer-motion";
-import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { seededRandom } from "./seeded-rng";
+
+function DashboardMockup() {
+  return (
+    <div className="relative w-full max-w-lg mx-auto lg:mx-0">
+      <div className="rounded-2xl bg-zinc-900/80 border border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-sm">
+        <div className="h-10 border-b border-white/10 flex items-center px-4 gap-2">
+          <div className="size-2.5 rounded-full bg-zinc-700" />
+          <div className="size-2.5 rounded-full bg-zinc-700" />
+          <div className="size-2.5 rounded-full bg-zinc-700" />
+          <div className="ml-3 h-5 w-48 rounded bg-white/5" />
+        </div>
+
+        <div className="p-5 grid grid-cols-12 gap-4">
+          <div className="col-span-3 space-y-3">
+            <div className="h-3 w-full rounded bg-white/10" />
+            <div className="h-3 w-3/4 rounded bg-white/5" />
+            <div className="h-3 w-full rounded bg-accent/20" />
+            <div className="h-3 w-3/4 rounded bg-white/5" />
+            <div className="h-3 w-full rounded bg-white/5" />
+          </div>
+
+          <div className="col-span-9 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="h-4 w-32 rounded bg-white/10" />
+              <div className="flex gap-2">
+                <div className="h-7 w-16 rounded-md bg-accent/20 border border-accent/30" />
+                <div className="h-7 w-7 rounded-md bg-white/5" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg bg-white/5 border border-white/5 p-3">
+                <div className="h-2 w-12 rounded bg-white/10 mb-2" />
+                <div className="text-lg font-mono font-semibold text-white/80">
+                  2,847
+                </div>
+                <div className="mt-1 h-1.5 w-16 rounded-full bg-accent/30" />
+              </div>
+              <div className="rounded-lg bg-white/5 border border-white/5 p-3">
+                <div className="h-2 w-10 rounded bg-white/10 mb-2" />
+                <div className="text-lg font-mono font-semibold text-white/80">
+                  142
+                </div>
+                <div className="mt-1 h-1.5 w-10 rounded-full bg-white/10" />
+              </div>
+              <div className="rounded-lg bg-white/5 border border-white/5 p-3">
+                <div className="h-2 w-14 rounded bg-white/10 mb-2" />
+                <div className="text-lg font-mono font-semibold text-white/80">
+                  98.7%
+                </div>
+                <div className="mt-1 h-1.5 w-20 rounded-full bg-accent/30" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { id: "full", w: "w-full", accent: true },
+                { id: "mid", w: "w-[92%]", accent: false },
+                { id: "short", w: "w-[78%]", accent: false },
+              ].map((row) => (
+                <div
+                  key={row.id}
+                  className="flex items-center gap-3 rounded-lg bg-white/[0.03] border border-white/5 px-3 py-2.5"
+                >
+                  <div className="size-8 rounded bg-white/5 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className={`h-2 ${row.w} rounded bg-white/10`} />
+                    <div className="h-2 w-1/2 rounded bg-white/5" />
+                  </div>
+                  {row.accent && (
+                    <div className="size-2 rounded-full bg-accent shrink-0" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-accent/10 blur-[40px] rounded-full" />
+    </div>
+  );
+}
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-zinc-950 selection:bg-neon-purple/30">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+    <section className="relative min-h-[100dvh] w-full flex items-center overflow-hidden bg-zinc-950 pt-20">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
 
-      {/* Particles / Stars */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => {
-          const particleId = `particle-${i}`;
-          const baseSeed = i + 1;
-
-          const randomX = seededRandom(baseSeed) * 100;
-          const randomY = seededRandom(baseSeed + 1) * 100;
-          const randomAnimateY = seededRandom(baseSeed + 2) * -100;
-          const randomWidth = seededRandom(baseSeed + 3) * 4;
-          const randomHeight = seededRandom(baseSeed + 4) * 4;
-          const randomScale = seededRandom(baseSeed + 5) * 0.5 + 0.5;
-          const randomDuration = seededRandom(baseSeed + 6) * 10 + 10;
-
-          return (
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-6 md:px-12 py-16 md:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center">
+          <div className="max-w-xl">
             <m.div
-              key={particleId}
-              className="absolute bg-white rounded-full opacity-20"
-              initial={{
-                x: `${randomX.toFixed(5)}%`,
-                y: `${randomY.toFixed(5)}%`,
-                scale: Number(randomScale.toFixed(5)),
-              }}
-              animate={{
-                y: [null, `${randomAnimateY.toFixed(5)}%`],
-                opacity: [0.2, 0.5, 0.2],
-              }}
-              transition={{
-                duration: randomDuration,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "linear",
-              }}
-              style={{
-                width: `${randomWidth.toFixed(5)}px`,
-                height: `${randomHeight.toFixed(5)}px`,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      <div className="absolute top-0 left-0 size-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] size-[500px] bg-neon-blue/20 rounded-full blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-[20%] size-[600px] bg-neon-purple/20 rounded-full blur-[120px] animate-pulse-slow delay-1000" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 text-center">
-        {/* Badge */}
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 hover:bg-white/10 transition-colors cursor-pointer group"
-        >
-          <Sparkles className="size-4 text-neon-blue group-hover:animate-spin" />
-          <span className="text-sm font-medium text-zinc-300">
-            The Future of Collection Management
-          </span>
-        </m.div>
-
-        {/* Main Heading */}
-        <m.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-8xl font-semibold tracking-tighter mb-6 drop-shadow-2xl"
-        >
-          <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-            Museum
-          </span>
-          <span className="text-neon-blue">Lite</span>
-        </m.h1>
-
-        <m.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
-        >
-          Experience the next generation of museum software.
-          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-            {" "}
-            AI-powered
-          </span>
-          ,
-          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-            {" "}
-            lightning fast
-          </span>
-          , and
-          <span className="text-white font-medium drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-            {" "}
-            beautifully designed
-          </span>{" "}
-          for the modern curator.
-        </m.p>
-
-        {/* Buttons */}
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
-        >
-          <Link href="https://app.museumlite.com/register">
-            <Button className="relative overflow-hidden h-14 px-8 rounded-full bg-white text-black hover:bg-zinc-200 text-lg font-semibold transition-all hover:scale-105 group">
-              <span className="relative z-10 flex items-center">
-                Start Free Trial
-                <ArrowRight className="ml-2 size-5 group-hover:translate-x-1 transition-transform" />
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 mb-8"
+            >
+              <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-medium tracking-wide text-accent uppercase">
+                Now in Public Beta
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer group-hover:animate-none" />
-            </Button>
-          </Link>
+            </m.div>
 
-          <Button
-            variant="outline"
-            className="h-14 px-8 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 text-lg font-medium backdrop-blur-sm transition-all hover:scale-105"
-          >
-            <PlayCircle className="mr-2 size-5" />
-            Watch Demo
-          </Button>
-        </m.div>
+            <m.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.1,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-white"
+            >
+              Collection management,{" "}
+              <span className="text-accent">simplified</span>
+            </m.h1>
 
-        {/* Floating UI Elements (Decorative) */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-full max-w-6xl pointer-events-none z-[-1]">
-          {/* Left Card */}
+            <m.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.2,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="text-base md:text-lg text-zinc-400 leading-relaxed max-w-[50ch] mb-10"
+            >
+              The modern platform for museums, galleries, and private
+              collectors. Catalog objects, track locations, manage loans, and
+              publish your collection online.
+            </m.p>
+
+            <m.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.3,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="flex flex-col sm:flex-row items-start gap-4"
+            >
+              <Link href="https://app.museumlite.com/register">
+                <Button className="h-12 px-7 rounded-full bg-white text-zinc-950 hover:bg-zinc-200 text-sm font-semibold transition-all active:scale-[0.98] group">
+                  Start free trial
+                  <ArrowRight className="ml-2 size-4 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </Link>
+
+              <Link href="#features">
+                <Button
+                  variant="ghost"
+                  className="h-12 px-7 rounded-full text-zinc-400 hover:text-white text-sm font-medium transition-colors"
+                >
+                  See how it works
+                </Button>
+              </Link>
+            </m.div>
+
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="mt-12 flex items-center gap-6 text-xs text-zinc-500"
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="size-1 rounded-full bg-accent/60" />
+                No credit card required
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-1 rounded-full bg-accent/60" />
+                Free for up to 100 objects
+              </span>
+            </m.div>
+          </div>
+
           <m.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="absolute top-[20%] left-[5%] hidden md:block p-4 rounded-2xl bg-zinc-950/40 border border-white/10 backdrop-blur-xl rotate-[-6deg] w-64"
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="hidden lg:block"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="size-10 rounded-full bg-neon-blue/20 flex items-center justify-center">
-                <Sparkles className="size-5 text-neon-blue" />
-              </div>
-              <div>
-                <div className="h-2 w-20 bg-white/20 rounded mb-1" />
-                <div className="h-2 w-12 bg-white/10 rounded" />
-              </div>
-            </div>
-            <div className="h-20 bg-white/5 rounded-lg border border-white/5" />
-          </m.div>
-
-          {/* Right Card */}
-          <m.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.7 }}
-            className="absolute bottom-[30%] right-[5%] hidden md:block p-4 rounded-2xl bg-zinc-950/40 border border-white/10 backdrop-blur-xl rotate-[6deg] w-64"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-2 w-24 bg-white/20 rounded" />
-              <div className="size-2 rounded-full bg-neon-green animate-pulse" />
-            </div>
-            <div className="space-y-2">
-              <div className="h-2 w-full bg-white/5 rounded" />
-              <div className="h-2 w-[80%] bg-white/5 rounded" />
-              <div className="h-2 w-[60%] bg-white/5 rounded" />
-            </div>
+            <DashboardMockup />
           </m.div>
         </div>
       </div>
 
-      {/* Bottom Fade */}
-      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none" />
     </section>
   );
 }

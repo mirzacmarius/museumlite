@@ -8,90 +8,107 @@ import {
   MapPinned,
   Search,
 } from "lucide-react";
-import { SpotlightCard } from "../spotlight-card";
 
 const features = [
   {
     icon: Archive,
     title: "Object Cataloging",
     description:
-      "Comprehensive cataloging with unlimited media attachments and detailed metadata.",
-    className: "md:col-span-2",
+      "Comprehensive cataloging with unlimited media attachments, custom fields, and detailed provenance tracking.",
+    area: "span-2",
   },
   {
     icon: Search,
     title: "Smart Search",
-    description: "Find anything instantly with AI-powered semantic search.",
-    className: "md:col-span-1",
+    description:
+      "Find anything instantly across your entire collection with full-text and faceted search.",
+    area: "span-1",
   },
   {
     icon: MapPinned,
     title: "Location Tracking",
-    description: "Real-time object location and complete movement history.",
-    className: "md:col-span-1",
+    description:
+      "Know where every object is at all times. Track movements, storage, and exhibition history.",
+    area: "span-1",
   },
   {
     icon: Globe,
     title: "Public Portal",
-    description: "Publish your collection online with a single click.",
-    className: "md:col-span-2",
+    description:
+      "Share your collection with the world through a customizable public-facing portal, published in one click.",
+    area: "span-2",
   },
   {
     icon: ImageIcon,
-    title: "Digital Assets",
-    description: "High-res image management with auto-watermarking.",
-    className: "md:col-span-3",
+    title: "Digital Asset Management",
+    description:
+      "High-resolution image management with automatic thumbnailing, watermarking, and metadata extraction. Attach unlimited files to any record.",
+    area: "span-full",
   },
 ];
 
 export function FeaturesGrid() {
   return (
-    <section className="py-32 px-4 relative bg-zinc-950">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-20">
-          <m.h2
-            initial={{ opacity: 0, y: 20 }}
+    <section
+      id="features"
+      className="py-28 md:py-36 px-6 md:px-12 relative bg-zinc-950"
+    >
+      <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-2xl mb-16 md:mb-20">
+          <m.p
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-6xl font-semibold mb-6 text-white"
+            className="text-accent text-sm font-medium tracking-wide uppercase mb-4"
           >
-            Powering the Future
+            Capabilities
+          </m.p>
+          <m.h2
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.05 }}
+            className="text-3xl md:text-5xl font-semibold tracking-tighter text-white mb-5"
+          >
+            Everything your collection needs
           </m.h2>
           <m.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-zinc-400 text-lg max-w-2xl mx-auto"
+            className="text-zinc-400 text-base md:text-lg leading-relaxed max-w-[50ch]"
           >
-            Advanced tools designed for the next generation of museums and
-            galleries.
+            Purpose-built tools for managing physical and digital collections at
+            any scale.
           </m.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden border border-white/[0.06]">
           {features.map((feature, i) => (
             <m.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={feature.className}
+              transition={{ delay: i * 0.07, ease: [0.16, 1, 0.3, 1] }}
+              className={`bg-zinc-950 p-8 md:p-10 group transition-colors hover:bg-zinc-900/50 ${
+                feature.area === "span-2"
+                  ? "md:col-span-2"
+                  : feature.area === "span-full"
+                    ? "md:col-span-3"
+                    : "md:col-span-1"
+              }`}
             >
-              <SpotlightCard className="h-full p-8 hover:bg-white/10 transition-colors">
-                <div className="relative z-10">
-                  <div className="size-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="size-6 text-neon-blue" />
-                  </div>
-                  <h3 className="text-2xl font-semibold text-white mb-3">
-                    {feature.title}
-                  </h3>
-                  <p className="text-zinc-400 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              </SpotlightCard>
+              <div className="size-10 rounded-xl bg-white/[0.06] border border-white/[0.06] flex items-center justify-center mb-6 group-hover:border-accent/30 transition-colors">
+                <feature.icon className="size-5 text-zinc-400 group-hover:text-accent transition-colors" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2 tracking-tight">
+                {feature.title}
+              </h3>
+              <p className="text-zinc-500 text-sm leading-relaxed max-w-[45ch]">
+                {feature.description}
+              </p>
             </m.div>
           ))}
         </div>
