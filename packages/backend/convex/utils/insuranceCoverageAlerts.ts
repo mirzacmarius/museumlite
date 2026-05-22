@@ -5,7 +5,6 @@ import { computeInsuranceStats } from "./insuranceStats";
 
 type AlertsCtx = Pick<QueryCtx, "db">;
 
-const OPEN_CLAIM_STATUSES = ["draft", "submitted", "under_review"] as const;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type CoverageAlertsResult = {

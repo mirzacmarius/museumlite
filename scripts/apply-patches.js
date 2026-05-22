@@ -9,7 +9,7 @@ const nodeModulesDir = path.join(__dirname, "..", "node_modules");
 function applyPatch(patchFile) {
   const patchContent = fs.readFileSync(patchFile, "utf-8");
   const patchName = path.basename(patchFile, ".patch");
-  const [packageName, version] = patchName.split("+");
+  const [packageName] = patchName.split("+");
 
   // Extract the file path from the patch
   const fileMatch = patchContent.match(/^--- a\/(.+)$/m);

@@ -21,11 +21,7 @@ import {
   restoreCollectionHandler,
   softDeleteCollectionHandler,
 } from "./utils/collectionDisposition";
-import {
-  applyCollectionDisposition,
-  markCollectionActive,
-  markCollectionDeaccessioned,
-} from "./utils/collectionLifecycle";
+import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import {
   getLocationPathStrings,
   isImageMedia,
@@ -613,13 +609,15 @@ async function deleteCollectionDependents(
         ),
       );
       await Promise.all(
-        conditionReportsByLoanItem.flatMap(({ loanItemId, conditionReports }) => [
-          ...Array.from(conditionReports).flatMap((report) => [
-            deleteStorageIds(ctx, report.photos ?? []),
-            ctx.db.delete(report._id),
-          ]),
-          ctx.db.delete(loanItemId),
-        ]),
+        conditionReportsByLoanItem.flatMap(
+          ({ loanItemId, conditionReports }) => [
+            ...Array.from(conditionReports).flatMap((report) => [
+              deleteStorageIds(ctx, report.photos ?? []),
+              ctx.db.delete(report._id),
+            ]),
+            ctx.db.delete(loanItemId),
+          ],
+        ),
       );
     })(),
     (async () => {
