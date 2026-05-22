@@ -200,9 +200,9 @@ export const deleteTask = mutation({
         .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
         .collect(),
     ] as const);
-    await Promise.all(comments.map((comment) => ctx.db.delete(comment._id)));
     await Promise.all([
-      Promise.all(checklists.map((item) => ctx.db.delete(item._id))),
+      ...comments.map((comment) => ctx.db.delete(comment._id)),
+      ...checklists.map((item) => ctx.db.delete(item._id)),
       ctx.db.delete(args.taskId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: task.organizationId,

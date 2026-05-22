@@ -66,10 +66,9 @@ export async function requestLoanExtensionHandler(
     getUsersToNotifyForWorkflowStep(ctx, loan.organizationId, "loan", 1),
   ] as const);
 
-  // Create notification for approvers
-  await Promise.all(
-    Array.from(approvers).map(async (approverId) => {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
+  await Promise.all([
+    ...Array.from(approvers).map((approverId) =>
+      ctx.runMutation(internal.audit.createNotificationInternal, {
         organizationId: loan.organizationId,
         userId: approverId,
         type: "loan_extension_requested",
@@ -77,23 +76,21 @@ export async function requestLoanExtensionHandler(
         message: `Extension requested for loan ${loan.loanNumber}`,
         relatedEntityType: "loan",
         relatedEntityId: args.loanId,
-      });
+      }),
+    ),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "extension_requested",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: {
+        originalEndDate: loan.endDate,
+        newRequestedEndDate: args.newEndDate,
+        reason: args.reason,
+      },
     }),
-  );
-
-  // Log audit action
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: loan.organizationId,
-    userId,
-    action: "extension_requested",
-    entityType: "loan",
-    entityId: args.loanId,
-    changes: {
-      originalEndDate: loan.endDate,
-      newRequestedEndDate: args.newEndDate,
-      reason: args.reason,
-    },
-  });
+  ]);
 
   return requestId;
 }

@@ -139,17 +139,15 @@ export const updateRole = mutation({
           .collect(),
       ] as const);
 
-      await Promise.all(existingPermissions.map((rp) => ctx.db.delete(rp._id)));
-
-      // Add new permissions
-      await Promise.all(
-        args.permissionIds.map((permissionId) =>
+      await Promise.all([
+        ...existingPermissions.map((rp) => ctx.db.delete(rp._id)),
+        ...args.permissionIds.map((permissionId) =>
           ctx.db.insert("rolePermissions", {
             roleId: args.roleId,
             permissionId,
           }),
         ),
-      );
+      ]);
     } else if (Object.keys(updates).length > 0) {
       await ctx.db.patch(args.roleId, updates);
     }

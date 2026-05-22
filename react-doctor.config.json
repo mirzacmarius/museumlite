@@ -1,0 +1,17 @@
+{
+  "ignore": {
+    "overrides": [
+      {
+        "files": [
+          "packages/backend/convex/**",
+          "packages/backend/tests/**",
+          "packages/backend/convex/**/*.test.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      }
+    ]
+  }
+}

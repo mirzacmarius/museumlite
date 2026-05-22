@@ -1662,38 +1662,40 @@ export const approve = mutation({
         });
       }
     } else {
-      await Promise.all([
-        ctx.db.patch(args.accessionId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-        }),
-        syncAccessionSearchDocument(ctx, args.accessionId),
-        ctx.runMutation(internal.workflows.recordWorkflowHistory, {
-          organizationId: accession.organizationId,
-          workflowType: "accession",
-          entityId: args.accessionId,
-          fromStep: 0,
-          toStep: -1,
-          action: "completed",
-          performedBy: userId,
-          comment: args.comment,
-        }),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: accession.organizationId,
-          userId,
-          action: "approved",
-          entityType: "accession",
-          entityId: args.accessionId,
-          changes: { status: "approved" },
-        }),
-      ]);
-      const userOrgs = await ctx.db
-        .query("userOrganizations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", accession.organizationId),
-        )
-        .collect();
+      const [, userOrgs] = await Promise.all([
+        Promise.all([
+          ctx.db.patch(args.accessionId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+          }),
+          syncAccessionSearchDocument(ctx, args.accessionId),
+          ctx.runMutation(internal.workflows.recordWorkflowHistory, {
+            organizationId: accession.organizationId,
+            workflowType: "accession",
+            entityId: args.accessionId,
+            fromStep: 0,
+            toStep: -1,
+            action: "completed",
+            performedBy: userId,
+            comment: args.comment,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: accession.organizationId,
+            userId,
+            action: "approved",
+            entityType: "accession",
+            entityId: args.accessionId,
+            changes: { status: "approved" },
+          }),
+        ]),
+        ctx.db
+          .query("userOrganizations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", accession.organizationId),
+          )
+          .collect(),
+      ] as const);
 
       await Promise.all(
         Array.from(userOrgs).map(async (userOrg) => {

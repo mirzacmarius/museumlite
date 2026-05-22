@@ -551,26 +551,28 @@ export const approve = mutation({
         if (nextStep === undefined) {
           throw new Error("Next workflow step is not configured");
         }
-        await Promise.all([
-          ctx.db.patch(args.treatmentId, {
-            workflowStep: nextStep,
-            workflowHistory: history,
-          }),
-          ctx.runMutation(internal.audit.logAction, {
-            organizationId: treatment.organizationId,
-            userId,
-            action: "step_approved",
-            entityType: "conservationTreatment",
-            entityId: args.treatmentId,
-            changes: { step: currentStep, nextStep },
-          }),
-        ]);
-        const usersToNotify = await getUsersToNotifyForWorkflowStep(
-          ctx,
-          treatment.organizationId,
-          "conservation",
-          nextStep,
-        );
+        const [, usersToNotify] = await Promise.all([
+          Promise.all([
+            ctx.db.patch(args.treatmentId, {
+              workflowStep: nextStep,
+              workflowHistory: history,
+            }),
+            ctx.runMutation(internal.audit.logAction, {
+              organizationId: treatment.organizationId,
+              userId,
+              action: "step_approved",
+              entityType: "conservationTreatment",
+              entityId: args.treatmentId,
+              changes: { step: currentStep, nextStep },
+            }),
+          ]),
+          getUsersToNotifyForWorkflowStep(
+            ctx,
+            treatment.organizationId,
+            "conservation",
+            nextStep,
+          ),
+        ] as const);
 
         await Promise.all(
           Array.from(usersToNotify).map(async (approverId) => {

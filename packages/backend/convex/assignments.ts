@@ -249,8 +249,10 @@ export const listMyAssignments = query({
       }
 
       if (check.type === "accession") {
-        const slaInfo = calculateSlaDue(check.entity.dateReceived, "accession");
-        const age = Date.now() - check.entity.dateReceived;
+        const entity = check.entity;
+        const dateReceived = entity.dateReceived;
+        const slaInfo = calculateSlaDue(dateReceived, "accession");
+        const age = Date.now() - dateReceived;
         const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
           ? "high"
           : age > 7 * 24 * 60 * 60 * 1000
@@ -260,13 +262,13 @@ export const listMyAssignments = query({
               : "low";
 
         pendingApprovals.push({
-          _id: check.entity._id,
+          _id: entity._id,
           type: "accession",
-          title: `Accession ${check.entity.accessionNumber}`,
-          subtitle: check.entity.source,
+          title: `Accession ${entity.accessionNumber}`,
+          subtitle: entity.source,
           status: "pending",
           workflowStep: check.currentStep,
-          createdAt: check.entity.dateReceived,
+          createdAt: dateReceived,
           urgency,
           ...slaInfo,
         });
@@ -274,11 +276,10 @@ export const listMyAssignments = query({
       }
 
       if (check.type === "deaccession") {
-        const slaInfo = calculateSlaDue(
-          check.entity.dateDeaccessioned,
-          "deaccession",
-        );
-        const age = Date.now() - check.entity.dateDeaccessioned;
+        const entity = check.entity;
+        const dateDeaccessioned = entity.dateDeaccessioned;
+        const slaInfo = calculateSlaDue(dateDeaccessioned, "deaccession");
+        const age = Date.now() - dateDeaccessioned;
         const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
           ? "high"
           : age > 7 * 24 * 60 * 60 * 1000
@@ -288,13 +289,13 @@ export const listMyAssignments = query({
               : "low";
 
         pendingApprovals.push({
-          _id: check.entity._id,
+          _id: entity._id,
           type: "deaccession",
-          title: `Deaccession ${check.entity.deaccessionNumber}`,
-          subtitle: check.entity.reason,
+          title: `Deaccession ${entity.deaccessionNumber}`,
+          subtitle: entity.reason,
           status: "pending",
           workflowStep: check.currentStep,
-          createdAt: check.entity.dateDeaccessioned,
+          createdAt: dateDeaccessioned,
           urgency,
           ...slaInfo,
         });
@@ -302,8 +303,10 @@ export const listMyAssignments = query({
       }
 
       if (check.type === "loan") {
-        const slaInfo = calculateSlaDue(check.entity.startDate, "loan");
-        const age = Date.now() - check.entity.startDate;
+        const entity = check.entity;
+        const startDate = entity.startDate;
+        const slaInfo = calculateSlaDue(startDate, "loan");
+        const age = Date.now() - startDate;
         const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
           ? "high"
           : age > 7 * 24 * 60 * 60 * 1000
@@ -313,13 +316,13 @@ export const listMyAssignments = query({
               : "low";
 
         pendingApprovals.push({
-          _id: check.entity._id,
+          _id: entity._id,
           type: "loan",
-          title: `Loan ${check.entity.loanNumber}`,
-          subtitle: `${check.entity.type === "incoming" ? "From" : "To"} ${check.entity.lenderBorrowerName}`,
+          title: `Loan ${entity.loanNumber}`,
+          subtitle: `${entity.type === "incoming" ? "From" : "To"} ${entity.lenderBorrowerName}`,
           status: "pending",
           workflowStep: check.currentStep,
-          createdAt: check.entity.startDate,
+          createdAt: startDate,
           urgency,
           ...slaInfo,
         });
@@ -327,8 +330,10 @@ export const listMyAssignments = query({
       }
 
       if (check.type === "exhibition") {
-        const slaInfo = calculateSlaDue(check.entity.startDate, "exhibition");
-        const age = Date.now() - check.entity.startDate;
+        const entity = check.entity;
+        const startDate = entity.startDate;
+        const slaInfo = calculateSlaDue(startDate, "exhibition");
+        const age = Date.now() - startDate;
         const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
           ? "high"
           : age > 7 * 24 * 60 * 60 * 1000
@@ -338,21 +343,23 @@ export const listMyAssignments = query({
               : "low";
 
         pendingApprovals.push({
-          _id: check.entity._id,
+          _id: entity._id,
           type: "exhibition",
-          title: check.entity.title,
-          subtitle: check.entity.location,
+          title: entity.title,
+          subtitle: entity.location,
           status: "proposed",
           workflowStep: check.currentStep,
-          createdAt: check.entity.startDate,
+          createdAt: startDate,
           urgency,
           ...slaInfo,
         });
         continue;
       }
 
-      const slaInfo = calculateSlaDue(check.entity.performedAt, "conservation");
-      const age = Date.now() - check.entity.performedAt;
+      const entity = check.entity;
+      const performedAt = entity.performedAt;
+      const slaInfo = calculateSlaDue(performedAt, "conservation");
+      const age = Date.now() - performedAt;
       const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
         ? "high"
         : age > 7 * 24 * 60 * 60 * 1000
@@ -362,13 +369,13 @@ export const listMyAssignments = query({
             : "low";
 
       pendingApprovals.push({
-        _id: check.entity._id,
+        _id: entity._id,
         type: "conservation",
-        title: check.entity.title,
-        subtitle: check.entity.treatmentType,
+        title: entity.title,
+        subtitle: entity.treatmentType,
         status: "proposed",
         workflowStep: check.currentStep,
-        createdAt: check.entity.performedAt,
+        createdAt: performedAt,
         urgency,
         ...slaInfo,
       });

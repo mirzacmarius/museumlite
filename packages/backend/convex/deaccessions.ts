@@ -1220,28 +1220,30 @@ export const approve = mutation({
         });
       }
     } else {
-      await Promise.all([
-        ctx.db.patch(args.deaccessionId, {
-          status: "approved",
-          approvedBy: userId,
-          approvedAt: Date.now(),
-        }),
-        syncDeaccessionSearchDocument(ctx, args.deaccessionId),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: deaccession.organizationId,
-          userId,
-          action: "approved",
-          entityType: "deaccession",
-          entityId: args.deaccessionId,
-          changes: { status: "approved" },
-        }),
-      ]);
-      const userOrgs = await ctx.db
-        .query("userOrganizations")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", deaccession.organizationId),
-        )
-        .collect();
+      const [, userOrgs] = await Promise.all([
+        Promise.all([
+          ctx.db.patch(args.deaccessionId, {
+            status: "approved",
+            approvedBy: userId,
+            approvedAt: Date.now(),
+          }),
+          syncDeaccessionSearchDocument(ctx, args.deaccessionId),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: deaccession.organizationId,
+            userId,
+            action: "approved",
+            entityType: "deaccession",
+            entityId: args.deaccessionId,
+            changes: { status: "approved" },
+          }),
+        ]),
+        ctx.db
+          .query("userOrganizations")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", deaccession.organizationId),
+          )
+          .collect(),
+      ] as const);
 
       await Promise.all(
         Array.from(userOrgs).map(async (userOrg) => {
