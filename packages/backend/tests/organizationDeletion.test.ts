@@ -92,6 +92,16 @@ describe("organizationDeletion", () => {
 
     const organization = await t.run(async (ctx) => ctx.db.get(organizationId));
     expect(organization?.isActive).toBe(false);
+
+    const auditEntry = await t.run(async (ctx) =>
+      ctx.db
+        .query("auditLog")
+        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .order("desc")
+        .first(),
+    );
+    expect(auditEntry?.action).toBe("scheduled_organization_deletion");
+    expect(auditEntry?.userId).toBe(ownerUserId);
   });
 
   test("owner can cancel deletion and reactivate organization", async () => {

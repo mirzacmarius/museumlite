@@ -18,6 +18,37 @@ import {
 } from "./utils/organizationDeletionTimings";
 import { requirePermission } from "./utils/permissions";
 
+interface OrganizationDeletionAuditChanges {
+  name?: string;
+  status?: string;
+  graceEndsAt?: number;
+  scheduledPurgeAt?: number;
+  newOwnerUserId?: string;
+  previousOwnerUserId?: string;
+  preservedSubscriptionTier?: string;
+  cancelledVia?: string;
+}
+
+async function logOrganizationDeletionAction(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    userId: Id<"users">;
+    action: string;
+    entityId: string;
+    changes?: OrganizationDeletionAuditChanges;
+  },
+) {
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: args.organizationId,
+    userId: args.userId,
+    action: args.action,
+    entityType: "organization",
+    entityId: args.entityId,
+    changes: args.changes,
+  });
+}
+
 export const organizationDeletionStatusValidator = v.union(
   v.literal("grace_period"),
   v.literal("awaiting_final_notice"),
@@ -363,6 +394,18 @@ export const requestDeletion = mutation({
       throw new ConvexError("Failed to create deletion request");
     }
 
+    await logOrganizationDeletionAction(ctx, {
+      organizationId: args.organizationId,
+      userId,
+      action: "scheduled_organization_deletion",
+      entityId: deletion._id,
+      changes: {
+        name: organization.name,
+        status: deletion.status,
+        graceEndsAt: deletion.graceEndsAt,
+      },
+    });
+
     return buildDeletionSummary(deletion);
   },
 });
@@ -414,6 +457,22 @@ export const cancelDeletion = mutation({
     }
 
     await cancelDeletionRecord(ctx, deletion);
+
+    const organization = await ctx.db.get(deletion.organizationId);
+    const actorUserId =
+      (await getAuthUserId(ctx)) ?? deletion.requestedByUserId;
+
+    await logOrganizationDeletionAction(ctx, {
+      organizationId: deletion.organizationId,
+      userId: actorUserId,
+      action: "cancelled_organization_deletion",
+      entityId: deletion._id,
+      changes: {
+        name: organization?.name,
+        status: "cancelled",
+        cancelledVia: args.token ? "email_link" : "settings",
+      },
+    });
 
     return {
       organizationId: deletion.organizationId,
@@ -472,6 +531,20 @@ export const transferOwnership = mutation({
       isActive: true,
     });
 
+    await logOrganizationDeletionAction(ctx, {
+      organizationId: args.organizationId,
+      userId,
+      action: "transferred_organization_ownership",
+      entityId: args.organizationId,
+      changes: {
+        name: organization.name,
+        previousOwnerUserId: userId,
+        newOwnerUserId: args.newOwnerUserId,
+        preservedSubscriptionTier: preservedTier,
+        status: activeDeletion ? "deletion_cancelled" : undefined,
+      },
+    });
+
     return null;
   },
 });
@@ -499,6 +572,17 @@ export const acknowledgeTransferredPlan = mutation({
     await ctx.db.patch(args.organizationId, {
       requiresPlanSelection: false,
       preservedSubscriptionTier: undefined,
+    });
+
+    await logOrganizationDeletionAction(ctx, {
+      organizationId: args.organizationId,
+      userId,
+      action: "confirmed_organization_plan",
+      entityId: args.organizationId,
+      changes: {
+        name: organization.name,
+        preservedSubscriptionTier: organization.subscriptionTier,
+      },
     });
 
     return null;
@@ -625,6 +709,18 @@ export const processOrganizationDeletionsInternal = internalMutation({
             scheduledPurgeAt,
           });
         }
+
+        await logOrganizationDeletionAction(ctx, {
+          organizationId: deletion.organizationId,
+          userId: deletion.requestedByUserId,
+          action: "sent_organization_deletion_final_notice",
+          entityId: deletion._id,
+          changes: {
+            name: organization.name,
+            status: "pending_purge",
+            scheduledPurgeAt,
+          },
+        });
       }
 
       advanced += 1;
@@ -640,6 +736,20 @@ export const processOrganizationDeletionsInternal = internalMutation({
     for (const deletion of readyForPurge) {
       if (!deletion.scheduledPurgeAt || deletion.scheduledPurgeAt > now) {
         continue;
+      }
+
+      const organizationBeforePurge = await ctx.db.get(deletion.organizationId);
+      if (organizationBeforePurge) {
+        await logOrganizationDeletionAction(ctx, {
+          organizationId: deletion.organizationId,
+          userId: deletion.requestedByUserId,
+          action: "completed_organization_deletion",
+          entityId: deletion._id,
+          changes: {
+            name: organizationBeforePurge.name,
+            scheduledPurgeAt: deletion.scheduledPurgeAt,
+          },
+        });
       }
 
       await ctx.runMutation(
