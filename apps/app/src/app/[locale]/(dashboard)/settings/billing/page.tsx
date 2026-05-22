@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Switch } from "@v1/ui/switch";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 import { useOrganization } from "@/components/organization-provider";
@@ -388,6 +388,13 @@ function BillingSettingsContent() {
   const createOrganizationCustomerPortalUrl = useAction(
     api.subscriptions.createOrganizationCustomerPortalUrl,
   );
+  const organizationDetails = useQuery(
+    api.organizations.get,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
+  );
+  const acknowledgeTransferredPlan = useMutation(
+    api.organizationDeletion.acknowledgeTransferredPlan,
+  );
 
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("month");
@@ -411,13 +418,22 @@ function BillingSettingsContent() {
     }
 
     syncedCheckoutRef.current = true;
-    void syncOrganizationSubscription({
-      organizationId: currentOrganizationId,
-    });
+    void (async () => {
+      await syncOrganizationSubscription({
+        organizationId: currentOrganizationId,
+      });
+      if (organizationDetails?.requiresPlanSelection) {
+        await acknowledgeTransferredPlan({
+          organizationId: currentOrganizationId,
+        });
+      }
+    })();
   }, [
+    acknowledgeTransferredPlan,
     canManageBilling,
     currentOrganizationId,
     getSearchParam,
+    organizationDetails?.requiresPlanSelection,
     syncOrganizationSubscription,
   ]);
 
@@ -470,8 +486,25 @@ function BillingSettingsContent() {
           organizationId: currentOrganizationId,
           productId,
         });
+        if (organizationDetails?.requiresPlanSelection) {
+          await acknowledgeTransferredPlan({
+            organizationId: currentOrganizationId,
+          });
+        }
       } finally {
         setPendingProductId(null);
+      }
+    });
+  };
+
+  const handleKeepDefaultPlan = () => {
+    startTransition(async () => {
+      try {
+        await acknowledgeTransferredPlan({
+          organizationId: currentOrganizationId,
+        });
+      } catch {
+        // Owner can retry from billing page.
       }
     });
   };
@@ -495,10 +528,35 @@ function BillingSettingsContent() {
     organizationSubscription?.currentPeriodEnd !== undefined
       ? formatDate(new Date(organizationSubscription.currentPeriodEnd), locale)
       : null;
+  const defaultTransferredTier =
+    organizationDetails?.preservedSubscriptionTier ??
+    organizationDetails?.subscriptionTier ??
+    "free";
 
   return (
     <div className="flex size-full flex-col gap-6">
       <BillingOverview />
+
+      {organizationDetails?.requiresPlanSelection ? (
+        <div className="rounded-lg border border-primary/40 bg-primary/5 p-4">
+          <p className="text-sm text-muted-foreground">
+            {t("planSelectionRequired", { tier: defaultTransferredTier })}
+          </p>
+          <div className="mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={handleKeepDefaultPlan}
+            >
+              {isPending
+                ? t("confirmingPlan")
+                : t("keepDefaultPlan", { tier: defaultTransferredTier })}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <PlanUsageStats
         organizationId={currentOrganizationId}

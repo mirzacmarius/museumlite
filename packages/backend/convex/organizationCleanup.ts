@@ -56,6 +56,7 @@ type OrganizationFootprint = Infer<typeof organizationFootprintValidator>;
 type PurgeOrganizationResult = Infer<typeof purgeOrganizationResultValidator>;
 
 const organizationScopedTables = [
+  "organizationDeletions",
   "organizationUsageCounters",
   "userOrganizations",
   "roles",
