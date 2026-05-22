@@ -2,7 +2,7 @@ name: Check
 on:
   push:
     paths:
-      - '**'
+      - "**"
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -17,3 +17,5 @@ jobs:
         run: bun run lint
       - name: 🪐 Check TypeScript
         run: bun run typecheck
+      - name: 🧑‍💻 React Doctor
+        run: bun run react-doctor
