@@ -24,7 +24,7 @@ import {
 } from "@v1/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { Clock, Mail, Trash2, UserCog, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientDate } from "@/hooks/use-client-date-format";
