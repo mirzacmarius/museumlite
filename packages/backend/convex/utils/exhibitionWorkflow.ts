@@ -295,28 +295,31 @@ export async function activateExhibitionHandler(
     }
   }
 
-  await requireExhibitionUpdatePermission(ctx, exhibition.organizationId);
-
-  const exhibitionObjects = await ctx.db
-    .query("exhibitionObjects")
-    .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
-    .filter((q) => q.eq(q.field("status"), "pending"))
-    .collect();
+  const [, exhibitionObjects] = await Promise.all([
+    requireExhibitionUpdatePermission(ctx, exhibition.organizationId),
+    ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect(),
+  ] as const);
 
   await Promise.all([
     Promise.all(
-      Array.from(exhibitionObjects).map(async (obj) => {
+      Array.from(exhibitionObjects).map((obj) => {
         const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
-        await ctx.db.patch(obj._id, {
-          status: "installed",
-          installedAt: Date.now(),
-          installedBy: userId,
-        });
-        if (newLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: newLocationId,
-          });
-        }
+        return Promise.all([
+          ctx.db.patch(obj._id, {
+            status: "installed",
+            installedAt: Date.now(),
+            installedBy: userId,
+          }),
+          newLocationId
+            ? ctx.db.patch(obj.collectionId, {
+                currentLocationId: newLocationId,
+              })
+            : Promise.resolve(),
+        ]);
       }),
     ),
     ctx.db.patch(args.exhibitionId, {
@@ -378,12 +381,13 @@ export async function closeExhibitionHandler(
     }
   }
 
-  await requireExhibitionUpdatePermission(ctx, exhibition.organizationId);
-
-  const exhibitionObjects = await ctx.db
-    .query("exhibitionObjects")
-    .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
-    .collect();
+  const [, exhibitionObjects] = await Promise.all([
+    requireExhibitionUpdatePermission(ctx, exhibition.organizationId),
+    ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .collect(),
+  ] as const);
 
   const notReturnedObjects = exhibitionObjects.filter(
     (obj) => obj.status !== "returned",
@@ -419,26 +423,27 @@ export async function closeExhibitionHandler(
     );
   }
 
-  await ctx.db.patch(args.exhibitionId, {
-    status: "closed",
-    isCurrent: false,
-    endDate: Date.now(),
-    deinstallationCompletedAt: Date.now(),
-    closedAt: Date.now(),
-    closedBy: userId,
-  });
-
-  await ctx.runMutation(internal.audit.logAction, {
-    organizationId: exhibition.organizationId,
-    userId,
-    action: "closed",
-    entityType: "exhibition",
-    entityId: args.exhibitionId,
-    changes: {
+  await Promise.all([
+    ctx.db.patch(args.exhibitionId, {
       status: "closed",
-      objectsReturned: notReturnedObjects.length,
-    },
-  });
+      isCurrent: false,
+      endDate: Date.now(),
+      deinstallationCompletedAt: Date.now(),
+      closedAt: Date.now(),
+      closedBy: userId,
+    }),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "closed",
+      entityType: "exhibition",
+      entityId: args.exhibitionId,
+      changes: {
+        status: "closed",
+        objectsReturned: notReturnedObjects.length,
+      },
+    }),
+  ]);
 
   return null;
 }

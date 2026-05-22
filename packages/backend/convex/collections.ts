@@ -600,22 +600,26 @@ async function deleteCollectionDependents(
         .query("loanItems")
         .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
         .collect();
-      await Promise.all(
-        Array.from(loanItems).map(async (loanItem) => {
-          const conditionReports = await ctx.db
+      const conditionReportsByLoanItem = await Promise.all(
+        Array.from(loanItems).map((loanItem) =>
+          ctx.db
             .query("conditionReports")
             .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItem._id))
-            .collect();
-          await Promise.all(
-            Array.from(conditionReports).map(async (report) => {
-              await Promise.all([
-                deleteStorageIds(ctx, report.photos ?? []),
-                ctx.db.delete(report._id),
-              ]);
-            }),
-          );
-          await ctx.db.delete(loanItem._id);
-        }),
+            .collect()
+            .then((conditionReports) => ({
+              loanItemId: loanItem._id,
+              conditionReports,
+            })),
+        ),
+      );
+      await Promise.all(
+        conditionReportsByLoanItem.flatMap(({ loanItemId, conditionReports }) => [
+          ...Array.from(conditionReports).flatMap((report) => [
+            deleteStorageIds(ctx, report.photos ?? []),
+            ctx.db.delete(report._id),
+          ]),
+          ctx.db.delete(loanItemId),
+        ]),
       );
     })(),
     (async () => {

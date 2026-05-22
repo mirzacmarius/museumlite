@@ -282,16 +282,14 @@ export async function bulkInstallObjectsHandler(
   ctx: MutationCtx,
   args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const { userId, exhibition } = await loadExhibitionMutationContext(
-    ctx,
-    args.exhibitionId,
-  );
-
-  const pendingObjects = await ctx.db
-    .query("exhibitionObjects")
-    .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
-    .filter((q) => q.eq(q.field("status"), "pending"))
-    .collect();
+  const [{ userId, exhibition }, pendingObjects] = await Promise.all([
+    loadExhibitionMutationContext(ctx, args.exhibitionId),
+    ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect(),
+  ] as const);
 
   await Promise.all([
     ...pendingObjects.map((obj) => {
@@ -327,16 +325,14 @@ export async function bulkReturnObjectsHandler(
   ctx: MutationCtx,
   args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const { userId, exhibition } = await loadExhibitionMutationContext(
-    ctx,
-    args.exhibitionId,
-  );
-
-  const deinstalledObjects = await ctx.db
-    .query("exhibitionObjects")
-    .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
-    .filter((q) => q.eq(q.field("status"), "deinstalled"))
-    .collect();
+  const [{ userId, exhibition }, deinstalledObjects] = await Promise.all([
+    loadExhibitionMutationContext(ctx, args.exhibitionId),
+    ctx.db
+      .query("exhibitionObjects")
+      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .filter((q) => q.eq(q.field("status"), "deinstalled"))
+      .collect(),
+  ] as const);
 
   await Promise.all([
     ...deinstalledObjects.map((obj) =>

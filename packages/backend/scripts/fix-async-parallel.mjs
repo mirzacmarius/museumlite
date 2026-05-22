@@ -293,6 +293,48 @@ function fixRequirePermissionThenCollect(content) {
   );
 }
 
+function fixRequireModuleAndPermissionThenCollect(content) {
+  return content.replace(
+    /await requireModuleAndPermission\(([\s\S]*?)\);\s*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("([^"]+)"\)([\s\S]*?)\.collect\(\);/g,
+    (match, permArgs, varName, table, queryTail) => {
+      if (match.includes("const [,")) return match;
+      return `const [, ${varName}] = await Promise.all([
+      requireModuleAndPermission(${permArgs}),
+      ctx.db
+        .query("${table}")${queryTail}.collect(),
+    ] as const);`;
+    },
+  );
+}
+
+function fixRequireExhibitionUpdatePermissionThenCollect(content) {
+  return content.replace(
+    /await requireExhibitionUpdatePermission\(([^)]+)\);\s*\n\s*const (\w+) = await ctx\.db\s*\n\s*\.query\("exhibitionObjects"\)([\s\S]*?)\.collect\(\);/g,
+    (match, orgArg, varName, queryTail) => {
+      if (match.includes("const [,")) return match;
+      return `const [, ${varName}] = await Promise.all([
+    requireExhibitionUpdatePermission(${orgArg}),
+    ctx.db
+      .query("exhibitionObjects")${queryTail}.collect(),
+  ] as const);`;
+    },
+  );
+}
+
+function fixLoanReturnPatchAndAudit(content) {
+  return content.replace(
+    /await ctx\.db\.patch\(args\.loanId, \{\s*\n\s*status: "returned",\s*\n\s*\}\);\s*\n\s*const recipients = await logActionAndGetRecipients\(ctx, \{\s*\n\s*organizationId: loan\.organizationId,\s*\n\s*userId,\s*\n\s*action: "returned",/g,
+    `const [, recipients] = await Promise.all([
+      ctx.db.patch(args.loanId, {
+        status: "returned",
+      }),
+      logActionAndGetRecipients(ctx, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "returned",`,
+  );
+}
+
 function fixLoanCancelBulk(content) {
   return content.replace(
     /\/\/ Update loan status\s*\n\s*await ctx\.db\.patch\(loanId, \{\s*\n\s*status: "cancelled",\s*\n\s*\}\);\s*\n\s*\/\/ Update collection statuses back to active\s*\n\s*const loanItems = await ctx\.db\s*\n\s*\.query\("loanItems"\)\s*\n\s*\.withIndex\("by_loan", \(q\) => q\.eq\("loanId", loanId\)\)\s*\n\s*\.collect\(\);/g,
@@ -334,6 +376,9 @@ function apply(filePath) {
   content = fixPatchThenAuditStandalone(content);
   content = fixLoanCancelBulk(content);
   content = fixRequirePermissionThenCollect(content);
+  content = fixRequireModuleAndPermissionThenCollect(content);
+  content = fixRequireExhibitionUpdatePermissionThenCollect(content);
+  content = fixLoanReturnPatchAndAudit(content);
   if (content !== original) {
     fs.writeFileSync(filePath, content);
     return true;

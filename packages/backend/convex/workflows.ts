@@ -163,19 +163,20 @@ export const upsert = mutation({
       );
     }
 
-    await requirePermission(
-      ctx,
-      args.organizationId,
-      "organization.manage_settings",
-    );
-
-    const existing = await ctx.db
-      .query("workflowConfigs")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("workflowType"), args.workflowType))
-      .unique();
+    const [, existing] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      ctx.db
+        .query("workflowConfigs")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .filter((q) => q.eq(q.field("workflowType"), args.workflowType))
+        .unique(),
+    ] as const);
 
     if (existing) {
       await Promise.all([

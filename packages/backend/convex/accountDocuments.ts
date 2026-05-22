@@ -41,16 +41,18 @@ export const list = query({
     if (!account) {
       throw new Error("Account not found");
     }
-    await requireModuleAndPermission(
-      ctx,
-      account.organizationId,
-      "accounts",
-      "accounts.read",
-    );
-    const documents = await ctx.db
-      .query("accountDocuments")
-      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
-      .collect();
+    const [, documents] = await Promise.all([
+      requireModuleAndPermission(
+        ctx,
+        account.organizationId,
+        "accounts",
+        "accounts.read",
+      ),
+      ctx.db
+        .query("accountDocuments")
+        .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+        .collect(),
+    ] as const);
 
     return documents;
   },
@@ -90,16 +92,16 @@ export const get = query({
     const [account, downloadUrl] = await Promise.all([
       ctx.db.get(document.accountId),
       ctx.storage.getUrl(document.storageId),
+      requireModuleAndPermission(
+        ctx,
+        document.organizationId,
+        "accounts",
+        "accounts.read",
+      ),
     ] as const);
     if (!account) {
       return null;
     }
-    await requireModuleAndPermission(
-      ctx,
-      account.organizationId,
-      "accounts",
-      "accounts.read",
-    );
 
     return {
       ...document,

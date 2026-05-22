@@ -54,22 +54,23 @@ export async function returnLoanHandler(
   });
 
   if (movement.allItemsNowReturned) {
-    await ctx.db.patch(args.loanId, {
-      status: "returned",
-    });
-
-    const recipients = await logActionAndGetRecipients(ctx, {
-      organizationId: loan.organizationId,
-      userId,
-      action: "returned",
-      entityType: "loan",
-      entityId: args.loanId,
-      changes: {
+    const [, recipients] = await Promise.all([
+      ctx.db.patch(args.loanId, {
         status: "returned",
-        itemsReturned: movement.returnedItemCount,
-        returnedItemIds: movement.returnedItemIds,
-      },
-    });
+      }),
+      logActionAndGetRecipients(ctx, {
+        organizationId: loan.organizationId,
+        userId,
+        action: "returned",
+        entityType: "loan",
+        entityId: args.loanId,
+        changes: {
+          status: "returned",
+          itemsReturned: movement.returnedItemCount,
+          returnedItemIds: movement.returnedItemIds,
+        },
+      }),
+    ] as const);
 
     await notifyOrganizationRecipients(ctx, recipients, {
       organizationId: loan.organizationId,
