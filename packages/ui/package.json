@@ -82,7 +82,7 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "format": "biome format --write .",
-    "lint": "biome check .",
+    "lint": "biome check . --error-on-warnings",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
