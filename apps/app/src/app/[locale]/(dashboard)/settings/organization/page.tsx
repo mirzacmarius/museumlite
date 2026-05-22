@@ -21,6 +21,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
+import { OrganizationDeletionZone } from "./organization-deletion-zone";
 
 type WatermarkPosition =
   | "center"
@@ -462,6 +463,11 @@ export default function OrganizationSettingsPage() {
               saveChanges: t("organization.saveChanges"),
               saving: t("organization.saving"),
             }}
+          />
+
+          <OrganizationDeletionZone
+            organizationId={currentOrganizationId as Id<"organizations">}
+            isSubOrganization={Boolean(organization.parentOrganizationId)}
           />
         </PermissionGate>
       </form>

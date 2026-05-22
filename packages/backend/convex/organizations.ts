@@ -183,6 +183,8 @@ export const create = mutation({
       type: args.type,
       settings: mergedSettings,
       subscriptionTier: "free",
+      ownerUserId: userId,
+      isActive: true,
       parentOrganizationId: args.parentOrganizationId,
       rootOrganizationId: hierarchy?.rootOrganizationId,
     });
@@ -414,6 +416,12 @@ export const get = query({
         }),
       ),
       subscriptionTier: v.optional(
+        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+      ),
+      ownerUserId: v.optional(v.id("users")),
+      isActive: v.optional(v.boolean()),
+      requiresPlanSelection: v.optional(v.boolean()),
+      preservedSubscriptionTier: v.optional(
         v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
       ),
       parentOrganizationId: v.optional(v.id("organizations")),

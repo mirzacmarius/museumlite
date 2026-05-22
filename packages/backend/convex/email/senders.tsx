@@ -506,3 +506,146 @@ export async function sendSubscriptionErrorEmail(
     html,
   });
 }
+
+// ============================================
+// Organization deletion emails
+// ============================================
+
+function formatEmailDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+type OrganizationDeletionGraceEmailOptions = {
+  email: string;
+  organizationName: string;
+  token: string;
+  graceEndsAt: number;
+};
+
+function OrganizationDeletionGraceEmail({
+  email,
+  organizationName,
+  token,
+  graceEndsAt,
+}: OrganizationDeletionGraceEmailOptions) {
+  const cancelUrl = `${env.SITE_URL}/organization-deletion/cancel/${token}`;
+
+  return (
+    <Html>
+      <Head />
+      <Preview>Your organization deletion request for {organizationName}</Preview>
+      <Body style={emailBodyStyle}>
+        <Container style={emailContainerStyle}>
+          <Img
+            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
+            width="40"
+            height="37"
+            alt=""
+          />
+          <Text style={emailTextStyle}>Hello {email},</Text>
+          <Text style={emailTextStyle}>
+            You requested deletion of <strong>{organizationName}</strong>. The
+            organization is now inactive while we wait for your confirmation.
+          </Text>
+          <Text style={emailTextStyle}>
+            If you do nothing, the deletion process will continue after{" "}
+            <strong>{formatEmailDate(graceEndsAt)}</strong>.
+          </Text>
+          <Section style={emailButtonSectionStyle}>
+            <Button href={cancelUrl} style={emailInvitationButtonStyle}>
+              Stop deletion
+            </Button>
+          </Section>
+          <Text style={emailMutedTextStyle}>
+            You can also transfer ownership to another member from organization
+            settings before the account is removed.
+          </Text>
+          <Hr style={emailHrStyle} />
+          <Text style={emailFooterTextStyle}>
+            This message was sent to {email} regarding {organizationName}.
+          </Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+
+type OrganizationDeletionFinalNoticeEmailOptions = {
+  email: string;
+  organizationName: string;
+  token: string;
+  scheduledDeletionDate: number;
+  scheduledPurgeAt: number;
+};
+
+function OrganizationDeletionFinalNoticeEmail({
+  email,
+  organizationName,
+  token,
+  scheduledDeletionDate,
+}: OrganizationDeletionFinalNoticeEmailOptions) {
+  const cancelUrl = `${env.SITE_URL}/organization-deletion/cancel/${token}`;
+
+  return (
+    <Html>
+      <Head />
+      <Preview>Final notice: {organizationName} will be deleted soon</Preview>
+      <Body style={emailBodyStyle}>
+        <Container style={emailContainerStyle}>
+          <Img
+            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
+            width="40"
+            height="37"
+            alt=""
+          />
+          <Text style={emailTextStyle}>Hello {email},</Text>
+          <Text style={emailTextStyle}>
+            Your organization <strong>{organizationName}</strong> is scheduled
+            for permanent deletion on{" "}
+            <strong>{formatEmailDate(scheduledDeletionDate)}</strong>.
+          </Text>
+          <Text style={emailTextStyle}>
+            If you want to keep this account, stop the deletion now or transfer
+            ownership to another team member.
+          </Text>
+          <Section style={emailButtonSectionStyle}>
+            <Button href={cancelUrl} style={emailInvitationButtonStyle}>
+              Stop deletion
+            </Button>
+          </Section>
+          <Hr style={emailHrStyle} />
+          <Text style={emailFooterTextStyle}>
+            This final notice was sent to {email} for {organizationName}.
+          </Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+
+export async function sendOrganizationDeletionGraceEmail(
+  args: OrganizationDeletionGraceEmailOptions,
+) {
+  const html = await render(<OrganizationDeletionGraceEmail {...args} />);
+  await sendEmail({
+    to: args.email,
+    subject: `Deletion requested for ${args.organizationName}`,
+    html,
+  });
+}
+
+export async function sendOrganizationDeletionFinalNoticeEmail(
+  args: OrganizationDeletionFinalNoticeEmailOptions,
+) {
+  const html = await render(<OrganizationDeletionFinalNoticeEmail {...args} />);
+  await sendEmail({
+    to: args.email,
+    subject: `Final notice: ${args.organizationName} will be deleted`,
+    html,
+  });
+}

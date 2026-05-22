@@ -7,6 +7,8 @@ import {
   sendLoanApprovedEmail,
   sendLoanPendingEmail,
   sendLoanRejectedEmail,
+  sendOrganizationDeletionFinalNoticeEmail,
+  sendOrganizationDeletionGraceEmail,
   sendSubscriptionErrorEmail,
   sendSubscriptionSuccessEmail,
   sendTaskAssignedEmail,
@@ -113,6 +115,35 @@ export const sendSubscriptionErrorEmailAction = internalAction({
   returns: v.null(),
   handler: async (_ctx, args) => {
     await sendSubscriptionErrorEmail(args);
+    return null;
+  },
+});
+
+export const sendOrganizationDeletionGraceEmailAction = internalAction({
+  args: {
+    email: v.string(),
+    organizationName: v.string(),
+    token: v.string(),
+    graceEndsAt: v.number(),
+  },
+  returns: v.null(),
+  handler: async (_ctx, args) => {
+    await sendOrganizationDeletionGraceEmail(args);
+    return null;
+  },
+});
+
+export const sendOrganizationDeletionFinalNoticeEmailAction = internalAction({
+  args: {
+    email: v.string(),
+    organizationName: v.string(),
+    token: v.string(),
+    scheduledDeletionDate: v.number(),
+    scheduledPurgeAt: v.number(),
+  },
+  returns: v.null(),
+  handler: async (_ctx, args) => {
+    await sendOrganizationDeletionFinalNoticeEmail(args);
     return null;
   },
 });

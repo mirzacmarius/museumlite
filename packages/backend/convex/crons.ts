@@ -53,4 +53,11 @@ crons.interval(
   internal.workflowSla.checkAllOrganizationsSla,
 );
 
+crons.interval(
+  "process-organization-deletions",
+  { hours: 24 },
+  internal.organizationDeletion.processOrganizationDeletionsInternal,
+  {},
+);
+
 export default crons;
