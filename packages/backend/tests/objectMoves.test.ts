@@ -47,19 +47,29 @@ async function createOrganization(
     accessionNumberFormat?: string;
     accessionCounterScope?: "global" | "year" | "month" | "day";
     autoGenerateAccessionNumbers?: boolean;
+    allowIncomingTransferRequests?: boolean;
   },
   hierarchy?: {
     parentOrganizationId?: Id<"organizations">;
     rootOrganizationId?: Id<"organizations">;
     subscriptionTier?: "free" | "pro" | "enterprise";
+    accountNumber?: string;
+    allowsIncomingTransferRequests?: boolean;
   },
 ) {
   return await t.run(async (ctx) => {
+    const allowsIncomingTransferRequests =
+      hierarchy?.allowsIncomingTransferRequests ??
+      settings?.allowIncomingTransferRequests ??
+      false;
+
     return await ctx.db.insert("organizations", {
       name,
       slug,
       type: "museum",
       settings,
+      accountNumber: hierarchy?.accountNumber,
+      allowsIncomingTransferRequests,
       subscriptionTier: hierarchy?.subscriptionTier,
       parentOrganizationId: hierarchy?.parentOrganizationId,
       rootOrganizationId: hierarchy?.rootOrganizationId,
@@ -1111,6 +1121,128 @@ describe("objectMoves", () => {
       },
     );
     expect(cancelledRequests.some((request) => request._id === requestId)).toBe(
+      true,
+    );
+  });
+
+  test("lookupTransferDestinationByAccountNumber rejects destinations that disallow incoming transfers", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const closedDestinationId = await createOrganization(
+      t,
+      "Closed Destination",
+      `closed-${Math.random().toString(36).slice(2, 8)}`,
+      { allowIncomingTransferRequests: false },
+      { accountNumber: "ORG-00042", allowsIncomingTransferRequests: false },
+    );
+
+    const lookup = await fixture.requester.query(
+      api.objectMoves.lookupTransferDestinationByAccountNumber,
+      {
+        collectionId: fixture.collectionId,
+        accountNumber: "ORG-00042",
+      },
+    );
+
+    expect(lookup.status).toBe("invalid");
+    if (lookup.status === "invalid") {
+      expect(lookup.message).toContain("not accepting incoming transfer");
+    }
+    expect(closedDestinationId).toBeDefined();
+  });
+
+  test("lookupTransferDestinationByAccountNumber accepts public destinations", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const publicDestinationId = await createOrganization(
+      t,
+      "Public Destination Museum",
+      `public-${Math.random().toString(36).slice(2, 8)}`,
+      { allowIncomingTransferRequests: true },
+      { accountNumber: "ORG-00099", allowsIncomingTransferRequests: true },
+    );
+
+    const lookup = await fixture.requester.query(
+      api.objectMoves.lookupTransferDestinationByAccountNumber,
+      {
+        collectionId: fixture.collectionId,
+        accountNumber: "ORG-00099",
+      },
+    );
+
+    expect(lookup).toEqual({
+      status: "valid",
+      organization: {
+        _id: publicDestinationId,
+        name: "Public Destination Museum",
+        slug: expect.any(String),
+        accountNumber: "ORG-00099",
+        source: "public",
+      },
+    });
+  });
+
+  test("createRequest allows public destinations without target membership", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    const publicDestinationId = await createOrganization(
+      t,
+      "External Receiver",
+      `external-${Math.random().toString(36).slice(2, 8)}`,
+      { allowIncomingTransferRequests: true },
+      { accountNumber: "ORG-00123", allowsIncomingTransferRequests: true },
+    );
+
+    const eligibility = await fixture.requester.query(
+      api.objectMoves.getEligibility,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: publicDestinationId,
+      },
+    );
+    expect(eligibility.isEligible).toBe(true);
+
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: publicDestinationId,
+        accessionMode: "keep",
+        reason: "Transfer to external organization",
+      },
+    );
+
+    const request = await t.run(async (ctx) => {
+      return await ctx.db.get(requestId);
+    });
+    expect(request?.targetOrganizationId).toBe(publicDestinationId);
+    expect(request?.status).toBe("pending_source_approval");
+  });
+
+  test("searchTransferDestinations finds organizations by account number", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+
+    await createOrganization(
+      t,
+      "Searchable Public Museum",
+      `searchable-${Math.random().toString(36).slice(2, 8)}`,
+      { allowIncomingTransferRequests: true },
+      { accountNumber: "ORG-00456", allowsIncomingTransferRequests: true },
+    );
+
+    const results = await fixture.requester.query(
+      api.objectMoves.searchTransferDestinations,
+      {
+        collectionId: fixture.collectionId,
+        query: "ORG-00456",
+      },
+    );
+
+    expect(results.some((entry) => entry.accountNumber === "ORG-00456")).toBe(
       true,
     );
   });

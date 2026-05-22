@@ -25,6 +25,7 @@ import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
+import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
@@ -171,9 +172,13 @@ export const create = mutation({
         }
       : defaultSettings;
 
+    const accountNumber = await generateNextOrganizationAccountNumber(ctx);
+
     const organizationId = await ctx.db.insert("organizations", {
       name,
       slug: normalizedSlug,
+      accountNumber,
+      allowsIncomingTransferRequests: false,
       type: args.type,
       settings: mergedSettings,
       subscriptionTier: "free",
@@ -352,6 +357,8 @@ export const get = query({
       _id: v.id("organizations"),
       name: v.string(),
       slug: v.string(),
+      accountNumber: v.optional(v.string()),
+      allowsIncomingTransferRequests: v.optional(v.boolean()),
       type: v.union(
         v.literal("museum"),
         v.literal("gallery"),
@@ -372,6 +379,7 @@ export const get = query({
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
           accessionWorkflowEnabled: v.optional(v.boolean()),
           deaccessionWorkflowEnabled: v.optional(v.boolean()),
+          allowIncomingTransferRequests: v.optional(v.boolean()),
           locationTrackingEnabled: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
@@ -452,6 +460,7 @@ export const getBySlug = query({
           autoGenerateAccessionNumbers: v.optional(v.boolean()),
           accessionWorkflowEnabled: v.optional(v.boolean()),
           deaccessionWorkflowEnabled: v.optional(v.boolean()),
+          allowIncomingTransferRequests: v.optional(v.boolean()),
           locationTrackingEnabled: v.optional(v.boolean()),
           locationTypes: v.optional(v.array(v.string())),
           enableDetailedConditionReports: v.optional(v.boolean()),
@@ -518,6 +527,7 @@ export const update = mutation({
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         accessionWorkflowEnabled: v.optional(v.boolean()),
         deaccessionWorkflowEnabled: v.optional(v.boolean()),
+        allowIncomingTransferRequests: v.optional(v.boolean()),
         locationTrackingEnabled: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
@@ -556,12 +566,14 @@ export const update = mutation({
         autoGenerateAccessionNumbers?: boolean;
         accessionWorkflowEnabled?: boolean;
         deaccessionWorkflowEnabled?: boolean;
+        allowIncomingTransferRequests?: boolean;
         locationTrackingEnabled?: boolean;
         locationTypes?: string[];
         enableDetailedConditionReports?: boolean;
         enabledIntegrations?: string[];
         enabledModules?: EnabledModule[];
       };
+      allowsIncomingTransferRequests?: boolean;
       subscriptionTier?: "free" | "pro" | "enterprise";
     } = {};
 
@@ -574,6 +586,10 @@ export const update = mutation({
         ...args.settings,
       };
       updates.settings = mergedSettings;
+      if (args.settings.allowIncomingTransferRequests !== undefined) {
+        updates.allowsIncomingTransferRequests =
+          args.settings.allowIncomingTransferRequests;
+      }
     }
     if (args.subscriptionTier !== undefined) {
       updates.subscriptionTier = args.subscriptionTier;
@@ -616,6 +632,7 @@ export const getSettings = query({
       autoGenerateAccessionNumbers: v.optional(v.boolean()),
       accessionWorkflowEnabled: v.optional(v.boolean()),
       deaccessionWorkflowEnabled: v.optional(v.boolean()),
+      allowIncomingTransferRequests: v.optional(v.boolean()),
       locationTrackingEnabled: v.optional(v.boolean()),
       locationTypes: v.optional(v.array(v.string())),
       enableDetailedConditionReports: v.optional(v.boolean()),
@@ -1083,6 +1100,8 @@ export const listUserOrganizations = query({
       _id: v.id("organizations"),
       name: v.string(),
       slug: v.string(),
+      accountNumber: v.optional(v.string()),
+      allowsIncomingTransferRequests: v.optional(v.boolean()),
       type: v.union(
         v.literal("museum"),
         v.literal("gallery"),
@@ -1171,6 +1190,8 @@ export const listChildOrganizations = query({
       _id: v.id("organizations"),
       name: v.string(),
       slug: v.string(),
+      accountNumber: v.optional(v.string()),
+      allowsIncomingTransferRequests: v.optional(v.boolean()),
       type: v.union(
         v.literal("museum"),
         v.literal("gallery"),

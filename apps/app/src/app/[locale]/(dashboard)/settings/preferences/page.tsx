@@ -32,12 +32,15 @@ type PreferencesPageAction =
   | {
       type: "syncFromOrganization";
       organization: {
+        accountNumber?: string;
+        allowsIncomingTransferRequests?: boolean;
         settings?: {
           accessionNumberFormat?: string;
           accessionCounterScope?: PreferencesFormData["accessionCounterScope"];
           autoGenerateAccessionNumbers?: boolean;
           accessionWorkflowEnabled?: boolean;
           deaccessionWorkflowEnabled?: boolean;
+          allowIncomingTransferRequests?: boolean;
           locationTrackingEnabled?: boolean;
           locationTypes?: string[];
           enableDetailedConditionReports?: boolean;
@@ -58,6 +61,7 @@ const initialPreferencesFormData: PreferencesFormData = {
   autoGenerateAccessionNumbers: true,
   accessionWorkflowEnabled: true,
   deaccessionWorkflowEnabled: true,
+  allowIncomingTransferRequests: false,
   locationTrackingEnabled: true,
   locationTypes: [],
   enableDetailedConditionReports: false,
@@ -108,6 +112,10 @@ function preferencesPageReducer(
             action.organization.settings?.accessionWorkflowEnabled ?? true,
           deaccessionWorkflowEnabled:
             action.organization.settings?.deaccessionWorkflowEnabled ?? true,
+          allowIncomingTransferRequests:
+            action.organization.settings?.allowIncomingTransferRequests ??
+            action.organization.allowsIncomingTransferRequests ??
+            false,
           locationTrackingEnabled:
             action.organization.settings?.locationTrackingEnabled ?? true,
           locationTypes: action.organization.settings?.locationTypes || [],
@@ -331,6 +339,8 @@ export default function PreferencesSettingsPage() {
             state.formData.autoGenerateAccessionNumbers,
           accessionWorkflowEnabled: state.formData.accessionWorkflowEnabled,
           deaccessionWorkflowEnabled: state.formData.deaccessionWorkflowEnabled,
+          allowIncomingTransferRequests:
+            state.formData.allowIncomingTransferRequests,
           locationTrackingEnabled: state.formData.locationTrackingEnabled,
           locationTypes:
             state.formData.locationTypes.length > 0
@@ -385,6 +395,7 @@ export default function PreferencesSettingsPage() {
 
       <PreferencesSettingsForm
         currentOrganizationId={currentOrganizationId}
+        organizationAccountNumber={organization.accountNumber}
         formData={state.formData}
         setFormData={(value) =>
           dispatch(

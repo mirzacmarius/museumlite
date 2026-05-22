@@ -28,6 +28,7 @@ export interface PreferencesFormData {
   autoGenerateAccessionNumbers: boolean;
   accessionWorkflowEnabled: boolean;
   deaccessionWorkflowEnabled: boolean;
+  allowIncomingTransferRequests: boolean;
   locationTrackingEnabled: boolean;
   locationTypes: string[];
   enableDetailedConditionReports: boolean;
@@ -61,10 +62,12 @@ interface PreferencesSettingsFormProps {
   onDeleteTemplate: (id: Id<"accessionTemplates">) => void;
   isSubmitting: boolean;
   onSavePreferences: () => void;
+  organizationAccountNumber?: string;
 }
 
 export function PreferencesSettingsForm({
   currentOrganizationId,
+  organizationAccountNumber,
   formData,
   setFormData,
   t,
@@ -186,6 +189,34 @@ export function PreferencesSettingsForm({
             />
           </div>
         </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Object transfers"
+        description="Control whether other organizations can find and request transfers to your organization."
+      >
+        {organizationAccountNumber ? (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Your organization account number is{" "}
+            <span className="font-mono text-foreground">
+              {organizationAccountNumber}
+            </span>
+            . Share this with partners when they transfer objects to your
+            collection.
+          </p>
+        ) : null}
+        <PreferenceSwitch
+          id="allowIncomingTransferRequests"
+          label="Allow incoming transfer requests"
+          description="When enabled, your organization appears in destination search and accepts object transfer requests from other organizations. When disabled, your organization is hidden and transfers are rejected."
+          checked={formData.allowIncomingTransferRequests}
+          onCheckedChange={(checked) =>
+            setFormData((prev) => ({
+              ...prev,
+              allowIncomingTransferRequests: checked,
+            }))
+          }
+        />
       </SettingsSection>
 
       <SettingsSection title="Automations and workflows">

@@ -247,6 +247,33 @@ export function padNumber(value: number, length: number): string {
   return String(value).padStart(length, "0");
 }
 
+export async function generateNextOrganizationAccountNumber(
+  ctx: MutationCtx,
+): Promise<string> {
+  const counter = await ctx.db
+    .query("organizationRegistryCounter")
+    .withIndex("by_scopeKey", (q) => q.eq("scopeKey", "global"))
+    .first();
+
+  let nextValue: number;
+  if (counter) {
+    nextValue = counter.currentValue + 1;
+    await ctx.db.patch(counter._id, {
+      currentValue: nextValue,
+      lastGeneratedAt: Date.now(),
+    });
+  } else {
+    nextValue = 1;
+    await ctx.db.insert("organizationRegistryCounter", {
+      scopeKey: "global",
+      currentValue: nextValue,
+      lastGeneratedAt: Date.now(),
+    });
+  }
+
+  return `ORG-${padNumber(nextValue, 5)}`;
+}
+
 export async function generateNextAccountNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,

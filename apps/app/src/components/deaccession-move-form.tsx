@@ -14,11 +14,7 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import type { AccessionMode } from "./deaccession-dialog-types";
-
-interface TargetOrganization {
-  _id: Id<"organizations">;
-  name: string;
-}
+import { TransferDestinationPicker } from "./transfer-destination-picker";
 
 interface MoveBlocker {
   code: string;
@@ -27,7 +23,7 @@ interface MoveBlocker {
 
 interface DeaccessionMoveFormProps {
   isDirectRemovalFlow: boolean;
-  targetOrganizations: TargetOrganization[] | undefined;
+  collectionId: Id<"collections">;
   blockers: MoveBlocker[];
   targetOrganizationId: Id<"organizations"> | "";
   accessionMode: AccessionMode;
@@ -44,7 +40,7 @@ interface DeaccessionMoveFormProps {
 
 export function DeaccessionMoveForm({
   isDirectRemovalFlow,
-  targetOrganizations,
+  collectionId,
   blockers,
   targetOrganizationId,
   accessionMode,
@@ -82,31 +78,12 @@ export function DeaccessionMoveForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="target-organization">Destination Organization *</Label>
-        <Select
-          value={targetOrganizationId || undefined}
-          onValueChange={(value) =>
-            onTargetOrganizationChange(value as Id<"organizations">)
-          }
-        >
-          <SelectTrigger id="target-organization">
-            <SelectValue placeholder="Select destination organization" />
-          </SelectTrigger>
-          <SelectContent>
-            {(targetOrganizations ?? []).map((organization) => (
-              <SelectItem key={organization._id} value={organization._id}>
-                {organization.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {targetOrganizations !== undefined &&
-          targetOrganizations.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              There are no eligible destination organizations available for your
-              account.
-            </p>
-          )}
+        <Label>Destination Organization *</Label>
+        <TransferDestinationPicker
+          collectionId={collectionId}
+          value={targetOrganizationId}
+          onValueChange={onTargetOrganizationChange}
+        />
       </div>
 
       <div className="space-y-2">

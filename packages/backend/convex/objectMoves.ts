@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
   mutation,
@@ -162,6 +162,53 @@ async function getTransferHierarchy(
     rootOrganization,
   };
 }
+
+function organizationAllowsIncomingTransfers(organization: {
+  allowsIncomingTransferRequests?: boolean;
+  settings?: { allowIncomingTransferRequests?: boolean };
+}) {
+  return (
+    organization.allowsIncomingTransferRequests === true ||
+    organization.settings?.allowIncomingTransferRequests === true
+  );
+}
+
+async function isPublicTransferDestination(
+  ctx: QueryCtx | MutationCtx,
+  sourceOrganizationId: Id<"organizations">,
+  targetOrganizationId: Id<"organizations">,
+) {
+  if (sourceOrganizationId === targetOrganizationId) {
+    return false;
+  }
+
+  const targetOrganization = await ctx.db.get(targetOrganizationId);
+  if (!targetOrganization) {
+    return false;
+  }
+
+  return organizationAllowsIncomingTransfers(targetOrganization);
+}
+
+const transferDestinationSummaryValidator = v.object({
+  _id: v.id("organizations"),
+  name: v.string(),
+  slug: v.string(),
+  accountNumber: v.optional(v.string()),
+  roleName: v.optional(v.string()),
+  source: v.union(v.literal("membership"), v.literal("public")),
+});
+
+const transferDestinationLookupValidator = v.union(
+  v.object({
+    status: v.literal("valid"),
+    organization: transferDestinationSummaryValidator,
+  }),
+  v.object({
+    status: v.literal("invalid"),
+    message: v.string(),
+  }),
+);
 
 async function generateAccessionNumber(
   ctx: MutationCtx,
@@ -848,18 +895,290 @@ async function createApprovedTransferDeaccession(
   return deaccessionId;
 }
 
+type TransferDestinationSummary = {
+  _id: Id<"organizations">;
+  name: string;
+  slug: string;
+  accountNumber?: string;
+  roleName?: string;
+  source: "membership" | "public";
+};
+
+async function listMembershipTransferTargets(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  collection: Doc<"collections">,
+): Promise<Array<TransferDestinationSummary>> {
+  const memberships = await ctx.db
+    .query("userOrganizations")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  const organizations = await Promise.all(
+    memberships.map(async (membership) => {
+      if (membership.organizationId === collection.organizationId) {
+        return null;
+      }
+
+      const rolePermissions = await ctx.db
+        .query("rolePermissions")
+        .withIndex("by_role", (q) => q.eq("roleId", membership.roleId))
+        .collect();
+
+      const permissions = await Promise.all(
+        rolePermissions.map((rolePermission) =>
+          ctx.db.get(rolePermission.permissionId),
+        ),
+      );
+
+      const canCreateCollections = permissions.some(
+        (permission) => permission?.name === "collections.create",
+      );
+
+      if (!canCreateCollections) {
+        return null;
+      }
+
+      const [organization, role] = await Promise.all([
+        ctx.db.get(membership.organizationId),
+        ctx.db.get(membership.roleId),
+      ] as const);
+      if (!organization) {
+        return null;
+      }
+
+      try {
+        await getTransferHierarchy(
+          ctx,
+          collection.organizationId,
+          organization._id,
+        );
+      } catch {
+        return null;
+      }
+
+      return {
+        _id: organization._id,
+        name: organization.name,
+        slug: organization.slug,
+        accountNumber: organization.accountNumber,
+        roleName: role?.name,
+        source: "membership" as const,
+      };
+    }),
+  );
+
+  const eligibleTargets: TransferDestinationSummary[] = [];
+  for (const organization of organizations) {
+    if (organization !== null) {
+      eligibleTargets.push(organization);
+    }
+  }
+
+  return eligibleTargets.sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+}
+
+async function searchPublicTransferTargets(
+  ctx: QueryCtx,
+  sourceOrganizationId: Id<"organizations">,
+  queryText: string,
+): Promise<Array<TransferDestinationSummary>> {
+  const normalizedQuery = queryText.trim();
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+
+  const orgAccountMatch = /^ORG-\d{5}$/i.exec(normalizedQuery);
+  if (orgAccountMatch) {
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_accountNumber", (q) =>
+        q.eq("accountNumber", normalizedQuery.toUpperCase()),
+      )
+      .first();
+
+    if (
+      organization &&
+      organization._id !== sourceOrganizationId &&
+      organizationAllowsIncomingTransfers(organization)
+    ) {
+      return [
+        {
+          _id: organization._id,
+          name: organization.name,
+          slug: organization.slug,
+          accountNumber: organization.accountNumber,
+          source: "public" as const,
+        },
+      ];
+    }
+
+    return [];
+  }
+
+  const searchResults = await ctx.db
+    .query("organizations")
+    .withSearchIndex("search_transfer_destinations", (q) =>
+      q.search("name", normalizedQuery).eq("allowsIncomingTransferRequests", true),
+    )
+    .take(20);
+
+  return searchResults
+    .filter((organization) => organization._id !== sourceOrganizationId)
+    .map((organization) => ({
+      _id: organization._id,
+      name: organization.name,
+      slug: organization.slug,
+      accountNumber: organization.accountNumber,
+      source: "public" as const,
+    }));
+}
+
+export const searchTransferDestinations = query({
+  args: {
+    collectionId: v.id("collections"),
+    query: v.string(),
+  },
+  returns: v.array(transferDestinationSummaryValidator),
+  handler: async (ctx, args) => {
+    const [userId, collection] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.collectionId),
+    ] as const);
+    if (!userId || !collection) {
+      return [];
+    }
+
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.update",
+    );
+
+    const trimmedQuery = args.query.trim();
+    const membershipTargets =
+      trimmedQuery.length === 0
+        ? []
+        : await listMembershipTransferTargets(ctx, userId, collection);
+
+    const publicTargets =
+      trimmedQuery.length >= 2
+        ? await searchPublicTransferTargets(
+            ctx,
+            collection.organizationId,
+            trimmedQuery,
+          )
+        : [];
+
+    const merged = new Map<
+      Id<"organizations">,
+      {
+        _id: Id<"organizations">;
+        name: string;
+        slug: string;
+        accountNumber?: string;
+        roleName?: string;
+        source: "membership" | "public";
+      }
+    >();
+
+    for (const target of membershipTargets) {
+      if (
+        target.name.toLowerCase().includes(trimmedQuery.toLowerCase()) ||
+        target.accountNumber?.toLowerCase().includes(trimmedQuery.toLowerCase())
+      ) {
+        merged.set(target._id, target);
+      }
+    }
+
+    for (const target of publicTargets) {
+      merged.set(target._id, target);
+    }
+
+    return Array.from(merged.values()).sort((left, right) =>
+      left.name.localeCompare(right.name),
+    );
+  },
+});
+
+export const lookupTransferDestinationByAccountNumber = query({
+  args: {
+    collectionId: v.id("collections"),
+    accountNumber: v.string(),
+  },
+  returns: transferDestinationLookupValidator,
+  handler: async (ctx, args) => {
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return {
+        status: "invalid" as const,
+        message: "Object not found.",
+      };
+    }
+
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.update",
+    );
+
+    const normalizedAccountNumber = args.accountNumber.trim().toUpperCase();
+    if (!/^ORG-\d{5}$/.test(normalizedAccountNumber)) {
+      return {
+        status: "invalid" as const,
+        message: "Enter a valid organization account number (ORG-00000).",
+      };
+    }
+
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_accountNumber", (q) =>
+        q.eq("accountNumber", normalizedAccountNumber),
+      )
+      .first();
+
+    if (!organization) {
+      return {
+        status: "invalid" as const,
+        message: "No organization found with this account number.",
+      };
+    }
+
+    if (organization._id === collection.organizationId) {
+      return {
+        status: "invalid" as const,
+        message: "You cannot transfer an object to its current organization.",
+      };
+    }
+
+    if (!organizationAllowsIncomingTransfers(organization)) {
+      return {
+        status: "invalid" as const,
+        message:
+          "This organization is not accepting incoming transfer requests.",
+      };
+    }
+
+    return {
+      status: "valid" as const,
+      organization: {
+        _id: organization._id,
+        name: organization.name,
+        slug: organization.slug,
+        accountNumber: organization.accountNumber,
+        source: "public" as const,
+      },
+    };
+  },
+});
+
 export const listEligibleTargetOrganizations = query({
   args: {
     collectionId: v.id("collections"),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("organizations"),
-      name: v.string(),
-      slug: v.string(),
-      roleName: v.optional(v.string()),
-    }),
-  ),
+  returns: v.array(transferDestinationSummaryValidator),
   handler: async (ctx, args) => {
     const [userId, collection] = await Promise.all([
       getAuthUserId(ctx),
@@ -872,72 +1191,8 @@ export const listEligibleTargetOrganizations = query({
       return [];
     }
 
-    const [, memberships] = await Promise.all([
-      requirePermission(ctx, collection.organizationId, "collections.update"),
-      ctx.db
-        .query("userOrganizations")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect(),
-    ] as const);
-
-    const organizations = await Promise.all(
-      memberships.map(async (membership) => {
-        if (membership.organizationId === collection.organizationId) {
-          return null;
-        }
-
-        const rolePermissions = await ctx.db
-          .query("rolePermissions")
-          .withIndex("by_role", (q) => q.eq("roleId", membership.roleId))
-          .collect();
-
-        const permissions = await Promise.all(
-          rolePermissions.map((rolePermission) =>
-            ctx.db.get(rolePermission.permissionId),
-          ),
-        );
-
-        const canCreateCollections = permissions.some(
-          (permission) => permission?.name === "collections.create",
-        );
-
-        if (!canCreateCollections) {
-          return null;
-        }
-
-        const [organization, role] = await Promise.all([
-          ctx.db.get(membership.organizationId),
-          ctx.db.get(membership.roleId),
-        ] as const);
-        if (!organization) {
-          return null;
-        }
-
-        try {
-          await getTransferHierarchy(
-            ctx,
-            collection.organizationId,
-            organization._id,
-          );
-        } catch {
-          return null;
-        }
-
-        return {
-          _id: organization._id,
-          name: organization.name,
-          slug: organization.slug,
-          roleName: role?.name,
-        };
-      }),
-    );
-
-    return organizations
-      .filter(
-        (organization): organization is NonNullable<typeof organization> =>
-          organization !== null,
-      )
-      .sort((left, right) => left.name.localeCompare(right.name));
+    await requirePermission(ctx, collection.organizationId, "collections.update");
+    return await listMembershipTransferTargets(ctx, userId, collection);
   },
 });
 
@@ -977,46 +1232,66 @@ export const getEligibility = query({
     );
 
     if (args.targetOrganizationId) {
-      try {
-        await getTransferHierarchy(
-          ctx,
-          collection.organizationId,
-          args.targetOrganizationId,
-        );
-      } catch (error) {
-        blockers.push({
-          code: "target_not_in_hierarchy",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Destination organization is not eligible for transfer.",
-        });
-      }
-
-      const membership = await getCurrentUserOrganization(
+      const isPublicDestination = await isPublicTransferDestination(
         ctx,
+        collection.organizationId,
         args.targetOrganizationId,
       );
 
-      if (!membership) {
-        blockers.push({
-          code: "target_membership_required",
-          message:
-            "You must be a member of the destination organization to move an object there.",
-        });
+      if (isPublicDestination) {
+        const targetOrganization = await ctx.db.get(args.targetOrganizationId);
+        if (
+          !targetOrganization ||
+          !organizationAllowsIncomingTransfers(targetOrganization)
+        ) {
+          blockers.push({
+            code: "target_not_accepting_transfers",
+            message:
+              "This organization is not accepting incoming transfer requests.",
+          });
+        }
       } else {
-        const canCreateInTarget = await hasPermission(
+        try {
+          await getTransferHierarchy(
+            ctx,
+            collection.organizationId,
+            args.targetOrganizationId,
+          );
+        } catch (error) {
+          blockers.push({
+            code: "target_not_in_hierarchy",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Destination organization is not eligible for transfer.",
+          });
+        }
+
+        const membership = await getCurrentUserOrganization(
           ctx,
           args.targetOrganizationId,
-          "collections.create",
         );
 
-        if (!canCreateInTarget) {
+        if (!membership) {
           blockers.push({
-            code: "target_create_permission_required",
+            code: "target_membership_required",
             message:
-              "You need collection creation permission in the destination organization.",
+              "You must be a member of the destination organization to move an object there.",
           });
+        } else {
+          const canCreateInTarget = await hasPermission(
+            ctx,
+            args.targetOrganizationId,
+            "collections.create",
+          );
+
+          if (!canCreateInTarget) {
+            blockers.push({
+              code: "target_create_permission_required",
+              message:
+                "You need collection creation permission in the destination organization.",
+            });
+          }
         }
       }
     }
@@ -1049,23 +1324,49 @@ export const createRequest = mutation({
     if (!collection) {
       throw new Error("Collection not found");
     }
-    await Promise.all([
-      requirePermission(ctx, collection.organizationId, "collections.update"),
-      requirePermission(ctx, args.targetOrganizationId, "collections.create"),
-    ]);
-    const [, membership, blockers] = await Promise.all([
-      getTransferHierarchy(
+    await requirePermission(ctx, collection.organizationId, "collections.update");
+
+    const isPublicDestination = await isPublicTransferDestination(
+      ctx,
+      collection.organizationId,
+      args.targetOrganizationId,
+    );
+
+    const blockers = await buildEligibilityBlockers(
+      ctx,
+      collection,
+      args.targetOrganizationId,
+    );
+
+    if (isPublicDestination) {
+      const targetOrganization = await ctx.db.get(args.targetOrganizationId);
+      if (
+        !targetOrganization ||
+        !organizationAllowsIncomingTransfers(targetOrganization)
+      ) {
+        throw new Error(
+          "This organization is not accepting incoming transfer requests.",
+        );
+      }
+    } else {
+      await requirePermission(
         ctx,
-        collection.organizationId,
         args.targetOrganizationId,
-      ),
-      getCurrentUserOrganization(ctx, args.targetOrganizationId),
-      buildEligibilityBlockers(ctx, collection, args.targetOrganizationId),
-    ]);
-    if (!membership) {
-      throw new Error(
-        "You must be a member of the destination organization to move an object there.",
+        "collections.create",
       );
+      const [, membership] = await Promise.all([
+        getTransferHierarchy(
+          ctx,
+          collection.organizationId,
+          args.targetOrganizationId,
+        ),
+        getCurrentUserOrganization(ctx, args.targetOrganizationId),
+      ]);
+      if (!membership) {
+        throw new Error(
+          "You must be a member of the destination organization to move an object there.",
+        );
+      }
     }
 
     if (blockers.length > 0) {
