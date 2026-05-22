@@ -188,3 +188,36 @@ status: v.union(v.literal("pending"), v.literal("active"))
 ## Middleware Note
 
 Non-standard location: `apps/app/src/proxy.ts` (not `middleware.ts`)
+
+## Cursor Cloud specific instructions
+
+### Services overview
+
+| Service | Port | Start command | Notes |
+|---------|------|--------------|-------|
+| Main app (Next.js) | 3000 | `bun dev:app` | Redirects to `/login` without auth |
+| Marketing site (Next.js) | 3001 | `bun dev:web` | Static marketing pages |
+| Convex backend | N/A (cloud) | `cd packages/backend && bun dev` | Requires Convex auth — see below |
+
+### Convex backend (cloud-hosted)
+
+The Convex backend runs in the cloud, not locally. Running `bun dev` at root starts `convex dev --tail-logs` which syncs local functions to the Convex cloud deployment. This requires Convex authentication — the `CONVEX_DEPLOY_KEY` or interactive `npx convex dev` login must be configured. Without Convex auth, the Next.js apps will start but cannot fetch data.
+
+### Environment files
+
+- `apps/app/.env` needs `NEXT_PUBLIC_CONVEX_URL` (required) and `SKIP_ENV_VALIDATION=1` to bypass t3-env validation in dev when other env vars are missing.
+- `apps/web/.env` needs `NEXT_PUBLIC_CONVEX_URL`.
+- These `.env` files are gitignored and must be created per-environment.
+
+### Running quality checks without Convex
+
+Lint, typecheck, and backend tests all work without Convex authentication:
+- `bun run lint` — Biome lint + sherif monorepo check
+- `bun run typecheck` — TypeScript checking across all workspaces
+- `cd packages/backend && bun test:once` — 745+ Vitest tests using `convex-test` (no cloud needed)
+
+### Gotchas
+
+- The `postinstall` script runs `node scripts/apply-patches.js` to patch `@xixixao/uploadstuff` for React 19 compatibility. This runs automatically on `bun install`.
+- `bun run typecheck` for `@v1/app` uses `--max-old-space-size=8192` — it can be memory-intensive.
+- Backend tests are in both `packages/backend/tests/` and `packages/backend/convex/` directories.
