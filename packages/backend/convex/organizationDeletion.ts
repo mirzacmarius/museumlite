@@ -493,15 +493,15 @@ export const transferOwnership = mutation({
       throw new ConvexError("Not authenticated");
     }
 
+    if (args.newOwnerUserId === userId) {
+      throw new ConvexError("You are already the organization owner");
+    }
+
     const organization = await requireOrganizationOwner(
       ctx,
       args.organizationId,
       userId,
     );
-
-    if (args.newOwnerUserId === userId) {
-      throw new ConvexError("You are already the organization owner");
-    }
 
     const membership = await ctx.db
       .query("userOrganizations")

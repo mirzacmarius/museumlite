@@ -6,7 +6,7 @@ import { Logo } from "@v1/ui/logo";
 import { useMutation, useQuery } from "convex/react";
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -30,6 +30,13 @@ export function OrganizationDeletionCancelPageClient({ params }: PageProps) {
     token,
   });
   const cancelDeletion = useMutation(api.organizationDeletion.cancelDeletion);
+
+  const scheduledDeletionDateLabel = useMemo(() => {
+    if (!deletionInfo?.scheduledDeletionDate) {
+      return null;
+    }
+    return formatDate(new Date(deletionInfo.scheduledDeletionDate), locale);
+  }, [deletionInfo?.scheduledDeletionDate, locale]);
 
   const handleCancelDeletion = async () => {
     setError(null);
@@ -103,12 +110,7 @@ export function OrganizationDeletionCancelPageClient({ params }: PageProps) {
               <p className="text-sm text-muted-foreground">
                 {t("scheduledDeletionDate")}
               </p>
-              <p className="text-base">
-                {formatDate(
-                  new Date(deletionInfo.scheduledDeletionDate),
-                  locale,
-                )}
-              </p>
+              <p className="text-base">{scheduledDeletionDateLabel}</p>
             </div>
           ) : null}
         </div>
