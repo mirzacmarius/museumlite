@@ -190,6 +190,9 @@ export default function PreferencesSettingsPage() {
       : "skip",
   );
   const updateOrganization = useMutation(api.organizations.update);
+  const ensureTransferRegistryFields = useMutation(
+    api.organizations.ensureTransferRegistryFields,
+  );
   const createTemplate = useMutation(api.accessionTemplates.create);
   const removeTemplate = useMutation(api.accessionTemplates.remove);
   const updateTemplate = useMutation(api.accessionTemplates.update);
@@ -198,6 +201,13 @@ export default function PreferencesSettingsPage() {
     if (!organization) return;
     dispatch({ type: "syncFromOrganization", organization });
   }, [organization]);
+
+  useEffect(() => {
+    if (!currentOrganizationId || organization?.accountNumber) return;
+    void ensureTransferRegistryFields({
+      organizationId: currentOrganizationId as Id<"organizations">,
+    });
+  }, [currentOrganizationId, ensureTransferRegistryFields, organization?.accountNumber]);
 
   const systemPresets = useMemo(
     () =>

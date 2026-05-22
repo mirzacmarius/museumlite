@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
+import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 
 function getLocationCodePrefix(type: string) {
   switch (type.trim().toLowerCase()) {
@@ -1003,5 +1004,63 @@ export const addCollectionWorkflowApprovalPermissions = internalMutation({
       permissionsCreated,
       rolePermissionsAdded,
     };
+  },
+});
+
+/**
+ * Migration: Backfill organization registry account numbers (ORG-#####) and
+ * denormalized allowsIncomingTransferRequests for existing organizations.
+ *
+ * Run: bunx convex run migrations:backfillOrganizationTransferFields
+ */
+export const backfillOrganizationTransferFields = internalMutation({
+  args: {},
+  returns: v.object({
+    totalOrganizations: v.number(),
+    accountNumbersAssigned: v.number(),
+    transferFlagsSynced: v.number(),
+  }),
+  handler: async (ctx) => {
+    console.log(
+      "Starting migration: Backfill organization transfer registry fields",
+    );
+
+    const organizations = await ctx.db.query("organizations").collect();
+    const sortedOrganizations = organizations.sort(
+      (a, b) => a._creationTime - b._creationTime,
+    );
+
+    let accountNumbersAssigned = 0;
+    let transferFlagsSynced = 0;
+
+    for (const organization of sortedOrganizations) {
+      const hadAccountNumber = Boolean(organization.accountNumber);
+      const hadTransferFlag =
+        organization.allowsIncomingTransferRequests !== undefined;
+
+      const accountNumber = await patchOrganizationTransferFieldsIfMissing(
+        ctx,
+        organization,
+      );
+
+      if (!hadAccountNumber && accountNumber) {
+        accountNumbersAssigned++;
+      }
+      if (!hadTransferFlag) {
+        transferFlagsSynced++;
+      }
+    }
+
+    const result = {
+      totalOrganizations: sortedOrganizations.length,
+      accountNumbersAssigned,
+      transferFlagsSynced,
+    };
+
+    console.log(
+      `Migration complete: ${result.accountNumbersAssigned} account numbers assigned, ${result.transferFlagsSynced} transfer flags synced (${result.totalOrganizations} organizations)`,
+    );
+
+    return result;
   },
 });

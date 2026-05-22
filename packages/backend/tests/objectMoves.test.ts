@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api.js";
+import { api, internal } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
 import schema from "../convex/schema.js";
 import { modules } from "./testSetup.js";
@@ -1245,5 +1245,30 @@ describe("objectMoves", () => {
     expect(results.some((entry) => entry.accountNumber === "ORG-00456")).toBe(
       true,
     );
+  });
+});
+
+describe("organization transfer registry", () => {
+  test("backfillOrganizationTransferFields assigns ORG account numbers", async () => {
+    const t = convexTest(schema, modules);
+    const legacyOrgId = await createOrganization(
+      t,
+      "Legacy Museum",
+      `legacy-${Math.random().toString(36).slice(2, 8)}`,
+    );
+
+    const before = await t.run(async (ctx) => ctx.db.get(legacyOrgId));
+    expect(before?.accountNumber).toBeUndefined();
+
+    const result = await t.mutation(
+      internal.migrations.backfillOrganizationTransferFields,
+      {},
+    );
+
+    expect(result.accountNumbersAssigned).toBeGreaterThanOrEqual(1);
+
+    const after = await t.run(async (ctx) => ctx.db.get(legacyOrgId));
+    expect(after?.accountNumber).toMatch(/^ORG-\d{5}$/);
+    expect(after?.allowsIncomingTransferRequests).toBe(false);
   });
 });

@@ -26,6 +26,7 @@ import {
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
+import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { requirePermission } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
@@ -558,6 +559,8 @@ export const update = mutation({
       throw new Error("Organization not found");
     }
 
+    await patchOrganizationTransferFieldsIfMissing(ctx, org);
+
     const updates: {
       name?: string;
       settings?: {
@@ -608,6 +611,48 @@ export const update = mutation({
     ]);
 
     return null;
+  },
+});
+
+/**
+ * Assign ORG account number and transfer opt-in denormalized fields when missing.
+ */
+export const ensureTransferRegistryFields = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.union(
+    v.object({
+      accountNumber: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) {
+      return null;
+    }
+
+    const accountNumber = await patchOrganizationTransferFieldsIfMissing(
+      ctx,
+      org,
+    );
+    if (!accountNumber) {
+      return null;
+    }
+
+    return { accountNumber };
   },
 });
 
