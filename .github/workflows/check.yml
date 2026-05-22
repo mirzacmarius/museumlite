@@ -11,6 +11,13 @@ concurrency:
 permissions:
   contents: read
 
+# Remote Turborepo cache. If the secrets are unset, GitHub passes empty
+# strings and Turbo silently falls back to local-only caching, so this is
+# safe to leave on even when the repo doesn't yet have credentials.
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
