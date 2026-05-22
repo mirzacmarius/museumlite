@@ -133,24 +133,25 @@ export async function dispatchLoanHandler(
     requirePermission(ctx, loan.organizationId, "loans.update"),
   ]);
 
-  await Promise.all([
-    dispatchLoanItems(ctx, {
-      loanId: args.loanId,
-      changedBy: userId,
+  const [, recipients] = await Promise.all([
+    Promise.all([
+      dispatchLoanItems(ctx, {
+        loanId: args.loanId,
+        changedBy: userId,
+      }),
+      ctx.db.patch(args.loanId, {
+        status: "dispatched",
+      }),
+    ]),
+    logActionAndGetRecipients(ctx, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "dispatched",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "dispatched" },
     }),
-    ctx.db.patch(args.loanId, {
-      status: "dispatched",
-    }),
-  ]);
-
-  const recipients = await logActionAndGetRecipients(ctx, {
-    organizationId: loan.organizationId,
-    userId,
-    action: "dispatched",
-    entityType: "loan",
-    entityId: args.loanId,
-    changes: { status: "dispatched" },
-  });
+  ] as const);
 
   await notifyOrganizationRecipients(ctx, recipients, {
     organizationId: loan.organizationId,
@@ -193,24 +194,25 @@ export async function cancelLoanHandler(
     requirePermission(ctx, loan.organizationId, "loans.update"),
   ]);
 
-  await Promise.all([
-    ctx.db.patch(args.loanId, {
-      status: "cancelled",
+  const [, recipients] = await Promise.all([
+    Promise.all([
+      ctx.db.patch(args.loanId, {
+        status: "cancelled",
+      }),
+      restoreLoanCollections(ctx, {
+        loanId: args.loanId,
+        changedBy: userId,
+      }),
+    ]),
+    logActionAndGetRecipients(ctx, {
+      organizationId: loan.organizationId,
+      userId,
+      action: "cancelled",
+      entityType: "loan",
+      entityId: args.loanId,
+      changes: { status: "cancelled" },
     }),
-    restoreLoanCollections(ctx, {
-      loanId: args.loanId,
-      changedBy: userId,
-    }),
-  ]);
-
-  const recipients = await logActionAndGetRecipients(ctx, {
-    organizationId: loan.organizationId,
-    userId,
-    action: "cancelled",
-    entityType: "loan",
-    entityId: args.loanId,
-    changes: { status: "cancelled" },
-  });
+  ] as const);
 
   await notifyOrganizationRecipients(ctx, recipients, {
     organizationId: loan.organizationId,

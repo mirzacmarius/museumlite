@@ -356,8 +356,8 @@ export const update = mutation({
         ),
       );
 
-      await Promise.all(
-        args.roleIds.map((roleId) =>
+      await Promise.all([
+        ...args.roleIds.map((roleId) =>
           ctx.db.insert("accountRoles", {
             accountId: args.accountId,
             roleId,
@@ -365,16 +365,15 @@ export const update = mutation({
             addedBy: userId,
           }),
         ),
-      );
-
-      await ctx.runMutation(internal.audit.logAction, {
-        organizationId: account.organizationId,
-        userId,
-        action: "updated_account",
-        entityType: "account",
-        entityId: args.accountId,
-        changes: updates,
-      });
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: account.organizationId,
+          userId,
+          action: "updated_account",
+          entityType: "account",
+          entityId: args.accountId,
+          changes: updates,
+        }),
+      ]);
     } else {
       await Promise.all([
         ctx.db.patch(args.accountId, updates),

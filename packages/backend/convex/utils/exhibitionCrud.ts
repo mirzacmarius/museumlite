@@ -66,18 +66,16 @@ export async function getExhibitionHandler(
     requirePermission(ctx, exhibition.organizationId, "collections.read"),
   ]);
 
-  const [collection, workflowConfig] = await Promise.all([
+  const [collection, workflowConfig, approver, creator] = await Promise.all([
     ctx.db.get(exhibition.collectionId),
     getWorkflowConfig(ctx, exhibition.organizationId, "exhibition"),
-  ] as const);
-  const [approver, creator] = await Promise.all([
     exhibition.approvedBy
       ? ctx.db.get(exhibition.approvedBy)
       : Promise.resolve(null),
     exhibition.createdBy
       ? ctx.db.get(exhibition.createdBy)
       : Promise.resolve(null),
-  ]);
+  ] as const);
 
   return {
     _id: exhibition._id,

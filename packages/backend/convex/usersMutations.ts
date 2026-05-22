@@ -47,39 +47,44 @@ export const deleteUserAccount = internalMutation({
           })),
       ),
     );
-    await Promise.all(
-      sessionsWithRefreshTokens.flatMap(
-        ({ authSessionId, refreshTokenIds }) => [
-          ...refreshTokenIds.map((refreshTokenId) =>
-            ctx.db.delete(refreshTokenId),
+    await Promise.all([
+      Promise.all(
+        sessionsWithRefreshTokens.flatMap(
+          ({ authSessionId, refreshTokenIds }) => [
+            ...refreshTokenIds.map((refreshTokenId) =>
+              ctx.db.delete(refreshTokenId),
+            ),
+            ctx.db.delete(authSessionId),
+          ],
+        ),
+      ),
+      (async () => {
+        const accountsWithVerificationCodes = await Promise.all(
+          authAccounts.map((authAccount) =>
+            ctx.db
+              .query("authVerificationCodes")
+              .withIndex("accountId", (q) =>
+                q.eq("accountId", authAccount._id),
+              )
+              .unique()
+              .then((verificationCode) => ({
+                authAccountId: authAccount._id,
+                verificationCodeId: verificationCode?._id,
+              })),
           ),
-          ctx.db.delete(authSessionId),
-        ],
-      ),
-    );
-
-    const accountsWithVerificationCodes = await Promise.all(
-      authAccounts.map((authAccount) =>
-        ctx.db
-          .query("authVerificationCodes")
-          .withIndex("accountId", (q) => q.eq("accountId", authAccount._id))
-          .unique()
-          .then((verificationCode) => ({
-            authAccountId: authAccount._id,
-            verificationCodeId: verificationCode?._id,
-          })),
-      ),
-    );
-    await Promise.all(
-      accountsWithVerificationCodes.flatMap(
-        ({ authAccountId, verificationCodeId }) => [
-          verificationCodeId
-            ? ctx.db.delete(verificationCodeId)
-            : Promise.resolve(),
-          ctx.db.delete(authAccountId),
-        ],
-      ),
-    );
+        );
+        await Promise.all(
+          accountsWithVerificationCodes.flatMap(
+            ({ authAccountId, verificationCodeId }) => [
+              verificationCodeId
+                ? ctx.db.delete(verificationCodeId)
+                : Promise.resolve(),
+              ctx.db.delete(authAccountId),
+            ],
+          ),
+        );
+      })(),
+    ]);
 
     await ctx.db.delete(args.userId);
     return null;
@@ -109,16 +114,17 @@ export const relinkUserAuthRecords = internalMutation({
       throw new Error("Target user not found");
     }
 
-    await Promise.all(
-      authAccounts.map((authAccount) =>
-        ctx.db.patch(authAccount._id, { userId: args.targetUserId }),
+    const [, userOrganizations] = await Promise.all([
+      Promise.all(
+        authAccounts.map((authAccount) =>
+          ctx.db.patch(authAccount._id, { userId: args.targetUserId }),
+        ),
       ),
-    );
-
-    const userOrganizations = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_user", (q) => q.eq("userId", args.sourceUserId))
-      .collect();
+      ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user", (q) => q.eq("userId", args.sourceUserId))
+        .collect(),
+    ] as const);
 
     await Promise.all(
       userOrganizations.map(async (userOrganization) => {

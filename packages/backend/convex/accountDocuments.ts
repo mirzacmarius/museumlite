@@ -141,33 +141,36 @@ export const create = mutation({
       "accounts",
       "accounts.write",
     );
-    const documentId = await ctx.db.insert("accountDocuments", {
-      organizationId: account.organizationId,
-      accountId: args.accountId,
-      storageId: args.storageId,
-      filename: args.filename.trim(),
-      mimeType: args.mimeType,
-      size: args.size,
-      documentType: args.documentType,
-      description: args.description?.trim(),
-      uploadedBy: userId,
-      uploadedAt: Date.now(),
-    });
 
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "uploaded_account_document",
-      entityType: "accountDocument",
-      entityId: documentId,
-      changes: {
-        filename: args.filename.trim(),
-        documentType: args.documentType,
+    return await ctx.db
+      .insert("accountDocuments", {
+        organizationId: account.organizationId,
         accountId: args.accountId,
-      },
-    });
+        storageId: args.storageId,
+        filename: args.filename.trim(),
+        mimeType: args.mimeType,
+        size: args.size,
+        documentType: args.documentType,
+        description: args.description?.trim(),
+        uploadedBy: userId,
+        uploadedAt: Date.now(),
+      })
+      .then(async (documentId) => {
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: account.organizationId,
+          userId,
+          action: "uploaded_account_document",
+          entityType: "accountDocument",
+          entityId: documentId,
+          changes: {
+            filename: args.filename.trim(),
+            documentType: args.documentType,
+            accountId: args.accountId,
+          },
+        });
 
-    return documentId;
+        return documentId;
+      });
   },
 });
 

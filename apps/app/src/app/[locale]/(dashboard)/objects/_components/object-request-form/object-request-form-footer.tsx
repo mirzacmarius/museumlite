@@ -61,10 +61,13 @@ interface ObjectRequestFormFooterProps {
   onSaveDraft: () => void;
 }
 
-function renderObjectRequestFormFooterStatus(
-  phase: ObjectRequestFormFooterPhase,
-  draft: ObjectRequestFormFooterDraft,
-) {
+function ObjectRequestFormFooterStatus({
+  phase,
+  draft,
+}: {
+  phase: ObjectRequestFormFooterPhase;
+  draft: ObjectRequestFormFooterDraft;
+}) {
   switch (phase.kind) {
     case "error":
       return <span className="text-destructive">{phase.message}</span>;
@@ -125,7 +128,7 @@ export function ObjectRequestFormFooter({
   return (
     <FormStickyFooter>
       <FormStickyFooter.Status>
-        {renderObjectRequestFormFooterStatus(phase, draft)}
+        <ObjectRequestFormFooterStatus phase={phase} draft={draft} />
       </FormStickyFooter.Status>
       <FormStickyFooter.Actions>
         <Button

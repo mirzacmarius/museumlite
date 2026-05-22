@@ -97,29 +97,33 @@ export const save = mutation({
       return duplicate._id;
     }
 
-    const searchId = await ctx.db.insert("searchHistory", {
-      organizationId: args.organizationId,
-      userId,
-      module: args.module,
-      query: trimmedQuery,
-      filters: args.filters,
-      resultCount: args.resultCount,
-      searchedAt: Date.now(),
-    });
+    return await ctx.db
+      .insert("searchHistory", {
+        organizationId: args.organizationId,
+        userId,
+        module: args.module,
+        query: trimmedQuery,
+        filters: args.filters,
+        resultCount: args.resultCount,
+        searchedAt: Date.now(),
+      })
+      .then(async (searchId) => {
+        const allUserSearches = await ctx.db
+          .query("searchHistory")
+          .withIndex("by_user_and_searched_at", (q) => q.eq("userId", userId))
+          .order("desc")
+          .take(101);
 
-    const allUserSearches = await ctx.db
-      .query("searchHistory")
-      .withIndex("by_user_and_searched_at", (q) => q.eq("userId", userId))
-      .order("desc")
-      .take(101);
+        if (allUserSearches.length > 100) {
+          await Promise.all(
+            allUserSearches
+              .slice(100)
+              .map((search) => ctx.db.delete(search._id)),
+          );
+        }
 
-    if (allUserSearches.length > 100) {
-      await Promise.all(
-        allUserSearches.slice(100).map((search) => ctx.db.delete(search._id)),
-      );
-    }
-
-    return searchId;
+        return searchId;
+      });
   },
 });
 

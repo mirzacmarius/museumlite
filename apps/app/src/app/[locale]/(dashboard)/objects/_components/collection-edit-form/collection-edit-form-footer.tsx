@@ -35,10 +35,13 @@ interface CollectionEditFormFooterProps {
   onNavigate: (href: string) => void;
 }
 
-function renderCollectionEditFormFooterStatus(
-  error: string | null,
-  state: CollectionEditFormFooterState,
-) {
+function CollectionEditFormFooterStatus({
+  error,
+  state,
+}: {
+  error: string | null;
+  state: CollectionEditFormFooterState;
+}) {
   if (error) {
     return <span className="text-destructive">{error}</span>;
   }
@@ -79,7 +82,7 @@ export function CollectionEditFormFooter({
   return (
     <FormStickyFooter>
       <FormStickyFooter.Status>
-        {renderCollectionEditFormFooterStatus(error, state)}
+        <CollectionEditFormFooterStatus error={error} state={state} />
       </FormStickyFooter.Status>
       <FormStickyFooter.Actions>
         <Button

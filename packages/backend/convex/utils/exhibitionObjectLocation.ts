@@ -16,11 +16,10 @@ export async function addExhibitionObjectHandler(
     exhibitionLocationId?: Id<"locations">;
   },
 ) {
-  const { userId, exhibition } = await loadExhibitionMutationContext(
-    ctx,
-    args.exhibitionId,
-  );
-  const collection = await ctx.db.get(args.collectionId);
+  const [{ userId, exhibition }, collection] = await Promise.all([
+    loadExhibitionMutationContext(ctx, args.exhibitionId),
+    ctx.db.get(args.collectionId),
+  ] as const);
   if (!collection) {
     throw new Error("Collection object not found");
   }

@@ -35,15 +35,14 @@ async function createTestOrg(
     return { organizationId, userId };
   });
 
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
-      organizationId,
-      name: "Curator",
-      isSystemRole: false,
-    });
-  });
-
-  const [permissionReadId, permissionUpdateId] = await Promise.all([
+  const [roleId, permissionReadId, permissionUpdateId] = await Promise.all([
+    t.run(async (ctx) => {
+      return await ctx.db.insert("roles", {
+        organizationId,
+        name: "Curator",
+        isSystemRole: false,
+      });
+    }),
     t.run(async (ctx) => {
       return await ctx.db.insert("permissions", {
         name: "collections.read",

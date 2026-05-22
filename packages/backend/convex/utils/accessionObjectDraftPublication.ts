@@ -32,7 +32,8 @@ export async function publishAccessionObjectDraft(
     (draftObjectData?.collectionGroupId
       ? [draftObjectData.collectionGroupId]
       : []);
-  const [, collectionId] = await Promise.all([
+  const uniqueCollectionGroupIds = [...new Set(collectionGroupIds)];
+  const [, collectionId, collectionGroups] = await Promise.all([
     ensureUsageCounter(ctx, accession.organizationId),
     ctx.db.insert("collections", {
       organizationId: accession.organizationId,
@@ -80,14 +81,12 @@ export async function publishAccessionObjectDraft(
       lastModifiedBy: catalogedBy,
       lastModifiedAt: catalogedAt,
     }),
-  ] as const);
-
-  const uniqueCollectionGroupIds = [...new Set(collectionGroupIds)];
-  const collectionGroups = await Promise.all(
-    uniqueCollectionGroupIds.map((collectionGroupId) =>
-      ctx.db.get(collectionGroupId),
+    Promise.all(
+      uniqueCollectionGroupIds.map((collectionGroupId) =>
+        ctx.db.get(collectionGroupId),
+      ),
     ),
-  );
+  ] as const);
 
   await Promise.all([
     ...uniqueCollectionGroupIds.flatMap((collectionGroupId, index) => {

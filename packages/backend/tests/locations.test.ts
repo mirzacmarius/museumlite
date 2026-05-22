@@ -337,14 +337,13 @@ test("should reject location creation with invalid siteId", async () => {
       }),
     ]);
     // Create site in different organization
-    const invalidSiteId = await ctx.db.insert("sites", {
-      organizationId: otherOrgId,
-      name: "Other Building",
-      isActive: true,
-      isPrimary: true,
-    });
-
-    const [userId, roleId, permissionId] = await Promise.all([
+    const [invalidSiteId, userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: otherOrgId,
+        name: "Other Building",
+        isActive: true,
+        isPrimary: true,
+      }),
       ctx.db.insert("users", {
         email: "test@example.com",
       }),

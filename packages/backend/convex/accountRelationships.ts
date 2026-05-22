@@ -242,33 +242,35 @@ export const create = mutation({
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),
     ]);
-    const relationshipId = await ctx.db.insert("accountRelationships", {
-      organizationId: account.organizationId,
-      accountId: args.accountId,
-      relatedEntityType: args.relatedEntityType,
-      relatedEntityId: args.relatedEntityId,
-      relationshipType: args.relationshipType,
-      startDate: args.startDate,
-      endDate: args.endDate,
-      notes: args.notes?.trim(),
-      metadata: args.metadata,
-      createdAt: Date.now(),
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: account.organizationId,
-      userId,
-      action: "created_account_relationship",
-      entityType: "accountRelationship",
-      entityId: relationshipId,
-      changes: {
+    return await ctx.db
+      .insert("accountRelationships", {
+        organizationId: account.organizationId,
+        accountId: args.accountId,
         relatedEntityType: args.relatedEntityType,
         relatedEntityId: args.relatedEntityId,
         relationshipType: args.relationshipType,
-      },
-    });
+        startDate: args.startDate,
+        endDate: args.endDate,
+        notes: args.notes?.trim(),
+        metadata: args.metadata,
+        createdAt: Date.now(),
+      })
+      .then(async (relationshipId) => {
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: account.organizationId,
+          userId,
+          action: "created_account_relationship",
+          entityType: "accountRelationship",
+          entityId: relationshipId,
+          changes: {
+            relatedEntityType: args.relatedEntityType,
+            relatedEntityId: args.relatedEntityId,
+            relationshipType: args.relationshipType,
+          },
+        });
 
-    return relationshipId;
+        return relationshipId;
+      });
   },
 });
 

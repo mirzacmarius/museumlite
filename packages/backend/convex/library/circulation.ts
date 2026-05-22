@@ -1137,23 +1137,23 @@ export const createRecall = mutation({
       ctx.db.get(circulation.accountId),
       ctx.db.get(circulation.itemId),
     ] as const);
-    if (account?.userId) {
-      await ctx.runMutation(internal.audit.createNotificationInternal, {
-        organizationId: circulation.organizationId,
-        userId: account.userId,
-        type: "library_recall",
-        title: "Item Recalled",
-        message: `"${item?.title}" has been recalled. Please return by ${new Date(finalDueDate).toLocaleDateString()}. Reason: ${args.reason}`,
-        relatedEntityType: "circulation",
-        relatedEntityId: args.circulationId,
-      });
-    }
-
-    // Update recall status to notified
-    await ctx.db.patch(recallId, {
-      status: "notified",
-      notifiedAt: now,
-    });
+    await Promise.all([
+      account?.userId
+        ? ctx.runMutation(internal.audit.createNotificationInternal, {
+            organizationId: circulation.organizationId,
+            userId: account.userId,
+            type: "library_recall",
+            title: "Item Recalled",
+            message: `"${item?.title}" has been recalled. Please return by ${new Date(finalDueDate).toLocaleDateString()}. Reason: ${args.reason}`,
+            relatedEntityType: "circulation",
+            relatedEntityId: args.circulationId,
+          })
+        : Promise.resolve(),
+      ctx.db.patch(recallId, {
+        status: "notified",
+        notifiedAt: now,
+      }),
+    ]);
 
     return recallId;
   },

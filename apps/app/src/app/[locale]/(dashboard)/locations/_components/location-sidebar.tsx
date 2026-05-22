@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { shouldShowInExhibitionSidebar } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 import {
   getInitialExpandedLocationIds,
@@ -17,7 +17,22 @@ interface LocationSidebarProps {
   onSelectLocation: (id: Id<"locations">) => void;
 }
 
-export function LocationSidebar({
+export function LocationSidebar(props: LocationSidebarProps) {
+  const locationsStructureKey = useMemo(
+    () =>
+      props.allLocations
+        .map(
+          (location) =>
+            `${location._id}:${location.parentLocationId ?? "root"}:${location.type}`,
+        )
+        .join("|"),
+    [props.allLocations],
+  );
+
+  return <LocationSidebarNav key={locationsStructureKey} {...props} />;
+}
+
+function LocationSidebarNav({
   allLocations,
   exhibitionLocations,
   storageLocations,
@@ -36,21 +51,6 @@ export function LocationSidebar({
     getChildren(parentLocationId).filter((location) =>
       shouldShowInExhibitionSidebar(location.type),
     );
-
-  const toggleLocation = (locationId: Id<"locations">) => {
-    setExpandedOverrides((currentLocationIds) => {
-      const baseLocationIds = currentLocationIds ?? initialExpandedLocationIds;
-      const nextLocationIds = new Set(baseLocationIds);
-
-      if (nextLocationIds.has(locationId)) {
-        nextLocationIds.delete(locationId);
-      } else {
-        nextLocationIds.add(locationId);
-      }
-
-      return nextLocationIds;
-    });
-  };
 
   const locationsStructureKey = useMemo(
     () =>
@@ -74,9 +74,20 @@ export function LocationSidebar({
     [locationsStructureKey],
   );
 
-  useEffect(() => {
-    setExpandedOverrides(null);
-  }, [locationsStructureKey]);
+  const toggleLocation = (locationId: Id<"locations">) => {
+    setExpandedOverrides((currentLocationIds) => {
+      const baseLocationIds = currentLocationIds ?? initialExpandedLocationIds;
+      const nextLocationIds = new Set(baseLocationIds);
+
+      if (nextLocationIds.has(locationId)) {
+        nextLocationIds.delete(locationId);
+      } else {
+        nextLocationIds.add(locationId);
+      }
+
+      return nextLocationIds;
+    });
+  };
 
   const expandedLocationIds = expandedOverrides ?? initialExpandedLocationIds;
 

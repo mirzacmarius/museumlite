@@ -170,196 +170,209 @@ export const listMyAssignments = query({
       throw new Error("Not authenticated");
     }
 
-    // Check accessions
-    await Promise.all(
-      Array.from(pendingAccessions).map(async (accession) => {
+    const approvalChecks = await Promise.all([
+      ...Array.from(pendingAccessions).map((accession) => {
         const currentStep = accession.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
+        return canApproveAtStep(
           ctx,
           args.organizationId,
           "accession",
           currentStep,
-        );
-
-        if (canApprove) {
-          const slaInfo = calculateSlaDue(accession.dateReceived, "accession");
-          const age = Date.now() - accession.dateReceived;
-          const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
-            ? "high"
-            : age > 7 * 24 * 60 * 60 * 1000
-              ? "high"
-              : age > 3 * 24 * 60 * 60 * 1000
-                ? "medium"
-                : "low";
-
-          pendingApprovals.push({
-            _id: accession._id,
-            type: "accession",
-            title: `Accession ${accession.accessionNumber}`,
-            subtitle: accession.source,
-            status: "pending",
-            workflowStep: currentStep,
-            createdAt: accession.dateReceived,
-            urgency,
-            ...slaInfo,
-          });
-        }
+        ).then((canApprove) => ({
+          canApprove,
+          type: "accession" as const,
+          entity: accession,
+          currentStep,
+        }));
       }),
-    );
-
-    // Check deaccessions
-    await Promise.all(
-      Array.from(pendingDeaccessions).map(async (deaccession) => {
+      ...Array.from(pendingDeaccessions).map((deaccession) => {
         const currentStep = deaccession.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
+        return canApproveAtStep(
           ctx,
           args.organizationId,
           "deaccession",
           currentStep,
-        );
-
-        if (canApprove) {
-          const slaInfo = calculateSlaDue(
-            deaccession.dateDeaccessioned,
-            "deaccession",
-          );
-          const age = Date.now() - deaccession.dateDeaccessioned;
-          const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
-            ? "high"
-            : age > 7 * 24 * 60 * 60 * 1000
-              ? "high"
-              : age > 3 * 24 * 60 * 60 * 1000
-                ? "medium"
-                : "low";
-
-          pendingApprovals.push({
-            _id: deaccession._id,
-            type: "deaccession",
-            title: `Deaccession ${deaccession.deaccessionNumber}`,
-            subtitle: deaccession.reason,
-            status: "pending",
-            workflowStep: currentStep,
-            createdAt: deaccession.dateDeaccessioned,
-            urgency,
-            ...slaInfo,
-          });
-        }
+        ).then((canApprove) => ({
+          canApprove,
+          type: "deaccession" as const,
+          entity: deaccession,
+          currentStep,
+        }));
       }),
-    );
-
-    // Check loans
-    await Promise.all(
-      Array.from(pendingLoans).map(async (loan) => {
+      ...Array.from(pendingLoans).map((loan) => {
         const currentStep = loan.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
+        return canApproveAtStep(
           ctx,
           args.organizationId,
           "loan",
           currentStep,
-        );
-
-        if (canApprove) {
-          const slaInfo = calculateSlaDue(loan.startDate, "loan");
-          const age = Date.now() - loan.startDate;
-          const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
-            ? "high"
-            : age > 7 * 24 * 60 * 60 * 1000
-              ? "high"
-              : age > 3 * 24 * 60 * 60 * 1000
-                ? "medium"
-                : "low";
-
-          pendingApprovals.push({
-            _id: loan._id,
-            type: "loan",
-            title: `Loan ${loan.loanNumber}`,
-            subtitle: `${loan.type === "incoming" ? "From" : "To"} ${loan.lenderBorrowerName}`,
-            status: "pending",
-            workflowStep: currentStep,
-            createdAt: loan.startDate,
-            urgency,
-            ...slaInfo,
-          });
-        }
+        ).then((canApprove) => ({
+          canApprove,
+          type: "loan" as const,
+          entity: loan,
+          currentStep,
+        }));
       }),
-    );
-
-    // Check exhibitions
-    await Promise.all(
-      Array.from(pendingExhibitions).map(async (exhibition) => {
+      ...Array.from(pendingExhibitions).map((exhibition) => {
         const currentStep = exhibition.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
+        return canApproveAtStep(
           ctx,
           args.organizationId,
           "exhibition",
           currentStep,
-        );
-
-        if (canApprove) {
-          const slaInfo = calculateSlaDue(exhibition.startDate, "exhibition");
-          const age = Date.now() - exhibition.startDate;
-          const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
-            ? "high"
-            : age > 7 * 24 * 60 * 60 * 1000
-              ? "high"
-              : age > 3 * 24 * 60 * 60 * 1000
-                ? "medium"
-                : "low";
-
-          pendingApprovals.push({
-            _id: exhibition._id,
-            type: "exhibition",
-            title: exhibition.title,
-            subtitle: exhibition.location,
-            status: "proposed",
-            workflowStep: currentStep,
-            createdAt: exhibition.startDate,
-            urgency,
-            ...slaInfo,
-          });
-        }
+        ).then((canApprove) => ({
+          canApprove,
+          type: "exhibition" as const,
+          entity: exhibition,
+          currentStep,
+        }));
       }),
-    );
-
-    // Check conservation treatments
-    await Promise.all(
-      Array.from(pendingConservation).map(async (treatment) => {
+      ...Array.from(pendingConservation).map((treatment) => {
         const currentStep = treatment.workflowStep ?? 1;
-        const canApprove = await canApproveAtStep(
+        return canApproveAtStep(
           ctx,
           args.organizationId,
           "conservation",
           currentStep,
-        );
-
-        if (canApprove) {
-          const slaInfo = calculateSlaDue(
-            treatment.performedAt,
-            "conservation",
-          );
-          const age = Date.now() - treatment.performedAt;
-          const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
-            ? "high"
-            : age > 7 * 24 * 60 * 60 * 1000
-              ? "high"
-              : age > 3 * 24 * 60 * 60 * 1000
-                ? "medium"
-                : "low";
-
-          pendingApprovals.push({
-            _id: treatment._id,
-            type: "conservation",
-            title: treatment.title,
-            subtitle: treatment.treatmentType,
-            status: "proposed",
-            workflowStep: currentStep,
-            createdAt: treatment.performedAt,
-            urgency,
-            ...slaInfo,
-          });
-        }
+        ).then((canApprove) => ({
+          canApprove,
+          type: "conservation" as const,
+          entity: treatment,
+          currentStep,
+        }));
       }),
-    );
+    ]);
+
+    for (const check of approvalChecks) {
+      if (!check.canApprove) {
+        continue;
+      }
+
+      if (check.type === "accession") {
+        const slaInfo = calculateSlaDue(check.entity.dateReceived, "accession");
+        const age = Date.now() - check.entity.dateReceived;
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
+            ? "high"
+            : age > 3 * 24 * 60 * 60 * 1000
+              ? "medium"
+              : "low";
+
+        pendingApprovals.push({
+          _id: check.entity._id,
+          type: "accession",
+          title: `Accession ${check.entity.accessionNumber}`,
+          subtitle: check.entity.source,
+          status: "pending",
+          workflowStep: check.currentStep,
+          createdAt: check.entity.dateReceived,
+          urgency,
+          ...slaInfo,
+        });
+        continue;
+      }
+
+      if (check.type === "deaccession") {
+        const slaInfo = calculateSlaDue(
+          check.entity.dateDeaccessioned,
+          "deaccession",
+        );
+        const age = Date.now() - check.entity.dateDeaccessioned;
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
+            ? "high"
+            : age > 3 * 24 * 60 * 60 * 1000
+              ? "medium"
+              : "low";
+
+        pendingApprovals.push({
+          _id: check.entity._id,
+          type: "deaccession",
+          title: `Deaccession ${check.entity.deaccessionNumber}`,
+          subtitle: check.entity.reason,
+          status: "pending",
+          workflowStep: check.currentStep,
+          createdAt: check.entity.dateDeaccessioned,
+          urgency,
+          ...slaInfo,
+        });
+        continue;
+      }
+
+      if (check.type === "loan") {
+        const slaInfo = calculateSlaDue(check.entity.startDate, "loan");
+        const age = Date.now() - check.entity.startDate;
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
+            ? "high"
+            : age > 3 * 24 * 60 * 60 * 1000
+              ? "medium"
+              : "low";
+
+        pendingApprovals.push({
+          _id: check.entity._id,
+          type: "loan",
+          title: `Loan ${check.entity.loanNumber}`,
+          subtitle: `${check.entity.type === "incoming" ? "From" : "To"} ${check.entity.lenderBorrowerName}`,
+          status: "pending",
+          workflowStep: check.currentStep,
+          createdAt: check.entity.startDate,
+          urgency,
+          ...slaInfo,
+        });
+        continue;
+      }
+
+      if (check.type === "exhibition") {
+        const slaInfo = calculateSlaDue(check.entity.startDate, "exhibition");
+        const age = Date.now() - check.entity.startDate;
+        const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+          ? "high"
+          : age > 7 * 24 * 60 * 60 * 1000
+            ? "high"
+            : age > 3 * 24 * 60 * 60 * 1000
+              ? "medium"
+              : "low";
+
+        pendingApprovals.push({
+          _id: check.entity._id,
+          type: "exhibition",
+          title: check.entity.title,
+          subtitle: check.entity.location,
+          status: "proposed",
+          workflowStep: check.currentStep,
+          createdAt: check.entity.startDate,
+          urgency,
+          ...slaInfo,
+        });
+        continue;
+      }
+
+      const slaInfo = calculateSlaDue(check.entity.performedAt, "conservation");
+      const age = Date.now() - check.entity.performedAt;
+      const urgency: "low" | "medium" | "high" = slaInfo.slaBreached
+        ? "high"
+        : age > 7 * 24 * 60 * 60 * 1000
+          ? "high"
+          : age > 3 * 24 * 60 * 60 * 1000
+            ? "medium"
+            : "low";
+
+      pendingApprovals.push({
+        _id: check.entity._id,
+        type: "conservation",
+        title: check.entity.title,
+        subtitle: check.entity.treatmentType,
+        status: "proposed",
+        workflowStep: check.currentStep,
+        createdAt: check.entity.performedAt,
+        urgency,
+        ...slaInfo,
+      });
+    }
 
     // Sort by: SLA breached first, then urgency (high first), then age (oldest first)
     pendingApprovals.sort((a, b) => {

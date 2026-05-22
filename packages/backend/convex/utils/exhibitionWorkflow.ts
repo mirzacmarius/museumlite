@@ -115,26 +115,28 @@ export async function approveExhibitionHandler(
       if (nextStep === undefined) {
         throw new Error("Next workflow step is not configured");
       }
-      await Promise.all([
-        ctx.db.patch(args.exhibitionId, {
-          workflowStep: nextStep,
-          workflowHistory: history,
-        }),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: exhibition.organizationId,
-          userId,
-          action: "step_approved",
-          entityType: "exhibition",
-          entityId: args.exhibitionId,
-          changes: { step: currentStep, nextStep },
-        }),
-      ]);
-      const usersToNotify = await getUsersToNotifyForWorkflowStep(
-        ctx,
-        exhibition.organizationId,
-        "exhibition",
-        nextStep,
-      );
+      const [, usersToNotify] = await Promise.all([
+        Promise.all([
+          ctx.db.patch(args.exhibitionId, {
+            workflowStep: nextStep,
+            workflowHistory: history,
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: exhibition.organizationId,
+            userId,
+            action: "step_approved",
+            entityType: "exhibition",
+            entityId: args.exhibitionId,
+            changes: { step: currentStep, nextStep },
+          }),
+        ]),
+        getUsersToNotifyForWorkflowStep(
+          ctx,
+          exhibition.organizationId,
+          "exhibition",
+          nextStep,
+        ),
+      ] as const);
 
       await Promise.all(
         Array.from(usersToNotify).map(async (approverId) => {

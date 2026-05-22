@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useReducer, useRef } from "react";
 
 interface NavigationProgressState {
   isNavigating: boolean;
@@ -81,6 +81,20 @@ export function NavigationProgress() {
     }, 100);
   }, [clearProgressInterval, clearResetTimeout]);
 
+  const onDocumentClick = useEffectEvent((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest("a");
+    if (
+      anchor?.href &&
+      !anchor.target &&
+      !anchor.href.startsWith("#") &&
+      anchor.origin === window.location.origin &&
+      anchor.pathname !== window.location.pathname
+    ) {
+      startNavigation();
+    }
+  });
+
   useEffect(() => {
     pathnameRef.current = pathname;
   }, [pathname]);
@@ -96,20 +110,6 @@ export function NavigationProgress() {
   }, [finishNavigation, pathname, state.isNavigating]);
 
   useEffect(() => {
-    const onDocumentClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const anchor = target.closest("a");
-      if (
-        anchor?.href &&
-        !anchor.target &&
-        !anchor.href.startsWith("#") &&
-        anchor.origin === window.location.origin &&
-        anchor.pathname !== window.location.pathname
-      ) {
-        startNavigation();
-      }
-    };
-
     document.addEventListener("click", onDocumentClick);
 
     return () => {
@@ -117,7 +117,7 @@ export function NavigationProgress() {
       clearProgressInterval();
       clearResetTimeout();
     };
-  }, [clearProgressInterval, clearResetTimeout, startNavigation]);
+  }, [clearProgressInterval, clearResetTimeout]);
 
   if (!state.isNavigating) return null;
 

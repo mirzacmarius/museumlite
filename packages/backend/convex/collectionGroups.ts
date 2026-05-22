@@ -382,30 +382,30 @@ export const deleteGroup = mutation({
     if (!group) {
       throw new Error("Group not found");
     }
-    await Promise.all([
-      requirePermission(ctx, group.organizationId, "collections.delete"),
-      checkGroupAccessControl(ctx, group, userId),
-    ]);
-    const groupItems = await ctx.db
-      .query("collectionGroupItems")
-      .withIndex("by_collectionGroup", (q) =>
-        q.eq("collectionGroupId", args.groupId),
-      )
-      .collect();
+    const [, groupItems] = await Promise.all([
+      Promise.all([
+        requirePermission(ctx, group.organizationId, "collections.delete"),
+        checkGroupAccessControl(ctx, group, userId),
+      ]),
+      ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collectionGroup", (q) =>
+          q.eq("collectionGroupId", args.groupId),
+        )
+        .collect(),
+    ] as const);
 
-    await Promise.all(
-      Array.from(groupItems).map(async (item) => {
-        await ctx.db.delete(item._id);
-      }),
-    );
-
-    // Also unset groupId on items using legacy one-to-many relationship
-    const items = await ctx.db
-      .query("collections")
-      .withIndex("by_collectionGroup", (q) =>
-        q.eq("collectionGroupId", args.groupId),
-      )
-      .collect();
+    const [, items] = await Promise.all([
+      Promise.all(
+        Array.from(groupItems).map((item) => ctx.db.delete(item._id)),
+      ),
+      ctx.db
+        .query("collections")
+        .withIndex("by_collectionGroup", (q) =>
+          q.eq("collectionGroupId", args.groupId),
+        )
+        .collect(),
+    ] as const);
     await Promise.all([
       Promise.all(
         Array.from(items).map(async (item) => {
