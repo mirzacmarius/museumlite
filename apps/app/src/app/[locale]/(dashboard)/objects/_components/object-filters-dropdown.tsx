@@ -38,6 +38,7 @@ interface ObjectFiltersDropdownProps {
   objectTypes: string[];
   locations?: LocationOption[];
   collectionGroups?: CollectionGroupOption[];
+  hideCollectionGroupFilter?: boolean;
   className?: string;
 }
 
@@ -74,6 +75,7 @@ export function ObjectFiltersDropdown({
   objectTypes,
   locations,
   collectionGroups,
+  hideCollectionGroupFilter = false,
   className,
 }: ObjectFiltersDropdownProps) {
   const t = useScopedI18n("objects");
@@ -96,7 +98,7 @@ export function ObjectFiltersDropdown({
     (filters.status !== "any" ? 1 : 0) +
     (filters.objectType !== "" ? 1 : 0) +
     (filters.locationId !== "" ? 1 : 0) +
-    (filters.collectionGroupId !== "" ? 1 : 0);
+    (!hideCollectionGroupFilter && filters.collectionGroupId !== "" ? 1 : 0);
 
   const filteredStatuses = statusOptions.filter((o) =>
     titleMatchesQuery(o.label, searchQuery),
@@ -237,42 +239,44 @@ export function ObjectFiltersDropdown({
               </div>
             </FilterSection>
 
-            <FilterSection
-              title={t("filters.collectionGroup")}
-              count={filters.collectionGroupId !== "" ? 1 : 0}
-              defaultOpen
-            >
-              <div className="space-y-1">
-                <FilterOptionRow
-                  kind="single"
-                  isChecked={filters.collectionGroupId === ""}
-                  onClick={() => onChange({ collectionGroupId: "" })}
-                  title={t("filters.allGroups")}
-                />
-                {filteredGroups.length > 0 ? (
-                  filteredGroups.map((group) => (
-                    <FilterOptionRow
-                      key={group._id}
-                      kind="single"
-                      isChecked={filters.collectionGroupId === group._id}
-                      onClick={() =>
-                        onChange({
-                          collectionGroupId:
-                            filters.collectionGroupId === group._id
-                              ? ""
-                              : group._id,
-                        })
-                      }
-                      title={group.name}
-                    />
-                  ))
-                ) : (
-                  <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
-                    {common("noResults")}
-                  </p>
-                )}
-              </div>
-            </FilterSection>
+            {!hideCollectionGroupFilter ? (
+              <FilterSection
+                title={t("filters.collectionGroup")}
+                count={filters.collectionGroupId !== "" ? 1 : 0}
+                defaultOpen
+              >
+                <div className="space-y-1">
+                  <FilterOptionRow
+                    kind="single"
+                    isChecked={filters.collectionGroupId === ""}
+                    onClick={() => onChange({ collectionGroupId: "" })}
+                    title={t("filters.allGroups")}
+                  />
+                  {filteredGroups.length > 0 ? (
+                    filteredGroups.map((group) => (
+                      <FilterOptionRow
+                        key={group._id}
+                        kind="single"
+                        isChecked={filters.collectionGroupId === group._id}
+                        onClick={() =>
+                          onChange({
+                            collectionGroupId:
+                              filters.collectionGroupId === group._id
+                                ? ""
+                                : group._id,
+                          })
+                        }
+                        title={group.name}
+                      />
+                    ))
+                  ) : (
+                    <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
+                      {common("noResults")}
+                    </p>
+                  )}
+                </div>
+              </FilterSection>
+            ) : null}
           </div>
         </div>
       </div>

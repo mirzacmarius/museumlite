@@ -34,6 +34,7 @@ interface ObjectAppliedFiltersProps {
   collectionGroups?: CollectionGroupOption[];
   onChange: (filters: Partial<ObjectAppliedFiltersValue>) => void;
   onClearAll: () => void;
+  hideCollectionGroupFilter?: boolean;
   className?: string;
 }
 
@@ -65,6 +66,7 @@ export function ObjectAppliedFilters({
   collectionGroups,
   onChange,
   onClearAll,
+  hideCollectionGroupFilter = false,
   className,
 }: ObjectAppliedFiltersProps) {
   const t = useScopedI18n("objects");
@@ -90,7 +92,7 @@ export function ObjectAppliedFilters({
     filters.status !== "any" ||
     filters.objectType !== "" ||
     filters.locationId !== "" ||
-    filters.collectionGroupId !== "";
+    (!hideCollectionGroupFilter && filters.collectionGroupId !== "");
 
   if (!showBar) return null;
 
@@ -128,7 +130,7 @@ export function ObjectAppliedFilters({
         />
       )}
 
-      {filters.collectionGroupId !== "" && (
+      {!hideCollectionGroupFilter && filters.collectionGroupId !== "" && (
         <AppliedFilterChip
           label={t("filters.collectionGroup")}
           value={groupLabel ?? filters.collectionGroupId}

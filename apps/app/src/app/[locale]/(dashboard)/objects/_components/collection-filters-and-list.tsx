@@ -2,6 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { BulkActionsBar } from "./bulk-actions-bar";
+import { AddObjectsToCollectionDialog } from "./add-objects-to-collection-dialog";
 import { BulkAddToGroupDialog } from "./bulk-add-to-group-dialog";
 import { BulkDeaccessionDialog } from "./bulk-deaccession-dialog";
 import { BulkMoveLocationDialog } from "./bulk-move-location-dialog";
@@ -32,6 +33,8 @@ export function CollectionFiltersAndList({
           onSelectItem={catalog.handleSelectItem}
           onSelectAll={catalog.handleSelectAll}
           onLoadMore={catalog.loadMore}
+          activeCollectionGroup={catalog.activeCollectionGroup}
+          onAddToCollection={() => catalog.setShowAddToCollectionDialog(true)}
         />
       </div>
 
@@ -74,6 +77,17 @@ export function CollectionFiltersAndList({
         selectedIds={Array.from(catalog.selectedIds)}
         onSuccess={catalog.handleBulkSuccess}
       />
+
+      {catalog.activeCollectionGroup ? (
+        <AddObjectsToCollectionDialog
+          open={catalog.showAddToCollectionDialog}
+          onOpenChange={catalog.setShowAddToCollectionDialog}
+          groupId={catalog.activeCollectionGroup._id}
+          groupName={catalog.activeCollectionGroup.name}
+          organizationId={organizationId}
+          onSuccess={catalog.handleBulkSuccess}
+        />
+      ) : null}
     </div>
   );
 }
