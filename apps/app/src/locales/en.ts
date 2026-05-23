@@ -2115,7 +2115,40 @@ export default {
     digitalAssetsTab: {
       title: "Documents",
       externalLink: "External Link",
+      externalLinksTitle: "External Links",
       noAssets: "No documents linked",
+    },
+    mediaGallery: {
+      loading: "Loading media…",
+      visualMediaTitle: "Visual Media",
+      documentsTitle: "Documents",
+      embedsTitle: "3D Models",
+      noMedia: "No images or 3D models for this object yet.",
+      noDocuments: "No documents uploaded for this object yet.",
+      sketchfabDefaultLabel: "Sketchfab 3D Model",
+      openExternal: "Open",
+      download: "Download",
+      previewFailedTitle: "Preview unavailable",
+      previewFailedDescription:
+        "This file could not be previewed in the browser. Open or download it instead.",
+      missingEmbedUrlTitle: "Embed unavailable",
+      missingEmbedUrlDescription:
+        "This Sketchfab link could not be converted to an embedded viewer.",
+      unsupportedPreviewTitle: "Preview not supported",
+      unsupportedPreviewDescription:
+        "This file type cannot be previewed here. Open or download the file instead.",
+      documentOpenTitle: "Document",
+      documentOpenDescription: "Open or download this file.",
+      missingFileTitle: "File unavailable",
+      missingFileDescription: "The file URL is missing or has expired.",
+      fileType: {
+        image: "Image",
+        video: "Video",
+        pdf: "PDF",
+        document: "Doc",
+        model3d: "3D",
+        embed3d: "3D",
+      },
     },
     printPreview: {
       title: "Print Preview",

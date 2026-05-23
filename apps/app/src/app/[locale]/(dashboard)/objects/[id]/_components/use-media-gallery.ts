@@ -7,14 +7,20 @@ import { useMutation, useQuery } from "convex/react";
 import { type DragEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useScopedI18n } from "@/locales/client";
+import {
+  getSketchfabEmbedsFromLinks,
+  type CollectionLink,
+} from "./media-gallery-utils";
 
 interface UseMediaGalleryOptions {
   collectionId: string;
+  collectionLinks?: CollectionLink[];
   onOpenLightbox?: (index: number) => void;
 }
 
 export function useMediaGallery({
   collectionId,
+  collectionLinks,
   onOpenLightbox,
 }: UseMediaGalleryOptions) {
   const t = useScopedI18n("common.toast");
@@ -180,6 +186,8 @@ export function useMediaGallery({
     setDragOverId(null);
   };
 
+  const sketchfabEmbeds = getSketchfabEmbedsFromLinks(collectionLinks);
+
   const openImageLightbox = (lightboxIdx: number) => {
     if (lightboxIdx < 0) {
       return;
@@ -197,6 +205,7 @@ export function useMediaGallery({
     error,
     images,
     documents,
+    sketchfabEmbeds,
     lightboxImages,
     isLightboxOpen,
     lightboxIndex,
