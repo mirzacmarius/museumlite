@@ -23,6 +23,7 @@
   --color-patina: var(--patina);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-soft-foreground: var(--soft-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-border: var(--border);
@@ -33,7 +34,9 @@
   --color-ring: var(--ring);
 }
 
-html.marketing-site {
+html.marketing-site,
+.marketing-site-root {
+  color-scheme: dark;
   --background: oklch(0.14 0.012 60);
   --foreground: oklch(0.94 0.012 80);
   --ink: oklch(0.10 0.008 60);
@@ -42,7 +45,9 @@ html.marketing-site {
   --gold-soft: oklch(0.62 0.10 70);
   --patina: oklch(0.55 0.05 180);
   --muted: oklch(0.20 0.012 60);
-  --muted-foreground: oklch(0.65 0.015 75);
+  /* ≥4.5:1 on --background for 12px+ text (WCAG AA) */
+  --muted-foreground: oklch(0.76 0.015 78);
+  --soft-foreground: oklch(0.83 0.012 82);
   --card: oklch(0.17 0.012 60);
   --card-foreground: oklch(0.94 0.012 80);
   --border: oklch(0.30 0.015 70 / 40%);
@@ -58,8 +63,18 @@ html.marketing-site {
   --shadow-gold: 0 0 60px -10px oklch(0.78 0.13 75 / 0.4);
 }
 
+html.marketing-site {
+  background-color: oklch(0.14 0.012 60);
+}
+
+.marketing-site-root {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
 @layer base {
-  html.marketing-site * {
+  html.marketing-site *,
+  .marketing-site-root * {
     border-color: var(--color-border);
   }
 
@@ -71,10 +86,20 @@ html.marketing-site {
     -webkit-font-smoothing: antialiased;
   }
 
+  .marketing-site-root {
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
   html.marketing-site h1,
   html.marketing-site h2,
   html.marketing-site h3,
-  html.marketing-site h4 {
+  html.marketing-site h4,
+  .marketing-site-root h1,
+  .marketing-site-root h2,
+  .marketing-site-root h3,
+  .marketing-site-root h4 {
     font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: -0.01em;

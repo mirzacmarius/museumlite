@@ -15,7 +15,7 @@ export function ContactForm() {
     return (
       <div className="border border-gold/40 bg-card p-12 text-center">
         <div className="font-display text-4xl text-gold mb-4">Received.</div>
-        <p className="text-ivory/70">
+        <p className="text-muted-foreground">
           A registrar will be in touch within one working day to arrange
           your private walkthrough.
         </p>

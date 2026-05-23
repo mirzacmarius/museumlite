@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export function SectionLabel({ index, title }: { index: string; title: string }) {
   return (
-    <div className="flex items-center gap-6 text-[10px] uppercase tracking-[0.4em] text-gold/80">
+    <div className="flex items-center gap-6 text-[10px] uppercase tracking-[0.4em] text-gold">
       <span className="font-display text-base text-gold normal-case tracking-normal">
         {index}
       </span>
@@ -35,7 +35,7 @@ export function PageHeader({
           </h1>
         </div>
         {lede && (
-          <p className="md:col-span-5 text-lg text-ivory/70 leading-relaxed md:pb-3">
+          <p className="md:col-span-5 text-lg text-soft-foreground leading-relaxed md:pb-3">
             {lede}
           </p>
         )}

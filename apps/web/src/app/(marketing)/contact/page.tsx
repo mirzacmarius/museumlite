@@ -37,7 +37,7 @@ export default function ContactPage() {
                 Via dei Pepi 32<br />
                 50122 Firenze, Italy
               </p>
-              <p className="mt-3 text-sm text-ivory/55">+39 055 0123 456</p>
+              <p className="mt-3 text-sm text-muted-foreground">+39 055 0123 456</p>
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-[0.3em] text-gold mb-4">Edinburgh Studio</div>
@@ -45,7 +45,7 @@ export default function ContactPage() {
                 14 George IV Bridge<br />
                 Edinburgh EH1 1EE, UK
               </p>
-              <p className="mt-3 text-sm text-ivory/55">+44 131 555 0144</p>
+              <p className="mt-3 text-sm text-muted-foreground">+44 131 555 0144</p>
             </div>
             <div className="pt-8 border-t border-border">
               <div className="text-[10px] uppercase tracking-[0.3em] text-gold mb-4">Press & Partnerships</div>

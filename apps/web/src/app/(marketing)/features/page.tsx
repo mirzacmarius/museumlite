@@ -99,13 +99,13 @@ export default function FeaturesPage() {
             >
               <div className="flex items-baseline justify-between">
                 <span className="font-display text-3xl text-gold">{m.n}</span>
-                <span className="text-[10px] uppercase tracking-[0.3em] text-ivory/40">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
                   Module
                 </span>
               </div>
               <h3 className="font-display text-4xl text-ivory">{m.title}</h3>
-              <p className="text-ivory/65 leading-relaxed">{m.desc}</p>
-              <ul className="mt-2 space-y-2 text-sm text-ivory/75">
+              <p className="text-muted-foreground leading-relaxed">{m.desc}</p>
+              <ul className="mt-2 space-y-2 text-sm text-soft-foreground">
                 {m.items.map((i) => (
                   <li
                     key={i}
@@ -144,7 +144,7 @@ export default function FeaturesPage() {
               <br />
               <em className="not-italic text-gold">its own story.</em>
             </h2>
-            <p className="mt-8 text-ivory/70 text-lg leading-relaxed">
+            <p className="mt-8 text-soft-foreground text-lg leading-relaxed">
               Linked provenance, condition history, exhibition cycles, loan
               agreements, high-resolution imagery and live environmental
               readings — all on one unhurried page.

@@ -25,7 +25,7 @@ export function Nav({ floating = false }: { floating?: boolean }) {
         <Mark />
         <nav
           aria-label="Main"
-          className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.22em] text-ivory/70"
+          className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.22em] text-muted-foreground"
         >
           {links.map((link) => (
             <NavLink key={link.href} href={link.href} label={link.label} />
@@ -34,7 +34,7 @@ export function Nav({ floating = false }: { floating?: boolean }) {
         <div className="flex items-center gap-5 text-xs uppercase tracking-[0.22em]">
           <a
             href={signInUrl}
-            className="hidden md:inline text-ivory/70 hover:text-gold"
+            className="hidden md:inline text-muted-foreground hover:text-gold"
           >
             Sign in
           </a>

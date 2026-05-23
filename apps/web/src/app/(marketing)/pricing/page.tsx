@@ -116,10 +116,10 @@ export default function PricingPage() {
                 <span className="font-display text-6xl text-ivory">
                   {t.price}
                 </span>
-                <span className="text-ivory/50 text-sm">{t.sub}</span>
+                <span className="text-muted-foreground text-sm">{t.sub}</span>
               </div>
-              <p className="text-ivory/65 leading-relaxed mb-8">{t.desc}</p>
-              <ul className="space-y-3 text-sm text-ivory/80 mb-10">
+              <p className="text-muted-foreground leading-relaxed mb-8">{t.desc}</p>
+              <ul className="space-y-3 text-sm text-soft-foreground mb-10">
                 {t.features.map((f) => (
                   <li
                     key={f}
@@ -159,7 +159,7 @@ export default function PricingPage() {
                     +
                   </span>
                 </summary>
-                <p className="mt-4 text-ivory/65 leading-relaxed max-w-2xl">
+                <p className="mt-4 text-muted-foreground leading-relaxed max-w-2xl">
                   {a}
                 </p>
               </details>

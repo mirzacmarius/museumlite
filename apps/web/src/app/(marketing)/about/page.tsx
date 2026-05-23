@@ -53,7 +53,7 @@ export default function AboutPage() {
               />
             </div>
           </div>
-          <div className="md:col-span-6 space-y-6 text-ivory/75 text-lg leading-relaxed md:pt-12">
+          <div className="md:col-span-6 space-y-6 text-soft-foreground text-lg leading-relaxed md:pt-12">
             <SectionLabel index="I." title="A studio, not a startup" />
             <h2 className="font-display text-5xl text-ivory">
               We design for <em className="not-italic text-gold">stewardship</em>, not scale.
@@ -86,7 +86,7 @@ export default function AboutPage() {
                 </div>
                 <div className="font-display text-2xl text-ivory">{p.name}</div>
                 <div className="text-xs uppercase tracking-[0.25em] text-gold mt-2">{p.role}</div>
-                <p className="mt-4 text-sm text-ivory/60 leading-relaxed">{p.note}</p>
+                <p className="mt-4 text-sm text-muted-foreground leading-relaxed">{p.note}</p>
               </div>
             ))}
           </div>
@@ -101,7 +101,7 @@ export default function AboutPage() {
             {milestones.map(([y, t]) => (
               <li key={y} className="bg-background p-6 grid grid-cols-12 gap-6 items-baseline">
                 <span className="col-span-3 font-display text-3xl text-gold">{y}</span>
-                <span className="col-span-9 text-ivory/80 text-lg">{t}</span>
+                <span className="col-span-9 text-soft-foreground text-lg">{t}</span>
               </li>
             ))}
           </ol>

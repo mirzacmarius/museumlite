@@ -39,7 +39,7 @@ const pillars = [
 
 function Hero() {
   return (
-    <section className="relative min-h-screen overflow-hidden grain">
+    <section className="relative min-h-screen overflow-hidden bg-background grain">
       <Image
         src="/marketing/hero-gallery.jpg"
         alt="Grand museum gallery illuminated at dusk"
@@ -67,7 +67,7 @@ function Hero() {
         </h1>
 
         <div className="mt-12 grid md:grid-cols-12 gap-8 items-end">
-          <p className="md:col-span-5 text-lg leading-relaxed text-ivory/75 max-w-md">
+          <p className="md:col-span-5 text-lg leading-relaxed text-soft-foreground max-w-md">
             MuseumLite unifies your collections, exhibitions, conservation
             records and library into a single, considered platform — built for
             curators, not spreadsheets.
@@ -82,7 +82,7 @@ function Hero() {
             </Link>
             <Link
               href="/features"
-              className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-ivory/70 hover:text-gold px-2"
+              className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-gold px-2"
             >
               <span
                 aria-hidden="true"
@@ -97,7 +97,7 @@ function Hero() {
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-border/60 bg-ink/40 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-xs uppercase tracking-[0.25em] text-ivory/60">
+        <div className="mx-auto max-w-7xl px-6 lg:px-10 py-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-xs uppercase tracking-[0.25em] text-muted-foreground">
           <Stat n="1,240+" l="Institutions" />
           <Stat n="38M" l="Objects catalogued" />
           <Stat n="62" l="Countries" />
@@ -114,7 +114,7 @@ function Stat({ n, l }: { n: string; l: string }) {
       <span className="font-display text-2xl text-gold normal-case tracking-normal">
         {n}
       </span>
-      <span>{l}</span>
+      <span className="text-muted-foreground">{l}</span>
     </div>
   );
 }
@@ -135,7 +135,7 @@ function Philosophy() {
             of a curator.
           </h2>
         </div>
-        <div className="md:col-span-6 md:col-start-7 space-y-6 text-ivory/75 text-lg leading-relaxed">
+        <div className="md:col-span-6 md:col-start-7 space-y-6 text-soft-foreground text-lg leading-relaxed">
           <p>
             A museum is not a warehouse. Yet most collection software treats it
             as one — endless rows, brittle forms, the texture of a tax return.
@@ -147,7 +147,7 @@ function Philosophy() {
           </p>
           <p className="font-display italic text-2xl text-gold/90 pt-4 border-t border-border">
             "At last, a system that respects the object."
-            <span className="block not-italic font-sans text-xs uppercase tracking-[0.3em] text-ivory/50 mt-3">
+            <span className="block not-italic font-sans text-xs uppercase tracking-[0.3em] text-muted-foreground mt-3">
               — Dr. Helena Vasari, Chief Conservator, Museo Aurelia
             </span>
           </p>
@@ -169,7 +169,7 @@ function Pillars() {
               <em className="not-italic text-gold"> One institution.</em>
             </h2>
           </div>
-          <p className="hidden md:block max-w-xs text-sm text-ivory/60 leading-relaxed">
+          <p className="hidden md:block max-w-xs text-sm text-muted-foreground leading-relaxed">
             Modules built for the people who actually do the work — and
             integrated so they finally speak the same language.
           </p>
@@ -187,8 +187,8 @@ function Pillars() {
                   alt={p.title}
                   fill
                   loading="lazy"
-                  quality={70}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 400px"
+                  quality={65}
+                  sizes="(max-width: 768px) 100vw, 400px"
                   className="object-cover grayscale-[20%] transition-all duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
@@ -200,7 +200,7 @@ function Pillars() {
                 <h3 className="font-display text-4xl text-ivory mb-4">
                   {p.title}
                 </h3>
-                <p className="text-ivory/65 leading-relaxed">{p.body}</p>
+                <p className="text-muted-foreground leading-relaxed">{p.body}</p>
               </div>
               <Link
                 href="/features"
@@ -229,14 +229,14 @@ function Logos() {
   return (
     <section className="relative py-20 border-y border-border">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <p className="text-center text-[10px] uppercase tracking-[0.4em] text-ivory/50 mb-10">
+        <p className="text-center text-[10px] uppercase tracking-[0.4em] text-muted-foreground mb-10">
           Entrusted by stewards of cultural memory
         </p>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 items-center">
           {insts.map((n) => (
             <div
               key={n}
-              className="font-display text-center text-lg text-ivory/60 tracking-[0.15em]"
+              className="font-display text-center text-lg text-muted-foreground tracking-[0.15em]"
             >
               {n}
             </div>
@@ -260,7 +260,7 @@ function CTA() {
           <br />
           <em className="not-italic text-gold">open.</em>
         </h2>
-        <p className="mt-10 text-ivory/70 text-lg max-w-xl mx-auto">
+        <p className="mt-10 text-soft-foreground text-lg max-w-xl mx-auto">
           See MuseumLite guide a real collection through accession, exhibition
           and conservation in a private 30-minute walkthrough with our team.
         </p>
