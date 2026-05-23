@@ -144,6 +144,8 @@ Run tests from `packages/backend` directory using `bun test`.
 
 Issues are tracked in Linear under the MuseumLite MUS team; agents may create issues directly in Linear and should pick up existing team-created issues from the MUS active board. See `docs/agents/issue-tracker.md`. When finishing Linear-delegated work, comment review steps on the issue and set status to **In Review** (never **Done**) — see `.cursor/rules/linear-delegation-handoff.mdc`.
 
+Delegated handoffs must include a **Review checklist** on the issue (`MUS-485` pattern: grouped `- [ ]` steps with where to test in the app). Details: `.cursor/rules/linear-delegation-handoff.mdc`.
+
 ### Triage labels
 
 Triage uses the MUS Linear statuses, with optional canonical labels only where a matching Linear label exists or is added later. See `docs/agents/triage-labels.md`.

@@ -224,4 +224,4 @@ Lint, typecheck, and backend tests all work without Convex authentication:
 
 ## Linear handoff
 
-When finishing work delegated from a MUS Linear issue: post a review comment on the issue (PR link, test steps), set status to **In Review**, and do **not** mark **Done**. See `.cursor/rules/linear-delegation-handoff.mdc` and `docs/agents/issue-tracker.md`.
+When finishing work delegated from a MUS Linear issue: post a **Review checklist** on the issue (grouped `- [ ]` QA steps with navigation paths and expected UI — canonical example: `MUS-485`), plus PR link and branch; set status to **In Review**; do **not** mark **Done**. See `.cursor/rules/linear-delegation-handoff.mdc` and `docs/agents/issue-tracker.md`.
