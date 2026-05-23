@@ -28,6 +28,13 @@ import {
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { requirePermission } from "./utils/permissions";
+import {
+  assertCanRemoveSuperAdminMember,
+  assertCanRemoveSuperAdminStatus,
+  getSuperAdminRole,
+  requireSuperAdmin,
+  SUPER_ADMIN_ROLE_NAME,
+} from "./utils/superAdmins";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
@@ -204,6 +211,9 @@ export const create = mutation({
       )
       .collect();
 
+    const superAdminRole = roles.find(
+      (r) => r.name === SUPER_ADMIN_ROLE_NAME && r.isSystemRole,
+    );
     const adminRole = roles.find((r) => r.name === "admin" && r.isSystemRole);
     const registrarRole = roles.find(
       (r) => r.name === "registrar" && r.isSystemRole,
@@ -211,13 +221,14 @@ export const create = mutation({
     const curatorRole = roles.find(
       (r) => r.name === "curator" && r.isSystemRole,
     );
+    const ownerRole = superAdminRole ?? adminRole;
 
-    if (adminRole) {
+    if (ownerRole) {
       await Promise.all([
         ctx.db.insert("userOrganizations", {
           userId,
           organizationId,
-          roleId: adminRole._id,
+          roleId: ownerRole._id,
           joinedAt: Date.now(),
         }),
         ctx.db.insert("workflowConfigs", {
@@ -1409,6 +1420,12 @@ export const removeUser = mutation({
       throw new Error("User is not in this organization");
     }
 
+    await assertCanRemoveSuperAdminMember(
+      ctx,
+      args.organizationId,
+      args.userId,
+    );
+
     await Promise.all([
       ctx.db.delete(userOrganization._id),
       ctx.runMutation(internal.audit.logAction, {
@@ -1457,6 +1474,23 @@ export const updateUserRole = mutation({
     if (!userOrganization) {
       throw new Error("User is not in this organization");
     }
+
+    const nextRole = await ctx.db.get(args.roleId);
+    if (!nextRole || nextRole.organizationId !== args.organizationId) {
+      throw new ConvexError("Invalid role for organization");
+    }
+
+    const superAdminRole = await getSuperAdminRole(ctx, args.organizationId);
+    if (superAdminRole && args.roleId === superAdminRole._id) {
+      await requireSuperAdmin(ctx, args.organizationId, currentUserId);
+    }
+
+    await assertCanRemoveSuperAdminStatus(
+      ctx,
+      args.organizationId,
+      args.userId,
+      args.roleId,
+    );
 
     await Promise.all([
       ctx.db.patch(userOrganization._id, {
@@ -1590,8 +1624,20 @@ export const createDefaultRoles = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     // Create system roles
-    const [adminRole, curatorRole, registrarRole, catalogerRole, viewerRole] =
-      await Promise.all([
+    const [
+      superAdminRole,
+      adminRole,
+      curatorRole,
+      registrarRole,
+      catalogerRole,
+      viewerRole,
+    ] = await Promise.all([
+        ctx.db.insert("roles", {
+          organizationId: args.organizationId,
+          name: SUPER_ADMIN_ROLE_NAME,
+          description: "Owner with full organization control (SuperAdmin)",
+          isSystemRole: true,
+        }),
         ctx.db.insert("roles", {
           organizationId: args.organizationId,
           name: "admin",
@@ -1700,14 +1746,18 @@ export const createDefaultRoles = internalMutation({
     );
 
     // Assign permissions to roles
-    // Admin: all permissions
+    // SuperAdmin and Admin: all permissions
     await Promise.all(
-      Array.from(permissionMap.values()).map(async (permId) => {
-        await ctx.db.insert("rolePermissions", {
+      Array.from(permissionMap.values()).flatMap((permId) => [
+        ctx.db.insert("rolePermissions", {
+          roleId: superAdminRole,
+          permissionId: permId,
+        }),
+        ctx.db.insert("rolePermissions", {
           roleId: adminRole,
           permissionId: permId,
-        });
-      }),
+        }),
+      ]),
     );
 
     // Curator: collections + media + locations + sites

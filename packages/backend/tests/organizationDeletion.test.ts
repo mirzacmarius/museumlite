@@ -41,12 +41,18 @@ async function createOwnerOrganization(t: ReturnType<typeof convexTest>) {
       isActive: true,
     });
   });
-  const roleId = await t.run(async (ctx) => {
-    return await ctx.db.insert("roles", {
+  const { superAdminRoleId, adminRoleId } = await t.run(async (ctx) => {
+    const superAdminRoleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "super_admin",
+      isSystemRole: true,
+    });
+    const adminRoleId = await ctx.db.insert("roles", {
       organizationId,
       name: "admin",
       isSystemRole: true,
     });
+    return { superAdminRoleId, adminRoleId };
   });
 
   const permissionId = await t.run(async (ctx) => {
@@ -57,25 +63,34 @@ async function createOwnerOrganization(t: ReturnType<typeof convexTest>) {
   });
 
   await t.run(async (ctx) => {
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
-    });
+    for (const roleId of [superAdminRoleId, adminRoleId]) {
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId,
+      });
+    }
     await ctx.db.insert("userOrganizations", {
       userId: ownerUserId,
       organizationId,
-      roleId,
+      roleId: superAdminRoleId,
       joinedAt: Date.now(),
     });
     await ctx.db.insert("userOrganizations", {
       userId: memberUserId,
       organizationId,
-      roleId,
+      roleId: adminRoleId,
       joinedAt: Date.now(),
     });
   });
 
-  return { organizationId, ownerUserId, memberUserId, roleId };
+  return {
+    organizationId,
+    ownerUserId,
+    memberUserId,
+    roleId: superAdminRoleId,
+    superAdminRoleId,
+    adminRoleId,
+  };
 }
 
 describe("organizationDeletion", () => {
@@ -144,9 +159,21 @@ describe("organizationDeletion", () => {
 
   test("transferring ownership cancels active deletion", async () => {
     const t = convexTest(schema, modules);
-    const { organizationId, ownerUserId, memberUserId } =
+    const { organizationId, ownerUserId, memberUserId, superAdminRoleId } =
       await createOwnerOrganization(t);
     const authed = authedForUser(t, ownerUserId);
+
+    await t.run(async (ctx) => {
+      const membership = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user_and_organization", (q) =>
+          q.eq("userId", memberUserId).eq("organizationId", organizationId),
+        )
+        .first();
+      if (membership) {
+        await ctx.db.patch(membership._id, { roleId: superAdminRoleId });
+      }
+    });
 
     await authed.mutation(api.organizationDeletion.requestDeletion, {
       organizationId,
