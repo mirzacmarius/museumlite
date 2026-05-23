@@ -92,11 +92,12 @@ export async function listSuperAdminUserIds(
       )
       .collect();
 
-    const superAdminIds = new Set(
-      memberships
-        .filter((membership) => membership.roleId === superAdminRole._id)
-        .map((membership) => membership.userId),
-    );
+    const superAdminIds = new Set<Id<"users">>();
+    for (const membership of memberships) {
+      if (membership.roleId === superAdminRole._id) {
+        superAdminIds.add(membership.userId);
+      }
+    }
 
     if (organization.ownerUserId) {
       superAdminIds.add(organization.ownerUserId);
@@ -123,9 +124,13 @@ export async function listSuperAdminUserIds(
     )
     .collect();
 
-  return memberships
-    .filter((membership) => membership.roleId === adminRole._id)
-    .map((membership) => membership.userId);
+  const adminUserIds: Array<Id<"users">> = [];
+  for (const membership of memberships) {
+    if (membership.roleId === adminRole._id) {
+      adminUserIds.push(membership.userId);
+    }
+  }
+  return adminUserIds;
 }
 
 export async function countSuperAdmins(

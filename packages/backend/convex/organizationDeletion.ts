@@ -603,15 +603,15 @@ export const transferOwnership = mutation({
       throw new ConvexError("Not authenticated");
     }
 
+    if (args.newOwnerUserId === userId) {
+      throw new ConvexError("You are already the organization owner");
+    }
+
     const organization = await requireOrganizationSuperAdmin(
       ctx,
       args.organizationId,
       userId,
     );
-
-    if (args.newOwnerUserId === userId) {
-      throw new ConvexError("You are already the organization owner");
-    }
 
     const isNewOwnerSuperAdmin = await isUserSuperAdmin(
       ctx,
