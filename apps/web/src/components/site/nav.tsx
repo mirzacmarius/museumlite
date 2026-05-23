@@ -1,8 +1,7 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { getAppLoginUrl } from "@/lib/app-login-url";
 import { Mark } from "./mark";
+import { NavLink } from "./nav-link";
 
 const links = [
   { href: "/features", label: "Features" },
@@ -12,7 +11,7 @@ const links = [
 ] as const;
 
 export function Nav({ floating = false }: { floating?: boolean }) {
-  const pathname = usePathname();
+  const signInUrl = getAppLoginUrl();
 
   return (
     <header
@@ -24,21 +23,19 @@ export function Nav({ floating = false }: { floating?: boolean }) {
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-10 py-6 flex items-center justify-between">
         <Mark />
-        <nav className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.22em] text-ivory/70">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`hover:text-gold transition-colors ${
-                pathname === l.href ? "text-gold" : ""
-              }`}
-            >
-              {l.label}
-            </Link>
+        <nav
+          aria-label="Main"
+          className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.22em] text-ivory/70"
+        >
+          {links.map((link) => (
+            <NavLink key={link.href} href={link.href} label={link.label} />
           ))}
         </nav>
         <div className="flex items-center gap-5 text-xs uppercase tracking-[0.22em]">
-          <a href="#signin" className="hidden md:inline text-ivory/70 hover:text-gold">
+          <a
+            href={signInUrl}
+            className="hidden md:inline text-ivory/70 hover:text-gold"
+          >
             Sign in
           </a>
           <Link

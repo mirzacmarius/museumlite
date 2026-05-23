@@ -46,7 +46,9 @@ export default function AboutPage() {
                 src="/marketing/hero-gallery.jpg"
                 alt="The studio"
                 fill
-                sizes="(max-width: 768px) 100vw, 50vw"
+                loading="lazy"
+                quality={70}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
                 className="object-cover grayscale-[30%]"
               />
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { OpenPanelComponent, type PostEventPayload } from "@openpanel/nextjs";
+import { OpenPanelComponent } from "@openpanel/nextjs";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -13,7 +13,7 @@ const Provider = () => (
   />
 );
 
-const track = (options: { event: string } & PostEventPayload["properties"]) => {
+const track = (options: { event: string } & Record<string, unknown>) => {
   if (!isProd) {
     // Use console.log for client-side dev logging
     // pino uses worker threads which aren't compatible with browser bundlers
