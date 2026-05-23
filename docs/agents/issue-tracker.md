@@ -20,11 +20,26 @@ Issues and PRDs for this repo live in Linear under the MuseumLite workspace, MUS
 
 When an agent finishes implementation for a Linear-delegated task:
 
-1. **Comment** on the issue with review steps (PR link, how to test, commands run, follow-ups). Use the template in `.cursor/rules/linear-delegation-handoff.mdc`.
+1. **Comment** on the issue with a **Review checklist** (markdown `- [ ]` items grouped by scenario), plus PR link, branch, what changed, and commands run. Follow `.cursor/rules/linear-delegation-handoff.mdc`.
 2. **Set status** to `In Review`.
 3. **Do not** set status to `Done` — a human closes the issue after review.
 
-Agents should use the Linear MCP after `mcp_get_tools` discovery. If MCP is unavailable, paste the comment in the agent summary for manual posting.
+### Review checklist expectations
+
+Checklists must tell reviewers **where to go in the app** and **what to expect** (labels, routes, permissions), not only what code changed.
+
+| Section | Purpose |
+| -------- | -------- |
+| Primary journey | Happy-path steps for the feature under the issue |
+| Edge / empty states | Zero-data, errors, idempotency |
+| Permissions | Roles or keys that block or allow actions |
+| Regression | Nearby flows that must still work |
+| Automated checks | `bun run lint`, targeted tests |
+| i18n (optional) | Locale keys if copy was added |
+
+**Example:** `MUS-485` — “Review checklist” comment on collection groups (navigation, copy, multi-group behavior, permissions).
+
+Agents should use the Linear MCP after `mcp_get_tools` discovery. If MCP is unavailable, paste the full comment (including checklist) in the agent summary for manual posting.
 
 ## Workflow Statuses
 
