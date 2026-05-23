@@ -51,7 +51,7 @@ export function MediaGallerySketchfabEmbed({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/60 bg-black">
+    <div className="overflow-hidden rounded-lg border border-border/60 bg-zinc-950">
       <iframe
         src={embedUrl}
         title={title}

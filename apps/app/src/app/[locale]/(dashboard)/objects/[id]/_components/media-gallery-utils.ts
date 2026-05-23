@@ -91,14 +91,17 @@ export function getSketchfabEmbedsFromLinks(
 ): SketchfabEmbedItem[] {
   if (!links?.length) return [];
 
-  return links
-    .filter((link) => link.url.includes("sketchfab"))
-    .map((link) => ({
+  const embeds: SketchfabEmbedItem[] = [];
+  for (const link of links) {
+    if (!link.url.includes("sketchfab")) continue;
+    embeds.push({
       id: link.url,
       url: link.url,
       label: link.label,
       embedUrl: getSketchfabEmbedUrl(link.url),
-    }));
+    });
+  }
+  return embeds;
 }
 
 export function getExternalLinksExcludingSketchfab(
