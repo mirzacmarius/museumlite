@@ -206,6 +206,84 @@ describe("superAdmin roles", () => {
     expect(organizationAfterApproval?.isActive).toBe(false);
   });
 
+  test("owner on admin role still counts toward multi-SuperAdmin deletion approval", async () => {
+    const t = convexTest(schema, modules);
+    const ownerUserId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Owner On Admin",
+        email: `owner-admin-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+    const secondSuperAdminUserId = await t.run(async (ctx) => {
+      return await ctx.db.insert("users", {
+        name: "Assigned SuperAdmin",
+        email: `assigned-sa-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+      });
+    });
+    const organizationId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Pre-Migration SuperAdmin Org",
+        slug: `pre-migration-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+        subscriptionTier: "pro",
+        ownerUserId,
+        isActive: true,
+      });
+    });
+
+    const { superAdminRoleId, adminRoleId } = await t.run(async (ctx) => {
+        const superAdminRoleId = await ctx.db.insert("roles", {
+          organizationId,
+          name: "super_admin",
+          isSystemRole: true,
+        });
+        const adminRoleId = await ctx.db.insert("roles", {
+          organizationId,
+          name: "admin",
+          isSystemRole: true,
+        });
+        const manageSettingsPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        for (const roleId of [superAdminRoleId, adminRoleId]) {
+          await ctx.db.insert("rolePermissions", {
+            roleId,
+            permissionId: manageSettingsPermissionId,
+          });
+        }
+        return { superAdminRoleId, adminRoleId };
+      });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("userOrganizations", {
+        userId: ownerUserId,
+        organizationId,
+        roleId: adminRoleId,
+        joinedAt: Date.now(),
+      });
+      await ctx.db.insert("userOrganizations", {
+        userId: secondSuperAdminUserId,
+        organizationId,
+        roleId: superAdminRoleId,
+        joinedAt: Date.now(),
+      });
+    });
+
+    const secondAuthed = authedForUser(t, secondSuperAdminUserId);
+
+    const pendingSummary = await secondAuthed.mutation(
+      api.organizationDeletion.requestDeletion,
+      { organizationId },
+    );
+    expect(pendingSummary.status).toBe("pending_super_admin_approval");
+
+    const organizationAfterRequest = await t.run(async (ctx) =>
+      ctx.db.get(organizationId),
+    );
+    expect(organizationAfterRequest?.isActive).toBe(true);
+  });
+
   test("creator receives super_admin role when creating organization", async () => {
     const t = convexTest(schema, modules);
     const userId = await t.run(async (ctx) => {

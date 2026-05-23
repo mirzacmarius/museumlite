@@ -78,6 +78,11 @@ export async function listSuperAdminUserIds(
   ctx: OrgCtx,
   organizationId: Id<"organizations">,
 ): Promise<Array<Id<"users">>> {
+  const organization = await ctx.db.get(organizationId);
+  if (!organization) {
+    return [];
+  }
+
   const superAdminRole = await getSuperAdminRole(ctx, organizationId);
   if (superAdminRole) {
     const memberships = await ctx.db
@@ -87,18 +92,19 @@ export async function listSuperAdminUserIds(
       )
       .collect();
 
-    const superAdminIds = memberships
-      .filter((membership) => membership.roleId === superAdminRole._id)
-      .map((membership) => membership.userId);
+    const superAdminIds = new Set(
+      memberships
+        .filter((membership) => membership.roleId === superAdminRole._id)
+        .map((membership) => membership.userId),
+    );
 
-    if (superAdminIds.length > 0) {
-      return superAdminIds;
+    if (organization.ownerUserId) {
+      superAdminIds.add(organization.ownerUserId);
     }
-  }
 
-  const organization = await ctx.db.get(organizationId);
-  if (!organization) {
-    return [];
+    if (superAdminIds.size > 0) {
+      return Array.from(superAdminIds);
+    }
   }
 
   if (organization.ownerUserId) {

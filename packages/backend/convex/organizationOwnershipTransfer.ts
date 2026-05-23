@@ -189,6 +189,21 @@ export const requestOwnershipTransfer = mutation({
       );
     }
 
+    const targetMembership = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q
+          .eq("userId", args.newOwnerUserId)
+          .eq("organizationId", args.targetOrganizationId),
+      )
+      .first();
+
+    if (!targetMembership) {
+      throw new ConvexError(
+        "New owner must be a member of the target organization",
+      );
+    }
+
     const existingRequest = await getPendingOwnershipTransfer(
       ctx,
       args.organizationId,
