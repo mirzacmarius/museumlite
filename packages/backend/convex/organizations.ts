@@ -222,8 +222,9 @@ export const create = mutation({
       (r) => r.name === "curator" && r.isSystemRole,
     );
     const ownerRole = superAdminRole ?? adminRole;
+    const workflowAdminRole = adminRole ?? superAdminRole;
 
-    if (ownerRole) {
+    if (ownerRole && workflowAdminRole) {
       await Promise.all([
         ctx.db.insert("userOrganizations", {
           userId,
@@ -237,17 +238,17 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: registrarRole?._id ?? adminRole._id,
+              roleId: registrarRole?._id ?? workflowAdminRole._id,
               name: "Registrar Review",
             },
             {
               stepNumber: 2,
-              roleId: curatorRole?._id ?? adminRole._id,
+              roleId: curatorRole?._id ?? workflowAdminRole._id,
               name: "Curator Approval",
             },
           ],
           canInitiateRoles: [
-            adminRole._id,
+            workflowAdminRole._id,
             ...(registrarRole ? [registrarRole._id] : []),
           ],
         }),
@@ -257,17 +258,17 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: curatorRole?._id ?? adminRole._id,
+              roleId: curatorRole?._id ?? workflowAdminRole._id,
               name: "Curator Review",
             },
             {
               stepNumber: 2,
-              roleId: adminRole._id,
+              roleId: workflowAdminRole._id,
               name: "Director Approval",
             },
           ],
           canInitiateRoles: [
-            adminRole._id,
+            workflowAdminRole._id,
             ...(curatorRole ? [curatorRole._id] : []),
           ],
         }),
@@ -277,17 +278,17 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: registrarRole?._id ?? adminRole._id,
+              roleId: registrarRole?._id ?? workflowAdminRole._id,
               name: "Registrar Review",
             },
             {
               stepNumber: 2,
-              roleId: curatorRole?._id ?? adminRole._id,
+              roleId: curatorRole?._id ?? workflowAdminRole._id,
               name: "Curator Approval",
             },
           ],
           canInitiateRoles: [
-            adminRole._id,
+            workflowAdminRole._id,
             ...(registrarRole ? [registrarRole._id] : []),
           ],
         }),
@@ -297,12 +298,12 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: adminRole._id,
+              roleId: workflowAdminRole._id,
               name: "Director Approval",
             },
           ],
           canInitiateRoles: [
-            adminRole._id,
+            workflowAdminRole._id,
             ...(curatorRole ? [curatorRole._id] : []),
           ],
         }),
@@ -312,12 +313,12 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: adminRole._id,
+              roleId: workflowAdminRole._id,
               name: "Director Approval",
             },
           ],
           canInitiateRoles: [
-            adminRole._id,
+            workflowAdminRole._id,
             ...(curatorRole ? [curatorRole._id] : []),
           ],
         }),
@@ -327,12 +328,12 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: curatorRole?._id ?? adminRole._id,
+              roleId: curatorRole?._id ?? workflowAdminRole._id,
               name: "Curator Approval",
             },
           ],
           canInitiateRoles: [
-            adminRole._id,
+            workflowAdminRole._id,
             ...(registrarRole ? [registrarRole._id] : []),
             ...(curatorRole ? [curatorRole._id] : []),
           ],
