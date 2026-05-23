@@ -29,6 +29,8 @@ import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { MediaEditDialog } from "./media-edit-dialog";
+import { MediaGalleryFileTypeBadge } from "./media-gallery-file-type-badge";
+import { getMediaDisplayKind } from "./media-gallery-utils";
 import type { useMediaGallery } from "./use-media-gallery";
 
 interface MediaGalleryImageGridProps {
@@ -43,6 +45,7 @@ export function MediaGalleryImageGrid({
   onOpenLightbox,
 }: MediaGalleryImageGridProps) {
   const tMedia = useScopedI18n("objects.form.media");
+  const tGallery = useScopedI18n("objects.mediaGallery");
   const {
     common,
     images,
@@ -119,14 +122,7 @@ export function MediaGalleryImageGrid({
   }, [editable, handleDragOver, handleDragLeave, handleDrop]);
 
   if (images.length === 0) {
-    return (
-      <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed">
-        <ImageIcon className="mb-2 size-8 text-muted-foreground" />
-        <p className="text-xs text-muted-foreground">
-          No images or videos uploaded
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -139,6 +135,11 @@ export function MediaGalleryImageGrid({
           );
           const isDragging = draggedId === mediaId;
           const isDragOver = dragOverId === mediaId;
+          const displayKind = getMediaDisplayKind(file);
+          const fileTypeLabel =
+            displayKind === "video"
+              ? tGallery("fileType.video")
+              : tGallery("fileType.image");
 
           return (
             <div
@@ -298,11 +299,17 @@ export function MediaGalleryImageGrid({
                     </div>
                   )}
 
-                  {file.isPrimary && (
-                    <div className="absolute left-2 top-2 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
-                      {tMedia("primary")}
-                    </div>
-                  )}
+                  <div className="absolute left-2 top-2 flex flex-col gap-1">
+                    {file.isPrimary && (
+                      <div className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
+                        {tMedia("primary")}
+                      </div>
+                    )}
+                    <MediaGalleryFileTypeBadge
+                      kind={displayKind}
+                      label={fileTypeLabel}
+                    />
+                  </div>
                 </>
               )}
             </div>
