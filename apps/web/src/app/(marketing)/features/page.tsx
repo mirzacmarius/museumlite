@@ -130,7 +130,9 @@ export default function FeaturesPage() {
                 src="/marketing/artifact-mask.jpg"
                 alt="Specimen"
                 fill
-                sizes="(max-width: 768px) 100vw, 42vw"
+                loading="lazy"
+                quality={70}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 42vw, 500px"
                 className="object-cover"
               />
             </div>

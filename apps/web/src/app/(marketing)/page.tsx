@@ -45,7 +45,8 @@ function Hero() {
         alt="Grand museum gallery illuminated at dusk"
         fill
         priority
-        sizes="100vw"
+        quality={65}
+        sizes="(max-width: 768px) 100vw, 1920px"
         className="object-cover opacity-70"
       />
       <div className="absolute inset-0 bg-vignette" />
@@ -83,7 +84,10 @@ function Hero() {
               href="/features"
               className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-ivory/70 hover:text-gold px-2"
             >
-              <span className="flex size-9 items-center justify-center rounded-full border border-ivory/40">
+              <span
+                aria-hidden="true"
+                className="flex size-9 items-center justify-center rounded-full border border-ivory/40"
+              >
                 ▶
               </span>
               Tour the platform
@@ -182,7 +186,9 @@ function Pillars() {
                   src={p.img}
                   alt={p.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
+                  loading="lazy"
+                  quality={70}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 400px"
                   className="object-cover grayscale-[20%] transition-all duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />

@@ -1,6 +1,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
+import { PortalAppShell } from "@/components/portal/portal-app-shell";
 import { PortalChrome } from "./portal-chrome";
 
 interface LayoutProps {
@@ -38,5 +39,9 @@ export async function generateMetadata({
 }
 
 export default function PortalLayout({ children }: LayoutProps) {
-  return <PortalChrome>{children}</PortalChrome>;
+  return (
+    <PortalAppShell>
+      <PortalChrome>{children}</PortalChrome>
+    </PortalAppShell>
+  );
 }
