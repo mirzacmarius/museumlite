@@ -81,7 +81,7 @@ function Hero() {
               href="/features"
               className="inline-flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-ivory/70 hover:text-gold px-2"
             >
-              <span className="h-9 w-9 rounded-full border border-ivory/40 flex items-center justify-center">
+              <span className="flex size-9 items-center justify-center rounded-full border border-ivory/40">
                 ▶
               </span>
               Tour the platform
