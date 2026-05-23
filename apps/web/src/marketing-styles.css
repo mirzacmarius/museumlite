@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap");
 @import "tailwindcss" source(none);
 @source "./app/(marketing)/**/*.{ts,tsx}";
 @source "./components/site/**/*.{ts,tsx}";
@@ -6,8 +7,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-display: var(--font-marketing-display), "Cormorant Garamond", serif;
-  --font-sans: var(--font-marketing-sans), "Inter", sans-serif;
+  --font-display: "Cormorant Garamond", serif;
+  --font-sans: "Inter", sans-serif;
 
   --radius-sm: 2px;
   --radius-md: 4px;
@@ -32,7 +33,7 @@
   --color-ring: var(--ring);
 }
 
-.marketing-site {
+html.marketing-site {
   --background: oklch(0.14 0.012 60);
   --foreground: oklch(0.94 0.012 80);
   --ink: oklch(0.10 0.008 60);
@@ -58,11 +59,11 @@
 }
 
 @layer base {
-  .marketing-site * {
+  html.marketing-site * {
     border-color: var(--color-border);
   }
 
-  .marketing-site {
+  html.marketing-site body {
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
@@ -70,10 +71,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  .marketing-site h1,
-  .marketing-site h2,
-  .marketing-site h3,
-  .marketing-site h4 {
+  html.marketing-site h1,
+  html.marketing-site h2,
+  html.marketing-site h3,
+  html.marketing-site h4 {
     font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: -0.01em;
