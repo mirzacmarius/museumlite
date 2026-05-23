@@ -4312,4 +4312,13 @@ export default defineSchema({
   })
     .index("by_object", ["objectId"])
     .index("by_organization", ["organizationId"]),
+
+  marketingInquiries: defineTable({
+    name: v.string(),
+    institution: v.string(),
+    email: v.string(),
+    collectionSize: v.optional(v.string()),
+    message: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_email", ["email"]),
 });

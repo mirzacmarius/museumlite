@@ -1,0 +1,128 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap");
+@import "tailwindcss" source(none);
+@source "./app/(marketing)/**/*.{ts,tsx}";
+@source "./components/site/**/*.{ts,tsx}";
+@source "./app/not-found.tsx";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Cormorant Garamond", serif;
+  --font-sans: "Inter", sans-serif;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ivory: var(--ivory);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-patina: var(--patina);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+}
+
+html.marketing-site {
+  --background: oklch(0.14 0.012 60);
+  --foreground: oklch(0.94 0.012 80);
+  --ink: oklch(0.10 0.008 60);
+  --ivory: oklch(0.94 0.014 85);
+  --gold: oklch(0.78 0.13 75);
+  --gold-soft: oklch(0.62 0.10 70);
+  --patina: oklch(0.55 0.05 180);
+  --muted: oklch(0.20 0.012 60);
+  --muted-foreground: oklch(0.65 0.015 75);
+  --card: oklch(0.17 0.012 60);
+  --card-foreground: oklch(0.94 0.012 80);
+  --border: oklch(0.30 0.015 70 / 40%);
+  --primary: oklch(0.78 0.13 75);
+  --primary-foreground: oklch(0.12 0.01 60);
+  --accent: oklch(0.78 0.13 75);
+  --accent-foreground: oklch(0.12 0.01 60);
+  --ring: oklch(0.78 0.13 75);
+
+  --gradient-spotlight: radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.78 0.13 75 / 0.18), transparent 70%);
+  --gradient-vignette: radial-gradient(ellipse at center, transparent 40%, oklch(0.08 0.005 60 / 0.85) 100%);
+  --shadow-gallery: 0 30px 80px -20px oklch(0.05 0.005 60 / 0.6);
+  --shadow-gold: 0 0 60px -10px oklch(0.78 0.13 75 / 0.4);
+}
+
+@layer base {
+  html.marketing-site * {
+    border-color: var(--color-border);
+  }
+
+  html.marketing-site body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html.marketing-site h1,
+  html.marketing-site h2,
+  html.marketing-site h3,
+  html.marketing-site h4 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .bg-spotlight {
+    background: var(--gradient-spotlight);
+  }
+  .bg-vignette {
+    background: var(--gradient-vignette);
+  }
+  .shadow-gallery {
+    box-shadow: var(--shadow-gallery);
+  }
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+  .gold-rule {
+    background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
