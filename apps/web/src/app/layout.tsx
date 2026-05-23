@@ -7,15 +7,16 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
 import { ConvexClientProvider } from "./convex-client-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://museumlite.com"),
-  title: "MuseumLite - Museum Collection Management Software",
+  title: {
+    default: "MuseumLite — Museum Management, Reimagined",
+    template: "%s | MuseumLite",
+  },
   description:
-    "Complete collection management for museums, galleries, and collectors. Track accessions, manage locations, handle loans, and publish your collection online. Start free.",
+    "MuseumLite is the operating system for modern museums — collections, exhibitions, conservation, and library in one elegant platform.",
   keywords: [
     "museum software",
     "collection management",
@@ -28,9 +29,9 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "MuseumLite" }],
   openGraph: {
-    title: "MuseumLite - Museum Collection Management Software",
+    title: "MuseumLite — Museum Management, Reimagined",
     description:
-      "Complete collection management for museums, galleries, and collectors. Track accessions, manage locations, and publish your collection online.",
+      "The operating system for modern museums — collections, exhibitions, conservation, and library in one platform.",
     url: "https://museumlite.com",
     siteName: "MuseumLite",
     locale: "en_US",
@@ -38,9 +39,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MuseumLite - Museum Collection Management Software",
+    title: "MuseumLite — Museum Management, Reimagined",
     description:
-      "Complete collection management for museums, galleries, and collectors.",
+      "The operating system for modern museums — collections, exhibitions, conservation, and library.",
   },
   robots: {
     index: true,
@@ -58,14 +59,12 @@ export default function RootLayout({
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "antialiased dark min-h-screen bg-zinc-950 text-white selection:bg-accent/20",
+          "min-h-screen antialiased",
         )}
       >
         <MotionProvider>
           <ConvexClientProvider>
-            <Header />
             {children}
-            <Footer />
             <SpeedInsights />
             <Analytics />
           </ConvexClientProvider>

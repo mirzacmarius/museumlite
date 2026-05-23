@@ -5,6 +5,7 @@ import type { MetadataRoute } from "next";
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://museumlite.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const marketingPaths = ["/features", "/pricing", "/about", "/contact"] as const;
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,
@@ -12,6 +13,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 1,
     },
+    ...marketingPaths.map((path) => ({
+      url: `${BASE_URL}${path}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
   ];
 
   try {
