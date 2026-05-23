@@ -59,10 +59,14 @@ export function ContactForm() {
       <Field label="Email" name="email" type="email" />
       <Field label="Approximate collection size" name="size" placeholder="e.g. 12,000 objects" />
       <div>
-        <label className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3">
+        <label
+          htmlFor="message"
+          className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3"
+        >
           Anything you&apos;d like us to know
         </label>
         <textarea
+          id="message"
           name="message"
           rows={5}
           className="w-full bg-transparent border-b border-border focus:border-gold outline-none text-ivory text-lg py-3 transition-colors resize-none"

@@ -189,6 +189,49 @@ export default {
         cancel: "Avbryt",
         delete: "Slett",
       },
+      deletion: {
+        dangerZone: "Faresone",
+        title: "Slett organisasjon",
+        description:
+          "Organisasjonen din deaktiveres i 90 dager. Du kan når som helst avbryte slettingen. Etter fristen sender vi en ny e-post før permanent sletting.",
+        requestButton: "Planlegg sletting",
+        cancelButton: "Avbryt sletting",
+        requesting: "Planlegger…",
+        cancelling: "Avbryter…",
+        activeTitle: "Sletting planlagt",
+        gracePeriodMessage:
+          "Denne organisasjonen er inaktiv mens sletting er planlagt. Fristen utløper {date}.",
+        awaitingFinalNoticeMessage:
+          "Siste varsel sendes snart. Du kan fortsatt avbryte slettingen eller overføre eierskap.",
+        pendingPurgeMessage:
+          "Permanent sletting er planlagt {date}. Avbryt nå for å beholde organisasjonen.",
+        transferTitle: "Overfør eierskap",
+        transferDescription:
+          "Overføring av eierskap avbryter slettingsprosessen. Den nye eieren må bekrefte faktureringsplanen.",
+        transferCandidateLabel: "Ny eier",
+        transferCandidatePlaceholder: "Velg et teammedlem",
+        transferButton: "Overfør eierskap",
+        transferring: "Overfører…",
+        subOrganizationBlocked:
+          "Underorganisasjoner kan ikke slettes fra denne skjermen.",
+        confirmDialog: {
+          title: "Planlegge sletting av organisasjon?",
+          description:
+            "Organisasjonen deaktiveres umiddelbart. Data beholdes i 90 dager slik at du kan avbryte. Vi sender en e-post med en lenke for å stoppe slettingen.",
+          confirm: "Planlegg sletting",
+          cancel: "Behold organisasjon",
+        },
+        cancelDialog: {
+          title: "Avbryte planlagt sletting?",
+          description:
+            "Organisasjonen din reaktiveres og slettingen stoppes.",
+          confirm: "Avbryt sletting",
+          cancel: "Behold planlagt sletting",
+        },
+        requestError: "Kunne ikke planlegge sletting. Prøv igjen.",
+        cancelError: "Kunne ikke avbryte sletting. Prøv igjen.",
+        transferError: "Kunne ikke overføre eierskap. Prøv igjen.",
+      },
     },
     developer: {
       selectOrganization:
@@ -645,6 +688,10 @@ export default {
     on: "den",
     noChargeTest:
       "Du vil ikke bli belastet for å teste abonnementsoppgraderingen.",
+    planSelectionRequired:
+      "Bekreft organisasjonens faktureringsplan. Forrige eiers plan ({tier}) er valgt som standard til du velger en plan nedenfor.",
+    keepDefaultPlan: "Behold {tier}-plan",
+    confirmingPlan: "Bekrefter…",
   },
   integrations: {
     title: "Integrasjoner",
@@ -3482,6 +3529,24 @@ export default {
     title: "Opprett konto",
     heading: "Opprett kontoen din",
     description: "Registrer deg for å begynne å bruke Museumlite",
+  },
+  organizationDeletionCancelPage: {
+    heading: "Avbryt sletting av organisasjon",
+    description:
+      "Stopp den planlagte slettingen og reaktiver organisasjonen din.",
+    organization: "Organisasjon",
+    scheduledDeletionDate: "Planlagt permanent sletting",
+    cancelButton: "Stopp sletting",
+    cancelling: "Avbryter…",
+    successTitle: "Sletting avbrutt",
+    successDescription:
+      "Organisasjonen din er reaktivert. Du kan logge inn for å fortsette å bruke MuseumLite.",
+    signIn: "Logg inn",
+    loading: "Laster…",
+    notFound: "Lenke ikke funnet",
+    notFoundDescription:
+      "Denne avbrytingslenken er ugyldig, eller slettingsprosessen er allerede avsluttet.",
+    error: "Vi kunne ikke avbryte slettingen. Lenken kan ha utløpt.",
   },
   invitePage: {
     heading: "Du har blitt invitert!",

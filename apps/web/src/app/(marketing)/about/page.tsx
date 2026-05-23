@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Nav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { PageHeader, SectionLabel } from "@/components/site/section-label";
@@ -41,7 +42,13 @@ export default function AboutPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-10 grid md:grid-cols-12 gap-12 items-start">
           <div className="md:col-span-6">
             <div className="relative aspect-[4/5] overflow-hidden shadow-gallery">
-              <img src="/marketing/hero-gallery.jpg" alt="The studio" className="h-full w-full object-cover grayscale-[30%]" />
+              <Image
+                src="/marketing/hero-gallery.jpg"
+                alt="The studio"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover grayscale-[30%]"
+              />
             </div>
           </div>
           <div className="md:col-span-6 space-y-6 text-ivory/75 text-lg leading-relaxed md:pt-12">

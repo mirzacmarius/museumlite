@@ -73,6 +73,7 @@ import type * as notifications from "../notifications.js";
 import type * as objectComments from "../objectComments.js";
 import type * as objectMoves from "../objectMoves.js";
 import type * as organizationCleanup from "../organizationCleanup.js";
+import type * as organizationDeletion from "../organizationDeletion.js";
 import type * as organizationUsage from "../organizationUsage.js";
 import type * as organizations from "../organizations.js";
 import type * as otp_ResendOTP from "../otp/ResendOTP.js";
@@ -227,6 +228,7 @@ declare const fullApi: ApiFromModules<{
   objectComments: typeof objectComments;
   objectMoves: typeof objectMoves;
   organizationCleanup: typeof organizationCleanup;
+  organizationDeletion: typeof organizationDeletion;
   organizationUsage: typeof organizationUsage;
   organizations: typeof organizations;
   "otp/ResendOTP": typeof otp_ResendOTP;

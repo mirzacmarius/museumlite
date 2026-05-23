@@ -5,6 +5,11 @@ node_modules
 .pnp
 .pnp.js
 
+# bun
+# Repo uses the text lockfile (bun.lock); the binary form is generated
+# locally by older Bun versions and should never be committed.
+bun.lockb
+
 # testing
 coverage
 

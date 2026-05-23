@@ -16,6 +16,16 @@ Issues and PRDs for this repo live in Linear under the MuseumLite workspace, MUS
 - Use Linear priority values when priority is known: urgent, high, medium, low, or none.
 - Move issues through the MUS workflow statuses rather than inventing new statuses.
 
+## Agent handoff (delegated work)
+
+When an agent finishes implementation for a Linear-delegated task:
+
+1. **Comment** on the issue with review steps (PR link, how to test, commands run, follow-ups). Use the template in `.cursor/rules/linear-delegation-handoff.mdc`.
+2. **Set status** to `In Review`.
+3. **Do not** set status to `Done` — a human closes the issue after review.
+
+Agents should use the Linear MCP after `mcp_get_tools` discovery. If MCP is unavailable, paste the comment in the agent summary for manual posting.
+
 ## Workflow Statuses
 
 The MUS team currently uses these statuses:

@@ -125,6 +125,8 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     slug: v.string(),
+    accountNumber: v.optional(v.string()),
+    allowsIncomingTransferRequests: v.optional(v.boolean()),
     logoId: v.optional(v.id("_storage")),
     type: v.union(
       v.literal("museum"),
@@ -146,6 +148,7 @@ export default defineSchema({
         autoGenerateAccessionNumbers: v.optional(v.boolean()),
         accessionWorkflowEnabled: v.optional(v.boolean()),
         deaccessionWorkflowEnabled: v.optional(v.boolean()),
+        allowIncomingTransferRequests: v.optional(v.boolean()),
         locationTrackingEnabled: v.optional(v.boolean()),
         locationTypes: v.optional(v.array(v.string())),
         enableDetailedConditionReports: v.optional(v.boolean()),
@@ -182,12 +185,58 @@ export default defineSchema({
     subscriptionTier: v.optional(
       v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     ),
+    ownerUserId: v.optional(v.id("users")),
+    isActive: v.optional(v.boolean()),
+    requiresPlanSelection: v.optional(v.boolean()),
+    preservedSubscriptionTier: v.optional(
+      v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+    ),
     parentOrganizationId: v.optional(v.id("organizations")),
     rootOrganizationId: v.optional(v.id("organizations")),
   })
     .index("by_slug", ["slug"])
+    .index("by_accountNumber", ["accountNumber"])
+    .index("by_allowsIncomingTransferRequests", [
+      "allowsIncomingTransferRequests",
+    ])
     .index("by_parent_organization", ["parentOrganizationId"])
-    .index("by_root_organization", ["rootOrganizationId"]),
+    .index("by_root_organization", ["rootOrganizationId"])
+    .searchIndex("search_transfer_destinations", {
+      searchField: "name",
+      filterFields: ["allowsIncomingTransferRequests"],
+    }),
+
+  organizationDeletions: defineTable({
+    organizationId: v.id("organizations"),
+    status: v.union(
+      v.literal("grace_period"),
+      v.literal("awaiting_final_notice"),
+      v.literal("pending_purge"),
+      v.literal("cancelled"),
+      v.literal("completed"),
+    ),
+    requestedAt: v.number(),
+    requestedByUserId: v.id("users"),
+    cancelToken: v.string(),
+    graceEndsAt: v.number(),
+    finalNoticeAt: v.number(),
+    scheduledDeletionDate: v.optional(v.number()),
+    scheduledPurgeAt: v.optional(v.number()),
+    initialEmailSentAt: v.optional(v.number()),
+    finalNoticeEmailSentAt: v.optional(v.number()),
+    preservedSubscriptionTier: v.union(
+      v.literal("free"),
+      v.literal("pro"),
+      v.literal("enterprise"),
+    ),
+    cancelledAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_cancel_token", ["cancelToken"])
+    .index("by_status_and_graceEndsAt", ["status", "graceEndsAt"])
+    .index("by_status_and_finalNoticeAt", ["status", "finalNoticeAt"])
+    .index("by_status_and_scheduledPurgeAt", ["status", "scheduledPurgeAt"]),
 
   organizationUsageCounters: defineTable({
     organizationId: v.id("organizations"),
@@ -1683,6 +1732,13 @@ export default defineSchema({
     currentValue: v.number(),
     lastGeneratedAt: v.number(),
   }).index("by_organization", ["organizationId"]),
+
+  // Platform-wide organization account number counter (ORG-XXXXX)
+  organizationRegistryCounter: defineTable({
+    scopeKey: v.literal("global"),
+    currentValue: v.number(),
+    lastGeneratedAt: v.number(),
+  }).index("by_scopeKey", ["scopeKey"]),
 
   // Loan number counter tracking (per year)
   loanCounters: defineTable({

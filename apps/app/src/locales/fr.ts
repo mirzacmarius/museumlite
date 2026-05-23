@@ -194,6 +194,52 @@ export default {
         cancel: "Annuler",
         delete: "Supprimer",
       },
+      deletion: {
+        dangerZone: "Zone de danger",
+        title: "Supprimer l'organisation",
+        description:
+          "Votre organisation sera désactivée pendant 90 jours. Vous pouvez annuler la suppression à tout moment. Après ce délai, nous vous enverrons un nouvel e-mail avant la suppression définitive.",
+        requestButton: "Planifier la suppression",
+        cancelButton: "Annuler la suppression",
+        requesting: "Planification…",
+        cancelling: "Annulation…",
+        activeTitle: "Suppression planifiée",
+        gracePeriodMessage:
+          "Cette organisation est inactive pendant la suppression planifiée. La période de grâce se termine le {date}.",
+        awaitingFinalNoticeMessage:
+          "L'avis final sera envoyé bientôt. Vous pouvez encore annuler la suppression ou transférer la propriété.",
+        pendingPurgeMessage:
+          "La suppression définitive est prévue le {date}. Annulez maintenant pour conserver votre organisation.",
+        transferTitle: "Transférer la propriété",
+        transferDescription:
+          "Le transfert de propriété annule le processus de suppression. Le nouveau propriétaire doit confirmer son plan de facturation.",
+        transferCandidateLabel: "Nouveau propriétaire",
+        transferCandidatePlaceholder: "Sélectionner un membre de l'équipe",
+        transferButton: "Transférer la propriété",
+        transferring: "Transfert…",
+        subOrganizationBlocked:
+          "Les sous-organisations ne peuvent pas être supprimées depuis cet écran.",
+        confirmDialog: {
+          title: "Planifier la suppression de l'organisation ?",
+          description:
+            "L'organisation sera désactivée immédiatement. Les données sont conservées 90 jours pour vous permettre d'annuler. Nous vous enverrons un e-mail avec un lien pour arrêter la suppression.",
+          confirm: "Planifier la suppression",
+          cancel: "Conserver l'organisation",
+        },
+        cancelDialog: {
+          title: "Annuler la suppression planifiée ?",
+          description:
+            "Votre organisation sera réactivée et la suppression sera arrêtée.",
+          confirm: "Annuler la suppression",
+          cancel: "Garder la suppression planifiée",
+        },
+        requestError:
+          "Impossible de planifier la suppression. Veuillez réessayer.",
+        cancelError:
+          "Impossible d'annuler la suppression. Veuillez réessayer.",
+        transferError:
+          "Impossible de transférer la propriété. Veuillez réessayer.",
+      },
     },
     developer: {
       selectOrganization:
@@ -665,6 +711,10 @@ export default {
     on: "le",
     noChargeTest:
       "Vous ne serez pas facturé pour tester la mise à niveau de l'abonnement.",
+    planSelectionRequired:
+      "Confirmez le plan de facturation de votre organisation. Le plan de l'ancien propriétaire ({tier}) est sélectionné par défaut jusqu'à ce que vous choisissiez un plan ci-dessous.",
+    keepDefaultPlan: "Conserver le plan {tier}",
+    confirmingPlan: "Confirmation…",
   },
   integrations: {
     title: "Intégrations",
@@ -3523,6 +3573,25 @@ export default {
     title: "Créer un compte",
     heading: "Créez votre compte",
     description: "Inscrivez-vous pour commencer à utiliser Museumlite",
+  },
+  organizationDeletionCancelPage: {
+    heading: "Annuler la suppression de l'organisation",
+    description:
+      "Arrêtez la suppression planifiée et réactivez votre organisation.",
+    organization: "Organisation",
+    scheduledDeletionDate: "Suppression définitive prévue",
+    cancelButton: "Arrêter la suppression",
+    cancelling: "Annulation…",
+    successTitle: "Suppression annulée",
+    successDescription:
+      "Votre organisation a été réactivée. Vous pouvez vous connecter pour continuer à utiliser MuseumLite.",
+    signIn: "Se connecter",
+    loading: "Chargement…",
+    notFound: "Lien introuvable",
+    notFoundDescription:
+      "Ce lien d'annulation est invalide ou le processus de suppression est déjà terminé.",
+    error:
+      "Nous n'avons pas pu annuler la suppression. Le lien a peut-être expiré.",
   },
   invitePage: {
     heading: "Vous avez été invité !",

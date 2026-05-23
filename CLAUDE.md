@@ -142,7 +142,7 @@ Run tests from `packages/backend` directory using `bun test`.
 
 ### Issue tracker
 
-Issues are tracked in Linear under the MuseumLite MUS team; agents may create issues directly in Linear and should pick up existing team-created issues from the MUS active board. See `docs/agents/issue-tracker.md`.
+Issues are tracked in Linear under the MuseumLite MUS team; agents may create issues directly in Linear and should pick up existing team-created issues from the MUS active board. See `docs/agents/issue-tracker.md`. When finishing Linear-delegated work, comment review steps on the issue and set status to **In Review** (never **Done**) — see `.cursor/rules/linear-delegation-handoff.mdc`.
 
 ### Triage labels
 

@@ -83,6 +83,8 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const [showBulkDeaccessionDialog, setShowBulkDeaccessionDialog] =
     useState(false);
   const [showAddToGroupDialog, setShowAddToGroupDialog] = useState(false);
+  const [showAddToCollectionDialog, setShowAddToCollectionDialog] =
+    useState(false);
   const [showBulkPrintLabelsDialog, setShowBulkPrintLabelsDialog] =
     useState(false);
 
@@ -211,6 +213,17 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     shouldLoadFilterMetadata ? { organizationId } : "skip",
   );
 
+  const activeCollectionGroup = useMemo(() => {
+    if (!filters.collectionGroupId || !collectionGroups) {
+      return null;
+    }
+    return (
+      collectionGroups.find(
+        (group) => group._id === filters.collectionGroupId,
+      ) ?? null
+    );
+  }, [collectionGroups, filters.collectionGroupId]);
+
   const objectTypeOptions = useMemo(() => {
     const types = new Set<string>();
     typeOptions?.forEach((option: TypeOption) => {
@@ -272,6 +285,9 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     setShowBulkDeaccessionDialog,
     showAddToGroupDialog,
     setShowAddToGroupDialog,
+    showAddToCollectionDialog,
+    setShowAddToCollectionDialog,
+    activeCollectionGroup,
     showBulkPrintLabelsDialog,
     setShowBulkPrintLabelsDialog,
     viewMode,

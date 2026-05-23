@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
@@ -125,10 +126,12 @@ export default function FeaturesPage() {
         <div className="relative mx-auto max-w-7xl px-6 lg:px-10 grid md:grid-cols-12 gap-12 items-center">
           <div className="md:col-span-7">
             <div className="relative aspect-[4/5] max-w-xl overflow-hidden shadow-gallery shadow-gold">
-              <img
+              <Image
                 src="/marketing/artifact-mask.jpg"
                 alt="Specimen"
-                className="h-full w-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 42vw"
+                className="object-cover"
               />
             </div>
           </div>

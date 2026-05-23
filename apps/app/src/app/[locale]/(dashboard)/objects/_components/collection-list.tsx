@@ -33,6 +33,8 @@ export function CollectionList({
   onSelectItem,
   onSelectAll,
   onLoadMore,
+  activeCollectionGroup,
+  onAddToCollection,
 }: {
   organizationId: Id<"organizations">;
   collections: Array<{
@@ -57,6 +59,8 @@ export function CollectionList({
   onSelectItem: (id: Id<"collections">, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
   onLoadMore: () => void;
+  activeCollectionGroup?: { _id: Id<"collectionGroups">; name: string } | null;
+  onAddToCollection?: () => void;
 }) {
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
@@ -106,21 +110,40 @@ export function CollectionList({
   }
 
   if (collections.length === 0) {
+    const isCollectionGroupView = Boolean(activeCollectionGroup);
+
     return (
-      <div className="flex h-64 flex-col items-center justify-center">
+      <div className="flex h-64 flex-col items-center justify-center px-6 text-center">
         <EmptyState
           icon={Package}
-          title={t("emptyState.noObjectsFound")}
-          description={t("emptyState.addFirstObject")}
+          title={
+            isCollectionGroupView
+              ? t("emptyState.noObjectsInCollection")
+              : t("emptyState.noObjectsFound")
+          }
+          description={
+            isCollectionGroupView
+              ? t("emptyState.addObjectsToCollectionDescription")
+              : t("emptyState.addFirstObject")
+          }
         />
-        <PermissionGate permission="collections.create">
-          <Button asChild className="mt-4">
-            <Link href="/objects/new">
+        {isCollectionGroupView ? (
+          <PermissionGate permission="collections.update">
+            <Button className="mt-4" onClick={onAddToCollection}>
               <Plus className="mr-2 size-4" />
-              {t("emptyState.addFirstObject")}
-            </Link>
-          </Button>
-        </PermissionGate>
+              {t("emptyState.addObjectsToCollection")}
+            </Button>
+          </PermissionGate>
+        ) : (
+          <PermissionGate permission="collections.create">
+            <Button asChild className="mt-4">
+              <Link href="/objects/new">
+                <Plus className="mr-2 size-4" />
+                {t("emptyState.addFirstObject")}
+              </Link>
+            </Button>
+          </PermissionGate>
+        )}
       </div>
     );
   }

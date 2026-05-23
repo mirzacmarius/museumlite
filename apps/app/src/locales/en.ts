@@ -190,6 +190,49 @@ export default {
         cancel: "Cancel",
         delete: "Delete",
       },
+      deletion: {
+        dangerZone: "Danger Zone",
+        title: "Delete organization",
+        description:
+          "Your organization will be deactivated for 90 days. You can cancel deletion at any time. After the grace period, we will email you again before permanent deletion.",
+        requestButton: "Schedule deletion",
+        cancelButton: "Cancel deletion",
+        requesting: "Scheduling…",
+        cancelling: "Cancelling…",
+        activeTitle: "Deletion scheduled",
+        gracePeriodMessage:
+          "This organization is inactive while scheduled for deletion. Grace period ends on {date}.",
+        awaitingFinalNoticeMessage:
+          "Final notice will be sent soon. You can still cancel deletion or transfer ownership.",
+        pendingPurgeMessage:
+          "Permanent deletion is scheduled for {date}. Cancel now to keep your organization.",
+        transferTitle: "Transfer ownership",
+        transferDescription:
+          "Transferring ownership cancels the deletion process. The new owner must confirm their billing plan.",
+        transferCandidateLabel: "New owner",
+        transferCandidatePlaceholder: "Select a team member",
+        transferButton: "Transfer ownership",
+        transferring: "Transferring…",
+        subOrganizationBlocked:
+          "Sub-organizations cannot be deleted from this screen.",
+        confirmDialog: {
+          title: "Schedule organization deletion?",
+          description:
+            "The organization will be deactivated immediately. Data is kept for 90 days so you can cancel. We'll email you with a link to stop deletion.",
+          confirm: "Schedule deletion",
+          cancel: "Keep organization",
+        },
+        cancelDialog: {
+          title: "Cancel scheduled deletion?",
+          description:
+            "Your organization will be reactivated and deletion will stop.",
+          confirm: "Cancel deletion",
+          cancel: "Keep scheduled deletion",
+        },
+        requestError: "Failed to schedule deletion. Please try again.",
+        cancelError: "Failed to cancel deletion. Please try again.",
+        transferError: "Failed to transfer ownership. Please try again.",
+      },
     },
     developer: {
       selectOrganization:
@@ -809,6 +852,10 @@ export default {
     on: "on",
     noChargeTest:
       "You will not be charged for testing the subscription upgrade.",
+    planSelectionRequired:
+      "Confirm your organization's billing plan. The previous owner's plan ({tier}) is selected by default until you choose a plan below.",
+    keepDefaultPlan: "Keep {tier} plan",
+    confirmingPlan: "Confirming…",
   },
   integrations: {
     title: "Integrations",
@@ -1749,6 +1796,21 @@ export default {
     emptyState: {
       noObjectsFound: "No objects found",
       addFirstObject: "Add Your First Object",
+      noObjectsInCollection: "No objects in this collection yet",
+      addObjectsToCollection: "Add objects to the collection",
+      addObjectsToCollectionDescription:
+        "Select existing catalog objects to include in this collection. Objects can belong to multiple collections.",
+    },
+    collectionGroup: {
+      addObjectsTitle: "Add objects to collection",
+      addObjectsDescription:
+        "Choose which objects belong in the “{name}” collection. Checked objects are included.",
+      searchAndSelectObjects: "Search and select objects…",
+      multiCollectionHint:
+        "Objects can belong to several collections at once. Uncheck to remove from this collection only.",
+      saveMembership: "Save selection",
+      addObjectsButton: "Add objects",
+      viewingCollection: "Collection: {name}",
     },
     table: {
       selectAllItems: "Select all items",
@@ -3605,6 +3667,24 @@ export default {
     title: "Create Account",
     heading: "Create your account",
     description: "Register to start using Museumlite",
+  },
+  organizationDeletionCancelPage: {
+    heading: "Cancel organization deletion",
+    description:
+      "Stop the scheduled deletion and reactivate your organization.",
+    organization: "Organization",
+    scheduledDeletionDate: "Scheduled permanent deletion",
+    cancelButton: "Stop deletion",
+    cancelling: "Cancelling…",
+    successTitle: "Deletion cancelled",
+    successDescription:
+      "Your organization has been reactivated. You can sign in to continue using MuseumLite.",
+    signIn: "Sign in",
+    loading: "Loading…",
+    notFound: "Link not found",
+    notFoundDescription:
+      "This cancellation link is invalid or the deletion process has already ended.",
+    error: "We could not cancel deletion. The link may have expired.",
   },
   invitePage: {
     heading: "You've been invited!",

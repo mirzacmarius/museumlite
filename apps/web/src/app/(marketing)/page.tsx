@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
@@ -39,12 +40,13 @@ const pillars = [
 function Hero() {
   return (
     <section className="relative min-h-screen overflow-hidden grain">
-      <img
+      <Image
         src="/marketing/hero-gallery.jpg"
         alt="Grand museum gallery illuminated at dusk"
-        width={1920}
-        height={1080}
-        className="absolute inset-0 h-full w-full object-cover opacity-70"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover opacity-70"
       />
       <div className="absolute inset-0 bg-vignette" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background" />
@@ -176,11 +178,12 @@ function Pillars() {
               className="group relative bg-background p-8 md:p-10 flex flex-col gap-8 hover:bg-card transition-colors"
             >
               <div className="relative aspect-[4/5] overflow-hidden shadow-gallery">
-                <img
+                <Image
                   src={p.img}
                   alt={p.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover grayscale-[20%] group-hover:grayscale-0 group-hover:scale-[1.03] transition-all duration-700"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-cover grayscale-[20%] transition-all duration-700 group-hover:scale-[1.03] group-hover:grayscale-0"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
                 <span className="absolute top-4 left-4 font-display text-3xl text-gold">

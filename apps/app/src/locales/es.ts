@@ -196,6 +196,51 @@ export default {
         cancel: "Cancelar",
         delete: "Eliminar",
       },
+      deletion: {
+        dangerZone: "Zona de peligro",
+        title: "Eliminar organización",
+        description:
+          "Tu organización se desactivará durante 90 días. Puedes cancelar la eliminación en cualquier momento. Después del período de gracia, te enviaremos otro correo antes de la eliminación permanente.",
+        requestButton: "Programar eliminación",
+        cancelButton: "Cancelar eliminación",
+        requesting: "Programando…",
+        cancelling: "Cancelando…",
+        activeTitle: "Eliminación programada",
+        gracePeriodMessage:
+          "Esta organización está inactiva mientras está programada para eliminación. El período de gracia termina el {date}.",
+        awaitingFinalNoticeMessage:
+          "Pronto se enviará el aviso final. Aún puedes cancelar la eliminación o transferir la propiedad.",
+        pendingPurgeMessage:
+          "La eliminación permanente está programada para el {date}. Cancela ahora para conservar tu organización.",
+        transferTitle: "Transferir propiedad",
+        transferDescription:
+          "Transferir la propiedad cancela el proceso de eliminación. El nuevo propietario debe confirmar su plan de facturación.",
+        transferCandidateLabel: "Nuevo propietario",
+        transferCandidatePlaceholder: "Seleccionar un miembro del equipo",
+        transferButton: "Transferir propiedad",
+        transferring: "Transfiriendo…",
+        subOrganizationBlocked:
+          "Las suborganizaciones no se pueden eliminar desde esta pantalla.",
+        confirmDialog: {
+          title: "¿Programar eliminación de la organización?",
+          description:
+            "La organización se desactivará de inmediato. Los datos se conservan 90 días para que puedas cancelar. Te enviaremos un correo con un enlace para detener la eliminación.",
+          confirm: "Programar eliminación",
+          cancel: "Conservar organización",
+        },
+        cancelDialog: {
+          title: "¿Cancelar eliminación programada?",
+          description:
+            "Tu organización se reactivará y la eliminación se detendrá.",
+          confirm: "Cancelar eliminación",
+          cancel: "Mantener eliminación programada",
+        },
+        requestError:
+          "No se pudo programar la eliminación. Inténtalo de nuevo.",
+        cancelError: "No se pudo cancelar la eliminación. Inténtalo de nuevo.",
+        transferError:
+          "No se pudo transferir la propiedad. Inténtalo de nuevo.",
+      },
     },
     developer: {
       selectOrganization:
@@ -663,6 +708,10 @@ export default {
     on: "el",
     noChargeTest:
       "No se te cobrará por probar la actualización de suscripción.",
+    planSelectionRequired:
+      "Confirma el plan de facturación de tu organización. El plan del propietario anterior ({tier}) se selecciona por defecto hasta que elijas un plan a continuación.",
+    keepDefaultPlan: "Mantener plan {tier}",
+    confirmingPlan: "Confirmando…",
   },
   integrations: {
     title: "Integraciones",
@@ -3504,6 +3553,25 @@ export default {
     title: "Crear cuenta",
     heading: "Crea tu cuenta",
     description: "Regístrate para empezar a usar Museumlite",
+  },
+  organizationDeletionCancelPage: {
+    heading: "Cancelar eliminación de la organización",
+    description:
+      "Detén la eliminación programada y reactiva tu organización.",
+    organization: "Organización",
+    scheduledDeletionDate: "Eliminación permanente programada",
+    cancelButton: "Detener eliminación",
+    cancelling: "Cancelando…",
+    successTitle: "Eliminación cancelada",
+    successDescription:
+      "Tu organización ha sido reactivada. Puedes iniciar sesión para seguir usando MuseumLite.",
+    signIn: "Iniciar sesión",
+    loading: "Cargando…",
+    notFound: "Enlace no encontrado",
+    notFoundDescription:
+      "Este enlace de cancelación no es válido o el proceso de eliminación ya ha finalizado.",
+    error:
+      "No pudimos cancelar la eliminación. Es posible que el enlace haya expirado.",
   },
   invitePage: {
     heading: "¡Has sido invitado!",

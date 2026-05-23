@@ -138,10 +138,6 @@ export function DeaccessionDialog({
     api.organizations.getWorkflowConfigs,
     organizationId ? { organizationId } : "skip",
   );
-  const targetOrganizations = useQuery(
-    api.objectMoves.listEligibleTargetOrganizations,
-    open ? { collectionId } : "skip",
-  );
   const moveEligibility = useQuery(
     api.objectMoves.getEligibility,
     state.removalType === "move" && state.targetOrganizationId
@@ -260,7 +256,7 @@ export function DeaccessionDialog({
         {state.removalType === "move" && (
           <DeaccessionMoveForm
             isDirectRemovalFlow={isDirectRemovalFlow}
-            targetOrganizations={targetOrganizations ?? undefined}
+            collectionId={collectionId}
             blockers={blockers}
             targetOrganizationId={state.targetOrganizationId}
             accessionMode={state.accessionMode}

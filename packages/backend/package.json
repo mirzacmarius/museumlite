@@ -6,6 +6,7 @@
     "dev": "convex dev --tail-logs",
     "setup": "convex dev --once && convex env set VALIDATE_ENV=true",
     "seed": "convex dev --once && convex run init",
+    "lint": "biome lint --error-on-warnings",
     "test": "vitest",
     "test:once": "vitest run",
     "test:watch": "vitest --watch"
