@@ -93,7 +93,7 @@ export function getSketchfabEmbedsFromLinks(
 
   const embeds: SketchfabEmbedItem[] = [];
   for (const link of links) {
-    if (!link.url.includes("sketchfab")) continue;
+    if (!isSketchfabUrl(link.url)) continue;
     embeds.push({
       id: link.url,
       url: link.url,
