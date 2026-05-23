@@ -17,6 +17,15 @@ import {
   ORGANIZATION_DELETION_WAIT_BEFORE_FINAL_NOTICE_MS,
 } from "./utils/organizationDeletionTimings";
 import { requirePermission } from "./utils/permissions";
+import {
+  countSuperAdmins,
+  hasUnanimousSuperAdminApproval,
+  isUserSuperAdmin,
+  listSuperAdminUserIds,
+  promoteToSuperAdmin,
+  requireSuperAdmin,
+  resolvePrimarySuperAdminUserId,
+} from "./utils/superAdmins";
 
 interface OrganizationDeletionAuditChanges {
   name?: string;
@@ -50,6 +59,7 @@ async function logOrganizationDeletionAction(
 }
 
 export const organizationDeletionStatusValidator = v.union(
+  v.literal("pending_super_admin_approval"),
   v.literal("grace_period"),
   v.literal("awaiting_final_notice"),
   v.literal("pending_purge"),
@@ -94,35 +104,7 @@ function getSubscriptionTier(
   return organization.subscriptionTier ?? "free";
 }
 
-async function resolveOrganizationOwnerUserId(
-  ctx: DeletionCtx,
-  organization: Doc<"organizations">,
-): Promise<Id<"users"> | null> {
-  if (organization.ownerUserId) {
-    const owner = await ctx.db.get(organization.ownerUserId);
-    if (owner) {
-      return organization.ownerUserId;
-    }
-  }
-
-  const memberships = await ctx.db
-    .query("userOrganizations")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organization._id),
-    )
-    .collect();
-
-  for (const membership of memberships) {
-    const role = await ctx.db.get(membership.roleId);
-    if (role?.isSystemRole && role.name === "admin") {
-      return membership.userId;
-    }
-  }
-
-  return memberships[0]?.userId ?? null;
-}
-
-async function requireOrganizationOwner(
+async function requireOrganizationSuperAdmin(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   userId: Id<"users">,
@@ -134,10 +116,7 @@ async function requireOrganizationOwner(
     throw new ConvexError("Organization not found");
   }
 
-  const ownerUserId = await resolveOrganizationOwnerUserId(ctx, organization);
-  if (!ownerUserId || ownerUserId !== userId) {
-    throw new ConvexError("Only the organization owner can perform this action");
-  }
+  await requireSuperAdmin(ctx, organizationId, userId);
 
   return organization;
 }
@@ -154,6 +133,7 @@ async function getActiveDeletionForOrganization(
   return (
     deletions.find(
       (deletion) =>
+        deletion.status === "pending_super_admin_approval" ||
         deletion.status === "grace_period" ||
         deletion.status === "awaiting_final_notice" ||
         deletion.status === "pending_purge",
@@ -165,12 +145,68 @@ async function getOwnerEmail(
   ctx: DeletionCtx,
   organization: Doc<"organizations">,
 ): Promise<string | null> {
-  const ownerUserId = await resolveOrganizationOwnerUserId(ctx, organization);
+  const ownerUserId = await resolvePrimarySuperAdminUserId(ctx, organization);
   if (!ownerUserId) {
     return null;
   }
   const owner = await ctx.db.get(ownerUserId);
   return owner?.email ?? null;
+}
+
+async function beginDeletionGracePeriod(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    organization: Doc<"organizations">;
+    userId: Id<"users">;
+    deletionId: Id<"organizationDeletions">;
+    now: number;
+    preservedTier: SubscriptionTier;
+    graceEndsAt: number;
+    finalNoticeAt: number;
+    cancelToken: string;
+  },
+) {
+  await ctx.db.patch(args.deletionId, {
+    status: "grace_period",
+    graceEndsAt: args.graceEndsAt,
+    finalNoticeAt: args.finalNoticeAt,
+    initialEmailSentAt: args.now,
+  });
+
+  await ctx.db.patch(args.organizationId, {
+    isActive: false,
+    ownerUserId: args.organization.ownerUserId ?? args.userId,
+  });
+
+  const ownerEmail = await getOwnerEmail(ctx, args.organization);
+  if (ownerEmail) {
+    await scheduleGracePeriodEmail(ctx, {
+      email: ownerEmail,
+      organizationName: args.organization.name,
+      cancelToken: args.cancelToken,
+      graceEndsAt: args.graceEndsAt,
+    });
+  }
+
+  const deletion = await ctx.db.get(args.deletionId);
+  if (!deletion) {
+    throw new ConvexError("Failed to update deletion request");
+  }
+
+  await logOrganizationDeletionAction(ctx, {
+    organizationId: args.organizationId,
+    userId: args.userId,
+    action: "scheduled_organization_deletion",
+    entityId: deletion._id,
+    changes: {
+      name: args.organization.name,
+      status: deletion.status,
+      graceEndsAt: deletion.graceEndsAt,
+    },
+  });
+
+  return deletion;
 }
 
 async function reactivateOrganization(
@@ -333,7 +369,7 @@ export const requestDeletion = mutation({
       throw new ConvexError("Not authenticated");
     }
 
-    const organization = await requireOrganizationOwner(
+    const organization = await requireOrganizationSuperAdmin(
       ctx,
       args.organizationId,
       userId,
@@ -361,52 +397,125 @@ export const requestDeletion = mutation({
       ORGANIZATION_DELETION_WAIT_BEFORE_FINAL_NOTICE_MS,
     );
     const cancelToken = generateCancelToken();
+    const superAdminCount = await countSuperAdmins(ctx, args.organizationId);
 
     const deletionId = await ctx.db.insert("organizationDeletions", {
       organizationId: args.organizationId,
-      status: "grace_period",
+      status:
+        superAdminCount > 1
+          ? "pending_super_admin_approval"
+          : "grace_period",
       requestedAt: now,
       requestedByUserId: userId,
       cancelToken,
       graceEndsAt,
       finalNoticeAt,
       preservedSubscriptionTier: preservedTier,
-      initialEmailSentAt: now,
+      superAdminApprovedByUserIds:
+        superAdminCount > 1 ? [] : undefined,
+      initialEmailSentAt: superAdminCount > 1 ? undefined : now,
     });
 
-    await ctx.db.patch(args.organizationId, {
-      isActive: false,
-      ownerUserId: organization.ownerUserId ?? userId,
-    });
+    if (superAdminCount > 1) {
+      const pendingDeletion = await ctx.db.get(deletionId);
+      if (!pendingDeletion) {
+        throw new ConvexError("Failed to create deletion request");
+      }
 
-    const ownerEmail = await getOwnerEmail(ctx, organization);
-    if (ownerEmail) {
-      await scheduleGracePeriodEmail(ctx, {
-        email: ownerEmail,
-        organizationName: organization.name,
-        cancelToken,
-        graceEndsAt,
+      await logOrganizationDeletionAction(ctx, {
+        organizationId: args.organizationId,
+        userId,
+        action: "requested_organization_deletion_approval",
+        entityId: pendingDeletion._id,
+        changes: {
+          name: organization.name,
+          status: pendingDeletion.status,
+        },
       });
+
+      return buildDeletionSummary(pendingDeletion);
     }
 
-    const deletion = await ctx.db.get(deletionId);
-    if (!deletion) {
-      throw new ConvexError("Failed to create deletion request");
-    }
-
-    await logOrganizationDeletionAction(ctx, {
+    const deletion = await beginDeletionGracePeriod(ctx, {
       organizationId: args.organizationId,
+      organization,
       userId,
-      action: "scheduled_organization_deletion",
-      entityId: deletion._id,
-      changes: {
-        name: organization.name,
-        status: deletion.status,
-        graceEndsAt: deletion.graceEndsAt,
-      },
+      deletionId,
+      now,
+      preservedTier,
+      graceEndsAt,
+      finalNoticeAt,
+      cancelToken,
     });
 
     return buildDeletionSummary(deletion);
+  },
+});
+
+export const approveDeletion = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: deletionSummaryValidator,
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    const organization = await requireOrganizationSuperAdmin(
+      ctx,
+      args.organizationId,
+      userId,
+    );
+
+    const deletion = await getActiveDeletionForOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!deletion || deletion.status !== "pending_super_admin_approval") {
+      throw new ConvexError("No deletion request is awaiting SuperAdmin approval");
+    }
+
+    const approvedByUserIds = deletion.superAdminApprovedByUserIds ?? [];
+    if (!approvedByUserIds.includes(userId)) {
+      approvedByUserIds.push(userId);
+    }
+
+    const superAdminUserIds = await listSuperAdminUserIds(
+      ctx,
+      args.organizationId,
+    );
+    const hasApproval = hasUnanimousSuperAdminApproval(
+      superAdminUserIds,
+      approvedByUserIds,
+      deletion.requestedByUserId,
+    );
+
+    if (!hasApproval) {
+      await ctx.db.patch(deletion._id, {
+        superAdminApprovedByUserIds: approvedByUserIds,
+      });
+      const updatedDeletion = await ctx.db.get(deletion._id);
+      if (!updatedDeletion) {
+        throw new ConvexError("Deletion request not found");
+      }
+      return buildDeletionSummary(updatedDeletion);
+    }
+
+    const completedDeletion = await beginDeletionGracePeriod(ctx, {
+      organizationId: args.organizationId,
+      organization,
+      userId: deletion.requestedByUserId,
+      deletionId: deletion._id,
+      now: Date.now(),
+      preservedTier: getSubscriptionTier(organization),
+      graceEndsAt: deletion.graceEndsAt,
+      finalNoticeAt: deletion.finalNoticeAt,
+      cancelToken: deletion.cancelToken,
+    });
+
+    return buildDeletionSummary(completedDeletion);
   },
 });
 
@@ -437,7 +546,7 @@ export const cancelDeletion = mutation({
       if (!userId) {
         throw new ConvexError("Not authenticated");
       }
-      await requireOrganizationOwner(ctx, args.organizationId, userId);
+      await requireOrganizationSuperAdmin(ctx, args.organizationId, userId);
       deletion = await getActiveDeletionForOrganization(
         ctx,
         args.organizationId,
@@ -449,6 +558,7 @@ export const cancelDeletion = mutation({
     }
 
     if (
+      deletion.status !== "pending_super_admin_approval" &&
       deletion.status !== "grace_period" &&
       deletion.status !== "awaiting_final_notice" &&
       deletion.status !== "pending_purge"
@@ -493,14 +603,25 @@ export const transferOwnership = mutation({
       throw new ConvexError("Not authenticated");
     }
 
-    const organization = await requireOrganizationOwner(
+    if (args.newOwnerUserId === userId) {
+      throw new ConvexError("You are already the organization owner");
+    }
+
+    const organization = await requireOrganizationSuperAdmin(
       ctx,
       args.organizationId,
       userId,
     );
 
-    if (args.newOwnerUserId === userId) {
-      throw new ConvexError("You are already the organization owner");
+    const isNewOwnerSuperAdmin = await isUserSuperAdmin(
+      ctx,
+      args.organizationId,
+      args.newOwnerUserId,
+    );
+    if (!isNewOwnerSuperAdmin) {
+      throw new ConvexError(
+        "Ownership can only be transferred to another SuperAdmin",
+      );
     }
 
     const membership = await ctx.db
@@ -513,6 +634,8 @@ export const transferOwnership = mutation({
     if (!membership) {
       throw new ConvexError("New owner must be a member of the organization");
     }
+
+    await promoteToSuperAdmin(ctx, args.organizationId, args.newOwnerUserId);
 
     const preservedTier = getSubscriptionTier(organization);
     const activeDeletion = await getActiveDeletionForOrganization(
@@ -613,30 +736,36 @@ export const listTransferCandidates = query({
       "organization.manage_settings",
     );
 
-    const memberships = await ctx.db
-      .query("userOrganizations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const superAdminUserIds = await listSuperAdminUserIds(
+      ctx,
+      args.organizationId,
+    );
 
     const candidates = await Promise.all(
-      memberships.map(async (membership) => {
-        if (membership.userId === userId) {
+      superAdminUserIds.map(async (superAdminUserId) => {
+        if (superAdminUserId === userId) {
           return null;
         }
-        const [user, role] = await Promise.all([
-          ctx.db.get(membership.userId),
-          ctx.db.get(membership.roleId),
+        const [user, membership] = await Promise.all([
+          ctx.db.get(superAdminUserId),
+          ctx.db
+            .query("userOrganizations")
+            .withIndex("by_user_and_organization", (q) =>
+              q
+                .eq("userId", superAdminUserId)
+                .eq("organizationId", args.organizationId),
+            )
+            .first(),
         ]);
-        if (!user || !role) {
+        if (!user || !membership) {
           return null;
         }
+        const role = await ctx.db.get(membership.roleId);
         return {
           userId: user._id,
           name: user.name,
           email: user.email,
-          roleName: role.name,
+          roleName: role?.name ?? "super_admin",
         };
       }),
     );

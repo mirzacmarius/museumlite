@@ -106,13 +106,13 @@ export default function FeaturesPage() {
               <h3 className="font-display text-4xl text-ivory">{m.title}</h3>
               <p className="text-muted-foreground leading-relaxed">{m.desc}</p>
               <ul className="mt-2 space-y-2 text-sm text-soft-foreground">
-                {m.items.map((i) => (
+                {m.items.map((item) => (
                   <li
-                    key={i}
+                    key={`${m.n}-${item}`}
                     className="flex items-center gap-3 border-b border-border/60 pb-2"
                   >
                     <span className="text-gold">✦</span>
-                    {i}
+                    {item}
                   </li>
                 ))}
               </ul>
@@ -147,7 +147,7 @@ export default function FeaturesPage() {
             <p className="mt-8 text-soft-foreground text-lg leading-relaxed">
               Linked provenance, condition history, exhibition cycles, loan
               agreements, high-resolution imagery and live environmental
-              readings — all on one unhurried page.
+              readings, all on one unhurried page.
             </p>
             <Link
               href="/contact"

@@ -69,7 +69,7 @@ function Hero() {
         <div className="mt-12 grid md:grid-cols-12 gap-8 items-end">
           <p className="md:col-span-5 text-lg leading-relaxed text-soft-foreground max-w-md">
             MuseumLite unifies your collections, exhibitions, conservation
-            records and library into a single, considered platform — built for
+            records and library into a single, considered platform, built for
             curators, not spreadsheets.
           </p>
           <div className="md:col-span-4 md:col-start-9 flex flex-col gap-4">
@@ -138,7 +138,7 @@ function Philosophy() {
         <div className="md:col-span-6 md:col-start-7 space-y-6 text-soft-foreground text-lg leading-relaxed">
           <p>
             A museum is not a warehouse. Yet most collection software treats it
-            as one — endless rows, brittle forms, the texture of a tax return.
+            as one: endless rows, brittle forms, the texture of a tax return.
           </p>
           <p>
             MuseumLite was designed alongside conservators at three national
@@ -148,7 +148,7 @@ function Philosophy() {
           <p className="font-display italic text-2xl text-gold/90 pt-4 border-t border-border">
             "At last, a system that respects the object."
             <span className="block not-italic font-sans text-xs uppercase tracking-[0.3em] text-muted-foreground mt-3">
-              — Dr. Helena Vasari, Chief Conservator, Museo Aurelia
+              Dr. Helena Vasari, Chief Conservator, Museo Aurelia
             </span>
           </p>
         </div>
@@ -170,7 +170,7 @@ function Pillars() {
             </h2>
           </div>
           <p className="hidden md:block max-w-xs text-sm text-muted-foreground leading-relaxed">
-            Modules built for the people who actually do the work — and
+            Modules built for the people who actually do the work, and
             integrated so they finally speak the same language.
           </p>
         </div>
@@ -247,7 +247,7 @@ function Logos() {
   );
 }
 
-function CTA() {
+function CallToActionSection() {
   return (
     <section className="relative py-32 md:py-44 overflow-hidden border-t border-border">
       <div className="absolute inset-0 bg-spotlight opacity-60" />
@@ -291,7 +291,7 @@ export default function HomePage() {
       <Philosophy />
       <Pillars />
       <Logos />
-      <CTA />
+      <CallToActionSection />
       <SiteFooter />
     </main>
   );
