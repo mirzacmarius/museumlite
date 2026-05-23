@@ -15,7 +15,7 @@ import { ChevronRight, Grid, List, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useReducer } from "react";
+import { Suspense, useCallback, useEffect, useReducer } from "react";
 import {
   createInitialPublicCollectionFiltersState,
   publicCollectionFiltersReducer,
@@ -59,7 +59,7 @@ function PublicPortalPageClientInner() {
 
   const basePath = `/${orgSlug}/${portalSlug}`;
 
-  const updateUrl = () => {
+  const updateUrl = useCallback(() => {
     const urlParams = new URLSearchParams();
     if (search) urlParams.set("search", search);
     if (objectType !== "all") urlParams.set("type", objectType);
@@ -67,12 +67,12 @@ function PublicPortalPageClientInner() {
     if (period !== "all") urlParams.set("period", period);
     const queryString = urlParams.toString();
     push(`${basePath}${queryString ? `?${queryString}` : ""}`);
-  };
+  }, [basePath, culture, objectType, period, push, search]);
 
   useEffect(() => {
     const timeout = setTimeout(updateUrl, 300);
     return () => clearTimeout(timeout);
-  }, [search, objectType, culture, period]);
+  }, [updateUrl]);
 
   const clearFilters = () => {
     dispatch({ type: "clearFilters" });

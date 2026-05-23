@@ -15,7 +15,7 @@ import { ChevronRight, Grid, List, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useReducer } from "react";
+import { Suspense, useCallback, useEffect, useReducer } from "react";
 import {
   createInitialPublicCollectionFiltersState,
   publicCollectionFiltersReducer,
@@ -55,7 +55,7 @@ function PublicCollectionPageClientInner() {
     period: period !== "all" ? period : undefined,
   });
 
-  const updateUrl = () => {
+  const updateUrl = useCallback(() => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (objectType !== "all") params.set("type", objectType);
@@ -63,12 +63,12 @@ function PublicCollectionPageClientInner() {
     if (period !== "all") params.set("period", period);
     const queryString = params.toString();
     push(`/collections/${slug}${queryString ? `?${queryString}` : ""}`);
-  };
+  }, [culture, objectType, period, push, search, slug]);
 
   useEffect(() => {
     const timeout = setTimeout(updateUrl, 300);
     return () => clearTimeout(timeout);
-  }, [search, objectType, culture, period]);
+  }, [updateUrl]);
 
   const clearFilters = () => {
     dispatch({ type: "clearFilters" });
