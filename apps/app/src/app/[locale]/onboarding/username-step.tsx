@@ -64,7 +64,7 @@ export function UsernameStep({ onContinue }: UsernameStepProps) {
           </usernameForm.Field>
         </div>
 
-        {usernameForm.state.fieldMeta.username?.errors.length > 0 && (
+        {(usernameForm.state.fieldMeta.username?.errors?.length ?? 0) > 0 && (
           <span className="mb-2 text-sm text-destructive dark:text-destructive-foreground">
             {usernameForm.state.fieldMeta.username?.errors.join(" ")}
           </span>

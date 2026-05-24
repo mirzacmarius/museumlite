@@ -13,6 +13,7 @@ import {
   useReducer,
 } from "react";
 import { useI18n } from "@/locales/client";
+import { CollectionSetupStep } from "./collection-setup-step";
 import { FirstDataStep } from "./first-data-step";
 import {
   isOrganizationSlugTakenError,
@@ -29,6 +30,7 @@ interface OnboardingPageState {
   orgError: string | null;
   createdOrgId: Id<"organizations"> | null;
   orgFormData: OrganizationFormData;
+  collectionSetupCompleted: boolean;
 }
 
 type OnboardingPageAction =
@@ -36,7 +38,8 @@ type OnboardingPageAction =
   | { type: "setSubmitting"; value: boolean }
   | { type: "setOrgError"; value: string | null }
   | { type: "setCreatedOrgId"; value: Id<"organizations"> | null }
-  | { type: "setOrgFormData"; value: OrganizationFormData };
+  | { type: "setOrgFormData"; value: OrganizationFormData }
+  | { type: "setCollectionSetupCompleted"; value: boolean };
 
 const initialOnboardingPageState: OnboardingPageState = {
   currentStep: "username",
@@ -48,6 +51,7 @@ const initialOnboardingPageState: OnboardingPageState = {
     slug: "",
     type: "museum",
   },
+  collectionSetupCompleted: false,
 };
 
 function onboardingPageReducer(
@@ -65,6 +69,8 @@ function onboardingPageReducer(
       return { ...state, createdOrgId: action.value };
     case "setOrgFormData":
       return { ...state, orgFormData: action.value };
+    case "setCollectionSetupCompleted":
+      return { ...state, collectionSetupCompleted: action.value };
   }
 }
 
@@ -110,27 +116,63 @@ export function OnboardingPageClient() {
       : "skip",
   );
 
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    firstOrganizationId ? { organizationId: firstOrganizationId } : "skip",
+  );
+
+  const completeCollectionSetup = useCallback(() => {
+    dispatch({ type: "setCollectionSetupCompleted", value: true });
+    dispatch({ type: "setCurrentStep", value: "firstData" });
+  }, []);
+
   useEffect(() => {
     if (!user || organizations === undefined) return;
 
     const hasOrganization =
       organizations.length > 0 || state.createdOrgId !== null;
     if (user.username && hasOrganization) {
-      if (collectionsPreview === undefined) return;
+      if (collectionsPreview === undefined || collectionGroups === undefined) {
+        return;
+      }
 
       if (collectionsPreview.page.length > 0) {
         push("/");
         return;
       }
 
-      dispatch({ type: "setCurrentStep", value: "firstData" });
+      const hasCollectionGroups = collectionGroups.length > 0;
+      if (
+        !state.collectionSetupCompleted &&
+        !hasCollectionGroups &&
+        state.currentStep !== "collectionSetup"
+      ) {
+        dispatch({ type: "setCurrentStep", value: "collectionSetup" });
+        return;
+      }
+
+      if (
+        state.currentStep !== "firstData" &&
+        state.currentStep !== "collectionSetup"
+      ) {
+        dispatch({ type: "setCurrentStep", value: "firstData" });
+      }
       return;
     }
 
     if (user.username) {
       dispatch({ type: "setCurrentStep", value: "organization" });
     }
-  }, [user, organizations, push, collectionsPreview, state.createdOrgId]);
+  }, [
+    user,
+    organizations,
+    push,
+    collectionsPreview,
+    collectionGroups,
+    state.createdOrgId,
+    state.collectionSetupCompleted,
+    state.currentStep,
+  ]);
 
   const handleOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,7 +194,7 @@ export function OnboardingPageClient() {
       });
 
       dispatch({ type: "setCreatedOrgId", value: organizationId });
-      dispatch({ type: "setCurrentStep", value: "firstData" });
+      dispatch({ type: "setCurrentStep", value: "collectionSetup" });
     } catch (err) {
       if (isOrganizationSlugTakenError(err)) {
         dispatch({
@@ -193,6 +235,15 @@ export function OnboardingPageClient() {
           orgError={state.orgError}
           isSubmitting={state.isSubmitting}
           onSubmit={handleOrgSubmit}
+        />
+      )}
+
+      {state.currentStep === "collectionSetup" && firstOrganizationId && (
+        <CollectionSetupStep
+          organizationId={firstOrganizationId}
+          orgFormData={state.orgFormData}
+          onComplete={completeCollectionSetup}
+          onSkip={completeCollectionSetup}
         />
       )}
 
