@@ -22,6 +22,42 @@ interface CollectionSetupStepProps {
   onSkip: () => void;
 }
 
+interface CollectionSetupState {
+  description: string;
+  summary: string | null;
+  objectTypes: string[];
+  suggestions: CollectionGroupSuggestion[];
+  selectedIds: Set<string>;
+  isGenerating: boolean;
+  isApplying: boolean;
+  error: string | null;
+}
+
+const initialCollectionSetupState: CollectionSetupState = {
+  description: "",
+  summary: null,
+  objectTypes: [],
+  suggestions: [],
+  selectedIds: new Set(),
+  isGenerating: false,
+  isApplying: false,
+  error: null,
+};
+
+function collectSelectedCollectionGroups(
+  suggestions: CollectionGroupSuggestion[],
+  selectedIds: Set<string>,
+): Array<{ name: string; description: string }> {
+  const selectedGroups: Array<{ name: string; description: string }> = [];
+  for (const group of suggestions) {
+    if (!selectedIds.has(group.id)) continue;
+    const name = group.name.trim();
+    if (name.length === 0) continue;
+    selectedGroups.push({ name, description: group.description.trim() });
+  }
+  return selectedGroups;
+}
+
 export function CollectionSetupStep({
   organizationId,
   orgFormData,
@@ -36,25 +72,17 @@ export function CollectionSetupStep({
     api.onboardingAiMutations.applyCollectionSuggestions,
   );
 
-  const [description, setDescription] = useState("");
-  const [summary, setSummary] = useState<string | null>(null);
-  const [objectTypes, setObjectTypes] = useState<string[]>([]);
-  const [suggestions, setSuggestions] = useState<CollectionGroupSuggestion[]>(
-    [],
+  const [setup, setSetup] = useState<CollectionSetupState>(
+    initialCollectionSetupState,
   );
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    setError(null);
-    setIsGenerating(true);
+    setSetup((current) => ({ ...current, error: null, isGenerating: true }));
     try {
       const result = await generateSuggestions({
         organizationName: orgFormData.name,
         organizationType: orgFormData.type,
-        description,
+        description: setup.description,
       });
 
       const withIds = result.collectionGroups.map((group, index) => ({
@@ -63,60 +91,68 @@ export function CollectionSetupStep({
         description: group.description,
       }));
 
-      setSummary(result.summary);
-      setObjectTypes(result.objectTypes);
-      setSuggestions(withIds);
-      setSelectedIds(new Set(withIds.map((group) => group.id)));
+      setSetup((current) => ({
+        ...current,
+        summary: result.summary,
+        objectTypes: result.objectTypes,
+        suggestions: withIds,
+        selectedIds: new Set(withIds.map((group) => group.id)),
+        isGenerating: false,
+      }));
     } catch {
-      setError(t("onboardingPage.collectionSetup.generateFailed"));
-    } finally {
-      setIsGenerating(false);
+      setSetup((current) => ({
+        ...current,
+        error: t("onboardingPage.collectionSetup.generateFailed"),
+        isGenerating: false,
+      }));
     }
   };
 
   const updateSuggestion = useCallback(
     (id: string, patch: Partial<Pick<CollectionGroupSuggestion, "name" | "description">>) => {
-      setSuggestions((current) =>
-        current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
-      );
+      setSetup((current) => ({
+        ...current,
+        suggestions: current.suggestions.map((item) =>
+          item.id === id ? { ...item, ...patch } : item,
+        ),
+      }));
     },
     [],
   );
 
   const removeSuggestion = useCallback((id: string) => {
-    setSuggestions((current) => current.filter((item) => item.id !== id));
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      next.delete(id);
-      return next;
+    setSetup((current) => {
+      const nextSelectedIds = new Set(current.selectedIds);
+      nextSelectedIds.delete(id);
+      return {
+        ...current,
+        suggestions: current.suggestions.filter((item) => item.id !== id),
+        selectedIds: nextSelectedIds,
+      };
     });
   }, []);
 
   const toggleSelected = useCallback((id: string, checked: boolean) => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
+    setSetup((current) => {
+      const nextSelectedIds = new Set(current.selectedIds);
+      if (checked) nextSelectedIds.add(id);
+      else nextSelectedIds.delete(id);
+      return { ...current, selectedIds: nextSelectedIds };
     });
   }, []);
 
   const handleApply = async () => {
-    const selectedGroups = suggestions
-      .filter((group) => selectedIds.has(group.id))
-      .map((group) => ({
-        name: group.name.trim(),
-        description: group.description.trim(),
-      }))
-      .filter((group) => group.name.length > 0);
+    const selectedGroups = collectSelectedCollectionGroups(
+      setup.suggestions,
+      setup.selectedIds,
+    );
 
     if (selectedGroups.length === 0) {
       onComplete();
       return;
     }
 
-    setError(null);
-    setIsApplying(true);
+    setSetup((current) => ({ ...current, error: null, isApplying: true }));
     try {
       await applySuggestions({
         organizationId,
@@ -124,9 +160,11 @@ export function CollectionSetupStep({
       });
       onComplete();
     } catch {
-      setError(t("onboardingPage.collectionSetup.applyFailed"));
-    } finally {
-      setIsApplying(false);
+      setSetup((current) => ({
+        ...current,
+        error: t("onboardingPage.collectionSetup.applyFailed"),
+        isApplying: false,
+      }));
     }
   };
 
@@ -154,8 +192,13 @@ export function CollectionSetupStep({
           </label>
           <Textarea
             id="collection-description"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
+            value={setup.description}
+            onChange={(event) =>
+              setSetup((current) => ({
+                ...current,
+                description: event.target.value,
+              }))
+            }
             placeholder={t("onboardingPage.collectionSetup.promptPlaceholder")}
             rows={4}
           />
@@ -165,10 +208,10 @@ export function CollectionSetupStep({
           type="button"
           variant="outline"
           className="w-full"
-          disabled={isGenerating || !orgFormData.name}
+          disabled={setup.isGenerating || !orgFormData.name}
           onClick={handleGenerate}
         >
-          {isGenerating ? (
+          {setup.isGenerating ? (
             <Loader2 className="animate-spin" />
           ) : (
             <>
@@ -178,36 +221,36 @@ export function CollectionSetupStep({
           )}
         </Button>
 
-        {summary && (
+        {setup.summary && (
           <p className="rounded-lg border border-white/10 bg-muted/30 p-3 text-sm text-muted-foreground">
-            {summary}
+            {setup.summary}
           </p>
         )}
 
-        {objectTypes.length > 0 && (
+        {setup.objectTypes.length > 0 && (
           <div className="rounded-lg border border-white/10 p-3">
             <p className="mb-2 text-sm font-medium">
               {t("onboardingPage.collectionSetup.objectTypesLabel")}
             </p>
             <p className="text-sm text-muted-foreground">
-              {objectTypes.join(" · ")}
+              {setup.objectTypes.join(" · ")}
             </p>
           </div>
         )}
 
-        {suggestions.length > 0 && (
+        {setup.suggestions.length > 0 && (
           <div className="space-y-3">
             <p className="text-sm font-medium">
               {t("onboardingPage.collectionSetup.groupsLabel")}
             </p>
-            {suggestions.map((group) => (
+            {setup.suggestions.map((group) => (
               <div
                 key={group.id}
                 className="space-y-2 rounded-lg border border-white/10 p-3"
               >
                 <div className="flex items-start gap-3">
                   <Checkbox
-                    checked={selectedIds.has(group.id)}
+                    checked={setup.selectedIds.has(group.id)}
                     onCheckedChange={(checked) =>
                       toggleSelected(group.id, checked === true)
                     }
@@ -251,19 +294,19 @@ export function CollectionSetupStep({
           </div>
         )}
 
-        {error && (
+        {setup.error && (
           <div className="rounded-lg border border-destructive bg-destructive/10 p-3">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{setup.error}</p>
           </div>
         )}
 
         <Button
           type="button"
           className="w-full"
-          disabled={isApplying}
+          disabled={setup.isApplying}
           onClick={handleApply}
         >
-          {isApplying ? (
+          {setup.isApplying ? (
             <Loader2 className="animate-spin" />
           ) : (
             t("onboardingPage.collectionSetup.continue")

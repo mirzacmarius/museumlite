@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 import {
   hasUnanimousSuperAdminApproval,
@@ -75,7 +75,7 @@ async function getPendingOwnershipTransfer(
 }
 
 async function completeOwnershipTransfer(
-  ctx: Parameters<typeof requireSuperAdmin>[0],
+  ctx: MutationCtx,
   request: Doc<"organizationOwnershipTransferRequests">,
 ) {
   const organization = await ctx.db.get(request.organizationId);
