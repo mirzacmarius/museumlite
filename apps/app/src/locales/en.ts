@@ -3703,6 +3703,24 @@ export default {
     orgTitle: "Create Your Organization",
     orgDescription:
       "Set up your organization to start managing your collection.",
+    collectionSetup: {
+      title: "Shape Your Collection",
+      description:
+        "Describe what you collect and we will suggest collection groups and object types you can adjust before saving.",
+      promptLabel: "What does your organization collect?",
+      promptPlaceholder:
+        "e.g. Regional history museum with paintings, textiles, and archival photographs…",
+      generate: "Generate suggestions",
+      generateFailed: "Could not generate suggestions. Please try again.",
+      applyFailed: "Could not save collection groups. Please try again.",
+      objectTypesLabel: "Suggested object types",
+      groupsLabel: "Suggested collection groups",
+      groupNamePlaceholder: "Collection group name",
+      groupDescriptionPlaceholder: "Short description",
+      removeGroup: "Remove group",
+      continue: "Save and continue",
+      skip: "Skip for now",
+    },
     dataTitle: "Add Your First Data",
     dataDescription:
       "Create an object, import existing records, or set up your first collection group.",
