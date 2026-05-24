@@ -170,11 +170,14 @@ export function parseCollectionSetupSuggestionJson(
 
     if (collectionGroups.length === 0) return null;
 
-    const objectTypes = parsed.objectTypes
-      .filter((value): value is string => typeof value === "string")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0)
-      .slice(0, 12);
+    const objectTypes: Array<string> = [];
+    for (const value of parsed.objectTypes) {
+      if (typeof value !== "string") continue;
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      objectTypes.push(trimmed);
+      if (objectTypes.length >= 12) break;
+    }
 
     return {
       summary: trimDescription(parsed.summary, 400),
