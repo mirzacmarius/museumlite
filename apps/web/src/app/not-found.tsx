@@ -1,33 +1,38 @@
 import Link from "next/link";
 import "@/marketing-styles.css";
+import { MarketingFonts } from "@/components/site/marketing-fonts";
+import { MarketingThemeScript } from "@/components/site/marketing-theme";
 import { MarketingSiteRoot } from "@/components/site/marketing-site-root";
 import { MarketingSiteShell } from "@/components/site/marketing-site-shell";
 
 export default function NotFound() {
   return (
-    <MarketingSiteRoot>
-      <MarketingSiteShell>
-        <div className="flex min-h-screen items-center justify-center px-4">
-          <div className="max-w-md text-center">
-            <h1 className="text-7xl font-semibold text-foreground">404</h1>
-            <h2 className="mt-4 text-xl font-semibold text-foreground">
-              Page not found
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              The page you&apos;re looking for doesn&apos;t exist or has been
-              moved.
-            </p>
-            <div className="mt-6">
+    <MarketingFonts>
+      <MarketingThemeScript />
+      <MarketingSiteRoot>
+        <MarketingSiteShell>
+          <main
+            id="main-content"
+            className="flex min-h-screen items-center justify-center px-6 bg-background"
+          >
+            <div className="max-w-md text-center">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-gold mb-4">
+                404
+              </p>
+              <h1 className="font-display text-6xl text-ivory">Page not found</h1>
+              <p className="mt-4 text-muted-foreground leading-relaxed">
+                The page you are looking for does not exist or has been moved.
+              </p>
               <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="btn-marketing mt-8 inline-flex border border-gold bg-gold px-6 py-3 text-xs uppercase tracking-[0.3em] text-ink hover:bg-transparent hover:text-gold transition-colors"
               >
-                Go home
+                Back to home
               </Link>
             </div>
-          </div>
-        </div>
-      </MarketingSiteShell>
-    </MarketingSiteRoot>
+          </main>
+        </MarketingSiteShell>
+      </MarketingSiteRoot>
+    </MarketingFonts>
   );
 }

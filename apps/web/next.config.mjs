@@ -1,9 +1,14 @@
+import { loadMonorepoEnv } from "../../scripts/load-monorepo-env.mjs";
+
+loadMonorepoEnv(import.meta.url);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Required for Next.js 16 - explicitly configure turbopack
   turbopack: {},
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [65, 70, 75],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [256, 384, 400, 512, 640, 800],
     remotePatterns: [

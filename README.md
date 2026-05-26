@@ -156,6 +156,20 @@ If you prefer to set up the project manually, follow these steps:
    ```
    This starts everything in development mode (web, app, api, email).
 
+### Git worktrees
+
+Git worktrees do not copy gitignored `.env` files. Before `bun dev`, this repo runs `scripts/sync-worktree-env.mjs` to symlink env files from another checkout of the same repo (or from `~/Developer/ml` if present).
+
+If sync cannot find a source, set your main clone explicitly:
+
+```bash
+export ML_ENV_SOURCE="$HOME/Developer/ml"   # path to a checkout that already has .env files
+bun run env:sync
+bun dev
+```
+
+You can re-sync anytime with `bun run env:sync` (use `--force` to replace existing symlinks).
+
    Alternatively, you can start specific parts of the application:
    - `bun dev:web`: starts the web app
    - `bun dev:app`: starts the app
