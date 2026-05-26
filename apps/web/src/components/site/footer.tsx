@@ -8,17 +8,15 @@ export function SiteFooter() {
       links: [
         { href: "/features", label: "Features" },
         { href: "/pricing", label: "Pricing" },
-        { href: "/features", label: "Collections" },
-        { href: "/features", label: "Conservation" },
+        { href: "/features#collections", label: "Collections" },
+        { href: "/features#conservation", label: "Conservation" },
       ],
     },
     {
-      h: "Institution",
+      h: "Company",
       links: [
         { href: "/about", label: "About" },
         { href: "/contact", label: "Contact" },
-        { href: "/about", label: "Journal" },
-        { href: "/about", label: "Press" },
       ],
     },
   ] as const;
@@ -28,9 +26,9 @@ export function SiteFooter() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <Mark />
-          <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
-            MuseumLite — built in Florence & Edinburgh for the institutions
-            that keep memory alive.
+          <p className="mt-4 text-sm text-muted-foreground max-w-sm leading-relaxed">
+            Museum collection management — catalogue objects, plan exhibitions,
+            track conservation, and publish a public portal from one workspace.
           </p>
         </div>
         {cols.map((col) => (
@@ -51,7 +49,7 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="mx-auto max-w-7xl px-6 lg:px-10 mt-14 pt-6 border-t border-border flex flex-col md:flex-row justify-between gap-4 text-xs text-muted-foreground uppercase tracking-[0.25em]">
-        <span>© MMXXV MuseumLite. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} MuseumLite. All rights reserved.</span>
         <span>Made with care for the keepers of culture.</span>
       </div>
     </footer>

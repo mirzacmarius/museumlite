@@ -30,7 +30,7 @@ export function PageHeader({
             <span className="h-px w-10 bg-gold/60" />
             {eyebrow}
           </div>
-          <h1 className="font-display text-6xl md:text-8xl leading-[0.92] text-ivory text-balance">
+          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.92] text-ivory text-balance">
             {title}
           </h1>
         </div>

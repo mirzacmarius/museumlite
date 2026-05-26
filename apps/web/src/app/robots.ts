@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://museumlite.com";
+import { siteConfig } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -11,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/_next/"],
       },
     ],
-    sitemap: `${BASE_URL}/sitemap.xml`,
+    sitemap: `${siteConfig.url}/sitemap.xml`,
   };
 }

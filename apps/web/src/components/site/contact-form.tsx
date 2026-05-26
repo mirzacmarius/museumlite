@@ -16,8 +16,8 @@ export function ContactForm() {
       <div className="border border-gold/40 bg-card p-12 text-center">
         <div className="font-display text-4xl text-gold mb-4">Received.</div>
         <p className="text-muted-foreground">
-          A registrar will be in touch within one working day to arrange
-          your private walkthrough.
+          We will be in touch within two business days to arrange your
+          walkthrough.
         </p>
       </div>
     );
@@ -57,7 +57,11 @@ export function ContactForm() {
       <Field label="Your name" name="name" />
       <Field label="Institution" name="institution" />
       <Field label="Email" name="email" type="email" />
-      <Field label="Approximate collection size" name="size" placeholder="e.g. 12,000 objects" />
+      <Field
+        label="Approximate collection size"
+        name="size"
+        placeholder="e.g. 12,000 objects"
+      />
       <div>
         <label
           htmlFor="message"
@@ -76,7 +80,7 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-4 bg-gold text-ink px-8 py-4 text-xs uppercase tracking-[0.3em] hover:bg-ivory transition-colors disabled:opacity-60"
+        className="btn-marketing mt-4 bg-gold text-ink px-8 py-4 text-xs uppercase tracking-[0.3em] hover:bg-ivory transition-colors disabled:opacity-60"
       >
         {isSubmitting ? "Sending…" : "Request a private tour"}
       </button>
@@ -97,7 +101,10 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3" htmlFor={name}>
+      <label
+        className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3"
+        htmlFor={name}
+      >
         {label}
       </label>
       <input

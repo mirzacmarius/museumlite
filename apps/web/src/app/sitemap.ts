@@ -2,7 +2,9 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://museumlite.com";
+import { siteConfig } from "@/lib/site";
+
+const BASE_URL = siteConfig.url;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const marketingPaths = ["/features", "/pricing", "/about", "/contact"] as const;

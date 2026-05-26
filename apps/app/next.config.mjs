@@ -1,3 +1,7 @@
+import { loadMonorepoEnv } from "../../scripts/load-monorepo-env.mjs";
+
+loadMonorepoEnv(import.meta.url);
+
 import "./src/env.mjs";
 import { withSentryConfig } from "@sentry/nextjs";
 

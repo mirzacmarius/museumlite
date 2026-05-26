@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getAppLoginUrl } from "@/lib/app-login-url";
 import { Mark } from "./mark";
+import { MobileNav } from "./mobile-nav";
 import { NavLink } from "./nav-link";
+import { ThemeSwitcher } from "./theme-switcher";
 
 const links = [
   { href: "/features", label: "Features" },
@@ -21,7 +23,7 @@ export function Nav({ floating = false }: { floating?: boolean }) {
           : "relative z-30 border-b border-border bg-background/80 backdrop-blur"
       }
     >
-      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-6 flex items-center justify-between">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10 py-6 flex items-center justify-between gap-4">
         <Mark />
         <nav
           aria-label="Main"
@@ -31,7 +33,8 @@ export function Nav({ floating = false }: { floating?: boolean }) {
             <NavLink key={link.href} href={link.href} label={link.label} />
           ))}
         </nav>
-        <div className="flex items-center gap-5 text-xs uppercase tracking-[0.22em]">
+        <div className="flex items-center gap-4 text-xs uppercase tracking-[0.22em]">
+          <ThemeSwitcher className="hidden sm:inline-flex" />
           <a
             href={signInUrl}
             className="hidden md:inline text-muted-foreground hover:text-gold"
@@ -40,10 +43,11 @@ export function Nav({ floating = false }: { floating?: boolean }) {
           </a>
           <Link
             href="/contact"
-            className="border border-gold/60 px-4 py-2.5 text-gold hover:bg-gold hover:text-ink transition-colors"
+            className="btn-marketing hidden sm:inline-flex border border-gold/60 px-4 py-2.5 text-gold hover:bg-gold hover:text-ink transition-colors"
           >
             Request a Tour
           </Link>
+          <MobileNav />
         </div>
       </div>
     </header>

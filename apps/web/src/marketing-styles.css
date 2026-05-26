@@ -2,6 +2,7 @@
 @import "tailwindcss" source(none);
 @source "./app/(marketing)/**/*.{ts,tsx}";
 @source "./components/site/**/*.{ts,tsx}";
+@source "./components/marketing/**/*.{ts,tsx}";
 @source "./app/not-found.tsx";
 
 @custom-variant dark (&:is(.dark *));
@@ -13,6 +14,7 @@
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 6px;
+  --radius-button: 9999px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -29,42 +31,98 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--gold);
+  --color-accent-foreground: var(--primary-foreground);
   --color-ring: var(--ring);
 }
 
+/* Default: editorial dark */
 html.marketing-site,
 .marketing-site-root {
   color-scheme: dark;
   --background: oklch(0.14 0.012 60);
   --foreground: oklch(0.94 0.012 80);
-  --ink: oklch(0.10 0.008 60);
+  --ink: oklch(0.1 0.008 60);
   --ivory: oklch(0.94 0.014 85);
   --gold: oklch(0.78 0.13 75);
-  --gold-soft: oklch(0.62 0.10 70);
+  --gold-soft: oklch(0.62 0.1 70);
   --patina: oklch(0.55 0.05 180);
-  --muted: oklch(0.20 0.012 60);
-  /* ≥4.5:1 on --background for 12px+ text (WCAG AA) */
+  --muted: oklch(0.2 0.012 60);
   --muted-foreground: oklch(0.76 0.015 78);
   --soft-foreground: oklch(0.83 0.012 82);
   --card: oklch(0.17 0.012 60);
   --card-foreground: oklch(0.94 0.012 80);
-  --border: oklch(0.30 0.015 70 / 40%);
+  --border: oklch(0.3 0.015 70 / 40%);
   --primary: oklch(0.78 0.13 75);
   --primary-foreground: oklch(0.12 0.01 60);
-  --accent: oklch(0.78 0.13 75);
-  --accent-foreground: oklch(0.12 0.01 60);
   --ring: oklch(0.78 0.13 75);
 
-  --gradient-spotlight: radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.78 0.13 75 / 0.18), transparent 70%);
-  --gradient-vignette: radial-gradient(ellipse at center, transparent 40%, oklch(0.08 0.005 60 / 0.85) 100%);
+  --gradient-spotlight: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    oklch(0.78 0.13 75 / 0.18),
+    transparent 70%
+  );
+  --gradient-vignette: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    oklch(0.08 0.005 60 / 0.85) 100%
+  );
+  --gradient-hero-fade: linear-gradient(
+    to bottom,
+    oklch(0.14 0.012 60 / 0.45),
+    oklch(0.14 0.012 60 / 0.22) 55%,
+    oklch(0.14 0.012 60)
+  );
   --shadow-gallery: 0 30px 80px -20px oklch(0.05 0.005 60 / 0.6);
   --shadow-gold: 0 0 60px -10px oklch(0.78 0.13 75 / 0.4);
 }
 
+/* Light theme — warm paper + gold (same hue family as dark) */
+html.marketing-site.marketing-theme-light,
+html.marketing-site.marketing-theme-light .marketing-site-root {
+  color-scheme: light;
+  --background: oklch(0.965 0.014 82);
+  --foreground: oklch(0.22 0.018 60);
+  --ink: oklch(0.14 0.012 60);
+  --ivory: oklch(0.2 0.018 60);
+  --gold: oklch(0.62 0.12 72);
+  --gold-soft: oklch(0.55 0.1 70);
+  --patina: oklch(0.52 0.05 180);
+  --muted: oklch(0.94 0.01 82);
+  --muted-foreground: oklch(0.46 0.02 60);
+  --soft-foreground: oklch(0.36 0.02 60);
+  --card: oklch(0.99 0.006 85);
+  --card-foreground: oklch(0.22 0.018 60);
+  --border: oklch(0.86 0.014 80 / 70%);
+  --primary: oklch(0.62 0.12 72);
+  --primary-foreground: oklch(0.99 0.006 85);
+  --ring: oklch(0.62 0.12 72);
+
+  --gradient-spotlight: radial-gradient(
+    ellipse 85% 55% at 50% -8%,
+    oklch(0.78 0.13 75 / 0.16),
+    oklch(0.965 0.014 82 / 0) 72%
+  );
+  --gradient-vignette: radial-gradient(
+    ellipse 90% 70% at 50% 25%,
+    transparent 55%,
+    oklch(0.965 0.014 82 / 0.35) 100%
+  );
+  /* Bottom band only — keeps the gallery photo visible in the upper hero */
+  --gradient-hero-fade: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 52%,
+    oklch(0.965 0.014 82 / 0.18) 68%,
+    oklch(0.965 0.014 82 / 0.72) 88%,
+    oklch(0.965 0.014 82 / 0.95) 100%
+  );
+  --shadow-gallery: 0 28px 70px -18px oklch(0.35 0.03 60 / 0.14);
+  --shadow-gold: 0 12px 40px -12px oklch(0.62 0.12 72 / 0.28);
+}
+
 html.marketing-site {
-  background-color: oklch(0.14 0.012 60);
+  background-color: var(--background);
 }
 
 .marketing-site-root {
@@ -119,6 +177,57 @@ html.marketing-site {
   .bg-vignette {
     background: var(--gradient-vignette);
   }
+  .bg-hero-fade {
+    background: var(--gradient-hero-fade);
+  }
+  .hero-cap-bar {
+    background: oklch(0.1 0.008 60 / 0.42);
+    backdrop-filter: blur(10px);
+  }
+  html.marketing-site.marketing-theme-light .hero-cap-bar {
+    background: oklch(0.965 0.014 82 / 0.92);
+  }
+  .hero-cap-item {
+    background: oklch(0.14 0.012 60 / 0.35);
+    backdrop-filter: blur(10px);
+    transition:
+      background 0.3s ease,
+      color 0.3s ease;
+  }
+  .hero-cap-item:hover {
+    background: oklch(0.17 0.012 60 / 0.55);
+  }
+  html.marketing-site.marketing-theme-light .hero-cap-item {
+    background: oklch(0.99 0.006 85 / 0.45);
+  }
+  html.marketing-site.marketing-theme-light .hero-cap-item:hover {
+    background: oklch(0.99 0.006 85 / 0.72);
+  }
+  .hero-photo {
+    opacity: 0.7;
+  }
+  .hero-vignette {
+    opacity: 1;
+  }
+  html.marketing-site.marketing-theme-light .hero-photo {
+    opacity: 0.88;
+    filter: brightness(1.06) saturate(1.05) contrast(1.02);
+  }
+  html.marketing-site.marketing-theme-light .hero-vignette {
+    opacity: 0.55;
+  }
+  .hero-text-scrim {
+    display: none;
+  }
+  html.marketing-site.marketing-theme-light .hero-text-scrim {
+    display: block;
+    background: linear-gradient(
+      to bottom,
+      oklch(0.965 0.014 82 / 0.42) 0%,
+      oklch(0.965 0.014 82 / 0.12) 40%,
+      transparent 72%
+    );
+  }
   .shadow-gallery {
     box-shadow: var(--shadow-gallery);
   }
@@ -127,6 +236,72 @@ html.marketing-site {
   }
   .gold-rule {
     background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+  }
+  .btn-marketing {
+    border-radius: var(--radius-button);
+    transition:
+      color 0.25s ease,
+      background-color 0.25s ease,
+      border-color 0.25s ease;
+  }
+  .feature-module-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: oklch(0.78 0.13 75 / 12%);
+  }
+  @media (min-width: 768px) {
+    .feature-module-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .feature-module-grid.cols-3 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .feature-module-grid.cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .feature-module-card {
+    background: oklch(0.17 0.012 60 / 0.55);
+    backdrop-filter: blur(12px);
+    transition:
+      background 0.25s ease,
+      color 0.25s ease;
+  }
+  .feature-module-card:hover {
+    background: oklch(0.2 0.012 60 / 0.75);
+  }
+  html.marketing-site.marketing-theme-light .feature-module-grid {
+    background: oklch(0.55 0.11 70 / 15%);
+  }
+  html.marketing-site.marketing-theme-light .feature-module-card {
+    background: oklch(0.99 0.006 85 / 0.65);
+  }
+  html.marketing-site.marketing-theme-light .feature-module-card:hover {
+    background: oklch(0.99 0.006 85 / 0.9);
+  }
+  .exhibitions-showcase-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: oklch(0.78 0.13 75 / 14%);
+  }
+  @media (min-width: 1024px) {
+    .exhibitions-showcase-grid {
+      grid-template-columns: 1.15fr 1fr;
+      min-height: 28rem;
+    }
+  }
+  .exhibitions-showcase-media {
+    overflow: hidden;
+  }
+  .exhibitions-showcase-panel {
+    min-height: 100%;
+  }
+  html.marketing-site.marketing-theme-light .exhibitions-showcase-grid {
+    background: oklch(0.55 0.11 70 / 18%);
   }
   .grain::after {
     content: "";
@@ -139,15 +314,201 @@ html.marketing-site {
   }
 }
 
-@keyframes shimmer {
+html.marketing-site.marketing-theme-light .grain::after {
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+}
+
+.workspace-section {
+  background-color: oklch(0.17 0.012 60 / 30%);
+}
+html.marketing-site.marketing-theme-light .workspace-section {
+  background-color: oklch(0.96 0.012 82 / 65%);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: var(--gold);
+  color: var(--primary-foreground);
+  font-size: 0.875rem;
+  text-decoration: none;
+  border-radius: var(--radius-button);
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* —— Homepage motion (respects prefers-reduced-motion below) —— */
+.marketing-home .hero-photo {
+  animation: marketing-hero-zoom 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.marketing-home .hero-cap-item {
+  transition:
+    background 0.3s ease,
+    color 0.3s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.marketing-home .hero-cap-item:hover {
+  transform: translateY(-2px);
+}
+
+.marketing-home .btn-marketing {
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.marketing-home .btn-marketing:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes marketing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marketing-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes marketing-hero-zoom {
+  from {
+    transform: scale(1.07);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes marketing-line-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes marketing-shimmer-line {
   0%,
   100% {
-    opacity: 0.4;
+    opacity: 0.45;
   }
   50% {
     opacity: 1;
   }
 }
-.animate-shimmer {
-  animation: shimmer 3s ease-in-out infinite;
+
+.marketing-home .animate-hero-enter {
+  animation: marketing-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.marketing-home .animate-hero-delay-1 {
+  animation-delay: 0.12s;
+}
+.marketing-home .animate-hero-delay-2 {
+  animation-delay: 0.24s;
+}
+.marketing-home .animate-hero-delay-3 {
+  animation-delay: 0.38s;
+}
+.marketing-home .animate-hero-delay-4 {
+  animation-delay: 0.52s;
+}
+.marketing-home .animate-hero-delay-5 {
+  animation-delay: 0.66s;
+}
+
+.marketing-home .hero-rule-animate {
+  transform-origin: left center;
+  animation: marketing-line-grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+.marketing-home .hero-cap-bar-enter {
+  animation: marketing-fade-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+}
+.marketing-home .hero-cap-bar-enter .hero-cap-item {
+  opacity: 0;
+  animation: marketing-fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.marketing-home .hero-cap-bar-enter .hero-cap-item:nth-child(1) {
+  animation-delay: 0.72s;
+}
+.marketing-home .hero-cap-bar-enter .hero-cap-item:nth-child(2) {
+  animation-delay: 0.8s;
+}
+.marketing-home .hero-cap-bar-enter .hero-cap-item:nth-child(3) {
+  animation-delay: 0.88s;
+}
+.marketing-home .hero-cap-bar-enter .hero-cap-item:nth-child(4) {
+  animation-delay: 0.96s;
+}
+
+.marketing-home .reveal {
+  opacity: 0;
+  transform: translateY(1.5rem);
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.marketing-home .reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .grain::after {
+    display: none;
+  }
+
+  .marketing-home .hero-photo,
+  .marketing-home .animate-hero-enter,
+  .marketing-home .hero-rule-animate,
+  .marketing-home .hero-cap-bar-enter,
+  .marketing-home .hero-cap-bar-enter .hero-cap-item {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .marketing-home .reveal,
+  .marketing-home .reveal-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .marketing-home .hero-cap-item:hover,
+  .marketing-home .btn-marketing:hover {
+    transform: none;
+  }
 }

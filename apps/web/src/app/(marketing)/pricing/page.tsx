@@ -1,62 +1,58 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
 import { PageHeader } from "@/components/site/section-label";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Pricing — MuseumLite",
+export const metadata = createPageMetadata({
+  title: "Pricing",
   description:
-    "Three considered plans for small collections, regional museums and national institutions. Transparent pricing.",
-  openGraph: {
-    title: "Pricing — MuseumLite",
-    description: "Considered, never complicated.",
-  },
-};
+    "Transparent plans for small collections, regional museums, and larger institutions. Free trial on standard tiers.",
+  path: "/pricing",
+});
 
 const tiers = [
   {
     name: "Atelier",
     price: "€280",
     sub: "/ month",
-    desc: "For small museums and private collections.",
+    desc: "For small museums and private collections getting started.",
     features: [
       "Up to 5,000 objects",
       "5 staff seats",
-      "Object Catalog & Accessions",
+      "Object catalog & accessions",
       "Public portal (subdomain)",
       "Email support",
     ],
-    cta: "Begin",
+    cta: "Request a tour",
   },
   {
     name: "Gallery",
     price: "€890",
     sub: "/ month",
-    desc: "For regional museums with active programming.",
+    desc: "For regional museums with active exhibition programmes.",
     features: [
       "Unlimited objects",
       "20 staff seats",
-      "Exhibitions & Loans modules",
+      "Exhibitions & loans modules",
       "Conservation suite",
       "Custom domain portal",
       "Priority support",
     ],
-    cta: "Begin",
+    cta: "Request a tour",
     featured: true,
   },
   {
     name: "Institution",
-    price: "Bespoke",
+    price: "Custom",
     sub: "",
-    desc: "For national institutions and consortia.",
+    desc: "For national institutions and consortia with specific requirements.",
     features: [
-      "Dedicated infrastructure",
+      "Dedicated infrastructure options",
       "Unlimited seats",
-      "Full module suite + Library",
+      "Full module suite + library",
       "SSO & audit logging",
-      "ISO 27001 compliance",
-      "Named success engineer",
+      "Named success contact",
     ],
     cta: "Speak with us",
   },
@@ -65,109 +61,111 @@ const tiers = [
 const faqs = [
   [
     "Is data migration included?",
-    "Yes. Our migrations team imports your existing records from CollectionSpace, TMS, EmbARK, Past Perfect, Axiell or spreadsheets — at no additional cost on Gallery and Institution tiers.",
+    "We help early partners import records from spreadsheets or common systems. Scope depends on your collection size — we will outline this during your tour.",
   ],
   [
     "Where is data hosted?",
-    "EU (Frankfurt) by default. UK (London), US (Virginia) and AU (Sydney) regions are available for Institution plans, with data residency guarantees.",
+    "EU (Frankfurt) by default. Additional regions can be discussed for Institution plans.",
   ],
   [
     "Do you offer non-profit pricing?",
-    "We discount Atelier and Gallery by 25% for accredited non-profits and reduce setup fees to zero. Just mention it when you request a tour.",
+    "We offer discounts for accredited non-profits on Atelier and Gallery. Mention it when you request a tour.",
   ],
   [
     "Can we self-host?",
-    "Institution tier supports private deployment on your own infrastructure with annual licensing. Talk to us about requirements.",
+    "Private deployment is available for Institution plans. Talk to us about your requirements.",
   ],
 ];
 
 export default function PricingPage() {
   return (
-    <main className="bg-background text-foreground">
+    <>
       <Nav />
-      <PageHeader
-        eyebrow="Stewardship Plans"
-        title={
-          <>
-            Considered,
-            <br />
-            <em className="not-italic text-gold">never complicated.</em>
-          </>
-        }
-        lede="Three plans, transparent pricing, no per-object fees. Free 30-day trial on Atelier and Gallery."
-      />
+      <main id="main-content" className="bg-background text-foreground">
+        <PageHeader
+          eyebrow="Pricing"
+          title={
+            <>
+              Clear plans,
+              <br />
+              <span className="text-gold">no per-object fees.</span>
+            </>
+          }
+          lede="Three tiers with transparent monthly pricing. We will confirm trial terms when you book a walkthrough."
+        />
 
-      <section className="bg-border py-24">
-        <div className="mx-auto grid max-w-7xl gap-px px-6 md:grid-cols-3 lg:px-10">
-          {tiers.map((t) => (
-            <div
-              key={t.name}
-              className={`relative p-10 flex flex-col ${t.featured ? "bg-card" : "bg-background"}`}
-            >
-              {t.featured && (
-                <span className="absolute -top-3 left-10 bg-gold text-ink text-[10px] uppercase tracking-[0.3em] px-3 py-1">
-                  Most chosen
-                </span>
-              )}
-              <div className="text-xs uppercase tracking-[0.3em] text-gold mb-4">
-                {t.name}
-              </div>
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className="font-display text-6xl text-ivory">
-                  {t.price}
-                </span>
-                <span className="text-muted-foreground text-sm">{t.sub}</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed mb-8">{t.desc}</p>
-              <ul className="space-y-3 text-sm text-soft-foreground mb-10">
-                {t.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-3 border-b border-border/60 pb-2"
-                  >
-                    <span className="text-gold mt-0.5">✦</span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/contact"
-                className={`mt-auto text-center py-4 text-xs uppercase tracking-[0.3em] transition-colors border ${
+        <section className="py-16 md:py-24 border-b border-border">
+          <div className="mx-auto grid max-w-7xl gap-6 px-6 md:grid-cols-3 lg:px-10">
+            {tiers.map((t) => (
+              <div
+                key={t.name}
+                className={`relative flex flex-col border p-8 ${
                   t.featured
-                    ? "bg-gold text-ink border-gold hover:bg-transparent hover:text-gold"
-                    : "border-ivory/30 text-ivory hover:border-gold hover:text-gold"
+                    ? "border-gold bg-card shadow-gold"
+                    : "border-border bg-card"
                 }`}
               >
-                {t.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="py-24 border-t border-border">
-        <div className="mx-auto max-w-4xl px-6 lg:px-10">
-          <h2 className="font-display text-5xl text-ivory mb-12 text-center">
-            Quietly answered.
-          </h2>
-          <div className="divide-y divide-border border-y border-border">
-            {faqs.map(([q, a]) => (
-              <details key={q} className="group py-6">
-                <summary className="cursor-pointer list-none flex justify-between items-center text-ivory hover:text-gold transition-colors">
-                  <span className="font-display text-2xl">{q}</span>
-                  <span className="text-gold text-2xl group-open:rotate-45 transition-transform">
-                    +
+                {t.featured && (
+                  <span className="btn-marketing absolute -top-3 left-8 bg-gold text-ink text-[10px] uppercase tracking-[0.2em] px-3 py-1">
+                    Popular
                   </span>
-                </summary>
-                <p className="mt-4 text-muted-foreground leading-relaxed max-w-2xl">
-                  {a}
+                )}
+                <div className="text-xs font-medium uppercase tracking-[0.2em] text-gold mb-3">
+                  {t.name}
+                </div>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="font-display text-5xl text-ivory">{t.price}</span>
+                  <span className="text-sm text-muted-foreground">{t.sub}</span>
+                </div>
+                <p className="text-muted-foreground leading-relaxed mb-6">
+                  {t.desc}
                 </p>
-              </details>
+                <ul className="space-y-2 text-sm text-soft-foreground mb-8 flex-1">
+                  {t.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <span className="text-gold mt-0.5">·</span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/contact"
+                  className={`btn-marketing text-center py-3.5 text-xs uppercase tracking-[0.3em] transition-colors border ${
+                    t.featured
+                      ? "bg-gold text-ink border-gold hover:bg-transparent hover:text-gold"
+                      : "border-border text-ivory hover:border-gold hover:text-gold"
+                  }`}
+                >
+                  {t.cta}
+                </Link>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
-      <SiteFooter />
-    </main>
+        </section>
+
+        <section className="py-16 md:py-24">
+          <div className="mx-auto max-w-3xl px-6 lg:px-10">
+            <h2 className="font-display text-3xl text-ivory mb-10 text-center">
+              Common questions
+            </h2>
+            <div className="divide-y divide-border border-y border-border">
+              {faqs.map(([q, a]) => (
+                <details key={q} className="group py-5">
+                  <summary className="cursor-pointer list-none flex justify-between items-center gap-4 text-ivory hover:text-gold transition-colors">
+                    <span className="font-display text-xl">{q}</span>
+                    <span className="text-gold text-xl shrink-0 group-open:rotate-45 transition-transform">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-muted-foreground leading-relaxed">{a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <SiteFooter />
+      </main>
+    </>
   );
 }

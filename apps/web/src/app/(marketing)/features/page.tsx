@@ -1,25 +1,27 @@
-import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
 import { PageHeader, SectionLabel } from "@/components/site/section-label";
+import { PrimaryButton } from "@/components/site/buttons";
+import { ExhibitionsShowcase } from "@/components/marketing/exhibitions-showcase";
+import {
+  FeatureModuleCard,
+  FeatureModuleGrid,
+  type FeatureModule,
+} from "@/components/marketing/feature-module-card";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Features — MuseumLite",
+export const metadata = createPageMetadata({
+  title: "Features",
   description:
-    "Modules for collections, exhibitions, conservation, library and the public portal — woven into one quiet platform.",
-  openGraph: {
-    title: "Features — MuseumLite",
-    description: "One platform. Every department.",
-  },
-};
+    "MuseumLite modules for collections, exhibitions, conservation, library, and public portals — integrated around one object record.",
+  path: "/features",
+});
 
-const modules = [
+const collectionModules: FeatureModule[] = [
   {
-    n: "01",
     title: "Object Catalog",
-    desc: "Museum-grade records with provenance chains, condition history, IIIF imagery and AAT/ULAN reconciliation.",
+    desc: "Museum-grade records with provenance chains, condition history, IIIF imagery and authority reconciliation.",
     items: [
       "Versioned revisions",
       "Bulk accession import",
@@ -27,7 +29,6 @@ const modules = [
     ],
   },
   {
-    n: "02",
     title: "Accessions & Deaccessions",
     desc: "Workflow-driven intake with committee approvals, legal documentation and audit trail.",
     items: [
@@ -37,128 +38,126 @@ const modules = [
     ],
   },
   {
-    n: "03",
     title: "Location & Tracking",
-    desc: "Know where every object lives, from vault shelf to vitrine, with RFID and barcode support.",
+    desc: "Know where every object lives, from vault shelf to vitrine, with barcode support.",
     items: ["Move history", "Storage hierarchy", "Audit reconciliation"],
   },
   {
-    n: "04",
     title: "Loans & Transit",
     desc: "Outgoing and incoming loans with courier briefs, crate manifests and condition checks at every hop.",
-    items: ["Couriered transit log", "Facility reports", "Insurance riders"],
+    items: ["Transit log", "Facility reports", "Insurance riders"],
   },
+];
+
+const conservationModules: FeatureModule[] = [
   {
-    n: "05",
-    title: "Exhibitions & Installations",
-    desc: "Plan walls, labels, vitrines and lighting on a visual timeline. Generate the show in a single export.",
-    items: ["Floorplan editor", "Label PDF export", "Install schedule"],
-  },
-  {
-    n: "06",
     title: "Conservation",
-    desc: "Treatments, environmental readings and risk flags — MuseumLite watches RH, light and pests for you.",
+    desc: "Treatments, environmental readings and risk flags — tied to the object record your team already trusts.",
     items: ["Treatment dossiers", "Sensor ingest", "Risk scoring"],
   },
   {
-    n: "07",
     title: "Library & Research",
-    desc: "MARC-compatible catalogue, patrons, circulation, fines and acquisitions for the institutional library.",
-    items: ["Z39.50 import", "Self-checkout", "Reading rooms"],
+    desc: "Catalogue holdings, patrons, circulation, and acquisitions for the institutional library.",
+    items: ["MARC import", "Self-checkout", "Reading rooms"],
   },
   {
-    n: "08",
     title: "Public Portal",
-    desc: "Publish a beautiful, IIIF-enabled public catalogue with embargo controls and editorial features.",
-    items: ["Custom domains", "SEO-ready", "Editorial pages"],
+    desc: "Publish a public catalogue with embargo controls and editorial pages when you are ready.",
+    items: ["Custom domains", "SEO-ready pages", "IIIF imagery"],
   },
 ];
 
 export default function FeaturesPage() {
   return (
-    <main className="bg-background text-foreground">
+    <>
       <Nav />
-      <PageHeader
-        eyebrow="The Platform"
-        title={
-          <>
-            One platform.
-            <br />
-            <em className="not-italic text-gold">Every department.</em>
-          </>
-        }
-        lede="MuseumLite replaces the patchwork of spreadsheets, file servers and ageing databases that hold most museums together. Eight integrated modules, one canonical record."
-      />
+      <main id="main-content" className="bg-background text-foreground">
+        <PageHeader
+          eyebrow="Platform"
+          title={
+            <>
+              One platform.
+              <br />
+              <span className="text-gold">Every department.</span>
+            </>
+          }
+          lede="Replace the patchwork of spreadsheets and ageing databases with integrated modules around a single canonical object record."
+        />
 
-      <section className="bg-border py-24 md:py-32">
-        <div className="mx-auto grid max-w-7xl gap-px px-6 md:grid-cols-2 lg:px-10">
-          {modules.map((m) => (
-            <article
-              key={m.n}
-              className="bg-background p-8 md:p-12 flex flex-col gap-5 hover:bg-card transition-colors"
-            >
-              <div className="flex items-baseline justify-between">
-                <span className="font-display text-3xl text-gold">{m.n}</span>
-                <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                  Module
-                </span>
+        <section
+          id="collections"
+          className="scroll-mt-24 py-16 md:py-28 border-b border-border"
+        >
+          <div className="mx-auto max-w-7xl px-6 lg:px-10 mb-12 md:mb-16">
+            <SectionLabel index="I." title="Collections" />
+            <h2 className="mt-6 font-display text-4xl md:text-5xl text-ivory text-balance max-w-2xl">
+              Catalogue & <em className="not-italic text-gold">accession</em>
+            </h2>
+            <p className="mt-4 max-w-xl text-soft-foreground leading-relaxed">
+              Everything that happens before and after an object enters your
+              walls — recorded with museum register depth and modern search.
+            </p>
+          </div>
+          <FeatureModuleGrid modules={collectionModules} />
+        </section>
+
+        <ExhibitionsShowcase />
+
+        <section
+          id="conservation"
+          className="scroll-mt-24 py-16 md:py-28 border-b border-border"
+        >
+          <div className="mx-auto max-w-7xl px-6 lg:px-10 mb-12 md:mb-16">
+            <SectionLabel index="III." title="Conservation" />
+            <h2 className="mt-6 font-display text-4xl md:text-5xl text-ivory text-balance max-w-2xl">
+              Care, library & <em className="not-italic text-gold">public face</em>
+            </h2>
+            <p className="mt-4 max-w-xl text-soft-foreground leading-relaxed">
+              Stewardship, research holdings, and the catalogue you choose to
+              share — without maintaining a second database.
+            </p>
+          </div>
+          <div className="feature-module-grid cols-3 mx-auto max-w-7xl px-6 lg:px-10">
+            {conservationModules.map((m) => (
+              <FeatureModuleCard key={m.title} module={m} />
+            ))}
+          </div>
+        </section>
+
+        <section className="py-20 md:py-28 bg-spotlight border-t border-border">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10 grid md:grid-cols-12 gap-12 items-center">
+            <div className="md:col-span-6">
+              <div className="relative aspect-[4/5] max-w-md overflow-hidden border border-border shadow-gallery">
+                <Image
+                  src="/marketing/artifact-mask.jpg"
+                  alt="Collection object in conservation review"
+                  fill
+                  loading="lazy"
+                  quality={70}
+                  sizes="(max-width: 768px) 100vw, 400px"
+                  className="object-cover"
+                />
               </div>
-              <h3 className="font-display text-4xl text-ivory">{m.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">{m.desc}</p>
-              <ul className="mt-2 space-y-2 text-sm text-soft-foreground">
-                {m.items.map((i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-3 border-b border-border/60 pb-2"
-                  >
-                    <span className="text-gold">✦</span>
-                    {i}
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative py-32 overflow-hidden border-t border-border">
-        <div className="absolute inset-0 bg-spotlight" />
-        <div className="relative mx-auto max-w-7xl px-6 lg:px-10 grid md:grid-cols-12 gap-12 items-center">
-          <div className="md:col-span-7">
-            <div className="relative aspect-[4/5] max-w-xl overflow-hidden shadow-gallery shadow-gold">
-              <Image
-                src="/marketing/artifact-mask.jpg"
-                alt="Specimen"
-                fill
-                loading="lazy"
-                quality={70}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 42vw, 500px"
-                className="object-cover"
-              />
+            </div>
+            <div className="md:col-span-6">
+              <SectionLabel index="✦" title="One canonical record" />
+              <h2 className="mt-6 font-display text-3xl md:text-4xl text-ivory text-balance">
+                Every object, its own story
+              </h2>
+              <p className="mt-6 text-soft-foreground leading-relaxed">
+                Linked provenance, condition history, exhibition cycles, loan
+                agreements, imagery, and environmental readings — on one page
+                your whole team can trust.
+              </p>
+              <PrimaryButton href="/contact" className="mt-8">
+                See it on your collection →
+              </PrimaryButton>
             </div>
           </div>
-          <div className="md:col-span-5">
-            <SectionLabel index="✦" title="One canonical record" />
-            <h2 className="mt-8 font-display text-5xl md:text-6xl text-ivory text-balance">
-              Every object,
-              <br />
-              <em className="not-italic text-gold">its own story.</em>
-            </h2>
-            <p className="mt-8 text-soft-foreground text-lg leading-relaxed">
-              Linked provenance, condition history, exhibition cycles, loan
-              agreements, high-resolution imagery and live environmental
-              readings — all on one unhurried page.
-            </p>
-            <Link
-              href="/contact"
-              className="mt-10 inline-flex border border-gold text-gold px-6 py-4 text-xs uppercase tracking-[0.3em] hover:bg-gold hover:text-ink transition-colors"
-            >
-              See it on your collection →
-            </Link>
-          </div>
-        </div>
-      </section>
-      <SiteFooter />
-    </main>
+        </section>
+
+        <SiteFooter />
+      </main>
+    </>
   );
 }
