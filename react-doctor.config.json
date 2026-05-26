@@ -12,6 +12,13 @@
           "react-doctor/server-sequential-independent-await",
           "react-doctor/async-await-in-loop"
         ]
+      },
+      {
+        "files": [
+          "apps/web/src/components/site/footer.tsx",
+          "src/components/site/footer.tsx"
+        ],
+        "rules": ["react-doctor/design-no-em-dash-in-jsx-text"]
       }
     ]
   }

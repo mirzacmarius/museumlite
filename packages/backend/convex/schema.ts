@@ -209,6 +209,7 @@ export default defineSchema({
   organizationDeletions: defineTable({
     organizationId: v.id("organizations"),
     status: v.union(
+      v.literal("pending_super_admin_approval"),
       v.literal("grace_period"),
       v.literal("awaiting_final_notice"),
       v.literal("pending_purge"),
@@ -217,6 +218,7 @@ export default defineSchema({
     ),
     requestedAt: v.number(),
     requestedByUserId: v.id("users"),
+    superAdminApprovedByUserIds: v.optional(v.array(v.id("users"))),
     cancelToken: v.string(),
     graceEndsAt: v.number(),
     finalNoticeAt: v.number(),
@@ -237,6 +239,25 @@ export default defineSchema({
     .index("by_status_and_graceEndsAt", ["status", "graceEndsAt"])
     .index("by_status_and_finalNoticeAt", ["status", "finalNoticeAt"])
     .index("by_status_and_scheduledPurgeAt", ["status", "scheduledPurgeAt"]),
+
+  organizationOwnershipTransferRequests: defineTable({
+    organizationId: v.id("organizations"),
+    targetOrganizationId: v.id("organizations"),
+    status: v.union(
+      v.literal("pending_super_admin_approval"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("cancelled"),
+      v.literal("completed"),
+    ),
+    requestedByUserId: v.id("users"),
+    requestedAt: v.number(),
+    newOwnerUserId: v.id("users"),
+    superAdminApprovedByUserIds: v.optional(v.array(v.id("users"))),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   organizationUsageCounters: defineTable({
     organizationId: v.id("organizations"),

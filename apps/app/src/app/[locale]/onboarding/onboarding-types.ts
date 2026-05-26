@@ -1,4 +1,8 @@
-export type OnboardingStep = "username" | "organization" | "firstData";
+export type OnboardingStep =
+  | "username"
+  | "organization"
+  | "collectionSetup"
+  | "firstData";
 
 export type OrganizationType = "museum" | "gallery" | "library" | "collector";
 
@@ -6,6 +10,12 @@ export interface OrganizationFormData {
   name: string;
   slug: string;
   type: OrganizationType;
+}
+
+export interface CollectionGroupSuggestion {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export function getConvexErrorCode(error: unknown): string | null {

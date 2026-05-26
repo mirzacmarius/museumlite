@@ -26,12 +26,9 @@ export function ContactForm() {
   return (
     <form
       className="space-y-8"
-      onSubmit={async (e) => {
-        e.preventDefault();
+      action={async (formData) => {
         setError(null);
         setIsSubmitting(true);
-
-        const formData = new FormData(e.currentTarget);
 
         try {
           await submitTourRequest({
@@ -65,6 +62,7 @@ export function ContactForm() {
       <div>
         <label
           htmlFor="message"
+          id="message-label"
           className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3"
         >
           Anything you&apos;d like us to know
@@ -73,6 +71,7 @@ export function ContactForm() {
           id="message"
           name="message"
           rows={5}
+          aria-labelledby="message-label"
           className="w-full bg-transparent border-b border-border focus:border-gold outline-none text-ivory text-lg py-3 transition-colors resize-none"
         />
       </div>
@@ -99,9 +98,12 @@ function Field({
   type?: string;
   placeholder?: string;
 }) {
+  const labelId = `${name}-label`;
+
   return (
     <div>
       <label
+        id={labelId}
         className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3"
         htmlFor={name}
       >
@@ -113,6 +115,7 @@ function Field({
         type={type}
         placeholder={placeholder}
         required
+        aria-labelledby={labelId}
         className="w-full bg-transparent border-b border-border focus:border-gold outline-none text-ivory text-lg py-3 transition-colors"
       />
     </div>

@@ -19,6 +19,7 @@ import {
   QrCode,
   Send,
   Share2,
+  Tags,
 } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
@@ -32,6 +33,7 @@ interface ObjectDetailHeaderProps {
   linkCopied: boolean;
   onLinkCopiedChange: (copied: boolean) => void;
   onPrintClick: () => void;
+  onObjectLabelClick: () => void;
   onQrLabelClick: () => void;
   collectionsLabel: string;
   copyLinkLabel: string;
@@ -39,6 +41,7 @@ interface ObjectDetailHeaderProps {
   exportPdfLabel: string;
   requestLoanLabel: string;
   printLabel: string;
+  printObjectLabel: string;
   editObjectLabel: string;
   shareTitle: string;
 }
@@ -50,6 +53,7 @@ export function ObjectDetailHeader({
   linkCopied,
   onLinkCopiedChange,
   onPrintClick,
+  onObjectLabelClick,
   onQrLabelClick,
   collectionsLabel,
   copyLinkLabel,
@@ -57,6 +61,7 @@ export function ObjectDetailHeader({
   exportPdfLabel,
   requestLoanLabel,
   printLabel,
+  printObjectLabel,
   editObjectLabel,
   shareTitle,
 }: ObjectDetailHeaderProps) {
@@ -129,6 +134,15 @@ export function ObjectDetailHeader({
           onClick={onPrintClick}
         >
           <Printer className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 text-muted-foreground hover:text-foreground"
+          title={printObjectLabel}
+          onClick={onObjectLabelClick}
+        >
+          <Tags className="size-4" />
         </Button>
         <Button
           variant="ghost"

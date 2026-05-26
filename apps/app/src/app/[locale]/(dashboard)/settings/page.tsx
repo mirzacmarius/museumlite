@@ -211,7 +211,7 @@ export default function DashboardSettings() {
               />
             )}
           </usernameForm.Field>
-          {usernameForm.state.fieldMeta.username?.errors.length > 0 && (
+          {(usernameForm.state.fieldMeta.username?.errors?.length ?? 0) > 0 && (
             <p className="text-sm text-destructive dark:text-destructive-foreground">
               {usernameForm.state.fieldMeta.username?.errors.join(" ")}
             </p>

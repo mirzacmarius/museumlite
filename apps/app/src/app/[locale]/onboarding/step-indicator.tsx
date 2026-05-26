@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Database, User } from "lucide-react";
+import { Building2, Database, Sparkles, User } from "lucide-react";
 import type { OnboardingStep } from "./onboarding-types";
 
 export function StepIndicator({
@@ -11,6 +11,7 @@ export function StepIndicator({
   const steps = [
     { id: "username" as const, icon: User },
     { id: "organization" as const, icon: Building2 },
+    { id: "collectionSetup" as const, icon: Sparkles },
     { id: "firstData" as const, icon: Database },
   ];
   const currentIndex = steps.findIndex((step) => step.id === currentStep);

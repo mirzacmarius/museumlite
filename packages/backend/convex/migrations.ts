@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
+import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 
 function getLocationCodePrefix(type: string) {
   switch (type.trim().toLowerCase()) {
@@ -1064,6 +1065,114 @@ export const backfillOrganizationTransferFields = internalMutation({
 
     console.log(
       `Migration complete: ${result.accountNumbersAssigned} account numbers assigned, ${result.transferFlagsSynced} transfer flags synced (${result.totalOrganizations} organizations)`,
+    );
+
+    return result;
+  },
+});
+
+/**
+ * Migration: Backfill super_admin system role and assign owners as SuperAdmins.
+ *
+ * Run: bunx convex run migrations:backfillSuperAdminRoles
+ */
+export const backfillSuperAdminRoles = internalMutation({
+  args: {},
+  returns: v.object({
+    totalOrganizations: v.number(),
+    rolesCreated: v.number(),
+    membershipsUpdated: v.number(),
+  }),
+  handler: async (ctx) => {
+    console.log("Starting migration: Backfill super_admin roles");
+
+    const organizations = await ctx.db.query("organizations").collect();
+    let rolesCreated = 0;
+    let membershipsUpdated = 0;
+
+    for (const organization of organizations) {
+      const { db } = ctx;
+      const rolesQuery = db.query("roles");
+      const rolePermissionsQuery = db.query("rolePermissions");
+      const userOrganizationsQuery = db.query("userOrganizations");
+      let superAdminRole = await rolesQuery
+        .withIndex("by_organization_and_name", (q) =>
+          q
+            .eq("organizationId", organization._id)
+            .eq("name", SUPER_ADMIN_ROLE_NAME),
+        )
+        .first();
+      if (!superAdminRole) {
+        const adminRole = await rolesQuery
+          .withIndex("by_organization_and_name", (q) =>
+            q.eq("organizationId", organization._id).eq("name", "admin"),
+          )
+          .first();
+
+        const superAdminRoleId = await db.insert("roles", {
+          organizationId: organization._id,
+          name: SUPER_ADMIN_ROLE_NAME,
+          description: "Owner with full organization control (SuperAdmin)",
+          isSystemRole: true,
+        });
+        superAdminRole = await db.get(superAdminRoleId);
+        rolesCreated += 1;
+
+        if (adminRole) {
+          const adminPermissions = await rolePermissionsQuery
+            .withIndex("by_role", (q) => q.eq("roleId", adminRole._id))
+            .collect();
+
+          for (const rolePermission of adminPermissions) {
+            await db.insert("rolePermissions", {
+              roleId: superAdminRoleId,
+              permissionId: rolePermission.permissionId,
+            });
+          }
+        }
+      }
+
+      if (!superAdminRole) {
+        continue;
+      }
+
+      if (organization.ownerUserId) {
+        const ownerMembership = await userOrganizationsQuery
+          .withIndex("by_user_and_organization", (q) =>
+            q
+              .eq("userId", organization.ownerUserId!)
+              .eq("organizationId", organization._id),
+          )
+          .first();
+
+        if (
+          ownerMembership &&
+          ownerMembership.roleId !== superAdminRole._id
+        ) {
+          await db.patch(ownerMembership._id, {
+            roleId: superAdminRole._id,
+          });
+          membershipsUpdated += 1;
+        } else if (!ownerMembership) {
+          await db.insert("userOrganizations", {
+            userId: organization.ownerUserId,
+            organizationId: organization._id,
+            roleId: superAdminRole._id,
+            joinedAt: Date.now(),
+          });
+          membershipsUpdated += 1;
+        }
+      }
+    }
+
+    const result = {
+      totalOrganizations: organizations.length,
+      rolesCreated,
+      membershipsUpdated,
+    };
+
+    console.log(
+      `Migration complete: ${result.rolesCreated} super_admin roles created, ${result.membershipsUpdated} memberships updated`,
     );
 
     return result;

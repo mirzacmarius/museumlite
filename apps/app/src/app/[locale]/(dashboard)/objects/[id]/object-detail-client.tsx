@@ -29,6 +29,13 @@ const QRLabelModal = dynamic(
   () => import("./_components/qr-label-modal").then((mod) => mod.QRLabelModal),
   { ssr: false },
 );
+const ObjectLabelModal = dynamic(
+  () =>
+    import("./_components/object-label-modal").then(
+      (mod) => mod.ObjectLabelModal,
+    ),
+  { ssr: false },
+);
 
 interface ObjectDetailClientProps {
   collectionId: Id<"collections">;
@@ -58,6 +65,7 @@ interface ObjectDetailViewState {
   activeTab: TabId;
   isHeroLightboxOpen: boolean;
   isPrintModalOpen: boolean;
+  isObjectLabelModalOpen: boolean;
   isQrLabelModalOpen: boolean;
   linkCopied: boolean;
   qrCodeUrl: string;
@@ -67,6 +75,7 @@ type ObjectDetailViewAction =
   | { type: "setActiveTab"; value: TabId }
   | { type: "setHeroLightboxOpen"; value: boolean }
   | { type: "setPrintModalOpen"; value: boolean }
+  | { type: "setObjectLabelModalOpen"; value: boolean }
   | { type: "setQrLabelModalOpen"; value: boolean }
   | { type: "setLinkCopied"; value: boolean }
   | { type: "setQrCodeUrl"; value: string };
@@ -75,6 +84,7 @@ const initialObjectDetailViewState: ObjectDetailViewState = {
   activeTab: "general",
   isHeroLightboxOpen: false,
   isPrintModalOpen: false,
+  isObjectLabelModalOpen: false,
   isQrLabelModalOpen: false,
   linkCopied: false,
   qrCodeUrl: "",
@@ -91,6 +101,8 @@ function objectDetailViewReducer(
       return { ...state, isHeroLightboxOpen: action.value };
     case "setPrintModalOpen":
       return { ...state, isPrintModalOpen: action.value };
+    case "setObjectLabelModalOpen":
+      return { ...state, isObjectLabelModalOpen: action.value };
     case "setQrLabelModalOpen":
       return { ...state, isQrLabelModalOpen: action.value };
     case "setLinkCopied":
@@ -247,6 +259,9 @@ function ObjectDetailView({
           onPrintClick={() =>
             dispatch({ type: "setPrintModalOpen", value: true })
           }
+          onObjectLabelClick={() =>
+            dispatch({ type: "setObjectLabelModalOpen", value: true })
+          }
           onQrLabelClick={() =>
             dispatch({ type: "setQrLabelModalOpen", value: true })
           }
@@ -256,6 +271,7 @@ function ObjectDetailView({
           exportPdfLabel={t("detail.exportToPdf")}
           requestLoanLabel={t("detail.requestLoan")}
           printLabel={t("detail.printLabel")}
+          printObjectLabel={t("detail.printObjectLabel")}
           editObjectLabel={t("detail.editObject")}
           shareTitle={common("share")}
         />
@@ -303,6 +319,13 @@ function ObjectDetailView({
         heroImage={heroImageForPrint}
         locationPath={locationPath ?? undefined}
         locale={locale}
+      />
+      <ObjectLabelModal
+        collection={collection}
+        isOpen={state.isObjectLabelModalOpen}
+        onClose={() =>
+          dispatch({ type: "setObjectLabelModalOpen", value: false })
+        }
       />
       <QRLabelModal
         collection={collection}

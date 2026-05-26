@@ -125,14 +125,17 @@ html.marketing-site {
   background-color: var(--background);
 }
 
-.marketing-site-root {
-  background-color: var(--background);
-  color: var(--foreground);
-}
-
 @layer base {
-  html.marketing-site *,
-  .marketing-site-root * {
+  .marketing-site-root {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .marketing-site-root *,
+  html.marketing-site * {
     border-color: var(--color-border);
   }
 
@@ -144,20 +147,14 @@ html.marketing-site {
     -webkit-font-smoothing: antialiased;
   }
 
-  .marketing-site-root {
-    font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
-    -webkit-font-smoothing: antialiased;
-  }
-
-  html.marketing-site h1,
-  html.marketing-site h2,
-  html.marketing-site h3,
-  html.marketing-site h4,
   .marketing-site-root h1,
   .marketing-site-root h2,
   .marketing-site-root h3,
-  .marketing-site-root h4 {
+  .marketing-site-root h4,
+  html.marketing-site h1,
+  html.marketing-site h2,
+  html.marketing-site h3,
+  html.marketing-site h4 {
     font-family: var(--font-display);
     font-weight: 400;
     letter-spacing: -0.01em;
