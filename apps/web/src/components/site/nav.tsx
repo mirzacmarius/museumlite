@@ -26,7 +26,7 @@ export function Nav({ floating = false }: { floating?: boolean }) {
         <Mark />
         <nav
           aria-label="Main"
-          className="hidden md:flex items-center gap-10 text-xs uppercase tracking-[0.22em] text-muted-foreground"
+          className="hidden lg:flex items-center gap-10 text-xs uppercase tracking-[0.22em] text-muted-foreground"
         >
           {links.map((link) => (
             <NavLink key={link.href} href={link.href} label={link.label} />
@@ -36,7 +36,7 @@ export function Nav({ floating = false }: { floating?: boolean }) {
           <ThemeSwitcher className="hidden sm:inline-flex" />
           <a
             href={signInUrl}
-            className="hidden md:inline text-muted-foreground hover:text-gold"
+            className="hidden lg:inline text-muted-foreground hover:text-gold"
           >
             Sign in
           </a>
