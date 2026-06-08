@@ -26,7 +26,7 @@ const capabilities = [
 
 export function HomeHero() {
   return (
-    <section className="relative min-h-screen overflow-hidden bg-background grain">
+    <section className="hero-overlay relative flex min-h-dvh flex-col overflow-hidden bg-background grain">
       <Image
         src="/marketing/hero-gallery.jpg"
         alt="Grand museum gallery illuminated at dusk"
@@ -38,9 +38,8 @@ export function HomeHero() {
       />
       <div className="hero-vignette absolute inset-0 bg-vignette" aria-hidden />
       <div className="hero-fade absolute inset-0 bg-hero-fade" aria-hidden />
-      <div className="hero-text-scrim pointer-events-none absolute inset-x-0 top-0 z-[1] h-[min(72vh,720px)]" aria-hidden />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10 pt-44 pb-52 md:pb-60">
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 lg:px-10 pt-44 pb-8 md:pb-10">
         <div className="animate-hero-enter flex items-center gap-4 text-[10px] uppercase tracking-[0.4em] text-gold mb-10">
           <span className="hero-rule-animate h-px w-10 bg-gold/60" />
           Museum collection management
@@ -54,7 +53,7 @@ export function HomeHero() {
           great museums.
         </h1>
 
-        <div className="mt-12 grid md:grid-cols-12 gap-8 items-end">
+        <div className="mt-auto grid gap-8 pt-10 md:grid-cols-12 md:pt-12 items-end">
           <p className="animate-hero-enter animate-hero-delay-2 md:col-span-5 text-lg leading-relaxed text-soft-foreground max-w-md">
             MuseumLite unifies collections, exhibitions, conservation, and
             library workflows in one workspace — structured records instead of
@@ -92,7 +91,7 @@ export function HomeHero() {
         </div>
       </div>
 
-      <div className="hero-cap-bar hero-cap-bar-enter absolute bottom-0 left-0 right-0 z-10 border-t border-border/60">
+      <div className="hero-cap-bar hero-cap-bar-enter relative z-10 shrink-0 border-t border-border/60">
         <div className="mx-auto max-w-7xl px-6 lg:px-10 py-8 md:py-10">
           <p className="text-center text-[10px] uppercase tracking-[0.45em] text-gold/80 mb-6 md:mb-8">
             One workspace · Four disciplines

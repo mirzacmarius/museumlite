@@ -104,9 +104,9 @@ html.marketing-site.marketing-theme-light .marketing-site-root {
     oklch(0.965 0.014 82 / 0) 72%
   );
   --gradient-vignette: radial-gradient(
-    ellipse 90% 70% at 50% 25%,
-    transparent 55%,
-    oklch(0.965 0.014 82 / 0.35) 100%
+    ellipse at center,
+    transparent 40%,
+    oklch(0.08 0.005 60 / 0.85) 100%
   );
   /* Bottom band only — keeps the gallery photo visible in the upper hero */
   --gradient-hero-fade: linear-gradient(
@@ -207,23 +207,24 @@ html.marketing-site {
     opacity: 1;
   }
   html.marketing-site.marketing-theme-light .hero-photo {
-    opacity: 0.88;
-    filter: brightness(1.06) saturate(1.05) contrast(1.02);
+    opacity: 0.7;
   }
-  html.marketing-site.marketing-theme-light .hero-vignette {
-    opacity: 0.55;
+  html.marketing-site.marketing-theme-light .hero-overlay {
+    --hero-overlay-ivory: oklch(0.94 0.014 85);
+    --hero-overlay-soft: oklch(0.83 0.012 82);
+    --hero-overlay-muted: oklch(0.76 0.015 78);
   }
-  .hero-text-scrim {
-    display: none;
+  html.marketing-site.marketing-theme-light .hero-overlay .text-ivory {
+    color: var(--hero-overlay-ivory);
   }
-  html.marketing-site.marketing-theme-light .hero-text-scrim {
-    display: block;
-    background: linear-gradient(
-      to bottom,
-      oklch(0.965 0.014 82 / 0.42) 0%,
-      oklch(0.965 0.014 82 / 0.12) 40%,
-      transparent 72%
-    );
+  html.marketing-site.marketing-theme-light .hero-overlay .text-soft-foreground {
+    color: var(--hero-overlay-soft);
+  }
+  html.marketing-site.marketing-theme-light .hero-overlay .text-muted-foreground {
+    color: var(--hero-overlay-muted);
+  }
+  html.marketing-site.marketing-theme-light .hero-overlay [class*="border-ivory"] {
+    border-color: oklch(0.94 0.014 85 / 40%);
   }
   .shadow-gallery {
     box-shadow: var(--shadow-gallery);

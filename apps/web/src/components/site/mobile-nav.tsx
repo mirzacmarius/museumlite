@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import { getAppLoginUrl } from "@/lib/app-login-url";
 import { NavLink } from "./nav-link";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -22,7 +21,6 @@ const links = [
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const panelId = useId();
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const signInUrl = getAppLoginUrl();
@@ -32,10 +30,6 @@ export function MobileNav() {
   const handleEscape = useEffectEvent(() => {
     close();
   });
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -53,56 +47,6 @@ export function MobileNav() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
-
-  const menuPanel =
-    open && isMounted
-      ? createPortal(
-          <nav
-            id={panelId}
-            aria-label="Mobile"
-            className="fixed inset-0 z-[200] flex min-h-dvh w-full flex-col bg-background px-6 py-6 shadow-gallery"
-          >
-            <div className="flex items-center justify-between mb-10">
-              <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Menu
-              </span>
-              <div className="flex items-center gap-3">
-                <ThemeSwitcher />
-                <button
-                  type="button"
-                  className="text-sm text-muted-foreground hover:text-gold"
-                  onClick={close}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-
-            <ul className="flex flex-col gap-6 text-xs uppercase tracking-[0.15em]">
-              {links.map((link, i) => (
-                <li key={link.href}>
-                  <NavLink
-                    ref={i === 0 ? firstLinkRef : undefined}
-                    href={link.href}
-                    label={link.label}
-                    onClick={close}
-                  />
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-auto pt-10">
-              <a
-                href={signInUrl}
-                className="block text-center text-sm text-muted-foreground hover:text-gold"
-              >
-                Sign in
-              </a>
-            </div>
-          </nav>,
-          document.body,
-        )
-      : null;
 
   return (
     <div className="lg:hidden flex items-center gap-2">
@@ -125,7 +69,62 @@ export function MobileNav() {
           />
         </svg>
       </button>
-      {menuPanel}
+
+      {open && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-50 border-0 bg-ink/80 p-0 backdrop-blur-sm"
+          onClick={close}
+        />
+      )}
+
+      <nav
+        id={panelId}
+        aria-label="Mobile"
+        hidden={!open}
+        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-border bg-background p-6 shadow-gallery transition-transform ${
+          open ? "translate-x-0" : "translate-x-full pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-10">
+          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Menu
+          </span>
+          <div className="flex items-center gap-3">
+            <ThemeSwitcher />
+            <button
+              type="button"
+              className="text-sm text-muted-foreground hover:text-gold"
+              onClick={close}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <ul className="flex flex-col gap-6 text-xs uppercase tracking-[0.15em]">
+          {links.map((link, i) => (
+            <li key={link.href}>
+              <NavLink
+                ref={i === 0 ? firstLinkRef : undefined}
+                href={link.href}
+                label={link.label}
+                onClick={close}
+              />
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-auto pt-10">
+          <a
+            href={signInUrl}
+            className="block text-center text-sm text-muted-foreground hover:text-gold"
+          >
+            Sign in
+          </a>
+        </div>
+      </nav>
     </div>
   );
 }
