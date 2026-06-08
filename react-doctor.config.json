@@ -15,10 +15,17 @@
       },
       {
         "files": [
-          "apps/web/src/components/site/footer.tsx",
-          "src/components/site/footer.tsx"
+          "apps/web/src/**/*.tsx",
+          "src/**/*.tsx"
         ],
         "rules": ["react-doctor/design-no-em-dash-in-jsx-text"]
+      },
+      {
+        "files": [
+          "apps/web/src/app/(marketing)/contact/actions.ts",
+          "src/app/(marketing)/contact/actions.ts"
+        ],
+        "rules": ["react-doctor/server-auth-actions"]
       }
     ]
   }

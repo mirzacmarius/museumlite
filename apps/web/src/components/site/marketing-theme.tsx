@@ -1,9 +1,10 @@
 "use client";
 
+import Script from "next/script";
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useLayoutEffect,
   useState,
 } from "react";
@@ -82,7 +83,7 @@ export function MarketingThemeProvider({
 }
 
 export function useMarketingTheme() {
-  const ctx = useContext(MarketingThemeContext);
+  const ctx = use(MarketingThemeContext);
   if (!ctx) {
     throw new Error("useMarketingTheme must be used within MarketingThemeProvider");
   }
@@ -91,11 +92,9 @@ export function useMarketingTheme() {
 
 /** Inline script to set theme class before paint (avoids flash). */
 export function MarketingThemeScript() {
-  const script = `(function(){try{var t=localStorage.getItem("${STORAGE_KEY}");if(t==="light"){document.documentElement.classList.add("marketing-theme-light");}}catch(e){}})();`;
   return (
-    <script
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: theme bootstrap only
-      dangerouslySetInnerHTML={{ __html: script }}
-    />
+    <Script id="museumlite-marketing-theme" strategy="beforeInteractive">
+      {`(function(){try{var t=localStorage.getItem("${STORAGE_KEY}");if(t==="light"){document.documentElement.classList.add("marketing-theme-light");}}catch(e){}})();`}
+    </Script>
   );
 }

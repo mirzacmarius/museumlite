@@ -10,8 +10,9 @@ import {
 } from "@/lib/pricing-plans";
 
 export function PricingPlans() {
-  const [interval, setInterval] = useState<BillingInterval>("month");
-  const plans = getPricingPlans(interval);
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>("month");
+  const plans = getPricingPlans(billingInterval);
   const registerUrl = getAppRegisterUrl();
 
   return (
@@ -27,9 +28,9 @@ export function PricingPlans() {
         >
           <button
             type="button"
-            onClick={() => setInterval("month")}
+            onClick={() => setBillingInterval("month")}
             className={`transition-colors ${
-              interval === "month" ? "text-gold" : "text-muted-foreground"
+              billingInterval === "month" ? "text-gold" : "text-muted-foreground"
             }`}
           >
             Monthly
@@ -39,9 +40,9 @@ export function PricingPlans() {
           </span>
           <button
             type="button"
-            onClick={() => setInterval("year")}
+            onClick={() => setBillingInterval("year")}
             className={`transition-colors ${
-              interval === "year" ? "text-gold" : "text-muted-foreground"
+              billingInterval === "year" ? "text-gold" : "text-muted-foreground"
             }`}
           >
             Yearly

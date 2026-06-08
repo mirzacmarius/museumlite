@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { getAppLoginUrl } from "@/lib/app-login-url";
 import { NavLink } from "./nav-link";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -20,11 +27,15 @@ export function MobileNav() {
 
   const close = useCallback(() => setOpen(false), []);
 
+  const handleEscape = useEffectEvent(() => {
+    close();
+  });
+
   useEffect(() => {
     if (!open) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") handleEscape();
     };
 
     document.body.style.overflow = "hidden";
@@ -35,7 +46,7 @@ export function MobileNav() {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, close]);
+  }, [open]);
 
   return (
     <div className="md:hidden flex items-center gap-2">
