@@ -63,7 +63,7 @@ export function HomeHero() {
           <div className="animate-hero-enter animate-hero-delay-3 md:col-span-4 md:col-start-9 flex flex-col gap-4">
             <Link
               href="/contact"
-              className="btn-marketing group inline-flex items-center justify-between border border-gold bg-gold/95 px-6 py-4 text-ink text-xs uppercase tracking-[0.3em] hover:bg-transparent hover:text-gold transition-colors"
+              className="btn-marketing group inline-flex h-14 w-full items-center justify-between border border-gold bg-gold/95 px-6 text-ink text-xs uppercase tracking-[0.3em] hover:bg-transparent hover:text-gold transition-colors"
             >
               Request a tour
               <span className="ml-4">→</span>
