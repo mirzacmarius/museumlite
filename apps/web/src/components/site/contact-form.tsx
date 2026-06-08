@@ -1,12 +1,10 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
-import { useAction } from "convex/react";
+import { submitTourRequest } from "@/app/(marketing)/contact/actions";
 import { useState } from "react";
 import { SectionLabel } from "./section-label";
 
 export function ContactForm() {
-  const submitTourRequest = useAction(api.web.submitTourRequest);
   const [sent, setSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,14 +29,19 @@ export function ContactForm() {
         setIsSubmitting(true);
 
         try {
-          await submitTourRequest({
+          const result = await submitTourRequest({
             name: String(formData.get("name") ?? ""),
             institution: String(formData.get("institution") ?? ""),
             email: String(formData.get("email") ?? ""),
             collectionSize: String(formData.get("size") ?? "") || undefined,
             message: String(formData.get("message") ?? "") || undefined,
           });
-          setSent(true);
+
+          if (result.ok) {
+            setSent(true);
+          } else {
+            setError(result.error);
+          }
         } catch (submitError) {
           setError(
             submitError instanceof Error
