@@ -34,18 +34,11 @@ export function MarketingJsonLd() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(software) }}
-      />
+      <script type="application/ld+json">
+        {JSON.stringify(organization)}
+      </script>
+      <script type="application/ld+json">{JSON.stringify(website)}</script>
+      <script type="application/ld+json">{JSON.stringify(software)}</script>
     </>
   );
 }

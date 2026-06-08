@@ -474,13 +474,8 @@ html.marketing-site.marketing-theme-light .workspace-section {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  html.marketing-site {
+    scroll-behavior: auto;
   }
 
   .grain::after {
@@ -504,11 +499,15 @@ html.marketing-site.marketing-theme-light .workspace-section {
     transition: none;
   }
 
+  .marketing-home .hero-cap-item,
   .marketing-home .hero-cap-item:hover {
     transform: none;
+    transition: none;
   }
 
+  .marketing-home .btn-marketing,
   .marketing-home .btn-marketing:hover {
     box-shadow: none;
+    transition: none;
   }
 }

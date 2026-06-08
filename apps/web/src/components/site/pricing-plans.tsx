@@ -21,9 +21,8 @@ export function PricingPlans() {
           Start on Free — no credit card. Upgrade to Pro or Enterprise anytime
           from Settings → Billing in the app.
         </p>
-        <div
-          className="inline-flex items-center gap-3 rounded-full border border-border px-4 py-2 text-xs uppercase tracking-[0.2em]"
-          role="group"
+        <fieldset
+          className="m-0 inline-flex min-w-0 items-center gap-3 rounded-full border border-border px-4 py-2 text-xs uppercase tracking-[0.2em]"
           aria-label="Billing interval"
         >
           <button
@@ -47,7 +46,7 @@ export function PricingPlans() {
           >
             Yearly
           </button>
-        </div>
+        </fieldset>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

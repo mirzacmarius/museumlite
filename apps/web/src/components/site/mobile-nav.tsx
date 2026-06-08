@@ -60,9 +60,10 @@ export function MobileNav() {
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm"
-          role="presentation"
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-50 border-0 bg-ink/40 p-0 backdrop-blur-sm"
           onClick={close}
         />
       )}
