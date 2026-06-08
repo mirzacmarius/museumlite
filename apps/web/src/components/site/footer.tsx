@@ -49,7 +49,9 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="mx-auto max-w-7xl px-6 lg:px-10 mt-14 pt-6 border-t border-border flex flex-col md:flex-row justify-between gap-4 text-xs text-muted-foreground uppercase tracking-[0.25em]">
-        <span>© {new Date().getFullYear()} MuseumLite. All rights reserved.</span>
+        <span suppressHydrationWarning>
+          © {new Date().getFullYear()} MuseumLite. All rights reserved.
+        </span>
         <span>Made with care for the keepers of culture.</span>
       </div>
     </footer>

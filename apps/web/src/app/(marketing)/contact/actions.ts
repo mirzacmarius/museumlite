@@ -1,5 +1,7 @@
 "use server";
 
+/* oxlint-disable react-doctor/server-auth-actions -- Public marketing tour request; no session required. */
+
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchAction } from "convex/nextjs";
 
