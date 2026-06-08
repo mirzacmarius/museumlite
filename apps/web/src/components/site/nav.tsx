@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getAppLoginUrl } from "@/lib/app-login-url";
 import { Mark } from "./mark";
 import { MobileNav } from "./mobile-nav";
@@ -41,12 +40,6 @@ export function Nav({ floating = false }: { floating?: boolean }) {
           >
             Sign in
           </a>
-          <Link
-            href="/contact"
-            className="btn-marketing hidden sm:inline-flex border border-gold/60 px-4 py-2.5 text-gold hover:bg-gold hover:text-ink transition-colors"
-          >
-            Request a Tour
-          </Link>
           <MobileNav />
         </div>
       </div>

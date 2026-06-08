@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { getAppLoginUrl } from "@/lib/app-login-url";
 import { NavLink } from "./nav-link";
@@ -105,20 +104,13 @@ export function MobileNav() {
           ))}
         </ul>
 
-        <div className="mt-auto flex flex-col gap-4 pt-10">
+        <div className="mt-auto pt-10">
           <a
             href={signInUrl}
-            className="text-center text-sm text-muted-foreground hover:text-gold"
+            className="block text-center text-sm text-muted-foreground hover:text-gold"
           >
             Sign in
           </a>
-          <Link
-            href="/contact"
-            className="btn-marketing border border-gold bg-gold py-3.5 text-center text-xs uppercase tracking-[0.2em] text-ink"
-            onClick={close}
-          >
-            Request a tour
-          </Link>
         </div>
       </nav>
     </div>
