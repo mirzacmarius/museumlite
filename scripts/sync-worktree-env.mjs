@@ -66,7 +66,9 @@ function findEnvSource() {
   if (explicit) {
     const resolved = explicit.replace(/\/$/, "");
     if (existsSync(join(resolved, "apps/app/.env"))) return resolved;
-    console.warn(`ML_ENV_SOURCE is set but apps/app/.env was not found at ${resolved}`);
+    console.warn(
+      `ML_ENV_SOURCE is set but apps/app/.env was not found at ${resolved}`,
+    );
   }
 
   try {
@@ -183,7 +185,9 @@ function main() {
   if (missing.some((m) => m.includes("apps/"))) {
     const seeded = seedFromExamples();
     if (seeded > 0) {
-      console.log(`  created ${seeded} .env from .env.example (fill in values)`);
+      console.log(
+        `  created ${seeded} .env from .env.example (fill in values)`,
+      );
     }
     missing = listMissing();
   }

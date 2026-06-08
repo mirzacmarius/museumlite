@@ -1,7 +1,7 @@
-import { config } from "dotenv";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
 
 /**
  * Load env files from the monorepo root, then app-local overrides.
