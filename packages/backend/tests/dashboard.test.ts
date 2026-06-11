@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import type { ModuleId } from "../convex/utils/moduleCatalog";
 import { modules } from "./testSetup";
 
 type TestSetup = {
@@ -13,17 +14,7 @@ type TestSetup = {
 
 interface CreateTestOrgOptions {
   subscriptionTier?: "free" | "pro" | "enterprise";
-  enabledModules?: Array<
-    | "library"
-    | "fine_art"
-    | "wine"
-    | "automotive"
-    | "natural_history"
-    | "archive"
-    | "accounts"
-    | "coins_stamps"
-    | "inventory_valuation"
-  >;
+  enabledModules?: Array<ModuleId>;
 }
 
 async function createTestOrg(

@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import type { ModuleId } from "../convex/utils/moduleCatalog";
 
 import { modules } from "./testSetup";
 
@@ -15,17 +16,7 @@ export interface TestOrgUserOptions {
   userEmailPrefix?: string;
   roleName?: string;
   subscriptionTier?: SubscriptionTier;
-  enabledModules?: Array<
-    | "library"
-    | "fine_art"
-    | "wine"
-    | "automotive"
-    | "natural_history"
-    | "archive"
-    | "accounts"
-    | "coins_stamps"
-    | "inventory_valuation"
-  >;
+  enabledModules?: Array<ModuleId>;
   permissionCategoryFallback?: string;
 }
 
