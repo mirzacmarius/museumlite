@@ -713,22 +713,10 @@ function AppSidebarClientInner({
 
   const navCoreInventory: NavigationItem[] = [
     { title: "Overview", url: "/", icon: LayoutGrid },
-    {
-      title: "Object Catalog",
-      url: "/objects",
-      icon: Database,
-      ...(isLocationTrackingEnabled
-        ? {
-            subItems: [
-              {
-                title: "Location & Tracking",
-                url: "/locations",
-                icon: MapPin,
-              },
-            ],
-          }
-        : {}),
-    },
+    { title: "Object Catalog", url: "/objects", icon: Database },
+    ...(isLocationTrackingEnabled
+      ? [{ title: "Location & Tracking", url: "/locations", icon: MapPin }]
+      : []),
     { title: "Scan", url: "/scan", icon: QrCode },
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
