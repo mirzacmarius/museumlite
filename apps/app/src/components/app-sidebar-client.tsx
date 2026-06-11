@@ -642,12 +642,12 @@ function AppSidebarClientInner({
   const navCoreInventory = [
     { title: "Overview", url: "/", icon: LayoutGrid },
     { title: "Object Catalog", url: "/objects", icon: Database },
-    { title: "Scan", url: "/scan", icon: QrCode },
-    { title: "Accessions", url: "/accessions", icon: FileCheck },
-    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
     ...(isLocationTrackingEnabled
       ? [{ title: "Location & Tracking", url: "/locations", icon: MapPin }]
       : []),
+    { title: "Scan", url: "/scan", icon: QrCode },
+    { title: "Accessions", url: "/accessions", icon: FileCheck },
+    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
   ];
 
   const navExhibitionsLoans = [
