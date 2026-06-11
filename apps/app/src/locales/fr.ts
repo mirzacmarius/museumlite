@@ -355,6 +355,11 @@ export default {
       description:
         "Catalogage des beaux-arts avec suivi de provenance et flux de curation.",
     },
+    inventory_valuation: {
+      name: "Évaluation de l'inventaire",
+      description:
+        "Suivez les totaux de valorisation des collections pour les beaux-arts, le vin et les véhicules dans Analytics.",
+    },
     coins_stamps: {
       name: "Monnaies et timbres",
       description:

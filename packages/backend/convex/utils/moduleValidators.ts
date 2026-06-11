@@ -13,6 +13,7 @@ export const enabledModuleValidator = v.union(
   v.literal("archive"),
   v.literal("accounts"),
   v.literal("coins_stamps"),
+  v.literal("inventory_valuation"),
 );
 
 export const collectionTypeValidator = v.union(

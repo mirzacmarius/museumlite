@@ -139,6 +139,7 @@ interface ReportExportsCardProps {
       path: string;
     }>;
   };
+  hasInventoryValuation: boolean;
 }
 
 function formatDate(timestamp: number, locale: string): string {
@@ -200,6 +201,7 @@ function useReportExportActions({
   kpis,
   compliance,
   locationUtilization,
+  hasInventoryValuation,
 }: ReportExportsCardProps): ReportExportActions {
   const locale = useCurrentLocale();
   const csv = useScopedI18n("analytics.reportExports.csv");
@@ -485,11 +487,14 @@ function useReportExportActions({
   }, [locationUtilization, kpis.generatedAt, csv, locale]);
 
   const exportAllReports = useCallback(() => {
-    exportInventoryValuation();
+    if (hasInventoryValuation) {
+      exportInventoryValuation();
+    }
     setTimeout(() => exportLoanReport(), 100);
     setTimeout(() => exportComplianceReport(), 200);
     setTimeout(() => exportLocationReport(), 300);
   }, [
+    hasInventoryValuation,
     exportInventoryValuation,
     exportLoanReport,
     exportComplianceReport,
@@ -730,6 +735,7 @@ function PrimaryReportMenu({
 }
 
 interface IndividualReportsMenuProps {
+  hasInventoryValuation: boolean;
   onExportInventoryValuation: () => void;
   onExportLoanReport: () => void;
   onExportComplianceReport: () => void;
@@ -738,6 +744,7 @@ interface IndividualReportsMenuProps {
 }
 
 function IndividualReportsMenu({
+  hasInventoryValuation,
   onExportInventoryValuation,
   onExportLoanReport,
   onExportComplianceReport,
@@ -755,9 +762,11 @@ function IndividualReportsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
-        <DropdownMenuItem onClick={onExportInventoryValuation}>
-          {t("inventoryValuation")}
-        </DropdownMenuItem>
+        {hasInventoryValuation && (
+          <DropdownMenuItem onClick={onExportInventoryValuation}>
+            {t("inventoryValuation")}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={onExportLoanReport}>
           {t("loanStatusReport")}
         </DropdownMenuItem>
@@ -807,6 +816,7 @@ export function ReportExportsCard(props: ReportExportsCardProps) {
             onExport={exportInsuranceReport}
           />
           <IndividualReportsMenu
+            hasInventoryValuation={props.hasInventoryValuation}
             onExportInventoryValuation={exportInventoryValuation}
             onExportLoanReport={exportLoanReport}
             onExportComplianceReport={exportComplianceReport}

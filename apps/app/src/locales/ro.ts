@@ -406,6 +406,11 @@ export default {
         description:
           "Gestionează donatori, creditori, instituții, contacte, documente și relații.",
       },
+      inventory_valuation: {
+        name: "Evaluarea inventarului",
+        description:
+          "Urmărește totalurile de evaluare ale colecției pentru artă, vin și vehicule în Analytics.",
+      },
       library: {
         title: "Bibliotecă",
         description: "Gestionează catalogul bibliotecii, membrii și circulația",

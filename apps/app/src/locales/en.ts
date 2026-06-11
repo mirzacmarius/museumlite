@@ -404,6 +404,11 @@ export default {
       description:
         "Fine art cataloging with provenance tracking and curation workflows.",
     },
+    inventory_valuation: {
+      name: "Inventory Valuation",
+      description:
+        "Track collection valuation totals across fine art, wine, and vehicle holdings in Analytics.",
+    },
     coins_stamps: {
       name: "Coins and Stamps",
       description:
