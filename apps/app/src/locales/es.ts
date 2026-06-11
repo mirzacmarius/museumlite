@@ -352,6 +352,11 @@ export default {
       description:
         "Catalogación de bellas artes con seguimiento de procedencia y flujos de curación.",
     },
+    inventory_valuation: {
+      name: "Valoración de inventario",
+      description:
+        "Siga los totales de valoración de colecciones para bellas artes, vino y vehículos en Analytics.",
+    },
     coins_stamps: {
       name: "Monedas y sellos",
       description:

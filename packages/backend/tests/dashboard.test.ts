@@ -11,8 +11,24 @@ type TestSetup = {
   roleId: Id<"roles">;
 };
 
+interface CreateTestOrgOptions {
+  subscriptionTier?: "free" | "pro" | "enterprise";
+  enabledModules?: Array<
+    | "library"
+    | "fine_art"
+    | "wine"
+    | "automotive"
+    | "natural_history"
+    | "archive"
+    | "accounts"
+    | "coins_stamps"
+    | "inventory_valuation"
+  >;
+}
+
 async function createTestOrg(
   t: ReturnType<typeof convexTest>,
+  options: CreateTestOrgOptions = {},
 ): Promise<TestSetup> {
   const [organizationId, userId] = await Promise.all([
     t.run(async (ctx) => {
@@ -20,6 +36,12 @@ async function createTestOrg(
         name: "Dashboard Test Org",
         slug: `dashboard-org-${Math.random().toString(36).slice(2, 8)}`,
         type: "museum",
+        ...(options.subscriptionTier
+          ? { subscriptionTier: options.subscriptionTier }
+          : {}),
+        ...(options.enabledModules !== undefined
+          ? { settings: { enabledModules: options.enabledModules } }
+          : {}),
       });
     }),
     t.run(async (ctx) => {
@@ -61,6 +83,27 @@ async function createTestOrg(
   });
 
   return { organizationId, userId, roleId };
+}
+
+async function grantPermission(
+  t: ReturnType<typeof convexTest>,
+  roleId: Id<"roles">,
+  name: string,
+  category = "collections",
+) {
+  const permissionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("permissions", {
+      name,
+      category,
+    });
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId,
+    });
+  });
 }
 
 function createCollection(
@@ -546,5 +589,90 @@ describe("Dashboard: getAnalytics", () => {
     expect(group).toHaveProperty("valuation");
     expect(group.storageLocation).toBe("Building A, Room 101");
     expect(group.valuation).toBe(50000);
+  });
+});
+
+describe("Dashboard: getOperationalKpis", () => {
+  test("returns zero inventory valuation when the module is disabled by default", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createTestOrg(t, {
+      subscriptionTier: "pro",
+    });
+    await grantPermission(t, roleId, "collections.read");
+
+    await t.run(async (ctx) => {
+      const collectionId = await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Appraised painting",
+          "ACC-VAL-001",
+          "active",
+        ),
+      );
+      await ctx.db.insert("fineArtDetails", {
+        collectionId,
+        organizationId,
+        appraisedValue: 125_000,
+      });
+    });
+
+    // #when
+    const authed = t.withIdentity({
+      subject: `${userId}|session-operational-kpis-disabled`,
+      issuer: "https://example.test",
+    });
+    const kpis = await authed.query(api.dashboard.getOperationalKpis, {
+      organizationId,
+    });
+
+    // #then
+    expect(kpis.inventory.totalValue).toBe(0);
+    expect(kpis.inventory.fineArt.itemCount).toBe(0);
+    expect(kpis.inventory.fineArt.valuedCount).toBe(0);
+  });
+
+  test("returns inventory valuation when the module is enabled", async () => {
+    // #given
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createTestOrg(t, {
+      subscriptionTier: "pro",
+      enabledModules: ["inventory_valuation"],
+    });
+    await grantPermission(t, roleId, "collections.read");
+
+    await t.run(async (ctx) => {
+      const collectionId = await ctx.db.insert(
+        "collections",
+        createCollection(
+          organizationId,
+          userId,
+          "Appraised sculpture",
+          "ACC-VAL-002",
+          "active",
+        ),
+      );
+      await ctx.db.insert("fineArtDetails", {
+        collectionId,
+        organizationId,
+        appraisedValue: 75_000,
+      });
+    });
+
+    // #when
+    const authed = t.withIdentity({
+      subject: `${userId}|session-operational-kpis-enabled`,
+      issuer: "https://example.test",
+    });
+    const kpis = await authed.query(api.dashboard.getOperationalKpis, {
+      organizationId,
+    });
+
+    // #then
+    expect(kpis.inventory.totalValue).toBe(75_000);
+    expect(kpis.inventory.fineArt.itemCount).toBe(1);
+    expect(kpis.inventory.fineArt.valuedCount).toBe(1);
   });
 });

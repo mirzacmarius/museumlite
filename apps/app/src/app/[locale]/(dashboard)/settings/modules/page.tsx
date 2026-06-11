@@ -17,6 +17,7 @@ import {
   Car,
   Check,
   Coins,
+  DollarSign,
   Leaf,
   Loader2,
   Palette,
@@ -39,6 +40,7 @@ const MODULE_ICONS: Record<ModuleId, typeof Users> = {
   archive: Archive,
   accounts: Users,
   coins_stamps: Coins,
+  inventory_valuation: DollarSign,
 };
 
 export default function ModulesSettingsPage() {

@@ -77,9 +77,10 @@ const ReportExportsCard = dynamic(
 export default function AnalyticsPage() {
   const t = useI18n();
   const { currentOrganizationId } = useOrganization();
-  const { hasFeature } = useFeatureAccess();
+  const { hasFeature, hasModule } = useFeatureAccess();
   const hasReporting = hasFeature("reporting");
   const hasCompliance = hasFeature("compliance");
+  const hasInventoryValuation = hasModule("inventory_valuation");
 
   const kpis = useQuery(
     api.dashboard.getOperationalKpis,
@@ -175,7 +176,9 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          <InventoryValuationCard data={kpis.inventory} />
+          {hasInventoryValuation && (
+            <InventoryValuationCard data={kpis.inventory} />
+          )}
           <LoanCalendarCard data={kpis.loans} />
           <ExhibitionPipelineCard data={kpis.exhibitions} />
         </div>
@@ -200,6 +203,7 @@ export default function AnalyticsPage() {
           kpis={kpis}
           compliance={complianceData}
           locationUtilization={locationUtilization}
+          hasInventoryValuation={hasInventoryValuation}
         />
       </div>
     </FeatureGuard>

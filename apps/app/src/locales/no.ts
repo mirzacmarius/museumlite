@@ -343,6 +343,11 @@ export default {
       description:
         "Kunstkatalogisering med provenienssporing og kuratorarbeidsflyter.",
     },
+    inventory_valuation: {
+      name: "Beholdningsvurdering",
+      description:
+        "Spor verditotaler for kunst, vin og kjøretøy i Analytics.",
+    },
     coins_stamps: {
       name: "Mynter og frimerker",
       description:

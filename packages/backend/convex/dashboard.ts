@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { buildOrganizationAnalytics } from "./utils/dashboardAnalytics";
-import { requireFeatureAccess } from "./utils/featureGates";
+import { hasModuleEnabled, requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
 function startOfDay(date: Date): number {
@@ -15,6 +15,16 @@ function startOfDay(date: Date): number {
 
 function addDays(timestamp: number, days: number): number {
   return timestamp + days * 24 * 60 * 60 * 1000;
+}
+
+interface ValuationSummary {
+  totalValue: number;
+  itemCount: number;
+  valuedCount: number;
+}
+
+function createEmptyValuationSummary(): ValuationSummary {
+  return { totalValue: 0, itemCount: 0, valuedCount: 0 };
 }
 
 export const getAnalytics = query({
@@ -843,7 +853,8 @@ export const getOperationalKpis = query({
     generatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
-    await Promise.all([
+    const [hasInventoryValuationModule] = await Promise.all([
+      hasModuleEnabled(ctx, args.organizationId, "inventory_valuation"),
       requireFeatureAccess(ctx, args.organizationId, "reporting"),
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
@@ -854,63 +865,69 @@ export const getOperationalKpis = query({
     const next7Days = addDays(todayStart, 7);
     const next30Days = addDays(todayStart, 30);
 
-    const fineArtDetails = await ctx.db
-      .query("fineArtDetails")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    let fineArtValuation = createEmptyValuationSummary();
+    let wineValuation = createEmptyValuationSummary();
+    let vehicleValuation = createEmptyValuationSummary();
 
-    const fineArtValuation = fineArtDetails.reduce(
-      (acc, item) => {
-        acc.itemCount++;
-        if (item.appraisedValue != null && item.appraisedValue > 0) {
-          acc.valuedCount++;
-          acc.totalValue += item.appraisedValue;
-        }
-        return acc;
-      },
-      { totalValue: 0, itemCount: 0, valuedCount: 0 },
-    );
+    if (hasInventoryValuationModule) {
+      const fineArtDetails = await ctx.db
+        .query("fineArtDetails")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
 
-    const wineDetails = await ctx.db
-      .query("wineDetails")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+      fineArtValuation = fineArtDetails.reduce(
+        (acc, item) => {
+          acc.itemCount++;
+          if (item.appraisedValue != null && item.appraisedValue > 0) {
+            acc.valuedCount++;
+            acc.totalValue += item.appraisedValue;
+          }
+          return acc;
+        },
+        createEmptyValuationSummary(),
+      );
 
-    const wineValuation = wineDetails.reduce(
-      (acc, item) => {
-        acc.itemCount++;
-        if (item.currentValue != null && item.currentValue > 0) {
-          acc.valuedCount++;
-          const quantity = item.quantity ?? 1;
-          acc.totalValue += item.currentValue * quantity;
-        }
-        return acc;
-      },
-      { totalValue: 0, itemCount: 0, valuedCount: 0 },
-    );
+      const wineDetails = await ctx.db
+        .query("wineDetails")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
 
-    const vehicleDetails = await ctx.db
-      .query("vehicleDetails")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+      wineValuation = wineDetails.reduce(
+        (acc, item) => {
+          acc.itemCount++;
+          if (item.currentValue != null && item.currentValue > 0) {
+            acc.valuedCount++;
+            const quantity = item.quantity ?? 1;
+            acc.totalValue += item.currentValue * quantity;
+          }
+          return acc;
+        },
+        createEmptyValuationSummary(),
+      );
 
-    const vehicleValuation = vehicleDetails.reduce(
-      (acc, item) => {
-        acc.itemCount++;
-        if (item.insuranceValue != null && item.insuranceValue > 0) {
-          acc.valuedCount++;
-          acc.totalValue += item.insuranceValue;
-        }
-        return acc;
-      },
-      { totalValue: 0, itemCount: 0, valuedCount: 0 },
-    );
+      const vehicleDetails = await ctx.db
+        .query("vehicleDetails")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
+
+      vehicleValuation = vehicleDetails.reduce(
+        (acc, item) => {
+          acc.itemCount++;
+          if (item.insuranceValue != null && item.insuranceValue > 0) {
+            acc.valuedCount++;
+            acc.totalValue += item.insuranceValue;
+          }
+          return acc;
+        },
+        createEmptyValuationSummary(),
+      );
+    }
 
     const allLoans = await ctx.db
       .query("loans")

@@ -23,6 +23,8 @@ export interface TestOrgUserOptions {
     | "natural_history"
     | "archive"
     | "accounts"
+    | "coins_stamps"
+    | "inventory_valuation"
   >;
   permissionCategoryFallback?: string;
 }
