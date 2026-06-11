@@ -616,6 +616,7 @@ describe("Dashboard: getOperationalKpis", () => {
         collectionId,
         organizationId,
         appraisedValue: 125_000,
+        createdAt: Date.now(),
       });
     });
 
@@ -658,6 +659,7 @@ describe("Dashboard: getOperationalKpis", () => {
         collectionId,
         organizationId,
         appraisedValue: 75_000,
+        createdAt: Date.now(),
       });
     });
 
