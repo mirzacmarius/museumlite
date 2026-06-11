@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useOrganization } from "@/components/organization-provider";
+import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { usePermission } from "@/components/permission-gate";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -247,6 +248,22 @@ export default function DashboardPage() {
               className={interactiveMetricCardClassName}
             />
           </Link>
+        </div>
+      </section>
+
+      <section className="mt-6">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+          Billing overview
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Current plan usage for your organization.
+        </p>
+
+        <div className="mt-3 max-w-md">
+          <PlanUsageStats
+            organizationId={currentOrganizationId}
+            className="border-border bg-card"
+          />
         </div>
       </section>
     </div>
