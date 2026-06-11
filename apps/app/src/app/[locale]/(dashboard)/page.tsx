@@ -2,11 +2,15 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import { KpiCard } from "@v1/ui/kpi-card";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeftRight,
   Building2,
+  CalendarClock,
+  CreditCard,
   Eye,
   FileClock,
   Package,
@@ -15,11 +19,164 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useOrganization } from "@/components/organization-provider";
-import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { usePermission } from "@/components/permission-gate";
+import { PlanUsageStats } from "@/components/plan-usage-stats";
+import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { DashboardPageSkeleton } from "./dashboard-page-skeleton";
+
+type SubscriptionTier = "free" | "pro" | "enterprise";
+type OrganizationSubscription = FunctionReturnType<
+  typeof api.subscriptions.getOrganizationSubscription
+>;
+type BillingInterval =
+  NonNullable<OrganizationSubscription>["recurringInterval"];
+type BillingStatus = NonNullable<OrganizationSubscription>["status"];
+
+interface BillingOverviewSectionProps {
+  canManageBilling: boolean;
+  locale: string;
+  organizationId: Id<"organizations">;
+  organizationSubscription: OrganizationSubscription | undefined;
+  subscriptionTier: SubscriptionTier;
+}
+
+function getPlanDisplayName(tier: SubscriptionTier): string {
+  return `${tier.charAt(0).toUpperCase()}${tier.slice(1)} plan`;
+}
+
+function getBillingStatusLabel(
+  organizationSubscription: OrganizationSubscription | undefined,
+  locale: string,
+): string {
+  if (organizationSubscription === undefined) return "Loading billing status";
+  if (!organizationSubscription) return "No active paid subscription";
+  if (!organizationSubscription.isEntitled)
+    return "Subscription needs attention";
+
+  if (organizationSubscription.currentPeriodEnd) {
+    const date = formatDate(
+      new Date(organizationSubscription.currentPeriodEnd),
+      locale,
+    );
+    return organizationSubscription.cancelAtPeriodEnd
+      ? `Expires on ${date}`
+      : `Renews on ${date}`;
+  }
+
+  return "Active subscription";
+}
+
+function getBillingIntervalLabel(
+  recurringInterval: BillingInterval | undefined,
+): string {
+  if (!recurringInterval) return "Included";
+  return `${recurringInterval}ly`;
+}
+
+function getBillingStatusBadgeLabel(status: BillingStatus | undefined): string {
+  if (!status) return "Free";
+  if (status === "past_due") return "Past due";
+  return status.replace("_", " ");
+}
+
+function getBillingActionLabel(subscriptionTier: SubscriptionTier): string {
+  if (subscriptionTier === "free") return "Review plans";
+  return "Manage billing";
+}
+
+function BillingOverviewSection({
+  canManageBilling,
+  locale,
+  organizationId,
+  organizationSubscription,
+  subscriptionTier,
+}: BillingOverviewSectionProps) {
+  const currentPlan =
+    organizationSubscription?.productName ??
+    getPlanDisplayName(subscriptionTier);
+  const billingStatus = getBillingStatusLabel(organizationSubscription, locale);
+  const billingInterval = getBillingIntervalLabel(
+    organizationSubscription?.recurringInterval,
+  );
+  const statusLabel = getBillingStatusBadgeLabel(
+    organizationSubscription?.status,
+  );
+  const actionLabel = getBillingActionLabel(subscriptionTier);
+
+  return (
+    <section className="mt-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+            Billing overview
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Keep an eye on plan status and usage from the overview page.
+          </p>
+        </div>
+        {canManageBilling ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href="/settings/billing">{actionLabel}</Link>
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
+                <CreditCard className="size-4" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Current plan
+                </p>
+                <p className="mt-1 text-base font-semibold text-foreground">
+                  {currentPlan}
+                </p>
+              </div>
+            </div>
+            <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium capitalize text-primary">
+              {statusLabel}
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-3 text-sm">
+            <div className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+              <span className="text-muted-foreground">Billing cycle</span>
+              <span className="font-medium capitalize text-foreground">
+                {billingInterval}
+              </span>
+            </div>
+            <div className="flex items-start justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <CalendarClock className="size-4" />
+                Status
+              </span>
+              <span className="text-right font-medium text-foreground">
+                {billingStatus}
+              </span>
+            </div>
+          </div>
+
+          {!canManageBilling ? (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Billing changes are managed by organization administrators.
+            </p>
+          ) : null}
+        </div>
+
+        <PlanUsageStats
+          organizationId={organizationId}
+          showUpgradeLink={canManageBilling}
+        />
+      </div>
+    </section>
+  );
+}
 
 export default function DashboardPage() {
   const {
@@ -36,12 +193,20 @@ export default function DashboardPage() {
     currentOrganizationId,
     "organization.view_analytics",
   );
+  const canManageBilling = usePermission(
+    currentOrganizationId,
+    "organization.manage_settings",
+  );
 
   const analytics = useQuery(
     api.dashboard.getAnalytics,
     currentOrganizationId && hasAnalyticsPermission
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      ? { organizationId: currentOrganizationId }
       : "skip",
+  );
+  const organizationSubscription = useQuery(
+    api.subscriptions.getOrganizationSubscription,
+    currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
 
   if (isLoading) {
@@ -104,6 +269,7 @@ export default function DashboardPage() {
 
   const canViewAnalytics = hasAnalyticsPermission === true;
   const analyticsData = canViewAnalytics ? analytics : undefined;
+  const subscriptionTier = currentOrganization?.subscriptionTier ?? "free";
   const metricCardClassName = "w-full px-3.5 py-3";
   const interactiveMetricCardClassName =
     "w-full px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40";
@@ -190,6 +356,14 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <BillingOverviewSection
+        canManageBilling={canManageBilling}
+        locale={locale}
+        organizationId={currentOrganizationId}
+        organizationSubscription={organizationSubscription}
+        subscriptionTier={subscriptionTier}
+      />
+
       <section className="mt-6">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
           Operational flow
@@ -248,22 +422,6 @@ export default function DashboardPage() {
               className={interactiveMetricCardClassName}
             />
           </Link>
-        </div>
-      </section>
-
-      <section className="mt-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Billing overview
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Current plan usage for your organization.
-        </p>
-
-        <div className="mt-3 max-w-md">
-          <PlanUsageStats
-            organizationId={currentOrganizationId}
-            className="border-border bg-card"
-          />
         </div>
       </section>
     </div>
