@@ -115,6 +115,7 @@ interface NavigationItem {
   url: string;
   icon?: SidebarIcon;
   locked?: boolean;
+  subItems?: NavigationItem[];
 }
 
 interface NavigationGroup {
@@ -153,6 +154,77 @@ function TopLevelNavigation({
           {items.map((item) => {
             const ItemIcon = item.icon;
             const itemActive = isPathActive(item.url);
+            const subItems = item.subItems ?? [];
+
+            if (subItems.length > 0) {
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    size="sm"
+                    tooltip={item.title}
+                    isActive={itemActive}
+                    aria-disabled={item.locked}
+                    className={cn(
+                      "h-7 text-xs font-medium",
+                      item.locked && "pointer-events-none opacity-60",
+                    )}
+                  >
+                    <Link
+                      href={item.url}
+                      onClick={
+                        item.locked
+                          ? (event) => event.preventDefault()
+                          : undefined
+                      }
+                    >
+                      {ItemIcon ? <ItemIcon /> : null}
+                      <span>{item.title}</span>
+                      {item.locked ? (
+                        <Lock className="ml-auto size-3" />
+                      ) : null}
+                    </Link>
+                  </SidebarMenuButton>
+                  <SidebarMenuSub className="gap-0 py-0.5">
+                    {subItems.map((subItem) => {
+                      const SubItemIcon = subItem.icon;
+                      const subItemActive = isPathActive(subItem.url);
+
+                      return (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild
+                            size="sm"
+                            isActive={subItemActive}
+                            aria-disabled={subItem.locked}
+                            className={cn(
+                              "h-7 text-xs font-medium",
+                              subItem.locked &&
+                                "pointer-events-none opacity-60",
+                            )}
+                          >
+                            <Link
+                              href={subItem.url}
+                              onClick={
+                                subItem.locked
+                                  ? (event) => event.preventDefault()
+                                  : undefined
+                              }
+                            >
+                              {SubItemIcon ? <SubItemIcon /> : null}
+                              <span>{subItem.title}</span>
+                              {subItem.locked ? (
+                                <Lock className="ml-auto size-3" />
+                              ) : null}
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </SidebarMenuItem>
+              );
+            }
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -639,7 +711,7 @@ function AppSidebarClientInner({
       : "skip",
   );
 
-  const navCoreInventory = [
+  const navCoreInventory: NavigationItem[] = [
     { title: "Overview", url: "/", icon: LayoutGrid },
     { title: "Object Catalog", url: "/objects", icon: Database },
     ...(isLocationTrackingEnabled

@@ -59,6 +59,28 @@ export function DashboardAnalyticsSectionsSkeleton() {
           ))}
         </div>
       </section>
+
+      <section className="mt-6">
+        <div className="h-4 w-28 rounded bg-muted/70" />
+        <div className="mt-2 h-3.5 w-64 max-w-full rounded bg-muted/50" />
+        <div className="mt-3 max-w-md rounded-lg border border-border bg-card p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="h-4 w-24 rounded bg-muted/70" />
+            <div className="h-3 w-14 rounded bg-muted/70" />
+          </div>
+          <div className="space-y-3">
+            {["storage", "objects", "exports"].map((metric) => (
+              <div key={metric}>
+                <div className="mb-1 flex items-end justify-between">
+                  <div className="h-3 w-16 rounded bg-muted/70" />
+                  <div className="h-3 w-20 rounded bg-muted/70" />
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted/40" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </>
   );
 }
