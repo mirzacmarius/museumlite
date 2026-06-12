@@ -1,17 +1,14 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
-
-function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
-  return t.withIdentity({
-    subject: `${userId}|session-1`,
-    issuer: "https://example.test",
-  });
-}
+import {
+  authedForUser,
+  createConvexTest,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
 test("should create organization", async () => {
   const _t = convexTest(schema, modules);
@@ -41,6 +38,44 @@ test("should remove user from organization", async () => {
 test("should transfer organization ownership", async () => {
   const _t = convexTest(schema, modules);
   expect(true).toBe(true);
+});
+
+describe("organizations.get security (IDOR fix)", () => {
+  test("member can read their own org", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+    );
+    const authed = authedForUser(t, userId);
+
+    const org = await authed.query(api.organizations.get, { organizationId });
+
+    expect(org).not.toBeNull();
+    expect(org?._id).toBe(organizationId);
+  });
+
+  test("unauthenticated caller cannot read org", async () => {
+    const t = createConvexTest();
+    const { organizationId } = await createOrgUserWithPermissions(t, []);
+
+    await expect(
+      t.query(api.organizations.get, { organizationId }),
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test("non-member cannot read another org", async () => {
+    const t = createConvexTest();
+    const { organizationId: orgA } = await createOrgUserWithPermissions(t, []);
+    const { userId: userB } = await createOrgUserWithPermissions(t, [], {
+      slugPrefix: "other-org",
+    });
+    const authedB = authedForUser(t, userB);
+
+    await expect(
+      authedB.query(api.organizations.get, { organizationId: orgA }),
+    ).rejects.toThrow("Not a member of this organization");
+  });
 });
 
 describe("organization hierarchy", () => {
