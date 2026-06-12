@@ -45,9 +45,11 @@ import {
   Activity,
   BookOpen,
   Building2,
+  ChartColumn,
   Check,
   ChevronRight,
   ChevronsUpDown,
+  Contact,
   Container,
   Database,
   FileCheck,
@@ -799,6 +801,13 @@ function AppSidebarClientInner({
   ];
 
   const navAdministration = [
+    {
+      title: "Analytics & Reports",
+      url: "/analytics",
+      icon: ChartColumn,
+      locked: !hasFeature("reporting"),
+    },
+    { title: "Accounts & CRM", url: "/accounts", icon: Contact },
     {
       title: "Public Portal",
       url: "/portal",
