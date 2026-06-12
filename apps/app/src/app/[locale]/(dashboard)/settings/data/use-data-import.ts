@@ -53,12 +53,14 @@ export function useDataImport(
             throw new Error("XML import is only supported for objects");
           }
 
-          const xml = await file.text();
-          const jobId = await createImportJob({
-            organizationId,
-            type: "csv",
-            totalItems: 1,
-          });
+          const [xml, jobId] = await Promise.all([
+            file.text(),
+            createImportJob({
+              organizationId,
+              type: "csv",
+              totalItems: 1,
+            }),
+          ]);
 
           await importObjectsDublinCore({
             organizationId,
