@@ -1411,6 +1411,59 @@ export default {
         other: "Annet",
       },
     },
+    holds: {
+      title: "Reservasjoner",
+      description: "Administrer reservasjoner og hentekø",
+      noOrganization: "Ingen Organisasjon Funnet",
+      noOrganizationDescription:
+        "Du må opprette en organisasjon for å administrere reservasjoner.",
+      selectOrganization: "Velg en Organisasjon",
+      selectOrganizationDescription:
+        "Velg en organisasjon fra menyen ovenfor.",
+      notEnabled: "Bibliotek Ikke Aktivert",
+      notEnabledDescription:
+        "Bibliotekintegrasjonen er ikke aktivert for denne organisasjonen.",
+      stats: {
+        total: "Totalt",
+        pending: "Ventende",
+        available: "Klar",
+        fulfilled: "Hentet",
+        expired: "Utløpt",
+        placedToday: "I dag",
+      },
+      filters: {
+        allStatus: "Alle Statuser",
+      },
+      status: {
+        pending: "Ventende",
+        available: "Klar for Henting",
+        fulfilled: "Hentet",
+        cancelled: "Kansellert",
+        expired: "Utløpt",
+      },
+      labels: {
+        queue: "Kø",
+        placed: "Plassert:",
+      },
+      actions: {
+        placeHold: "Opprett Reservasjon",
+        fulfill: "Fullfør",
+        cancel: "Kanseller",
+      },
+      emptyState: {
+        noHolds: "Ingen reservasjoner",
+        noHoldsFiltered: "Ingen reservasjoner funnet",
+        noHoldsDescription:
+          "Opprett en reservasjon eller vent på forespørsler fra lånere",
+        tryAdjustFilters: "Prøv å justere filtrene",
+      },
+      placeDialog: {
+        title: "Opprett Reservasjon",
+        description: "Søk etter låner og materiale",
+        patronCard: "Lånerkortnummer",
+        itemSearch: "Materiale",
+      },
+    },
   },
   loans: {
     title: "Lån",

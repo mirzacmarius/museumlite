@@ -1482,6 +1482,59 @@ export default {
         confirmWaive: "Ești sigur că vrei să retragi această amendă?",
       },
     },
+    holds: {
+      title: "Rezervări",
+      description: "Gestionează rezervările și coada de ridicare",
+      noOrganization: "Nicio Organizație Găsită",
+      noOrganizationDescription:
+        "Trebuie să creezi o organizație pentru a gestiona rezervările.",
+      selectOrganization: "Selectează o Organizație",
+      selectOrganizationDescription:
+        "Selectează o organizație din meniul de mai sus.",
+      notEnabled: "Bibliotecă Neactivată",
+      notEnabledDescription:
+        "Integrarea bibliotecii nu este activată pentru această organizație.",
+      stats: {
+        total: "Total",
+        pending: "În Așteptare",
+        available: "Gata",
+        fulfilled: "Ridicate",
+        expired: "Expirate",
+        placedToday: "Astăzi",
+      },
+      filters: {
+        allStatus: "Toate Statusurile",
+      },
+      status: {
+        pending: "În Așteptare",
+        available: "Gata de Ridicare",
+        fulfilled: "Ridicată",
+        cancelled: "Anulată",
+        expired: "Expirată",
+      },
+      labels: {
+        queue: "Coadă",
+        placed: "Plasată:",
+      },
+      actions: {
+        placeHold: "Plasează Rezervare",
+        fulfill: "Finalizează",
+        cancel: "Anulează",
+      },
+      emptyState: {
+        noHolds: "Nicio rezervare",
+        noHoldsFiltered: "Nicio rezervare găsită",
+        noHoldsDescription:
+          "Plasează o rezervare sau așteaptă solicitările utilizatorilor",
+        tryAdjustFilters: "Încearcă să ajustezi filtrele",
+      },
+      placeDialog: {
+        title: "Plasează Rezervare",
+        description: "Caută utilizator și material",
+        patronCard: "Număr Card",
+        itemSearch: "Material",
+      },
+    },
   },
   analytics: {
     title: "Analitice",

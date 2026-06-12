@@ -1438,6 +1438,59 @@ export default {
         other: "Otro",
       },
     },
+    holds: {
+      title: "Reservas",
+      description: "Gestionar reservas y cola de recogida",
+      noOrganization: "No se Encontró Organización",
+      noOrganizationDescription:
+        "Necesita crear una organización para gestionar reservas.",
+      selectOrganization: "Seleccionar una Organización",
+      selectOrganizationDescription:
+        "Seleccione una organización en el menú superior.",
+      notEnabled: "Biblioteca No Habilitada",
+      notEnabledDescription:
+        "La integración de biblioteca no está habilitada para esta organización.",
+      stats: {
+        total: "Total",
+        pending: "Pendientes",
+        available: "Listas",
+        fulfilled: "Completadas",
+        expired: "Vencidas",
+        placedToday: "Hoy",
+      },
+      filters: {
+        allStatus: "Todos los Estados",
+      },
+      status: {
+        pending: "Pendiente",
+        available: "Lista para Recoger",
+        fulfilled: "Completada",
+        cancelled: "Cancelada",
+        expired: "Vencida",
+      },
+      labels: {
+        queue: "Cola",
+        placed: "Colocada:",
+      },
+      actions: {
+        placeHold: "Crear Reserva",
+        fulfill: "Completar",
+        cancel: "Cancelar",
+      },
+      emptyState: {
+        noHolds: "Sin reservas",
+        noHoldsFiltered: "No se encontraron reservas",
+        noHoldsDescription:
+          "Cree una reserva o espere solicitudes de usuarios",
+        tryAdjustFilters: "Intente ajustar los filtros",
+      },
+      placeDialog: {
+        title: "Crear Reserva",
+        description: "Buscar usuario y material",
+        patronCard: "Número de Tarjeta",
+        itemSearch: "Material",
+      },
+    },
   },
   loans: {
     title: "Préstamos",

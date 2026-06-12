@@ -60,4 +60,10 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "expire-library-holds",
+  { hours: 6 },
+  internal.library.holds.expireOldHoldsAllOrgs,
+);
+
 export default crons;
