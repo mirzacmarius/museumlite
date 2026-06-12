@@ -12,7 +12,7 @@ chat summary; what follows are the findings selected for plans.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Make destructive seed actions internal-only | P1 | S | — | TODO |
+| 001 | Make destructive seed actions internal-only | P1 | S | — | DONE (`advisor/001-internalize-seed-actions` @ `d47732ee`, reviewed & approved 2026-06-12) |
 | 002 | Authorize four exposed public Convex functions | P1 | M | — | TODO |
 | 003 | Close cross-tenant IDOR (org.get, media.create) | P1 | M | — | TODO |
 | 004 | Fix loan data-integrity gaps | P2 | M | — | TODO |
