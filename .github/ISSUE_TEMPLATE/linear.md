@@ -9,7 +9,7 @@ assignees: ''
 ## Description
 <!-- Describe the issue or feature -->
 
-## Labels Required (see [APP-IDEEA.md](../../APP-IDEEA.md#label-taxonomy-required))
+## Labels Required (see [APP-IDEEA.md](../../docs/APP-IDEEA.md#label-taxonomy-required))
 - [ ] `module/*` - exactly one (multi-module allowed for cross-cutting work)
 - [ ] `phase/*` - exactly one: core | advanced | operations
 - [ ] Type - exactly one: Feature | Bug | Chore | Docs | Improvement

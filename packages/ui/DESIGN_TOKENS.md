@@ -1,6 +1,6 @@
 # MuseumLite Design System Tokens
 
-Reference design: `aura-html-pages/dasboard-as-admin.html`
+Reference design: `docs/design/aura-html-pages/dasboard-as-admin.html`
 
 ## Color Palette
 
