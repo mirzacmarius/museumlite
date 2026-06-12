@@ -28,6 +28,10 @@ export async function addExhibitionObjectHandler(
     throw new Error("Object does not belong to the same organization");
   }
 
+  if (collection.status === "loaned") {
+    throw new Error("Cannot add an object that is currently on loan");
+  }
+
   const existingEntry = await ctx.db
     .query("exhibitionObjects")
     .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
@@ -101,6 +105,14 @@ export async function installObjectHandler(
 
   if (exhibitionObject.status !== "pending") {
     throw new Error("Object is not in pending status");
+  }
+
+  const collection = await ctx.db.get(exhibitionObject.collectionId);
+  if (!collection) {
+    throw new Error("Collection object not found");
+  }
+  if (collection.status === "loaned") {
+    throw new Error("Cannot install an object that is currently on loan");
   }
 
   const newLocationId =
