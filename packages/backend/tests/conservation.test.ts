@@ -1,125 +1,237 @@
-import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
-import schema from "../convex/schema";
+import { describe, expect, test } from "vitest";
+import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import {
+  authedForUser,
+  type ConvexTest,
+  createConvexTest,
+  createOrgUserCollectionWithPermissions,
+} from "./testHarness";
 
-import { modules } from "./testSetup";
+const conservationPermissions = [
+  "collections.read",
+  "collections.update",
+  "collections.create",
+  "collections.approve_conservation",
+] as const;
 
-test("should create conservation treatment with workflow", async () => {
-  const _t = convexTest(schema, modules);
+async function setupConservationWorkflow(t: ConvexTest) {
+  const setup = await createOrgUserCollectionWithPermissions(
+    t,
+    [...conservationPermissions],
+    {
+      subscriptionTier: "pro",
+      roleName: "Conservator",
+    },
+  );
 
-  // Treatment should start in proposed status when workflow configured
-  // const treatmentId = await t.mutation(api.conservationTreatments.create, {
-  //   collectionId,
-  //   treatmentType: "restoration",
-  //   title: "Frame restoration",
-  //   description: "Restore damaged frame corners",
-  // });
-  // const treatment = await t.query(api.conservationTreatments.get, { id: treatmentId });
-  // expect(treatment?.status).toBe("proposed");
+  await t.run(async (ctx) => {
+    await ctx.db.insert("workflowConfigs", {
+      organizationId: setup.organizationId,
+      workflowType: "conservation",
+      steps: [{ stepNumber: 1, roleId: setup.roleId, name: "Approve" }],
+      canInitiateRoles: [setup.roleId],
+    });
+  });
 
-  expect(true).toBe(true);
-});
+  return setup;
+}
 
-test("should move treatment through workflow stages", async () => {
-  const _t = convexTest(schema, modules);
+async function getTreatmentStatus(
+  t: ConvexTest,
+  treatmentId: Id<"conservationTreatments">,
+) {
+  return await t.run(async (ctx) => {
+    const treatment = await ctx.db.get(treatmentId);
+    return treatment?.status;
+  });
+}
 
-  // 1. Create treatment (proposed)
-  // 2. Approve (approved)
-  // 3. Start progress (in_progress)
-  // 4. Complete (completed)
-  // await t.mutation(api.conservationTreatments.approve, { treatmentId });
-  // await t.mutation(api.conservationTreatments.startProgress, { treatmentId });
-  // await t.mutation(api.conservationTreatments.complete, { treatmentId });
-  // const final = await t.query(api.conservationTreatments.get, { id: treatmentId });
-  // expect(final?.status).toBe("completed");
+describe("Conservation treatment lifecycle", () => {
+  test("should create conservation treatment with workflow", async () => {
+    const t = createConvexTest();
+    const { collectionId, userId } = await setupConservationWorkflow(t);
+    const authed = authedForUser(t, userId);
 
-  expect(true).toBe(true);
-});
+    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
+      collectionId,
+      treatmentType: "restoration",
+      title: "Frame restoration",
+      description: "Restore damaged frame corners",
+    });
 
-test("should add before/after attachments to treatment", async () => {
-  const _t = convexTest(schema, modules);
+    expect(await getTreatmentStatus(t, treatmentId)).toBe("proposed");
 
-  // const attachmentId = await t.mutation(api.conservationTreatments.addAttachment, {
-  //   organizationId,
-  //   treatmentId,
-  //   storageId,
-  //   fileName: "before_photo.jpg",
-  //   fileType: "image/jpeg",
-  //   fileSize: 1024000,
-  //   attachmentType: "before_photo",
-  //   caption: "Condition before treatment",
-  // });
-  // const attachments = await t.query(api.conservationTreatments.listAttachments, { treatmentId });
-  // expect(attachments.length).toBe(1);
-  // expect(attachments[0].attachmentType).toBe("before_photo");
+    const treatment = await authed.query(api.conservationTreatments.get, {
+      id: treatmentId,
+    });
+    expect(treatment).not.toBeNull();
+    expect(treatment?.title).toBe("Frame restoration");
+    expect(treatment?.treatmentType).toBe("restoration");
+  });
 
-  expect(true).toBe(true);
-});
+  test("should move treatment through workflow stages", async () => {
+    const t = createConvexTest();
+    const { collectionId, userId } = await setupConservationWorkflow(t);
+    const authed = authedForUser(t, userId);
 
-test("should create and trigger conservation alerts", async () => {
-  const _t = convexTest(schema, modules);
+    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
+      collectionId,
+      treatmentType: "cleaning",
+      title: "Surface cleaning",
+      description: "Remove surface grime",
+    });
 
-  // Create alert rule for overdue treatments
-  // const ruleId = await t.mutation(api.conservationTreatments.createAlertRule, {
-  //   organizationId,
-  //   name: "Overdue Treatment Alert",
-  //   triggerType: "treatment_overdue",
-  //   daysOverdue: 7,
-  //   priority: "high",
-  //   emailNotification: true,
-  //   inAppNotification: true,
-  //   isActive: true,
-  // });
+    expect(await getTreatmentStatus(t, treatmentId)).toBe("proposed");
 
-  // Create manual alert
-  // const alertId = await t.mutation(api.conservationTreatments.createAlert, {
-  //   organizationId,
-  //   treatmentId,
-  //   alertType: "urgent_treatment",
-  //   title: "Urgent: Water damage detected",
-  //   description: "Water damage found on canvas requires immediate attention",
-  //   priority: "critical",
-  // });
-  // expect(alertId).toBeDefined();
+    await authed.mutation(api.conservationTreatments.approve, { treatmentId });
+    expect(await getTreatmentStatus(t, treatmentId)).toBe("approved");
 
-  expect(true).toBe(true);
-});
+    await authed.mutation(api.conservationTreatments.startProgress, {
+      treatmentId,
+    });
+    expect(await getTreatmentStatus(t, treatmentId)).toBe("in_progress");
 
-test("should acknowledge and resolve alerts", async () => {
-  const _t = convexTest(schema, modules);
+    await authed.mutation(api.conservationTreatments.complete, {
+      treatmentId,
+      notes: "Treatment finished successfully",
+    });
+    expect(await getTreatmentStatus(t, treatmentId)).toBe("completed");
+  });
 
-  // Create alert
-  // const alertId = await t.mutation(api.conservationTreatments.createAlert, { ... });
+  test("should add before/after attachments to treatment", async () => {
+    const t = createConvexTest();
+    const { collectionId, userId } = await setupConservationWorkflow(t);
+    const authed = authedForUser(t, userId);
 
-  // Acknowledge
-  // await t.mutation(api.conservationTreatments.acknowledgeAlert, { alertId });
-  // const acked = await t.query(api.conservationTreatments.listAlerts, { organizationId, status: "acknowledged" });
-  // expect(acked.length).toBe(1);
+    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
+      collectionId,
+      treatmentType: "assessment",
+      title: "Condition assessment",
+      description: "Document condition before treatment",
+    });
 
-  // Resolve
-  // await t.mutation(api.conservationTreatments.resolveAlert, {
-  //   alertId,
-  //   resolutionNotes: "Treatment completed successfully",
-  // });
-  // const resolved = await t.query(api.conservationTreatments.listAlerts, { organizationId, status: "resolved" });
-  // expect(resolved.length).toBe(1);
+    const storageId = await t.run(async (ctx) => {
+      return await ctx.storage.store(
+        new Blob([new Uint8Array([0xff, 0xd8, 0xff])], {
+          type: "image/jpeg",
+        }),
+      );
+    });
 
-  expect(true).toBe(true);
-});
+    await authed.mutation(api.conservationTreatments.addAttachment, {
+      treatmentId,
+      storageId,
+      fileName: "before_photo.jpg",
+      fileType: "image/jpeg",
+      fileSize: 1024000,
+      attachmentType: "before_photo",
+      caption: "Condition before treatment",
+    });
 
-test("should get active alerts by priority", async () => {
-  const _t = convexTest(schema, modules);
+    const attachments = await authed.query(
+      api.conservationTreatments.listAttachments,
+      { treatmentId },
+    );
+    expect(attachments).toHaveLength(1);
+    expect(attachments[0]?.attachmentType).toBe("before_photo");
+    expect(attachments[0]?.fileName).toBe("before_photo.jpg");
+  });
 
-  // Create alerts at different priorities
-  // await t.mutation(api.conservationTreatments.createAlert, { priority: "low", ... });
-  // await t.mutation(api.conservationTreatments.createAlert, { priority: "critical", ... });
-  // await t.mutation(api.conservationTreatments.createAlert, { priority: "high", ... });
+  test("should acknowledge and resolve alerts", async () => {
+    const t = createConvexTest();
+    const { organizationId, collectionId, userId } =
+      await setupConservationWorkflow(t);
+    const authed = authedForUser(t, userId);
 
-  // Get priority breakdown
-  // const breakdown = await t.query(api.conservationTreatments.getAlertsByPriority, { organizationId });
-  // expect(breakdown.critical).toBe(1);
-  // expect(breakdown.high).toBe(1);
-  // expect(breakdown.low).toBe(1);
+    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
+      collectionId,
+      treatmentType: "repair",
+      title: "Canvas repair",
+      description: "Repair small tear",
+    });
 
-  expect(true).toBe(true);
+    const alertId = await authed.mutation(api.conservationTreatments.createAlert, {
+      organizationId,
+      treatmentId,
+      alertType: "urgent_treatment",
+      title: "Urgent: Water damage detected",
+      description: "Water damage found on canvas requires immediate attention",
+      priority: "critical",
+    });
+    expect(alertId).toBeDefined();
+
+    await authed.mutation(api.conservationTreatments.acknowledgeAlert, {
+      alertId,
+    });
+    const acknowledged = await authed.query(
+      api.conservationTreatments.listAlerts,
+      { organizationId, status: "acknowledged" },
+    );
+    expect(acknowledged).toHaveLength(1);
+    expect(acknowledged[0]?._id).toBe(alertId);
+
+    await authed.mutation(api.conservationTreatments.resolveAlert, {
+      alertId,
+      resolutionNotes: "Treatment completed successfully",
+    });
+    const resolved = await authed.query(api.conservationTreatments.listAlerts, {
+      organizationId,
+      status: "resolved",
+    });
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]?.resolutionNotes).toBe(
+      "Treatment completed successfully",
+    );
+  });
+
+  test("should get active alerts by priority", async () => {
+    const t = createConvexTest();
+    const { organizationId, collectionId, userId } =
+      await setupConservationWorkflow(t);
+    const authed = authedForUser(t, userId);
+
+    const treatmentId = await authed.mutation(api.conservationTreatments.create, {
+      collectionId,
+      treatmentType: "stabilization",
+      title: "Climate stabilization",
+      description: "Stabilize environmental conditions",
+    });
+
+    await Promise.all([
+      authed.mutation(api.conservationTreatments.createAlert, {
+        organizationId,
+        treatmentId,
+        alertType: "manual",
+        title: "Low priority note",
+        description: "Routine follow-up",
+        priority: "low",
+      }),
+      authed.mutation(api.conservationTreatments.createAlert, {
+        organizationId,
+        treatmentId,
+        alertType: "manual",
+        title: "Critical issue",
+        description: "Immediate attention required",
+        priority: "critical",
+      }),
+      authed.mutation(api.conservationTreatments.createAlert, {
+        organizationId,
+        treatmentId,
+        alertType: "manual",
+        title: "High priority issue",
+        description: "Schedule treatment soon",
+        priority: "high",
+      }),
+    ]);
+
+    const breakdown = await authed.query(
+      api.conservationTreatments.getAlertsByPriority,
+      { organizationId },
+    );
+    expect(breakdown.critical).toBe(1);
+    expect(breakdown.high).toBe(1);
+    expect(breakdown.low).toBe(1);
+    expect(breakdown.total).toBe(3);
+  });
 });

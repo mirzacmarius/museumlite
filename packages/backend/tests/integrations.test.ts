@@ -1,35 +1,188 @@
 import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
+import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
 
-test("should create API key for organization", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
+type TestSetup = {
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  roleId: Id<"roles">;
+};
 
-test("should revoke API key", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
+async function createTestSetup(
+  t: ReturnType<typeof convexTest>,
+): Promise<TestSetup> {
+  const [organizationId, userId, manageSettingsPermissionId] =
+    await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Test Museum",
+          slug: `test-museum-${Math.random().toString(36).slice(2, 8)}`,
+          type: "museum",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: `test-${Math.random().toString(36).slice(2, 8)}@example.com`,
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+      }),
+    ]);
+  const roleId = await t.run(async (ctx) => {
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Admin",
+      isSystemRole: true,
+    });
 
-test("should register webhook endpoint", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: manageSettingsPermissionId,
+    });
 
-test("should update webhook event subscriptions", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
+    return roleId;
+  });
 
-test("should validate API key on request", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
+  await t.run(async (ctx) => {
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+  });
 
-test("should deliver webhook events", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
+  return { organizationId, userId, roleId };
+}
+
+function authedForUser(
+  t: ReturnType<typeof convexTest>,
+  userId: Id<"users">,
+  sessionId: string,
+) {
+  return t.withIdentity({
+    subject: `${userId}|${sessionId}`,
+    issuer: "https://example.test",
+  });
+}
+
+describe("Webhook integrations", () => {
+  test("should register webhook endpoint", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = authedForUser(t, userId, "session-create-webhook");
+
+    const result = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Collection Events",
+      url: "https://example.com/webhooks/collections",
+      events: ["collection.created", "collection.updated"],
+    });
+
+    expect(result.id).toBeDefined();
+    expect(result.secret).toMatch(/^whsec_[A-Za-z0-9]{32}$/);
+
+    const webhooks = await authed.query(api.webhooks.list, { organizationId });
+    expect(webhooks).toHaveLength(1);
+    expect(webhooks[0]?._id).toBe(result.id);
+    expect(webhooks[0]?.name).toBe("Collection Events");
+    expect(webhooks[0]?.url).toBe("https://example.com/webhooks/collections");
+    expect(webhooks[0]?.events).toEqual([
+      "collection.created",
+      "collection.updated",
+    ]);
+    expect(webhooks[0]?.isActive).toBe(true);
+  });
+
+  test("should get webhook with secret after registration", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = authedForUser(t, userId, "session-get-webhook");
+
+    const { id, secret } = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Loan Events",
+      url: "https://example.com/webhooks/loans",
+      events: ["loan.created"],
+    });
+
+    const webhook = await authed.query(api.webhooks.get, { webhookId: id });
+
+    expect(webhook).not.toBeNull();
+    expect(webhook?.secret).toBe(secret);
+    expect(webhook?.events).toEqual(["loan.created"]);
+  });
+
+  test("should update webhook event subscriptions", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = authedForUser(t, userId, "session-update-webhook");
+
+    const { id } = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Media Events",
+      url: "https://example.com/webhooks/media",
+      events: ["media.uploaded"],
+    });
+
+    await authed.mutation(api.webhooks.update, {
+      webhookId: id,
+      events: ["media.uploaded", "accession.created", "accession.approved"],
+      isActive: false,
+    });
+
+    const webhook = await authed.query(api.webhooks.get, { webhookId: id });
+    expect(webhook?.events).toEqual([
+      "media.uploaded",
+      "accession.created",
+      "accession.approved",
+    ]);
+    expect(webhook?.isActive).toBe(false);
+  });
+
+  test("should delete webhook", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = authedForUser(t, userId, "session-delete-webhook");
+
+    const { id } = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Temporary Webhook",
+      url: "https://example.com/webhooks/temp",
+      events: ["loan.returned"],
+    });
+
+    await authed.mutation(api.webhooks.deleteWebhook, { webhookId: id });
+
+    const webhooks = await authed.query(api.webhooks.list, { organizationId });
+    expect(webhooks).toHaveLength(0);
+    expect(await authed.query(api.webhooks.get, { webhookId: id })).toBeNull();
+  });
+
+  test("should reject unauthenticated webhook delivery test", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = authedForUser(t, userId, "session-deliver-webhook");
+
+    const { id } = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Delivery Test Webhook",
+      url: "https://example.com/webhooks/delivery",
+      events: ["collection.created"],
+    });
+
+    const result = await t.action(api.webhooksActions.test, { webhookId: id });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Not authenticated");
+  });
 });
