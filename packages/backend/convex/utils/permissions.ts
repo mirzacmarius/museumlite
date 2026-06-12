@@ -1,5 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
+import { internalQuery } from "../_generated/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
 import {
@@ -347,6 +349,64 @@ export async function canApproveAtStep(
   }
   return false;
 }
+
+/**
+ * Internal query: returns true if the given user is a member of the organization.
+ * For use from action context (actions have no ctx.db access).
+ */
+export const checkOrgMembership = internalQuery({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const member = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q
+          .eq("userId", args.userId)
+          .eq("organizationId", args.organizationId),
+      )
+      .first();
+    return member !== null;
+  },
+});
+
+/**
+ * Internal query: returns true if the given user has a specific named permission
+ * in the organization.  For use from action context.
+ */
+export const checkOrgPermission = internalQuery({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    permissionName: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const userOrg = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q
+          .eq("userId", args.userId)
+          .eq("organizationId", args.organizationId),
+      )
+      .first();
+    if (!userOrg) return false;
+
+    const rolePerms = await ctx.db
+      .query("rolePermissions")
+      .withIndex("by_role", (q) => q.eq("roleId", userOrg.roleId))
+      .collect();
+    if (rolePerms.length === 0) return false;
+
+    const permissions = await Promise.all(
+      rolePerms.map((rp) => ctx.db.get(rp.permissionId)),
+    );
+    return permissions.some((p) => p?.name === args.permissionName);
+  },
+});
 
 export async function getUsersToNotifyForWorkflowStep(
   ctx: QueryCtx | MutationCtx,

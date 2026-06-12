@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action } from "./_generated/server";
@@ -24,6 +25,30 @@ export const test = action({
     statusCode?: number;
     error?: string;
   }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const orgId = await ctx.runQuery(internal.webhooks.getWebhookOrgId, {
+      webhookId: args.webhookId,
+    });
+    if (!orgId) {
+      return { success: false, error: "Webhook not found" };
+    }
+
+    const hasPermission = await ctx.runQuery(
+      internal.utils.permissions.checkOrgPermission,
+      {
+        userId,
+        organizationId: orgId,
+        permissionName: "organization.manage_settings",
+      },
+    );
+    if (!hasPermission) {
+      return { success: false, error: "Not authorized" };
+    }
+
     const webhook: {
       url: string;
       secret: string;

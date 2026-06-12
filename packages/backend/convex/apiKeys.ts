@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 function generateApiKey(): string {
@@ -210,7 +210,7 @@ export const deleteKey = mutation({
   },
 });
 
-export const validate = mutation({
+export const validate = internalMutation({
   args: {
     apiKey: v.string(),
   },

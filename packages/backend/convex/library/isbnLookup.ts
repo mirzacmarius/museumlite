@@ -1,5 +1,6 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { type ActionCtx, action } from "../_generated/server";
 
@@ -31,6 +32,19 @@ async function requireLibraryModule(
   ctx: ActionCtx,
   organizationId: Id<"organizations">,
 ) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  const isMember = await ctx.runQuery(
+    internal.utils.permissions.checkOrgMembership,
+    { userId, organizationId },
+  );
+  if (!isMember) {
+    throw new Error("Not a member of this organization");
+  }
+
   const org = await ctx.runQuery(api.organizations.get, { organizationId });
   if (!org) {
     throw new Error("Organization not found");
