@@ -20,7 +20,7 @@ Plans 001–008: standard-depth audit. Plans 009–014: direction round (`/impro
 | 006 | Paginate audit-log & compliance queries | P2 | M | — | DONE — verified on `main` @ `aaa0dff4` ([PR #58](https://github.com/mirzacmarius/ml-cursor/pull/58)) |
 | 007 | Replace placeholder tests with real coverage | P2 | M | — | DONE — verified on `main` ([PR #57](https://github.com/mirzacmarius/ml-cursor/pull/57)) |
 | 008 | Remove root scratch artifacts & dead convex/ stub | P3 | S | — | DONE — verified on `main` @ `aaa0dff4` ([PR #59](https://github.com/mirzacmarius/ml-cursor/pull/59)) |
-| 009 | Scheduled reporting: one report type end-to-end | P2 | L | — | TODO — drift since `6e3f1d1a`: `crons.ts` (holds expiry), `dashboard.ts` (006 audit pagination); `reporting.ts` unchanged — re-read excerpts before execute |
+| 009 | Scheduled reporting: one report type end-to-end | P2 | L | — | DONE — executed + reviewed 2026-06-12 (`advisor/009-scheduled-reporting`; operational_kpis generation, 15m cron, analytics UI, 3 new tests, 812 backend tests pass) |
 | 010 | Deliver outbound webhooks + minimal key-authed read API | P2 | L | — | DONE — verified on `main` @ `21424c6b` ([PR #62](https://github.com/mirzacmarius/ml-cursor/pull/62); webhooks + `GET /v1/objects`, 809 backend tests pass) |
 | 011 | Library holds UI + close the hold lifecycle | P2 | M–L | — | DONE — verified on `main` @ `6c632ec9` ([PR #61](https://github.com/mirzacmarius/ml-cursor/pull/61)) |
 | 012 | Align marketing claims; Dublin Core import for objects | P3 | S+M | — | TODO |
@@ -31,9 +31,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 ## Direction round — next up
 
-Recommended order: ~~010~~ ~~011~~ **009** → **012** → **013**.
-
-**Note**: Direction plan files `009`–`014` exist locally under `plans/` but are not yet committed to `main` — commit them before dispatching executors on other machines.
+Recommended order: ~~009~~ ~~010~~ ~~011~~ **012** → **013** (009 ready for commit/PR on `advisor/009-scheduled-reporting`).
 
 ## Dependency notes
 
