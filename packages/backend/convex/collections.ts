@@ -3708,7 +3708,9 @@ export const getPublicFilters = query({
         ...collections.flatMap((collection) =>
           collection.objectType ? [collection.objectType] : [],
         ),
-        ...libraryItems.map((item) => item.itemType),
+        ...libraryItems.flatMap((item) =>
+          item.itemType ? [item.itemType] : [],
+        ),
       ]),
     ] as string[];
     const cultures = [
@@ -3716,7 +3718,9 @@ export const getPublicFilters = query({
         ...collections.flatMap((collection) =>
           collection.culture ? [collection.culture] : [],
         ),
-        ...libraryItems.map((item) => item.language),
+        ...libraryItems.flatMap((item) =>
+          item.language ? [item.language] : [],
+        ),
       ]),
     ] as string[];
     const periods = [

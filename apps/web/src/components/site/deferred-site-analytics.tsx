@@ -21,7 +21,9 @@ const SpeedInsights = dynamic(
 );
 
 export function DeferredSiteAnalytics() {
-  const hasOpenPanel = Boolean(process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID);
+  const hasOpenPanel = Boolean(
+    process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID?.trim(),
+  );
 
   return (
     <>

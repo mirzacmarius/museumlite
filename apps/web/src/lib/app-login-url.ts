@@ -1,5 +1,6 @@
 function getAppOrigin(): string | null {
-  return process.env.NEXT_PUBLIC_APP_URL ?? null;
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  return configured || null;
 }
 
 export function getAppLoginUrl(): string {
