@@ -360,13 +360,32 @@ export const getActiveForEvent = internalQuery({
       )
       .collect();
 
-    return webhooks
-      .filter((webhook) => webhook.isActive && webhook.events.includes(args.event))
-      .map((webhook) => ({
+    const active: Array<{
+      _id: (typeof webhooks)[number]["_id"];
+      url: string;
+      secret: string;
+    }> = [];
+    for (const webhook of webhooks) {
+      if (!webhook.isActive) {
+        continue;
+      }
+      let isSubscribed = false;
+      for (const subscribedEvent of webhook.events) {
+        if (subscribedEvent === args.event) {
+          isSubscribed = true;
+          break;
+        }
+      }
+      if (!isSubscribed) {
+        continue;
+      }
+      active.push({
         _id: webhook._id,
         url: webhook.url,
         secret: webhook.secret,
-      }));
+      });
+    }
+    return active;
   },
 });
 
