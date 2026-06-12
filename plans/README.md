@@ -15,7 +15,7 @@ chat summary; what follows are the findings selected for plans.
 | 001 | Make destructive seed actions internal-only | P1 | S | — | DONE (`advisor/001-internalize-seed-actions` @ `d47732ee`, reviewed & approved 2026-06-12) |
 | 002 | Authorize four exposed public Convex functions | P1 | M | — | DONE ([PR #53](https://github.com/mirzacmarius/ml-cursor/pull/53), 002a/b/d at `35cc7d57`; 002c `hasPasswordAccountForEmail` deferred — pre-auth login form caller (`apps/app/src/auth/form-root.tsx:73`), needs login-flow redesign) |
 | 003 | Close cross-tenant IDOR (org.get, media.create) | P1 | M | — | DONE ([PR #54](https://github.com/mirzacmarius/ml-cursor/pull/54) draft, `35003b29`; reviewed & approved 2026-06-12) |
-| 004 | Fix loan data-integrity gaps | P2 | M | — | TODO |
+| 004 | Fix loan data-integrity gaps | P2 | M | — | DONE (branch `advisor/004-loan-data-integrity` @ `21ed9b9d` rebased on main, reviewed & approved 2026-06-12; not yet merged) |
 | 005 | Guard deaccession/exhibition against on-loan objects | P2 | M | — | TODO |
 | 006 | Paginate audit-log & compliance queries | P2 | M | — | TODO |
 | 007 | Replace placeholder tests with real coverage | P2 | M | — | TODO |
