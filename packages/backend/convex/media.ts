@@ -80,6 +80,14 @@ export const generateUploadUrl = mutation({
 
     await requirePermission(ctx, args.organizationId, "media.upload");
 
+    const uploadCollection = await ctx.db.get(args.collectionId);
+    if (
+      !uploadCollection ||
+      uploadCollection.organizationId !== args.organizationId
+    ) {
+      throw new Error("Collection does not belong to this organization");
+    }
+
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     const isLargeFile = args.fileSize > MAX_SMALL_MEDIA_FILE_SIZE;
@@ -136,6 +144,14 @@ export const create = mutation({
 
     // Check permission
     await requirePermission(ctx, args.organizationId, "media.upload");
+
+    const targetCollection = await ctx.db.get(args.collectionId);
+    if (
+      !targetCollection ||
+      targetCollection.organizationId !== args.organizationId
+    ) {
+      throw new Error("Collection does not belong to this organization");
+    }
 
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 

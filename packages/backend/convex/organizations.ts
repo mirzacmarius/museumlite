@@ -27,7 +27,10 @@ import {
 } from "./utils/organizationUsageCounters";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
-import { requirePermission } from "./utils/permissions";
+import {
+  getCurrentUserOrganization,
+  requirePermission,
+} from "./utils/permissions";
 import {
   assertCanRemoveSuperAdminMember,
   assertCanRemoveSuperAdminStatus,
@@ -443,6 +446,17 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw new Error("Not a member of this organization");
+    }
     const org = await ctx.db.get(args.organizationId);
     return org;
   },
