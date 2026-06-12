@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
@@ -43,6 +44,47 @@ import {
 } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
+
+/**
+ * Loan statuses that block a collection from being added to a new loan.
+ * Mirrors the check in `checkCollectionsInActiveLoans` (lines ~1266-1273),
+ * which is the canonical authority for this set.
+ * Note: objectMoves.ts:72 uses a narrower set (active + dispatched only)
+ * for object-move blocking — that is intentionally different.
+ */
+const BLOCKING_LOAN_STATUSES = new Set([
+  "pending",
+  "active",
+  "dispatched",
+] as const);
+
+/**
+ * Throws if the given collection is currently on an active/pending/dispatched
+ * loan.  Use this before inserting any new loanItems row.
+ */
+async function assertCollectionNotOnActiveLoan(
+  ctx: MutationCtx,
+  collectionId: Id<"collections">,
+): Promise<void> {
+  const loanItems = await ctx.db
+    .query("loanItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+
+  for (const loanItem of loanItems) {
+    const loan = await ctx.db.get(loanItem.loanId);
+    if (
+      loan &&
+      BLOCKING_LOAN_STATUSES.has(
+        loan.status as "pending" | "active" | "dispatched",
+      )
+    ) {
+      throw new Error(
+        `Collection ${collectionId} is already in an active loan`,
+      );
+    }
+  }
+}
 
 /**
  * Create loan record
@@ -95,10 +137,29 @@ export const create = mutation({
       }
     }
 
+    // Validate date ordering
+    if (args.endDate !== undefined && args.endDate < args.startDate) {
+      throw new Error("Loan end date cannot be before start date");
+    }
+
     // Generate or use provided loan number
     let loanNumber: string;
     if (args.loanNumber) {
       loanNumber = args.loanNumber;
+      // Enforce manual loan-number uniqueness within the org (application-level;
+      // Convex has no DB-level unique constraints — see maintenance notes).
+      const existingLoans = await ctx.db
+        .query("loans")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
+      const duplicate = existingLoans.some(
+        (l) => l.loanNumber === loanNumber,
+      );
+      if (duplicate) {
+        throw new Error("Loan number already in use");
+      }
     } else {
       loanNumber = await generateNextLoanNumber(ctx, args.organizationId);
     }
@@ -160,9 +221,24 @@ export const create = mutation({
         : [];
 
     if (itemsToAdd.length > 0) {
-      // Verify collections belong to organization and are active
+      // Dedup by collectionId — duplicate entries in the same request are an error
+      const seenCollectionIds = new Map<
+        string,
+        { collectionId: Id<"collections">; conditionOut?: string }
+      >();
+      for (const item of itemsToAdd) {
+        if (seenCollectionIds.has(item.collectionId)) {
+          throw new Error(
+            `Duplicate collection in loan items: ${item.collectionId}`,
+          );
+        }
+        seenCollectionIds.set(item.collectionId, item);
+      }
+      const dedupedItems = Array.from(seenCollectionIds.values());
+
+      // Verify collections belong to organization, are active, and not on another active loan
       await Promise.all(
-        itemsToAdd.map(async (item) => {
+        dedupedItems.map(async (item) => {
           const collection = await ctx.db.get(item.collectionId);
           if (!collection) {
             throw new Error(`Collection ${item.collectionId} not found`);
@@ -178,29 +254,7 @@ export const create = mutation({
             throw new Error(`Collection ${item.collectionId} is not active`);
           }
 
-          // Check if already in a loan
-          const existingLoanItem = await ctx.db
-            .query("loanItems")
-            .withIndex("by_collection", (q) =>
-              q.eq("collectionId", item.collectionId),
-            )
-            .filter((q) => {
-              return q.eq(q.field("collectionId"), item.collectionId);
-            })
-            .first();
-
-          if (existingLoanItem) {
-            const existingLoan = await ctx.db.get(existingLoanItem.loanId);
-            if (
-              existingLoan &&
-              (existingLoan.status === "pending" ||
-                existingLoan.status === "active")
-            ) {
-              throw new Error(
-                `Collection ${item.collectionId} is already in an active loan`,
-              );
-            }
-          }
+          await assertCollectionNotOnActiveLoan(ctx, item.collectionId);
 
           await ctx.db.insert("loanItems", {
             loanId,
@@ -328,9 +382,15 @@ export const addItems = mutation({
       requirePermission(ctx, loan.organizationId, "loans.update"),
     ]);
 
-    // Verify collections belong to organization and are active
+    // Dedup by collectionId — duplicate entries in the same request are an error
+    const uniqueCollectionIds = Array.from(new Set(args.collectionIds));
+    if (uniqueCollectionIds.length !== args.collectionIds.length) {
+      throw new Error("Duplicate collection in loan items");
+    }
+
+    // Verify collections belong to organization, are active, and not on another active loan
     await Promise.all(
-      args.collectionIds.map(async (collectionId) => {
+      uniqueCollectionIds.map(async (collectionId) => {
         const collection = await ctx.db.get(collectionId);
         if (!collection) {
           throw new Error(`Collection ${collectionId} not found`);
@@ -346,29 +406,7 @@ export const addItems = mutation({
           throw new Error(`Collection ${collectionId} is not active`);
         }
 
-        // Check if already in a loan
-        const existingLoanItem = await ctx.db
-          .query("loanItems")
-          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-          .filter((q) => {
-            // Check if collection is in an active loan
-            const loanId = q.field("loanId");
-            return loanId;
-          })
-          .first();
-
-        if (existingLoanItem) {
-          const existingLoan = await ctx.db.get(existingLoanItem.loanId);
-          if (
-            existingLoan &&
-            (existingLoan.status === "pending" ||
-              existingLoan.status === "active")
-          ) {
-            throw new Error(
-              `Collection ${collectionId} is already in an active loan`,
-            );
-          }
-        }
+        await assertCollectionNotOnActiveLoan(ctx, collectionId);
 
         // Create loan item
         await ctx.db.insert("loanItems", {
@@ -822,6 +860,17 @@ export const update = mutation({
     if (args.insuranceValue !== undefined)
       updates.insuranceValue = args.insuranceValue;
     if (args.notes !== undefined) updates.notes = args.notes;
+
+    // Validate date ordering using effective (post-update) values
+    const effectiveStartDate = updates.startDate ?? loan.startDate;
+    const effectiveEndDate =
+      "endDate" in updates ? updates.endDate : loan.endDate;
+    if (
+      effectiveEndDate !== undefined &&
+      effectiveEndDate < effectiveStartDate
+    ) {
+      throw new Error("Loan end date cannot be before start date");
+    }
 
     await ctx.db.patch(args.loanId, updates);
 
