@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 
 const SEED_USER_EMAIL = "mirzacmarius@gmail.com";
 
@@ -99,7 +99,7 @@ const ORGANIZATIONS = [
 ];
 
 // Step 1: Clear all data
-export const clearAllData = action({
+export const clearAllData = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
@@ -224,7 +224,7 @@ export const clearAllData = action({
 });
 
 // Step 2: Seed a single organization (call this 5 times, once per org)
-export const seedOrganization = action({
+export const seedOrganization = internalAction({
   args: { orgIndex: v.number() },
   returns: v.null(),
   handler: async (ctx, { orgIndex }) => {
@@ -480,7 +480,7 @@ export const seedOrganization = action({
 });
 
 // Run the full seed sequence
-export const runFullSeed = action({
+export const runFullSeed = internalAction({
   args: {},
   returns: v.null(),
   handler: async (_ctx) => {

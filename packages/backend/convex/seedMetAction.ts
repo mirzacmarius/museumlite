@@ -2,13 +2,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
-import { action, internalAction } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 
 /**
- * Public action wrapper to run the seed from CLI.
+ * Internal action wrapper to run the seed from CLI.
  * Usage: bunx convex run seedMetAction:runSeed
  */
-export const runSeed = action({
+export const runSeed = internalAction({
   args: {},
   returns: v.union(v.null(), v.string()),
   handler: async (ctx) => {
