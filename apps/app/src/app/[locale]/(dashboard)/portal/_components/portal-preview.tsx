@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe } from "lucide-react";
+import { Button } from "@v1/ui/button";
+import { ExternalLink, Globe } from "lucide-react";
 import { getPublicPortalBaseUrl } from "@/lib/portal-url";
 
 interface PortalPreviewProps {
@@ -28,6 +29,14 @@ export function PortalPreview({
         <div className="code-text ml-4 flex-1 truncate rounded-md bg-background/60 px-3 py-1.5 text-muted-foreground">
           {portalUrl}
         </div>
+        {isEnabled && orgSlug ? (
+          <Button asChild size="sm" variant="ghost" className="shrink-0">
+            <a href={portalUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-2 size-4" />
+              Open
+            </a>
+          </Button>
+        ) : null}
       </div>
 
       <div className="min-h-[400px] flex-1 overflow-hidden rounded-b-lg border border-t-0 border-border bg-background">

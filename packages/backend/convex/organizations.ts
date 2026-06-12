@@ -521,8 +521,16 @@ export const getBySlug = query({
     }
 
     return {
-      ...org,
+      _id: org._id,
+      name: org.name,
+      slug: org.slug,
       logoUrl,
+      type: org.type,
+      settings: org.settings,
+      subscriptionTier: org.subscriptionTier,
+      parentOrganizationId: org.parentOrganizationId,
+      rootOrganizationId: org.rootOrganizationId,
+      _creationTime: org._creationTime,
     };
   },
 });

@@ -1,6 +1,22 @@
+function readPublicAppUrl(): string {
+  const configured =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    process.env.NEXT_PUBLIC_WEB_URL?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    return `https://${vercelUrl}`;
+  }
+
+  return "http://localhost:3001";
+}
+
 export const siteConfig = {
   name: "MuseumLite",
-  url: process.env.NEXT_PUBLIC_APP_URL ?? "https://museumlite.com",
+  url: readPublicAppUrl(),
   description:
     "Museum collection management software — catalogue objects, plan exhibitions, and track conservation in one workspace built for registrars and curators.",
   tagline: "Museum collection management, reimagined.",
@@ -16,7 +32,7 @@ export const siteConfig = {
     "artifact cataloguing",
     "museum CMS",
   ],
-  contactEmail: "hello@museumlite.app",
+  contactEmail: "hello@[REDACTED].app",
 } as const;
 
 export function absoluteUrl(path: string): string {
