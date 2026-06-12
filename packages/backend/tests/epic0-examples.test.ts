@@ -180,23 +180,44 @@ describe("Epic 0 examples", () => {
   test("action returns validation result", async () => {
     const t = convexTest(schema, modules);
 
-    const organizationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
+    const { organizationId, userId } = await t.run(async (ctx) => {
+      const orgId = await ctx.db.insert("organizations", {
         name: "Library Org",
         slug: `library-org-${Math.random().toString(36).slice(2, 8)}`,
         type: "library",
         settings: { enabledModules: ["library"] },
       });
+      const uid = await ctx.db.insert("users", {
+        name: "Library User",
+        email: `library-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Member",
+        isSystemRole: false,
+      });
+      await ctx.db.insert("userOrganizations", {
+        userId: uid,
+        organizationId: orgId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+      return { organizationId: orgId, userId: uid };
     });
 
-    const valid = await t.action(api.library.isbnLookup.validateIsbn, {
+    const authed = t.withIdentity({
+      subject: `${userId}|session-isbn`,
+      issuer: "https://example.test",
+    });
+
+    const valid = await authed.action(api.library.isbnLookup.validateIsbn, {
       organizationId,
       isbn: "9780140449136",
     });
 
     expect(valid.valid).toBe(true);
 
-    const invalid = await t.action(api.library.isbnLookup.validateIsbn, {
+    const invalid = await authed.action(api.library.isbnLookup.validateIsbn, {
       organizationId,
       isbn: "1234567890",
     });
