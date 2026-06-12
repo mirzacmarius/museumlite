@@ -63,14 +63,19 @@ export const list = query({
     const indexedQuery = ctx.db
       .query("auditLog")
       .withIndex("by_organization_and_timestamp", (q) => {
-        let range = q.eq("organizationId", args.organizationId);
+        const org = q.eq("organizationId", args.organizationId);
+        if (args.fromDate !== undefined && args.toDate !== undefined) {
+          return org
+            .gte("timestamp", args.fromDate)
+            .lte("timestamp", args.toDate);
+        }
         if (args.fromDate !== undefined) {
-          range = range.gte("timestamp", args.fromDate);
+          return org.gte("timestamp", args.fromDate);
         }
         if (args.toDate !== undefined) {
-          range = range.lte("timestamp", args.toDate);
+          return org.lte("timestamp", args.toDate);
         }
-        return range;
+        return org;
       })
       .order("desc");
 
