@@ -275,3 +275,215 @@ test("should enforce permissions", async () => {
 
   expect(true).toBe(true);
 });
+
+// ---------------------------------------------------------------------------
+// Data-integrity tests (Plan 004)
+// ---------------------------------------------------------------------------
+
+async function setupOrgWithLoanPermissions(t: ConvexTest) {
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "loans.create",
+    "loans.read",
+    "loans.approve",
+    "loans.update",
+  ]);
+
+  const locationId = await t.run(async (ctx) => {
+    return await ctx.db.insert("locations", {
+      organizationId,
+      name: "Main Gallery",
+      type: "gallery",
+      sortOrder: 0,
+      isActive: true,
+    });
+  });
+
+  async function makeCollection(suffix: string) {
+    return t.run(async (ctx) => {
+      return await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: `INT-${suffix}`,
+        title: `Integrity Test Object ${suffix}`,
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+        currentLocationId: locationId,
+      });
+    });
+  }
+
+  return { organizationId, userId, authed: authedForUser(t, userId), makeCollection };
+}
+
+test("(integrity) duplicate collectionId in create → throws, not two loanItems rows", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed, makeCollection } = await setupOrgWithLoanPermissions(t);
+  const collectionId = await makeCollection("dup-create");
+
+  await expect(
+    authed.mutation(api.loans.create, {
+      organizationId,
+      loanNumber: "INT-DUP-001",
+      type: "outgoing",
+      lenderBorrowerName: "Dedup Test Borrower",
+      startDate: Date.now(),
+      collectionIds: [collectionId, collectionId],
+    }),
+  ).rejects.toThrow("Duplicate collection in loan items");
+
+  // Confirm no loanItems row was inserted
+  const count = await t.run(async (ctx) => {
+    const rows = await ctx.db
+      .query("loanItems")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+      .collect();
+    return rows.length;
+  });
+  expect(count).toBe(0);
+});
+
+test("(integrity) duplicate collectionId in addItems → throws", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed, makeCollection } = await setupOrgWithLoanPermissions(t);
+  const collectionA = await makeCollection("dup-addItems-A");
+  const collectionB = await makeCollection("dup-addItems-B");
+
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "INT-DUP-ADD-001",
+    type: "outgoing",
+    lenderBorrowerName: "AddItems Dedup Borrower",
+    startDate: Date.now(),
+  });
+
+  // Approve to get to active status (addItems requires pending or active)
+  await authed.mutation(api.loans.approve, { loanId });
+
+  await expect(
+    authed.mutation(api.loans.addItems, {
+      loanId,
+      collectionIds: [collectionA, collectionB, collectionA],
+    }),
+  ).rejects.toThrow("Duplicate collection in loan items");
+});
+
+test("(integrity) adding collection already on dispatched loan → throws (dispatched blocks)", async () => {
+  const t = createConvexTest();
+  const { authed, collectionId, loanId, organizationId } =
+    await createActiveLoanWithCollection(t, { loanNumber: "INT-DISPATCH-001" });
+
+  // Dispatch the first loan → collection status becomes "loaned"
+  await authed.mutation(api.loans.dispatch, { loanId });
+
+  // Simulate a data inconsistency by manually resetting the collection back to
+  // "active" — this is exactly the race condition the dispatched-status check
+  // guards against (old code would miss it; new code must catch it).
+  await t.run(async (ctx) => {
+    await ctx.db.patch(collectionId, { status: "active" });
+  });
+
+  // Now the new helper must block the create because the loan is dispatched
+  await expect(
+    authed.mutation(api.loans.create, {
+      organizationId,
+      loanNumber: "INT-DISPATCH-002",
+      type: "outgoing",
+      lenderBorrowerName: "Second Borrower",
+      startDate: Date.now(),
+      collectionIds: [collectionId],
+    }),
+  ).rejects.toThrow("already in an active loan");
+});
+
+test("(integrity) create with endDate < startDate → throws", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupOrgWithLoanPermissions(t);
+  const now = Date.now();
+
+  await expect(
+    authed.mutation(api.loans.create, {
+      organizationId,
+      loanNumber: "INT-DATE-001",
+      type: "outgoing",
+      lenderBorrowerName: "Date Test Borrower",
+      startDate: now,
+      endDate: now - 1000, // 1 second before start
+    }),
+  ).rejects.toThrow("Loan end date cannot be before start date");
+});
+
+test("(integrity) update with endDate < startDate → throws", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupOrgWithLoanPermissions(t);
+  const now = Date.now();
+
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "INT-DATE-UPDATE-001",
+    type: "outgoing",
+    lenderBorrowerName: "Date Update Test",
+    startDate: now,
+    endDate: now + 10_000,
+  });
+
+  await expect(
+    authed.mutation(api.loans.update, {
+      loanId,
+      endDate: now - 1000, // before existing startDate
+    }),
+  ).rejects.toThrow("Loan end date cannot be before start date");
+});
+
+test("(integrity) duplicate manual loanNumber within org → throws", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupOrgWithLoanPermissions(t);
+  const now = Date.now();
+
+  await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "UNIQUE-001",
+    type: "outgoing",
+    lenderBorrowerName: "First Borrower",
+    startDate: now,
+  });
+
+  await expect(
+    authed.mutation(api.loans.create, {
+      organizationId,
+      loanNumber: "UNIQUE-001",
+      type: "outgoing",
+      lenderBorrowerName: "Second Borrower",
+      startDate: now,
+    }),
+  ).rejects.toThrow("Loan number already in use");
+});
+
+test("(integrity) happy path: distinct collections, valid dates, unique number → correct item count", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed, makeCollection } = await setupOrgWithLoanPermissions(t);
+  const now = Date.now();
+  const [colA, colB, colC] = await Promise.all([
+    makeCollection("happy-A"),
+    makeCollection("happy-B"),
+    makeCollection("happy-C"),
+  ]);
+
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "HAPPY-001",
+    type: "outgoing",
+    lenderBorrowerName: "Happy Path Borrower",
+    startDate: now,
+    endDate: now + 30 * 24 * 60 * 60 * 1000,
+    collectionIds: [colA, colB, colC],
+  });
+
+  const itemCount = await t.run(async (ctx) => {
+    const rows = await ctx.db
+      .query("loanItems")
+      .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+      .collect();
+    return rows.length;
+  });
+  expect(itemCount).toBe(3);
+});
