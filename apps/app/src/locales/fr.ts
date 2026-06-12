@@ -1490,6 +1490,59 @@ export default {
         other: "Autre",
       },
     },
+    holds: {
+      title: "Réservations",
+      description: "Gérer les réservations et la file d'attente",
+      noOrganization: "Aucune Organisation Trouvée",
+      noOrganizationDescription:
+        "Vous devez créer une organisation pour gérer les réservations.",
+      selectOrganization: "Sélectionner une Organisation",
+      selectOrganizationDescription:
+        "Veuillez sélectionner une organisation dans le menu ci-dessus.",
+      notEnabled: "Bibliothèque Non Activée",
+      notEnabledDescription:
+        "L'intégration bibliothèque n'est pas activée pour cette organisation.",
+      stats: {
+        total: "Total",
+        pending: "En Attente",
+        available: "Prêtes",
+        fulfilled: "Récupérées",
+        expired: "Expirées",
+        placedToday: "Aujourd'hui",
+      },
+      filters: {
+        allStatus: "Tous les Statuts",
+      },
+      status: {
+        pending: "En Attente",
+        available: "Prête au Comptoir",
+        fulfilled: "Récupérée",
+        cancelled: "Annulée",
+        expired: "Expirée",
+      },
+      labels: {
+        queue: "File",
+        placed: "Placée :",
+      },
+      actions: {
+        placeHold: "Placer une Réservation",
+        fulfill: "Récupérer",
+        cancel: "Annuler",
+      },
+      emptyState: {
+        noHolds: "Aucune réservation",
+        noHoldsFiltered: "Aucune réservation trouvée",
+        noHoldsDescription:
+          "Placez une réservation ou attendez les demandes des usagers",
+        tryAdjustFilters: "Essayez d'ajuster vos filtres",
+      },
+      placeDialog: {
+        title: "Placer une Réservation",
+        description: "Rechercher un usager et un ouvrage",
+        patronCard: "Numéro de Carte",
+        itemSearch: "Ouvrage",
+      },
+    },
   },
   loans: {
     title: "Prêts",

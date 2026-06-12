@@ -44,6 +44,7 @@ import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import {
   Activity,
   BookOpen,
+  Bookmark,
   Building2,
   ChartColumn,
   Check,
@@ -778,6 +779,12 @@ function AppSidebarClientInner({
       title: "Circulation Desk",
       url: "/library/circulation",
       icon: IdCard,
+      locked: !isLibraryModuleEnabled,
+    },
+    {
+      title: "Holds",
+      url: "/library/holds",
+      icon: Bookmark,
       locked: !isLibraryModuleEnabled,
     },
     {

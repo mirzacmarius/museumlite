@@ -3339,6 +3339,58 @@ export default {
         other: "Other",
       },
     },
+    holds: {
+      title: "Holds",
+      description: "Manage patron holds and pickup queue",
+      noOrganization: "No Organization Found",
+      noOrganizationDescription:
+        "You need to create an organization to manage holds.",
+      selectOrganization: "Select an Organization",
+      selectOrganizationDescription:
+        "Please select an organization from the dropdown above.",
+      notEnabled: "Library Not Enabled",
+      notEnabledDescription:
+        "The Library integration is not enabled for this organization.",
+      stats: {
+        total: "Total",
+        pending: "Pending",
+        available: "Ready",
+        fulfilled: "Fulfilled",
+        expired: "Expired",
+        placedToday: "Placed Today",
+      },
+      filters: {
+        allStatus: "All Status",
+      },
+      status: {
+        pending: "Pending",
+        available: "Ready for Pickup",
+        fulfilled: "Fulfilled",
+        cancelled: "Cancelled",
+        expired: "Expired",
+      },
+      labels: {
+        queue: "Queue",
+        placed: "Placed:",
+      },
+      actions: {
+        placeHold: "Place Hold",
+        fulfill: "Fulfill",
+        cancel: "Cancel",
+      },
+      emptyState: {
+        noHolds: "No holds",
+        noHoldsFiltered: "No holds found",
+        noHoldsDescription: "Place a hold or wait for patrons to request items",
+        tryAdjustFilters: "Try adjusting your filters",
+      },
+      placeDialog: {
+        title: "Place Hold",
+        description: "Search for a patron and library item",
+        patronCard: "Patron Card Number",
+        itemSearch: "Library Item",
+      },
+    },
   },
   analytics: {
     title: "Analytics & Compliance",

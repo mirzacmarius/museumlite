@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { type MutationCtx, mutation, query } from "../_generated/server";
+import {
+  type MutationCtx,
+  internalMutation,
+  mutation,
+  query,
+} from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
 
 const holdStatusValidator = v.union(
@@ -442,46 +447,70 @@ export const expireOldHolds = mutation({
   returns: v.number(),
   handler: async (ctx, args) => {
     await requireModuleEnabled(ctx, args.organizationId, "library");
-    const now = Date.now();
+    return await expireHoldsForOrg(ctx, args.organizationId);
+  },
+});
 
-    const expiredHolds = await ctx.db
-      .query("libraryHolds")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "available"),
-      )
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("expirationDate"), undefined),
-          q.lt(q.field("expirationDate"), now),
-        ),
-      )
-      .collect();
+export const expireOldHoldsAllOrgs = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const libraryOrgs = await ctx.db.query("librarySettings").collect();
 
+    let totalExpired = 0;
     await Promise.all(
-      Array.from(expiredHolds).map(async (hold) => {
-        if (hold.copyId) {
-          const copy = await ctx.db.get(hold.copyId);
-          if (copy && copy.status === "on_hold") {
-            await ctx.db.patch(hold.copyId, { status: "available" });
-
-            const item = await ctx.db.get(hold.itemId);
-            if (item) {
-              await ctx.db.patch(hold.itemId, {
-                availableCopies: item.availableCopies + 1,
-              });
-            }
-          }
-        }
-
-        await ctx.db.patch(hold._id, { status: "expired" });
-
-        await notifyNextInQueue(ctx, hold.itemId);
+      libraryOrgs.map(async (settings) => {
+        totalExpired += await expireHoldsForOrg(ctx, settings.organizationId);
       }),
     );
 
-    return expiredHolds.length;
+    return totalExpired;
   },
 });
+
+async function expireHoldsForOrg(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<number> {
+  const now = Date.now();
+
+  const expiredHolds = await ctx.db
+    .query("libraryHolds")
+    .withIndex("by_organization_and_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "available"),
+    )
+    .filter((q) =>
+      q.and(
+        q.neq(q.field("expirationDate"), undefined),
+        q.lt(q.field("expirationDate"), now),
+      ),
+    )
+    .collect();
+
+  await Promise.all(
+    Array.from(expiredHolds).map(async (hold) => {
+      if (hold.copyId) {
+        const copy = await ctx.db.get(hold.copyId);
+        if (copy && copy.status === "on_hold") {
+          await ctx.db.patch(hold.copyId, { status: "available" });
+
+          const item = await ctx.db.get(hold.itemId);
+          if (item) {
+            await ctx.db.patch(hold.itemId, {
+              availableCopies: item.availableCopies + 1,
+            });
+          }
+        }
+      }
+
+      await ctx.db.patch(hold._id, { status: "expired" });
+
+      await promoteNextHold(ctx, hold.itemId);
+    }),
+  );
+
+  return expiredHolds.length;
+}
 
 async function reorderHoldQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
   const pendingHolds = await ctx.db
@@ -503,7 +532,10 @@ async function reorderHoldQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
   );
 }
 
-async function notifyNextInQueue(ctx: MutationCtx, itemId: Id<"libraryItems">) {
+export async function promoteNextHold(
+  ctx: MutationCtx,
+  itemId: Id<"libraryItems">,
+) {
   const pendingHolds = await ctx.db
     .query("libraryHolds")
     .withIndex("by_item_and_status", (q) =>
