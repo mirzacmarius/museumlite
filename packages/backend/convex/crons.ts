@@ -66,4 +66,10 @@ crons.interval(
   internal.library.holds.expireOldHoldsAllOrgs,
 );
 
+crons.interval(
+  "process-due-scheduled-reports",
+  { minutes: 15 },
+  internal.reporting.processDueReports,
+);
+
 export default crons;

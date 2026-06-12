@@ -74,6 +74,18 @@ const ReportExportsCard = dynamic(
   },
 );
 
+const ScheduledReportsCard = dynamic(
+  () =>
+    import("./_components/scheduled-reports-card").then(
+      (mod) => mod.ScheduledReportsCard,
+    ),
+  {
+    loading: () => (
+      <Skeleton className="h-[280px] w-full rounded-xl bg-muted/20" />
+    ),
+  },
+);
+
 export default function AnalyticsPage() {
   const t = useI18n();
   const { currentOrganizationId } = useOrganization();
@@ -199,12 +211,15 @@ export default function AnalyticsPage() {
           <LocationUtilizationCard data={locationUtilization} />
         </div>
 
-        <ReportExportsCard
-          kpis={kpis}
-          compliance={complianceData}
-          locationUtilization={locationUtilization}
-          hasInventoryValuation={hasInventoryValuation}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ScheduledReportsCard organizationId={currentOrganizationId} />
+          <ReportExportsCard
+            kpis={kpis}
+            compliance={complianceData}
+            locationUtilization={locationUtilization}
+            hasInventoryValuation={hasInventoryValuation}
+          />
+        </div>
       </div>
     </FeatureGuard>
   );

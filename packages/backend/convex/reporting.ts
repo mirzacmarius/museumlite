@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
+import { loadOperationalKpis } from "./utils/operationalKpis";
 import { loadCatalogGrowthSnapshot } from "./utils/reportingCatalogAnalytics";
 
 // ============================================
@@ -544,6 +545,52 @@ export const listReportRuns = query({
 });
 
 /**
+ * Internal: Process scheduled reports that are due to run
+ */
+export const processDueReports = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    const dueReports = await ctx.db
+      .query("scheduledReports")
+      .withIndex("by_next_run", (q) =>
+        q.eq("isActive", true).lte("nextRunAt", now),
+      )
+      .take(25);
+
+    for (const report of dueReports) {
+      const runId = await ctx.db.insert("reportRuns", {
+        organizationId: report.organizationId,
+        scheduledReportId: report._id,
+        reportType: report.reportType,
+        reportName: report.name,
+        startedAt: now,
+        status: "running",
+        triggeredBy: "schedule",
+      });
+
+      await ctx.db.patch(report._id, {
+        nextRunAt: calculateNextRun(
+          report.schedule,
+          report.scheduledDay,
+          report.scheduledTime,
+          report.timezone,
+        ),
+      });
+
+      await ctx.runMutation(internal.reporting.generateReport, {
+        runId,
+        reportId: report._id,
+      });
+    }
+
+    return null;
+  },
+});
+
+/**
  * Internal: Generate report (called by scheduler)
  */
 export const generateReport = internalMutation({
@@ -563,15 +610,31 @@ export const generateReport = internalMutation({
       return null;
     }
 
+    const run = await ctx.db.get(args.runId);
+
     try {
-      // Generate report data based on type
-      // This is a placeholder - actual report generation would query relevant data
-      const reportData = {
-        generatedAt: Date.now(),
-        reportType: report.reportType,
-        organizationId: report.organizationId,
-        // Add report-specific data here
-      };
+      let reportData: Record<string, unknown>;
+
+      if (report.reportType === "operational_kpis") {
+        const kpis = await loadOperationalKpis(ctx, report.organizationId);
+        reportData = {
+          generatedAt: Date.now(),
+          reportType: report.reportType,
+          organizationId: report.organizationId,
+          generatorVersion: "v1",
+          inventory: kpis.inventory,
+          loans: kpis.loans,
+          exhibitions: kpis.exhibitions,
+          kpiGeneratedAt: kpis.generatedAt,
+        };
+      } else {
+        reportData = {
+          generatedAt: Date.now(),
+          reportType: report.reportType,
+          organizationId: report.organizationId,
+          generatorVersion: "stub",
+        };
+      }
 
       // Update run record with success
       await ctx.db.patch(args.runId, {
@@ -580,17 +643,21 @@ export const generateReport = internalMutation({
         reportData,
       });
 
-      // Update scheduled report
-      await ctx.db.patch(args.reportId, {
+      const scheduledReportUpdates: Record<string, unknown> = {
         lastRunAt: Date.now(),
         lastRunStatus: "success",
-        nextRunAt: calculateNextRun(
+      };
+
+      if (run?.triggeredBy !== "schedule") {
+        scheduledReportUpdates.nextRunAt = calculateNextRun(
           report.schedule,
           report.scheduledDay,
           report.scheduledTime,
           report.timezone,
-        ),
-      });
+        );
+      }
+
+      await ctx.db.patch(args.reportId, scheduledReportUpdates);
 
       // TODO: Send email if configured
       // This would integrate with Resend or similar email service

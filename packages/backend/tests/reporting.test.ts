@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
+import { internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
@@ -2151,5 +2152,213 @@ describe("email recipient management", () => {
         expect(report?.includeAttachment).toBe(true);
       }),
     );
+  });
+});
+
+describe("report generation and cron processing", () => {
+  test("generateReport operational_kpis stores real KPI fields", async () => {
+    const t = convexTest(schema, modules);
+
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "KPI Museum",
+          slug: "kpi-museum-gen",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "kpi-gen@example.com",
+        });
+      }),
+    ]);
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Operational KPIs",
+        reportType: "operational_kpis",
+        schedule: "weekly",
+        isActive: true,
+        createdBy: userId,
+        createdAt: Date.now(),
+      });
+    });
+
+    const runId = await t.run(async (ctx) => {
+      return await ctx.db.insert("reportRuns", {
+        organizationId: orgId,
+        scheduledReportId: reportId,
+        reportType: "operational_kpis",
+        reportName: "Operational KPIs",
+        startedAt: Date.now(),
+        status: "running",
+        triggeredBy: "manual",
+        triggeredByUserId: userId,
+      });
+    });
+
+    await t.mutation(internal.reporting.generateReport, {
+      runId,
+      reportId,
+    });
+
+    const run = await t.run(async (ctx) => {
+      return await ctx.db.get(runId);
+    });
+
+    expect(run?.status).toBe("success");
+    expect(run?.reportData).toMatchObject({
+      reportType: "operational_kpis",
+      generatorVersion: "v1",
+      organizationId: orgId,
+    });
+
+    const reportData = run?.reportData as {
+      inventory?: { totalValue: number };
+      loans?: { overdue: number };
+      exhibitions?: { active: number };
+    };
+
+    expect(reportData.inventory).toBeDefined();
+    expect(reportData.loans).toBeDefined();
+    expect(reportData.exhibitions).toBeDefined();
+    expect(typeof reportData.inventory?.totalValue).toBe("number");
+    expect(typeof reportData.loans?.overdue).toBe("number");
+    expect(typeof reportData.exhibitions?.active).toBe("number");
+  });
+
+  test("processDueReports creates a run and advances nextRunAt", async () => {
+    const t = convexTest(schema, modules);
+    const now = Date.now();
+    const pastNextRun = now - 60_000;
+
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "Cron Museum",
+          slug: "cron-museum-due",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "cron-due@example.com",
+        });
+      }),
+    ]);
+
+    const reportId = await t.run(async (ctx) => {
+      return await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Due Report",
+        reportType: "operational_kpis",
+        schedule: "daily",
+        scheduledTime: "09:00",
+        timezone: "UTC",
+        isActive: true,
+        nextRunAt: pastNextRun,
+        createdBy: userId,
+        createdAt: now,
+      });
+    });
+
+    const runsBefore = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("reportRuns")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+    });
+
+    await t.mutation(internal.reporting.processDueReports, {});
+
+    const [report, runsAfter] = await t.run(async (ctx) => {
+      const updatedReport = await ctx.db.get(reportId);
+      const runs = await ctx.db
+        .query("reportRuns")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+      return [updatedReport, runs] as const;
+    });
+
+    expect(runsAfter.length).toBe(runsBefore.length + 1);
+    expect(report?.nextRunAt).toBeDefined();
+    expect(report?.nextRunAt).toBeGreaterThan(pastNextRun);
+
+    const scheduledRun = runsAfter.find(
+      (run) =>
+        run.scheduledReportId === reportId && run.triggeredBy === "schedule",
+    );
+    expect(scheduledRun).toBeDefined();
+    expect(scheduledRun?.status).toBe("success");
+  });
+
+  test("processDueReports with no due reports creates no new runs", async () => {
+    const t = convexTest(schema, modules);
+    const now = Date.now();
+
+    const [orgId, userId] = await Promise.all([
+      t.run(async (ctx) => {
+        return await ctx.db.insert("organizations", {
+          name: "No Due Museum",
+          slug: "cron-museum-none",
+          type: "museum",
+          subscriptionTier: "pro",
+        });
+      }),
+      t.run(async (ctx) => {
+        return await ctx.db.insert("users", {
+          name: "Test User",
+          email: "cron-none@example.com",
+        });
+      }),
+    ]);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Future Report",
+        reportType: "operational_kpis",
+        schedule: "daily",
+        isActive: true,
+        nextRunAt: now + 7 * 24 * 60 * 60 * 1000,
+        createdBy: userId,
+        createdAt: now,
+      });
+
+      await ctx.db.insert("scheduledReports", {
+        organizationId: orgId,
+        name: "Inactive Report",
+        reportType: "operational_kpis",
+        schedule: "daily",
+        isActive: false,
+        nextRunAt: now - 60_000,
+        createdBy: userId,
+        createdAt: now,
+      });
+    });
+
+    const runsBefore = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("reportRuns")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+    });
+
+    await t.mutation(internal.reporting.processDueReports, {});
+
+    const runsAfter = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("reportRuns")
+        .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+        .collect();
+    });
+
+    expect(runsAfter.length).toBe(runsBefore.length);
   });
 });
