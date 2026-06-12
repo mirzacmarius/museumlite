@@ -37,6 +37,7 @@ import {
   rejectLoanHandler,
 } from "./utils/loanWorkflow";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
@@ -884,7 +885,23 @@ export const approve = mutation({
     comment: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, args) => approveLoanHandler(ctx, args),
+  handler: async (ctx, args) => {
+    const loanBefore = await ctx.db.get(args.loanId);
+    await approveLoanHandler(ctx, args);
+    if (loanBefore) {
+      const loanAfter = await ctx.db.get(args.loanId);
+      if (
+        loanAfter &&
+        loanAfter.status === "active" &&
+        loanBefore.status !== "active"
+      ) {
+        await emitWebhookEvent(ctx, loanAfter.organizationId, "loan.approved", {
+          loanId: args.loanId,
+        });
+      }
+    }
+    return null;
+  },
 });
 
 export const reject = mutation({

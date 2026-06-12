@@ -340,6 +340,36 @@ export const getWebhookOrgId = internalQuery({
   },
 });
 
+export const getActiveForEvent = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    event: v.string(),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("webhooks"),
+      url: v.string(),
+      secret: v.string(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const webhooks = await ctx.db
+      .query("webhooks")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .collect();
+
+    return webhooks
+      .filter((webhook) => webhook.isActive && webhook.events.includes(args.event))
+      .map((webhook) => ({
+        _id: webhook._id,
+        url: webhook.url,
+        secret: webhook.secret,
+      }));
+  },
+});
+
 export const getInternal = internalQuery({
   args: {
     webhookId: v.id("webhooks"),

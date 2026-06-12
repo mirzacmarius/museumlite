@@ -1,7 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { action, internalAction } from "./_generated/server";
 
 /**
  * Test webhook action - sends a test payload to verify webhook configuration.
@@ -101,6 +102,66 @@ export const test = action({
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  },
+});
+
+export const deliver = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+    event: v.string(),
+    data: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const webhooks: Array<{
+      _id: Id<"webhooks">;
+      url: string;
+      secret: string;
+    }> = await ctx.runQuery(internal.webhooks.getActiveForEvent, {
+      organizationId: args.organizationId,
+      event: args.event,
+    });
+
+    const payload = {
+      event: args.event,
+      timestamp: Date.now(),
+      data: args.data,
+    };
+    const body = JSON.stringify(payload);
+
+    for (const webhook of webhooks) {
+      if (!webhook.url.startsWith("https://")) {
+        continue;
+      }
+
+      const signature = await signPayload(body, webhook.secret);
+
+      try {
+        const response = await fetch(webhook.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-ML-Signature": signature,
+            "X-ML-Event": args.event,
+          },
+          body,
+        });
+
+        if (response.ok) {
+          await ctx.runMutation(internal.webhooks.updateLastTriggered, {
+            webhookId: webhook._id,
+          });
+        }
+      } catch (error) {
+        console.error("Webhook delivery failed:", {
+          webhookId: webhook._id,
+          event: args.event,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    return null;
   },
 });
 

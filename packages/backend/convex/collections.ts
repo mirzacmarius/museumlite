@@ -5,12 +5,14 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   type MutationCtx,
+  internalQuery,
   mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
 import { customFieldValue } from "./schema";
 import { getNextCounterValue } from "./utils/accessionCounter";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
@@ -801,6 +803,37 @@ async function getLibraryCoverImageUrl(
   return item.coverImageUrl;
 }
 
+export const listForApi = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(
+    v.object({
+      id: v.id("collections"),
+      title: v.string(),
+      status: v.string(),
+      createdAt: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const maxItems = Math.min(args.limit ?? 50, 50);
+    const collections = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .take(maxItems);
+
+    return collections.map((collection) => ({
+      id: collection._id,
+      title: collection.title,
+      status: collection.status,
+      createdAt: collection.catalogedAt,
+    }));
+  },
+});
+
 /**
  * Create new collection object
  */
@@ -1010,6 +1043,11 @@ export const create = mutation({
         },
       }),
     ] as const);
+
+    await emitWebhookEvent(ctx, args.organizationId, "collection.created", {
+      collectionId,
+      title: args.title,
+    });
 
     return collectionId;
   },

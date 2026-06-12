@@ -412,3 +412,95 @@ describe("API Key Generation Security", () => {
     expect(key2.key).toMatch(/^ml_[A-Za-z0-9]{37}$/);
   });
 });
+
+describe("GET /v1/objects", () => {
+  test("returns 401 without auth header", async () => {
+    const t = convexTest(schema, modules);
+
+    const response = await t.fetch("/v1/objects");
+    expect(response.status).toBe(401);
+
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toBe("invalid_api_key");
+  });
+
+  test("returns 401 for revoked key", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-http-revoked`,
+      issuer: "https://example.test",
+    });
+
+    const result = await authed.mutation(api.apiKeys.create, {
+      organizationId,
+      name: "Revoked HTTP Key",
+      permissions: ["read"],
+    });
+
+    await authed.mutation(api.apiKeys.revoke, {
+      organizationId,
+      keyId: result.id,
+    });
+
+    const response = await t.fetch("/v1/objects", {
+      headers: { Authorization: `Bearer ${result.key}` },
+    });
+    expect(response.status).toBe(401);
+  });
+
+  test("returns only objects for the authenticated organization", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId: org1Id, userId } = await createTestSetup(t);
+
+    const org2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Other Museum",
+        slug: `other-museum-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("collections", {
+        organizationId: org1Id,
+        accessionNumber: "ORG1-001",
+        title: "Org One Object",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+      await ctx.db.insert("collections", {
+        organizationId: org2Id,
+        accessionNumber: "ORG2-001",
+        title: "Org Two Object",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-http-tenant`,
+      issuer: "https://example.test",
+    });
+
+    const keyResult = await authed.mutation(api.apiKeys.create, {
+      organizationId: org1Id,
+      name: "Org 1 Read Key",
+      permissions: ["read"],
+    });
+
+    const response = await t.fetch("/v1/objects", {
+      headers: { Authorization: `Bearer ${keyResult.key}` },
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      data: Array<{ title: string }>;
+    };
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0]?.title).toBe("Org One Object");
+  });
+});
