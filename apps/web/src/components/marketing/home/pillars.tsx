@@ -8,7 +8,7 @@ const pillars = [
     n: "01",
     title: "Collections",
     img: "/marketing/artifact-bust.jpg",
-    body: "Catalogue objects with museum-grade fields — accession numbers, provenance chains, agents, locations, and IIIF-ready media. Bulk import, versioned revisions, and board-ready accession workflows.",
+    body: "Catalogue objects with museum-grade fields — accession numbers, provenance chains, agents, locations, and rich media. Bulk import, versioned revisions, and board-ready accession workflows.",
     href: "/features#collections",
   },
   {

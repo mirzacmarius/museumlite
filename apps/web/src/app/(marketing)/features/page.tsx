@@ -21,10 +21,11 @@ export const metadata = createPageMetadata({
 const collectionModules: FeatureModule[] = [
   {
     title: "Object Catalog",
-    desc: "Museum-grade records with provenance chains, condition history, IIIF imagery and authority reconciliation.",
+    desc: "Museum-grade records with provenance chains, condition history, rich media, and linked agents and places.",
     items: [
       "Versioned revisions",
       "Bulk accession import",
+      "Dublin Core import/export",
       "Linked agents & places",
     ],
   },
@@ -52,18 +53,18 @@ const collectionModules: FeatureModule[] = [
 const conservationModules: FeatureModule[] = [
   {
     title: "Conservation",
-    desc: "Treatments, environmental readings and risk flags — tied to the object record your team already trusts.",
-    items: ["Treatment dossiers", "Sensor ingest", "Risk scoring"],
+    desc: "Treatments, environmental readings and condition alerts — tied to the object record your team already trusts.",
+    items: ["Treatment dossiers", "Environmental readings", "Condition alerts"],
   },
   {
     title: "Library & Research",
     desc: "Catalogue holdings, patrons, circulation, and acquisitions for the institutional library.",
-    items: ["MARC import", "Self-checkout", "Reading rooms"],
+    items: ["ISBN lookup", "Barcode circulation", "Holds & fines"],
   },
   {
     title: "Public Portal",
     desc: "Publish a public catalogue with embargo controls and editorial pages when you are ready.",
-    items: ["Custom domains", "SEO-ready pages", "IIIF imagery"],
+    items: ["Branded portal pages", "SEO-ready pages", "High-res imagery"],
   },
 ];
 

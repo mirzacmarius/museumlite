@@ -294,6 +294,118 @@ function escapeXml(str: string): string {
 }
 
 /**
+ * Decodes XML entities produced by {@link escapeXml}.
+ */
+function decodeXml(str: string): string {
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
+}
+
+function extractOaiDcBlocks(xml: string): string[] {
+  const blocks: string[] = [];
+  const recordRegex = /<oai_dc:dc[\s\S]*?<\/oai_dc:dc>/g;
+  let match = recordRegex.exec(xml);
+  while (match) {
+    blocks.push(match[0]);
+    match = recordRegex.exec(xml);
+  }
+
+  if (blocks.length > 0) {
+    return blocks;
+  }
+
+  return xml.includes("<dc:") ? [xml] : [];
+}
+
+function parseOaiDcBlock(block: string): DublinCoreMetadata | null {
+  const fields: Record<string, string[]> = {};
+  const elementRegex = /<dc:(\w+)>([\s\S]*?)<\/dc:\1>/g;
+  let match = elementRegex.exec(block);
+  while (match) {
+    const name = match[1];
+    const rawValue = match[2];
+    if (!name || rawValue === undefined) {
+      match = elementRegex.exec(block);
+      continue;
+    }
+    const value = decodeXml(rawValue.trim());
+    if (!fields[name]) {
+      fields[name] = [];
+    }
+    fields[name].push(value);
+    match = elementRegex.exec(block);
+  }
+
+  const title = fields.title?.[0];
+  const identifier = fields.identifier?.[0];
+  if (!title || !identifier) {
+    return null;
+  }
+
+  const getScalarField = (name: string): string | undefined => {
+    const values = fields[name];
+    return values?.[0];
+  };
+
+  const getArrayField = (name: string): string | string[] | undefined => {
+    const values = fields[name];
+    if (!values?.length) {
+      return undefined;
+    }
+    return values.length === 1 ? values[0] : values;
+  };
+
+  return {
+    title,
+    identifier,
+    creator: getScalarField("creator"),
+    subject: getArrayField("subject"),
+    description: getScalarField("description"),
+    publisher: getScalarField("publisher"),
+    contributor: getArrayField("contributor"),
+    date: getScalarField("date"),
+    type: getScalarField("type"),
+    format: getScalarField("format"),
+    source: getScalarField("source"),
+    language: getScalarField("language"),
+    relation: getArrayField("relation"),
+    coverage: getScalarField("coverage"),
+    rights: getScalarField("rights"),
+  };
+}
+
+/**
+ * Parses Dublin Core XML (OAI-DC) into metadata records.
+ *
+ * Accepts single-record documents and multi-record wrappers produced by
+ * {@link toDublinCoreXML} / export. Malformed or empty input returns `[]`.
+ */
+export function fromDublinCoreXML(xml: string): DublinCoreMetadata[] {
+  if (!xml.trim()) {
+    return [];
+  }
+
+  const blocks = extractOaiDcBlocks(xml);
+  if (blocks.length === 0) {
+    return [];
+  }
+
+  const records: DublinCoreMetadata[] = [];
+  for (const block of blocks) {
+    const metadata = parseOaiDcBlock(block);
+    if (metadata) {
+      records.push(metadata);
+    }
+  }
+
+  return records;
+}
+
+/**
  * Converts multiple collections to Dublin Core metadata records
  * @param collections - Array of collection documents
  * @param options - Optional configuration for metadata mapping

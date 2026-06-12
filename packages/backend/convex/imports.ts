@@ -2,7 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { collectionsToDublinCore, toDublinCoreXML } from "./utils/dublinCore";
+import {
+  collectionsToDublinCore,
+  fromDublinCore,
+  fromDublinCoreXML,
+  toDublinCoreXML,
+} from "./utils/dublinCore";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { toJSON, toXML } from "./utils/formatConverters";
 import { normalizeAccessionImportRow } from "./utils/importRows";
@@ -1185,6 +1190,125 @@ export const importObjectsBatch = mutation({
       progress: newProgress,
       errors: allErrors.slice(-100),
       status: newProcessedItems >= job.totalItems ? "completed" : "processing",
+    });
+
+    return { processed, errors };
+  },
+});
+
+export const importObjectsDublinCore = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    jobId: v.id("importJobs"),
+    xml: v.string(),
+  },
+  returns: v.object({
+    processed: v.number(),
+    errors: v.array(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const [, job] = await Promise.all([
+      requirePermission(ctx, args.organizationId, "collections.create"),
+      ctx.db.get(args.jobId),
+    ]);
+    if (!job || job.organizationId !== args.organizationId) {
+      throw new Error("Import job not found");
+    }
+
+    const metadataRecords = fromDublinCoreXML(args.xml);
+    if (metadataRecords.length === 0) {
+      throw new Error("No valid Dublin Core records found in XML");
+    }
+
+    await ctx.db.patch(args.jobId, {
+      status: "processing",
+      totalItems: metadataRecords.length,
+    });
+
+    const rows = metadataRecords.map((metadata) => {
+      const collection = fromDublinCore(metadata);
+      return {
+        accessionNumber: collection.accessionNumber,
+        title: collection.title ?? metadata.title,
+        alternativeTitle: collection.alternativeTitle,
+        creator: collection.creator,
+        objectType: collection.objectType,
+        objectName: collection.objectName,
+        culture: collection.culture,
+        period: collection.period,
+        dateCreated: collection.dateCreated,
+        materials: collection.materials,
+        technique: collection.technique,
+        dimensions: collection.dimensions,
+        description: collection.description,
+        provenance: collection.provenance,
+      };
+    });
+
+    const errors: string[] = [];
+    let processed = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+
+      const rowNum = i + 1;
+
+      try {
+        if (!row.title || row.title.trim() === "") {
+          errors.push(`Record ${rowNum}: Title is required`);
+          continue;
+        }
+
+        const accessionNumber =
+          row.accessionNumber || `IMP-DC-${Date.now()}-${i}`;
+
+        await ctx.db.insert("collections", {
+          organizationId: args.organizationId,
+          accessionNumber,
+          title: row.title.trim(),
+          alternativeTitle: row.alternativeTitle?.trim(),
+          creator: row.creator?.trim(),
+          objectType: row.objectType?.trim(),
+          objectName: row.objectName?.trim(),
+          culture: row.culture?.trim(),
+          period: row.period?.trim(),
+          dateCreated: row.dateCreated?.trim(),
+          materials: row.materials?.trim(),
+          technique: row.technique?.trim(),
+          dimensions: row.dimensions?.trim(),
+          description: row.description?.trim(),
+          provenance: row.provenance?.trim(),
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: Date.now(),
+        });
+
+        processed++;
+      } catch (err) {
+        errors.push(
+          `Record ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
+        );
+      }
+    }
+
+    const newProcessedItems = job.processedItems + processed;
+    const newProgress = Math.round(
+      (newProcessedItems / metadataRecords.length) * 100,
+    );
+    const allErrors = [...(job.errors || []), ...errors];
+
+    await ctx.db.patch(args.jobId, {
+      processedItems: newProcessedItems,
+      progress: newProgress,
+      errors: allErrors.slice(-100),
+      status:
+        newProcessedItems >= metadataRecords.length ? "completed" : "processing",
     });
 
     return { processed, errors };
