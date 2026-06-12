@@ -201,4 +201,45 @@ http.route({
   handler: integrationWebhook,
 });
 
+const listObjects = httpAction(async (ctx, request) => {
+  const unauthorized = () =>
+    new Response(JSON.stringify({ error: "invalid_api_key" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return unauthorized();
+  }
+
+  const apiKey = authHeader.slice("Bearer ".length).trim();
+  if (!apiKey) {
+    return unauthorized();
+  }
+
+  const validation = await ctx.runMutation(internal.apiKeys.validate, {
+    apiKey,
+  });
+
+  if (!validation.valid || !validation.permissions.includes("read")) {
+    return unauthorized();
+  }
+
+  const objects = await ctx.runQuery(internal.collections.listForApi, {
+    organizationId: validation.organizationId,
+  });
+
+  return new Response(JSON.stringify({ data: objects }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+});
+
+http.route({
+  path: "/v1/objects",
+  method: "GET",
+  handler: listObjects,
+});
+
 export default http;

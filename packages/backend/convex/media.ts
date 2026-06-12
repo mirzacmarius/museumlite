@@ -25,6 +25,7 @@ import {
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 
 function isImageMedia(media: {
   fileType?: string;
@@ -171,6 +172,9 @@ export const create = mutation({
       });
 
       if (mediaId) {
+        await emitWebhookEvent(ctx, args.organizationId, "media.uploaded", {
+          mediaId,
+        });
         return mediaId;
       }
     }
@@ -188,6 +192,10 @@ export const create = mutation({
       photographer: args.photographer,
       copyright: args.copyright,
       uploadedBy: userId,
+    });
+
+    await emitWebhookEvent(ctx, args.organizationId, "media.uploaded", {
+      mediaId,
     });
 
     return mediaId;
