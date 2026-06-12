@@ -3,6 +3,12 @@ import { query } from "./_generated/server";
 import { auditLogChanges } from "./schema";
 import { requirePermission } from "./utils/permissions";
 
+/** Max audit rows scanned when no date range is set (best-effort recent window). */
+const RECENT_SCAN_CAP = 1000;
+
+/** Max recent audit rows scanned for filter dropdown options. */
+const DROPDOWN_SCAN_CAP = 1000;
+
 const ENTITY_TYPES = [
   "collection",
   "loan",
@@ -54,18 +60,24 @@ export const list = query({
 
     const limit = Math.min(args.limit ?? 50, 100);
 
-    // Build query with filters
-    const query = ctx.db
+    const indexedQuery = ctx.db
       .query("auditLog")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
+      .withIndex("by_organization_and_timestamp", (q) => {
+        let range = q.eq("organizationId", args.organizationId);
+        if (args.fromDate !== undefined) {
+          range = range.gte("timestamp", args.fromDate);
+        }
+        if (args.toDate !== undefined) {
+          range = range.lte("timestamp", args.toDate);
+        }
+        return range;
+      })
       .order("desc");
 
-    // Collect all entries for filtering (we need to filter in memory for some conditions)
-    let entries = await query.collect();
+    // Date range is pushed into the index; always cap the scan window.
+    let entries = await indexedQuery.take(RECENT_SCAN_CAP);
 
-    // Apply filters
+    // Filters without supporting indexes apply in-memory over the bounded scan.
     if (args.userId) {
       entries = entries.filter((e) => e.userId === args.userId);
     }
@@ -76,12 +88,6 @@ export const list = query({
       entries = entries.filter((e) =>
         e.action.toLowerCase().includes(args.action!.toLowerCase()),
       );
-    }
-    if (args.fromDate) {
-      entries = entries.filter((e) => e.timestamp >= args.fromDate!);
-    }
-    if (args.toDate) {
-      entries = entries.filter((e) => e.timestamp <= args.toDate!);
     }
 
     const totalCount = entries.length;
@@ -140,7 +146,8 @@ export const getEntityTypes = query({
 });
 
 /**
- * Get available actions for filter dropdown (based on existing data)
+ * Get available actions for filter dropdown (based on recent audit entries).
+ * Bounded to the most recent {@link DROPDOWN_SCAN_CAP} entries.
  */
 export const getAvailableActions = query({
   args: {
@@ -152,10 +159,11 @@ export const getAvailableActions = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
       ctx.db
         .query("auditLog")
-        .withIndex("by_organization", (q) =>
+        .withIndex("by_organization_and_timestamp", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .collect(),
+        .order("desc")
+        .take(DROPDOWN_SCAN_CAP),
     ] as const);
 
     const actions = [...new Set(entries.map((e) => e.action))];
@@ -164,7 +172,8 @@ export const getAvailableActions = query({
 });
 
 /**
- * Get users who have audit log entries (for filter dropdown)
+ * Get users who have audit log entries (for filter dropdown).
+ * Bounded to users appearing in the most recent {@link DROPDOWN_SCAN_CAP} entries.
  */
 export const getActiveUsers = query({
   args: {
@@ -182,10 +191,11 @@ export const getActiveUsers = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
       ctx.db
         .query("auditLog")
-        .withIndex("by_organization", (q) =>
+        .withIndex("by_organization_and_timestamp", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .collect(),
+        .order("desc")
+        .take(DROPDOWN_SCAN_CAP),
     ] as const);
 
     const userIds = [...new Set(entries.map((e) => e.userId))];

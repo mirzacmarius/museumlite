@@ -1013,6 +1013,167 @@ describe("auditLog detailed logging", () => {
     });
   });
 
+  describe("auditLog.list pagination", () => {
+    async function setupListTestOrg(t: ReturnType<typeof convexTest>) {
+      return t.run(async (ctx) => {
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Pagination Org",
+            slug: `pagination-org-${Math.random().toString(36).slice(2, 8)}`,
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Pagination User",
+            email: `pagination-${Math.random().toString(36).slice(2, 8)}@test.dev`,
+          }),
+        ]);
+        const roleId = await ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Admin",
+          isSystemRole: true,
+        });
+        await ctx.db.insert("userOrganizations", {
+          userId,
+          organizationId: orgId,
+          roleId,
+          joinedAt: Date.now(),
+        });
+        const permissionId = await ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
+        return { orgId, userId };
+      });
+    }
+
+    test("filters by date range and preserves return shape", async () => {
+      const t = convexTest(schema, modules);
+      const { orgId, userId } = await setupListTestOrg(t);
+
+      const rangeStart = 1_700_000_000_000;
+      const rangeEnd = 1_700_086_400_000;
+      const beforeRange = rangeStart - 86_400_000;
+      const afterRange = rangeEnd + 86_400_000;
+
+      await t.run(async (ctx) => {
+        for (const timestamp of [
+          beforeRange,
+          rangeStart + 1_000,
+          rangeEnd - 1_000,
+          afterRange,
+        ]) {
+          await ctx.db.insert("auditLog", {
+            organizationId: orgId,
+            userId,
+            action: "range_test",
+            entityType: "accession",
+            entityId: `entry_${timestamp}`,
+            timestamp,
+          });
+        }
+      });
+
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(api.auditLog.list, {
+        organizationId: orgId,
+        fromDate: rangeStart,
+        toDate: rangeEnd,
+      });
+
+      expect(result.entries).toHaveLength(2);
+      expect(result.totalCount).toBe(2);
+      expect(result.nextCursor).toBeUndefined();
+      expect(
+        result.entries.every(
+          (e) => e.timestamp >= rangeStart && e.timestamp <= rangeEnd,
+        ),
+      ).toBe(true);
+      expect(result.entries[0]).toMatchObject({
+        _id: expect.any(String),
+        action: "range_test",
+        entityType: "accession",
+        userId,
+      });
+    });
+
+    test("paginates with cursor across entries in range", async () => {
+      const t = convexTest(schema, modules);
+      const { orgId, userId } = await setupListTestOrg(t);
+
+      const rangeStart = 1_710_000_000_000;
+      const rangeEnd = 1_710_172_800_000;
+      const entryCount = 55;
+      const pageSize = 20;
+
+      await t.run(async (ctx) => {
+        for (let i = 0; i < entryCount; i++) {
+          await ctx.db.insert("auditLog", {
+            organizationId: orgId,
+            userId,
+            action: "page_test",
+            entityType: "loan",
+            entityId: `page_${i}`,
+            timestamp: rangeStart + i * 1_000,
+          });
+        }
+        await ctx.db.insert("auditLog", {
+          organizationId: orgId,
+          userId,
+          action: "outside_range",
+          entityType: "loan",
+          entityId: "outside",
+          timestamp: rangeEnd + 86_400_000,
+        });
+      });
+
+      const authed = authedForUser(t, userId);
+      const firstPage = await authed.query(api.auditLog.list, {
+        organizationId: orgId,
+        fromDate: rangeStart,
+        toDate: rangeEnd,
+        limit: pageSize,
+      });
+
+      expect(firstPage.entries).toHaveLength(pageSize);
+      expect(firstPage.totalCount).toBe(entryCount);
+      expect(firstPage.nextCursor).toBeDefined();
+
+      const secondPage = await authed.query(api.auditLog.list, {
+        organizationId: orgId,
+        fromDate: rangeStart,
+        toDate: rangeEnd,
+        limit: pageSize,
+        cursor: firstPage.nextCursor,
+      });
+
+      expect(secondPage.entries).toHaveLength(pageSize);
+      expect(secondPage.totalCount).toBe(entryCount);
+      expect(secondPage.nextCursor).toBeDefined();
+
+      const thirdPage = await authed.query(api.auditLog.list, {
+        organizationId: orgId,
+        fromDate: rangeStart,
+        toDate: rangeEnd,
+        limit: pageSize,
+        cursor: secondPage.nextCursor,
+      });
+
+      expect(thirdPage.entries).toHaveLength(entryCount - pageSize * 2);
+      expect(thirdPage.totalCount).toBe(entryCount);
+      expect(thirdPage.nextCursor).toBeUndefined();
+
+      const firstPageIds = new Set(firstPage.entries.map((e) => e._id));
+      const secondPageIds = new Set(secondPage.entries.map((e) => e._id));
+      for (const id of secondPageIds) {
+        expect(firstPageIds.has(id)).toBe(false);
+      }
+    });
+  });
+
   describe("data integrity", () => {
     test("should maintain timestamp ordering", async () => {
       const t = convexTest(schema, modules);

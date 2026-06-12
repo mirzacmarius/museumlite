@@ -221,6 +221,7 @@ export const getComplianceReport = query({
     const rangeStart = args.dateRangeStart ?? now - 30 * 24 * 60 * 60 * 1000;
     const rangeEnd = args.dateRangeEnd ?? now;
 
+    // TODO: bound if accession volume grows
     const allAccessions = await ctx.db
       .query("accessions")
       .withIndex("by_organization", (q) =>
@@ -352,32 +353,43 @@ export const getComplianceReport = query({
       ),
       ctx.db
         .query("auditLog")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
+        .withIndex("by_organization_and_timestamp", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .gte("timestamp", rangeStart)
+            .lte("timestamp", rangeEnd),
         )
+        .order("desc")
         .collect(),
     ]);
-    const filteredEvents = auditEvents.filter(
-      (e) => e.timestamp >= rangeStart && e.timestamp <= rangeEnd,
-    );
+    const filteredEvents = auditEvents;
 
-    const recentEvents = filteredEvents
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 20);
+    const recentEvents = filteredEvents.slice(0, 20);
 
-    const recentEventDetails = await Promise.all(
-      recentEvents.map(async (event) => {
-        const user = await ctx.db.get(event.userId);
-        return {
-          id: event._id,
-          action: event.action,
-          entityType: event.entityType,
-          entityId: event.entityId,
-          userName: user?.name ?? user?.email ?? "Unknown",
-          timestamp: event.timestamp,
-        };
+    const uniqueRecentUserIds = [
+      ...new Set(recentEvents.map((event) => event.userId)),
+    ];
+    const recentUsers = await Promise.all(
+      uniqueRecentUserIds.map(async (userId) => {
+        const user = await ctx.db.get(userId);
+        return { userId, user };
       }),
     );
+    const recentUserNameById = new Map(
+      recentUsers.map(({ userId, user }) => [
+        userId,
+        user?.name ?? user?.email ?? "Unknown",
+      ]),
+    );
+
+    const recentEventDetails = recentEvents.map((event) => ({
+      id: event._id,
+      action: event.action,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      userName: recentUserNameById.get(event.userId) ?? "Unknown",
+      timestamp: event.timestamp,
+    }));
 
     const eventsByTypeMap = new Map<string, number>();
     for (const event of filteredEvents) {
@@ -402,19 +414,27 @@ export const getComplianceReport = query({
       }
     }
 
-    const eventsByUserWithNames = await Promise.all(
-      Array.from(eventsByUserMap.values())
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10)
-        .map(async ({ userId, count }) => {
-          const user = await ctx.db.get(userId as Id<"users">);
-          return {
-            userId,
-            userName: user?.name ?? user?.email ?? "Unknown",
-            count,
-          };
-        }),
+    const topEventsByUser = Array.from(eventsByUserMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    const eventsByUserIds = [
+      ...new Set(topEventsByUser.map(({ userId }) => userId)),
+    ];
+    const eventsByUserRecords = await Promise.all(
+      eventsByUserIds.map(async (userId) => {
+        const user = await ctx.db.get(userId as Id<"users">);
+        return [userId, user] as const;
+      }),
     );
+    const eventsByUserNameById = new Map(eventsByUserRecords);
+    const eventsByUserWithNames = topEventsByUser.map(({ userId, count }) => {
+      const user = eventsByUserNameById.get(userId);
+      return {
+        userId,
+        userName: user?.name ?? user?.email ?? "Unknown",
+        count,
+      };
+    });
 
     return {
       accessions: {

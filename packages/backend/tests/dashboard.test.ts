@@ -669,3 +669,75 @@ describe("Dashboard: getOperationalKpis", () => {
     expect(kpis.inventory.fineArt.valuedCount).toBe(1);
   });
 });
+
+describe("Dashboard: getComplianceReport", () => {
+  test("counts only audit events within the report date range", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId, roleId } = await createTestOrg(t, {
+      subscriptionTier: "enterprise",
+    });
+    await grantPermission(t, roleId, "collections.read");
+
+    const rangeStart = 1_720_000_000_000;
+    const rangeEnd = 1_720_086_400_000;
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("auditLog", {
+        organizationId,
+        userId,
+        action: "in_range_a",
+        entityType: "accession",
+        entityId: "acc_in_1",
+        timestamp: rangeStart + 1_000,
+      });
+      await ctx.db.insert("auditLog", {
+        organizationId,
+        userId,
+        action: "in_range_b",
+        entityType: "loan",
+        entityId: "loan_in_1",
+        timestamp: rangeEnd - 1_000,
+      });
+      await ctx.db.insert("auditLog", {
+        organizationId,
+        userId,
+        action: "before_range",
+        entityType: "accession",
+        entityId: "acc_out_1",
+        timestamp: rangeStart - 86_400_000,
+      });
+      await ctx.db.insert("auditLog", {
+        organizationId,
+        userId,
+        action: "after_range",
+        entityType: "accession",
+        entityId: "acc_out_2",
+        timestamp: rangeEnd + 86_400_000,
+      });
+    });
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-compliance-report`,
+      issuer: "https://example.test",
+    });
+    const report = await authed.query(api.dashboard.getComplianceReport, {
+      organizationId,
+      dateRangeStart: rangeStart,
+      dateRangeEnd: rangeEnd,
+    });
+
+    expect(report.auditTrail.totalEvents).toBe(2);
+    expect(report.auditTrail.recentEvents).toHaveLength(2);
+    expect(
+      report.auditTrail.recentEvents.every(
+        (event) => event.timestamp >= rangeStart && event.timestamp <= rangeEnd,
+      ),
+    ).toBe(true);
+    expect(report.auditTrail.eventsByType).toEqual(
+      expect.arrayContaining([
+        { entityType: "accession", count: 1 },
+        { entityType: "loan", count: 1 },
+      ]),
+    );
+  });
+});
