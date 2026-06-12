@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
@@ -268,7 +268,7 @@ describe("API Key Generation Security", () => {
     });
 
     // Validate the key
-    const validation = await authed.mutation(api.apiKeys.validate, {
+    const validation = await t.mutation(internal.apiKeys.validate, {
       apiKey: result.key,
     });
 
@@ -282,15 +282,10 @@ describe("API Key Generation Security", () => {
 
   test("should not validate keys with incorrect format", async () => {
     const t = convexTest(schema, modules);
-    const { userId } = await createTestSetup(t);
-
-    const authed = t.withIdentity({
-      subject: `${userId}|session-invalid`,
-      issuer: "https://example.test",
-    });
+    await createTestSetup(t);
 
     // Try to validate a fake key
-    const validation = await authed.mutation(api.apiKeys.validate, {
+    const validation = await t.mutation(internal.apiKeys.validate, {
       apiKey: "ml_fakekeythatdoesnotexist1234567890",
     });
 
@@ -319,7 +314,7 @@ describe("API Key Generation Security", () => {
     });
 
     // Try to validate the revoked key
-    const validation = await authed.mutation(api.apiKeys.validate, {
+    const validation = await t.mutation(internal.apiKeys.validate, {
       apiKey: result.key,
     });
 
@@ -344,7 +339,7 @@ describe("API Key Generation Security", () => {
     });
 
     // Try to validate the expired key
-    const validation = await authed.mutation(api.apiKeys.validate, {
+    const validation = await t.mutation(internal.apiKeys.validate, {
       apiKey: result.key,
     });
 
