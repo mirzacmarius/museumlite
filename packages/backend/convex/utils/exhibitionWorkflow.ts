@@ -306,6 +306,15 @@ export async function activateExhibitionHandler(
       .collect(),
   ] as const);
 
+  for (const obj of exhibitionObjects) {
+    const collection = await ctx.db.get(obj.collectionId);
+    if (collection?.status === "loaned") {
+      throw new Error(
+        `Cannot activate exhibition: object "${collection.title}" is currently on loan`,
+      );
+    }
+  }
+
   await Promise.all([
     Promise.all(
       Array.from(exhibitionObjects).map((obj) => {

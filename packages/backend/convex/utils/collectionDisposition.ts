@@ -23,6 +23,11 @@ export async function deleteCollectionHandler(
   if (!collection) {
     throw new Error("Collection not found");
   }
+
+  if (collection.status === "loaned") {
+    throw new Error("Cannot deaccession an object that is currently on loan");
+  }
+
   await Promise.all([
     requirePermission(ctx, collection.organizationId, "collections.delete"),
     markCollectionDeaccessioned(ctx, {
