@@ -97,7 +97,7 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv"
+              accept={importType === "objects" ? ".csv,.xml" : ".csv"}
               onChange={handleFileSelect}
               className="hidden"
               id="csv-upload"

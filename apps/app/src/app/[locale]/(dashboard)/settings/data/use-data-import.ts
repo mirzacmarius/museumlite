@@ -23,6 +23,7 @@ export function useDataImport(
 
   const createImportJob = useMutation(api.imports.createImportJob);
   const importObjectsBatch = useMutation(api.imports.importObjectsBatch);
+  const importObjectsDublinCore = useMutation(api.imports.importObjectsDublinCore);
   const importAccessionsBatch = useMutation(api.imports.importAccessionsBatch);
   const importLocationsBatch = useMutation(api.imports.importLocationsBatch);
   const importAccountsBatch = useMutation(api.imports.importAccountsBatch);
@@ -45,6 +46,28 @@ export function useDataImport(
       setImporting(true);
 
       try {
+        const isXml = file.name.toLowerCase().endsWith(".xml");
+
+        if (isXml) {
+          if (importType !== "objects") {
+            throw new Error("XML import is only supported for objects");
+          }
+
+          const xml = await file.text();
+          const jobId = await createImportJob({
+            organizationId,
+            type: "csv",
+            totalItems: 1,
+          });
+
+          await importObjectsDublinCore({
+            organizationId,
+            jobId,
+            xml,
+          });
+          return;
+        }
+
         const text = await file.text();
         const rows = parseCSV(text);
         const headers = rows[0];
@@ -157,6 +180,7 @@ export function useDataImport(
       importType,
       createImportJob,
       importObjectsBatch,
+      importObjectsDublinCore,
       importAccessionsBatch,
       importLocationsBatch,
       importAccountsBatch,

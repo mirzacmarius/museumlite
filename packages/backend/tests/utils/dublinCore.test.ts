@@ -12,6 +12,7 @@ import {
   collectionsToDublinCore,
   type DublinCoreMetadata,
   fromDublinCore,
+  fromDublinCoreXML,
   toDublinCore,
   toDublinCoreXML,
 } from "../../convex/utils/dublinCore";
@@ -610,6 +611,68 @@ describe("collectionsToDublinCore", () => {
     const dcArray = collectionsToDublinCore([]);
 
     expect(dcArray).toEqual([]);
+  });
+});
+
+describe("fromDublinCoreXML", () => {
+  test("should round-trip collection through XML export and import", () => {
+    const original: Partial<Doc<"collections">> = {
+      title: "Test Artwork",
+      accessionNumber: "2024.1.1",
+      creator: "John Artist",
+      description: "A beautiful painting",
+      tags: ["painting", "modern art"],
+    };
+
+    const dc = toDublinCore(original);
+    const xml = toDublinCoreXML(dc);
+    const parsed = fromDublinCoreXML(xml);
+    const converted = fromDublinCore(parsed[0]!);
+
+    expect(parsed).toHaveLength(1);
+    expect(converted.title).toBe(original.title);
+    expect(converted.accessionNumber).toBe(original.accessionNumber);
+    expect(converted.creator).toBe(original.creator);
+    expect(converted.description).toBe(original.description);
+    expect(converted.tags).toEqual(original.tags);
+  });
+
+  test("should decode XML entities in titles", () => {
+    const metadata: DublinCoreMetadata = {
+      title: 'Test & "Artwork" <Special>',
+      identifier: "2024.1.1",
+    };
+
+    const xml = toDublinCoreXML(metadata);
+    const parsed = fromDublinCoreXML(xml);
+
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]?.title).toBe('Test & "Artwork" <Special>');
+  });
+
+  test("should return empty array for malformed XML", () => {
+    expect(fromDublinCoreXML("not xml at all")).toEqual([]);
+    expect(fromDublinCoreXML("<dc:title>Missing identifier</dc:title>")).toEqual(
+      [],
+    );
+    expect(fromDublinCoreXML("")).toEqual([]);
+  });
+
+  test("should parse multi-record export wrapper", () => {
+    const records = collectionsToDublinCore([
+      { title: "Artwork 1", accessionNumber: "2024.1.1" },
+      { title: "Artwork 2", accessionNumber: "2024.1.2" },
+    ]);
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<dublincore:records xmlns:dublincore="http://purl.org/dc/elements/1.1/">
+${records.map((record) => toDublinCoreXML(record)).join("\n")}
+</dublincore:records>`;
+
+    const parsed = fromDublinCoreXML(xml);
+
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0]?.title).toBe("Artwork 1");
+    expect(parsed[1]?.title).toBe("Artwork 2");
   });
 });
 

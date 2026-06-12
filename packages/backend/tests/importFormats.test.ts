@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import { toDublinCore, toDublinCoreXML } from "../convex/utils/dublinCore";
 import { modules } from "./testSetup";
 
 type OrgSetup = {
@@ -739,5 +740,67 @@ describe("Import E2E Verification (manual)", () => {
     console.log(`  - Errors: ${validation.errorCount}`);
     console.log(`  - Warnings: ${validation.warningCount}`);
     console.log(`  - Info: ${validation.infoCount}`);
+  });
+
+  test("should import objects from Dublin Core XML with org isolation", async () => {
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, [
+      "collections.create",
+    ]);
+    const asUser = authedForUser(t, userId);
+
+    const otherOrg = await t.run(async (ctx) => {
+      return ctx.db.insert("organizations", {
+        name: "Other Museum",
+        slug: `other-museum-${Math.random().toString(36).slice(2, 8)}`,
+        type: "museum",
+      });
+    });
+
+    const dc = toDublinCore({
+      title: "Dublin Core Import Test",
+      accessionNumber: "DC-2024-001",
+      creator: "Test Artist",
+      description: "Imported via Dublin Core XML",
+      tags: ["sculpture"],
+    });
+    const xml = toDublinCoreXML(dc);
+
+    const jobId = await asUser.mutation(api.imports.createImportJob, {
+      organizationId: orgId,
+      type: "csv",
+      totalItems: 1,
+    });
+
+    await asUser.mutation(api.imports.importObjectsDublinCore, {
+      organizationId: orgId,
+      jobId,
+      xml,
+    });
+
+    const collections = await asUser.run(async (ctx) => {
+      return ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", orgId),
+        )
+        .collect();
+    });
+
+    expect(collections).toHaveLength(1);
+    expect(collections[0]?.title).toBe("Dublin Core Import Test");
+    expect(collections[0]?.organizationId).toBe(orgId);
+    expect(collections[0]?.accessionNumber).toBe("DC-2024-001");
+
+    const otherOrgCollections = await asUser.run(async (ctx) => {
+      return ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", otherOrg),
+        )
+        .collect();
+    });
+
+    expect(otherOrgCollections).toHaveLength(0);
   });
 });
