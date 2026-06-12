@@ -19,4 +19,4 @@
 - [ ] `bun test` passes (if applicable)
 
 ## Labels Confirmed
-- [ ] Linear issue has correct labels per [taxonomy](APP-IDEEA.md#label-taxonomy-required)
+- [ ] Linear issue has correct labels per [taxonomy](docs/APP-IDEEA.md#label-taxonomy-required)

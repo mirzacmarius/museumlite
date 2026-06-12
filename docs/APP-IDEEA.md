@@ -379,28 +379,28 @@ Missing from routes but present in design:
 ## Design → Implementation Matrix (Initial)
 | Module | Design HTML (source) | App Routes (Next.js) | Convex/Backend | Gaps / Notes |
 | --- | --- | --- | --- | --- |
-| Dashboard | `aura-html-pages/index.html`, `aura-html-pages/dasboard-as-admin.html` | `/` (`apps/app/src/app/[locale]/(dashboard)/page.tsx`) | `api.dashboard.getAnalytics` (needs confirm) | Verify KPI semantics vs design. |
-| Activity | `aura-html-pages/index.html` (activity section) | `/activity` (`apps/app/src/app/[locale]/(dashboard)/activity/page.tsx`) | Not confirmed | Confirm activity feed source. |
-| Assignments | `aura-html-pages/my-assignments.html` | `/assignments` (`apps/app/src/app/[locale]/(dashboard)/assignments/page.tsx`) | Not confirmed | Wire assignments data source. |
-| Objects Catalog | `aura-html-pages/collection.html` (list), `aura-html-pages/object.html`, `aura-html-pages/object-light.html` | `/objects`, `/objects/[id]`, `/objects/new` | `packages/backend/convex/collections.ts` | Validate list/grid parity + filters. |
+| Dashboard | `docs/design/aura-html-pages/index.html`, `docs/design/aura-html-pages/dasboard-as-admin.html` | `/` (`apps/app/src/app/[locale]/(dashboard)/page.tsx`) | `api.dashboard.getAnalytics` (needs confirm) | Verify KPI semantics vs design. |
+| Activity | `docs/design/aura-html-pages/index.html` (activity section) | `/activity` (`apps/app/src/app/[locale]/(dashboard)/activity/page.tsx`) | Not confirmed | Confirm activity feed source. |
+| Assignments | `docs/design/aura-html-pages/my-assignments.html` | `/assignments` (`apps/app/src/app/[locale]/(dashboard)/assignments/page.tsx`) | Not confirmed | Wire assignments data source. |
+| Objects Catalog | `docs/design/aura-html-pages/collection.html` (list), `docs/design/aura-html-pages/object.html`, `docs/design/aura-html-pages/object-light.html` | `/objects`, `/objects/[id]`, `/objects/new` | `packages/backend/convex/collections.ts` | Validate list/grid parity + filters. |
 | Collections / Groups | `collection-management-group-pages.html` | `/collections`, `/collections/[id]` | `packages/backend/convex/collectionGroups.ts` | Confirm group detail parity. |
-| Accessions | `aura-html-pages/accessions.html`, `aura-html-pages/new-record.html` | `/accessions`, `/accessions/[id]`, `/accessions/new` | `packages/backend/convex/accessions.ts`, `packages/backend/convex/accessionTemplates.ts` | Workflow + templates parity. |
+| Accessions | `docs/design/aura-html-pages/accessions.html`, `docs/design/aura-html-pages/new-record.html` | `/accessions`, `/accessions/[id]`, `/accessions/new` | `packages/backend/convex/accessions.ts`, `packages/backend/convex/accessionTemplates.ts` | Workflow + templates parity. |
 | Deaccessions | Not found yet in HTML | `/deaccessions`, `/deaccessions/[id]`, `/deaccessions/new` | `packages/backend/convex/deaccessions.ts` | Add design reference. |
-| Loans & Transport | `aura-html-pages/loans.html`, `aura-html-pages/loans-overview*.html`, `aura-html-pages/outgoing-loans.html`, `aura-html-pages/loans-transport.html` | `/loans`, `/loans/[id]`, `/loans/new` | `packages/backend/convex/loans.ts` | Transport UI partial. |
-| Locations | `aura-html-pages/location-and-tracking.html` | `/locations`, `/locations/[id]` | `packages/backend/convex/locations.ts` | Tree UI + occupancy gaps. |
+| Loans & Transport | `docs/design/aura-html-pages/loans.html`, `docs/design/aura-html-pages/loans-overview*.html`, `docs/design/aura-html-pages/outgoing-loans.html`, `docs/design/aura-html-pages/loans-transport.html` | `/loans`, `/loans/[id]`, `/loans/new` | `packages/backend/convex/loans.ts` | Transport UI partial. |
+| Locations | `docs/design/aura-html-pages/location-and-tracking.html` | `/locations`, `/locations/[id]` | `packages/backend/convex/locations.ts` | Tree UI + occupancy gaps. |
 | Exhibitions | Not found yet in HTML | `/exhibitions`, `/exhibitions/[id]`, `/exhibitions/new` | Not confirmed | Add design reference. |
 | Conservation | Not found yet in HTML | `/conservation`, `/conservation/[id]`, `/conservation/new` | Not confirmed | Add design reference. |
-| Library Catalog | `aura-html-pages/edit-patron-*.html` (patrons) | `/library/catalog`, `/library/catalog/[id]`, `/library/catalog/new` | `packages/backend/convex/library/items.ts` | Need catalog-specific design reference. |
+| Library Catalog | `docs/design/aura-html-pages/edit-patron-*.html` (patrons) | `/library/catalog`, `/library/catalog/[id]`, `/library/catalog/new` | `packages/backend/convex/library/items.ts` | Need catalog-specific design reference. |
 | Library Circulation | Not found yet in HTML | `/library/circulation` | `packages/backend/convex/library/circulation.ts` | Add design reference. |
 | Library Fines | Not found yet in HTML | `/library/fines` | Not confirmed | Add design reference. |
 | Library Acquisitions | Not found yet in HTML | `/library/acquisitions` | `packages/backend/convex/library/acquisitions.ts` | Add design reference. |
 | Accounts / CRM | Not found yet in HTML | `/accounts`, `/accounts/[id]`, `/accounts/new` | Not confirmed | Add design reference. |
 | Digital Assets | Not found yet in HTML | Not present | `packages/backend/convex/media.ts` | Needs UI routes + global assets browser. |
-| Transit Log | `aura-html-pages/loans-transport.html` (partial) | Not present | Not present | New module. |
+| Transit Log | `docs/design/aura-html-pages/loans-transport.html` (partial) | Not present | Not present | New module. |
 | Installation Planning | Not found yet in HTML | Not present | Not present | New module. |
 | Insurance | Not found yet in HTML | Not present | Not present | New module. |
 | Public Portal | `museumlite.aura.build.html` | `apps/web` (TBD) | Not present | New module. |
-| Settings | `aura-html-pages/index.html` (settings section) | `/settings/*` | Not confirmed | Validate settings parity. |
+| Settings | `docs/design/aura-html-pages/index.html` (settings section) | `/settings/*` | Not confirmed | Validate settings parity. |
 
 ## Epic 0 — Foundations & Definition of Done
 - Create Design → Implementation matrix for every sidebar module.

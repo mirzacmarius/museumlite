@@ -48,6 +48,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# agent scratch
+build-progress.txt
+*_keys.txt
+
 # turbo
 .turbo
 

@@ -1,4 +1,4 @@
-![hero](image.png)
+![hero](docs/design/hero.png)
 
 
 <p align="center">

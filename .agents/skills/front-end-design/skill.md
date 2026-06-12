@@ -4,8 +4,8 @@ Create distinctive, production-grade frontend interfaces following the Aura desi
 
 ## Design Reference
 
-**Primary Source**: `aura-html-pages/dasboard-as-admin.html`
-**Additional Pages**: Browse `aura-html-pages/` folder for specific page designs (loans, collections, objects, patrons, etc.)
+**Primary Source**: `docs/design/aura-html-pages/dasboard-as-admin.html`
+**Additional Pages**: Browse `docs/design/aura-html-pages/` folder for specific page designs (loans, collections, objects, patrons, etc.)
 
 When no specific design exists for a page, derive the visual style from `dashboard-as-admin.html` to maintain consistency.
 
@@ -293,7 +293,7 @@ Use with `style="animation-delay: 0ms/100ms/200ms/300ms"` for stagger effect.
 ## Best Practices
 
 1. **Always use semantic color classes** (`bg-background`, `text-foreground`, etc.) for theme compatibility
-2. **Reference design files** in `aura-html-pages/` before implementing new pages
+2. **Reference design files** in `docs/design/aura-html-pages/` before implementing new pages
 3. **Accent colors are static** - indigo, amber, emerald, etc. don't change between themes
 4. **Use opacity on semantic colors**: `bg-card/50`, `border-border/60` for subtle variants
 5. **Layer shadows for depth**: `shadow-lg hover:shadow-2xl hover:shadow-{accent}-900/10`
@@ -308,10 +308,10 @@ Use with `style="animation-delay: 0ms/100ms/200ms/300ms"` for stagger effect.
 
 | Design | File |
 |--------|------|
-| Main dashboard | `aura-html-pages/dasboard-as-admin.html` |
-| Object detail | `aura-html-pages/object.html` |
-| Loans overview | `aura-html-pages/loans-overview.html` |
-| New record form | `aura-html-pages/new-record.html` |
-| Collection grid | `aura-html-pages/collection.html` |
-| Patron editing | `aura-html-pages/edit-patron-*.html` |
-| Location tracking | `aura-html-pages/location-and-tracking.html` |
+| Main dashboard | `docs/design/aura-html-pages/dasboard-as-admin.html` |
+| Object detail | `docs/design/aura-html-pages/object.html` |
+| Loans overview | `docs/design/aura-html-pages/loans-overview.html` |
+| New record form | `docs/design/aura-html-pages/new-record.html` |
+| Collection grid | `docs/design/aura-html-pages/collection.html` |
+| Patron editing | `docs/design/aura-html-pages/edit-patron-*.html` |
+| Location tracking | `docs/design/aura-html-pages/location-and-tracking.html` |

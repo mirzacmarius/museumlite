@@ -24,10 +24,8 @@
       "!packages/tsconfig",
       "!tooling/typescript",
       "!**/.react-email",
-      "!aura-html-pages",
       "!*.html",
       "!convex",
-      "!audit_mutations.js",
       "!packages/backend/convex/_generated"
     ]
   },
