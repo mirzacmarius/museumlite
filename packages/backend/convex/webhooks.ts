@@ -329,6 +329,17 @@ export const deleteWebhook = mutation({
   },
 });
 
+export const getWebhookOrgId = internalQuery({
+  args: {
+    webhookId: v.id("webhooks"),
+  },
+  returns: v.union(v.id("organizations"), v.null()),
+  handler: async (ctx, args) => {
+    const webhook = await ctx.db.get(args.webhookId);
+    return webhook?.organizationId ?? null;
+  },
+});
+
 export const getInternal = internalQuery({
   args: {
     webhookId: v.id("webhooks"),
