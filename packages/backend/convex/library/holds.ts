@@ -9,6 +9,10 @@ import {
   query,
 } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
+import {
+  loadLibraryItemForOrg,
+  loadLocationForOrg,
+} from "./utils/tenantIntegrity";
 
 const holdStatusValidator = v.union(
   v.literal("pending"),
@@ -48,10 +52,11 @@ export const place = mutation({
 
     await requireModuleEnabled(ctx, account.organizationId, "library");
 
-    const item = await ctx.db.get(args.itemId);
-    if (!item) {
-      throw new Error("Library item not found");
-    }
+    const item = await loadLibraryItemForOrg(
+      ctx,
+      args.itemId,
+      account.organizationId,
+    );
 
     if (!item.isCirculating) {
       throw new Error("This item is for reference only and cannot be held");
@@ -109,13 +114,22 @@ export const place = mutation({
 
     const now = Date.now();
 
+    const pickupLocationId = args.pickupLocationId ?? account.preferredBranch;
+    if (pickupLocationId) {
+      await loadLocationForOrg(
+        ctx,
+        pickupLocationId,
+        account.organizationId,
+      );
+    }
+
     const holdId = await ctx.db.insert("libraryHolds", {
       organizationId: account.organizationId,
       accountId: args.accountId,
       itemId: args.itemId,
       holdDate: now,
       queuePosition,
-      pickupLocationId: args.pickupLocationId || account.preferredBranch,
+      pickupLocationId,
       status: "pending",
       notes: args.notes,
       createdAt: now,
@@ -225,6 +239,12 @@ export const updatePickupLocation = mutation({
     }
 
     await requireModuleEnabled(ctx, hold.organizationId, "library");
+
+    await loadLocationForOrg(
+      ctx,
+      args.pickupLocationId,
+      hold.organizationId,
+    );
 
     await ctx.db.patch(args.holdId, {
       pickupLocationId: args.pickupLocationId,

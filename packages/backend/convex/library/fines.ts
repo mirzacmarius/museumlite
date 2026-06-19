@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireModuleEnabled } from "../utils/featureGates";
+import { assertSameOrganization } from "./utils/tenantIntegrity";
 
 const fineTypeValidator = v.union(
   v.literal("overdue"),
@@ -122,7 +123,13 @@ export const recordPayment = mutation({
 
         const fineId = args.fineIds[i];
         const fine = fines[i];
-        if (!fineId || !fine || fine.accountId !== args.accountId) continue;
+        if (!fineId || !fine) continue;
+        if (fine.accountId !== args.accountId) continue;
+        assertSameOrganization(
+          fine.organizationId,
+          account.organizationId,
+          "Fine",
+        );
         if (fine.status !== "outstanding") continue;
 
         const paymentForFine = Math.min(remainingPayment, fine.balance);
