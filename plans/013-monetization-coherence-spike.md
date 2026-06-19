@@ -7,7 +7,7 @@
 > the status row in `plans/README.md` — unless a reviewer dispatched you and told you
 > they maintain the index.
 >
-> **Drift check (run first)**: `git diff --stat 6e3f1d1a..HEAD -- packages/backend/convex/utils/featurePolicy.ts packages/backend/convex/utils/featureGates.ts packages/backend/convex/integrations.ts packages/backend/convex/organizations.ts packages/backend/convex/email apps/app/src/app/[locale]/\(dashboard\)/settings`
+> **Drift check (run first)**: `git diff --stat 8a341d62..HEAD -- packages/backend/convex/utils/featurePolicy.ts packages/backend/convex/utils/featureGates.ts packages/backend/convex/integrations.ts packages/backend/convex/organizations.ts packages/backend/convex/email apps/app/src/app/[locale]/\(dashboard\)/settings`
 > If any in-scope file changed since this plan was written, compare the
 > "Current state" excerpts against the live code before proceeding; on a
 > mismatch, treat it as a STOP condition.
@@ -19,7 +19,10 @@
 - **Risk**: LOW for steps 1–3 (no entitlement behavior changes); the memo defers the risky part to the maintainer
 - **Depends on**: none
 - **Category**: direction
-- **Planned at**: commit `6e3f1d1a`, 2026-06-12
+- **Planned at**: commit `6e3f1d1a`, 2026-06-12 — **reconciled** against `main` @ `8a341d62`, 2026-06-12 (finding unchanged; drift baseline updated after unrelated settings/data import work from Plan 012)
+- **Execute refresh**: 2026-06-12 — first executor stopped before edits because the Polar webhook subscription payload contains `customerId` but no customer email. The refreshed plan keeps the same scope and allows a repo-local internal lookup of the organization's billing recipient email from `organizations.ownerUserId` → `users.email`; it still forbids external customer/email lookups.
+- **Executed**: 2026-06-12 in `/Users/marius/Developer/ml-worktrees/advisor-013-monetization` on branch `advisor/013-monetization-coherence` @ `93c29a34`; reviewed and approved. Verification: `bun run lint`, `bun run typecheck`, `cd packages/backend && bunx vitest run subscriptions` (2 files, 12 tests), and `cd packages/backend && bun test:once` (79 files, 820 tests) all passed.
+- **Reconciled 2026-06-12**: work is **not on `main`** @ `8a341d62` — no open PR. Index status is IN PROGRESS until merge. On `main`, done criteria still fail: Stripe link at `settings/billing/page.tsx:117`, missing `docs/decisions/monetization-coherence.md`, no `sendSubscriptionSuccessEmail` wiring in `subscriptions.ts`.
 
 ## Why this matters
 
@@ -117,6 +120,14 @@ export const sendSubscriptionErrorEmailAction = internalAction({
   Subscription state sync happens in `packages/backend/convex/subscriptions.ts`
   (Polar checkout creation ~line 620-668; find the webhook-driven upsert path by
   reading the file and `http.ts:192`'s `/polar/events` handler).
+- **Billing recipient source** — the Polar webhook subscription payload has
+  `customerId` but no email. Do **not** query Polar just to send this email. Instead,
+  use repo-local data: `organizations.ownerUserId` is optional in `schema.ts`, and
+  `users.email` is optional on the user row. Add a small internal helper in
+  `subscriptions.ts` that reads the organization and owner user, returning
+  `{ email: string } | null`; schedule the success email only when this helper returns
+  a non-empty email. If the organization has no owner email, continue the billing sync
+  and record the skipped email in the memo/report rather than failing the webhook.
 - Conventions: scheduled work targets `internal.*` only; conventional commits;
   tests in `packages/backend/tests/` with `testHarness.ts`.
 
@@ -133,7 +144,7 @@ export const sendSubscriptionErrorEmailAction = internalAction({
 
 **In scope** (the only files you should modify/create):
 - `apps/app/src/app/[locale]/(dashboard)/settings/billing/page.tsx` (doc link only)
-- `packages/backend/convex/subscriptions.ts` (schedule the two email actions)
+- `packages/backend/convex/subscriptions.ts` (schedule subscription email actions; add a repo-local internal helper if needed to resolve the organization's owner email)
 - `packages/backend/tests/subscriptions.test.ts` (extend/create)
 - `docs/decisions/monetization-coherence.md` (create — the memo)
 - `plans/README.md` (status row)
@@ -167,21 +178,45 @@ Update the surrounding copy if it says "Stripe".
 
 In `subscriptions.ts`, locate where a subscription becomes active after checkout/webhook
 (the upsert that sets the org's `subscriptionTier` — read the file; also check the
-`/polar/events` handler in `http.ts` if the upsert lives behind it). At the success
-point, schedule:
+`/polar/events` handler in `http.ts` if the upsert lives behind it).
+
+The webhook payload does not include customer email. Add a small internal helper in
+`subscriptions.ts` if one does not already exist, for example
+`getOrganizationBillingEmail`, that:
+
+1. accepts `organizationId: v.id("organizations")`,
+2. reads the organization,
+3. reads `organization.ownerUserId` from `users`,
+4. returns `v.union(v.object({ email: v.string() }), v.null())`,
+5. returns `null` if the organization, owner, or owner email is missing.
+
+Do not query Polar, Clerk/Auth, or any other external system just to send this email.
+At the successful entitled subscription point, call that helper and schedule the
+success email only when it returns an email:
 
 ```typescript
-await ctx.scheduler.runAfter(0, internal.email.actions.sendSubscriptionSuccessEmailAction, {
-  email: customerEmail,
-  subscriptionId,
-});
+const billingEmail = await ctx.runQuery(
+  internal.subscriptions.getOrganizationBillingEmail,
+  { organizationId },
+);
+if (billingEmail) {
+  await ctx.scheduler.runAfter(
+    0,
+    internal.email.actions.sendSubscriptionSuccessEmailAction,
+    {
+      email: billingEmail.email,
+      subscriptionId,
+    },
+  );
+}
 ```
 
-and the error action at the corresponding failure/cancellation point if one exists
-(if there is no clear failure handling point, wire success only and say so in the memo).
-Source the email from the data already present at that point (subscription/customer
-record or org owner); if no email is reachable without new queries to external
-systems, STOP per below.
+Use the actual subscription id variable at that point (likely `args.id` in the webhook
+action or `subscription.id` in the manual sync action). Only schedule success for an
+entitled subscription (`isEntitled` / active access), not for cancellation or revoked
+events. Wire the error action only if there is already a clear non-entitled failure path
+with a repo-local recipient email; otherwise leave error email unwired and say so in the
+memo. Missing owner email is not a STOP condition; the billing sync must still complete.
 
 **Verify**: `bun run typecheck` → exit 0;
 `rg "sendSubscriptionSuccessEmailAction" packages/backend/convex --files-with-matches` → ≥2 files.
@@ -189,11 +224,13 @@ systems, STOP per below.
 ### Step 3: Smoke test for webhook → tier sync
 
 In `packages/backend/tests/subscriptions.test.ts` (extend if present, else create with
-the `testHarness.ts` pattern): drive whatever internal mutation the Polar event handler
-calls to upsert a subscription (read `http.ts:192`'s handler to find it), then assert
-the organization's `subscriptionTier` becomes `pro`, and assert an email action was
-scheduled (via `t.run` inspection of scheduled functions, or skip the scheduler
-assertion if the harness can't see it — note which).
+the `testHarness.ts` pattern): drive whatever internal mutation/action the Polar event
+handler calls to upsert a subscription (read `http.ts:192`'s handler to find it), then
+assert the organization's `subscriptionTier` becomes `pro`. Add coverage for the
+repo-local billing email helper: owner email present returns `{ email }`; missing owner
+or owner email returns `null`. Assert an email action was scheduled if the harness can
+inspect scheduled functions; if it cannot, skip only the scheduler assertion and note
+which.
 
 **Verify**: `cd packages/backend && bunx vitest run subscriptions` → all pass.
 
@@ -219,7 +256,12 @@ all facts are in "Current state" above; restate them, do not re-audit:
 4. **Fork risk paragraph**: `@erquhart/convex-polar@0.2.0-alpha.5` vs upstream
    `@convex-dev/polar` — record current upstream version (check npm), and what to
    smoke-test on any bump (the Step 3 test is exactly that).
-5. **Dead-code inventory** to delete under Option A: subscribe dialog state +
+5. **Email wiring note**: success emails use the organization owner email from the
+   local database because Polar subscription webhooks carry `customerId` but not email.
+   If an organization has no owner email, billing sync still succeeds and the email is
+   skipped. Error emails remain unwired unless/until a clear local recipient and failure
+   event are defined.
+6. **Dead-code inventory** to delete under Option A: subscribe dialog state +
    `handleSubscribe` (`settings/integrations/page.tsx`), `createCheckoutLink`,
    `requiresSubscription` plumbing, `/integrations/polar/webhook` route,
    `integrationSubscriptions` table (schema change — flag it).
@@ -252,8 +294,9 @@ existing `packages/backend/tests/` harness usage.
 Stop and report back (do not improvise) if:
 
 - The subscription-activation point in `subscriptions.ts`/`http.ts` cannot be
-  identified unambiguously, or no customer email is reachable there without new
-  external queries.
+  identified unambiguously.
+- There is no repo-local path to resolve a billing recipient email from the
+  organization/owner user without external queries.
 - The Polar component's API makes the Step 3 test require network access (tests must
   stay hermetic) — write the memo and doc-link fix, report the test as blocked.
 - You find tier enforcement on `enabledModules` already exists (drift) — the memo's

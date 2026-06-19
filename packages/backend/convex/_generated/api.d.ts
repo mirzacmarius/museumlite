@@ -140,6 +140,7 @@ import type * as utils_notificationRecipients from "../utils/notificationRecipie
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
 import type * as utils_onboardingCollectionSuggestions from "../utils/onboardingCollectionSuggestions.js";
+import type * as utils_operationalKpis from "../utils/operationalKpis.js";
 import type * as utils_organizationAudit from "../utils/organizationAudit.js";
 import type * as utils_organizationDeletionTimings from "../utils/organizationDeletionTimings.js";
 import type * as utils_organizationTransferRegistry from "../utils/organizationTransferRegistry.js";
@@ -152,6 +153,7 @@ import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_superAdmins from "../utils/superAdmins.js";
 import type * as utils_validators from "../utils/validators.js";
+import type * as utils_webhookEvents from "../utils/webhookEvents.js";
 import type * as utils_workflowConfigs from "../utils/workflowConfigs.js";
 import type * as utils_workflowExecution from "../utils/workflowExecution.js";
 import type * as utils_workflowSteps from "../utils/workflowSteps.js";
@@ -302,6 +304,7 @@ declare const fullApi: ApiFromModules<{
   "utils/numberGenerator": typeof utils_numberGenerator;
   "utils/objectDraftData": typeof utils_objectDraftData;
   "utils/onboardingCollectionSuggestions": typeof utils_onboardingCollectionSuggestions;
+  "utils/operationalKpis": typeof utils_operationalKpis;
   "utils/organizationAudit": typeof utils_organizationAudit;
   "utils/organizationDeletionTimings": typeof utils_organizationDeletionTimings;
   "utils/organizationTransferRegistry": typeof utils_organizationTransferRegistry;
@@ -314,6 +317,7 @@ declare const fullApi: ApiFromModules<{
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/superAdmins": typeof utils_superAdmins;
   "utils/validators": typeof utils_validators;
+  "utils/webhookEvents": typeof utils_webhookEvents;
   "utils/workflowConfigs": typeof utils_workflowConfigs;
   "utils/workflowExecution": typeof utils_workflowExecution;
   "utils/workflowSteps": typeof utils_workflowSteps;
