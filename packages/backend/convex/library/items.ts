@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 
 // Item type validator
 const itemTypeValidator = v.union(
@@ -110,7 +110,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.create");
 
     const itemId = await ctx.db.insert("libraryItems", {
       organizationId: args.organizationId,
@@ -182,7 +182,7 @@ export const get = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.read");
 
     // Get cover image URL if stored locally
     let coverImageUrl = item.coverImageUrl;
@@ -218,7 +218,7 @@ export const list = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     let results: Doc<"libraryItems">[] = [];
 
     // Use search index when search term is provided
@@ -453,7 +453,7 @@ export const update = mutation({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.update");
 
     const updates: Partial<Doc<"libraryItems">> = {
       lastModifiedBy: userId,
@@ -548,7 +548,7 @@ export const remove = mutation({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.delete");
 
     // Check if there are any copies
     const copies = await ctx.db
@@ -603,7 +603,7 @@ export const publish = mutation({
       return null;
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.update");
 
     await ctx.db.patch(args.itemId, {
       catalogStatus: "published",
@@ -635,7 +635,7 @@ export const archive = mutation({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.update");
 
     // Check for active circulations
     const activeCirculations = await ctx.db
@@ -668,7 +668,7 @@ export const getByIsbn = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     // Try ISBN-10
     let item = await ctx.db
       .query("libraryItems")
@@ -701,7 +701,7 @@ export const getByBarcode = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const item = await ctx.db
       .query("libraryItems")
       .withIndex("by_barcode", (q) => q.eq("barcode", args.barcode))
@@ -726,7 +726,7 @@ export const generateUploadUrl = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.create");
 
     return await ctx.storage.generateUploadUrl();
   },
@@ -753,7 +753,7 @@ export const setCoverImage = mutation({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.update");
 
     await ctx.db.patch(args.itemId, {
       coverImageId: args.storageId,
@@ -783,7 +783,7 @@ export const getStats = query({
     byType: v.record(v.string(), v.number()),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const allItems = await ctx.db
       .query("libraryItems")
       .withIndex("by_organization", (q) =>

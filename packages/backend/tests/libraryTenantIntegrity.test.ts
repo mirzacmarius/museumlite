@@ -50,6 +50,28 @@ async function setupCrossTenantFixture(
       name: "Staff User",
     });
 
+    // Grant the staff user accounts.write in org A so the per-action library
+    // permission gate passes and the cross-tenant integrity checks are reached.
+    const orgARoleId = await ctx.db.insert("roles", {
+      organizationId: orgAId,
+      name: "Library Staff",
+      isSystemRole: false,
+    });
+    const accountsWritePermissionId = await ctx.db.insert("permissions", {
+      name: "accounts.write",
+      category: "accounts",
+    });
+    await ctx.db.insert("rolePermissions", {
+      roleId: orgARoleId,
+      permissionId: accountsWritePermissionId,
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgAId,
+      roleId: orgARoleId,
+      joinedAt: now,
+    });
+
     await Promise.all([
       ctx.db.insert("librarySettings", {
         organizationId: orgAId,
