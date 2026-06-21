@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 import { promoteNextHold } from "./holds";
 import {
   assertBorrowingLimitAllowsCheckout,
@@ -41,7 +41,7 @@ export const checkout = mutation({
 
     assertPatronAccountCanCheckout(account);
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
+    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
 
     const settings = await ctx.db
       .query("librarySettings")
@@ -148,7 +148,7 @@ export const checkin = mutation({
       throw new Error("Item is already checked in");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.write");
 
     const account = await ctx.db.get(circulation.accountId);
     if (!account) {
@@ -256,7 +256,7 @@ export const markLost = mutation({
       throw new Error("Invalid status for marking as lost");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.write");
 
     const [copy, item, account] = await Promise.all([
       ctx.db.get(circulation.copyId),
@@ -318,7 +318,7 @@ export const markClaimedReturned = mutation({
       throw new Error("Circulation record not found");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.write");
 
     await ctx.db.patch(args.circulationId, {
       status: "claimed_returned",
@@ -340,7 +340,7 @@ export const get = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.read");
 
     const [account, copy, item] = await Promise.all([
       ctx.db.get(circulation.accountId),
@@ -363,7 +363,7 @@ export const getByBarcode = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const copy = await ctx.db
       .query("itemCopies")
       .withIndex("by_organization_and_barcode", (q) =>
@@ -412,7 +412,7 @@ export const listActive = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const circulations = await ctx.db
       .query("circulations")
       .withIndex("by_organization_and_status", (q) =>
@@ -450,7 +450,7 @@ export const listOverdue = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const now = Date.now();
 
     const circulations = await ctx.db
@@ -501,7 +501,7 @@ export const getStatistics = query({
     dueSoon: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const now = Date.now();
 
     const allCirculations = await ctx.db
@@ -557,7 +557,7 @@ export const searchForCheckout = query({
   },
   returns: v.array(v.any()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const searchQuery = args.query.trim();
     if (!searchQuery) {
       return [];
@@ -648,7 +648,7 @@ export const renew = mutation({
       };
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.write");
 
     const account = await ctx.db.get(circulation.accountId);
     if (!account) {
@@ -734,7 +734,7 @@ export const autoRenewEligibleItems = mutation({
     skippedCount: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.write");
 
     const settings = await ctx.db
       .query("librarySettings")
@@ -897,7 +897,7 @@ export const checkPatronBlocks = query({
       };
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
+    await requireLibraryPermission(ctx, account.organizationId, "accounts.read");
 
     const blocks: Array<{
       type: string;
@@ -1008,7 +1008,7 @@ export const checkoutWithOverride = mutation({
       throw new Error("Cannot override hard blocks (blocked/suspended status)");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
+    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
 
     const copy = await loadCopyForOrg(
       ctx,
@@ -1108,7 +1108,7 @@ export const createRecall = mutation({
       throw new Error("Item is already recalled");
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.write");
 
     if (args.requestingAccountId) {
       const requestingAccount = await ctx.db.get(args.requestingAccountId);
@@ -1228,7 +1228,7 @@ export const cancelRecall = mutation({
       throw new Error("Recall cannot be cancelled");
     }
 
-    await requireModuleEnabled(ctx, recall.organizationId, "library");
+    await requireLibraryPermission(ctx, recall.organizationId, "accounts.write");
 
     // Restore original due date
     const circulation = await ctx.db.get(recall.circulationId);
@@ -1273,7 +1273,7 @@ export const listRecalls = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
 
     const query = args.status
       ? ctx.db
@@ -1331,7 +1331,7 @@ export const getRecallByCirculation = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, circulation.organizationId, "library");
+    await requireLibraryPermission(ctx, circulation.organizationId, "accounts.read");
 
     const recall = await ctx.db
       .query("libraryRecalls")
@@ -1371,7 +1371,7 @@ export const updateAutoRenewalPreference = mutation({
       throw new Error("Account not found");
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
+    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
 
     await ctx.db.patch(args.accountId, {
       autoRenewalEnabled: args.enabled,
@@ -1395,7 +1395,7 @@ export const listPatronCheckouts = query({
       return [];
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
+    await requireLibraryPermission(ctx, account.organizationId, "accounts.read");
 
     const circulations = await ctx.db
       .query("circulations")
