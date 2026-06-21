@@ -20,6 +20,7 @@
 - **Depends on**: none
 - **Category**: direction
 - **Planned at**: commit `6e3f1d1a`, 2026-06-12
+- **Reconciled**: 2026-06-12 against `main` @ `8a341d62`. Core deliverables are merged in PR #64 and targeted tests pass (`dublinCore`, `importFormats`, `subscriptions`). Note: the broad marketing overclaim grep in this plan's done criteria still finds `IIIF-ready media` in `apps/web/src/components/marketing/home/philosophy.tsx:33`, which was outside this plan's original in-scope files.
 
 ## Why this matters
 

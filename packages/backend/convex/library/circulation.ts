@@ -14,6 +14,11 @@ import {
   calculateOverdueFine,
   resolveCheckoutDueDate,
 } from "./utils/circulationRules";
+import {
+  assertSameOrganization,
+  loadCopyForOrg,
+  loadLibraryItemForOrg,
+} from "./utils/tenantIntegrity";
 
 export const checkout = mutation({
   args: {
@@ -59,16 +64,22 @@ export const checkout = mutation({
       activeCheckoutCount: activeCheckouts.length,
     });
 
-    const copy = await ctx.db.get(args.copyId);
-    if (!copy) {
-      throw new Error("Copy not found");
-    }
+    const copy = await loadCopyForOrg(
+      ctx,
+      args.copyId,
+      account.organizationId,
+    );
 
     assertCopyAvailable(copy);
 
-    const item = await ctx.db.get(copy.itemId);
-    if (!item) {
-      throw new Error("Library item not found");
+    const item = await loadLibraryItemForOrg(
+      ctx,
+      copy.itemId,
+      account.organizationId,
+    );
+
+    if (copy.itemId !== item._id) {
+      throw new Error("Copy does not belong to the specified library item");
     }
 
     assertItemCanCirculate(item);
@@ -999,18 +1010,24 @@ export const checkoutWithOverride = mutation({
 
     await requireModuleEnabled(ctx, account.organizationId, "library");
 
-    const copy = await ctx.db.get(args.copyId);
-    if (!copy) {
-      throw new Error("Copy not found");
-    }
+    const copy = await loadCopyForOrg(
+      ctx,
+      args.copyId,
+      account.organizationId,
+    );
 
     if (copy.status !== "available") {
       throw new Error(`Copy is not available (status: ${copy.status})`);
     }
 
-    const item = await ctx.db.get(copy.itemId);
-    if (!item) {
-      throw new Error("Library item not found");
+    const item = await loadLibraryItemForOrg(
+      ctx,
+      copy.itemId,
+      account.organizationId,
+    );
+
+    if (copy.itemId !== item._id) {
+      throw new Error("Copy does not belong to the specified library item");
     }
 
     if (!item.isCirculating) {
@@ -1092,6 +1109,30 @@ export const createRecall = mutation({
     }
 
     await requireModuleEnabled(ctx, circulation.organizationId, "library");
+
+    if (args.requestingAccountId) {
+      const requestingAccount = await ctx.db.get(args.requestingAccountId);
+      if (!requestingAccount) {
+        throw new Error("Requesting account not found");
+      }
+      assertSameOrganization(
+        requestingAccount.organizationId,
+        circulation.organizationId,
+        "Requesting account",
+      );
+    }
+
+    if (args.requestingHoldId) {
+      const requestingHold = await ctx.db.get(args.requestingHoldId);
+      if (!requestingHold) {
+        throw new Error("Requesting hold not found");
+      }
+      assertSameOrganization(
+        requestingHold.organizationId,
+        circulation.organizationId,
+        "Requesting hold",
+      );
+    }
 
     // Get settings for recall shortened due date
     const settings = await ctx.db
