@@ -17,6 +17,9 @@ interface CrossTenantFixture {
   orgBItemId: Id<"libraryItems">;
   orgBCopyId: Id<"itemCopies">;
   orgBLocationId: Id<"locations">;
+  orgBPatronId: Id<"accounts">;
+  orgAFineId: Id<"libraryFines">;
+  orgBFineId: Id<"libraryFines">;
 }
 
 async function setupCrossTenantFixture(
@@ -78,17 +81,32 @@ async function setupCrossTenantFixture(
       }),
     ]);
 
-    const orgAPatronId = await ctx.db.insert("accounts", {
-      organizationId: orgAId,
-      accountNumber: "PAT-A-001",
-      accountType: "patron",
-      status: "active",
-      firstName: "Alice",
-      lastName: "Reader",
-      cardNumber: "CARD-A-001",
-      createdBy: userId,
-      createdAt: now,
-    });
+    const [orgAPatronId, orgBPatronId] = await Promise.all([
+      ctx.db.insert("accounts", {
+        organizationId: orgAId,
+        accountNumber: "PAT-A-001",
+        accountType: "patron",
+        status: "active",
+        firstName: "Alice",
+        lastName: "Reader",
+        cardNumber: "CARD-A-001",
+        fineBalance: 10,
+        createdBy: userId,
+        createdAt: now,
+      }),
+      ctx.db.insert("accounts", {
+        organizationId: orgBId,
+        accountNumber: "PAT-B-001",
+        accountType: "patron",
+        status: "active",
+        firstName: "Bob",
+        lastName: "Reader",
+        cardNumber: "CARD-B-001",
+        fineBalance: 5,
+        createdBy: userId,
+        createdAt: now,
+      }),
+    ]);
 
     const [orgAItemId, orgBItemId] = await Promise.all([
       ctx.db.insert("libraryItems", {
@@ -146,6 +164,31 @@ async function setupCrossTenantFixture(
       }),
     ]);
 
+    const [orgAFineId, orgBFineId] = await Promise.all([
+      ctx.db.insert("libraryFines", {
+        organizationId: orgAId,
+        accountId: orgAPatronId,
+        fineType: "overdue",
+        description: "Org A overdue fine",
+        amount: 10,
+        amountPaid: 0,
+        balance: 10,
+        status: "outstanding",
+        createdAt: now,
+      }),
+      ctx.db.insert("libraryFines", {
+        organizationId: orgBId,
+        accountId: orgBPatronId,
+        fineType: "overdue",
+        description: "Org B overdue fine",
+        amount: 5,
+        amountPaid: 0,
+        balance: 5,
+        status: "outstanding",
+        createdAt: now,
+      }),
+    ]);
+
     return {
       userId,
       orgAId,
@@ -156,6 +199,9 @@ async function setupCrossTenantFixture(
       orgBItemId,
       orgBCopyId,
       orgBLocationId,
+      orgBPatronId,
+      orgAFineId,
+      orgBFineId,
     };
   });
 }
@@ -202,5 +248,50 @@ describe("library tenant integrity", () => {
         pickupLocationId: orgBLocationId,
       }),
     ).rejects.toThrow(/belongs to a different organization/);
+  });
+
+  test("record payment rejects org A account with org B fine without changing balance", async () => {
+    const t = createConvexTest();
+    const { userId, orgAPatronId, orgBFineId } =
+      await setupCrossTenantFixture(t);
+    const authed = authedForUser(t, userId);
+
+    await expect(
+      authed.mutation(api.library.fines.recordPayment, {
+        accountId: orgAPatronId,
+        amount: 5,
+        paymentMethod: "cash",
+        fineIds: [orgBFineId],
+      }),
+    ).rejects.toThrow(/belongs to a different organization/);
+
+    const orgAAccount = await t.run(async (ctx) =>
+      ctx.db.get(orgAPatronId),
+    );
+    expect(orgAAccount?.fineBalance).toBe(10);
+  });
+
+  test("record payment validates all explicit fines before applying payment", async () => {
+    const t = createConvexTest();
+    const { userId, orgAPatronId, orgAFineId, orgBFineId } =
+      await setupCrossTenantFixture(t);
+    const authed = authedForUser(t, userId);
+
+    await expect(
+      authed.mutation(api.library.fines.recordPayment, {
+        accountId: orgAPatronId,
+        amount: 10,
+        paymentMethod: "cash",
+        fineIds: [orgAFineId, orgBFineId],
+      }),
+    ).rejects.toThrow(/belongs to a different organization/);
+
+    const [orgAAccount, orgAFine] = await t.run(async (ctx) =>
+      Promise.all([ctx.db.get(orgAPatronId), ctx.db.get(orgAFineId)]),
+    );
+    expect(orgAAccount?.fineBalance).toBe(10);
+    expect(orgAFine?.amountPaid).toBe(0);
+    expect(orgAFine?.balance).toBe(10);
+    expect(orgAFine?.status).toBe("outstanding");
   });
 });
