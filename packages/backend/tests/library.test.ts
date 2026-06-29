@@ -20,7 +20,13 @@ async function setupLibraryCatalogFixture(
 ): Promise<LibraryCatalogFixture> {
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
-    ["collections.create"],
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "accounts.read",
+      "accounts.write",
+    ],
     {
       organizationName: "Catalog Test Library",
       slugPrefix: "catalog-lib",
