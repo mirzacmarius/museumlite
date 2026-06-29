@@ -75,6 +75,7 @@ export interface OperationalKpisData {
 export async function loadOperationalKpis(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
+  now: number,
 ): Promise<OperationalKpisData> {
   const hasInventoryValuationModule = await hasModuleEnabled(
     ctx,
@@ -82,8 +83,7 @@ export async function loadOperationalKpis(
     "inventory_valuation",
   );
 
-  const now = Date.now();
-  const todayStart = startOfDay(new Date());
+  const todayStart = startOfDay(new Date(now));
   const todayEnd = addDays(todayStart, 1);
   const next7Days = addDays(todayStart, 7);
   const next30Days = addDays(todayStart, 30);
