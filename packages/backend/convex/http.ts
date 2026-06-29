@@ -14,6 +14,19 @@ function encodeBase64(value: string) {
   return btoa(value);
 }
 
+function toIsoString(value: string | Date): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function toOptionalIsoString(
+  value: string | Date | null | undefined,
+): string | null {
+  if (value == null) {
+    return null;
+  }
+  return toIsoString(value);
+}
+
 function serializeWebhookSubscription(
   subscription: Subscription,
   webhookId: string,
@@ -33,13 +46,13 @@ function serializeWebhookSubscription(
     currency: subscription.currency,
     recurringInterval: subscription.recurringInterval,
     status: subscription.status,
-    createdAt: subscription.createdAt.toISOString(),
-    modifiedAt: subscription.modifiedAt?.toISOString() ?? null,
-    currentPeriodStart: subscription.currentPeriodStart.toISOString(),
-    currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+    createdAt: toIsoString(subscription.createdAt),
+    modifiedAt: toOptionalIsoString(subscription.modifiedAt),
+    currentPeriodStart: toIsoString(subscription.currentPeriodStart),
+    currentPeriodEnd: toOptionalIsoString(subscription.currentPeriodEnd),
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-    startedAt: subscription.startedAt?.toISOString() ?? null,
-    endedAt: subscription.endedAt?.toISOString() ?? null,
+    startedAt: toOptionalIsoString(subscription.startedAt),
+    endedAt: toOptionalIsoString(subscription.endedAt),
     metadata: subscription.metadata,
     organizationId:
       typeof subscription.metadata?.organizationId === "string"
