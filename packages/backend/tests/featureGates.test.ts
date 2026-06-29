@@ -97,7 +97,10 @@ describe("Feature Gates - Tier Access", () => {
     });
 
     const result = await t
-      .query(api.dashboard.getComplianceReport, { organizationId: orgId })
+      .query(api.dashboard.getComplianceReport, {
+        organizationId: orgId,
+        now: 1_720_000_000_000,
+      })
       .catch((error: Error) => {
         expect(error.message).not.toContain("Feature requires");
         return null;

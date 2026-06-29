@@ -1031,6 +1031,7 @@ export const getConservationTrends = query({
 export const getCollectionHealthDashboard = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
   returns: v.object({
     conservation: v.object({
@@ -1092,8 +1093,9 @@ export const getCollectionHealthDashboard = query({
       ),
     ]);
 
-    const now = Date.now();
-    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const now = args.now;
+    const nowDate = new Date(now);
+    const yearStart = new Date(nowDate.getFullYear(), 0, 1).getTime();
     const thirtyDaysFromNow = now + 30 * 24 * 60 * 60 * 1000;
     const threeYearsAgo = now - 3 * 365 * 24 * 60 * 60 * 1000;
 
