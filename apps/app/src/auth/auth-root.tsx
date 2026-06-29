@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useReducer } from "react";
 import { AuthHeader } from "@/auth/auth-header";
 import { FormContainer } from "@/auth/common/container";
@@ -12,6 +13,7 @@ import type {
   AuthStep,
   UniqueCodeFlow,
 } from "@/auth/types";
+import { buildAuthPath } from "@/auth/search-params";
 import { useCurrentLocale } from "@/locales/client";
 
 interface AuthRootProps {
@@ -39,6 +41,12 @@ type AuthRootAction =
   | { type: "setEmail"; value: string }
   | { type: "setErrorInfo"; value: AuthErrorInfo | undefined }
   | { type: "setCodeFlow"; value: UniqueCodeFlow };
+
+interface AuthModeSwitchLinkProps {
+  email: string;
+  mode: AuthMode;
+  redirectTo?: string;
+}
 
 function createInitialAuthRootState({
   initialEmail,
@@ -71,6 +79,30 @@ function authRootReducer(
   }
 }
 
+function AuthModeSwitchLink({
+  email,
+  mode,
+  redirectTo,
+}: AuthModeSwitchLinkProps) {
+  const nextMode = mode === "signIn" ? "signUp" : "signIn";
+  const href = buildAuthPath(nextMode === "signIn" ? "/login" : "/register", {
+    email: email || undefined,
+    returnTo: redirectTo,
+  });
+
+  return (
+    <p className="pt-5 text-center text-sm text-muted-foreground">
+      {mode === "signIn" ? "No account yet?" : "Already have an account?"}{" "}
+      <Link
+        className="font-medium text-foreground underline underline-offset-4"
+        href={href}
+      >
+        {mode === "signIn" ? "Create one" : "Sign in"}
+      </Link>
+    </p>
+  );
+}
+
 export function AuthRoot({
   initialEmail,
   initialMode,
@@ -98,7 +130,7 @@ export function AuthRoot({
         </div>
       ) : null}
 
-      <AuthHeader mode={state.mode} />
+      <AuthHeader mode={state.mode} step={state.step} />
 
       <SignInWithOAuth
         compact={state.step === "password"}
@@ -120,6 +152,11 @@ export function AuthRoot({
         setMode={(mode) => dispatch({ type: "setMode", value: mode })}
         setStep={(step) => dispatch({ type: "setStep", value: step })}
         step={state.step}
+      />
+      <AuthModeSwitchLink
+        email={state.email}
+        mode={state.mode}
+        redirectTo={redirectTo}
       />
     </FormContainer>
   );

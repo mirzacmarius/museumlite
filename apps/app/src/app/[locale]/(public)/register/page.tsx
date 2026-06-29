@@ -1,11 +1,6 @@
 import { Logo } from "@v1/ui/logo";
-import Link from "next/link";
 import { AuthRoot } from "@/auth/auth-root";
-import {
-  buildAuthPath,
-  getInitialAuthEmail,
-  getSafeReturnTo,
-} from "@/auth/search-params";
+import { getInitialAuthEmail, getSafeReturnTo } from "@/auth/search-params";
 import { getI18n } from "@/locales/server";
 
 export async function generateMetadata() {
@@ -38,18 +33,6 @@ export default async function Page({ searchParams }: PageProps) {
           initialMode="signUp"
           redirectTo={redirectTo}
         />
-        <p className="pt-5 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link
-            className="font-medium text-foreground underline underline-offset-4"
-            href={buildAuthPath("/login", {
-              email: initialEmail,
-              returnTo: redirectTo,
-            })}
-          >
-            Sign in
-          </Link>
-        </p>
       </div>
     </div>
   );
