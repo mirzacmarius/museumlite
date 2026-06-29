@@ -1946,11 +1946,11 @@ export const createCollectionFromAccession = internalMutation({
       return accession.collectionId;
     }
 
-    const firstUser = await ctx.db.query("users").first();
-    const catalogedBy = accession.approvedBy ?? firstUser?._id;
-    if (!catalogedBy) {
-      throw new Error("Could not determine cataloging user");
+    if (!accession.approvedBy) {
+      throw new Error("Accession must be approved before publish");
     }
+
+    const catalogedBy = accession.approvedBy;
 
     const catalogedAt = accession.approvedAt ?? Date.now();
     const collectionId = await publishAccessionObjectDraft(ctx, {
