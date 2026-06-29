@@ -58,6 +58,49 @@ async function setupTransitFixture(t: ConvexTest): Promise<TransitFixture> {
   return { organizationId, userId, collectionId, loanId, authed };
 }
 
+test("paginates transit records for an organization", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "loans.read",
+  ], {
+    subscriptionTier: "pro",
+  });
+  const authed = authedForUser(t, userId);
+
+  await t.run(async (ctx) => {
+    await Promise.all(
+      Array.from({ length: 5 }, (_, index) =>
+        ctx.db.insert("transitRecords", {
+          organizationId,
+          transitNumber: `TRN-2026-${String(index + 1).padStart(4, "0")}`,
+          transitType: "outgoing",
+          originName: "Storage",
+          destinationName: `Destination ${index + 1}`,
+          carrier: "Carrier Co",
+          status: "draft",
+          createdBy: userId,
+          createdAt: Date.now() - index * 86_400_000,
+        }),
+      ),
+    );
+  });
+
+  const page1 = await authed.query(api.transit.listTransitRecords, {
+    organizationId,
+    paginationOpts: { numItems: 2, cursor: null },
+  });
+
+  expect(page1.page).toHaveLength(2);
+  expect(page1.isDone).toBe(false);
+
+  const page2 = await authed.query(api.transit.listTransitRecords, {
+    organizationId,
+    paginationOpts: { numItems: 2, cursor: page1.continueCursor },
+  });
+
+  expect(page2.page.length).toBeGreaterThan(0);
+});
+
 test("should create transit record with auto-generated number", async () => {
   const t = createConvexTest();
   const { organizationId, authed } = await setupTransitFixture(t);

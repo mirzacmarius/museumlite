@@ -201,6 +201,125 @@ export const get = query({
 /**
  * List library items with pagination and filters
  */
+const BOUNDED_LIBRARY_ITEM_SEARCH_SCAN_LIMIT = 500;
+
+function libraryItemMatchesAdditionalSearch(
+  item: Doc<"libraryItems">,
+  searchLower: string,
+): boolean {
+  return (
+    item.isbn?.toLowerCase().includes(searchLower) ||
+    item.isbn13?.toLowerCase().includes(searchLower) ||
+    item.barcode?.toLowerCase().includes(searchLower) ||
+    item.callNumber?.toLowerCase().includes(searchLower) ||
+    item.authors.some((author) => author.toLowerCase().includes(searchLower)) ||
+    item.publisher?.toLowerCase().includes(searchLower) ||
+    item.series?.toLowerCase().includes(searchLower) ||
+    false
+  );
+}
+
+function applyLibraryItemJsFilters(
+  items: Doc<"libraryItems">[],
+  args: {
+    category?: string;
+    genre?: string;
+    author?: string;
+    publisherFilter?: string;
+    yearFrom?: number;
+    yearTo?: number;
+  },
+) {
+  let results = items;
+
+  if (args.category) {
+    const categoryLower = args.category.toLowerCase();
+    results = results.filter((item) =>
+      item.categories?.some((category) =>
+        category.toLowerCase().includes(categoryLower),
+      ),
+    );
+  }
+
+  if (args.genre) {
+    const genreLower = args.genre.toLowerCase();
+    results = results.filter((item) =>
+      item.genres?.some((genre) => genre.toLowerCase().includes(genreLower)),
+    );
+  }
+
+  if (args.author) {
+    const authorLower = args.author.toLowerCase();
+    results = results.filter((item) =>
+      item.authors.some((author) => author.toLowerCase().includes(authorLower)),
+    );
+  }
+
+  if (args.publisherFilter) {
+    const publisherLower = args.publisherFilter.toLowerCase();
+    results = results.filter((item) =>
+      item.publisher?.toLowerCase().includes(publisherLower),
+    );
+  }
+
+  if (args.yearFrom) {
+    results = results.filter(
+      (item) =>
+        item.publicationYear !== undefined &&
+        item.publicationYear >= args.yearFrom!,
+    );
+  }
+
+  if (args.yearTo) {
+    results = results.filter(
+      (item) =>
+        item.publicationYear !== undefined &&
+        item.publicationYear <= args.yearTo!,
+    );
+  }
+
+  return results;
+}
+
+function mapLibraryItemListEntry(item: Doc<"libraryItems">) {
+  return {
+    _id: item._id,
+    itemType: item.itemType,
+    title: item.title,
+    subtitle: item.subtitle,
+    authors: item.authors,
+    isbn: item.isbn,
+    isbn13: item.isbn13,
+    callNumber: item.callNumber,
+    publisher: item.publisher,
+    publicationYear: item.publicationYear,
+    totalCopies: item.totalCopies,
+    availableCopies: item.availableCopies,
+    catalogStatus: item.catalogStatus,
+    coverImageUrl: item.coverImageUrl,
+    _creationTime: item._creationTime,
+  };
+}
+
+function paginateBoundedLibraryItems(
+  items: Doc<"libraryItems">[],
+  paginationOpts: { numItems: number; cursor: string | null },
+) {
+  items.sort((a, b) => b.createdAt - a.createdAt);
+
+  const cursor = paginationOpts.cursor
+    ? Number.parseInt(paginationOpts.cursor, 10)
+    : 0;
+  const startIndex = Number.isNaN(cursor) ? 0 : cursor;
+  const endIndex = Math.min(startIndex + paginationOpts.numItems, items.length);
+
+  return {
+    page: items.slice(startIndex, endIndex).map(mapLibraryItemListEntry),
+    isDone: endIndex >= items.length,
+    continueCursor: endIndex.toString(),
+  };
+}
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -219,15 +338,24 @@ export const list = query({
   returns: v.any(),
   handler: async (ctx, args) => {
     await requireLibraryPermission(ctx, args.organizationId, "collections.read");
-    let results: Doc<"libraryItems">[] = [];
 
-    // Use search index when search term is provided
-    if (args.search && args.search.trim().length > 0) {
-      const searchQuery = ctx.db
+    const search = args.search?.trim();
+    const hasJsFilters = Boolean(
+      args.category ||
+        args.genre ||
+        args.author ||
+        args.publisherFilter ||
+        args.yearFrom ||
+        args.yearTo,
+    );
+
+    if (search && search.length > 0) {
+      const searchLower = search.toLowerCase();
+      const searchIndexResults = await ctx.db
         .query("libraryItems")
         .withSearchIndex("search_library_items", (q) => {
           let filter = q
-            .search("title", args.search!)
+            .search("title", search)
             .eq("organizationId", args.organizationId);
 
           if (args.itemType) {
@@ -238,146 +366,116 @@ export const list = query({
           }
 
           return filter;
-        });
+        })
+        .take(BOUNDED_LIBRARY_ITEM_SEARCH_SCAN_LIMIT);
 
-      results = await searchQuery.collect();
-
-      // Also search in other fields not covered by searchIndex
-      const allItems = await ctx.db
+      const recentItems = await ctx.db
         .query("libraryItems")
         .withIndex("by_organization", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .collect();
+        .order("desc")
+        .take(BOUNDED_LIBRARY_ITEM_SEARCH_SCAN_LIMIT);
 
-      const searchLower = args.search.toLowerCase();
-      const resultIds = new Set(results.map((r) => r._id));
+      const resultIds = new Set(searchIndexResults.map((item) => item._id));
+      const mergedResults = [
+        ...searchIndexResults,
+        ...recentItems.filter((item) => {
+          if (resultIds.has(item._id)) {
+            return false;
+          }
+          if (args.itemType && item.itemType !== args.itemType) {
+            return false;
+          }
+          if (args.catalogStatus && item.catalogStatus !== args.catalogStatus) {
+            return false;
+          }
+          if (args.isCirculating !== undefined) {
+            return item.isCirculating === args.isCirculating;
+          }
+          return libraryItemMatchesAdditionalSearch(item, searchLower);
+        }),
+      ];
 
-      const additionalResults = allItems.filter((item) => {
-        if (resultIds.has(item._id)) return false;
+      const filteredResults = applyLibraryItemJsFilters(mergedResults, args);
+      return paginateBoundedLibraryItems(filteredResults, args.paginationOpts);
+    }
 
-        // Filter by type and status if specified
-        if (args.itemType && item.itemType !== args.itemType) return false;
-        if (args.catalogStatus && item.catalogStatus !== args.catalogStatus)
-          return false;
-
-        // Search in additional fields
-        return (
-          item.isbn?.toLowerCase().includes(searchLower) ||
-          item.isbn13?.toLowerCase().includes(searchLower) ||
-          item.barcode?.toLowerCase().includes(searchLower) ||
-          item.callNumber?.toLowerCase().includes(searchLower) ||
-          item.authors.some((a) => a.toLowerCase().includes(searchLower)) ||
-          item.publisher?.toLowerCase().includes(searchLower) ||
-          item.series?.toLowerCase().includes(searchLower) ||
-          false
-        );
-      });
-
-      results = [...results, ...additionalResults];
-    } else {
-      // No search - use regular index
-      let query = ctx.db
+    if (hasJsFilters || args.isCirculating !== undefined) {
+      let indexedQuery = ctx.db
         .query("libraryItems")
         .withIndex("by_organization", (q) =>
           q.eq("organizationId", args.organizationId),
-        );
+        )
+        .order("desc");
 
       if (args.itemType) {
-        query = query.filter((q) => q.eq(q.field("itemType"), args.itemType));
+        indexedQuery = indexedQuery.filter((q) =>
+          q.eq(q.field("itemType"), args.itemType),
+        );
       }
       if (args.catalogStatus) {
-        query = query.filter((q) =>
+        indexedQuery = indexedQuery.filter((q) =>
           q.eq(q.field("catalogStatus"), args.catalogStatus),
         );
       }
       if (args.isCirculating !== undefined) {
-        query = query.filter((q) =>
+        indexedQuery = indexedQuery.filter((q) =>
           q.eq(q.field("isCirculating"), args.isCirculating),
         );
       }
 
-      results = await query.collect();
-    }
-
-    // Apply JavaScript-level filters
-    if (args.category) {
-      const categoryLower = args.category.toLowerCase();
-      results = results.filter((item) =>
-        item.categories?.some((c: string) =>
-          c.toLowerCase().includes(categoryLower),
-        ),
+      const candidateItems = await indexedQuery.take(
+        BOUNDED_LIBRARY_ITEM_SEARCH_SCAN_LIMIT,
       );
+      const filteredResults = applyLibraryItemJsFilters(candidateItems, args);
+      return paginateBoundedLibraryItems(filteredResults, args.paginationOpts);
     }
 
-    if (args.genre) {
-      const genreLower = args.genre.toLowerCase();
-      results = results.filter((item) =>
-        item.genres?.some((g: string) => g.toLowerCase().includes(genreLower)),
-      );
-    }
-
-    if (args.author) {
-      const authorLower = args.author.toLowerCase();
-      results = results.filter((item) =>
-        item.authors.some((a: string) => a.toLowerCase().includes(authorLower)),
-      );
-    }
-
-    if (args.publisherFilter) {
-      const publisherLower = args.publisherFilter.toLowerCase();
-      results = results.filter((item) =>
-        item.publisher?.toLowerCase().includes(publisherLower),
-      );
-    }
-
-    if (args.yearFrom) {
-      results = results.filter(
-        (item) =>
-          item.publicationYear && item.publicationYear >= args.yearFrom!,
-      );
-    }
-
-    if (args.yearTo) {
-      results = results.filter(
-        (item) => item.publicationYear && item.publicationYear <= args.yearTo!,
-      );
-    }
-
-    // Sort by creation time (newest first)
-    results.sort((a, b) => b.createdAt - a.createdAt);
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      results.length,
-    );
-    const page = results.slice(startIndex, endIndex);
+    const paginationResult =
+      args.itemType && args.catalogStatus
+        ? await ctx.db
+            .query("libraryItems")
+            .withIndex("by_organization_and_type", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("itemType", args.itemType!),
+            )
+            .filter((q) => q.eq(q.field("catalogStatus"), args.catalogStatus))
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : args.itemType
+          ? await ctx.db
+              .query("libraryItems")
+              .withIndex("by_organization_and_type", (q) =>
+                q
+                  .eq("organizationId", args.organizationId)
+                  .eq("itemType", args.itemType!),
+              )
+              .order("desc")
+              .paginate(args.paginationOpts)
+          : args.catalogStatus
+            ? await ctx.db
+                .query("libraryItems")
+                .withIndex("by_organization_and_status", (q) =>
+                  q
+                    .eq("organizationId", args.organizationId)
+                    .eq("catalogStatus", args.catalogStatus!),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("libraryItems")
+                .withIndex("by_organization", (q) =>
+                  q.eq("organizationId", args.organizationId),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts);
 
     return {
-      page: page.map((item) => ({
-        _id: item._id,
-        itemType: item.itemType,
-        title: item.title,
-        subtitle: item.subtitle,
-        authors: item.authors,
-        isbn: item.isbn,
-        isbn13: item.isbn13,
-        callNumber: item.callNumber,
-        publisher: item.publisher,
-        publicationYear: item.publicationYear,
-        totalCopies: item.totalCopies,
-        availableCopies: item.availableCopies,
-        catalogStatus: item.catalogStatus,
-        coverImageUrl: item.coverImageUrl,
-        _creationTime: item._creationTime,
-      })),
-      isDone: endIndex >= results.length,
-      continueCursor: endIndex.toString(),
+      page: paginationResult.page.map(mapLibraryItemListEntry),
+      isDone: paginationResult.isDone,
+      continueCursor: paginationResult.continueCursor,
     };
   },
 });

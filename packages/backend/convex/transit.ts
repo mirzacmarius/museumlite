@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalMutation,
   type MutationCtx,
@@ -807,110 +807,175 @@ export const listTransitRecords = query({
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "loans.read");
 
-    let baseQuery = ctx.db
-      .query("transitRecords")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+    const search = args.search?.trim();
+    const BOUNDED_TRANSIT_SEARCH_SCAN_LIMIT = 500;
+
+    async function enrichTransitPage(records: Doc<"transitRecords">[]) {
+      return await Promise.all(
+        records.map(async (record) => {
+          const items = await ctx.db
+            .query("transitItems")
+            .withIndex("by_transitRecord", (q) =>
+              q.eq("transitRecordId", record._id),
+            )
+            .collect();
+
+          let loanNumber: string | undefined;
+          if (record.loanId) {
+            const loan = await ctx.db.get(record.loanId);
+            loanNumber = loan?.loanNumber;
+          }
+
+          let exhibitionTitle: string | undefined;
+          if (record.exhibitionId) {
+            const exhibition = await ctx.db.get(record.exhibitionId);
+            exhibitionTitle = exhibition?.title;
+          }
+
+          return {
+            _id: record._id,
+            transitNumber: record.transitNumber,
+            transitType: record.transitType,
+            originName: record.originName,
+            destinationName: record.destinationName,
+            carrier: record.carrier,
+            trackingNumber: record.trackingNumber,
+            status: record.status,
+            scheduledPickupDate: record.scheduledPickupDate,
+            estimatedDeliveryDate: record.estimatedDeliveryDate,
+            actualDeliveryDate: record.actualDeliveryDate,
+            itemCount: items.length,
+            loanNumber,
+            exhibitionTitle,
+          };
+        }),
       );
-
-    if (args.status) {
-      baseQuery = baseQuery.filter((q) => q.eq(q.field("status"), args.status));
     }
 
-    if (args.transitType) {
-      baseQuery = baseQuery.filter((q) =>
-        q.eq(q.field("transitType"), args.transitType),
-      );
-    }
+    if (search && search.length > 0) {
+      const searchLower = search.toLowerCase();
+      const recentRecords = await ctx.db
+        .query("transitRecords")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .order("desc")
+        .take(BOUNDED_TRANSIT_SEARCH_SCAN_LIMIT);
 
-    if (args.carrier) {
-      baseQuery = baseQuery.filter((q) =>
-        q.eq(q.field("carrier"), args.carrier),
-      );
-    }
+      const filteredRecords = recentRecords.filter((record) => {
+        if (args.status && record.status !== args.status) {
+          return false;
+        }
+        if (args.transitType && record.transitType !== args.transitType) {
+          return false;
+        }
+        if (args.carrier && record.carrier !== args.carrier) {
+          return false;
+        }
+        if (args.loanId && record.loanId !== args.loanId) {
+          return false;
+        }
+        if (args.exhibitionId && record.exhibitionId !== args.exhibitionId) {
+          return false;
+        }
 
-    if (args.loanId) {
-      baseQuery = baseQuery.filter((q) => q.eq(q.field("loanId"), args.loanId));
-    }
-
-    if (args.exhibitionId) {
-      baseQuery = baseQuery.filter((q) =>
-        q.eq(q.field("exhibitionId"), args.exhibitionId),
-      );
-    }
-
-    let allResults = await baseQuery.collect();
-
-    if (args.search && args.search.trim().length > 0) {
-      const searchLower = args.search.toLowerCase();
-      allResults = allResults.filter((record) => {
         return (
-          record.transitNumber?.toLowerCase().includes(searchLower) ||
-          record.originName?.toLowerCase().includes(searchLower) ||
-          record.destinationName?.toLowerCase().includes(searchLower) ||
-          record.carrier?.toLowerCase().includes(searchLower) ||
+          record.transitNumber.toLowerCase().includes(searchLower) ||
+          record.originName.toLowerCase().includes(searchLower) ||
+          record.destinationName.toLowerCase().includes(searchLower) ||
+          record.carrier.toLowerCase().includes(searchLower) ||
           record.trackingNumber?.toLowerCase().includes(searchLower) ||
           false
         );
       });
+
+      filteredRecords.sort((a, b) => b.createdAt - a.createdAt);
+
+      const cursor = args.paginationOpts.cursor
+        ? Number.parseInt(args.paginationOpts.cursor, 10)
+        : 0;
+      const startIndex = Number.isNaN(cursor) ? 0 : cursor;
+      const endIndex = Math.min(
+        startIndex + args.paginationOpts.numItems,
+        filteredRecords.length,
+      );
+      const pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+      return {
+        page: await enrichTransitPage(pageRecords),
+        isDone: endIndex >= filteredRecords.length,
+        continueCursor: endIndex.toString(),
+      };
     }
 
-    allResults.sort((a, b) => b.createdAt - a.createdAt);
+    const paginationResult = args.loanId
+      ? await ctx.db
+          .query("transitRecords")
+          .withIndex("by_loan", (q) => q.eq("loanId", args.loanId!))
+          .filter((q) => q.eq(q.field("organizationId"), args.organizationId))
+          .order("desc")
+          .paginate(args.paginationOpts)
+      : args.exhibitionId
+        ? await ctx.db
+            .query("transitRecords")
+            .withIndex("by_exhibition", (q) =>
+              q.eq("exhibitionId", args.exhibitionId!),
+            )
+            .filter((q) =>
+              q.eq(q.field("organizationId"), args.organizationId),
+            )
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : args.carrier
+          ? await ctx.db
+              .query("transitRecords")
+              .withIndex("by_organization_and_carrier", (q) =>
+                q
+                  .eq("organizationId", args.organizationId)
+                  .eq("carrier", args.carrier!),
+              )
+              .order("desc")
+              .paginate(args.paginationOpts)
+          : args.status
+            ? await ctx.db
+                .query("transitRecords")
+                .withIndex("by_organization_and_status", (q) =>
+                  q
+                    .eq("organizationId", args.organizationId)
+                    .eq("status", args.status!),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("transitRecords")
+                .withIndex("by_organization", (q) =>
+                  q.eq("organizationId", args.organizationId),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts);
 
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      allResults.length,
-    );
-    const page = allResults.slice(startIndex, endIndex);
-
-    const recordsWithDetails = await Promise.all(
-      page.map(async (record) => {
-        const items = await ctx.db
-          .query("transitItems")
-          .withIndex("by_transitRecord", (q) =>
-            q.eq("transitRecordId", record._id),
-          )
-          .collect();
-
-        let loanNumber: string | undefined;
-        if (record.loanId) {
-          const loan = await ctx.db.get(record.loanId);
-          loanNumber = loan?.loanNumber;
-        }
-
-        let exhibitionTitle: string | undefined;
-        if (record.exhibitionId) {
-          const exhibition = await ctx.db.get(record.exhibitionId);
-          exhibitionTitle = exhibition?.title;
-        }
-
-        return {
-          _id: record._id,
-          transitNumber: record.transitNumber,
-          transitType: record.transitType,
-          originName: record.originName,
-          destinationName: record.destinationName,
-          carrier: record.carrier,
-          trackingNumber: record.trackingNumber,
-          status: record.status,
-          scheduledPickupDate: record.scheduledPickupDate,
-          estimatedDeliveryDate: record.estimatedDeliveryDate,
-          actualDeliveryDate: record.actualDeliveryDate,
-          itemCount: items.length,
-          loanNumber,
-          exhibitionTitle,
-        };
-      }),
-    );
+    const filteredPage = paginationResult.page.filter((record) => {
+      if (args.transitType && record.transitType !== args.transitType) {
+        return false;
+      }
+      if (
+        args.carrier &&
+        record.carrier !== args.carrier &&
+        !args.loanId &&
+        !args.exhibitionId
+      ) {
+        return false;
+      }
+      if (args.status && record.status !== args.status && args.loanId) {
+        return false;
+      }
+      return true;
+    });
 
     return {
-      page: recordsWithDetails,
-      isDone: endIndex >= allResults.length,
-      continueCursor: endIndex.toString(),
+      page: await enrichTransitPage(filteredPage),
+      isDone: paginationResult.isDone,
+      continueCursor: paginationResult.continueCursor,
     };
   },
 });
