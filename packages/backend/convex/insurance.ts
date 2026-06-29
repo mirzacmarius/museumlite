@@ -1867,19 +1867,16 @@ export const createAutoClaimForTransitDamage = internalMutation({
 
     // Calculate claimed amount from active coverages
     let claimedAmount = 0;
-    await Promise.all(
-      Array.from(args.collectionIds).map(async (collectionId) => {
-        // Look up active coverage for this collection
-        const coverage = await ctx.db
-          .query("insuranceCoverages")
-          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-          .filter((q) => q.eq(q.field("status"), "active"))
-          .first();
-        if (coverage) {
-          claimedAmount += coverage.coveredValue;
-        }
-      }),
-    );
+    for (const collectionId of args.collectionIds) {
+      const coverage = await ctx.db
+        .query("insuranceCoverages")
+        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .first();
+      if (coverage) {
+        claimedAmount += coverage.coveredValue;
+      }
+    }
 
     const [claimNumber, createdByUser] = await Promise.all([
       generateNextClaimNumber(ctx, args.organizationId),
