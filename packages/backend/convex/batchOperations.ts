@@ -17,6 +17,24 @@ import { requirePermission } from "./utils/permissions";
 
 const BATCH_CHUNK_SIZE = 50; // Process items in chunks to avoid timeouts
 
+async function assertCollectionsBelongToOrg(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  collectionIds: Id<"collections">[],
+): Promise<void> {
+  const collections = await Promise.all(
+    collectionIds.map((id) => ctx.db.get(id)),
+  );
+  for (const collection of collections) {
+    if (!collection) {
+      throw new Error("Some collections not found");
+    }
+    if (collection.organizationId !== organizationId) {
+      throw new Error("Some collections do not belong to this organization");
+    }
+  }
+}
+
 // ============================================
 // Batch Job Management
 // ============================================
@@ -56,15 +74,11 @@ export const createBulkEditJob = mutation({
 
     await requirePermission(ctx, args.organizationId, "collections.update");
 
-    // Validate all collections belong to organization
-    const collections = await Promise.all(
-      args.collectionIds.slice(0, 10).map((id) => ctx.db.get(id)),
+    await assertCollectionsBelongToOrg(
+      ctx,
+      args.organizationId,
+      args.collectionIds,
     );
-    for (const collection of collections) {
-      if (collection && collection.organizationId !== args.organizationId) {
-        throw new Error("Some collections do not belong to this organization");
-      }
-    }
 
     const jobId = await ctx.db.insert("batchJobs", {
       organizationId: args.organizationId,
@@ -123,6 +137,12 @@ export const createBulkMoveJob = mutation({
     if (!toLocation || toLocation.organizationId !== args.organizationId) {
       throw new Error("Invalid target location");
     }
+
+    await assertCollectionsBelongToOrg(
+      ctx,
+      args.organizationId,
+      args.collectionIds,
+    );
 
     const jobId = await ctx.db.insert("batchJobs", {
       organizationId: args.organizationId,
@@ -186,6 +206,12 @@ export const createBulkStatusChangeJob = mutation({
     } else {
       await requirePermission(ctx, args.organizationId, "collections.update");
     }
+
+    await assertCollectionsBelongToOrg(
+      ctx,
+      args.organizationId,
+      args.collectionIds,
+    );
 
     const jobId = await ctx.db.insert("batchJobs", {
       organizationId: args.organizationId,
@@ -762,24 +788,15 @@ export const quickBulkEdit = mutation({
 
     await requirePermission(ctx, args.organizationId, "collections.update");
 
+    await assertCollectionsBelongToOrg(
+      ctx,
+      args.organizationId,
+      args.collectionIds,
+    );
+
     const editResults = await Promise.all(
       args.collectionIds.map(async (collectionId) => {
         try {
-          const collection = await ctx.db.get(collectionId);
-          if (!collection) {
-            return {
-              itemId: collectionId,
-              error: "Collection not found",
-            };
-          }
-
-          if (collection.organizationId !== args.organizationId) {
-            return {
-              itemId: collectionId,
-              error: "Collection belongs to different organization",
-            };
-          }
-
           const updates: Partial<CollectionDoc> = {
             lastModifiedBy: userId,
             lastModifiedAt: Date.now(),
@@ -972,14 +989,17 @@ export const bulkAddTags = mutation({
 
     await requirePermission(ctx, args.organizationId, "collections.update");
 
+    await assertCollectionsBelongToOrg(
+      ctx,
+      args.organizationId,
+      args.collectionIds,
+    );
+
     const addTagResults = await Promise.all(
       args.collectionIds.map(async (collectionId) => {
         try {
           const collection = await ctx.db.get(collectionId);
-          if (
-            !collection ||
-            collection.organizationId !== args.organizationId
-          ) {
+          if (!collection) {
             return false;
           }
 
