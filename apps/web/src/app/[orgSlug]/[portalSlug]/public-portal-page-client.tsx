@@ -212,17 +212,15 @@ function PublicPortalPageClientInner() {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-xl text-white/60 mb-2">No items found</p>
             <p className="text-white/40">
-              {collections.portalStatus === "upgrade_required"
-                ? "Public portal requires a Pro plan for this organization"
-                : collections.portalStatus === "portal_disabled"
-                  ? "Public portal is disabled for this organization"
-                  : collections.portalStatus === "portal_slug_mismatch"
-                    ? "This portal URL is not configured for this organization"
-                    : collections.portalStatus === "org_not_found"
-                      ? "Organization not found"
-                      : hasActiveFilters
-                        ? "Try adjusting your filters"
-                        : "This collection has no publicly visible items"}
+              {collections.portalStatus === "portal_disabled"
+                ? "Public portal is disabled for this organization"
+                : collections.portalStatus === "portal_slug_mismatch"
+                  ? "This portal URL is not configured for this organization"
+                  : collections.portalStatus === "org_not_found"
+                    ? "Organization not found"
+                    : hasActiveFilters
+                      ? "Try adjusting your filters"
+                      : "This collection has no publicly visible items"}
             </p>
           </div>
         ) : viewMode === "grid" ? (

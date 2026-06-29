@@ -36,7 +36,6 @@ import {
 } from "./utils/collectionListHelpers";
 import {
   enforceObjectQuota,
-  hasFeatureAccess,
   hasModuleEnabled,
 } from "./utils/featureGates";
 import {
@@ -755,17 +754,16 @@ async function getPublicCatalogCollections(
     PUBLIC_CATALOG_STATUSES.map((status) =>
       ctx.db
         .query("collections")
-        .withIndex("by_organization_status_public", (q) =>
-          q
-            .eq("organizationId", organizationId)
-            .eq("status", status)
-            .eq("isPubliclyVisible", true),
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", organizationId).eq("status", status),
         )
         .collect(),
     ),
   );
 
-  return collectionsByStatus.flat();
+  return collectionsByStatus
+    .flat()
+    .filter((collection) => collection.isPubliclyVisible === true);
 }
 
 function isLibraryCatalogPubliclyVisible(organization: Doc<"organizations">) {
@@ -3288,7 +3286,6 @@ export const listPublic = query({
     portalStatus: v.union(
       v.literal("ok"),
       v.literal("org_not_found"),
-      v.literal("upgrade_required"),
       v.literal("portal_disabled"),
       v.literal("portal_slug_mismatch"),
     ),
@@ -3305,20 +3302,6 @@ export const listPublic = query({
         nextCursor: undefined,
         hasMore: false,
         portalStatus: "org_not_found" as const,
-      };
-    }
-
-    const hasAccess = await hasFeatureAccess(
-      ctx,
-      organization._id,
-      "public_portal",
-    );
-    if (!hasAccess) {
-      return {
-        items: [],
-        nextCursor: undefined,
-        hasMore: false,
-        portalStatus: "upgrade_required" as const,
       };
     }
 
@@ -3540,12 +3523,7 @@ export const getPublic = query({
       return null;
     }
 
-    const hasAccess = await hasFeatureAccess(
-      ctx,
-      organization._id,
-      "public_portal",
-    );
-    if (!hasAccess || !organization.settings?.portalSettings?.isEnabled) {
+    if (!organization.settings?.portalSettings?.isEnabled) {
       return null;
     }
 
@@ -3729,12 +3707,7 @@ export const getPublicFilters = query({
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
-    const hasAccess = await hasFeatureAccess(
-      ctx,
-      organization._id,
-      "public_portal",
-    );
-    if (!hasAccess || !organization.settings?.portalSettings?.isEnabled) {
+    if (!organization.settings?.portalSettings?.isEnabled) {
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
@@ -3805,11 +3778,6 @@ export const listPublicForSitemap = query({
 
     await Promise.all(
       Array.from(organizations).map(async (org) => {
-        const hasPortal = await hasFeatureAccess(ctx, org._id, "public_portal");
-        if (!hasPortal) {
-          return;
-        }
-
         if (!org.settings?.portalSettings?.isEnabled) {
           return;
         }
