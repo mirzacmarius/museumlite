@@ -862,6 +862,19 @@ export const updateOrder = mutation({
 
     await requirePermission(ctx, firstMedia.organizationId, "media.upload");
 
+    const mediaDocs = await Promise.all(
+      args.mediaIds.map((mediaId) => ctx.db.get(mediaId)),
+    );
+
+    for (const media of mediaDocs) {
+      if (!media) {
+        throw new Error("Media not found");
+      }
+      if (media.organizationId !== firstMedia.organizationId) {
+        throw new Error("Media does not belong to this organization");
+      }
+    }
+
     await Promise.all([
       ...args.mediaIds.map((mediaId, i) =>
         mediaId
