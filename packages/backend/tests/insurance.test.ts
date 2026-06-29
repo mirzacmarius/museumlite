@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
   authedForUser,
@@ -204,4 +204,112 @@ test("should identify uncovered objects", async () => {
   });
 
   expect(uncovered.page.some((obj) => obj._id === collectionId)).toBe(true);
+});
+
+test("should attribute auto-claim to actor user", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, collectionId, authed } =
+    await setupInsuranceFixture(t);
+
+  const now = Date.now();
+  const policyId = await authed.mutation(api.insurance.createPolicy, {
+    organizationId,
+    policyNumber: "POL-AUTO",
+    carrier: "Auto Claim Carrier",
+    policyType: "transit",
+    coverageAmount: 100_000,
+    effectiveDate: now,
+    expirationDate: now + 365 * 24 * 60 * 60 * 1000,
+  });
+
+  await authed.mutation(api.insurance.addCoverage, {
+    policyId,
+    collectionId,
+    coveredValue: 15_000,
+  });
+
+  const loanId = await t.run(async (ctx) => {
+    return await ctx.db.insert("loans", {
+      organizationId,
+      loanNumber: "LOAN-AUTO-001",
+      type: "outgoing",
+      status: "active",
+      lenderBorrowerName: "Test Borrower",
+      startDate: now,
+      endDate: now + 30 * 24 * 60 * 60 * 1000,
+    });
+  });
+
+  const claimId = await t.mutation(
+    internal.insurance.createAutoClaimForTransitDamage,
+    {
+      organizationId,
+      loanId,
+      collectionIds: [collectionId],
+      incidentDescription: "Scratch detected on return",
+      actorUserId: userId,
+    },
+  );
+
+  expect(claimId).not.toBeNull();
+
+  const claim = await t.run(async (ctx) => {
+    return await ctx.db.get(claimId!);
+  });
+
+  expect(claim?.createdBy).toBe(userId);
+  expect(claim?.isAutoClaim).toBe(true);
+  expect(claim?.autoClaimSource).toBe("loan_return_damage");
+});
+
+test("should reject auto-claim for non-member actor", async () => {
+  const t = createConvexTest();
+  const { organizationId, collectionId, authed } =
+    await setupInsuranceFixture(t);
+
+  const now = Date.now();
+  const policyId = await authed.mutation(api.insurance.createPolicy, {
+    organizationId,
+    policyNumber: "POL-AUTO-REJECT",
+    carrier: "Auto Claim Carrier",
+    policyType: "transit",
+    coverageAmount: 100_000,
+    effectiveDate: now,
+    expirationDate: now + 365 * 24 * 60 * 60 * 1000,
+  });
+
+  await authed.mutation(api.insurance.addCoverage, {
+    policyId,
+    collectionId,
+    coveredValue: 15_000,
+  });
+
+  const loanId = await t.run(async (ctx) => {
+    return await ctx.db.insert("loans", {
+      organizationId,
+      loanNumber: "LOAN-AUTO-002",
+      type: "outgoing",
+      status: "active",
+      lenderBorrowerName: "Test Borrower",
+      startDate: now,
+      endDate: now + 30 * 24 * 60 * 60 * 1000,
+    });
+  });
+
+  const outsiderUserId = await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      email: `outsider-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: "Outsider User",
+    });
+  });
+
+  await expect(
+    t.mutation(internal.insurance.createAutoClaimForTransitDamage, {
+      organizationId,
+      loanId,
+      collectionIds: [collectionId],
+      incidentDescription: "Scratch detected on return",
+      actorUserId: outsiderUserId,
+    }),
+  ).rejects.toThrow("User is not a member of this organization");
 });

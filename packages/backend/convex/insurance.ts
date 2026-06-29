@@ -1840,6 +1840,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
     collectionIds: v.array(v.id("collections")),
     incidentDescription: v.string(),
     conditionDisputeId: v.optional(v.id("conditionDisputes")),
+    actorUserId: v.id("users"),
   },
   returns: v.union(v.id("insuranceClaims"), v.null()),
   handler: async (ctx, args) => {
@@ -1881,10 +1882,23 @@ export const createAutoClaimForTransitDamage = internalMutation({
       }),
     );
 
-    const [claimNumber, createdByUser] = await Promise.all([
-      generateNextClaimNumber(ctx, args.organizationId),
-      ctx.db.query("users").first(),
-    ] as const);
+    const membership = await ctx.db
+      .query("userOrganizations")
+      .withIndex("by_user_and_organization", (q) =>
+        q
+          .eq("userId", args.actorUserId)
+          .eq("organizationId", args.organizationId),
+      )
+      .first();
+
+    if (!membership) {
+      throw new Error("User is not a member of this organization");
+    }
+
+    const claimNumber = await generateNextClaimNumber(
+      ctx,
+      args.organizationId,
+    );
     const now = Date.now();
 
     const [claimId, coordinatorUserIds] = await Promise.all([
@@ -1905,7 +1919,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
         conditionDisputeId: args.conditionDisputeId,
         internalNotes:
           "Auto-generated claim based on condition change detected during loan return.",
-        createdBy: createdByUser?._id as Id<"users">,
+        createdBy: args.actorUserId,
         createdAt: now,
       }),
       getUserIdsWithPermission(
