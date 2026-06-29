@@ -47,13 +47,15 @@ For repos of any real size, fan out with parallel read-only subagents (in Claude
 
 Audit depth follows the **effort level** (default `standard`; the user sets it with a `quick` / `deep` keyword anywhere in the invocation):
 
-| | `quick` | `standard` (default) | `deep` |
-|---|---|---|---|
-| Coverage | Recon hotspots only — highest-churn, highest-criticality code | Hotspot-weighted, key packages | Whole repo, every package |
-| Subagents | 0–1 (sweep directly when feasible) | ≤4 concurrent | ≤8 concurrent, one per category |
-| Breadth | "medium" | "very thorough" for correctness + security, "medium" rest | "very thorough" everywhere |
-| Categories | correctness, security, tests | all nine | all nine |
-| Findings | top ~6, HIGH-confidence only | full table | full table incl. LOW-confidence "investigate" items |
+
+|            | `quick`                                                       | `standard` (default)                                      | `deep`                                              |
+| ---------- | ------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
+| Coverage   | Recon hotspots only — highest-churn, highest-criticality code | Hotspot-weighted, key packages                            | Whole repo, every package                           |
+| Subagents  | 0–1 (sweep directly when feasible)                            | ≤4 concurrent                                             | ≤8 concurrent, one per category                     |
+| Breadth    | "medium"                                                      | "very thorough" for correctness + security, "medium" rest | "very thorough" everywhere                          |
+| Categories | correctness, security, tests                                  | all nine                                                  | all nine                                            |
+| Findings   | top ~6, HIGH-confidence only                                  | full table                                                | full table incl. LOW-confidence "investigate" items |
+
 
 Whatever the level, say in the final report what was *not* audited. On a large monorepo even `deep` scopes subagents to packages, not the root.
 
