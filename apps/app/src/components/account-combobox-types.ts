@@ -1,5 +1,5 @@
-import type { AccountHolderType } from "@/lib/account-holder";
-import { DEFAULT_ACCOUNT_HOLDER_TYPE } from "@/lib/account-holder";
+import type { CustomerCategory } from "@/lib/account-holder";
+import { DEFAULT_CUSTOMER_CATEGORY } from "@/lib/account-holder";
 
 export interface AccountComboboxProps {
   organizationId?: string;
@@ -21,7 +21,7 @@ export interface AccountComboboxProps {
 }
 
 export interface NewAccountForm {
-  holderType: AccountHolderType;
+  customerCategory: CustomerCategory;
   businessName: string;
   taxId: string;
   dateOfBirth: string;
@@ -39,7 +39,7 @@ export interface NewAccountForm {
 }
 
 export const initialAccountFormState: NewAccountForm = {
-  holderType: DEFAULT_ACCOUNT_HOLDER_TYPE,
+  customerCategory: DEFAULT_CUSTOMER_CATEGORY,
   businessName: "",
   taxId: "",
   dateOfBirth: "",

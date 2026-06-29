@@ -9,6 +9,8 @@ export type AccountType =
 
 export type HolderType = "organization" | "privatePerson";
 
+export type CustomerCategory = "person" | "business" | "nonProfit";
+
 export type AccountStatus =
   | "active"
   | "expired"
@@ -34,6 +36,7 @@ export interface StructuredAddress {
 interface AccountProfileFields {
   accountType: AccountType;
   holderType?: HolderType;
+  customerCategory?: CustomerCategory;
   businessName?: string;
   taxId?: string;
   contactPerson?: string;
@@ -122,6 +125,7 @@ export function buildAccountCreateDocument(
     accountNumber: metadata.accountNumber,
     accountType: input.accountType,
     holderType,
+    customerCategory: input.customerCategory,
     businessName: trimmedOptional(input.businessName),
     taxId: trimmedOptional(input.taxId),
     contactPerson: trimmedOptional(input.contactPerson),

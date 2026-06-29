@@ -9,7 +9,10 @@ import { useMutation, useQuery } from "convex/react";
 import { Building2, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
-import { parseDateInputValue } from "@/lib/account-holder";
+import {
+  customerCategoryToHolderType,
+  parseDateInputValue,
+} from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import { AccountComboboxCreateDialog } from "./account-combobox-create-dialog";
 import { AccountComboboxListContent } from "./account-combobox-list-content";
@@ -146,14 +149,17 @@ export function AccountCombobox({
       return;
     }
 
-    const isOrganization = state.formData.holderType === "organization";
+    const isOrganization = state.formData.customerCategory !== "person";
 
     dispatch({ type: "setIsSubmitting", value: true });
     try {
       const accountId = await createAccount({
         organizationId: organizationId as Id<"organizations">,
         accountType: "institution",
-        holderType: state.formData.holderType,
+        holderType: customerCategoryToHolderType(
+          state.formData.customerCategory,
+        ),
+        customerCategory: state.formData.customerCategory,
         businessName: state.formData.businessName.trim(),
         taxId: isOrganization
           ? state.formData.taxId.trim() || undefined

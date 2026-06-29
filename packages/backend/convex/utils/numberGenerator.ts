@@ -61,10 +61,19 @@ export interface YearBasedCounter {
  * @property currentValue - Current counter value (increments atomically)
  * @property lastGeneratedAt - Timestamp of last counter increment
  */
+export type CustomerCategory = "person" | "business" | "nonProfit";
+
+export const CUSTOMER_NUMBER_PREFIXES: Record<CustomerCategory, string> = {
+  person: "0100",
+  business: "0200",
+  nonProfit: "0300",
+};
+
 export interface GlobalCounter {
   _id: Id<"accountCounters">;
   _creationTime: number;
   organizationId: Id<"organizations">;
+  customerCategory?: CustomerCategory;
   currentValue: number;
   lastGeneratedAt: number;
 }
@@ -274,6 +283,72 @@ export async function generateNextOrganizationAccountNumber(
   return `ORG-${padNumber(nextValue, 5)}`;
 }
 
+export function resolveCustomerCategory(
+  holderType: "organization" | "privatePerson" | undefined,
+  explicitCategory?: CustomerCategory,
+): CustomerCategory {
+  if (explicitCategory) {
+    return explicitCategory;
+  }
+  if (holderType === "privatePerson") {
+    return "person";
+  }
+  return "business";
+}
+
+export async function getNextCategoryScopedAccountValue(
+  ctx: MutationCtx,
+  existingCounter: GlobalCounter | null | undefined,
+  params: {
+    organizationId: Id<"organizations">;
+    customerCategory: CustomerCategory;
+  },
+): Promise<number> {
+  const { organizationId, customerCategory } = params;
+
+  if (existingCounter) {
+    const nextValue = existingCounter.currentValue + 1;
+    await ctx.db.patch(existingCounter._id, {
+      currentValue: nextValue,
+      lastGeneratedAt: Date.now(),
+    });
+    return nextValue;
+  }
+
+  await ctx.db.insert("accountCounters", {
+    organizationId,
+    customerCategory,
+    currentValue: 1,
+    lastGeneratedAt: Date.now(),
+  });
+
+  return 1;
+}
+
+export async function generateNextCustomerNumber(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  customerCategory: CustomerCategory,
+): Promise<string> {
+  const counter = await ctx.db
+    .query("accountCounters")
+    .withIndex("by_organization_and_customerCategory", (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("customerCategory", customerCategory),
+    )
+    .first();
+
+  const nextValue = await getNextCategoryScopedAccountValue(ctx, counter, {
+    organizationId,
+    customerCategory,
+  });
+
+  const prefix = CUSTOMER_NUMBER_PREFIXES[customerCategory];
+  return `${prefix}${padNumber(nextValue, 6)}`;
+}
+
+/** @deprecated Use generateNextCustomerNumber instead. Kept for legacy ACC-* format. */
 export async function generateNextAccountNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
