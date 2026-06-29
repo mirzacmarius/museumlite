@@ -50,6 +50,51 @@ const transitItemStatusValidator = v.union(
   v.literal("missing"),
 );
 
+type TransitStatus = Doc<"transitRecords">["status"];
+
+/**
+ * Allowed transit status transitions.
+ * Terminal states (cancelled, returned) have no outbound transitions.
+ * draft → in_transit is allowed for backward compatibility with existing UI/tests.
+ */
+const ALLOWED_TRANSIT_TRANSITIONS: Record<
+  TransitStatus,
+  readonly TransitStatus[]
+> = {
+  draft: ["scheduled", "in_transit", "cancelled"],
+  scheduled: ["in_transit", "cancelled", "delayed"],
+  in_transit: [
+    "out_for_delivery",
+    "delivered",
+    "delayed",
+    "held",
+    "cancelled",
+  ],
+  out_for_delivery: ["delivered", "delayed", "held"],
+  delivered: ["returned"],
+  delayed: ["in_transit", "cancelled"],
+  held: ["in_transit", "cancelled"],
+  returned: [],
+  cancelled: [],
+};
+
+function assertAllowedTransitTransition(
+  from: TransitStatus,
+  to: TransitStatus,
+): void {
+  if (from === to) {
+    throw new Error(
+      `Invalid transit status transition from ${from} to ${to}`,
+    );
+  }
+  const allowed = ALLOWED_TRANSIT_TRANSITIONS[from];
+  if (!allowed.includes(to)) {
+    throw new Error(
+      `Invalid transit status transition from ${from} to ${to}`,
+    );
+  }
+}
+
 export const createTransitRecord = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -326,6 +371,8 @@ export const updateTransitStatus = mutation({
     }
 
     await requirePermission(ctx, transitRecord.organizationId, "loans.update");
+
+    assertAllowedTransitTransition(transitRecord.status, args.status);
 
     const now = Date.now();
 
