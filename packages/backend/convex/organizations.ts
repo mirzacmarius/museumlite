@@ -483,24 +483,6 @@ export const getBySlug = query({
       ),
       settings: v.optional(
         v.object({
-          accessionNumberFormat: v.optional(v.string()),
-          accessionCounterScope: v.optional(
-            v.union(
-              v.literal("global"),
-              v.literal("year"),
-              v.literal("month"),
-              v.literal("day"),
-            ),
-          ),
-          autoGenerateAccessionNumbers: v.optional(v.boolean()),
-          accessionWorkflowEnabled: v.optional(v.boolean()),
-          deaccessionWorkflowEnabled: v.optional(v.boolean()),
-          allowIncomingTransferRequests: v.optional(v.boolean()),
-          locationTrackingEnabled: v.optional(v.boolean()),
-          locationTypes: v.optional(v.array(v.string())),
-          enableDetailedConditionReports: v.optional(v.boolean()),
-          enabledIntegrations: v.optional(v.array(v.string())),
-          enabledModules: v.optional(v.array(enabledModuleValidator)),
           portalSettings: v.optional(
             v.object({
               isEnabled: v.optional(v.boolean()),
@@ -512,11 +494,6 @@ export const getBySlug = query({
           ),
         }),
       ),
-      subscriptionTier: v.optional(
-        v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
-      ),
-      parentOrganizationId: v.optional(v.id("organizations")),
-      rootOrganizationId: v.optional(v.id("organizations")),
       _creationTime: v.number(),
     }),
     v.null(),
@@ -534,16 +511,15 @@ export const getBySlug = query({
       logoUrl = (await ctx.storage.getUrl(org.logoId)) ?? undefined;
     }
 
+    const portalSettings = org.settings?.portalSettings;
+
     return {
       _id: org._id,
       name: org.name,
       slug: org.slug,
       logoUrl,
       type: org.type,
-      settings: org.settings,
-      subscriptionTier: org.subscriptionTier,
-      parentOrganizationId: org.parentOrganizationId,
-      rootOrganizationId: org.rootOrganizationId,
+      settings: portalSettings ? { portalSettings } : undefined,
       _creationTime: org._creationTime,
     };
   },
