@@ -4,7 +4,10 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { requirePermission } from "./utils/permissions";
+import {
+  getCurrentUserOrganization,
+  requirePermission,
+} from "./utils/permissions";
 
 // Available integrations in the system
 export const AVAILABLE_INTEGRATIONS = [
@@ -62,6 +65,19 @@ export const getEnabled = query({
   },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw new Error("Not a member of this organization");
+    }
+
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       return [];
@@ -80,6 +96,19 @@ export const isEnabled = query({
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw new Error("Not a member of this organization");
+    }
+
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       return false;

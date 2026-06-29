@@ -48,6 +48,61 @@ describe("organizations.get security (IDOR fix)", () => {
   });
 });
 
+describe("organizations.getPortalSettings security", () => {
+  test("member can read portal settings", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+    );
+    const authed = authedForUser(t, userId);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, {
+        settings: {
+          portalSettings: {
+            isEnabled: true,
+            isSearchEnabled: true,
+            portalSlug: "catalog",
+          },
+        },
+      });
+    });
+
+    const settings = await authed.query(api.organizations.getPortalSettings, {
+      organizationId,
+    });
+
+    expect(settings.isEnabled).toBe(true);
+    expect(settings.isSearchEnabled).toBe(true);
+    expect(settings.portalSlug).toBe("catalog");
+  });
+
+  test("unauthenticated caller cannot read portal settings", async () => {
+    const t = createConvexTest();
+    const { organizationId } = await createOrgUserWithPermissions(t, []);
+
+    await expect(
+      t.query(api.organizations.getPortalSettings, { organizationId }),
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test("non-member cannot read another org portal settings", async () => {
+    const t = createConvexTest();
+    const { organizationId: orgA } = await createOrgUserWithPermissions(t, []);
+    const { userId: userB } = await createOrgUserWithPermissions(t, [], {
+      slugPrefix: "other-org",
+    });
+    const authedB = authedForUser(t, userB);
+
+    await expect(
+      authedB.query(api.organizations.getPortalSettings, {
+        organizationId: orgA,
+      }),
+    ).rejects.toThrow("Not a member of this organization");
+  });
+});
+
 describe("organization hierarchy", () => {
   async function createUser(t: ReturnType<typeof convexTest>) {
     return await t.run(async (ctx) => {

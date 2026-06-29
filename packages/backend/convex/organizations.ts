@@ -1183,6 +1183,19 @@ export const getPortalSettings = query({
     orgSlug: v.string(),
   }),
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const membership = await getCurrentUserOrganization(
+      ctx,
+      args.organizationId,
+    );
+    if (!membership) {
+      throw new Error("Not a member of this organization");
+    }
+
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       throw new Error("Organization not found");
