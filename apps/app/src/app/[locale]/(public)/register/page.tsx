@@ -38,10 +38,10 @@ export default async function Page({ searchParams }: PageProps) {
           initialMode="signUp"
           redirectTo={redirectTo}
         />
-        <p className="pt-5 text-center text-sm text-white/70">
+        <p className="pt-5 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
-            className="font-medium text-white underline underline-offset-4"
+            className="font-medium text-foreground underline underline-offset-4"
             href={buildAuthPath("/login", {
               email: initialEmail,
               returnTo: redirectTo,

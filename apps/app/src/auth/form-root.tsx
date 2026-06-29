@@ -63,7 +63,7 @@ function AuthPasswordStepNotice({
   passwordAccountExists: boolean | null;
 }) {
   return (
-    <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white/70">
+    <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
       {getPasswordStepHelpText({ email, mode, passwordAccountExists })}
     </div>
   );

@@ -44,12 +44,12 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-1">
         <label
-          className="text-xs font-medium text-white/70"
+          className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-email"
         >
           Email
         </label>
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-muted-foreground">
           Enter your email once. If you do not have an account yet, we will help
           you create one.
         </p>
@@ -77,7 +77,7 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
               tabIndex={-1}
               type="button"
             >
-              <XCircle className="size-4 text-white/40" />
+              <XCircle className="size-4 text-muted-foreground" />
             </button>
           ) : null}
         </div>
