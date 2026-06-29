@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
   authedForUser,
@@ -191,6 +191,86 @@ test("should detect expiring policies", async () => {
 
   expect(expiring.length).toBeGreaterThan(0);
   expect(expiring[0]?.policyNumber).toBe("POL-EXP");
+});
+
+test("createAutoClaimForTransitDamage sums active coverages across collections", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId, authed } = await setupInsuranceFixture(t);
+
+  const [collectionIdA, collectionIdB] = await t.run(async (ctx) => {
+    const suffix = Math.random().toString(36).slice(2, 8);
+    return await Promise.all([
+      ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: `INS-A-${suffix}`,
+        title: "Insured Object A",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+      ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: `INS-B-${suffix}`,
+        title: "Insured Object B",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      }),
+    ]);
+  });
+
+  const now = Date.now();
+  const policyId = await authed.mutation(api.insurance.createPolicy, {
+    organizationId,
+    policyNumber: "POL-TRANSIT",
+    carrier: "Transit Carrier",
+    policyType: "transit",
+    coverageAmount: 500_000,
+    effectiveDate: now,
+    expirationDate: now + 365 * 24 * 60 * 60 * 1000,
+  });
+
+  await Promise.all([
+    authed.mutation(api.insurance.addCoverage, {
+      policyId,
+      collectionId: collectionIdA,
+      coveredValue: 1000,
+    }),
+    authed.mutation(api.insurance.addCoverage, {
+      policyId,
+      collectionId: collectionIdB,
+      coveredValue: 2500,
+    }),
+  ]);
+
+  const loanId = await t.run(async (ctx) => {
+    return await ctx.db.insert("loans", {
+      organizationId,
+      loanNumber: `LOAN-${Math.random().toString(36).slice(2, 8)}`,
+      type: "outgoing",
+      lenderBorrowerName: "Borrowing Museum",
+      startDate: now,
+      status: "active",
+    });
+  });
+
+  const claimId = await t.mutation(
+    internal.insurance.createAutoClaimForTransitDamage,
+    {
+      organizationId,
+      loanId,
+      collectionIds: [collectionIdA, collectionIdB],
+      incidentDescription: "Transit damage during loan return",
+    },
+  );
+
+  expect(claimId).not.toBeNull();
+
+  const claim = await t.run(async (ctx) => {
+    return await ctx.db.get(claimId!);
+  });
+
+  expect(claim?.claimedAmount).toBe(3500);
 });
 
 test("should identify uncovered objects", async () => {
