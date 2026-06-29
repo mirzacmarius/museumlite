@@ -104,6 +104,7 @@ export const getAnalytics = query({
 export const getComplianceReport = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
     dateRangeStart: v.optional(v.number()),
     dateRangeEnd: v.optional(v.number()),
   },
@@ -196,7 +197,7 @@ export const getComplianceReport = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
-    const now = Date.now();
+    const now = args.now;
     const rangeStart = args.dateRangeStart ?? now - 30 * 24 * 60 * 60 * 1000;
     const rangeEnd = args.dateRangeEnd ?? now;
 
@@ -440,6 +441,7 @@ export const getComplianceReport = query({
 export const getLocationUtilization = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
   returns: v.object({
     summary: v.object({
@@ -499,7 +501,7 @@ export const getLocationUtilization = query({
       requirePermission(ctx, args.organizationId, "locations.read"),
     ]);
 
-    const now = Date.now();
+    const now = args.now;
 
     const [allLocations, allCollections] = await Promise.all([
       ctx.db
@@ -712,6 +714,7 @@ export const getCollectionGrowth = query({
 export const getKpiTrends = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
   returns: v.object({
     totalObjects: v.array(v.number()),
@@ -721,7 +724,7 @@ export const getKpiTrends = query({
   }),
   handler: async (ctx, args) => {
     const days = 7;
-    const now = Date.now();
+    const now = args.now;
     const dayMs = 24 * 60 * 60 * 1000;
 
     const [, [collections, loans, accessions]] = await Promise.all([
@@ -785,6 +788,7 @@ export const getKpiTrends = query({
 export const getOperationalKpis = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
   returns: v.object({
     inventory: v.object({
@@ -857,6 +861,6 @@ export const getOperationalKpis = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
-    return await loadOperationalKpis(ctx, args.organizationId);
+    return await loadOperationalKpis(ctx, args.organizationId, args.now);
   },
 });

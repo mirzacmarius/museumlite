@@ -40,27 +40,24 @@ async function setupLibraryHoldsFixture(
       email: `staff-${Math.random().toString(36).slice(2, 8)}@example.com`,
       name: "Staff User",
     });
-
     const roleId = await ctx.db.insert("roles", {
       organizationId,
       name: "Library Staff",
       isSystemRole: false,
     });
-
-    const permissionNames = ["accounts.read", "accounts.write"];
-    await Promise.all(
-      permissionNames.map(async (permissionName) => {
-        const permissionId = await ctx.db.insert("permissions", {
+    const permissionIds = await Promise.all(
+      ["accounts.read", "accounts.write"].map((permissionName) =>
+        ctx.db.insert("permissions", {
           name: permissionName,
-          category: permissionName.split(".")[0] ?? "accounts",
-        });
-        await ctx.db.insert("rolePermissions", {
-          roleId,
-          permissionId,
-        });
-      }),
+          category: "accounts",
+        }),
+      ),
     );
-
+    await Promise.all(
+      permissionIds.map((permissionId) =>
+        ctx.db.insert("rolePermissions", { roleId, permissionId }),
+      ),
+    );
     await ctx.db.insert("userOrganizations", {
       userId,
       organizationId,

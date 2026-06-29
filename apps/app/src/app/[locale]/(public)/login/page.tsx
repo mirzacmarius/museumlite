@@ -1,6 +1,6 @@
 import { Logo } from "@v1/ui/logo";
-import Link from "next/link";
 import { AuthRoot } from "@/auth/auth-root";
+import { getInitialAuthEmail, getSafeReturnTo } from "@/auth/search-params";
 import { getI18n } from "@/locales/server";
 
 export async function generateMetadata() {
@@ -12,17 +12,15 @@ export async function generateMetadata() {
 
 interface PageProps {
   searchParams: Promise<{
+    email?: string | string[];
     returnTo?: string | string[];
   }>;
 }
 
 export default async function Page({ searchParams }: PageProps) {
-  const { returnTo } = await searchParams;
-  const requestedReturnTo =
-    typeof returnTo === "string" ? returnTo : returnTo?.[0];
-  const redirectTo = requestedReturnTo?.startsWith("/")
-    ? requestedReturnTo
-    : undefined;
+  const { email, returnTo } = await searchParams;
+  const initialEmail = getInitialAuthEmail(email);
+  const redirectTo = getSafeReturnTo(returnTo);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center px-4">
@@ -30,20 +28,11 @@ export default async function Page({ searchParams }: PageProps) {
         <div className="mb-6 flex justify-center">
           <Logo height={120} width={120} />
         </div>
-        <AuthRoot initialMode="signIn" redirectTo={redirectTo} />
-        <p className="pt-5 text-center text-sm text-white/70">
-          No account yet?{" "}
-          <Link
-            className="font-medium text-white underline underline-offset-4"
-            href={
-              redirectTo
-                ? `/register?returnTo=${encodeURIComponent(redirectTo)}`
-                : "/register"
-            }
-          >
-            Create one
-          </Link>
-        </p>
+        <AuthRoot
+          initialEmail={initialEmail}
+          initialMode="signIn"
+          redirectTo={redirectTo}
+        />
       </div>
     </div>
   );

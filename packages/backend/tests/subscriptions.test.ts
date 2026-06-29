@@ -4,9 +4,21 @@ import { internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
+async function createUser(
+  t: ReturnType<typeof convexTest<typeof schema>>,
+  email?: string,
+) {
+  return await t.run(async (ctx) => {
+    return await ctx.db.insert("users", {
+      ...(email ? { email } : {}),
+    });
+  });
+}
+
 async function createOrganization(
   t: ReturnType<typeof convexTest<typeof schema>>,
   tier: "free" | "pro" | "enterprise" = "free",
+  ownerUserId?: Awaited<ReturnType<typeof createUser>>,
 ) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -14,6 +26,7 @@ async function createOrganization(
       slug: `billing-org-${Math.random().toString(36).slice(2, 8)}`,
       type: "museum",
       subscriptionTier: tier,
+      ...(ownerUserId ? { ownerUserId } : {}),
     });
   });
 }
@@ -59,6 +72,44 @@ describe("organization subscriptions", () => {
     expect(organization?.subscriptionTier).toBe("pro");
     expect(subscription?.productId).toBe("prod_pro_monthly");
     expect(subscription?.status).toBe("active");
+  });
+
+  test("billing email helper returns the owner email when available", async () => {
+    const t = convexTest(schema, modules);
+    const ownerUserId = await createUser(t, "owner@example.com");
+    const organizationId = await createOrganization(t, "free", ownerUserId);
+
+    const billingEmail = await t.query(
+      internal.subscriptions.getOrganizationBillingEmail,
+      { organizationId },
+    );
+
+    expect(billingEmail).toEqual({ email: "owner@example.com" });
+  });
+
+  test("billing email helper returns null without an owner email", async () => {
+    const t = convexTest(schema, modules);
+    const ownerUserId = await createUser(t);
+    const organizationId = await createOrganization(t, "free", ownerUserId);
+
+    const billingEmail = await t.query(
+      internal.subscriptions.getOrganizationBillingEmail,
+      { organizationId },
+    );
+
+    expect(billingEmail).toBeNull();
+  });
+
+  test("billing email helper returns null without an owner", async () => {
+    const t = convexTest(schema, modules);
+    const organizationId = await createOrganization(t);
+
+    const billingEmail = await t.query(
+      internal.subscriptions.getOrganizationBillingEmail,
+      { organizationId },
+    );
+
+    expect(billingEmail).toBeNull();
   });
 
   test("canceling at period end keeps the paid tier until access expires", async () => {

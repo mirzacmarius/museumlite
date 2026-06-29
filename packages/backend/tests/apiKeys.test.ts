@@ -251,6 +251,30 @@ describe("API Key Generation Security", () => {
     expect(createdKey?.isRevoked).toBe(false);
   });
 
+  test("should reject a wrong key with the same prefix", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-wrong-prefix`,
+      issuer: "https://example.test",
+    });
+
+    const result = await authed.mutation(api.apiKeys.create, {
+      organizationId,
+      name: "Prefix Mismatch Key",
+      permissions: ["read"],
+    });
+
+    const wrongKey = `${result.key.substring(0, 10)}${"Z".repeat(30)}`;
+
+    const validation = await t.mutation(internal.apiKeys.validate, {
+      apiKey: wrongKey,
+    });
+
+    expect(validation.valid).toBe(false);
+  });
+
   test("should validate generated keys successfully", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestSetup(t);

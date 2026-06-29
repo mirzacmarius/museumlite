@@ -653,6 +653,61 @@ export const getUploadProgress = query({
   },
 });
 
+const storageUrlResultValidator = v.object({
+  storageId: v.id("_storage"),
+  url: v.union(v.string(), v.null()),
+});
+
+export const getStorageUrls = query({
+  args: {
+    organizationId: v.id("organizations"),
+    storageIds: v.array(v.id("_storage")),
+  },
+  returns: v.array(storageUrlResultValidator),
+  handler: async (ctx, args) => {
+    if (args.storageIds.length === 0) {
+      return [];
+    }
+
+    await requirePermission(ctx, args.organizationId, "media.read");
+
+    const uniqueStorageIds = [...new Set(args.storageIds)];
+    const authorizedIds = new Set<Id<"_storage">>();
+
+    await Promise.all(
+      uniqueStorageIds.map(async (storageId) => {
+        const media = await ctx.db
+          .query("mediaFiles")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .filter((q) =>
+            q.or(
+              q.eq(q.field("storageId"), storageId),
+              q.eq(q.field("thumbnailStorageId"), storageId),
+            ),
+          )
+          .first();
+
+        if (media) {
+          authorizedIds.add(storageId);
+        }
+      }),
+    );
+
+    return await Promise.all(
+      uniqueStorageIds.map(async (storageId) => {
+        if (!authorizedIds.has(storageId)) {
+          return { storageId, url: null };
+        }
+
+        const url = await ctx.storage.getUrl(storageId);
+        return { storageId, url };
+      }),
+    );
+  },
+});
+
 export const listByOrganization = query({
   args: {
     organizationId: v.id("organizations"),
@@ -684,8 +739,6 @@ export const listByOrganization = query({
         caption: v.optional(v.string()),
         photographer: v.optional(v.string()),
         copyright: v.optional(v.string()),
-        url: v.union(v.string(), v.null()),
-        thumbnailUrl: v.union(v.string(), v.null()),
         uploadedAt: v.number(),
         uploaderName: v.optional(v.string()),
         currentVersionId: v.optional(v.id("mediaVersions")),
@@ -737,41 +790,33 @@ export const listByOrganization = query({
     const collectionMap = createLookupMap<"collections">(collections);
     const uploaderMap = createLookupMap<"users">(uploaders);
 
-    const enriched = await Promise.all(
-      paginationResult.page.map(async (media) => {
-        const collection = collectionMap.get(media.collectionId);
-        const uploader = uploaderMap.get(media.uploadedBy);
-        const url = await ctx.storage.getUrl(media.storageId);
-        const thumbnailUrl = media.thumbnailStorageId
-          ? await ctx.storage.getUrl(media.thumbnailStorageId)
-          : null;
+    const enriched = paginationResult.page.map((media) => {
+      const collection = collectionMap.get(media.collectionId);
+      const uploader = uploaderMap.get(media.uploadedBy);
 
-        return {
-          _id: media._id,
-          _creationTime: media._creationTime,
-          collectionId: media.collectionId,
-          collectionTitle: collection?.title ?? "Unknown",
-          accessionNumber: collection?.accessionNumber,
-          storageId: media.storageId,
-          thumbnailStorageId: media.thumbnailStorageId,
-          fileName: media.fileName,
-          fileType: media.fileType,
-          fileSize: media.fileSize,
-          mimeType: media.mimeType,
-          mediaCategory: media.mediaCategory,
-          isPrimary: media.isPrimary,
-          caption: media.caption,
-          photographer: media.photographer,
-          copyright: media.copyright,
-          url,
-          thumbnailUrl,
-          uploadedAt: media.uploadedAt,
-          uploaderName: uploader?.name ?? uploader?.username,
-          currentVersionId: media.currentVersionId,
-          versionCount: media.versionCount,
-        };
-      }),
-    );
+      return {
+        _id: media._id,
+        _creationTime: media._creationTime,
+        collectionId: media.collectionId,
+        collectionTitle: collection?.title ?? "Unknown",
+        accessionNumber: collection?.accessionNumber,
+        storageId: media.storageId,
+        thumbnailStorageId: media.thumbnailStorageId,
+        fileName: media.fileName,
+        fileType: media.fileType,
+        fileSize: media.fileSize,
+        mimeType: media.mimeType,
+        mediaCategory: media.mediaCategory,
+        isPrimary: media.isPrimary,
+        caption: media.caption,
+        photographer: media.photographer,
+        copyright: media.copyright,
+        uploadedAt: media.uploadedAt,
+        uploaderName: uploader?.name ?? uploader?.username,
+        currentVersionId: media.currentVersionId,
+        versionCount: media.versionCount,
+      };
+    });
 
     return {
       page: enriched,
@@ -861,6 +906,19 @@ export const updateOrder = mutation({
     }
 
     await requirePermission(ctx, firstMedia.organizationId, "media.upload");
+
+    const mediaDocs = await Promise.all(
+      args.mediaIds.map((mediaId) => ctx.db.get(mediaId)),
+    );
+
+    for (const media of mediaDocs) {
+      if (!media) {
+        throw new Error("Media not found");
+      }
+      if (media.organizationId !== firstMedia.organizationId) {
+        throw new Error("Media does not belong to this organization");
+      }
+    }
 
     await Promise.all([
       ...args.mediaIds.map((mediaId, i) =>

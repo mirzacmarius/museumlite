@@ -1,44 +1,15 @@
-import { convexTest } from "convex-test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import type { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
+import type { Id } from "../convex/_generated/dataModel";
 
-import { modules } from "./testSetup";
 import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
 } from "./testHarness";
-
-test("should upload media file", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should generate thumbnail", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should associate media with collection", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should set primary image", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should delete media and cleanup storage", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should reorder media gallery", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
 
 // Shared helper for media security tests
 async function setupOrgWithMediaUpload(t: ReturnType<typeof convexTest>) {
@@ -56,6 +27,66 @@ async function setupOrgWithMediaUpload(t: ReturnType<typeof convexTest>) {
     });
   });
   return { organizationId, userId, collectionId };
+}
+
+async function setupOrgWithMediaRead(t: ReturnType<typeof convexTest>) {
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "media.read",
+  ]);
+  const collectionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `OBJ-${Math.random().toString(36).slice(2, 8)}`,
+      title: "Test Object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+  });
+  return { organizationId, userId, collectionId };
+}
+
+async function createMediaFile(
+  t: ReturnType<typeof convexTest>,
+  {
+    organizationId,
+    collectionId,
+    userId,
+    fileName,
+    displayOrder,
+  }: {
+    organizationId: Id<"organizations">;
+    collectionId: Id<"collections">;
+    userId: Id<"users">;
+    fileName: string;
+    displayOrder: number;
+  },
+) {
+  const storageId = await t.run(async (ctx) => {
+    return await ctx.storage.store(
+      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+    );
+  });
+
+  const mediaId = await t.run(async (ctx) => {
+    return await ctx.db.insert("mediaFiles", {
+      organizationId,
+      collectionId,
+      storageId,
+      fileName,
+      fileType: "image",
+      fileSize: 1024,
+      mimeType: "image/jpeg",
+      mediaCategory: "image",
+      isPrimary: false,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "completed",
+      displayOrder,
+    });
+  });
+
+  return { mediaId, storageId };
 }
 
 // Note: media.create tests use generateUploadUrl as a proxy because the
@@ -109,5 +140,162 @@ describe("media upload security (cross-tenant org binding)", () => {
     expect(thrownError?.message).not.toBe(
       "Collection does not belong to this organization",
     );
+  });
+});
+
+describe("media listByOrganization storage URL batching", () => {
+  test("listByOrganization handler does not call ctx.storage.getUrl", () => {
+    const mediaSource = readFileSync(
+      join(process.cwd(), "convex/media.ts"),
+      "utf8",
+    );
+    const listStart = mediaSource.indexOf("export const listByOrganization");
+    const listEnd = mediaSource.indexOf("export const getStorageStats", listStart);
+    const listHandler = mediaSource.slice(listStart, listEnd);
+
+    expect(listHandler).not.toContain("ctx.storage.getUrl");
+  });
+
+  test("listByOrganization returns storage IDs without resolved URLs", async () => {
+    const t = createConvexTest();
+    const org = await setupOrgWithMediaRead(t);
+    const authed = authedForUser(t, org.userId);
+
+    await createMediaFile(t, {
+      organizationId: org.organizationId,
+      collectionId: org.collectionId,
+      userId: org.userId,
+      fileName: "listed.jpg",
+      displayOrder: 0,
+    });
+
+    const result = await authed.query(api.media.listByOrganization, {
+      organizationId: org.organizationId,
+      paginationOpts: { numItems: 20, cursor: null },
+    });
+
+    expect(result.page).toHaveLength(1);
+    const item = result.page[0];
+    expect(item?.storageId).toBeDefined();
+    expect(item).not.toHaveProperty("url");
+    expect(item).not.toHaveProperty("thumbnailUrl");
+  });
+});
+
+describe("media.getStorageUrls", () => {
+  test("returns signed URLs for org-owned storage IDs", async () => {
+    const t = createConvexTest();
+    const org = await setupOrgWithMediaRead(t);
+    const authed = authedForUser(t, org.userId);
+
+    const { storageId } = await createMediaFile(t, {
+      organizationId: org.organizationId,
+      collectionId: org.collectionId,
+      userId: org.userId,
+      fileName: "preview.jpg",
+      displayOrder: 0,
+    });
+
+    const urls = await authed.query(api.media.getStorageUrls, {
+      organizationId: org.organizationId,
+      storageIds: [storageId],
+    });
+
+    expect(urls).toHaveLength(1);
+    expect(urls[0]?.storageId).toBe(storageId);
+    expect(urls[0]?.url).toMatch(/^https?:\/\//);
+  });
+
+  test("returns null URLs for storage IDs outside the organization", async () => {
+    const t = createConvexTest();
+    const orgA = await setupOrgWithMediaRead(t);
+    const orgB = await setupOrgWithMediaRead(t);
+    const authedA = authedForUser(t, orgA.userId);
+
+    const { storageId: foreignStorageId } = await createMediaFile(t, {
+      organizationId: orgB.organizationId,
+      collectionId: orgB.collectionId,
+      userId: orgB.userId,
+      fileName: "foreign.jpg",
+      displayOrder: 0,
+    });
+
+    const urls = await authedA.query(api.media.getStorageUrls, {
+      organizationId: orgA.organizationId,
+      storageIds: [foreignStorageId],
+    });
+
+    expect(urls).toEqual([{ storageId: foreignStorageId, url: null }]);
+  });
+});
+
+describe("media.updateOrder security (cross-tenant org binding)", () => {
+  test("rejects mixed-org media IDs", async () => {
+    const t = createConvexTest();
+
+    const orgA = await setupOrgWithMediaUpload(t);
+    const orgB = await setupOrgWithMediaUpload(t);
+    const authedA = authedForUser(t, orgA.userId);
+
+    const [mediaA, mediaB] = await Promise.all([
+      createMediaFile(t, {
+        organizationId: orgA.organizationId,
+        collectionId: orgA.collectionId,
+        userId: orgA.userId,
+        fileName: "a.jpg",
+        displayOrder: 0,
+      }),
+      createMediaFile(t, {
+        organizationId: orgB.organizationId,
+        collectionId: orgB.collectionId,
+        userId: orgB.userId,
+        fileName: "b.jpg",
+        displayOrder: 0,
+      }),
+    ]);
+
+    await expect(
+      authedA.mutation(api.media.updateOrder, {
+        mediaIds: [mediaA.mediaId, mediaB.mediaId],
+      }),
+    ).rejects.toThrow("Media does not belong to this organization");
+  });
+
+  test("accepts same-org media IDs and updates display order", async () => {
+    const t = createConvexTest();
+
+    const org = await setupOrgWithMediaUpload(t);
+    const authed = authedForUser(t, org.userId);
+
+    const [mediaFirst, mediaSecond] = await Promise.all([
+      createMediaFile(t, {
+        organizationId: org.organizationId,
+        collectionId: org.collectionId,
+        userId: org.userId,
+        fileName: "first.jpg",
+        displayOrder: 0,
+      }),
+      createMediaFile(t, {
+        organizationId: org.organizationId,
+        collectionId: org.collectionId,
+        userId: org.userId,
+        fileName: "second.jpg",
+        displayOrder: 1,
+      }),
+    ]);
+
+    await authed.mutation(api.media.updateOrder, {
+      mediaIds: [mediaSecond.mediaId, mediaFirst.mediaId],
+    });
+
+    const [updatedFirst, updatedSecond] = await t.run(async (ctx) => {
+      return await Promise.all([
+        ctx.db.get(mediaFirst.mediaId),
+        ctx.db.get(mediaSecond.mediaId),
+      ]);
+    });
+
+    expect(updatedFirst?.displayOrder).toBe(1);
+    expect(updatedSecond?.displayOrder).toBe(0);
   });
 });

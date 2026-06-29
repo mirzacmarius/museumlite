@@ -23,7 +23,7 @@ import {
   restoreCollectionHandler,
   softDeleteCollectionHandler,
 } from "./utils/collectionDisposition";
-import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
+import { createDeaccessionRecord } from "./deaccessions";
 import {
   getLocationPathStrings,
   isImageMedia,
@@ -2513,14 +2513,16 @@ export const emptyDeletedCollections = mutation({
       )
       .collect();
 
-    let deletedCount = 0;
-
-    await Promise.all(
+    const deleteResults = await Promise.all(
       Array.from(deletedCollections).map(async (collection) => {
         await deleteCollectionDependents(ctx, collection._id);
         await ctx.db.delete(collection._id);
-        deletedCount += 1;
+        return 1;
       }),
+    );
+    const deletedCount = deleteResults.reduce<number>(
+      (total, deleted) => total + deleted,
+      0,
     );
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -3053,15 +3055,11 @@ export const bulkUpdateLocation = mutation({
       throw new Error("Not authenticated");
     }
 
-    let updated = 0;
-    let failed = 0;
-
-    await Promise.all(
+    const outcomes = await Promise.all(
       Array.from(args.collectionIds).map(async (collectionId) => {
         const collection = await ctx.db.get(collectionId);
         if (!collection) {
-          failed++;
-          return;
+          return "failed" as const;
         }
 
         try {
@@ -3076,12 +3074,22 @@ export const bulkUpdateLocation = mutation({
             lastModifiedBy: userId,
             lastModifiedAt: Date.now(),
           });
-          updated++;
+          return "updated" as const;
         } catch {
-          failed++;
+          return "failed" as const;
         }
       }),
     );
+
+    let updated = 0;
+    let failed = 0;
+    for (const outcome of outcomes) {
+      if (outcome === "updated") {
+        updated++;
+      } else {
+        failed++;
+      }
+    }
 
     return { updated, failed };
   },
@@ -3107,52 +3115,46 @@ export const bulkDeaccession = mutation({
     let failed = 0;
     let skipped = 0;
 
-    await Promise.all(
-      Array.from(args.collectionIds).map(async (collectionId) => {
-        const collection = await ctx.db.get(collectionId);
-        if (!collection) {
-          failed++;
-          return;
-        }
+    for (const collectionId of args.collectionIds) {
+      const collection = await ctx.db.get(collectionId);
+      if (!collection) {
+        failed++;
+        continue;
+      }
 
-        if (collection.status === "deaccessioned") {
-          skipped++;
-          return;
-        }
+      if (collection.status === "deaccessioned") {
+        skipped++;
+        continue;
+      }
 
-        if (collection.status === "loaned") {
-          failed++;
-          return;
-        }
+      if (collection.status === "loaned") {
+        failed++;
+        continue;
+      }
 
-        try {
-          await Promise.all([
-            requirePermission(
-              ctx,
-              collection.organizationId,
-              "collections.delete",
-            ),
-            markCollectionDeaccessioned(ctx, {
-              collectionId,
-              changedBy: userId,
-            }),
-            ctx.db.insert("auditLog", {
-              organizationId: collection.organizationId,
-              userId,
-              action: "deaccessioned",
-              entityType: "collection",
-              entityId: collectionId,
-              changes: { reason: args.reason, bulk: true },
-              timestamp: Date.now(),
-            }),
-          ] as const);
-
-          deaccessioned++;
-        } catch {
-          failed++;
-        }
-      }),
-    );
+      try {
+        await requirePermission(
+          ctx,
+          collection.organizationId,
+          "collections.delete",
+        );
+        // Bulk UI has no method picker yet; default to destruction.
+        await createDeaccessionRecord(
+          ctx,
+          {
+            organizationId: collection.organizationId,
+            collectionId,
+            reason: args.reason,
+            method: "destruction",
+            dateDeaccessioned: Date.now(),
+          },
+          userId,
+        );
+        deaccessioned++;
+      } catch {
+        failed++;
+      }
+    }
 
     return { deaccessioned, failed, skipped };
   },

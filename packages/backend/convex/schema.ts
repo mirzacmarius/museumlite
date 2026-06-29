@@ -1414,6 +1414,10 @@ export default defineSchema({
     isCurrentAppraisal: v.optional(v.boolean()), // Mark as the current/active appraisal
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_appraisalDate", [
+      "organizationId",
+      "appraisalDate",
+    ])
     .index("by_collection", ["collectionId"])
     .index("by_collection_and_date", ["collectionId", "appraisalDate"]),
 
@@ -1808,6 +1812,7 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_startDate", ["organizationId", "startDate"])
     .index("by_type", ["type"])
     .index("by_organization_and_type", ["organizationId", "type"])
     .index("by_account", ["accountId"])
@@ -3960,46 +3965,6 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
     sortOrder: v.number(),
   }).index("by_task", ["taskId"]),
-
-  // ============================================
-  // INTEGRATION SUBSCRIPTIONS
-  // ============================================
-
-  // Integration Subscriptions - Tracks paid integration subscriptions per organization
-  integrationSubscriptions: defineTable({
-    organizationId: v.id("organizations"),
-    integrationId: v.string(), // e.g., "library"
-
-    // Polar subscription details
-    productId: v.string(), // Polar product ID
-    subscriptionId: v.string(), // Polar subscription ID
-    customerId: v.string(), // Polar customer ID
-
-    // Subscription status
-    status: v.union(
-      v.literal("active"),
-      v.literal("canceled"),
-      v.literal("past_due"),
-      v.literal("unpaid"),
-      v.literal("incomplete"),
-    ),
-    cancelAtPeriodEnd: v.boolean(),
-    currentPeriodEnd: v.number(), // Unix timestamp
-
-    // Metadata from checkout
-    metadata: v.optional(metadataRecord),
-
-    // Audit
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_organization", ["organizationId"])
-    .index("by_organization_and_integration", [
-      "organizationId",
-      "integrationId",
-    ])
-    .index("by_subscription", ["subscriptionId"])
-    .index("by_status", ["status"]),
 
   organizationSubscriptions: defineTable({
     organizationId: v.id("organizations"),

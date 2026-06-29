@@ -277,24 +277,24 @@ export const checkAllOrganizationsSla = internalMutation({
       {},
     );
 
-    let totalBreaches = 0;
-    let totalWarnings = 0;
-
-    await Promise.all(
-      Array.from(orgIds).map(async (orgId) => {
-        const result = await ctx.runMutation(
-          internal.workflowSla.checkSlaBreaches,
-          { organizationId: orgId },
-        );
-        totalBreaches += result.breachesFound;
-        totalWarnings += result.warningsSent;
-      }),
+    const orgResults = await Promise.all(
+      Array.from(orgIds).map(async (orgId) =>
+        ctx.runMutation(internal.workflowSla.checkSlaBreaches, {
+          organizationId: orgId,
+        }),
+      ),
     );
 
     return {
       organizationsChecked: orgIds.length,
-      totalBreaches,
-      totalWarnings,
+      totalBreaches: orgResults.reduce(
+        (total, result) => total + result.breachesFound,
+        0,
+      ),
+      totalWarnings: orgResults.reduce(
+        (total, result) => total + result.warningsSent,
+        0,
+      ),
     };
   },
 });
@@ -320,8 +320,6 @@ export const checkSlaBreaches = internalMutation({
       return { breachesFound: 0, warningsSent: 0 };
     }
 
-    let breachesFound = 0;
-    let warningsSent = 0;
     const now = Date.now();
     const oneDayMs = 24 * 60 * 60 * 1000;
 
@@ -330,7 +328,7 @@ export const checkSlaBreaches = internalMutation({
       items: Array<{ id: string; createdAt: number }>;
     }> = [];
 
-    await Promise.all(
+    const configResults = await Promise.all(
       Array.from(slaConfigs).map(async (config) => {
         const slaDueThreshold = now - config.slaDays * oneDayMs;
         const warningThreshold = config.warningDays
@@ -397,10 +395,9 @@ export const checkSlaBreaches = internalMutation({
           items = pending.map((p) => ({ id: p._id, createdAt: p.performedAt }));
         }
 
-        await Promise.all(
+        return Promise.all(
           Array.from(items).map(async (item) => {
             if (item.createdAt < slaDueThreshold) {
-              breachesFound++;
               if (config.escalateToRoleId) {
                 await ctx.runMutation(
                   internal.notifications.notifyUsersWithPermission,
@@ -415,8 +412,9 @@ export const checkSlaBreaches = internalMutation({
                   },
                 );
               }
-            } else if (warningThreshold && item.createdAt < warningThreshold) {
-              warningsSent++;
+              return "breach" as const;
+            }
+            if (warningThreshold && item.createdAt < warningThreshold) {
               await ctx.runMutation(
                 internal.notifications.notifyUsersWithPermission,
                 {
@@ -429,11 +427,21 @@ export const checkSlaBreaches = internalMutation({
                   relatedEntityId: item.id,
                 },
               );
+              return "warning" as const;
             }
+            return "none" as const;
           }),
         );
       }),
     );
+
+    const itemOutcomes = configResults.flat();
+    const breachesFound = itemOutcomes.filter(
+      (outcome) => outcome === "breach",
+    ).length;
+    const warningsSent = itemOutcomes.filter(
+      (outcome) => outcome === "warning",
+    ).length;
 
     return { breachesFound, warningsSent };
   },

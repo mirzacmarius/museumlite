@@ -16,7 +16,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
   const [email, setEmail] = useState(() => defaultEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFocused, _setIsFocused] = useState(true);
+  const [isFocused, setIsFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasEmailError = useMemo(
@@ -44,16 +44,22 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-1">
         <label
-          className="text-xs font-medium text-white/70"
+          className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-email"
         >
           Email
         </label>
-        <div>
+        <p className="text-xs text-muted-foreground">
+          Enter your email once. If you do not have an account yet, we will help
+          you create one.
+        </p>
+        <div className="relative">
           <Input
             autoComplete="email"
             id="auth-email"
             onChange={(event) => setEmail(event.target.value)}
+            onBlur={() => setIsFocused(false)}
+            onFocus={() => setIsFocused(true)}
             placeholder="name@company.com"
             ref={inputRef}
             required
@@ -71,7 +77,7 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
               tabIndex={-1}
               type="button"
             >
-              <XCircle className="size-4 text-white/40" />
+              <XCircle className="size-4 text-muted-foreground" />
             </button>
           ) : null}
         </div>

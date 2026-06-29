@@ -15,6 +15,7 @@ import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublica
 import { batchLookup } from "./utils/batchLookup";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { enforceMediaQuota } from "./utils/featureGates";
+import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
   accessionDraftMediaValidator,
@@ -510,6 +511,11 @@ export const generateDraftUploadUrl = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+
+    if (!isSupportedMediaMimeType(args.mimeType)) {
+      throw new Error(`Unsupported file type: ${args.mimeType}`);
+    }
+
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     return {
@@ -1940,11 +1946,11 @@ export const createCollectionFromAccession = internalMutation({
       return accession.collectionId;
     }
 
-    const firstUser = await ctx.db.query("users").first();
-    const catalogedBy = accession.approvedBy ?? firstUser?._id;
-    if (!catalogedBy) {
-      throw new Error("Could not determine cataloging user");
+    if (!accession.approvedBy) {
+      throw new Error("Accession must be approved before publish");
     }
+
+    const catalogedBy = accession.approvedBy;
 
     const catalogedAt = accession.approvedAt ?? Date.now();
     const collectionId = await publishAccessionObjectDraft(ctx, {

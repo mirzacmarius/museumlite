@@ -179,6 +179,7 @@ export function InvitePageClient({ params }: PageProps) {
   const [isDeclining, setIsDeclining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const inviteReturnTo = `/${locale}/invite/${token}`;
 
   // Fetch invitation details (public query, no auth required)
   const invitation = useQuery(api.invitations.getInvitationByToken, { token });
@@ -225,6 +226,15 @@ export function InvitePageClient({ params }: PageProps) {
     } finally {
       setIsDeclining(false);
     }
+  };
+
+  const handleSignInToAccept = (email: string) => {
+    const params = new URLSearchParams({
+      email,
+      returnTo: inviteReturnTo,
+    });
+
+    push(`/${locale}/login?${params.toString()}`);
   };
 
   if (invitation === undefined) {
@@ -373,11 +383,7 @@ export function InvitePageClient({ params }: PageProps) {
         isDeclining={isDeclining}
         onAccept={handleAccept}
         onDecline={handleDecline}
-        onSignIn={() =>
-          push(
-            `/${locale}/login?returnTo=${encodeURIComponent(`/${locale}/invite/${token}`)}`,
-          )
-        }
+        onSignIn={() => handleSignInToAccept(invitation.email)}
         signInLabel={t("signInToAccept")}
       />
 

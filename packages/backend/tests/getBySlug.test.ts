@@ -4,7 +4,7 @@ import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
-test("getBySlug returns org without validation error", async () => {
+test("getBySlug returns public-safe org projection", async () => {
   const t = convexTest(schema, modules);
   await t.run(async (ctx) => {
     const userId = await ctx.db.insert("users", { email: "curator@example.com" });
@@ -18,6 +18,7 @@ test("getBySlug returns org without validation error", async () => {
       accountNumber: "ORG-001",
       allowsIncomingTransferRequests: true,
       settings: {
+        enabledIntegrations: ["slack"],
         portalSettings: { isEnabled: true, portalSlug: "gallery" },
         watermarkSettings: { isEnabled: true, text: "Museum" },
       },
@@ -27,4 +28,12 @@ test("getBySlug returns org without validation error", async () => {
     slug: "test-museum",
   });
   expect(result?.name).toBe("Test Museum");
+  expect(result?.settings?.portalSettings?.isEnabled).toBe(true);
+  expect(result?.settings?.portalSettings?.portalSlug).toBe("gallery");
+  expect(result).not.toHaveProperty("subscriptionTier");
+  expect(result).not.toHaveProperty("ownerUserId");
+  expect(result).not.toHaveProperty("parentOrganizationId");
+  expect(result).not.toHaveProperty("rootOrganizationId");
+  expect(result?.settings).not.toHaveProperty("enabledIntegrations");
+  expect(result?.settings).not.toHaveProperty("watermarkSettings");
 });

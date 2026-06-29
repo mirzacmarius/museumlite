@@ -6,16 +6,6 @@ import {
   createOrgUserWithPermissions,
 } from "./testHarness";
 
-test("should create import job from CSV", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should validate import field mapping", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
 test("should process import batch", async () => {
   const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(
@@ -215,13 +205,68 @@ test("should import warning-only accession rows with normalized values", async (
 });
 
 test("should track import progress", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    {
+      organizationName: "Import Test Museum",
+      slugPrefix: "import-progress",
+      subscriptionTier: "pro",
+    },
+  );
+  const authed = authedForUser(t, userId);
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    totalItems: 2,
+  });
+
+  await authed.mutation(api.imports.importAccessionsBatch, {
+    organizationId,
+    jobId,
+    batchIndex: 0,
+    rows: [
+      {
+        accessionNumber: "PROG-001",
+        dateReceived: "2024-01-15",
+        source: "Donor",
+        method: "gift",
+      },
+    ],
+  });
+
+  const job = await authed.query(api.imports.getImportJob, { jobId });
+
+  expect(job).not.toBeNull();
+  expect(job?.processedItems).toBe(1);
+  expect(job?.progress).toBeGreaterThan(0);
 });
 
 test("should rollback failed import", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create"],
+    {
+      organizationName: "Import Test Museum",
+      slugPrefix: "import-cancel",
+      subscriptionTier: "pro",
+    },
+  );
+  const authed = authedForUser(t, userId);
+
+  const jobId = await authed.mutation(api.imports.createImportJob, {
+    organizationId,
+    type: "csv",
+    totalItems: 1,
+  });
+
+  await authed.mutation(api.imports.cancelImportJob, { jobId });
+
+  const job = await authed.query(api.imports.getImportJob, { jobId });
+  expect(job?.status).toBe("failed");
 });
 
 test("getImportTemplate returns PastPerfect template", async () => {

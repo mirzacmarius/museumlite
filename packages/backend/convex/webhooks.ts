@@ -27,11 +27,23 @@ const WEBHOOK_EVENTS = [
 function generateSecret(): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let secret = "whsec_";
-  for (let i = 0; i < 32; i++) {
-    secret += chars.charAt(Math.floor(Math.random() * chars.length));
+  const alphabetLength = chars.length;
+  const limit = Math.floor(256 / alphabetLength) * alphabetLength;
+  const bodyLength = 32;
+
+  let body = "";
+  const randomBytes = new Uint8Array(bodyLength * 2);
+
+  while (body.length < bodyLength) {
+    crypto.getRandomValues(randomBytes);
+    for (const byte of randomBytes) {
+      if (byte >= limit) continue;
+      body += chars.charAt(byte % alphabetLength);
+      if (body.length === bodyLength) break;
+    }
   }
-  return secret;
+
+  return `whsec_${body}`;
 }
 
 export const listEvents = query({

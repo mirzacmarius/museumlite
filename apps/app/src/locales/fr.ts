@@ -235,8 +235,7 @@ export default {
         },
         requestError:
           "Impossible de planifier la suppression. Veuillez réessayer.",
-        cancelError:
-          "Impossible d'annuler la suppression. Veuillez réessayer.",
+        cancelError: "Impossible d'annuler la suppression. Veuillez réessayer.",
         transferError:
           "Impossible de transférer la propriété. Veuillez réessayer.",
       },
@@ -3690,7 +3689,7 @@ export default {
     decline: "Refuser l'invitation",
     accepting: "Acceptation...",
     declining: "Refus...",
-    signInToAccept: "Se connecter pour accepter",
+    signInToAccept: "Se connecter ou créer un compte pour accepter",
     loading: "Chargement de l'invitation...",
     notFound: "Invitation introuvable",
     notFoundDescription: "Ce lien d'invitation est invalide ou a été supprimé.",
@@ -3710,7 +3709,7 @@ export default {
     goToLogin: "Aller à la connexion",
     unknownInviter: "Inconnu",
     helpText:
-      "En acceptant, vous acceptez de rejoindre cette organisation avec le rôle spécifié.",
+      "Si vous n'avez pas encore de compte, utilisez l'e-mail de l'invitation pour en créer un. Après connexion, vous pourrez accepter cette invitation d'organisation.",
   },
   accessions: {
     title: "Acquisitions",

@@ -135,7 +135,6 @@ const organizationScopedTables = [
   "transitCounters",
   "installationTasks",
   "installationTaskTemplates",
-  "integrationSubscriptions",
   "contacts",
   "accountRelationships",
   "accountDocuments",
@@ -725,76 +724,81 @@ export const purgeOrganizationsInternal = internalMutation({
   },
   returns: v.array(purgeOrganizationResultValidator),
   handler: async (ctx, args): Promise<Array<PurgeOrganizationResult>> => {
-    const results: Array<PurgeOrganizationResult> = [];
+    const results = (
+      await Promise.all(
+        Array.from(args.organizationIds).map(async (organizationId) => {
+          const snapshot = await collectPurgeSnapshot(ctx, organizationId);
+          if (!snapshot) {
+            return null;
+          }
 
-    await Promise.all(
-      Array.from(args.organizationIds).map(async (organizationId) => {
-        const snapshot = await collectPurgeSnapshot(ctx, organizationId);
-        if (!snapshot) {
-          return;
-        }
-
-        let storageBytes = 0;
-        await Promise.all(
-          Array.from(snapshot.storageIds).map(async (storageId) => {
-            const storageDoc = await ctx.db.system.get(storageId);
-            storageBytes += storageDoc?.size ?? 0;
-          }),
-        );
-
-        if (!args.dryRun) {
-          await Promise.all([
-            Promise.all(
-              Array.from(snapshot.storageIds).map(async (storageId) => {
-                await ctx.storage.delete(storageId);
-              }),
-            ),
-            deleteDocuments(ctx, snapshot.childDocuments.rolePermissions),
-            deleteDocuments(ctx, snapshot.childDocuments.userSites),
-            deleteDocuments(ctx, snapshot.childDocuments.collectionGroupItems),
-            deleteDocuments(ctx, snapshot.childDocuments.locationHistory),
-            deleteDocuments(
-              ctx,
-              snapshot.childDocuments.organizationMoveRequests,
-            ),
-            deleteDocuments(ctx, snapshot.childDocuments.accountRoles),
-            deleteDocuments(ctx, snapshot.childDocuments.loanDocuments),
-            deleteDocuments(ctx, snapshot.childDocuments.conditionReports),
-            deleteDocuments(ctx, snapshot.childDocuments.loanItems),
-            deleteDocuments(ctx, snapshot.childDocuments.exhibitionDocuments),
-            deleteDocuments(ctx, snapshot.childDocuments.transitItems),
-            deleteDocuments(ctx, snapshot.childDocuments.transitStatusUpdates),
-            deleteDocuments(
-              ctx,
-              snapshot.childDocuments.installationTaskComments,
-            ),
-            deleteDocuments(
-              ctx,
-              snapshot.childDocuments.installationTaskChecklists,
-            ),
-            deleteDocuments(ctx, snapshot.childDocuments.userPreferences),
-            Promise.all(
-              Array.from(snapshot.organizationDocuments).flatMap((entry) =>
-                entry.docs.map((doc) => ctx.db.delete(doc._id)),
-              ),
-            ),
-            ctx.db.delete(snapshot.organization._id),
-          ] as const);
-        }
-
-        results.push({
-          organizationId,
-          organizationName: snapshot.organization.name,
-          dryRun: args.dryRun,
-          tableCounts: snapshot.tableCounts,
-          totalDocuments: snapshot.tableCounts.reduce(
-            (total, entry) => total + entry.count,
+          const storageByteSizes = await Promise.all(
+            Array.from(snapshot.storageIds).map(async (storageId) => {
+              const storageDoc = await ctx.db.system.get(storageId);
+              return storageDoc?.size ?? 0;
+            }),
+          );
+          const storageBytes = storageByteSizes.reduce<number>(
+            (total, size) => total + size,
             0,
-          ),
-          storageFiles: snapshot.storageIds.length,
-          storageBytes,
-        });
-      }),
+          );
+
+          if (!args.dryRun) {
+            await Promise.all([
+              Promise.all(
+                Array.from(snapshot.storageIds).map(async (storageId) => {
+                  await ctx.storage.delete(storageId);
+                }),
+              ),
+              deleteDocuments(ctx, snapshot.childDocuments.rolePermissions),
+              deleteDocuments(ctx, snapshot.childDocuments.userSites),
+              deleteDocuments(ctx, snapshot.childDocuments.collectionGroupItems),
+              deleteDocuments(ctx, snapshot.childDocuments.locationHistory),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.organizationMoveRequests,
+              ),
+              deleteDocuments(ctx, snapshot.childDocuments.accountRoles),
+              deleteDocuments(ctx, snapshot.childDocuments.loanDocuments),
+              deleteDocuments(ctx, snapshot.childDocuments.conditionReports),
+              deleteDocuments(ctx, snapshot.childDocuments.loanItems),
+              deleteDocuments(ctx, snapshot.childDocuments.exhibitionDocuments),
+              deleteDocuments(ctx, snapshot.childDocuments.transitItems),
+              deleteDocuments(ctx, snapshot.childDocuments.transitStatusUpdates),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.installationTaskComments,
+              ),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.installationTaskChecklists,
+              ),
+              deleteDocuments(ctx, snapshot.childDocuments.userPreferences),
+              Promise.all(
+                Array.from(snapshot.organizationDocuments).flatMap((entry) =>
+                  entry.docs.map((doc) => ctx.db.delete(doc._id)),
+                ),
+              ),
+              ctx.db.delete(snapshot.organization._id),
+            ] as const);
+          }
+
+          return {
+            organizationId,
+            organizationName: snapshot.organization.name,
+            dryRun: args.dryRun,
+            tableCounts: snapshot.tableCounts,
+            totalDocuments: snapshot.tableCounts.reduce(
+              (total, entry) => total + entry.count,
+              0,
+            ),
+            storageFiles: snapshot.storageIds.length,
+            storageBytes,
+          };
+        }),
+      )
+    ).filter(
+      (result): result is NonNullable<typeof result> => result !== null,
     );
 
     return results;

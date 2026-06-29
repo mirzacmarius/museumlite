@@ -2,7 +2,6 @@ import type { Product } from "@polar-sh/sdk/models/components/product.js";
 import type { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { env } from "./env";
@@ -13,6 +12,19 @@ auth.addHttpRoutes(http);
 
 function encodeBase64(value: string) {
   return btoa(value);
+}
+
+function toIsoString(value: string | Date): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function toOptionalIsoString(
+  value: string | Date | null | undefined,
+): string | null {
+  if (value == null) {
+    return null;
+  }
+  return toIsoString(value);
 }
 
 function serializeWebhookSubscription(
@@ -34,13 +46,13 @@ function serializeWebhookSubscription(
     currency: subscription.currency,
     recurringInterval: subscription.recurringInterval,
     status: subscription.status,
-    createdAt: subscription.createdAt.toISOString(),
-    modifiedAt: subscription.modifiedAt?.toISOString() ?? null,
-    currentPeriodStart: subscription.currentPeriodStart.toISOString(),
-    currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+    createdAt: toIsoString(subscription.createdAt),
+    modifiedAt: toOptionalIsoString(subscription.modifiedAt),
+    currentPeriodStart: toIsoString(subscription.currentPeriodStart),
+    currentPeriodEnd: toOptionalIsoString(subscription.currentPeriodEnd),
     cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-    startedAt: subscription.startedAt?.toISOString() ?? null,
-    endedAt: subscription.endedAt?.toISOString() ?? null,
+    startedAt: toOptionalIsoString(subscription.startedAt),
+    endedAt: toOptionalIsoString(subscription.endedAt),
     metadata: subscription.metadata,
     organizationId:
       typeof subscription.metadata?.organizationId === "string"
@@ -114,91 +126,10 @@ const billingWebhook = httpAction(async (ctx, request) => {
   }
 });
 
-const integrationWebhook = httpAction(async (ctx, request) => {
-  const { Webhook } = await import("standardwebhooks");
-
-  const webhookSecret =
-    env.POLAR_INTEGRATIONS_WEBHOOK_SECRET ?? env.POLAR_WEBHOOK_SECRET;
-
-  const body = await request.text();
-  const headers = {
-    "webhook-id": request.headers.get("webhook-id") ?? "",
-    "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
-    "webhook-signature": request.headers.get("webhook-signature") ?? "",
-  };
-
-  let payload: {
-    type: string;
-    data: {
-      id: string;
-      product_id: string;
-      customer_id: string;
-      status: string;
-      cancel_at_period_end: boolean;
-      current_period_end: string;
-      metadata?: Record<string, unknown>;
-    };
-  };
-
-  try {
-    const wh = new Webhook(webhookSecret);
-    payload = wh.verify(body, headers) as typeof payload;
-  } catch {
-    return new Response("Invalid webhook signature", { status: 401 });
-  }
-
-  const isSubscriptionEvent =
-    payload.type === "subscription.created" ||
-    payload.type === "subscription.updated" ||
-    payload.type === "subscription.canceled";
-
-  if (!isSubscriptionEvent) {
-    return new Response("OK", { status: 200 });
-  }
-
-  const metadata = payload.data.metadata;
-  if (!metadata?.organizationId || !metadata?.integrationId) {
-    return new Response("OK", { status: 200 });
-  }
-
-  const statusMap: Record<
-    string,
-    "active" | "canceled" | "past_due" | "unpaid" | "incomplete"
-  > = {
-    active: "active",
-    canceled: "canceled",
-    past_due: "past_due",
-    unpaid: "unpaid",
-    incomplete: "incomplete",
-  };
-
-  const status = statusMap[payload.data.status] ?? "incomplete";
-
-  await ctx.runMutation(internal.integrations.upsertIntegrationSubscription, {
-    organizationId: metadata.organizationId as Id<"organizations">,
-    integrationId: metadata.integrationId as string,
-    productId: payload.data.product_id,
-    subscriptionId: payload.data.id,
-    customerId: payload.data.customer_id,
-    status,
-    cancelAtPeriodEnd: payload.data.cancel_at_period_end,
-    currentPeriodEnd: new Date(payload.data.current_period_end).getTime(),
-    metadata,
-  });
-
-  return new Response("OK", { status: 200 });
-});
-
 http.route({
   path: "/polar/events",
   method: "POST",
   handler: billingWebhook,
-});
-
-http.route({
-  path: "/integrations/polar/webhook",
-  method: "POST",
-  handler: integrationWebhook,
 });
 
 const listObjects = httpAction(async (ctx, request) => {

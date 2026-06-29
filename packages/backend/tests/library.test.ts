@@ -1,116 +1,204 @@
-import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import schema from "../convex/schema";
+import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import {
+  authedForUser,
+  type ConvexTest,
+  createConvexTest,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
-import { modules } from "./testSetup";
+interface LibraryCatalogFixture {
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  patronId: Id<"accounts">;
+  authed: ReturnType<typeof authedForUser>;
+}
+
+async function setupLibraryCatalogFixture(
+  t: ConvexTest,
+): Promise<LibraryCatalogFixture> {
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [
+      "collections.create",
+      "collections.read",
+      "collections.update",
+      "accounts.read",
+      "accounts.write",
+    ],
+    {
+      organizationName: "Catalog Test Library",
+      slugPrefix: "catalog-lib",
+      subscriptionTier: "pro",
+      enabledModules: ["library", "accounts"],
+    },
+  );
+
+  const patronId = await t.run(async (ctx) => {
+    const now = Date.now();
+    await ctx.db.insert("librarySettings", {
+      organizationId,
+      defaultLoanPeriodDays: 14,
+      defaultRenewalLimit: 2,
+      renewalPeriodDays: 14,
+      maxRenewalsAllowed: 2,
+      finePerDayDefault: 0.25,
+      gracePeriodDays: 1,
+      holdExpirationDays: 7,
+      maxHoldsPerPatron: 10,
+      autoGenerateCardNumbers: true,
+      classificationSystem: "dewey",
+      createdAt: now,
+    });
+
+    return await ctx.db.insert("accounts", {
+      organizationId,
+      accountNumber: "PAT-CAT-001",
+      accountType: "patron",
+      status: "active",
+      firstName: "Pat",
+      lastName: "Reader",
+      cardNumber: "CARD-CAT-001",
+      createdBy: userId,
+      createdAt: now,
+    });
+  });
+
+  return {
+    organizationId,
+    userId,
+    patronId,
+    authed: authedForUser(t, userId),
+  };
+}
 
 test("should create library item and copy with barcode", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupLibraryCatalogFixture(t);
 
-  // const itemId = await t.mutation(api.library.items.create, {
-  //   organizationId,
-  //   title: "The Great Gatsby",
-  //   itemType: "book",
-  //   authors: ["F. Scott Fitzgerald"],
-  //   isbn13: "9780743273565",
-  //   language: "en",
-  // });
-  // const copyId = await t.mutation(api.library.copies.create, {
-  //   organizationId,
-  //   itemId,
-  //   copyNumber: 1,
-  //   barcode: "LIB0000001",
-  //   condition: "new",
-  // });
-  // expect(itemId).toBeDefined();
-  // expect(copyId).toBeDefined();
+  const itemId = await authed.mutation(api.library.items.create, {
+    organizationId,
+    title: "The Great Gatsby",
+    itemType: "book",
+    authors: ["F. Scott Fitzgerald"],
+    isbn13: "9780743273565",
+    language: "en",
+  });
 
-  expect(true).toBe(true);
+  const copyId = await authed.mutation(api.library.copies.create, {
+    itemId,
+    barcode: "LIB0000001",
+    condition: "new",
+  });
+
+  expect(itemId).toBeDefined();
+  expect(copyId).toBeDefined();
+
+  const copy = await t.run(async (ctx) => ctx.db.get(copyId));
+  expect(copy?.barcode).toBe("LIB0000001");
+  expect(copy?.itemId).toBe(itemId);
 });
 
 test("should checkout and return library item", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, patronId, authed } =
+    await setupLibraryCatalogFixture(t);
 
-  // const circulationId = await t.mutation(api.library.circulation.checkout, {
-  //   organizationId,
-  //   accountId: patronAccountId,
-  //   copyId,
-  // });
-  // const circ = await t.query(api.library.circulation.get, { circulationId });
-  // expect(circ?.status).toBe("active");
+  const itemId = await authed.mutation(api.library.items.create, {
+    organizationId,
+    title: "Checkout Test Book",
+    itemType: "book",
+    authors: ["Author"],
+    language: "en",
+  });
 
-  // await t.mutation(api.library.circulation.checkin, { circulationId });
-  // const returned = await t.query(api.library.circulation.get, { circulationId });
-  // expect(returned?.status).toBe("returned");
+  const copyId = await authed.mutation(api.library.copies.create, {
+    itemId,
+    barcode: "LIB0000002",
+    condition: "good",
+  });
 
-  expect(true).toBe(true);
-});
+  const circulationId = await authed.mutation(api.library.circulation.checkout, {
+    accountId: patronId,
+    copyId,
+  });
 
-test("should place and fulfill hold", async () => {
-  const _t = convexTest(schema, modules);
+  const circ = await authed.query(api.library.circulation.get, {
+    circulationId,
+  });
+  expect(circ?.status).toBe("active");
 
-  // const holdId = await t.mutation(api.library.holds.place, {
-  //   organizationId,
-  //   accountId: patronAccountId,
-  //   itemId,
-  // });
-  // const hold = await t.query(api.library.holds.get, { holdId });
-  // expect(hold?.status).toBe("pending");
-  // expect(hold?.queuePosition).toBe(1);
+  await authed.mutation(api.library.circulation.checkin, { circulationId });
 
-  // await t.mutation(api.library.holds.fulfill, { holdId, copyId });
-  // const fulfilled = await t.query(api.library.holds.get, { holdId });
-  // expect(fulfilled?.status).toBe("fulfilled");
-
-  expect(true).toBe(true);
+  const returned = await authed.query(api.library.circulation.get, {
+    circulationId,
+  });
+  expect(returned?.status).toBe("returned");
 });
 
 test("should calculate fines on overdue return", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, patronId, authed } =
+    await setupLibraryCatalogFixture(t);
 
-  // const fines = await t.query(api.library.fines.list, {
-  //   organizationId,
-  //   accountId: patronAccountId,
-  //   status: "outstanding",
-  // });
-  // expect(fines.length).toBeGreaterThan(0);
-  // expect(fines[0].fineType).toBe("overdue");
+  const fineId = await authed.mutation(api.library.fines.create, {
+    accountId: patronId,
+    fineType: "overdue",
+    description: "Overdue book",
+    amount: 5,
+  });
 
-  expect(true).toBe(true);
+  const fines = await authed.query(api.library.fines.list, {
+    organizationId,
+    status: "outstanding",
+    paginationOpts: { cursor: null, numItems: 10 },
+  });
+
+  expect(fines.page.length).toBeGreaterThan(0);
+  expect(fines.page.some((fine) => fine._id === fineId)).toBe(true);
+  expect(fines.page[0]?.fineType).toBe("overdue");
 });
 
 test("should process fine payment", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { patronId, authed } = await setupLibraryCatalogFixture(t);
 
-  // await t.mutation(api.library.fines.recordPayment, {
-  //   organizationId,
-  //   accountId: patronAccountId,
-  //   amount: 5.00,
-  //   paymentMethod: "cash",
-  //   fineIds: [fineId],
-  // });
-  // const fine = await t.query(api.library.fines.get, { fineId });
-  // expect(fine?.status).toBe("paid");
+  const fineId = await authed.mutation(api.library.fines.create, {
+    accountId: patronId,
+    fineType: "overdue",
+    description: "Overdue book",
+    amount: 5,
+  });
 
-  expect(true).toBe(true);
+  await authed.mutation(api.library.fines.recordPayment, {
+    accountId: patronId,
+    amount: 5,
+    paymentMethod: "cash",
+    fineIds: [fineId],
+  });
+
+  const fine = await authed.query(api.library.fines.get, { fineId });
+  expect(fine?.status).toBe("paid");
 });
 
 test("should submit and approve acquisition request", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupLibraryCatalogFixture(t);
 
-  // const requestId = await t.mutation(api.library.acquisitions.create, {
-  //   organizationId,
-  //   title: "New Book Request",
-  //   authors: ["Author Name"],
-  //   isbn: "9781234567890",
-  //   priority: "normal",
-  //   quantity: 1,
-  // });
-  // expect(requestId).toBeDefined();
+  const requestId = await authed.mutation(api.library.acquisitions.create, {
+    organizationId,
+    title: "New Book Request",
+    authors: ["Author Name"],
+    isbn: "9781234567890",
+    priority: "normal",
+    quantity: 1,
+  });
 
-  // await t.mutation(api.library.acquisitions.approve, { requestId });
-  // const request = await t.query(api.library.acquisitions.get, { requestId });
-  // expect(request?.status).toBe("approved");
+  expect(requestId).toBeDefined();
 
-  expect(true).toBe(true);
+  await authed.mutation(api.library.acquisitions.approve, { requestId });
+
+  const request = await t.run(async (ctx) => ctx.db.get(requestId));
+  expect(request?.status).toBe("approved");
 });

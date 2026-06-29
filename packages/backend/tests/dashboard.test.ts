@@ -584,6 +584,8 @@ describe("Dashboard: getAnalytics", () => {
 });
 
 describe("Dashboard: getOperationalKpis", () => {
+  const fixedNow = 1_700_000_000_000;
+
   test("returns zero inventory valuation when the module is disabled by default", async () => {
     // #given
     const t = convexTest(schema, modules);
@@ -618,6 +620,7 @@ describe("Dashboard: getOperationalKpis", () => {
     });
     const kpis = await authed.query(api.dashboard.getOperationalKpis, {
       organizationId,
+      now: fixedNow,
     });
 
     // #then
@@ -661,6 +664,7 @@ describe("Dashboard: getOperationalKpis", () => {
     });
     const kpis = await authed.query(api.dashboard.getOperationalKpis, {
       organizationId,
+      now: fixedNow,
     });
 
     // #then
@@ -722,6 +726,7 @@ describe("Dashboard: getComplianceReport", () => {
     });
     const report = await authed.query(api.dashboard.getComplianceReport, {
       organizationId,
+      now: rangeEnd,
       dateRangeStart: rangeStart,
       dateRangeEnd: rangeEnd,
     });

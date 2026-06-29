@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireLibraryPermission } from "./utils/permissions";
+import { assertSameOrganization } from "./utils/tenantIntegrity";
 
 const fineTypeValidator = v.union(
   v.literal("overdue"),
@@ -109,21 +110,43 @@ export const recordPayment = mutation({
 
     const now = Date.now();
     let remainingPayment = args.amount;
+    let appliedPayment = 0;
     const paidFineIds: Id<"libraryFines">[] = [];
 
     if (args.fineIds && args.fineIds.length > 0) {
       const fines = await Promise.all(
         args.fineIds.map((fineId) => ctx.db.get(fineId)),
       );
-      const patchPromises: Array<Promise<void>> = [];
+      const payableFines: Array<{
+        fineId: Id<"libraryFines">;
+        fine: NonNullable<(typeof fines)[number]>;
+      }> = [];
 
       for (let i = 0; i < args.fineIds.length; i++) {
-        if (remainingPayment <= 0) break;
-
         const fineId = args.fineIds[i];
         const fine = fines[i];
-        if (!fineId || !fine || fine.accountId !== args.accountId) continue;
-        if (fine.status !== "outstanding") continue;
+        if (!fineId || !fine) {
+          throw new Error("Fine not found");
+        }
+        assertSameOrganization(
+          fine.organizationId,
+          account.organizationId,
+          "Fine",
+        );
+        if (fine.accountId !== args.accountId) {
+          throw new Error("Fine does not belong to the specified account");
+        }
+        if (fine.status !== "outstanding") {
+          throw new Error("Can only pay outstanding fines");
+        }
+
+        payableFines.push({ fineId, fine });
+      }
+
+      const patchPromises: Array<Promise<void>> = [];
+
+      for (const { fineId, fine } of payableFines) {
+        if (remainingPayment <= 0) break;
 
         const paymentForFine = Math.min(remainingPayment, fine.balance);
         const newAmountPaid = fine.amountPaid + paymentForFine;
@@ -141,6 +164,7 @@ export const recordPayment = mutation({
         );
 
         remainingPayment -= paymentForFine;
+        appliedPayment += paymentForFine;
         paidFineIds.push(fineId);
       }
 
@@ -175,6 +199,7 @@ export const recordPayment = mutation({
         );
 
         remainingPayment -= paymentForFine;
+        appliedPayment += paymentForFine;
         paidFineIds.push(fine._id);
       }
 
@@ -193,7 +218,7 @@ export const recordPayment = mutation({
       notes: args.notes,
     });
 
-    const newBalance = Math.max(0, (account.fineBalance || 0) - args.amount);
+    const newBalance = Math.max(0, (account.fineBalance || 0) - appliedPayment);
     await ctx.db.patch(args.accountId, { fineBalance: newBalance });
 
     return paymentId;

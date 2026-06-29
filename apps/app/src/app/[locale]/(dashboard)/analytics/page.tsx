@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import { ClientTime } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useClientNow } from "@/hooks/use-client-date-format";
 import { useI18n } from "@/locales/client";
 
 const chartFallback = () => (
@@ -93,25 +94,35 @@ export default function AnalyticsPage() {
   const hasReporting = hasFeature("reporting");
   const hasCompliance = hasFeature("compliance");
   const hasInventoryValuation = hasModule("inventory_valuation");
+  const now = useClientNow();
 
   const kpis = useQuery(
     api.dashboard.getOperationalKpis,
-    currentOrganizationId && hasReporting
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+    currentOrganizationId && hasReporting && now !== undefined
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          now,
+        }
       : "skip",
   );
 
   const compliance = useQuery(
     api.dashboard.getComplianceReport,
-    currentOrganizationId && hasCompliance
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+    currentOrganizationId && hasCompliance && now !== undefined
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          now,
+        }
       : "skip",
   );
 
   const locationUtilization = useQuery(
     api.dashboard.getLocationUtilization,
-    currentOrganizationId && hasReporting
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+    currentOrganizationId && hasReporting && now !== undefined
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          now,
+        }
       : "skip",
   );
 

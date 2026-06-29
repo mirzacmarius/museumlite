@@ -51,9 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - name: 🧪 Test (backend)
-        working-directory: packages/backend
-        run: bun run test:once
+      - name: 🧪 Test
+        run: bun run test
 
   build:
     runs-on: ubuntu-latest

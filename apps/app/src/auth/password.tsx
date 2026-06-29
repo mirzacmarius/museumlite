@@ -161,14 +161,14 @@ export function AuthPasswordForm({
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-1">
         <label
-          className="text-xs font-medium text-white/70"
+          className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-email-disabled"
         >
           Email
         </label>
         <div className="relative flex items-center rounded-md border border-white/10 bg-background">
           <Input
-            className="h-10 border-0 pr-10 text-white/75"
+            className="h-10 border-0 pr-10 text-muted-foreground"
             disabled
             id="auth-email-disabled"
             type="email"
@@ -180,14 +180,14 @@ export function AuthPasswordForm({
             onClick={onEmailClear}
             type="button"
           >
-            <XCircle className="size-4 text-white/40" />
+            <XCircle className="size-4 text-muted-foreground" />
           </button>
         </div>
       </div>
 
       <div className="space-y-1">
         <label
-          className="text-xs font-medium text-white/70"
+          className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-password"
         >
           {isSignUp ? "Set password" : "Password"}
@@ -211,15 +211,15 @@ export function AuthPasswordForm({
             type="button"
           >
             {state.showPassword ? (
-              <EyeOff className="size-4 text-white/40" />
+              <EyeOff className="size-4 text-muted-foreground" />
             ) : (
-              <Eye className="size-4 text-white/40" />
+              <Eye className="size-4 text-muted-foreground" />
             )}
           </button>
         </div>
         {mode === "signIn" ? (
           <button
-            className="text-xs font-medium text-white/70 transition-colors hover:text-white"
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => {
               void onForgotPassword();
             }}
@@ -233,7 +233,7 @@ export function AuthPasswordForm({
       {isSignUp ? (
         <div className="space-y-1">
           <label
-            className="text-xs font-medium text-white/70"
+            className="text-xs font-medium text-muted-foreground"
             htmlFor="auth-confirm-password"
           >
             Confirm password
@@ -262,9 +262,9 @@ export function AuthPasswordForm({
               type="button"
             >
               {state.showRetypePassword ? (
-                <EyeOff className="size-4 text-white/40" />
+                <EyeOff className="size-4 text-muted-foreground" />
               ) : (
-                <Eye className="size-4 text-white/40" />
+                <Eye className="size-4 text-muted-foreground" />
               )}
             </button>
           </div>

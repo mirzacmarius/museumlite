@@ -223,8 +223,7 @@ export default {
         },
         cancelDialog: {
           title: "Avbryte planlagt sletting?",
-          description:
-            "Organisasjonen din reaktiveres og slettingen stoppes.",
+          description: "Organisasjonen din reaktiveres og slettingen stoppes.",
           confirm: "Avbryt sletting",
           cancel: "Behold planlagt sletting",
         },
@@ -345,8 +344,7 @@ export default {
     },
     inventory_valuation: {
       name: "Beholdningsvurdering",
-      description:
-        "Spor verditotaler for kunst, vin og kjøretøy i Analytics.",
+      description: "Spor verditotaler for kunst, vin og kjøretøy i Analytics.",
     },
     coins_stamps: {
       name: "Mynter og frimerker",
@@ -1418,8 +1416,7 @@ export default {
       noOrganizationDescription:
         "Du må opprette en organisasjon for å administrere reservasjoner.",
       selectOrganization: "Velg en Organisasjon",
-      selectOrganizationDescription:
-        "Velg en organisasjon fra menyen ovenfor.",
+      selectOrganizationDescription: "Velg en organisasjon fra menyen ovenfor.",
       notEnabled: "Bibliotek Ikke Aktivert",
       notEnabledDescription:
         "Bibliotekintegrasjonen er ikke aktivert for denne organisasjonen.",
@@ -3428,8 +3425,7 @@ export default {
       scheduleWeekly: "Ukentlig",
       scheduleMonthly: "Månedlig",
       create: "Legg til",
-      reportTypeHint:
-        "Operative KPI-rapport (inventar, lån, utstillinger).",
+      reportTypeHint: "Operative KPI-rapport (inventar, lån, utstillinger).",
       loading: "Laster planer…",
       empty:
         "Ingen planlagte rapporter ennå. Opprett en for å automatisere operative KPI-øyeblikksbilder.",
@@ -3645,7 +3641,7 @@ export default {
     decline: "Avslå invitasjon",
     accepting: "Godtar...",
     declining: "Avslår...",
-    signInToAccept: "Logg inn for å godta",
+    signInToAccept: "Logg inn eller opprett konto for å godta",
     loading: "Laster invitasjon...",
     notFound: "Invitasjon ikke funnet",
     notFoundDescription:
@@ -3667,7 +3663,7 @@ export default {
     goToLogin: "Gå til innlogging",
     unknownInviter: "Ukjent",
     helpText:
-      "Ved å godta, samtykker du til å bli med i denne organisasjonen med den angitte rollen.",
+      "Hvis du ikke har en konto ennå, bruker du e-posten i invitasjonen for å opprette en først. Etter innlogging kan du godta denne organisasjonsinvitasjonen.",
   },
   accessions: {
     title: "Aksessjoner",

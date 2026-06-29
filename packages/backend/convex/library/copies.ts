@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { requireLibraryPermission } from "./utils/permissions";
+import { loadLocationForOrg } from "./utils/tenantIntegrity";
 
 // Copy status validator
 const _copyStatusValidator = v.union(
@@ -58,6 +59,10 @@ export const create = mutation({
     }
 
     await requireLibraryPermission(ctx, item.organizationId, "collections.create");
+
+    if (args.locationId) {
+      await loadLocationForOrg(ctx, args.locationId, item.organizationId);
+    }
 
     // Check if barcode is unique within organization
     const existingCopy = await ctx.db

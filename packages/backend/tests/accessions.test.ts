@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import {
   authedForUser,
   type ConvexTest,
@@ -15,36 +15,6 @@ async function createOrgUserWithPermissions(
     roleName: "Registrar",
   });
 }
-
-test("should create accession record", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should generate accession number", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should link accession to collection object", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should track accession workflow status", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should attach donor information", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should complete accession process", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
 
 test("object draft save keeps the accession at workflow step 0", async () => {
   const t = createConvexTest();
@@ -1087,6 +1057,97 @@ test("organization administrators can approve an accession even when the workflo
   expect(collection?.title).toBe("Admin Override Accession");
 });
 
+test("createCollectionFromAccession fails when approvedBy is missing", async () => {
+  const t = createConvexTest();
+  const { organizationId, accessionId } = await t.run(async (ctx) => {
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Publish Guard Museum",
+      slug: `publish-guard-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+
+    const accessionId = await ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "PUBLISH-NO-APPROVER-001",
+      dateReceived: Date.now(),
+      source: "Test source",
+      method: "gift",
+      status: "approved",
+    });
+
+    return { organizationId, accessionId };
+  });
+
+  await expect(
+    t.run(async (ctx) => {
+      return await ctx.runMutation(
+        internal.accessions.createCollectionFromAccession,
+        { accessionId },
+      );
+    }),
+  ).rejects.toThrow("Accession must be approved before publish");
+
+  const collection = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_accessionNumber", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("accessionNumber", "PUBLISH-NO-APPROVER-001"),
+      )
+      .first();
+  });
+
+  expect(collection).toBeNull();
+});
+
+test("createCollectionFromAccession sets catalogedBy from approvedBy", async () => {
+  const t = createConvexTest();
+  const { userId, accessionId } = await t.run(async (ctx) => {
+    const organizationId = await ctx.db.insert("organizations", {
+      name: "Publish Approver Museum",
+      slug: `publish-approver-${Math.random().toString(36).slice(2, 8)}`,
+      type: "museum",
+    });
+    const userId = await ctx.db.insert("users", {
+      email: `approver-${Math.random().toString(36).slice(2, 8)}@example.com`,
+      name: "Final Approver",
+    });
+    const approvedAt = Date.now();
+
+    const accessionId = await ctx.db.insert("accessions", {
+      organizationId,
+      accessionNumber: "PUBLISH-WITH-APPROVER-001",
+      dateReceived: Date.now(),
+      source: "Test source",
+      method: "gift",
+      status: "approved",
+      approvedBy: userId,
+      approvedAt,
+      draftObjectData: {
+        title: "Published From Approved Accession",
+      },
+    });
+
+    return { organizationId, userId, accessionId };
+  });
+
+  const collectionId = await t.run(async (ctx) => {
+    return await ctx.runMutation(
+      internal.accessions.createCollectionFromAccession,
+      { accessionId },
+    );
+  });
+
+  const collection = await t.run(async (ctx) => {
+    return await ctx.db.get(collectionId);
+  });
+
+  expect(collection).not.toBeNull();
+  expect(collection?.catalogedBy).toBe(userId);
+  expect(collection?.title).toBe("Published From Approved Accession");
+});
+
 /**
  * Integration test for batch lookup optimization (N+1 query elimination).
  *
@@ -1260,4 +1321,39 @@ test("should batch lookup collections and assignees for list query", async () =>
     expect(accession.assigneeName).toBeDefined();
     expect(accession.assigneeName).toMatch(/^Curator [1-3]$/);
   }
+});
+
+test("generateDraftUploadUrl rejects unsupported MIME types", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "media.upload",
+  ]);
+  const authed = authedForUser(t, userId);
+
+  await expect(
+    authed.mutation(api.accessions.generateDraftUploadUrl, {
+      organizationId,
+      fileName: "malware.exe",
+      fileSize: 1024,
+      mimeType: "application/x-msdownload",
+    }),
+  ).rejects.toThrow("Unsupported file type: application/x-msdownload");
+});
+
+test("generateDraftUploadUrl accepts supported MIME types", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "media.upload",
+  ]);
+  const authed = authedForUser(t, userId);
+
+  const result = await authed.mutation(api.accessions.generateDraftUploadUrl, {
+    organizationId,
+    fileName: "photo.jpg",
+    fileSize: 1024,
+    mimeType: "image/jpeg",
+  });
+
+  expect(result.uploadUrl).toBeDefined();
+  expect(typeof result.uploadUrl).toBe("string");
 });
