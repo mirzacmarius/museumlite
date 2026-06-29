@@ -10,36 +10,6 @@ import {
   createOrgUserWithPermissions,
 } from "./testHarness";
 
-test("should create organization", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should add user to organization", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should assign role to user", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should update organization settings", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should remove user from organization", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should transfer organization ownership", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
 describe("organizations.get security (IDOR fix)", () => {
   test("member can read their own org", async () => {
     const t = createConvexTest();

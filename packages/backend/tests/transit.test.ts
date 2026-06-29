@@ -1,124 +1,240 @@
-import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
+import type { Id } from "../convex/_generated/dataModel";
+import {
+  authedForUser,
+  type ConvexTest,
+  createConvexTest,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
-import { modules } from "./testSetup";
+const transitPermissions = [
+  "loans.create",
+  "loans.read",
+  "loans.update",
+  "organization.manage_settings",
+] as const;
+
+interface TransitFixture {
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  collectionId: Id<"collections">;
+  loanId: Id<"loans">;
+  authed: ReturnType<typeof authedForUser>;
+}
+
+async function setupTransitFixture(t: ConvexTest): Promise<TransitFixture> {
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...transitPermissions],
+    {
+      subscriptionTier: "pro",
+      slugPrefix: "transit-test",
+    },
+  );
+
+  const collectionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `TRN-${Math.random().toString(36).slice(2, 8)}`,
+      title: "Transit Test Object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+  });
+
+  const authed = authedForUser(t, userId);
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: `LOAN-TRN-${Math.random().toString(36).slice(2, 6)}`,
+    type: "outgoing",
+    lenderBorrowerName: "Partner Gallery",
+    startDate: Date.now(),
+    endDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    collectionIds: [collectionId],
+  });
+
+  return { organizationId, userId, collectionId, loanId, authed };
+}
 
 test("should create transit record with auto-generated number", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
 
-  // 1. Create a transit record
-  // const transitId = await t.mutation(api.transit.createTransitRecord, {
-  //   organizationId: "test-org-id" as Id<"organizations">,
-  //   transitType: "outgoing",
-  //   originName: "Museum Storage",
-  //   destinationName: "Partner Gallery",
-  //   carrier: "Art Handler Co",
-  // });
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
 
-  // 2. Verify transit number format TRN-YYYY-XXXX
-  // const transit = await t.query(api.transit.getTransitRecord, { transitRecordId: transitId });
-  // expect(transit?.transitNumber).toMatch(/^TRN-\d{4}-\d{4}$/);
+  const transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId: transitId,
+  });
 
-  expect(true).toBe(true);
+  expect(transit).not.toBeNull();
+  expect(transit?.transitNumber).toMatch(/^TRN-\d{4}-\d{4}$/);
+  expect(transit?.status).toBe("draft");
 });
 
 test("should update transit status and create status history", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
 
-  // 1. Create transit record
-  // const transitId = await t.mutation(api.transit.createTransitRecord, { /* ... */ });
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
 
-  // 2. Update status to in_transit
-  // await t.mutation(api.transit.updateTransitStatus, {
-  //   transitRecordId: transitId,
-  //   status: "in_transit",
-  //   description: "Picked up by carrier",
-  // });
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "in_transit",
+    description: "Picked up by carrier",
+  });
 
-  // 3. Verify status updated and history entry created
-  // const transit = await t.query(api.transit.getTransitRecord, { transitRecordId: transitId });
-  // expect(transit?.status).toBe("in_transit");
-  // expect(transit?.statusHistory.length).toBeGreaterThan(0);
+  const transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId: transitId,
+  });
 
-  expect(true).toBe(true);
+  expect(transit?.status).toBe("in_transit");
+  expect(transit?.statusHistory.length).toBeGreaterThan(0);
+  expect(transit?.statusHistory[0]?.description).toBe("Picked up by carrier");
 });
 
 test("should link transit to loan and retrieve via getTransitForLoan", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, loanId, authed } = await setupTransitFixture(t);
 
-  // 1. Create transit record linked to loan
-  // const transitId = await t.mutation(api.transit.createTransitRecord, {
-  //   /* ... */
-  //   loanId: someLoanId,
-  // });
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+    loanId,
+  });
 
-  // 2. Query transits for that loan
-  // const transits = await t.query(api.transit.getTransitForLoan, { loanId: someLoanId });
-  // expect(transits.length).toBe(1);
-  // expect(transits[0]._id).toBe(transitId);
+  const transits = await authed.query(api.transit.getTransitForLoan, {
+    loanId,
+  });
 
-  expect(true).toBe(true);
+  expect(transits).toHaveLength(1);
+  expect(transits[0]?._id).toBe(transitId);
 });
 
 test("should add and remove items from transit", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId, collectionId, authed } =
+    await setupTransitFixture(t);
 
-  // 1. Create transit record
-  // const transitId = await t.mutation(api.transit.createTransitRecord, { /* ... */ });
+  const secondCollectionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `TRN-2-${Math.random().toString(36).slice(2, 6)}`,
+      title: "Second Transit Object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+  });
 
-  // 2. Add items
-  // await t.mutation(api.transit.addItemsToTransit, {
-  //   transitRecordId: transitId,
-  //   collectionIds: [collectionId1, collectionId2],
-  // });
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+    collectionIds: [collectionId],
+  });
 
-  // 3. Verify items added
-  // const transit = await t.query(api.transit.getTransitRecord, { transitRecordId: transitId });
-  // expect(transit?.items.length).toBe(2);
+  await authed.mutation(api.transit.addItemsToTransit, {
+    transitRecordId: transitId,
+    collectionIds: [secondCollectionId],
+  });
 
-  // 4. Remove one item
-  // await t.mutation(api.transit.removeItemFromTransit, { transitItemId: transit.items[0]._id });
+  let transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId: transitId,
+  });
+  expect(transit?.items).toHaveLength(2);
 
-  // 5. Verify item removed
-  // const updated = await t.query(api.transit.getTransitRecord, { transitRecordId: transitId });
-  // expect(updated?.items.length).toBe(1);
+  const itemToRemove = transit?.items.find(
+    (item) => item.collectionId === secondCollectionId,
+  );
+  expect(itemToRemove).toBeDefined();
 
-  expect(true).toBe(true);
+  await authed.mutation(api.transit.removeItemFromTransit, {
+    transitItemId: itemToRemove!._id,
+  });
+
+  transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId: transitId,
+  });
+  expect(transit?.items).toHaveLength(1);
 });
 
 test("should update transit item status on delivery", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, collectionId, authed } =
+    await setupTransitFixture(t);
 
-  // 1. Create transit with items
-  // const transitId = await t.mutation(api.transit.createTransitRecord, {
-  //   /* ... */
-  //   collectionIds: [collectionId1],
-  // });
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+    collectionIds: [collectionId],
+  });
 
-  // 2. Update status to delivered
-  // await t.mutation(api.transit.updateTransitStatus, {
-  //   transitRecordId: transitId,
-  //   status: "delivered",
-  //   description: "Successfully delivered",
-  // });
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "in_transit",
+    description: "En route",
+  });
 
-  // 3. Verify items also marked as delivered
-  // const transit = await t.query(api.transit.getTransitRecord, { transitRecordId: transitId });
-  // expect(transit?.items[0].status).toBe("delivered");
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "delivered",
+    description: "Successfully delivered",
+  });
 
-  expect(true).toBe(true);
+  const transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId: transitId,
+  });
+
+  expect(transit?.items[0]?.status).toBe("delivered");
 });
 
 test("should prevent deletion of in-transit records", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
 
-  expect(true).toBe(true);
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "in_transit",
+    description: "In transit",
+  });
+
+  await expect(
+    authed.mutation(api.transit.deleteTransitRecord, { transitRecordId: transitId }),
+  ).rejects.toThrow("Can only delete draft or cancelled transit records");
 });
 
 test("should require permission for getTransitForLoanWithHistory", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
 
   const orgId = await t.run(async (ctx) => {
     return await ctx.db.insert("organizations", {
@@ -147,13 +263,38 @@ test("should require permission for getTransitForLoanWithHistory", async () => {
 });
 
 test("should return empty array when no transit records exist", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { loanId, authed } = await setupTransitFixture(t);
 
-  expect(true).toBe(true);
+  const transits = await authed.query(api.transit.getTransitForLoan, { loanId });
+
+  expect(transits).toEqual([]);
 });
 
 test("should return transit records with status history", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, loanId, authed } = await setupTransitFixture(t);
 
-  expect(true).toBe(true);
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+    loanId,
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "scheduled",
+    description: "Pickup scheduled",
+  });
+
+  const records = await authed.query(api.transit.getTransitForLoanWithHistory, {
+    loanId,
+  });
+
+  expect(records).toHaveLength(1);
+  expect(records[0]?._id).toBe(transitId);
+  expect(records[0]?.statusHistory.length).toBeGreaterThan(0);
 });
