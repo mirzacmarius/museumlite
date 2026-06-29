@@ -18,7 +18,6 @@ import {
   generateNextLoanNumber,
   generateNextTransitNumber,
   getCurrentYear,
-  getNextCategoryScopedAccountValue,
   getNextGlobalValue,
   getNextYearBasedValue,
   padNumber,
