@@ -515,6 +515,71 @@ describe("notification CRUD operations", () => {
     expect(notifications.every((n) => n?.read === true)).toBe(true);
   });
 
+  test("bulkDelete returns accurate count for multiple owned notifications", async () => {
+    const t = convexTest(schema, modules);
+
+    const { ownerId, notificationIds } = await t.run(
+      async (ctx) => {
+        const orgId = await ctx.db.insert("organizations", {
+          name: "Bulk Delete Org",
+          slug: "bulk-delete-org",
+          type: "museum",
+        });
+        const ownerId = await ctx.db.insert("users", {
+          name: "Owner",
+          email: "owner@example.com",
+        });
+        const otherUserId = await ctx.db.insert("users", {
+          name: "Other User",
+          email: "other@example.com",
+        });
+
+        const notificationIds = await Promise.all(
+          Array.from({ length: 4 }, (_, i) =>
+            ctx.db.insert("notifications", {
+              organizationId: orgId,
+              userId: ownerId,
+              type: "task_assigned",
+              title: `Owned ${i}`,
+              message: `Message ${i}`,
+              read: false,
+              createdAt: Date.now() + i,
+            }),
+          ),
+        );
+
+        const otherUserNotificationId = await ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId: otherUserId,
+          type: "task_assigned",
+          title: "Other user notification",
+          message: "Should not be deleted",
+          read: false,
+          createdAt: Date.now(),
+        });
+
+        return {
+          ownerId,
+          notificationIds: [...notificationIds, otherUserNotificationId],
+        };
+      },
+    );
+
+    const authed = authedForUser(t, ownerId);
+    const deletedCount = await authed.mutation(api.notifications.bulkDelete, {
+      notificationIds,
+    });
+
+    expect(deletedCount).toBe(4);
+
+    const remaining = await t.run(async (ctx) => {
+      return await Promise.all(notificationIds.map((id) => ctx.db.get(id)));
+    });
+
+    expect(remaining.filter((n) => n?.userId === ownerId)).toHaveLength(0);
+    expect(remaining.find((n) => n !== null && n.userId !== ownerId)).toBeDefined();
+  });
+
   test("should bulk delete notifications", async () => {
     const t = convexTest(schema, modules);
 

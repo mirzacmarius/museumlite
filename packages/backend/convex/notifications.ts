@@ -449,18 +449,18 @@ export const bulkDelete = mutation({
       throw new Error("Not authenticated");
     }
 
-    let count = 0;
-    await Promise.all(
+    const deleteResults = await Promise.all(
       Array.from(args.notificationIds).map(async (notificationId) => {
         const notification = await ctx.db.get(notificationId);
         if (notification && notification.userId === userId) {
           await ctx.db.delete(notificationId);
-          count++;
+          return 1;
         }
+        return 0;
       }),
     );
 
-    return count;
+    return deleteResults.reduce<number>((total, deleted) => total + deleted, 0);
   },
 });
 
@@ -582,7 +582,6 @@ export const sendNotificationToUsers = internalMutation({
   returns: v.number(),
   handler: async (ctx, args) => {
     const now = Date.now();
-    let count = 0;
 
     await Promise.all(
       Array.from(args.userIds).map(async (userId) => {
@@ -597,7 +596,6 @@ export const sendNotificationToUsers = internalMutation({
           relatedEntityId: args.relatedEntityId,
           createdAt: now,
         });
-        count++;
 
         // Send email notification if user has instant email enabled
         await ctx.runMutation(internal.notifications.sendEmailNotification, {
@@ -611,7 +609,7 @@ export const sendNotificationToUsers = internalMutation({
       }),
     );
 
-    return count;
+    return args.userIds.length;
   },
 });
 
@@ -644,7 +642,6 @@ export const notifyUsersWithPermission = internalMutation({
 
     // Inline notification creation to avoid circular type reference
     const now = Date.now();
-    let count = 0;
 
     await Promise.all(
       Array.from(userIds).map(async (userId) => {
@@ -659,11 +656,10 @@ export const notifyUsersWithPermission = internalMutation({
           relatedEntityId: args.relatedEntityId,
           createdAt: now,
         });
-        count++;
       }),
     );
 
-    return count;
+    return userIds.length;
   },
 });
 

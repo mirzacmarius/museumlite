@@ -452,9 +452,7 @@ export const addItems = mutation({
     await requirePermission(ctx, group.organizationId, "collections.update");
     await checkGroupAccessControl(ctx, group, userId);
 
-    let addedCount = 0;
-
-    await Promise.all(
+    const addResults = await Promise.all(
       Array.from(args.collectionIds).map(async (collectionId) => {
         // Check if collection exists and belongs to same organization
         const collection = await ctx.db.get(collectionId);
@@ -482,10 +480,12 @@ export const addItems = mutation({
             addedAt: Date.now(),
             addedBy: userId,
           });
-          addedCount++;
+          return 1;
         }
+        return 0;
       }),
     );
+    const addedCount = addResults.reduce<number>((total, added) => total + added, 0);
 
     // Update items count
     if (addedCount > 0) {
@@ -533,9 +533,7 @@ export const removeItems = mutation({
     await requirePermission(ctx, group.organizationId, "collections.update");
     await checkGroupAccessControl(ctx, group, userId);
 
-    let removedCount = 0;
-
-    await Promise.all(
+    const removeResults = await Promise.all(
       Array.from(args.collectionIds).map(async (collectionId) => {
         const item = await ctx.db
           .query("collectionGroupItems")
@@ -548,9 +546,14 @@ export const removeItems = mutation({
 
         if (item) {
           await ctx.db.delete(item._id);
-          removedCount++;
+          return 1;
         }
+        return 0;
       }),
+    );
+    const removedCount = removeResults.reduce<number>(
+      (total, removed) => total + removed,
+      0,
     );
 
     // Update items count

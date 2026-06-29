@@ -477,14 +477,13 @@ export const expireOldHoldsAllOrgs = internalMutation({
   handler: async (ctx) => {
     const libraryOrgs = await ctx.db.query("librarySettings").collect();
 
-    let totalExpired = 0;
-    await Promise.all(
-      libraryOrgs.map(async (settings) => {
-        totalExpired += await expireHoldsForOrg(ctx, settings.organizationId);
-      }),
+    const expiredCounts = await Promise.all(
+      libraryOrgs.map(async (settings) =>
+        expireHoldsForOrg(ctx, settings.organizationId),
+      ),
     );
 
-    return totalExpired;
+    return expiredCounts.reduce<number>((total, count) => total + count, 0);
   },
 });
 

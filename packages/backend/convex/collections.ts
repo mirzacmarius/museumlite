@@ -2513,14 +2513,16 @@ export const emptyDeletedCollections = mutation({
       )
       .collect();
 
-    let deletedCount = 0;
-
-    await Promise.all(
+    const deleteResults = await Promise.all(
       Array.from(deletedCollections).map(async (collection) => {
         await deleteCollectionDependents(ctx, collection._id);
         await ctx.db.delete(collection._id);
-        deletedCount += 1;
+        return 1;
       }),
+    );
+    const deletedCount = deleteResults.reduce<number>(
+      (total, deleted) => total + deleted,
+      0,
     );
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -3053,15 +3055,11 @@ export const bulkUpdateLocation = mutation({
       throw new Error("Not authenticated");
     }
 
-    let updated = 0;
-    let failed = 0;
-
-    await Promise.all(
+    const outcomes = await Promise.all(
       Array.from(args.collectionIds).map(async (collectionId) => {
         const collection = await ctx.db.get(collectionId);
         if (!collection) {
-          failed++;
-          return;
+          return "failed" as const;
         }
 
         try {
@@ -3076,12 +3074,22 @@ export const bulkUpdateLocation = mutation({
             lastModifiedBy: userId,
             lastModifiedAt: Date.now(),
           });
-          updated++;
+          return "updated" as const;
         } catch {
-          failed++;
+          return "failed" as const;
         }
       }),
     );
+
+    let updated = 0;
+    let failed = 0;
+    for (const outcome of outcomes) {
+      if (outcome === "updated") {
+        updated++;
+      } else {
+        failed++;
+      }
+    }
 
     return { updated, failed };
   },
@@ -3103,26 +3111,19 @@ export const bulkDeaccession = mutation({
       throw new Error("Not authenticated");
     }
 
-    let deaccessioned = 0;
-    let failed = 0;
-    let skipped = 0;
-
-    await Promise.all(
+    const outcomes = await Promise.all(
       Array.from(args.collectionIds).map(async (collectionId) => {
         const collection = await ctx.db.get(collectionId);
         if (!collection) {
-          failed++;
-          return;
+          return "failed" as const;
         }
 
         if (collection.status === "deaccessioned") {
-          skipped++;
-          return;
+          return "skipped" as const;
         }
 
         if (collection.status === "loaned") {
-          failed++;
-          return;
+          return "failed" as const;
         }
 
         try {
@@ -3147,12 +3148,25 @@ export const bulkDeaccession = mutation({
             }),
           ] as const);
 
-          deaccessioned++;
+          return "deaccessioned" as const;
         } catch {
-          failed++;
+          return "failed" as const;
         }
       }),
     );
+
+    let deaccessioned = 0;
+    let failed = 0;
+    let skipped = 0;
+    for (const outcome of outcomes) {
+      if (outcome === "deaccessioned") {
+        deaccessioned++;
+      } else if (outcome === "skipped") {
+        skipped++;
+      } else {
+        failed++;
+      }
+    }
 
     return { deaccessioned, failed, skipped };
   },
