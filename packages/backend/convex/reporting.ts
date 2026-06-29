@@ -616,7 +616,11 @@ export const generateReport = internalMutation({
       let reportData: Record<string, unknown>;
 
       if (report.reportType === "operational_kpis") {
-        const kpis = await loadOperationalKpis(ctx, report.organizationId);
+        const kpis = await loadOperationalKpis(
+          ctx,
+          report.organizationId,
+          Date.now(),
+        );
         reportData = {
           generatedAt: Date.now(),
           reportType: report.reportType,

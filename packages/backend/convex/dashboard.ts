@@ -788,6 +788,7 @@ export const getKpiTrends = query({
 export const getOperationalKpis = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
   returns: v.object({
     inventory: v.object({
@@ -860,6 +861,6 @@ export const getOperationalKpis = query({
       requirePermission(ctx, args.organizationId, "collections.read"),
     ]);
 
-    return await loadOperationalKpis(ctx, args.organizationId);
+    return await loadOperationalKpis(ctx, args.organizationId, args.now);
   },
 });

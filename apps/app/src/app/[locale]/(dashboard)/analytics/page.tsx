@@ -98,8 +98,11 @@ export default function AnalyticsPage() {
 
   const kpis = useQuery(
     api.dashboard.getOperationalKpis,
-    currentOrganizationId && hasReporting
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+    currentOrganizationId && hasReporting && now !== undefined
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          now,
+        }
       : "skip",
   );
 

@@ -665,11 +665,11 @@ export const getStorageUrls = query({
   },
   returns: v.array(storageUrlResultValidator),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "media.read");
-
     if (args.storageIds.length === 0) {
       return [];
     }
+
+    await requirePermission(ctx, args.organizationId, "media.read");
 
     const uniqueStorageIds = [...new Set(args.storageIds)];
     const authorizedIds = new Set<Id<"_storage">>();
