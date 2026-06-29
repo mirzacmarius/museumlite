@@ -8,7 +8,7 @@
     "seed": "convex dev --once && convex run init",
     "lint": "biome lint --error-on-warnings",
     "test": "bun run test:no-placeholders && vitest run",
-    "test:no-placeholders": "sh -c 'rg -n \"expect\\\\(true\\\\)\\\\.toBe\\\\(true\\\\)|expect\\\\(true\\\\)\" tests && exit 1 || exit 0'",
+    "test:no-placeholders": "sh -c 'rg -n \"expect\\\\(true\\\\)\\\\.toBe\\\\(true\\\\)|expect\\\\(true\\\\)\" tests convex && exit 1 || exit 0'",
     "test:once": "bun run test:no-placeholders && vitest run",
     "test:watch": "vitest --watch"
   },
