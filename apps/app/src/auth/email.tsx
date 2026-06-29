@@ -16,7 +16,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
   const [email, setEmail] = useState(() => defaultEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFocused, _setIsFocused] = useState(true);
+  const [isFocused, setIsFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasEmailError = useMemo(
@@ -49,11 +49,17 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
         >
           Email
         </label>
-        <div>
+        <p className="text-xs text-white/50">
+          Enter your email once. If you do not have an account yet, we will help
+          you create one.
+        </p>
+        <div className="relative">
           <Input
             autoComplete="email"
             id="auth-email"
             onChange={(event) => setEmail(event.target.value)}
+            onBlur={() => setIsFocused(false)}
+            onFocus={() => setIsFocused(true)}
             placeholder="name@company.com"
             ref={inputRef}
             required

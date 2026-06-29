@@ -21,7 +21,7 @@ export default {
     decline: "Refuză invitația",
     accepting: "Se acceptă...",
     declining: "Se refuză...",
-    signInToAccept: "Autentifică-te pentru a accepta",
+    signInToAccept: "Autentifică-te sau creează un cont pentru a accepta",
     loading: "Se încarcă invitația...",
     notFound: "Invitație negăsită",
     notFoundDescription:
@@ -42,7 +42,7 @@ export default {
     goToLogin: "Mergi la autentificare",
     unknownInviter: "Necunoscut",
     helpText:
-      "Acceptând, ești de acord să te alături acestei organizații cu rolul specificat.",
+      "Dacă nu ai încă un cont, folosește emailul invitației pentru a crea unul mai întâi. După autentificare, poți accepta această invitație de organizație.",
   },
   onboardingPage: {
     welcome: "Bine ai venit!",

@@ -29,6 +29,46 @@ interface AuthFormRootProps {
   onSignedIn: () => void;
 }
 
+function getPasswordStepHelpText({
+  email,
+  mode,
+  passwordAccountExists,
+}: {
+  email: string;
+  mode: AuthMode;
+  passwordAccountExists: boolean | null;
+}) {
+  if (mode === "signUp") {
+    if (passwordAccountExists === false) {
+      return `No account exists for ${email} yet. Create a password to set up your account, then continue.`;
+    }
+
+    return `Create a password for ${email} to finish setting up your account.`;
+  }
+
+  if (passwordAccountExists) {
+    return `We found an existing account for ${email}. Enter your password to continue.`;
+  }
+
+  return `Enter your password for ${email} to continue.`;
+}
+
+function AuthPasswordStepNotice({
+  email,
+  mode,
+  passwordAccountExists,
+}: {
+  email: string;
+  mode: AuthMode;
+  passwordAccountExists: boolean | null;
+}) {
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white/70">
+      {getPasswordStepHelpText({ email, mode, passwordAccountExists })}
+    </div>
+  );
+}
+
 export function AuthFormRoot({
   currentAuthMode,
   mode,
@@ -215,17 +255,24 @@ export function AuthFormRoot({
 
   if (step === "password") {
     return (
-      <AuthPasswordForm
-        canSignInWithPassword={passwordAccountExists !== false}
-        email={email}
-        mode={mode}
-        onEmailClear={handleEmailClear}
-        onForgotPassword={openResetFlow}
-        onModeChange={setMode}
-        onPasswordVerificationRequired={openPasswordVerificationFlow}
-        onSignedIn={onSignedIn}
-        onUniqueCodeRequest={openOtpFlow}
-      />
+      <div className="space-y-4">
+        <AuthPasswordStepNotice
+          email={email}
+          mode={mode}
+          passwordAccountExists={passwordAccountExists}
+        />
+        <AuthPasswordForm
+          canSignInWithPassword={passwordAccountExists !== false}
+          email={email}
+          mode={mode}
+          onEmailClear={handleEmailClear}
+          onForgotPassword={openResetFlow}
+          onModeChange={setMode}
+          onPasswordVerificationRequired={openPasswordVerificationFlow}
+          onSignedIn={onSignedIn}
+          onUniqueCodeRequest={openOtpFlow}
+        />
+      </div>
     );
   }
 

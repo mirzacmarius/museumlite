@@ -16,7 +16,13 @@ import { useCurrentLocale } from "@/locales/client";
 
 interface AuthRootProps {
   initialMode: AuthMode;
+  initialEmail?: string;
   redirectTo?: string;
+}
+
+interface AuthRootInit {
+  initialMode: AuthMode;
+  initialEmail?: string;
 }
 
 interface AuthRootState {
@@ -34,11 +40,14 @@ type AuthRootAction =
   | { type: "setErrorInfo"; value: AuthErrorInfo | undefined }
   | { type: "setCodeFlow"; value: UniqueCodeFlow };
 
-function createInitialAuthRootState(initialMode: AuthMode): AuthRootState {
+function createInitialAuthRootState({
+  initialEmail,
+  initialMode,
+}: AuthRootInit): AuthRootState {
   return {
     mode: initialMode,
     step: "email",
-    email: "",
+    email: initialEmail ?? "",
     errorInfo: undefined,
     codeFlow: "otp",
   };
@@ -62,13 +71,17 @@ function authRootReducer(
   }
 }
 
-export function AuthRoot({ initialMode, redirectTo }: AuthRootProps) {
+export function AuthRoot({
+  initialEmail,
+  initialMode,
+  redirectTo,
+}: AuthRootProps) {
   const locale = useCurrentLocale();
   const { push, refresh } = useRouter();
 
   const [state, dispatch] = useReducer(
     authRootReducer,
-    initialMode,
+    { initialEmail, initialMode },
     createInitialAuthRootState,
   );
 
