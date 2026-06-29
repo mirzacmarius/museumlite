@@ -23,9 +23,13 @@ bun run lint               # Biome lint + sherif monorepo check
 bun run typecheck          # TypeScript check all workspaces
 bun run format             # Biome format (writes files)
 
+# Testing
+bun run test               # Run all workspace tests (app + backend)
+
 # Testing (from packages/backend/)
-bun test                   # Run all tests (vitest)
-bun test:once              # Run once without watch
+bun test                   # Run backend tests once
+bun test:watch             # Run backend tests in watch mode
+bun test:once              # Alias for bun test
 bun test loans.test.ts     # Run single test file
 bun test -t "approve"      # Run tests matching pattern
 
@@ -211,10 +215,10 @@ The Convex backend runs in the cloud, not locally. Running `bun dev` at root sta
 
 ### Running quality checks without Convex
 
-Lint, typecheck, and backend tests all work without Convex authentication:
+Lint, typecheck, and tests all work without Convex authentication:
 - `bun run lint` — Biome lint + sherif monorepo check
 - `bun run typecheck` — TypeScript checking across all workspaces
-- `cd packages/backend && bun test:once` — 745+ Vitest tests using `convex-test` (no cloud needed)
+- `bun run test` — app + backend Vitest suites using `convex-test` (no cloud needed)
 
 ### Gotchas
 
