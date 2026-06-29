@@ -14,7 +14,9 @@ function applyPatch(patchFile) {
   // Extract the file path from the patch
   const fileMatch = patchContent.match(/^--- a\/(.+)$/m);
   if (!fileMatch) {
-    console.warn(`Could not parse patch file: ${patchFile}`);
+    console.error(
+      `Failed to apply patch for ${packageName}: could not parse ${path.basename(patchFile)}`,
+    );
     return false;
   }
 
@@ -22,7 +24,13 @@ function applyPatch(patchFile) {
   const targetFile = path.join(nodeModulesDir, filePath);
 
   if (!fs.existsSync(targetFile)) {
-    console.warn(`Target file not found: ${targetFile}`);
+    console.error(
+      `Failed to apply required patch for ${packageName} (${path.basename(patchFile)}):`,
+    );
+    console.error(`  Target file not found: ${filePath}`);
+    console.error(
+      "  The dependency may have been upgraded or its layout changed. Check patches/ and update or remove the patch.",
+    );
     return false;
   }
 
