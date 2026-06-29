@@ -35,13 +35,13 @@ Plans 015–022: 2026-06-19 follow-up audit (`/improve`, standard depth).
 | 020 | Run every finite workspace test suite in CI | P2 | S | — | DONE — verified on `main` @ `ce3a9b9a` ([PR #72](https://github.com/mirzacmarius/ml-cursor/pull/72) merged 2026-06-29). CI `test` job runs root `bun run test` (app + backend); backend `test` finite (`vitest run`), `test:watch` preserved. |
 | 021 | Generate webhook signing secrets with cryptographic randomness | P3 | S | — | DONE — verified on `main` @ `2a0a33c0` ([PR #78](https://github.com/mirzacmarius/ml-cursor/pull/78) merged 2026-06-29). Rebuilt as a clean 2-file commit off `main` (dropped the original branch's stale `plans/` + bindings); webhooks tests (5), typecheck, lint+sherif green. |
 | 022 | Stop hiding required postinstall patch failures | P3 | S | — | DONE — verified on `main` @ `87ba3daa` ([PR #80](https://github.com/mirzacmarius/ml-cursor/pull/80) merged 2026-06-29) |
-| 032 | Use constant-time API key compare and unbiased key generation | P2 | S | — | IN PROGRESS ([PR #81](https://github.com/mirzacmarius/ml-cursor/pull/81)) |
-| 033 | Validate MIME type on accession draft uploads | P2 | S | — | IN PROGRESS ([PR #82](https://github.com/mirzacmarius/ml-cursor/pull/82)) |
-| 034 | Fix parallel counter aggregation in insurance auto-claim | P2 | S | — | IN PROGRESS ([PR #84](https://github.com/mirzacmarius/ml-cursor/pull/84)) |
-| 035 | Fix auto-claim createdBy user attribution | P2 | S | — | IN PROGRESS ([PR #85](https://github.com/mirzacmarius/ml-cursor/pull/85); merge after 034) |
-| 036 | Validate every media ID on reorder belongs to authorized org | P2 | S | — | IN PROGRESS ([PR #83](https://github.com/mirzacmarius/ml-cursor/pull/83)) |
-| 037 | Run placeholder-test guard in CI backend test script | P2 | S | — | IN PROGRESS ([PR #86](https://github.com/mirzacmarius/ml-cursor/pull/86)) |
-| 038 | Docs hygiene bundle (AGENTS, env example, broken pointers) | P3 | S | — | IN PROGRESS ([PR #87](https://github.com/mirzacmarius/ml-cursor/pull/87)) |
+| 032 | Use constant-time API key compare and unbiased key generation | P2 | S | — | DONE ([PR #81](https://github.com/mirzacmarius/ml-cursor/pull/81)) |
+| 033 | Validate MIME type on accession draft uploads | P2 | S | — | DONE ([PR #82](https://github.com/mirzacmarius/ml-cursor/pull/82)) |
+| 034 | Fix parallel counter aggregation in insurance auto-claim | P2 | S | — | DONE ([PR #84](https://github.com/mirzacmarius/ml-cursor/pull/84)) |
+| 035 | Fix auto-claim createdBy user attribution | P2 | S | — | DONE ([PR #85](https://github.com/mirzacmarius/ml-cursor/pull/85)) |
+| 036 | Validate every media ID on reorder belongs to authorized org | P2 | S | — | DONE ([PR #83](https://github.com/mirzacmarius/ml-cursor/pull/83)) |
+| 037 | Run placeholder-test guard in CI backend test script | P2 | S | — | DONE ([PR #86](https://github.com/mirzacmarius/ml-cursor/pull/86)) |
+| 038 | Docs hygiene bundle (AGENTS, env example, broken pointers) | P3 | S | — | DONE ([PR #87](https://github.com/mirzacmarius/ml-cursor/pull/87)) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -53,7 +53,7 @@ Optional micro-follow-up after 012: fix residual `IIIF-ready media` in `apps/web
 
 ## Deep audit round (2026-06-29 @ `f8648557`) — next up
 
-Recommended batch order: ~~022~~ → **032–033, 036–037** (PRs open) → **034–035** (insurance; merge 034 before 035) → **038**.
+Recommended batch order: ~~022~~ ~~032–038~~ (merged). Next: write plans 039+ for deferred audit items (PERF, public org queries, Polar spike).
 
 | ID | Finding | Plan |
 |----|---------|------|
