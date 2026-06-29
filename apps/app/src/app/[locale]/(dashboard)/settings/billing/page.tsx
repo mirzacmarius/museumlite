@@ -114,12 +114,12 @@ function BillingOverview() {
         for your organization. For test purchases, you can use the card numbers
         listed in this{" "}
         <a
-          href="https://stripe.com/docs/testing#cards"
+          href="https://docs.polar.sh/integrate/sandbox"
           target="_blank"
           rel="noreferrer"
           className="font-medium text-foreground underline"
         >
-          resource from Stripe
+          Polar sandbox resource
         </a>
         .
       </p>

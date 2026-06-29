@@ -308,6 +308,26 @@ export const resolveOrganizationId = internalQuery({
   },
 });
 
+export const getOrganizationBillingEmail = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  returns: v.union(v.object({ email: v.string() }), v.null()),
+  handler: async (ctx, args) => {
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization?.ownerUserId) {
+      return null;
+    }
+
+    const owner = await ctx.db.get(organization.ownerUserId);
+    if (!owner?.email) {
+      return null;
+    }
+
+    return { email: owner.email };
+  },
+});
+
 export const claimPolarWebhook = internalMutation({
   args: {
     webhookId: v.string(),
@@ -568,6 +588,7 @@ export const applyBillingSubscriptionEvent = internalAction({
     const currentPeriodStart =
       getTimestamp(args.currentPeriodStart) ?? Date.now();
     const currentPeriodEnd = getTimestamp(args.currentPeriodEnd) ?? undefined;
+    const status = normalizeSubscriptionStatus(args.status);
 
     await ctx.runMutation(
       internal.subscriptions.upsertOrganizationSubscription,
@@ -580,13 +601,45 @@ export const applyBillingSubscriptionEvent = internalAction({
         subscriptionId: args.id,
         customerId: args.customerId,
         recurringInterval: args.recurringInterval ?? undefined,
-        status: normalizeSubscriptionStatus(args.status),
+        status,
         cancelAtPeriodEnd: args.cancelAtPeriodEnd,
         currentPeriodStart,
         currentPeriodEnd,
         metadata: args.metadata,
       },
     );
+
+    const isEntitled = hasActiveSubscriptionAccess({
+      status,
+      cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+      currentPeriodEnd: currentPeriodEnd ?? null,
+    });
+
+    if (
+      args.eventType === "subscription.active" &&
+      status === "active" &&
+      isEntitled
+    ) {
+      const billingEmail = await ctx.runQuery(
+        internal.subscriptions.getOrganizationBillingEmail,
+        { organizationId },
+      );
+
+      if (billingEmail) {
+        try {
+          await ctx.scheduler.runAfter(
+            0,
+            internal.email.actions.sendSubscriptionSuccessEmailAction,
+            {
+              email: billingEmail.email,
+              subscriptionId: args.id,
+            },
+          );
+        } catch (error) {
+          console.warn("Failed to schedule subscription success email", error);
+        }
+      }
+    }
 
     return { processed: true };
   },
