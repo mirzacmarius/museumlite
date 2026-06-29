@@ -181,7 +181,9 @@ async function canInitiateDeaccessionWorkflowForUser(
   );
 
   return permissions.some(
-    (permission) => permission?.name === "collections.create",
+    (permission) =>
+      permission?.name === "collections.create" ||
+      permission?.name === "collections.delete",
   );
 }
 
@@ -193,7 +195,7 @@ async function isDeaccessionWorkflowEnabled(
   return organization?.settings?.deaccessionWorkflowEnabled ?? true;
 }
 
-async function createDeaccessionRecord(
+export async function createDeaccessionRecord(
   ctx: MutationCtx,
   args: {
     organizationId: Id<"organizations">;
