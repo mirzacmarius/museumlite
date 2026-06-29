@@ -18,6 +18,16 @@ async function createBulkDeaccessionFixture(
     },
   );
 
+  await t.run(async (ctx) => {
+    const organization = await ctx.db.get(organizationId);
+    await ctx.db.patch(organizationId, {
+      settings: {
+        ...organization?.settings,
+        deaccessionWorkflowEnabled: false,
+      },
+    });
+  });
+
   const {
     activeCollectionIdA,
     activeCollectionIdB,
@@ -100,6 +110,7 @@ test("bulkDeaccession returns correct counts for mixed collection states", async
   const t = createConvexTest();
   const {
     authed,
+    organizationId,
     activeCollectionIdA,
     activeCollectionIdB,
     deaccessionedCollectionId,
@@ -124,20 +135,38 @@ test("bulkDeaccession returns correct counts for mixed collection states", async
     failed: 2,
   });
 
-  const [deaccessionedA, deaccessionedB, skipped, loaned] = await t.run(
-    async (ctx) =>
-      Promise.all([
+  const [deaccessionedA, deaccessionedB, skipped, loaned, deaccessionRecords] =
+    await t.run(async (ctx) => {
+      const records = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
+        .collect();
+
+      return Promise.all([
         ctx.db.get(activeCollectionIdA),
         ctx.db.get(activeCollectionIdB),
         ctx.db.get(deaccessionedCollectionId),
         ctx.db.get(loanedCollectionId),
-      ]),
-  );
+        records,
+      ] as const);
+    });
 
   expect(deaccessionedA?.status).toBe("deaccessioned");
   expect(deaccessionedB?.status).toBe("deaccessioned");
   expect(skipped?.status).toBe("deaccessioned");
   expect(loaned?.status).toBe("loaned");
+
+  expect(deaccessionRecords).toHaveLength(2);
+  expect(
+    deaccessionRecords.map((record) => record.collectionId).sort(),
+  ).toEqual([activeCollectionIdA, activeCollectionIdB].sort());
+  for (const record of deaccessionRecords) {
+    expect(record.method).toBe("destruction");
+    expect(record.reason).toBe("Bulk catalog cleanup");
+    expect(record.status).toBe("approved");
+  }
 });
 
 test("bulkDeaccession rejects unauthenticated callers", async () => {
