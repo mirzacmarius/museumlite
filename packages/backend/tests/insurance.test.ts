@@ -261,6 +261,7 @@ test("createAutoClaimForTransitDamage sums active coverages across collections",
       loanId,
       collectionIds: [collectionIdA, collectionIdB],
       incidentDescription: "Transit damage during loan return",
+      actorUserId: userId,
     },
   );
 
