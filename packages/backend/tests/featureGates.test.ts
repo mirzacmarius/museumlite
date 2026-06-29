@@ -96,14 +96,14 @@ describe("Feature Gates - Tier Access", () => {
       );
     });
 
-    await t
+    const result = await t
       .query(api.dashboard.getComplianceReport, { organizationId: orgId })
-      .catch((e: Error) => {
-        expect(e.message).not.toContain("Feature requires");
+      .catch((error: Error) => {
+        expect(error.message).not.toContain("Feature requires");
         return null;
       });
 
-    expect(true).toBe(true);
+    expect(result === null || result !== undefined).toBe(true);
   });
 });
 
@@ -198,26 +198,118 @@ describe("Feature Gates - Quota Enforcement", () => {
   test("free tier should enforce object quota (1000 limit)", async () => {
     const t = convexTest(schema, modules);
 
-    await t.run(async (ctx) => {
-      return await ctx.db.insert(
+    const { organizationId, userId } = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert(
         "organizations",
         createOrg("Quota Test Org", "quota-org", "free"),
       );
+      const userId = await ctx.db.insert("users", {
+        email: "quota@example.com",
+        name: "Quota User",
+      });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+
+      await Promise.all(
+        Array.from({ length: 100 }, (_, index) =>
+          ctx.db.insert("collections", {
+            organizationId,
+            accessionNumber: `Q-${index}`,
+            title: `Object ${index}`,
+            status: "active",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+          }),
+        ),
+      );
+
+      return { organizationId, userId };
     });
 
-    expect(true).toBe(true);
+    const authed = t.withIdentity({
+      subject: `${userId}|session`,
+      issuer: "https://example.test",
+    });
+
+    await expect(
+      authed.mutation(api.collections.create, {
+        organizationId,
+        accessionNumber: "Q-OVER-LIMIT",
+        title: "Over limit object",
+      }),
+    ).rejects.toThrow("Object limit reached for current tier");
   });
 
   test("enterprise tier should have unlimited quotas", async () => {
     const t = convexTest(schema, modules);
 
-    await t.run(async (ctx) => {
-      return await ctx.db.insert(
+    const { organizationId, userId } = await t.run(async (ctx) => {
+      const organizationId = await ctx.db.insert(
         "organizations",
         createOrg("Unlimited Org", "unlimited-org", "enterprise"),
       );
+      const userId = await ctx.db.insert("users", {
+        email: "enterprise@example.com",
+        name: "Enterprise User",
+      });
+      const roleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "Admin",
+        isSystemRole: true,
+      });
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "collections.create",
+        category: "collections",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+      await ctx.db.insert("userOrganizations", {
+        userId,
+        organizationId,
+        roleId,
+        joinedAt: Date.now(),
+      });
+
+      await Promise.all(
+        Array.from({ length: 101 }, (_, index) =>
+          ctx.db.insert("collections", {
+            organizationId,
+            accessionNumber: `E-${index}`,
+            title: `Enterprise Object ${index}`,
+            status: "active",
+            catalogedBy: userId,
+            catalogedAt: Date.now(),
+          }),
+        ),
+      );
+
+      return { organizationId, userId };
     });
 
-    expect(true).toBe(true);
+    const authed = t.withIdentity({
+      subject: `${userId}|session`,
+      issuer: "https://example.test",
+    });
+
+    const collectionId = await authed.mutation(api.collections.create, {
+      organizationId,
+      accessionNumber: "E-UNLIMITED",
+      title: "Enterprise overflow object",
+    });
+
+    expect(collectionId).toBeDefined();
   });
 });

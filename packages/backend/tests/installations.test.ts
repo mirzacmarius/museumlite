@@ -1,158 +1,252 @@
-import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import schema from "../convex/schema";
+import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import {
+  authedForUser,
+  type ConvexTest,
+  createConvexTest,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
-import { modules } from "./testSetup";
+interface InstallationFixture {
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  exhibitionId: Id<"exhibitions">;
+  authed: ReturnType<typeof authedForUser>;
+}
+
+async function setupInstallationFixture(
+  t: ConvexTest,
+): Promise<InstallationFixture> {
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    ["collections.create", "collections.read", "collections.update"],
+    {
+      subscriptionTier: "pro",
+      slugPrefix: "install-test",
+    },
+  );
+
+  const authed = authedForUser(t, userId);
+
+  const collectionId = await t.run(async (ctx) => {
+    return await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: `EXH-${Math.random().toString(36).slice(2, 8)}`,
+      title: "Exhibition Anchor Object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+  });
+
+  const exhibitionId = await authed.mutation(api.exhibitions.create, {
+    collectionId,
+    title: "Summer Show",
+    startDate: Date.now(),
+    endDate: Date.now() + 90 * 24 * 60 * 60 * 1000,
+    isCurrent: false,
+  });
+
+  return {
+    organizationId,
+    userId,
+    exhibitionId,
+    authed,
+  };
+}
 
 test("should create installation task linked to exhibition", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, exhibitionId, authed } =
+    await setupInstallationFixture(t);
 
-  // 1. Create an exhibition (setup)
-  // 2. Create an installation task
-  // const taskId = await t.mutation(api.installations.createTask, {
-  //   organizationId: orgId,
-  //   exhibitionId: exhibitionId,
-  //   title: "Install lighting for main gallery",
-  //   taskType: "lighting",
-  //   priority: "high",
-  // });
+  const taskId = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "Install lighting for main gallery",
+    taskType: "lighting",
+    priority: "high",
+  });
 
-  // 3. Verify task created with todo status
-  // const task = await t.query(api.installations.getTask, { taskId });
-  // expect(task?.title).toBe("Install lighting for main gallery");
-  // expect(task?.status).toBe("todo");
-  // expect(task?.taskType).toBe("lighting");
+  const task = await authed.query(api.installations.getTask, { taskId });
 
-  expect(true).toBe(true);
+  expect(task?.title).toBe("Install lighting for main gallery");
+  expect(task?.status).toBe("todo");
+  expect(task?.taskType).toBe("lighting");
 });
 
 test("should move task through status workflow", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, exhibitionId, authed } =
+    await setupInstallationFixture(t);
 
-  // 1. Create task in todo status
-  // const taskId = await t.mutation(api.installations.createTask, { /* ... */ });
+  const taskId = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "Install signage",
+    taskType: "signage",
+    priority: "medium",
+  });
 
-  // 2. Move to in_progress
-  // await t.mutation(api.installations.moveTask, {
-  //   taskId,
-  //   status: "in_progress",
-  // });
-  // const task1 = await t.query(api.installations.getTask, { taskId });
-  // expect(task1?.status).toBe("in_progress");
+  await authed.mutation(api.installations.moveTask, {
+    taskId,
+    status: "in_progress",
+  });
 
-  // 3. Complete task
-  // await t.mutation(api.installations.completeTask, { taskId });
-  // const task2 = await t.query(api.installations.getTask, { taskId });
-  // expect(task2?.status).toBe("completed");
-  // expect(task2?.completedAt).toBeDefined();
+  const inProgress = await authed.query(api.installations.getTask, { taskId });
+  expect(inProgress?.status).toBe("in_progress");
 
-  expect(true).toBe(true);
+  await authed.mutation(api.installations.completeTask, { taskId });
+
+  const completed = await authed.query(api.installations.getTask, { taskId });
+  expect(completed?.status).toBe("completed");
+  expect(completed?.completedAt).toBeDefined();
 });
 
 test("should create task from template", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, exhibitionId, authed } =
+    await setupInstallationFixture(t);
 
-  // 1. Create template
-  // const templateId = await t.mutation(api.installations.createTemplate, {
-  //   organizationId: orgId,
-  //   name: "Standard Lighting Setup",
-  //   taskType: "lighting",
-  //   defaultPriority: "medium",
-  //   defaultEstimatedHours: 4,
-  //   checklist: [
-  //     { item: "Check fixture inventory", required: true },
-  //     { item: "Test all bulbs", required: true },
-  //     { item: "Document final positions", required: false },
-  //   ],
-  // });
+  const templateId = await authed.mutation(api.installations.createTemplate, {
+    organizationId,
+    name: "Standard Lighting Setup",
+    taskType: "lighting",
+    defaultPriority: "medium",
+    defaultEstimatedHours: 4,
+    checklist: [
+      { item: "Check fixture inventory", required: true },
+      { item: "Test all bulbs", required: true },
+      { item: "Document final positions", required: false },
+    ],
+  });
 
-  // 2. Apply template to create task
-  // const taskId = await t.mutation(api.installations.applyTemplate, {
-  //   templateId,
-  //   exhibitionId,
-  // });
+  const taskId = await authed.mutation(api.installations.applyTemplate, {
+    templateId,
+    exhibitionId,
+  });
 
-  // 3. Verify task has template values and checklist items
-  // const task = await t.query(api.installations.getTask, { taskId });
-  // expect(task?.taskType).toBe("lighting");
-  // expect(task?.priority).toBe("medium");
-  // expect(task?.checklist.length).toBe(3);
-
-  expect(true).toBe(true);
+  const task = await authed.query(api.installations.getTask, { taskId });
+  expect(task?.taskType).toBe("lighting");
+  expect(task?.priority).toBe("medium");
+  expect(task?.checklistItems.length).toBe(3);
 });
 
 test("should manage task dependencies", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, exhibitionId, authed } =
+    await setupInstallationFixture(t);
 
-  // 1. Create two tasks
-  // const task1Id = await t.mutation(api.installations.createTask, {
-  //   /* lighting task */
-  // });
-  // const task2Id = await t.mutation(api.installations.createTask, {
-  //   /* signage task - depends on lighting */
-  // });
+  const task1Id = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "Lighting setup",
+    taskType: "lighting",
+    priority: "high",
+  });
 
-  // 2. Add dependency: task2 depends on task1
-  // await t.mutation(api.installations.addDependency, {
-  //   taskId: task2Id,
-  //   dependsOnTaskId: task1Id,
-  // });
+  const task2Id = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "Signage install",
+    taskType: "signage",
+    priority: "medium",
+  });
 
-  // 3. Verify dependency chain
-  // const chain = await t.query(api.installations.getDependencyChain, { taskId: task2Id });
-  // expect(chain.length).toBe(1);
-  // expect(chain[0]._id).toBe(task1Id);
+  await authed.mutation(api.installations.addDependency, {
+    taskId: task2Id,
+    dependsOnTaskId: task1Id,
+  });
 
-  // 4. Remove dependency
-  // await t.mutation(api.installations.removeDependency, {
-  //   taskId: task2Id,
-  //   dependsOnTaskId: task1Id,
-  // });
+  const chain = await authed.query(api.installations.getDependencyChain, {
+    taskId: task2Id,
+  });
+  expect(chain.length).toBe(1);
+  expect(chain[0]?._id).toBe(task1Id);
 
-  expect(true).toBe(true);
+  await authed.mutation(api.installations.removeDependency, {
+    taskId: task2Id,
+    dependsOnTaskId: task1Id,
+  });
+
+  const emptyChain = await authed.query(api.installations.getDependencyChain, {
+    taskId: task2Id,
+  });
+  expect(emptyChain).toHaveLength(0);
 });
 
 test("should block task with reason and unblock", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, exhibitionId, authed } =
+    await setupInstallationFixture(t);
 
-  // 1. Create task
-  // const taskId = await t.mutation(api.installations.createTask, { /* ... */ });
+  const taskId = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "AV setup",
+    taskType: "av",
+    priority: "medium",
+  });
 
-  // 2. Block task
-  // await t.mutation(api.installations.blockTask, {
-  //   taskId,
-  //   reason: "Waiting for equipment delivery",
-  // });
-  // const blocked = await t.query(api.installations.getTask, { taskId });
-  // expect(blocked?.status).toBe("blocked");
-  // expect(blocked?.blockedReason).toBe("Waiting for equipment delivery");
+  await authed.mutation(api.installations.blockTask, {
+    taskId,
+    reason: "Waiting for equipment delivery",
+  });
 
-  // 3. Unblock task
-  // await t.mutation(api.installations.unblockTask, { taskId });
-  // const unblocked = await t.query(api.installations.getTask, { taskId });
-  // expect(unblocked?.status).toBe("todo"); // or previous status
-  // expect(unblocked?.blockedReason).toBeUndefined();
+  const blocked = await authed.query(api.installations.getTask, { taskId });
+  expect(blocked?.status).toBe("blocked");
+  expect(blocked?.blockedReason).toBe("Waiting for equipment delivery");
 
-  expect(true).toBe(true);
+  await authed.mutation(api.installations.unblockTask, { taskId });
+
+  const unblocked = await authed.query(api.installations.getTask, { taskId });
+  expect(unblocked?.status).toBe("todo");
+  expect(unblocked?.blockedReason).toBeUndefined();
 });
 
 test("should get tasks grouped by status for board view", async () => {
-  const _t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, exhibitionId, authed } =
+    await setupInstallationFixture(t);
 
-  // 1. Create multiple tasks in different statuses
-  // await t.mutation(api.installations.createTask, { /* todo */ });
-  // const task2 = await t.mutation(api.installations.createTask, { /* ... */ });
-  // await t.mutation(api.installations.moveTask, { taskId: task2, status: "in_progress" });
-  // const task3 = await t.mutation(api.installations.createTask, { /* ... */ });
-  // await t.mutation(api.installations.completeTask, { taskId: task3 });
+  await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "Todo task",
+    taskType: "labeling",
+    priority: "low",
+  });
 
-  // 2. Get board view
-  // const board = await t.query(api.installations.getTasksForBoard, { exhibitionId });
+  const inProgressTaskId = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "In progress task",
+    taskType: "mounts",
+    priority: "medium",
+  });
+  await authed.mutation(api.installations.moveTask, {
+    taskId: inProgressTaskId,
+    status: "in_progress",
+  });
 
-  // 3. Verify grouped by status
-  // expect(board.todo.length).toBe(1);
-  // expect(board.in_progress.length).toBe(1);
-  // expect(board.completed.length).toBe(1);
+  const completedTaskId = await authed.mutation(api.installations.createTask, {
+    organizationId,
+    exhibitionId,
+    title: "Completed task",
+    taskType: "security",
+    priority: "high",
+  });
+  await authed.mutation(api.installations.completeTask, {
+    taskId: completedTaskId,
+  });
 
-  expect(true).toBe(true);
+  const board = await authed.query(api.installations.getTasksForBoard, {
+    organizationId,
+    exhibitionId,
+  });
+
+  expect(board.todo.length).toBeGreaterThanOrEqual(1);
+  expect(board.in_progress.length).toBe(1);
+  expect(board.completed.length).toBe(1);
 });

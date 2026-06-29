@@ -148,28 +148,30 @@ test("loan workflows advance through configured approval steps before activation
 });
 
 test("should approve pending loan and change status to active", async () => {
-  const _t = createConvexTest();
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "loans.create",
+    "loans.read",
+    "loans.approve",
+  ]);
 
-  // 1. Create a pending loan
-  // const loanId = await t.mutation(api.loans.create, {
-  //   organizationId: "test-org-id" as Id<"organizations">,
-  //   borrowerId: "test-borrower-id",
-  //   // ... other required fields
-  // });
+  const authed = authedForUser(t, userId);
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "LOAN-APPROVE-001",
+    type: "outgoing",
+    lenderBorrowerName: "Partner Museum",
+    startDate: Date.now(),
+    endDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+  });
 
-  // 2. Verify initial status is pending
-  // const initialLoan = await t.query(api.loans.get, { loanId });
-  // expect(initialLoan?.status).toBe("pending");
+  const initialLoan = await authed.query(api.loans.get, { loanId });
+  expect(initialLoan?.status).toBe("pending");
 
-  // 3. Approve the loan
-  // await t.mutation(api.loans.approve, { loanId });
+  await authed.mutation(api.loans.approve, { loanId });
 
-  // 4. Verify status changed to active
-  // const approvedLoan = await t.query(api.loans.get, { loanId });
-  // expect(approvedLoan?.status).toBe("active");
-
-  // Placeholder assertion
-  expect(true).toBe(true);
+  const approvedLoan = await authed.query(api.loans.get, { loanId });
+  expect(approvedLoan?.status).toBe("active");
 });
 
 test("should dispatch active loan and change status to dispatched", async () => {
@@ -251,29 +253,36 @@ test("should return active loan directly (without dispatch)", async () => {
 });
 
 test("should prevent invalid status transitions", async () => {
-  const _t = createConvexTest();
+  const t = createConvexTest();
+  const { authed, loanId } = await createActiveLoanWithCollection(t, {
+    loanNumber: "LOAN-INVALID-001",
+  });
 
-  // 1. Create and approve loan
-  // const loanId = await t.mutation(api.loans.create, { /* ... */ });
-  // await t.mutation(api.loans.approve, { loanId });
+  await authed.mutation(api.loans.dispatch, { loanId });
 
-  // 2. Try to dispatch already-dispatched loan (should fail)
-  // await t.mutation(api.loans.dispatch, { loanId });
-  // await expect(
-  //   t.mutation(api.loans.dispatch, { loanId })
-  // ).rejects.toThrow("Loan must be active to dispatch");
-
-  expect(true).toBe(true);
+  await expect(authed.mutation(api.loans.dispatch, { loanId })).rejects.toThrow(
+    "Loan must be active to dispatch",
+  );
 });
 
 test("should enforce permissions", async () => {
-  const _t = createConvexTest();
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "loans.create",
+    "loans.read",
+  ]);
 
-  // Test that users without loans.update permission cannot dispatch
-  // Test that users without loans.approve permission cannot approve
-  // Note: Permission testing may require setting up auth context in convexTest
+  const authed = authedForUser(t, userId);
+  const loanId = await authed.mutation(api.loans.create, {
+    organizationId,
+    loanNumber: "LOAN-PERM-001",
+    type: "outgoing",
+    lenderBorrowerName: "Partner Museum",
+    startDate: Date.now(),
+    endDate: Date.now() + 7 * 24 * 60 * 60 * 1000,
+  });
 
-  expect(true).toBe(true);
+  await expect(authed.mutation(api.loans.approve, { loanId })).rejects.toThrow();
 });
 
 // ---------------------------------------------------------------------------

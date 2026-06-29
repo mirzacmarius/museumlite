@@ -12,36 +12,6 @@ function buildLocationCode(locationCode: string) {
   };
 }
 
-test("should create location", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should create nested location hierarchy", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should move object to location", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should track location capacity", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should list objects at location", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should generate location path breadcrumb", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
 test("should require permission for getLocationHistory", async () => {
   const t = convexTest(schema, modules);
 
@@ -71,15 +41,147 @@ test("should require permission for getLocationHistory", async () => {
 });
 
 test("should return empty array when no location history exists", async () => {
-  const _t = convexTest(schema, modules);
+  const t = convexTest(schema, modules);
 
-  expect(true).toBe(true);
+  const { locationId, userId } = await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", {
+      name: "Test Museum",
+      slug: "test-museum-empty-history",
+      type: "museum",
+      settings: { enabledModules: [] },
+    });
+
+    const [locationId, userId, roleId, permissionId] = await Promise.all([
+      ctx.db.insert("locations", {
+        organizationId: orgId,
+        name: "Empty Storage",
+        ...buildLocationCode("EMPTY-1"),
+        type: "storage",
+        sortOrder: 1,
+        isActive: true,
+      }),
+      ctx.db.insert("users", {
+        email: "history-empty@example.com",
+      }),
+      ctx.db.insert("roles", {
+        organizationId: orgId,
+        name: "Admin",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("permissions", {
+        name: "locations.read",
+        category: "locations",
+      }),
+    ]);
+
+    await ctx.db.insert("rolePermissions", { roleId, permissionId });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    return { locationId, userId };
+  });
+
+  const authed = t.withIdentity({
+    subject: `${userId}|session`,
+    issuer: "https://example.test",
+  });
+
+  const history = await authed.query(api.locations.getLocationHistory, {
+    locationId,
+  });
+
+  expect(history).toEqual([]);
 });
 
 test("should return location history with enriched data", async () => {
-  const _t = convexTest(schema, modules);
+  const t = convexTest(schema, modules);
 
-  expect(true).toBe(true);
+  const { locationId, userId } = await t.run(async (ctx) => {
+    const orgId = await ctx.db.insert("organizations", {
+      name: "Test Museum",
+      slug: "test-museum-history",
+      type: "museum",
+      settings: { enabledModules: [] },
+    });
+
+    const userId = await ctx.db.insert("users", {
+      email: "history@example.com",
+      name: "History User",
+    });
+
+    const [roleId, permissionId, collectionId, locationId, otherLocationId] =
+      await Promise.all([
+        ctx.db.insert("roles", {
+          organizationId: orgId,
+          name: "Admin",
+          isSystemRole: true,
+        }),
+        ctx.db.insert("permissions", {
+          name: "locations.read",
+          category: "locations",
+        }),
+        ctx.db.insert("collections", {
+          organizationId: orgId,
+          accessionNumber: "HIST-001",
+          title: "History Object",
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: Date.now(),
+        }),
+        ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Gallery A",
+          ...buildLocationCode("G-A"),
+          type: "gallery",
+          sortOrder: 1,
+          isActive: true,
+        }),
+        ctx.db.insert("locations", {
+          organizationId: orgId,
+          name: "Storage B",
+          ...buildLocationCode("ST-B"),
+          type: "storage",
+          sortOrder: 2,
+          isActive: true,
+        }),
+      ]);
+
+    await ctx.db.insert("rolePermissions", { roleId, permissionId });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId: orgId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    await ctx.db.insert("locationHistory", {
+      collectionId,
+      toLocationId: locationId,
+      fromLocationId: otherLocationId,
+      movedAt: Date.now(),
+      movedBy: userId,
+    });
+
+    return { locationId, userId };
+  });
+
+  const authed = t.withIdentity({
+    subject: `${userId}|session`,
+    issuer: "https://example.test",
+  });
+
+  const history = await authed.query(api.locations.getLocationHistory, {
+    locationId,
+  });
+
+  expect(history.length).toBe(1);
+  expect(history[0]?.accessionNumber).toBe("HIST-001");
+  expect(history[0]?.collectionTitle).toBe("History Object");
+  expect(history[0]?.eventType).toBe("moved_in");
 });
 
 test("should return latest environmental reading for location", async () => {

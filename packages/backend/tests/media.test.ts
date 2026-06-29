@@ -1,44 +1,12 @@
-import { convexTest } from "convex-test";
+import type { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
 
-import { modules } from "./testSetup";
 import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
 } from "./testHarness";
-
-test("should upload media file", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should generate thumbnail", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should associate media with collection", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should set primary image", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should delete media and cleanup storage", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
-
-test("should reorder media gallery", async () => {
-  const _t = convexTest(schema, modules);
-  expect(true).toBe(true);
-});
 
 // Shared helper for media security tests
 async function setupOrgWithMediaUpload(t: ReturnType<typeof convexTest>) {

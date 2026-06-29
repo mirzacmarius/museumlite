@@ -16,36 +16,6 @@ async function createOrgUserWithPermissions(
   });
 }
 
-test("should create accession record", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should generate accession number", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should link accession to collection object", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should track accession workflow status", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should attach donor information", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
-test("should complete accession process", async () => {
-  const _t = createConvexTest();
-  expect(true).toBe(true);
-});
-
 test("object draft save keeps the accession at workflow step 0", async () => {
   const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
