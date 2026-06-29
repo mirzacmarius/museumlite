@@ -1231,3 +1231,38 @@ test("should batch lookup collections and assignees for list query", async () =>
     expect(accession.assigneeName).toMatch(/^Curator [1-3]$/);
   }
 });
+
+test("generateDraftUploadUrl rejects unsupported MIME types", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "media.upload",
+  ]);
+  const authed = authedForUser(t, userId);
+
+  await expect(
+    authed.mutation(api.accessions.generateDraftUploadUrl, {
+      organizationId,
+      fileName: "malware.exe",
+      fileSize: 1024,
+      mimeType: "application/x-msdownload",
+    }),
+  ).rejects.toThrow("Unsupported file type: application/x-msdownload");
+});
+
+test("generateDraftUploadUrl accepts supported MIME types", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "media.upload",
+  ]);
+  const authed = authedForUser(t, userId);
+
+  const result = await authed.mutation(api.accessions.generateDraftUploadUrl, {
+    organizationId,
+    fileName: "photo.jpg",
+    fileSize: 1024,
+    mimeType: "image/jpeg",
+  });
+
+  expect(result.uploadUrl).toBeDefined();
+  expect(typeof result.uploadUrl).toBe("string");
+});
