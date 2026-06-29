@@ -46,6 +46,10 @@ Plans 015–022: 2026-06-19 follow-up audit (`/improve`, standard depth).
 | 040 | Pass client time into dashboard and reporting queries | P2 | S | — | DONE ([PR #90](https://github.com/mirzacmarius/ml-cursor/pull/90)) |
 | 041 | Remove arbitrary user fallback on accession publish | P2 | S | — | DONE ([PR #91](https://github.com/mirzacmarius/ml-cursor/pull/91)) |
 | 042 | Test Polar billing webhook HTTP handler | P2 | M | — | DONE ([PR #92](https://github.com/mirzacmarius/ml-cursor/pull/92)) |
+| 043 | Require auth for portal settings and integration reads | P2 | S | — | IN PROGRESS |
+| 044 | Trim getBySlug to public-safe projection | P2 | M | — | IN PROGRESS |
+| 045 | Test collections bulkDeaccession mutation | P2 | M | — | IN PROGRESS |
+| 046 | Extend placeholder guard to convex test files | P3 | S | — | IN PROGRESS |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -57,7 +61,7 @@ Optional micro-follow-up after 012: fix residual `IIIF-ready media` in `apps/web
 
 ## Deep audit round (2026-06-29 @ `f8648557`) — next up
 
-Recommended batch order: ~~039–042~~ (merged). **Next:** write 043+ from backlog (COR-08 bulk deaccession, TEST-02, PERF-04 storage URLs, SEC-04 org slug auth).
+Recommended batch order: **043 → 044 → 045 → 046** (in progress). Merge 043 before 044 if `organizations.ts` conflicts.
 
 ### Batch 032–038 (done)
 
