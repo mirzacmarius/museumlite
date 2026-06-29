@@ -50,6 +50,10 @@ Plans 015–022: 2026-06-19 follow-up audit (`/improve`, standard depth).
 | 044 | Trim getBySlug to public-safe projection | P2 | M | — | DONE ([PR #96](https://github.com/mirzacmarius/ml-cursor/pull/96)) |
 | 045 | Test collections bulkDeaccession mutation | P2 | M | — | DONE ([PR #94](https://github.com/mirzacmarius/ml-cursor/pull/94)) |
 | 046 | Extend placeholder guard to convex test files | P3 | S | — | DONE ([PR #93](https://github.com/mirzacmarius/ml-cursor/pull/93)) |
+| 047 | Route bulkDeaccession through deaccession records | P2 | M | 045 | IN PROGRESS |
+| 048 | Test applyBillingSubscriptionEvent pipeline | P2 | M | 042 | IN PROGRESS |
+| 049 | Batch storage URL resolution for media browser list | P2 | M | — | IN PROGRESS |
+| 050 | Enforce allowed transit status transitions | P2 | M | — | IN PROGRESS |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -61,7 +65,7 @@ Optional micro-follow-up after 012: fix residual `IIIF-ready media` in `apps/web
 
 ## Deep audit round (2026-06-29 @ `f8648557`) — next up
 
-Recommended batch order: ~~043–046~~ (merged @ `38478f44`). **Next:** write 047+ (COR-08 bulk deaccession workflow, PERF-04 media URLs, TEST-06 billing events, transit transitions).
+Recommended batch order: **047–050** (in progress). Merge 047 before updating bulk tests if conflicts.
 
 ### Batch 032–038 (done)
 
