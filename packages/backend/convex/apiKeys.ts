@@ -7,16 +7,23 @@ import { requirePermission } from "./utils/permissions";
 function generateApiKey(): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let key = "ml_";
-  const randomValues = new Uint32Array(37);
-  crypto.getRandomValues(randomValues);
-  for (let i = 0; i < 37; i++) {
-    const randomValue = randomValues[i];
-    if (randomValue !== undefined) {
-      key += chars.charAt(randomValue % chars.length);
+  const alphabetLength = chars.length;
+  const limit = Math.floor(256 / alphabetLength) * alphabetLength;
+  const bodyLength = 37;
+
+  let body = "";
+  const randomBytes = new Uint8Array(bodyLength * 2);
+
+  while (body.length < bodyLength) {
+    crypto.getRandomValues(randomBytes);
+    for (const byte of randomBytes) {
+      if (byte >= limit) continue;
+      body += chars.charAt(byte % alphabetLength);
+      if (body.length === bodyLength) break;
     }
   }
-  return key;
+
+  return `ml_${body}`;
 }
 
 async function hashKey(key: string): Promise<string> {
@@ -25,6 +32,42 @@ async function hashKey(key: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function hexDigestToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.byteLength !== b.byteLength) {
+    return false;
+  }
+
+  let diff = 0;
+  for (let i = 0; i < a.byteLength; i++) {
+    diff |= a[i]! ^ b[i]!;
+  }
+
+  return diff === 0;
+}
+
+function compareHashDigests(storedHash: string, candidateHash: string): boolean {
+  if (storedHash.length !== candidateHash.length) {
+    return false;
+  }
+
+  const storedBytes = hexDigestToBytes(storedHash);
+  const candidateBytes = hexDigestToBytes(candidateHash);
+
+  if (storedBytes.length !== candidateBytes.length) {
+    return false;
+  }
+
+  return timingSafeEqual(storedBytes, candidateBytes);
 }
 
 export const list = query({
@@ -234,7 +277,13 @@ export const validate = internalMutation({
       .withIndex("by_prefix", (q) => q.eq("prefix", prefix))
       .collect();
 
-    const matchingKey = keys.find((k) => k.keyHash === keyHash);
+    let matchingKey;
+    for (const key of keys) {
+      if (compareHashDigests(key.keyHash, keyHash)) {
+        matchingKey = key;
+        break;
+      }
+    }
 
     if (!matchingKey) {
       return { valid: false as const };
