@@ -3,12 +3,11 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
   getUsersToNotifyForWorkflowStep,
-  requirePermission,
 } from "../utils/permissions";
 import { getWorkflowConfig } from "../utils/workflowConfigs";
 import { resolveWorkflowStepState } from "../utils/workflowSteps";
@@ -56,9 +55,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const [userId] = await Promise.all([
       getAuthUserId(ctx),
-
-      requireModuleEnabled(ctx, args.organizationId, "library"),
-      requirePermission(ctx, args.organizationId, "collections.create"),
+      requireLibraryPermission(ctx, args.organizationId, "collections.create"),
     ] as const);
     if (!userId) {
       throw new Error("Not authenticated");
@@ -173,8 +170,7 @@ export const list = query({
   }),
   handler: async (ctx, args) => {
     await Promise.all([
-      requireModuleEnabled(ctx, args.organizationId, "library"),
-      requirePermission(ctx, args.organizationId, "collections.read"),
+      requireLibraryPermission(ctx, args.organizationId, "collections.read"),
     ]);
 
     const requestQuery = args.status
@@ -244,8 +240,7 @@ export const updateStatus = mutation({
     }
 
     await Promise.all([
-      requireModuleEnabled(ctx, request.organizationId, "library"),
-      requirePermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
     ]);
 
     const validTransitions: Record<string, string[]> = {
@@ -318,8 +313,7 @@ export const updateOrderInfo = mutation({
     }
 
     await Promise.all([
-      requireModuleEnabled(ctx, request.organizationId, "library"),
-      requirePermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
     ]);
 
     const updates: Record<string, unknown> = {};
@@ -377,8 +371,7 @@ export const linkToItem = mutation({
     }
 
     await Promise.all([
-      requireModuleEnabled(ctx, request.organizationId, "library"),
-      requirePermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
     ]);
 
     await Promise.all([
@@ -437,8 +430,7 @@ export const update = mutation({
     }
 
     await Promise.all([
-      requireModuleEnabled(ctx, request.organizationId, "library"),
-      requirePermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
     ]);
 
     const updates: Record<string, unknown> = {};
@@ -498,8 +490,7 @@ export const cancel = mutation({
     }
 
     await Promise.all([
-      requireModuleEnabled(ctx, request.organizationId, "library"),
-      requirePermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
     ]);
 
     await Promise.all([
@@ -540,8 +531,7 @@ export const remove = mutation({
     }
 
     await Promise.all([
-      requireModuleEnabled(ctx, request.organizationId, "library"),
-      requirePermission(ctx, request.organizationId, "collections.delete"),
+      requireLibraryPermission(ctx, request.organizationId, "collections.delete"),
     ]);
 
     await Promise.all([
@@ -588,8 +578,7 @@ export const getStatistics = query({
   }),
   handler: async (ctx, args) => {
     await Promise.all([
-      requireModuleEnabled(ctx, args.organizationId, "library"),
-      requirePermission(ctx, args.organizationId, "collections.read"),
+      requireLibraryPermission(ctx, args.organizationId, "collections.read"),
     ]);
     const requests = await ctx.db
       .query("libraryAcquisitionRequests")
@@ -676,7 +665,11 @@ export const approve = mutation({
       throw new Error("Request is not pending approval");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
+    await requireLibraryPermission(
+      ctx,
+      request.organizationId,
+      "collections.update",
+    );
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -846,7 +839,11 @@ export const reject = mutation({
       throw new Error("Request is not pending approval");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
+    await requireLibraryPermission(
+      ctx,
+      request.organizationId,
+      "collections.update",
+    );
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -933,7 +930,11 @@ export const getWorkflowHistory = query({
       throw new Error("Request not found");
     }
 
-    await requireModuleEnabled(ctx, request.organizationId, "library");
+    await requireLibraryPermission(
+      ctx,
+      request.organizationId,
+      "collections.read",
+    );
 
     const history = request.workflowHistory ?? [];
 

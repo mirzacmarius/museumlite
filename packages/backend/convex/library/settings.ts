@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 
 /**
  * Get library settings for an organization
@@ -44,7 +44,7 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>
@@ -90,7 +90,7 @@ export const update = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "organization.manage_settings");
 
     const settings = await ctx.db
       .query("librarySettings")
@@ -196,7 +196,7 @@ export const listMembershipTypes = query({
     }),
   ),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const types = await ctx.db
       .query("membershipTypes")
       .withIndex("by_organization", (q) =>
@@ -232,7 +232,7 @@ export const createMembershipType = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "organization.manage_settings");
 
     // If setting as default, unset other defaults
     if (args.isDefault) {
@@ -297,7 +297,7 @@ export const updateMembershipType = mutation({
       throw new Error("Membership type not found");
     }
 
-    await requireModuleEnabled(ctx, membershipType.organizationId, "library");
+    await requireLibraryPermission(ctx, membershipType.organizationId, "organization.manage_settings");
 
     // If setting as default, unset other defaults
     if (args.isDefault) {
@@ -357,7 +357,7 @@ export const deleteMembershipType = mutation({
       throw new Error("Membership type not found");
     }
 
-    await requireModuleEnabled(ctx, membershipType.organizationId, "library");
+    await requireLibraryPermission(ctx, membershipType.organizationId, "organization.manage_settings");
 
     const accountsWithType = await ctx.db
       .query("accounts")
@@ -397,7 +397,7 @@ export const getLibraryStats = query({
     pendingHolds: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const now = Date.now();
 
     const items = await ctx.db

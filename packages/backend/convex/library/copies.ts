@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 
 // Copy status validator
 const _copyStatusValidator = v.union(
@@ -57,7 +57,7 @@ export const create = mutation({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.create");
 
     // Check if barcode is unique within organization
     const existingCopy = await ctx.db
@@ -127,7 +127,7 @@ export const get = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, copy.organizationId, "library");
+    await requireLibraryPermission(ctx, copy.organizationId, "collections.read");
 
     // Get the parent item
     const item = await ctx.db.get(copy.itemId);
@@ -157,7 +157,7 @@ export const listByItem = query({
       throw new Error("Library item not found");
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "collections.read");
 
     const copies = await ctx.db
       .query("itemCopies")
@@ -194,7 +194,7 @@ export const getByBarcode = query({
   },
   returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const copy = await ctx.db
       .query("itemCopies")
       .withIndex("by_organization_and_barcode", (q) =>
@@ -251,7 +251,7 @@ export const update = mutation({
       throw new Error("Copy not found");
     }
 
-    await requireModuleEnabled(ctx, copy.organizationId, "library");
+    await requireLibraryPermission(ctx, copy.organizationId, "collections.update");
 
     // Check for active circulations
 
@@ -305,7 +305,7 @@ export const markLost = mutation({
       throw new Error("Copy not found");
     }
 
-    await requireModuleEnabled(ctx, copy.organizationId, "library");
+    await requireLibraryPermission(ctx, copy.organizationId, "collections.update");
 
     const wasAvailable = copy.status === "available";
 
@@ -345,7 +345,7 @@ export const withdraw = mutation({
       throw new Error("Copy not found");
     }
 
-    await requireModuleEnabled(ctx, copy.organizationId, "library");
+    await requireLibraryPermission(ctx, copy.organizationId, "collections.update");
 
     // Check for active circulations
     const activeCirculation = await ctx.db
@@ -398,7 +398,7 @@ export const remove = mutation({
       throw new Error("Copy not found");
     }
 
-    await requireModuleEnabled(ctx, copy.organizationId, "library");
+    await requireLibraryPermission(ctx, copy.organizationId, "collections.delete");
 
     // Check for active circulations
     const activeCirculation = await ctx.db
@@ -441,7 +441,7 @@ export const generateBarcode = query({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const settings = await ctx.db
       .query("librarySettings")
       .withIndex("by_organization", (q) =>

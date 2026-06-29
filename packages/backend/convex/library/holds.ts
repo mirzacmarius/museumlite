@@ -8,7 +8,7 @@ import {
   mutation,
   query,
 } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 
 const holdStatusValidator = v.union(
   v.literal("pending"),
@@ -46,7 +46,7 @@ export const place = mutation({
       throw new Error(`Cannot place hold: Account status is ${account.status}`);
     }
 
-    await requireModuleEnabled(ctx, account.organizationId, "library");
+    await requireLibraryPermission(ctx, account.organizationId, "accounts.write");
 
     const item = await ctx.db.get(args.itemId);
     if (!item) {
@@ -146,7 +146,7 @@ export const cancel = mutation({
       throw new Error(`Cannot cancel hold with status: ${hold.status}`);
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
+    await requireLibraryPermission(ctx, hold.organizationId, "accounts.write");
 
     if (hold.status === "available" && hold.copyId) {
       const copy = await ctx.db.get(hold.copyId);
@@ -191,7 +191,7 @@ export const fulfill = mutation({
       throw new Error("Hold is not ready for pickup");
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
+    await requireLibraryPermission(ctx, hold.organizationId, "accounts.write");
 
     await Promise.all([
       ctx.db.patch(args.holdId, { status: "fulfilled" }),
@@ -224,7 +224,7 @@ export const updatePickupLocation = mutation({
       throw new Error("Can only update pickup location for pending holds");
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
+    await requireLibraryPermission(ctx, hold.organizationId, "accounts.write");
 
     await ctx.db.patch(args.holdId, {
       pickupLocationId: args.pickupLocationId,
@@ -245,7 +245,7 @@ export const get = query({
       return null;
     }
 
-    await requireModuleEnabled(ctx, hold.organizationId, "library");
+    await requireLibraryPermission(ctx, hold.organizationId, "accounts.read");
 
     const [account, item] = await Promise.all([
       ctx.db.get(hold.accountId),
@@ -277,7 +277,7 @@ export const listByItem = query({
       return [];
     }
 
-    await requireModuleEnabled(ctx, item.organizationId, "library");
+    await requireLibraryPermission(ctx, item.organizationId, "accounts.read");
 
     const holds = await ctx.db
       .query("libraryHolds")
@@ -314,7 +314,7 @@ export const list = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const query = args.status
       ? ctx.db
           .query("libraryHolds")
@@ -363,7 +363,7 @@ export const listAvailable = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const holds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_organization_and_status", (q) =>
@@ -409,7 +409,7 @@ export const getStatistics = query({
     placedToday: v.number(),
   }),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.read");
     const holds = await ctx.db
       .query("libraryHolds")
       .withIndex("by_organization", (q) =>
@@ -446,7 +446,7 @@ export const expireOldHolds = mutation({
   },
   returns: v.number(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "accounts.write");
     return await expireHoldsForOrg(ctx, args.organizationId);
   },
 });

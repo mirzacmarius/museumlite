@@ -41,6 +41,33 @@ async function setupLibraryHoldsFixture(
       name: "Staff User",
     });
 
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Library Staff",
+      isSystemRole: false,
+    });
+
+    const permissionNames = ["accounts.read", "accounts.write"];
+    await Promise.all(
+      permissionNames.map(async (permissionName) => {
+        const permissionId = await ctx.db.insert("permissions", {
+          name: permissionName,
+          category: permissionName.split(".")[0] ?? "accounts",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId,
+        });
+      }),
+    );
+
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: now,
+    });
+
     await ctx.db.insert("librarySettings", {
       organizationId,
       defaultLoanPeriodDays: 14,

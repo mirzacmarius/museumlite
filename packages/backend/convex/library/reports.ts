@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { query } from "../_generated/server";
-import { requireModuleEnabled } from "../utils/featureGates";
+import { requireLibraryPermission } from "./utils/permissions";
 
 /**
  * Get comprehensive library dashboard statistics
@@ -12,7 +12,7 @@ export const getDashboardStats = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const now = Date.now();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
@@ -153,7 +153,7 @@ export const getCirculationReport = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const circulations = await ctx.db
       .query("circulations")
       .withIndex("by_organization", (q) =>
@@ -229,7 +229,7 @@ export const getPatronReport = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const allPatronAccounts = await ctx.db
       .query("accounts")
       .withIndex("by_organization_and_accountType", (q) =>
@@ -308,7 +308,7 @@ export const getCollectionReport = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     const items = await ctx.db
       .query("libraryItems")
       .withIndex("by_organization", (q) =>
@@ -387,7 +387,7 @@ export const getFinancialReport = query({
   },
   returns: v.any(),
   handler: async (ctx, args) => {
-    await requireModuleEnabled(ctx, args.organizationId, "library");
+    await requireLibraryPermission(ctx, args.organizationId, "collections.read");
     // Fines created in period
     const fines = await ctx.db
       .query("libraryFines")
