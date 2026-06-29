@@ -722,6 +722,7 @@ describe("Dashboard: getComplianceReport", () => {
     });
     const report = await authed.query(api.dashboard.getComplianceReport, {
       organizationId,
+      now: rangeEnd,
       dateRangeStart: rangeStart,
       dateRangeEnd: rangeEnd,
     });
