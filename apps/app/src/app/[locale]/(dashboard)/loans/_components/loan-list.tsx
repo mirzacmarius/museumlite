@@ -2,8 +2,8 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useQuery } from "convex/react";
-import { useCallback, useMemo, useState } from "react";
+import { usePaginatedQuery } from "convex/react";
+import { useCallback, useState } from "react";
 import { LoanListFilters } from "./loan-list-filters";
 import { LoanListKpis } from "./loan-list-kpis";
 import { LoanListTable } from "./loan-list-table";
@@ -22,29 +22,29 @@ export function LoanList({
 }: LoanListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
 
-  const loans = useQuery(
+  const {
+    results: loansPage,
+    status,
+  } = usePaginatedQuery(
     api.loans.list,
     organizationId
       ? {
           organizationId: organizationId as Id<"organizations">,
-          paginationOpts: { numItems: 50, cursor: null },
           status: statusFilter === "all" ? undefined : statusFilter,
           type: typeFilter === "all" ? undefined : typeFilter,
           search: searchQuery.trim() || undefined,
         }
       : "skip",
+    { initialNumItems: 50 },
   );
 
-  const isLoading = loans === undefined;
-  const loansPage = useMemo(
-    () => (loans?.page ?? []) as LoanListRow[],
-    [loans?.page],
-  );
+  const isLoading = status === "LoadingFirstPage";
+  const typedLoansPage = loansPage as LoanListRow[];
 
-  const activeLoansCount = loansPage.filter(
+  const activeLoansCount = typedLoansPage.filter(
     (loan) => loan.status === "active",
   ).length;
-  const totalItemsInTransit = loansPage.reduce(
+  const totalItemsInTransit = typedLoansPage.reduce(
     (sum, loan) => sum + (loan.itemCount || 0),
     0,
   );
@@ -55,7 +55,7 @@ export function LoanList({
 
   const { handleBulkApprove, handleBulkCancel, handleExport } =
     useLoanListBulkActions({
-      loansPage,
+      loansPage: typedLoansPage,
       selectedIds,
       onClearSelection: clearSelection,
     });
@@ -90,9 +90,9 @@ export function LoanList({
         />
 
         <LoanListTable
-          loansPage={loansPage}
+          loansPage={typedLoansPage}
           isLoading={isLoading}
-          hasMore={Boolean(loans?.continueCursor)}
+          hasMore={status === "CanLoadMore"}
           statusFilter={statusFilter}
           typeFilter={typeFilter}
           searchQuery={searchQuery}
@@ -100,7 +100,7 @@ export function LoanList({
           onToggleSelection={toggleSelection}
         />
 
-        {!isLoading && loansPage.length > 0 && (
+        {!isLoading && typedLoansPage.length > 0 && (
           <LoansBulkActionsBar
             selectedCount={selectedIds.size}
             onClearSelection={clearSelection}

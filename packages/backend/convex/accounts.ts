@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import {
@@ -25,6 +26,54 @@ const holderTypeValidator = v.union(
   v.literal("privatePerson"),
 );
 
+const BOUNDED_ACCOUNT_SEARCH_SCAN_LIMIT = 500;
+
+function accountMatchesSearch(
+  account: Doc<"accounts">,
+  searchLower: string,
+): boolean {
+  return (
+    account.businessName?.toLowerCase().includes(searchLower) ||
+    account.firstName?.toLowerCase().includes(searchLower) ||
+    account.lastName?.toLowerCase().includes(searchLower) ||
+    account.accountNumber.toLowerCase().includes(searchLower) ||
+    account.email?.toLowerCase().includes(searchLower) ||
+    account.contactPerson?.toLowerCase().includes(searchLower) ||
+    account.cardNumber?.toLowerCase().includes(searchLower) ||
+    false
+  );
+}
+
+function paginateBoundedResults<T>(
+  items: T[],
+  paginationOpts: { numItems: number; cursor: string | null },
+) {
+  const cursor = paginationOpts.cursor
+    ? Number.parseInt(paginationOpts.cursor, 10)
+    : 0;
+  const startIndex = Number.isNaN(cursor) ? 0 : cursor;
+  const endIndex = Math.min(startIndex + paginationOpts.numItems, items.length);
+
+  return {
+    page: items.slice(startIndex, endIndex),
+    isDone: endIndex >= items.length,
+    continueCursor: endIndex.toString(),
+  };
+}
+
+function toAccountsListResult<T>(result: {
+  page: T[];
+  isDone: boolean;
+  continueCursor: string;
+}) {
+  return {
+    page: result.page,
+    accounts: result.page,
+    isDone: result.isDone,
+    continueCursor: result.continueCursor,
+  };
+}
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -33,9 +82,10 @@ export const list = query({
     accountType: v.optional(accountTypeValidator),
   },
   returns: v.object({
+    page: v.array(v.any()),
     accounts: v.array(v.any()),
     isDone: v.boolean(),
-    continueCursor: v.optional(v.string()),
+    continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
     await Promise.all([
@@ -43,73 +93,62 @@ export const list = query({
       requirePermission(ctx, args.organizationId, "accounts.read"),
     ]);
 
-    let results = await ctx.db
+    const paginationOpts = args.paginationOpts ?? {
+      numItems: 50,
+      cursor: null,
+    };
+    const search = args.search?.trim();
+
+    if (search && search.length > 0) {
+      const searchLower = search.toLowerCase();
+      const recentAccounts = await ctx.db
+        .query("accounts")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .order("desc")
+        .take(BOUNDED_ACCOUNT_SEARCH_SCAN_LIMIT);
+
+      const filteredAccounts = recentAccounts.filter((account) => {
+        if (
+          args.accountType &&
+          account.accountType !== args.accountType
+        ) {
+          return false;
+        }
+
+        return accountMatchesSearch(account, searchLower);
+      });
+
+      return toAccountsListResult(
+        paginateBoundedResults(filteredAccounts, paginationOpts),
+      );
+    }
+
+    if (args.accountType) {
+      const accountType = args.accountType;
+      const paginationResult = await ctx.db
+        .query("accounts")
+        .withIndex("by_organization_and_accountType", (q) =>
+          q
+            .eq("organizationId", args.organizationId)
+            .eq("accountType", accountType),
+        )
+        .order("desc")
+        .paginate(paginationOpts);
+
+      return toAccountsListResult(paginationResult);
+    }
+
+    const paginationResult = await ctx.db
       .query("accounts")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
       .order("desc")
-      .collect();
+      .paginate(paginationOpts);
 
-    if (args.accountType) {
-      results = results.filter(
-        (account) => account.accountType === args.accountType,
-      );
-    }
-
-    if (args.search && args.search.trim().length > 0) {
-      const searchLower = args.search.toLowerCase();
-      results = results.filter((account) => {
-        const businessNameMatch = account.businessName
-          ?.toLowerCase()
-          .includes(searchLower);
-        const nameMatch =
-          account.firstName?.toLowerCase().includes(searchLower) ||
-          account.lastName?.toLowerCase().includes(searchLower);
-        const accountNumberMatch = account.accountNumber
-          .toLowerCase()
-          .includes(searchLower);
-        const emailMatch = account.email?.toLowerCase().includes(searchLower);
-        const contactMatch = account.contactPerson
-          ?.toLowerCase()
-          .includes(searchLower);
-        const cardMatch = account.cardNumber
-          ?.toLowerCase()
-          .includes(searchLower);
-        return (
-          businessNameMatch ||
-          nameMatch ||
-          accountNumberMatch ||
-          emailMatch ||
-          contactMatch ||
-          cardMatch
-        );
-      });
-    }
-
-    if (args.paginationOpts) {
-      const cursor = args.paginationOpts.cursor
-        ? Number.parseInt(args.paginationOpts.cursor, 10)
-        : 0;
-      const startIndex = cursor;
-      const endIndex = Math.min(
-        startIndex + args.paginationOpts.numItems,
-        results.length,
-      );
-      const page = results.slice(startIndex, endIndex);
-
-      return {
-        accounts: page,
-        isDone: endIndex >= results.length,
-        continueCursor: endIndex.toString(),
-      };
-    }
-
-    return {
-      accounts: results,
-      isDone: true,
-      continueCursor: undefined,
-    };
+    return toAccountsListResult(paginationResult);
   },
 });
 

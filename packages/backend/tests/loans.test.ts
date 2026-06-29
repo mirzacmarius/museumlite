@@ -496,3 +496,46 @@ test("(integrity) happy path: distinct collections, valid dates, unique number â
   });
   expect(itemCount).toBe(3);
 });
+
+test("paginates loans with cursor and status filter", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+    "loans.create",
+    "loans.read",
+  ]);
+  const authed = authedForUser(t, userId);
+
+  await t.run(async (ctx) => {
+    await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        ctx.db.insert("loans", {
+          organizationId,
+          loanNumber: `LOAN-PAGE-${index + 1}`,
+          type: "outgoing",
+          lenderBorrowerName: `Borrower ${index + 1}`,
+          startDate: Date.now() - index * 86_400_000,
+          status: index % 2 === 0 ? "active" : "pending",
+        }),
+      ),
+    );
+  });
+
+  const page1 = await authed.query(api.loans.list, {
+    organizationId,
+    paginationOpts: { numItems: 3, cursor: null },
+    status: "active",
+  });
+
+  expect(page1.page).toHaveLength(3);
+  expect(page1.isDone).toBe(false);
+  expect(page1.page.every((loan) => loan.status === "active")).toBe(true);
+
+  const page2 = await authed.query(api.loans.list, {
+    organizationId,
+    paginationOpts: { numItems: 3, cursor: page1.continueCursor },
+    status: "active",
+  });
+
+  expect(page2.page.length).toBeGreaterThan(0);
+  expect(page2.page.every((loan) => loan.status === "active")).toBe(true);
+});

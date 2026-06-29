@@ -1414,6 +1414,10 @@ export default defineSchema({
     isCurrentAppraisal: v.optional(v.boolean()), // Mark as the current/active appraisal
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_appraisalDate", [
+      "organizationId",
+      "appraisalDate",
+    ])
     .index("by_collection", ["collectionId"])
     .index("by_collection_and_date", ["collectionId", "appraisalDate"]),
 
@@ -1808,6 +1812,7 @@ export default defineSchema({
     .index("by_organization", ["organizationId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
+    .index("by_organization_and_startDate", ["organizationId", "startDate"])
     .index("by_type", ["type"])
     .index("by_organization_and_type", ["organizationId", "type"])
     .index("by_account", ["accountId"])

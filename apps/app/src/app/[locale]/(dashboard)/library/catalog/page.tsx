@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import {
   BookCopy,
   BookOpen,
@@ -406,12 +406,14 @@ export default function LibraryCatalogPage() {
 
   const isLibraryEnabled = hasModule("library");
 
-  const items = useQuery(
+  const {
+    results: catalogItems,
+    status: catalogStatus,
+  } = usePaginatedQuery(
     api.library.items.list,
     currentOrganizationId && isLibraryEnabled
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
-          paginationOpts: { numItems: 50, cursor: null },
           search: searchQuery.trim() || undefined,
           itemType: typeFilter !== "all" ? (typeFilter as ItemType) : undefined,
           catalogStatus:
@@ -420,7 +422,13 @@ export default function LibraryCatalogPage() {
               : undefined,
         }
       : "skip",
+    { initialNumItems: 50 },
   );
+
+  const items =
+    catalogStatus === "LoadingFirstPage"
+      ? undefined
+      : { page: catalogItems as CatalogItem[] };
 
   if (isLoading) {
     return (

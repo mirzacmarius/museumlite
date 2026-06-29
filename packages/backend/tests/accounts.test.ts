@@ -544,4 +544,74 @@ describe("Accounts CRUD", () => {
       }),
     ).rejects.toThrow("Business name is required for non-patron accounts");
   });
+
+  test("paginates accounts with cursor and preserves accountType filter", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-pagination`,
+      issuer: "https://example.test",
+    });
+
+    await Promise.all(
+      Array.from({ length: 12 }, (_, index) =>
+        authed.mutation(api.accounts.create, {
+          organizationId,
+          accountType: index % 2 === 0 ? "lender" : "borrower",
+          businessName: `Account ${index + 1}`,
+        }),
+      ),
+    );
+
+    const page1 = await authed.query(api.accounts.list, {
+      organizationId,
+      paginationOpts: { numItems: 5, cursor: null },
+      accountType: "lender",
+    });
+
+    expect(page1.page).toHaveLength(5);
+    expect(page1.isDone).toBe(false);
+    expect(page1.page.every((account) => account.accountType === "lender")).toBe(
+      true,
+    );
+
+    const page2 = await authed.query(api.accounts.list, {
+      organizationId,
+      paginationOpts: { numItems: 5, cursor: page1.continueCursor },
+      accountType: "lender",
+    });
+
+    expect(page2.page.length).toBeGreaterThan(0);
+    expect(page2.page.every((account) => account.accountType === "lender")).toBe(
+      true,
+    );
+  });
+
+  test("bounds account search to recent records window", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-search-bounds`,
+      issuer: "https://example.test",
+    });
+
+    await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      businessName: "Unique Search Target Museum",
+    });
+
+    const searchResult = await authed.query(api.accounts.list, {
+      organizationId,
+      paginationOpts: { numItems: 10, cursor: null },
+      search: "Unique Search Target",
+    });
+
+    expect(searchResult.page).toHaveLength(1);
+    expect(searchResult.page[0]?.businessName).toBe(
+      "Unique Search Target Museum",
+    );
+  });
 });

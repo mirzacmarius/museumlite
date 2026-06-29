@@ -269,17 +269,20 @@ function AccountList({
   accountType?: AccountType;
 }) {
   const t = useScopedI18n("accounts");
-  const accounts = useQuery(api.accounts.list, {
+  const accountsResult = useQuery(api.accounts.list, {
     organizationId,
+    paginationOpts: { numItems: 50, cursor: null },
     search: searchQuery || undefined,
     accountType,
   });
 
-  if (accounts === undefined) {
+  if (accountsResult === undefined) {
     return <ListRowsSkeleton count={8} />;
   }
 
-  if (accounts.accounts.length === 0) {
+  const accounts = accountsResult.page;
+
+  if (accounts.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center">
         <EmptyState
@@ -305,7 +308,7 @@ function AccountList({
 
   const isPatronList = accountType === "patron";
 
-  const getAccountDisplayName = (account: (typeof accounts.accounts)[0]) => {
+  const getAccountDisplayName = (account: (typeof accounts)[0]) => {
     if (account.accountType === "patron") {
       return (
         `${account.firstName ?? ""} ${account.lastName ?? ""}`.trim() ||
@@ -335,7 +338,7 @@ function AccountList({
   return (
     <div className="p-4 sm:p-6">
       <div className="space-y-2">
-        {accounts.accounts.map((account) => (
+        {accounts.map((account) => (
           <Link
             key={account._id}
             href={`/accounts/${account._id}`}

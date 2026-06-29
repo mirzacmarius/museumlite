@@ -2,9 +2,9 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
@@ -482,6 +482,81 @@ export const removeItems = mutation({
 /**
  * List loans with filters
  */
+const BOUNDED_LOAN_SEARCH_SCAN_LIMIT = 500;
+
+function paginateBoundedLoanResults(
+  items: Doc<"loans">[],
+  paginationOpts: { numItems: number; cursor: string | null },
+) {
+  const cursor = paginationOpts.cursor
+    ? Number.parseInt(paginationOpts.cursor, 10)
+    : 0;
+  const startIndex = Number.isNaN(cursor) ? 0 : cursor;
+  const endIndex = Math.min(startIndex + paginationOpts.numItems, items.length);
+
+  return {
+    page: items.slice(startIndex, endIndex),
+    isDone: endIndex >= items.length,
+    continueCursor: endIndex.toString(),
+  };
+}
+
+async function enrichLoanListPage(ctx: QueryCtx, loans: Doc<"loans">[]) {
+  return await Promise.all(
+    loans.map(async (loan) => {
+      const items = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+        .collect();
+
+      return {
+        _id: loan._id,
+        loanNumber: loan.loanNumber,
+        type: loan.type,
+        lenderBorrowerName: loan.lenderBorrowerName,
+        startDate: loan.startDate,
+        endDate: loan.endDate,
+        status: loan.status,
+        itemCount: items.length,
+      };
+    }),
+  );
+}
+
+async function filterLoansBySearch(
+  ctx: QueryCtx,
+  loans: Doc<"loans">[],
+  searchLower: string,
+) {
+  const loansWithCollectionInfo = await Promise.all(
+    loans.map(async (loan) => {
+      const items = await ctx.db
+        .query("loanItems")
+        .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
+        .take(1);
+
+      let collectionTitle = "";
+      if (items.length > 0 && items[0]) {
+        const collection = await ctx.db.get(items[0].collectionId);
+        collectionTitle = collection?.title ?? "";
+      }
+
+      return { loan, collectionTitle };
+    }),
+  );
+
+  return loansWithCollectionInfo.flatMap(({ loan, collectionTitle }) =>
+    loan.loanNumber.toLowerCase().includes(searchLower) ||
+    loan.lenderBorrowerName.toLowerCase().includes(searchLower) ||
+    loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
+    loan.notes?.toLowerCase().includes(searchLower) ||
+    loan.terms?.toLowerCase().includes(searchLower) ||
+    collectionTitle.toLowerCase().includes(searchLower)
+      ? [loan]
+      : [],
+  );
+}
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -526,96 +601,120 @@ export const list = query({
       requirePermission(ctx, args.organizationId, "loans.read"),
     ]);
 
-    let query = ctx.db
-      .query("loans")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      );
+    const search = args.search?.trim();
 
-    if (args.status) {
-      query = query.filter((q) => q.eq(q.field("status"), args.status));
-    }
+    if (search && search.length > 0) {
+      const searchLower = search.toLowerCase();
+      let candidateLoans = await ctx.db
+        .query("loans")
+        .withSearchIndex("search_loans", (q) => {
+          let filter = q
+            .search("lenderBorrowerName", search)
+            .eq("organizationId", args.organizationId);
 
-    if (args.type) {
-      query = query.filter((q) => q.eq(q.field("type"), args.type));
-    }
-
-    // Collect all results for search filtering
-    let allResults = await query.collect();
-
-    // Apply search filter if provided
-    if (args.search && args.search.trim().length > 0) {
-      const searchLower = args.search.toLowerCase();
-      // Get collection titles for loans to include in search
-      const loansWithCollectionInfo = await Promise.all(
-        allResults.map(async (loan) => {
-          const items = await ctx.db
-            .query("loanItems")
-            .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
-            .take(1);
-
-          let collectionTitle = "";
-          if (items.length > 0 && items[0]) {
-            const collection = await ctx.db.get(items[0].collectionId);
-            collectionTitle = collection?.title || "";
+          if (args.status) {
+            filter = filter.eq("status", args.status);
+          }
+          if (args.type) {
+            filter = filter.eq("type", args.type);
           }
 
-          return { ...loan, collectionTitle };
-        }),
+          return filter;
+        })
+        .take(BOUNDED_LOAN_SEARCH_SCAN_LIMIT);
+
+      if (candidateLoans.length < BOUNDED_LOAN_SEARCH_SCAN_LIMIT) {
+        let indexedQuery = ctx.db
+          .query("loans")
+          .withIndex("by_organization_and_startDate", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .order("desc");
+
+        if (args.status) {
+          indexedQuery = indexedQuery.filter((q) =>
+            q.eq(q.field("status"), args.status),
+          );
+        }
+        if (args.type) {
+          indexedQuery = indexedQuery.filter((q) =>
+            q.eq(q.field("type"), args.type),
+          );
+        }
+
+        const recentLoans = await indexedQuery.take(
+          BOUNDED_LOAN_SEARCH_SCAN_LIMIT,
+        );
+        const seenIds = new Set(candidateLoans.map((loan) => loan._id));
+        candidateLoans = [
+          ...candidateLoans,
+          ...recentLoans.filter((loan) => !seenIds.has(loan._id)),
+        ];
+      }
+
+      const filteredLoans = await filterLoansBySearch(
+        ctx,
+        candidateLoans,
+        searchLower,
+      );
+      filteredLoans.sort((a, b) => b.startDate - a.startDate);
+
+      const paginated = paginateBoundedLoanResults(
+        filteredLoans,
+        args.paginationOpts,
       );
 
-      allResults = loansWithCollectionInfo.flatMap(
-        ({ collectionTitle, ...loan }) =>
-          loan.loanNumber?.toLowerCase().includes(searchLower) ||
-          loan.lenderBorrowerName?.toLowerCase().includes(searchLower) ||
-          loan.lenderBorrowerContact?.toLowerCase().includes(searchLower) ||
-          loan.notes?.toLowerCase().includes(searchLower) ||
-          loan.terms?.toLowerCase().includes(searchLower) ||
-          collectionTitle?.toLowerCase().includes(searchLower)
-            ? [loan]
-            : [],
-      );
+      return {
+        page: await enrichLoanListPage(ctx, paginated.page),
+        isDone: paginated.isDone,
+        continueCursor: paginated.continueCursor,
+      };
     }
 
-    // Sort by start date (newest first)
-    allResults.sort((a, b) => b.startDate - a.startDate);
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      allResults.length,
-    );
-    const page = allResults.slice(startIndex, endIndex);
-
-    // Get item counts for each loan
-    const loansWithCounts = await Promise.all(
-      page.map(async (loan) => {
-        const items = await ctx.db
-          .query("loanItems")
-          .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
-          .collect();
-
-        return {
-          _id: loan._id,
-          loanNumber: loan.loanNumber,
-          type: loan.type,
-          lenderBorrowerName: loan.lenderBorrowerName,
-          startDate: loan.startDate,
-          endDate: loan.endDate,
-          status: loan.status,
-          itemCount: items.length,
-        };
-      }),
-    );
+    const paginationResult =
+      args.status && args.type
+        ? await ctx.db
+            .query("loans")
+            .withIndex("by_organization_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", args.status!),
+            )
+            .filter((q) => q.eq(q.field("type"), args.type))
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : args.status
+          ? await ctx.db
+              .query("loans")
+              .withIndex("by_organization_and_status", (q) =>
+                q
+                  .eq("organizationId", args.organizationId)
+                  .eq("status", args.status!),
+              )
+              .order("desc")
+              .paginate(args.paginationOpts)
+          : args.type
+            ? await ctx.db
+                .query("loans")
+                .withIndex("by_organization_and_type", (q) =>
+                  q
+                    .eq("organizationId", args.organizationId)
+                    .eq("type", args.type!),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("loans")
+                .withIndex("by_organization_and_startDate", (q) =>
+                  q.eq("organizationId", args.organizationId),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts);
 
     return {
-      page: loansWithCounts,
-      isDone: endIndex >= allResults.length,
-      continueCursor: endIndex.toString(),
+      page: await enrichLoanListPage(ctx, paginationResult.page),
+      isDone: paginationResult.isDone,
+      continueCursor: paginationResult.continueCursor,
     };
   },
 });

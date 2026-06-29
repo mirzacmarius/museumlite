@@ -2,7 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { mutation, query, type QueryCtx } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
 const appraisalTypeValidator = v.union(
@@ -363,11 +364,49 @@ export const listByCollection = query({
 /**
  * List appraisals for an organization with pagination
  */
+const BOUNDED_APPRAISAL_SEARCH_SCAN_LIMIT = 500;
+const MAX_APPRAISAL_AGE_MS = 730 * 24 * 60 * 60 * 1000;
+const APPRAISAL_EXPIRY_WARNING_MS = 90 * 24 * 60 * 60 * 1000;
+
+async function enrichAppraisalPage(
+  ctx: { db: QueryCtx["db"] },
+  appraisals: Doc<"appraisals">[],
+  now: number,
+) {
+  return await Promise.all(
+    appraisals.map(async (appraisal) => {
+      const collection = await ctx.db.get(appraisal.collectionId);
+      const appraisalAge = now - appraisal.appraisalDate;
+      const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
+      const isValid = appraisalAge <= MAX_APPRAISAL_AGE_MS;
+      const daysUntilExpiry = isValid
+        ? Math.floor(
+            (MAX_APPRAISAL_AGE_MS - appraisalAge) / (24 * 60 * 60 * 1000),
+          )
+        : undefined;
+
+      return {
+        _id: appraisal._id,
+        collectionId: appraisal.collectionId,
+        collectionTitle: collection?.title,
+        appraisalDate: appraisal.appraisalDate,
+        appraiserName: appraisal.appraiserName,
+        appraisalType: appraisal.appraisalType,
+        value: appraisal.value,
+        currency: appraisal.currency,
+        ageDays,
+        isValid,
+        daysUntilExpiry,
+      };
+    }),
+  );
+}
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
     paginationOpts: paginationOptsValidator,
-    expiringSoon: v.optional(v.boolean()), // Filter to show appraisals expiring within 90 days
+    expiringSoon: v.optional(v.boolean()),
   },
   returns: v.object({
     page: v.array(
@@ -389,71 +428,53 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    const [, appraisals] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.read"),
-      ctx.db
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
+    const now = Date.now();
+
+    if (args.expiringSoon) {
+      const recentAppraisals = await ctx.db
         .query("appraisals")
-        .withIndex("by_organization", (q) =>
+        .withIndex("by_organization_and_appraisalDate", (q) =>
           q.eq("organizationId", args.organizationId),
         )
-        .collect(),
-    ] as const);
+        .order("desc")
+        .take(BOUNDED_APPRAISAL_SEARCH_SCAN_LIMIT);
 
-    const maxAgeMs = 730 * 24 * 60 * 60 * 1000; // 2 years
-    const expiryWarningMs = 90 * 24 * 60 * 60 * 1000; // 90 days
-
-    let enrichedAppraisals = await Promise.all(
-      appraisals.map(async (appraisal) => {
-        const collection = await ctx.db.get(appraisal.collectionId);
-        const appraisalAge = Date.now() - appraisal.appraisalDate;
-        const ageDays = Math.floor(appraisalAge / (24 * 60 * 60 * 1000));
-        const isValid = appraisalAge <= maxAgeMs;
-        const daysUntilExpiry = isValid
-          ? Math.floor((maxAgeMs - appraisalAge) / (24 * 60 * 60 * 1000))
-          : undefined;
-
-        return {
-          _id: appraisal._id,
-          collectionId: appraisal.collectionId,
-          collectionTitle: collection?.title,
-          appraisalDate: appraisal.appraisalDate,
-          appraiserName: appraisal.appraiserName,
-          appraisalType: appraisal.appraisalType,
-          value: appraisal.value,
-          currency: appraisal.currency,
-          ageDays,
-          isValid,
-          daysUntilExpiry,
-        };
-      }),
-    );
-
-    // Filter for expiring soon if requested
-    if (args.expiringSoon) {
-      enrichedAppraisals = enrichedAppraisals.filter((a) => {
-        const appraisalAge = Date.now() - a.appraisalDate;
-        return appraisalAge >= maxAgeMs - expiryWarningMs;
+      const expiringAppraisals = recentAppraisals.filter((appraisal) => {
+        const appraisalAge = now - appraisal.appraisalDate;
+        return appraisalAge >= MAX_APPRAISAL_AGE_MS - APPRAISAL_EXPIRY_WARNING_MS;
       });
+
+      const cursor = args.paginationOpts.cursor
+        ? Number.parseInt(args.paginationOpts.cursor, 10)
+        : 0;
+      const startIndex = Number.isNaN(cursor) ? 0 : cursor;
+      const endIndex = Math.min(
+        startIndex + args.paginationOpts.numItems,
+        expiringAppraisals.length,
+      );
+      const pageAppraisals = expiringAppraisals.slice(startIndex, endIndex);
+
+      return {
+        page: await enrichAppraisalPage(ctx, pageAppraisals, now),
+        isDone: endIndex >= expiringAppraisals.length,
+        continueCursor: endIndex.toString(),
+      };
     }
 
-    // Sort by appraisal date descending
-    enrichedAppraisals.sort((a, b) => b.appraisalDate - a.appraisalDate);
-
-    // Handle pagination
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      enrichedAppraisals.length,
-    );
-    const page = enrichedAppraisals.slice(startIndex, endIndex);
+    const paginationResult = await ctx.db
+      .query("appraisals")
+      .withIndex("by_organization_and_appraisalDate", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
 
     return {
-      page,
-      isDone: endIndex >= enrichedAppraisals.length,
-      continueCursor: endIndex.toString(),
+      page: await enrichAppraisalPage(ctx, paginationResult.page, now),
+      isDone: paginationResult.isDone,
+      continueCursor: paginationResult.continueCursor,
     };
   },
 });
