@@ -160,17 +160,17 @@ describe("organization hierarchy", () => {
 
 describe("getUsageStats", () => {
   test("should read object and storage usage from organization counters", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      { slugPrefix: "counter-org" },
+    );
+    const authed = authedForUser(t, userId);
 
-    const orgId = await t.run(async (ctx) => {
-      const orgId = await ctx.db.insert("organizations", {
-        name: "Counter Org",
-        slug: "counter-org",
-        type: "museum",
-      });
-
+    await t.run(async (ctx) => {
       await ctx.db.insert("organizationUsageCounters", {
-        organizationId: orgId,
+        organizationId,
         objectCount: 17,
         mediaFileCount: 4,
         mediaVersionCount: 2,
@@ -185,7 +185,7 @@ describe("getUsageStats", () => {
       });
 
       await ctx.db.insert("exportUsage", {
-        organizationId: orgId,
+        organizationId,
         periodStart: Date.UTC(
           new Date().getUTCFullYear(),
           new Date().getUTCMonth(),
@@ -193,12 +193,10 @@ describe("getUsageStats", () => {
         ),
         count: 3,
       });
-
-      return orgId;
     });
 
-    const stats = await t.query(api.organizations.getUsageStats, {
-      organizationId: orgId,
+    const stats = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
     });
 
     expect(stats.objects.used).toBe(17);
@@ -207,18 +205,16 @@ describe("getUsageStats", () => {
   });
 
   test("should return correct structure for free tier", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      { slugPrefix: "test-org" },
+    );
+    const authed = authedForUser(t, userId);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org",
-        type: "museum",
-      });
-    });
-
-    const stats = await t.query(api.organizations.getUsageStats, {
-      organizationId: orgId,
+    const stats = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
     });
 
     expect(stats).toBeDefined();
@@ -232,61 +228,164 @@ describe("getUsageStats", () => {
   });
 
   test("should count objects correctly", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      { slugPrefix: "test-org-pro" },
+    );
+    const authed = authedForUser(t, userId);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org",
-        slug: "test-org-pro",
-        type: "museum",
-      });
-    });
-
-    const stats = await t.query(api.organizations.getUsageStats, {
-      organizationId: orgId,
+    const stats = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
     });
 
     expect(stats.objects.used).toBe(0);
   });
 
   test("should sum storage correctly", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      { slugPrefix: "test-org-storage" },
+    );
+    const authed = authedForUser(t, userId);
 
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Test Org Storage",
-        slug: "test-org-storage",
-        type: "museum",
-      });
-    });
-
-    const stats = await t.query(api.organizations.getUsageStats, {
-      organizationId: orgId,
+    const stats = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
     });
 
     expect(stats.storage.used).toBe(0);
   });
 
   test("should handle enterprise tier with null limits", async () => {
-    const t = convexTest(schema, modules);
-
-    const orgId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
-        name: "Enterprise Org",
-        slug: "enterprise-org",
-        type: "museum",
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      {
+        slugPrefix: "enterprise-org",
         subscriptionTier: "enterprise",
-      });
-    });
+      },
+    );
+    const authed = authedForUser(t, userId);
 
-    const stats = await t.query(api.organizations.getUsageStats, {
-      organizationId: orgId,
+    const stats = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
     });
 
     expect(stats.tier).toBe("enterprise");
     expect(stats.storage.limit).toBeNull();
     expect(stats.objects.limit).toBeNull();
     expect(stats.exports.limit).toBeNull();
+  });
+});
+
+describe("organization read helpers security", () => {
+  test("unauthenticated callers cannot read settings, usage, or user list", async () => {
+    const t = createConvexTest();
+    const { organizationId } = await createOrgUserWithPermissions(t, [], {
+      slugPrefix: "secured-org",
+    });
+
+    await expect(
+      t.query(api.organizations.getSettings, { organizationId }),
+    ).rejects.toThrow("Not authenticated");
+    await expect(
+      t.query(api.organizations.getUsageStats, { organizationId }),
+    ).rejects.toThrow("Not authenticated");
+    await expect(
+      t.query(api.organizations.listOrganizationUsers, { organizationId }),
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test("non-member cannot read another org's settings, usage, or user list", async () => {
+    const t = createConvexTest();
+    const { organizationId: orgA } = await createOrgUserWithPermissions(
+      t,
+      ["organization.manage_settings"],
+      { slugPrefix: "org-a" },
+    );
+    const { userId: userB } = await createOrgUserWithPermissions(
+      t,
+      ["organization.manage_settings"],
+      { slugPrefix: "org-b" },
+    );
+    const authedB = authedForUser(t, userB);
+
+    await expect(
+      authedB.query(api.organizations.getSettings, { organizationId: orgA }),
+    ).rejects.toThrow("Permission denied: organization.manage_settings");
+    await expect(
+      authedB.query(api.organizations.getUsageStats, { organizationId: orgA }),
+    ).rejects.toThrow("Not a member of this organization");
+    await expect(
+      authedB.query(api.organizations.listOrganizationUsers, {
+        organizationId: orgA,
+      }),
+    ).rejects.toThrow("Permission denied: organization.manage_settings");
+  });
+
+  test("authorized org admin can read settings, usage, and user list", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      ["organization.manage_settings"],
+      {
+        slugPrefix: "admin-org",
+        organizationName: "Admin Museum",
+      },
+    );
+    const authed = authedForUser(t, userId);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, {
+        settings: {
+          autoGenerateAccessionNumbers: true,
+        },
+      });
+    });
+
+    const [settings, stats, users] = await Promise.all([
+      authed.query(api.organizations.getSettings, { organizationId }),
+      authed.query(api.organizations.getUsageStats, { organizationId }),
+      authed.query(api.organizations.listOrganizationUsers, { organizationId }),
+    ]);
+
+    expect(settings?.autoGenerateAccessionNumbers).toBe(true);
+    expect(stats.tier).toBe("free");
+    expect(users.some((user) => user._id === userId)).toBe(true);
+  });
+
+  test("org member without manage_settings can read usage stats", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      { slugPrefix: "member-usage-org" },
+    );
+    const authed = authedForUser(t, userId);
+
+    const stats = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
+    });
+
+    expect(stats.tier).toBe("free");
+  });
+
+  test("org member without manage_settings cannot list organization users", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+      { slugPrefix: "member-users-org" },
+    );
+    const authed = authedForUser(t, userId);
+
+    await expect(
+      authed.query(api.organizations.listOrganizationUsers, { organizationId }),
+    ).rejects.toThrow("Permission denied: organization.manage_settings");
   });
 });
 
