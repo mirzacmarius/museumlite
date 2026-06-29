@@ -314,6 +314,123 @@ test("should return empty array when no transit records exist", async () => {
   expect(transits).toEqual([]);
 });
 
+test("should reject invalid transit status transitions", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
+
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "cancelled",
+    description: "Shipment cancelled",
+  });
+
+  await expect(
+    authed.mutation(api.transit.updateTransitStatus, {
+      transitRecordId: transitId,
+      status: "in_transit",
+      description: "Attempt to revive cancelled shipment",
+    }),
+  ).rejects.toThrow(
+    "Invalid transit status transition from cancelled to in_transit",
+  );
+});
+
+test("should reject transition from delivered to draft", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
+
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "in_transit",
+    description: "En route",
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "delivered",
+    description: "Delivered",
+  });
+
+  await expect(
+    authed.mutation(api.transit.updateTransitStatus, {
+      transitRecordId: transitId,
+      status: "draft",
+      description: "Attempt to revert to draft",
+    }),
+  ).rejects.toThrow(
+    "Invalid transit status transition from delivered to draft",
+  );
+});
+
+test("should allow draft to scheduled to in_transit transitions", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
+
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "scheduled",
+    description: "Pickup scheduled",
+  });
+
+  await authed.mutation(api.transit.updateTransitStatus, {
+    transitRecordId: transitId,
+    status: "in_transit",
+    description: "Picked up by carrier",
+  });
+
+  const transit = await authed.query(api.transit.getTransitRecord, {
+    transitRecordId: transitId,
+  });
+
+  expect(transit?.status).toBe("in_transit");
+  expect(transit?.statusHistory).toHaveLength(2);
+});
+
+test("should reject same-status updates", async () => {
+  const t = createConvexTest();
+  const { organizationId, authed } = await setupTransitFixture(t);
+
+  const transitId = await authed.mutation(api.transit.createTransitRecord, {
+    organizationId,
+    transitType: "outgoing",
+    originName: "Museum Storage",
+    destinationName: "Partner Gallery",
+    carrier: "Art Handler Co",
+  });
+
+  await expect(
+    authed.mutation(api.transit.updateTransitStatus, {
+      transitRecordId: transitId,
+      status: "draft",
+      description: "No-op update",
+    }),
+  ).rejects.toThrow("Invalid transit status transition from draft to draft");
+});
+
 test("should return transit records with status history", async () => {
   const t = createConvexTest();
   const { organizationId, loanId, authed } = await setupTransitFixture(t);
