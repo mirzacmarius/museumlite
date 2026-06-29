@@ -42,10 +42,10 @@ Plans 015–022: 2026-06-19 follow-up audit (`/improve`, standard depth).
 | 036 | Validate every media ID on reorder belongs to authorized org | P2 | S | — | DONE ([PR #83](https://github.com/mirzacmarius/ml-cursor/pull/83)) |
 | 037 | Run placeholder-test guard in CI backend test script | P2 | S | — | DONE ([PR #86](https://github.com/mirzacmarius/ml-cursor/pull/86)) |
 | 038 | Docs hygiene bundle (AGENTS, env example, broken pointers) | P3 | S | — | DONE ([PR #87](https://github.com/mirzacmarius/ml-cursor/pull/87)) |
-| 039 | Fix remaining parallel counter races under Promise.all | P2 | M | — | TODO |
-| 040 | Pass client time into dashboard and reporting queries | P2 | S | — | TODO |
-| 041 | Remove arbitrary user fallback on accession publish | P2 | S | — | TODO |
-| 042 | Test Polar billing webhook HTTP handler | P2 | M | — | TODO |
+| 039 | Fix remaining parallel counter races under Promise.all | P2 | M | — | DONE ([PR #89](https://github.com/mirzacmarius/ml-cursor/pull/89)) |
+| 040 | Pass client time into dashboard and reporting queries | P2 | S | — | DONE ([PR #90](https://github.com/mirzacmarius/ml-cursor/pull/90)) |
+| 041 | Remove arbitrary user fallback on accession publish | P2 | S | — | DONE ([PR #91](https://github.com/mirzacmarius/ml-cursor/pull/91)) |
+| 042 | Test Polar billing webhook HTTP handler | P2 | M | — | DONE ([PR #92](https://github.com/mirzacmarius/ml-cursor/pull/92)) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -57,7 +57,7 @@ Optional micro-follow-up after 012: fix residual `IIIF-ready media` in `apps/web
 
 ## Deep audit round (2026-06-29 @ `f8648557`) — next up
 
-Recommended batch order: ~~022~~ ~~032–038~~ (merged). **Next execute: 039 → 040 → 041 → 042**, then write 043+ for PERF/COR/TEST backlog below.
+Recommended batch order: ~~039–042~~ (merged). **Next:** write 043+ from backlog (COR-08 bulk deaccession, TEST-02, PERF-04 storage URLs, SEC-04 org slug auth).
 
 ### Batch 032–038 (done)
 
@@ -71,14 +71,16 @@ Recommended batch order: ~~022~~ ~~032–038~~ (merged). **Next execute: 039 →
 | TEST-07 | Placeholder guard not in CI `test` script | 037 |
 | DOCS-01 | Stale agent docs / env example | 038 |
 
-### Batch 039+ (queued — plans written for 039–042)
+### Batch 039–042 (done)
 
-| ID | Finding | Plan | Effort |
-|----|---------|------|--------|
-| COR-01 (rest) | Parallel `++`/`+=` in notifications, collections bulk, SLA, etc. | **039** | M |
-| COR-10 | `Date.now()` in dashboard/reporting queries | **040** | S |
-| COR-04 | Accession publish `users.first()` catalogedBy | **041** | S |
-| TEST-01 | Polar billing webhook HTTP untested | **042** | M |
+| ID | Finding | Plan |
+|----|---------|------|
+| COR-01 (rest) | Parallel `++`/`+=` in notifications, collections bulk, SLA, etc. | **039** |
+| COR-10 | `Date.now()` in dashboard/reporting queries | **040** |
+| COR-04 | Accession publish `users.first()` catalogedBy | **041** |
+| TEST-01 | Polar billing webhook HTTP untested | **042** |
+
+### Batch 039+ (queued — plans written for 039–042)
 
 ### Backlog (plans not yet written — prioritize after 042)
 
