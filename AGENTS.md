@@ -1,6 +1,6 @@
 # `AGENTS.md - Coding Agent Guidelines
 
-Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 15 App Router, Bun, Biome.
+Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 16 App Router, Bun, Biome.
 
 ## Philosophy
 
@@ -27,9 +27,9 @@ bun run format             # Biome format (writes files)
 bun run test               # Run all workspace tests (app + backend)
 
 # Testing (from packages/backend/)
-bun test                   # Run backend tests once
+bun test                   # Run backend tests once (finite vitest run)
 bun test:watch             # Run backend tests in watch mode
-bun test:once              # Alias for bun test
+bun test:once              # Placeholder guard, then vitest run
 bun test loans.test.ts     # Run single test file
 bun test -t "approve"      # Run tests matching pattern
 

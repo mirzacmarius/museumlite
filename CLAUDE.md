@@ -42,9 +42,13 @@ bun format         # Format code with Biome
 # Type checking
 bun typecheck      # Run TypeScript type checks
 
+# Testing
+bun run test       # Run all workspace tests (app + backend)
+
 # Testing (from packages/backend)
-bun test           # Run tests with Vitest
-bun test:watch     # Run tests in watch mode
+bun test           # Run backend tests once (finite vitest run)
+bun test:watch     # Run backend tests in watch mode
+bun test:once      # Placeholder guard, then vitest run
 ```
 
 ### Convex Backend
@@ -152,4 +156,4 @@ Triage uses the MUS Linear statuses, with optional canonical labels only where a
 
 ### Domain docs
 
-Single-context domain documentation: read root `CONTEXT.md` and root `docs/adr/` when present. See `docs/agents/domain.md`.
+Single-context domain documentation: see `docs/agents/domain.md` (optional `CONTEXT.md` and `docs/adr/` when present).
