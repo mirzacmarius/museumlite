@@ -5,6 +5,11 @@ import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 
 import { modules } from "./testSetup";
+import {
+  authedForUser,
+  createConvexTest,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 
 type TestSetup = {
   organizationId: Id<"organizations">;
@@ -62,17 +67,6 @@ async function createTestSetup(
   });
 
   return { organizationId, userId, roleId };
-}
-
-function authedForUser(
-  t: ReturnType<typeof convexTest>,
-  userId: Id<"users">,
-  sessionId: string,
-) {
-  return t.withIdentity({
-    subject: `${userId}|${sessionId}`,
-    issuer: "https://example.test",
-  });
 }
 
 describe("Webhook integrations", () => {
@@ -184,5 +178,71 @@ describe("Webhook integrations", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("Not authenticated");
+  });
+});
+
+describe("integrations read security", () => {
+  test("member can read enabled integrations", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      [],
+    );
+    const authed = authedForUser(t, userId);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, {
+        settings: {
+          enabledIntegrations: ["library"],
+        },
+      });
+    });
+
+    const enabled = await authed.query(api.integrations.getEnabled, {
+      organizationId,
+    });
+    expect(enabled).toEqual(["library"]);
+
+    const isLibraryEnabled = await authed.query(api.integrations.isEnabled, {
+      organizationId,
+      integrationId: "library",
+    });
+    expect(isLibraryEnabled).toBe(true);
+  });
+
+  test("unauthenticated caller cannot read enabled integrations", async () => {
+    const t = createConvexTest();
+    const { organizationId } = await createOrgUserWithPermissions(t, []);
+
+    await expect(
+      t.query(api.integrations.getEnabled, { organizationId }),
+    ).rejects.toThrow("Not authenticated");
+
+    await expect(
+      t.query(api.integrations.isEnabled, {
+        organizationId,
+        integrationId: "library",
+      }),
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test("non-member cannot read another org integrations", async () => {
+    const t = createConvexTest();
+    const { organizationId: orgA } = await createOrgUserWithPermissions(t, []);
+    const { userId: userB } = await createOrgUserWithPermissions(t, [], {
+      slugPrefix: "other-org",
+    });
+    const authedB = authedForUser(t, userB);
+
+    await expect(
+      authedB.query(api.integrations.getEnabled, { organizationId: orgA }),
+    ).rejects.toThrow("Not a member of this organization");
+
+    await expect(
+      authedB.query(api.integrations.isEnabled, {
+        organizationId: orgA,
+        integrationId: "library",
+      }),
+    ).rejects.toThrow("Not a member of this organization");
   });
 });
