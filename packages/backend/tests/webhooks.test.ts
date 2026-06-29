@@ -9,6 +9,35 @@ import {
 } from "./testHarness";
 import { modules } from "./testSetup";
 
+describe("webhook secret generation", () => {
+  test("create returns a whsec_ secret with expected length and hides it from list", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "organization.manage_settings",
+    ]);
+    const authed = authedForUser(t, userId, "session-webhook-secret");
+
+    const { id, secret } = await authed.mutation(api.webhooks.create, {
+      organizationId,
+      name: "Secret shape hook",
+      url: "https://example.com/webhooks/secret",
+      events: ["collection.created"],
+    });
+
+    expect(secret.startsWith("whsec_")).toBe(true);
+    expect(secret).toMatch(/^whsec_[A-Za-z0-9]{32}$/);
+    expect(secret.length).toBe(38);
+
+    const listed = await authed.query(api.webhooks.list, { organizationId });
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?._id).toBe(id);
+    expect(listed[0]).not.toHaveProperty("secret");
+
+    const fetched = await authed.query(api.webhooks.get, { webhookId: id });
+    expect(fetched?.secret).toBe(secret);
+  });
+});
+
 describe("webhook delivery", () => {
   afterEach(() => {
     vi.useRealTimers();
