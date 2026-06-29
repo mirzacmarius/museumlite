@@ -1480,8 +1480,7 @@ export default {
       emptyState: {
         noHolds: "Sin reservas",
         noHoldsFiltered: "No se encontraron reservas",
-        noHoldsDescription:
-          "Cree una reserva o espere solicitudes de usuarios",
+        noHoldsDescription: "Cree una reserva o espere solicitudes de usuarios",
         tryAdjustFilters: "Intente ajustar los filtros",
       },
       placeDialog: {
@@ -3641,8 +3640,7 @@ export default {
   },
   organizationDeletionCancelPage: {
     heading: "Cancelar eliminación de la organización",
-    description:
-      "Detén la eliminación programada y reactiva tu organización.",
+    description: "Detén la eliminación programada y reactiva tu organización.",
     organization: "Organización",
     scheduledDeletionDate: "Eliminación permanente programada",
     cancelButton: "Detener eliminación",
@@ -3670,7 +3668,7 @@ export default {
     decline: "Rechazar invitación",
     accepting: "Aceptando...",
     declining: "Rechazando...",
-    signInToAccept: "Inicia sesión para aceptar",
+    signInToAccept: "Inicia sesión o crea una cuenta para aceptar",
     loading: "Cargando invitación...",
     notFound: "Invitación no encontrada",
     notFoundDescription:
@@ -3693,7 +3691,7 @@ export default {
     goToLogin: "Ir a iniciar sesión",
     unknownInviter: "Desconocido",
     helpText:
-      "Al aceptar, aceptas unirte a esta organización con el rol especificado.",
+      "Si aún no tienes una cuenta, usa el correo de la invitación para crear una primero. Después de iniciar sesión, podrás aceptar esta invitación de organización.",
   },
   accessions: {
     title: "Adquisiciones",

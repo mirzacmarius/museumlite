@@ -3619,9 +3619,11 @@ export default {
       scheduleWeekly: "Weekly",
       scheduleMonthly: "Monthly",
       create: "Add schedule",
-      reportTypeHint: "Operational KPIs report (inventory, loans, exhibitions).",
+      reportTypeHint:
+        "Operational KPIs report (inventory, loans, exhibitions).",
       loading: "Loading schedules…",
-      empty: "No scheduled reports yet. Create one to automate operational KPI snapshots.",
+      empty:
+        "No scheduled reports yet. Create one to automate operational KPI snapshots.",
       scheduleSummary: "Runs {schedule}",
       nextRun: "Next:",
       lastRunStatus: "Last run: {status}",
@@ -3851,7 +3853,7 @@ export default {
     decline: "Decline Invitation",
     accepting: "Accepting...",
     declining: "Declining...",
-    signInToAccept: "Sign In to Accept",
+    signInToAccept: "Sign in or create an account to accept",
     loading: "Loading invitation...",
     notFound: "Invitation Not Found",
     notFoundDescription: "This invitation link is invalid or has been removed.",
@@ -3871,7 +3873,7 @@ export default {
     goToLogin: "Go to Login",
     unknownInviter: "Unknown",
     helpText:
-      "By accepting, you agree to join this organization with the specified role.",
+      "If you do not have an account yet, use the invited email to create one first. After sign-in, you can accept this organization invitation.",
   },
   accessions: {
     title: "Accessions",
