@@ -29,6 +29,22 @@ function getFileExtension(fileName: string): string {
   return ext || "FILE";
 }
 
+function collectPageStorageIds(
+  page: Array<{
+    storageId: Id<"_storage">;
+    thumbnailStorageId?: Id<"_storage">;
+  }>,
+): Array<Id<"_storage">> {
+  const ids = new Set<Id<"_storage">>();
+  for (const item of page) {
+    ids.add(item.storageId);
+    if (item.thumbnailStorageId) {
+      ids.add(item.thumbnailStorageId);
+    }
+  }
+  return [...ids];
+}
+
 const MediaDetailModal = dynamic(
   () => import("./media-detail-modal").then((mod) => mod.MediaDetailModal),
   { ssr: false },
@@ -107,6 +123,28 @@ export function MediaPageClient({
     shouldUsePreloaded ? "skip" : queryArgs,
   );
   const media = shouldUsePreloaded ? preloadedMediaResult : liveMediaResult;
+
+  const pageStorageIds = useMemo(
+    () => (media ? collectPageStorageIds(media.page) : []),
+    [media],
+  );
+  const storageUrlQueryArgs = useMemo(
+    () =>
+      pageStorageIds.length > 0
+        ? { organizationId, storageIds: pageStorageIds }
+        : "skip",
+    [organizationId, pageStorageIds],
+  );
+  const storageUrls = useQuery(api.media.getStorageUrls, storageUrlQueryArgs);
+  const urlByStorageId = useMemo(() => {
+    const map = new Map<Id<"_storage">, string | null>();
+    if (storageUrls) {
+      for (const entry of storageUrls) {
+        map.set(entry.storageId, entry.url);
+      }
+    }
+    return map;
+  }, [storageUrls]);
 
   const [selectedMediaId, setSelectedMediaId] =
     useState<Id<"mediaFiles"> | null>(null);
@@ -192,7 +230,12 @@ export function MediaPageClient({
 
         {media && media.page.length > 0 && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {media.page.map((item) => (
+            {media.page.map((item) => {
+              const previewStorageId =
+                item.thumbnailStorageId ?? item.storageId;
+              const previewUrl = urlByStorageId.get(previewStorageId);
+
+              return (
               <button
                 key={item._id}
                 type="button"
@@ -200,10 +243,9 @@ export function MediaPageClient({
                 className="group relative w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 text-left transition-all duration-300 hover:border-zinc-600 hover:shadow-xl"
               >
                 <div className="relative aspect-square overflow-hidden bg-zinc-950">
-                  {item.fileType === "image" &&
-                  (item.thumbnailUrl || item.url) ? (
+                  {item.fileType === "image" && previewUrl ? (
                     <NextImage
-                      src={item.thumbnailUrl ?? item.url ?? ""}
+                      src={previewUrl}
                       alt={item.fileName}
                       fill
                       sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
@@ -232,7 +274,8 @@ export function MediaPageClient({
                   </div>
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
