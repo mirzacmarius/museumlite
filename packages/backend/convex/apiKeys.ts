@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 
@@ -277,7 +278,7 @@ export const validate = internalMutation({
       .withIndex("by_prefix", (q) => q.eq("prefix", prefix))
       .collect();
 
-    let matchingKey;
+    let matchingKey: Doc<"apiKeys"> | null = null;
     for (const key of keys) {
       if (compareHashDigests(key.keyHash, keyHash)) {
         matchingKey = key;
