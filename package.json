@@ -9,7 +9,7 @@
   "scripts": {
     "env:sync": "node scripts/sync-worktree-env.mjs",
     "predev": "node scripts/sync-worktree-env.mjs",
-    "postinstall": "node scripts/apply-patches.js || true; node scripts/sync-worktree-env.mjs || true",
+    "postinstall": "node scripts/apply-patches.js; node scripts/sync-worktree-env.mjs || true",
     "build": "turbo build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
