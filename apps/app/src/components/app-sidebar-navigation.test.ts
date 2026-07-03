@@ -86,4 +86,17 @@ describe("buildSidebarNavigation", () => {
 
     expect(patrons.locked).toBe(false);
   });
+
+  test("locks the Library patron link with the library module", () => {
+    const { navigationGroups } = buildNavigation({
+      isLibraryModuleEnabled: false,
+    });
+
+    const patrons = findItem(
+      findGroup(navigationGroups, "Library").items,
+      "Patron Management",
+    );
+
+    expect(patrons.locked).toBe(true);
+  });
 });
