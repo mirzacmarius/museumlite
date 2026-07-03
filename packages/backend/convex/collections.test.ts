@@ -119,7 +119,7 @@ test("collections.list hides deleted and deaccession workflow objects by default
     paginationOpts: { numItems: 50, cursor: null },
   });
   expect(new Set(includeAll.page.map((c) => c.title))).toEqual(
-    new Set(["Active item", "Deaccessioned item"]),
+    new Set(["Active item", "Deaccessioned item", "Stored active item"]),
   );
 
   const onlyDeaccessioned = await asUser.query(api.collections.list, {
