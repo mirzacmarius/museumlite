@@ -18,6 +18,8 @@ export type ObjectStatus =
   | "archived"
   | "deleted";
 
+export type ObjectDisplayStatus = "" | "on_display";
+
 // Advanced filter types matching AdvancedSearchDialog
 export type FilterOperator =
   | "eq"
@@ -83,6 +85,10 @@ export function useObjectFilters() {
     "objectType",
     parseAsString.withDefault(""),
   );
+  const [displayStatus, setDisplayStatus] = useQueryState(
+    "displayStatus",
+    parseAsStringLiteral(["", "on_display"] as const).withDefault(""),
+  );
   const [culture, setCulture] = useQueryState(
     "culture",
     parseAsString.withDefault(""),
@@ -127,6 +133,7 @@ export function useObjectFilters() {
       search,
       status: status as ObjectStatus,
       objectType,
+      displayStatus: displayStatus as ObjectDisplayStatus,
       culture,
       period,
       materials,
@@ -141,6 +148,7 @@ export function useObjectFilters() {
       search,
       status,
       objectType,
+      displayStatus,
       culture,
       period,
       materials,
@@ -159,6 +167,8 @@ export function useObjectFilters() {
       if (newFilters.status !== undefined) setStatus(newFilters.status || null);
       if (newFilters.objectType !== undefined)
         setObjectType(newFilters.objectType || null);
+      if (newFilters.displayStatus !== undefined)
+        setDisplayStatus(newFilters.displayStatus || null);
       if (newFilters.culture !== undefined)
         setCulture(newFilters.culture || null);
       if (newFilters.period !== undefined) setPeriod(newFilters.period || null);
@@ -185,6 +195,7 @@ export function useObjectFilters() {
       setSearch,
       setStatus,
       setObjectType,
+      setDisplayStatus,
       setCulture,
       setPeriod,
       setMaterials,
@@ -201,6 +212,7 @@ export function useObjectFilters() {
     setSearch(null);
     setStatus(null);
     setObjectType(null);
+    setDisplayStatus(null);
     setCulture(null);
     setPeriod(null);
     setMaterials(null);
@@ -214,6 +226,7 @@ export function useObjectFilters() {
     setSearch,
     setStatus,
     setObjectType,
+    setDisplayStatus,
     setCulture,
     setPeriod,
     setMaterials,
@@ -234,6 +247,7 @@ export function useObjectFilters() {
       search !== "" ||
       status !== "any" ||
       objectType !== "" ||
+      displayStatus !== "" ||
       culture !== "" ||
       period !== "" ||
       materials !== "" ||
@@ -247,6 +261,7 @@ export function useObjectFilters() {
     search,
     status,
     objectType,
+    displayStatus,
     culture,
     period,
     materials,
@@ -265,6 +280,7 @@ export function useObjectFilters() {
     setSearch,
     setStatus,
     setObjectType,
+    setDisplayStatus,
     setCulture,
     setPeriod,
     setMaterials,

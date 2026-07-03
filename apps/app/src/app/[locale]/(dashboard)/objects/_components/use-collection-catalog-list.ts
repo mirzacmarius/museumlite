@@ -176,6 +176,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
       search: filters.search || undefined,
       status: statusFilter,
       objectType: filters.objectType || undefined,
+      displayStatus: filters.displayStatus || undefined,
       culture: filters.culture || undefined,
       period: filters.period || undefined,
       materials: filters.materials || undefined,

@@ -8,7 +8,10 @@ import {
   FiltersSearchInput,
 } from "@v1/ui/filters-dropdown";
 import { useMemo, useState } from "react";
-import type { ObjectStatus } from "@/hooks/use-url-filters";
+import type {
+  ObjectDisplayStatus,
+  ObjectStatus,
+} from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 
 interface LocationPathItem {
@@ -28,6 +31,7 @@ interface CollectionGroupOption {
 export interface ObjectFiltersDropdownValue {
   status: ObjectStatus;
   objectType: string;
+  displayStatus: ObjectDisplayStatus;
   locationId: string;
   collectionGroupId: string;
 }
@@ -69,6 +73,21 @@ function statusLabel(
   }
 }
 
+function displayStatusLabel(
+  t: ReturnType<typeof useScopedI18n>,
+  displayStatus: ObjectDisplayStatus,
+) {
+  switch (displayStatus) {
+    case "":
+      return t("filters.anyDisplayStatus");
+    case "on_display":
+      return t("filters.onDisplay");
+  }
+
+  const exhaustiveDisplayStatus: never = displayStatus;
+  return exhaustiveDisplayStatus;
+}
+
 export function ObjectFiltersDropdown({
   filters,
   onChange,
@@ -93,10 +112,21 @@ export function ObjectFiltersDropdown({
     ],
     [t],
   );
+  const displayStatusOptions: Array<{
+    value: ObjectDisplayStatus;
+    label: string;
+  }> = useMemo(
+    () => [
+      { value: "", label: displayStatusLabel(t, "") },
+      { value: "on_display", label: displayStatusLabel(t, "on_display") },
+    ],
+    [t],
+  );
 
   const activeFilterCount =
     (filters.status !== "any" ? 1 : 0) +
     (filters.objectType !== "" ? 1 : 0) +
+    (filters.displayStatus !== "" ? 1 : 0) +
     (filters.locationId !== "" ? 1 : 0) +
     (!hideCollectionGroupFilter && filters.collectionGroupId !== "" ? 1 : 0);
 
@@ -107,6 +137,10 @@ export function ObjectFiltersDropdown({
   const filteredObjectTypes = objectTypes
     .filter((type) => titleMatchesQuery(type, searchQuery))
     .sort((a, b) => a.localeCompare(b));
+
+  const filteredDisplayStatuses = displayStatusOptions.filter((option) =>
+    titleMatchesQuery(option.label, searchQuery),
+  );
 
   const filteredLocations = (locations ?? []).filter((location) => {
     const label = location.path.map((p) => p.name).join(" > ");
@@ -189,6 +223,37 @@ export function ObjectFiltersDropdown({
                         })
                       }
                       title={type}
+                    />
+                  ))
+                ) : (
+                  <p className="px-1.5 py-2 text-xs italic text-muted-foreground">
+                    {common("noResults")}
+                  </p>
+                )}
+              </div>
+            </FilterSection>
+
+            <FilterSection
+              title={t("filters.displayStatus")}
+              count={filters.displayStatus !== "" ? 1 : 0}
+              defaultOpen
+            >
+              <div className="space-y-1">
+                {filteredDisplayStatuses.length > 0 ? (
+                  filteredDisplayStatuses.map((option) => (
+                    <FilterOptionRow
+                      key={option.value || "any-display-status"}
+                      kind="single"
+                      isChecked={filters.displayStatus === option.value}
+                      onClick={() =>
+                        onChange({
+                          displayStatus:
+                            filters.displayStatus === option.value
+                              ? ""
+                              : option.value,
+                        })
+                      }
+                      title={option.label}
                     />
                   ))
                 ) : (

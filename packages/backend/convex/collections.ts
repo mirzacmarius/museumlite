@@ -1674,6 +1674,7 @@ export const list = query({
     ),
     locationId: v.optional(v.id("locations")),
     objectType: v.optional(v.string()),
+    displayStatus: v.optional(v.string()),
     culture: v.optional(v.string()),
     period: v.optional(v.string()),
     materials: v.optional(v.string()),
@@ -1840,6 +1841,7 @@ export const list = query({
       accessionNumber: string;
       collectionGroupId?: Id<"collectionGroups">;
       objectType?: string;
+      displayStatus?: string;
       currentLocationId?: Id<"locations">;
       status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
       culture?: string;
@@ -1933,6 +1935,12 @@ export const list = query({
         );
       }
 
+      if (args.displayStatus) {
+        query = query.filter((q) =>
+          q.eq(q.field("displayStatus"), args.displayStatus),
+        );
+      }
+
       // Date range filters
       if (args.catalogedFrom || args.catalogedTo) {
         query = query.filter((q) => {
@@ -2008,6 +2016,12 @@ export const list = query({
     // Apply objectType filter if not already applied (for search case)
     if (args.objectType && args.search) {
       allResults = allResults.filter((c) => c.objectType === args.objectType);
+    }
+
+    if (args.displayStatus && args.search) {
+      allResults = allResults.filter(
+        (c) => c.displayStatus === args.displayStatus,
+      );
     }
 
     if (args.collectionGroupId) {

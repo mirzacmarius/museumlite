@@ -46,6 +46,7 @@ export function CollectionCatalogToolbar({
     filters.search !== "" ||
     filters.status !== "any" ||
     filters.objectType !== "" ||
+    filters.displayStatus !== "" ||
     filters.locationId !== "" ||
     (!isCollectionGroupView && filters.collectionGroupId !== "");
 
@@ -54,6 +55,7 @@ export function CollectionCatalogToolbar({
         search: filters.search,
         status: filters.status,
         objectType: filters.objectType,
+        displayStatus: filters.displayStatus,
         locationId: filters.locationId,
         collectionGroupId: "",
       }
@@ -61,6 +63,7 @@ export function CollectionCatalogToolbar({
         search: filters.search,
         status: filters.status,
         objectType: filters.objectType,
+        displayStatus: filters.displayStatus,
         locationId: filters.locationId,
         collectionGroupId: filters.collectionGroupId,
       };
@@ -107,6 +110,7 @@ export function CollectionCatalogToolbar({
             filters={{
               status: filters.status,
               objectType: filters.objectType,
+              displayStatus: filters.displayStatus,
               locationId: filters.locationId,
               collectionGroupId: filters.collectionGroupId,
             }}

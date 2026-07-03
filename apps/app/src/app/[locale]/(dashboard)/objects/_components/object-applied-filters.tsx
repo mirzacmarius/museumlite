@@ -3,7 +3,10 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
 import { useMemo } from "react";
-import type { ObjectStatus } from "@/hooks/use-url-filters";
+import type {
+  ObjectDisplayStatus,
+  ObjectStatus,
+} from "@/hooks/use-url-filters";
 import { useScopedI18n } from "@/locales/client";
 
 interface LocationPathItem {
@@ -24,6 +27,7 @@ export interface ObjectAppliedFiltersValue {
   search: string;
   status: ObjectStatus;
   objectType: string;
+  displayStatus: ObjectDisplayStatus;
   locationId: string;
   collectionGroupId: string;
 }
@@ -60,6 +64,21 @@ function statusLabel(
   }
 }
 
+function displayStatusLabel(
+  t: ReturnType<typeof useScopedI18n>,
+  displayStatus: ObjectDisplayStatus,
+) {
+  switch (displayStatus) {
+    case "":
+      return "";
+    case "on_display":
+      return t("filters.onDisplay");
+  }
+
+  const exhaustiveDisplayStatus: never = displayStatus;
+  return exhaustiveDisplayStatus;
+}
+
 export function ObjectAppliedFilters({
   filters,
   locations,
@@ -91,6 +110,7 @@ export function ObjectAppliedFilters({
     filters.search !== "" ||
     filters.status !== "any" ||
     filters.objectType !== "" ||
+    filters.displayStatus !== "" ||
     filters.locationId !== "" ||
     (!hideCollectionGroupFilter && filters.collectionGroupId !== "");
 
@@ -119,6 +139,14 @@ export function ObjectAppliedFilters({
           label={t("filters.objectType")}
           value={filters.objectType}
           onRemove={() => onChange({ objectType: "" })}
+        />
+      )}
+
+      {filters.displayStatus !== "" && (
+        <AppliedFilterChip
+          label={t("filters.displayStatus")}
+          value={displayStatusLabel(t, filters.displayStatus)}
+          onRemove={() => onChange({ displayStatus: "" })}
         />
       )}
 
