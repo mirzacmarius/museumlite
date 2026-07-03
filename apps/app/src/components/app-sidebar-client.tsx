@@ -143,6 +143,12 @@ interface SidebarUser {
   image?: string | null;
 }
 
+const PATRON_MANAGEMENT_NAV_ITEM = {
+  title: "Patron Management",
+  url: "/accounts?type=patron",
+  icon: Users,
+} satisfies NavigationItem;
+
 function TopLevelNavigation({
   items,
   isPathActive,
@@ -733,6 +739,10 @@ function AppSidebarClientInner({
       locked: !hasFeature("loans"),
     },
     {
+      ...PATRON_MANAGEMENT_NAV_ITEM,
+      locked: !hasFeature("loans"),
+    },
+    {
       title: "Transit Log",
       url: "/transit",
       icon: Container,
@@ -788,9 +798,7 @@ function AppSidebarClientInner({
       locked: !isLibraryModuleEnabled,
     },
     {
-      title: "Patron Management",
-      url: "/accounts?type=patron",
-      icon: Users,
+      ...PATRON_MANAGEMENT_NAV_ITEM,
       locked: !isLibraryModuleEnabled,
     },
     {
