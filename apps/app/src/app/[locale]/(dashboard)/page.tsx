@@ -321,7 +321,7 @@ export default function DashboardPage() {
               className={interactiveMetricCardClassName}
             />
           </Link>
-          <Link href="/loans" className="w-full">
+          <Link href="/loans" className={metricLinkClassName}>
             <KpiCard
               title={kpi("activeLoans")}
               value={

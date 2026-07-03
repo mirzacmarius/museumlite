@@ -4,18 +4,22 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
-  type MutationCtx,
   internalQuery,
+  type MutationCtx,
   mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { createDeaccessionRecord } from "./deaccessions";
 import { customFieldValue } from "./schema";
 import { getNextCounterValue } from "./utils/accessionCounter";
-import { emitWebhookEvent } from "./utils/webhookEvents";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
+import {
+  getLocationPathStrings,
+  isImageMedia,
+} from "./utils/collectionDisplayHelpers";
 import {
   archiveCollectionHandler,
   countDeletedCollectionsHandler,
@@ -23,21 +27,13 @@ import {
   restoreCollectionHandler,
   softDeleteCollectionHandler,
 } from "./utils/collectionDisposition";
-import { createDeaccessionRecord } from "./deaccessions";
-import {
-  getLocationPathStrings,
-  isImageMedia,
-} from "./utils/collectionDisplayHelpers";
 import {
   enrichCollectionListPage,
   getCollectionsWithOpenDeaccessions,
   shouldUseIndexedCollectionsPagination,
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
-import {
-  enforceObjectQuota,
-  hasModuleEnabled,
-} from "./utils/featureGates";
+import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
 import {
   type CollectionType,
   getCollectionTypeModuleRequirement,
@@ -45,6 +41,7 @@ import {
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 
 const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
 
