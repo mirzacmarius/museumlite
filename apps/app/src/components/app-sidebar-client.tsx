@@ -42,44 +42,24 @@ import { Skeleton } from "@v1/ui/skeleton";
 import { cn } from "@v1/ui/utils";
 import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
 import {
-  Activity,
-  BookOpen,
-  Bookmark,
   Building2,
-  ChartColumn,
   Check,
   ChevronRight,
   ChevronsUpDown,
-  Contact,
-  Container,
-  Database,
-  FileCheck,
-  FileX,
-  GalleryVerticalEnd,
-  Globe,
-  Hammer,
-  IdCard,
-  Image,
-  LayoutGrid,
-  Library,
   Lock,
   LogOut,
-  MapPin,
   Plus,
-  QrCode,
   Search,
-  Settings2,
-  Shield,
-  ShoppingCart,
-  SlidersHorizontal,
-  Ticket,
-  Truck,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { Suspense } from "react";
+import {
+  buildSidebarNavigation,
+  type NavigationGroup,
+  type NavigationItem,
+} from "@/components/app-sidebar-navigation";
 import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
 import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import { useCommandPalette } from "@/components/command-palette-provider";
@@ -110,23 +90,6 @@ const COLLECTION_COLORS = [
   "#7c3aed",
   "#0891b2",
 ];
-
-type SidebarIcon = React.ComponentType<{ className?: string }>;
-
-interface NavigationItem {
-  title: string;
-  url: string;
-  icon?: SidebarIcon;
-  locked?: boolean;
-  subItems?: NavigationItem[];
-}
-
-interface NavigationGroup {
-  title: string;
-  icon: SidebarIcon;
-  items: NavigationItem[];
-  defaultOpen?: boolean;
-}
 
 interface SidebarOrganization {
   _id: Id<"organizations">;
@@ -183,9 +146,7 @@ function TopLevelNavigation({
                     >
                       {ItemIcon ? <ItemIcon /> : null}
                       <span>{item.title}</span>
-                      {item.locked ? (
-                        <Lock className="ml-auto size-3" />
-                      ) : null}
+                      {item.locked ? <Lock className="ml-auto size-3" /> : null}
                     </Link>
                   </SidebarMenuButton>
                   <SidebarMenuSub className="gap-0 py-0.5">
@@ -714,122 +675,6 @@ function AppSidebarClientInner({
       : "skip",
   );
 
-  const navCoreInventory: NavigationItem[] = [
-    { title: "Overview", url: "/", icon: LayoutGrid },
-    { title: "Object Catalog", url: "/objects", icon: Database },
-    ...(isLocationTrackingEnabled
-      ? [{ title: "Location & Tracking", url: "/locations", icon: MapPin }]
-      : []),
-    { title: "Scan", url: "/scan", icon: QrCode },
-    { title: "Accessions", url: "/accessions", icon: FileCheck },
-    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
-  ];
-
-  const navExhibitionsLoans = [
-    {
-      title: "Loans & Transport",
-      url: "/loans",
-      icon: Truck,
-      locked: !hasFeature("loans"),
-    },
-    {
-      title: "Transit Log",
-      url: "/transit",
-      icon: Container,
-      locked: !hasFeature("loans"),
-    },
-    {
-      title: "Exhibitions",
-      url: "/exhibitions",
-      icon: GalleryVerticalEnd,
-      locked: !hasFeature("exhibitions"),
-    },
-    {
-      title: "Installations",
-      url: "/installations",
-      icon: Hammer,
-      locked: !hasFeature("installations"),
-    },
-  ];
-
-  const navConservation = [
-    {
-      title: "Conservation",
-      url: "/conservation",
-      icon: Activity,
-      locked: !hasFeature("conservation"),
-    },
-    {
-      title: "Insurance",
-      url: "/insurance",
-      icon: Shield,
-      locked: !hasFeature("conservation"),
-    },
-  ];
-
-  const navLibrary = [
-    { title: "Library Dashboard", url: "/library", icon: Library },
-    {
-      title: "Catalog & Search",
-      url: "/library/catalog",
-      icon: BookOpen,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: "Circulation Desk",
-      url: "/library/circulation",
-      icon: IdCard,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: "Holds",
-      url: "/library/holds",
-      icon: Bookmark,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: "Patron Management",
-      url: "/accounts?type=patron",
-      icon: Users,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: "Fines & Fees",
-      url: "/library/fines",
-      icon: Ticket,
-      locked: !isLibraryModuleEnabled,
-    },
-    {
-      title: "Acquisitions",
-      url: "/library/acquisitions",
-      icon: ShoppingCart,
-      locked: !isLibraryModuleEnabled,
-    },
-  ];
-
-  const navAdministration = [
-    {
-      title: "Analytics & Reports",
-      url: "/analytics",
-      icon: ChartColumn,
-      locked: !hasFeature("reporting"),
-    },
-    { title: "Accounts & CRM", url: "/accounts", icon: Contact },
-    {
-      title: "Public Portal",
-      url: "/portal",
-      icon: Globe,
-      locked: !hasFeature("public_portal"),
-    },
-    { title: "Digital Assets", url: "/media", icon: Image },
-    {
-      title: "Preferences",
-      url: "/settings/preferences",
-      icon: SlidersHorizontal,
-    },
-    { title: "Settings", url: "/settings/organization", icon: Settings2 },
-  ];
-
   const isPathActive = (url: string) => {
     if (url === "/") return pathname === "/";
     if (url.includes("?")) {
@@ -839,30 +684,11 @@ function AppSidebarClientInner({
     return pathname?.startsWith(url);
   };
 
-  const topLevelNavigation = navCoreInventory;
-
-  const navigationGroups: NavigationGroup[] = [
-    {
-      title: "Exhibitions & Loans",
-      icon: Truck,
-      items: navExhibitionsLoans,
-    },
-    {
-      title: "Conservation & Care",
-      icon: Shield,
-      items: navConservation,
-    },
-    {
-      title: "Library",
-      icon: Library,
-      items: navLibrary,
-    },
-    {
-      title: "Administration",
-      icon: Settings2,
-      items: navAdministration,
-    },
-  ];
+  const { topLevelNavigation, navigationGroups } = buildSidebarNavigation({
+    hasFeature,
+    isLibraryModuleEnabled,
+    isLocationTrackingEnabled,
+  });
 
   return (
     <Sidebar collapsible="icon">
