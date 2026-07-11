@@ -270,7 +270,6 @@ export default function DashboardPage() {
   const canViewAnalytics = hasAnalyticsPermission === true;
   const analyticsData = canViewAnalytics ? analytics : undefined;
   const subscriptionTier = currentOrganization?.subscriptionTier ?? "free";
-  const metricCardClassName = "w-full px-3.5 py-3";
   const interactiveMetricCardClassName =
     "w-full px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40";
   const metricLinkClassName =
@@ -293,29 +292,36 @@ export default function DashboardPage() {
         </h3>
 
         <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
-          <KpiCard
-            title={kpi("totalObjects")}
-            value={
-              analyticsData
-                ? formatNumber(analyticsData.objects.total, locale)
-                : "—"
-            }
-            icon={Package}
-            accentColor="indigo"
-            className={metricCardClassName}
-          />
-          <KpiCard
-            title="Items on Display"
-            value={
-              analyticsData
-                ? formatNumber(analyticsData.objects.onDisplay, locale)
-                : "—"
-            }
-            icon={Eye}
-            accentColor="emerald"
-            className={metricCardClassName}
-          />
-          <Link href="/loans" className="w-full">
+          <Link href="/objects" className={metricLinkClassName}>
+            <KpiCard
+              title={kpi("totalObjects")}
+              value={
+                analyticsData
+                  ? formatNumber(analyticsData.objects.total, locale)
+                  : "—"
+              }
+              icon={Package}
+              accentColor="indigo"
+              className={interactiveMetricCardClassName}
+            />
+          </Link>
+          <Link
+            href="/objects?status=active&displayStatus=on_display"
+            className={metricLinkClassName}
+          >
+            <KpiCard
+              title={kpi("itemsOnDisplay")}
+              value={
+                analyticsData
+                  ? formatNumber(analyticsData.objects.onDisplay, locale)
+                  : "—"
+              }
+              icon={Eye}
+              accentColor="emerald"
+              className={interactiveMetricCardClassName}
+            />
+          </Link>
+          <Link href="/loans" className={metricLinkClassName}>
             <KpiCard
               title={kpi("activeLoans")}
               value={

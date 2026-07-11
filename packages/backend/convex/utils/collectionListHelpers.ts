@@ -14,6 +14,7 @@ export function shouldUseIndexedCollectionsPagination(args: {
   culture?: string;
   period?: string;
   materials?: string;
+  displayStatus?: string;
   search?: string;
   catalogedFrom?: number;
   catalogedTo?: number;
@@ -23,6 +24,7 @@ export function shouldUseIndexedCollectionsPagination(args: {
     !args.culture &&
     !args.period &&
     !args.materials &&
+    !args.displayStatus &&
     !args.search?.trim() &&
     !args.catalogedFrom &&
     !args.catalogedTo

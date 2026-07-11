@@ -46,24 +46,18 @@ export function CollectionCatalogToolbar({
     filters.search !== "" ||
     filters.status !== "any" ||
     filters.objectType !== "" ||
+    filters.displayStatus !== "" ||
     filters.locationId !== "" ||
     (!isCollectionGroupView && filters.collectionGroupId !== "");
 
-  const secondaryFilters = isCollectionGroupView
-    ? {
-        search: filters.search,
-        status: filters.status,
-        objectType: filters.objectType,
-        locationId: filters.locationId,
-        collectionGroupId: "",
-      }
-    : {
-        search: filters.search,
-        status: filters.status,
-        objectType: filters.objectType,
-        locationId: filters.locationId,
-        collectionGroupId: filters.collectionGroupId,
-      };
+  const secondaryFilters = {
+    search: filters.search,
+    status: filters.status,
+    objectType: filters.objectType,
+    displayStatus: filters.displayStatus,
+    locationId: filters.locationId,
+    collectionGroupId: isCollectionGroupView ? "" : filters.collectionGroupId,
+  };
 
   return (
     <div className="z-20 flex flex-col border-b border-border bg-card/60 backdrop-blur-sm">
@@ -107,6 +101,7 @@ export function CollectionCatalogToolbar({
             filters={{
               status: filters.status,
               objectType: filters.objectType,
+              displayStatus: filters.displayStatus,
               locationId: filters.locationId,
               collectionGroupId: filters.collectionGroupId,
             }}

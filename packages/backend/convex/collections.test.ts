@@ -44,6 +44,7 @@ test("collections.list hides deleted and deaccession workflow objects by default
       organizationId,
       accessionNumber: "A-0001",
       title: "Active item",
+      displayStatus: "on_display",
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),
@@ -53,6 +54,17 @@ test("collections.list hides deleted and deaccession workflow objects by default
       organizationId,
       accessionNumber: "A-0002",
       title: "Pending deaccession item",
+      displayStatus: "on_display",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0003",
+      title: "Stored active item",
+      displayStatus: "in_storage",
       status: "active",
       catalogedBy: userId,
       catalogedAt: Date.now(),
@@ -97,7 +109,9 @@ test("collections.list hides deleted and deaccession workflow objects by default
     organizationId,
     paginationOpts: { numItems: 50, cursor: null },
   });
-  expect(defaultList.page.map((c) => c.title)).toEqual(["Active item"]);
+  expect(new Set(defaultList.page.map((c) => c.title))).toEqual(
+    new Set(["Active item", "Stored active item"]),
+  );
 
   const includeAll = await asUser.query(api.collections.list, {
     organizationId,
@@ -105,7 +119,7 @@ test("collections.list hides deleted and deaccession workflow objects by default
     paginationOpts: { numItems: 50, cursor: null },
   });
   expect(new Set(includeAll.page.map((c) => c.title))).toEqual(
-    new Set(["Active item", "Deaccessioned item"]),
+    new Set(["Active item", "Deaccessioned item", "Stored active item"]),
   );
 
   const onlyDeaccessioned = await asUser.query(api.collections.list, {
@@ -129,7 +143,17 @@ test("collections.list hides deleted and deaccession workflow objects by default
     status: "active",
     paginationOpts: { numItems: 50, cursor: null },
   });
-  expect(onlyActive.page.map((c) => c.title)).toEqual(["Active item"]);
+  expect(new Set(onlyActive.page.map((c) => c.title))).toEqual(
+    new Set(["Active item", "Stored active item"]),
+  );
+
+  const activeOnDisplay = await asUser.query(api.collections.list, {
+    organizationId,
+    status: "active",
+    displayStatus: "on_display",
+    paginationOpts: { numItems: 50, cursor: null },
+  });
+  expect(activeOnDisplay.page.map((c) => c.title)).toEqual(["Active item"]);
 });
 
 test("collections.list paginates newest objects and enriches visible rows", async () => {
