@@ -30,6 +30,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useCommandPalette } from "./command-palette-provider";
 import { useOrganization } from "./organization-provider";
 
@@ -88,6 +89,8 @@ export function CommandPalette() {
   const [search, setSearch] = React.useState("");
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
+  const { hasModule } = useFeatureAccess();
+  const isLibraryModuleEnabled = hasModule("library");
 
   const normalizedSearch = search.trim();
   const hasSearch = normalizedSearch.length > 1;
@@ -347,10 +350,12 @@ export function CommandPalette() {
               <MapPin className="mr-2 size-4" />
               <span>Locations</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => push("/library"))}>
-              <Library className="mr-2 size-4" />
-              <span>Library</span>
-            </CommandItem>
+            {isLibraryModuleEnabled ? (
+              <CommandItem onSelect={() => runCommand(() => push("/library"))}>
+                <Library className="mr-2 size-4" />
+                <span>Library</span>
+              </CommandItem>
+            ) : null}
             <CommandItem
               onSelect={() => runCommand(() => push("/settings/organization"))}
             >

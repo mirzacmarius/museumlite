@@ -1,7 +1,7 @@
 import {
   Activity,
-  BookOpen,
   Bookmark,
+  BookOpen,
   ChartColumn,
   Contact,
   Container,
@@ -130,35 +130,27 @@ export function buildSidebarNavigation({
       title: "Catalog & Search",
       url: "/library/catalog",
       icon: BookOpen,
-      locked: !isLibraryModuleEnabled,
     },
     {
       title: "Circulation Desk",
       url: "/library/circulation",
       icon: IdCard,
-      locked: !isLibraryModuleEnabled,
     },
     {
       title: "Holds",
       url: "/library/holds",
       icon: Bookmark,
-      locked: !isLibraryModuleEnabled,
     },
-    {
-      ...PATRON_MANAGEMENT_NAV_ITEM,
-      locked: !isLibraryModuleEnabled,
-    },
+    PATRON_MANAGEMENT_NAV_ITEM,
     {
       title: "Fines & Fees",
       url: "/library/fines",
       icon: Ticket,
-      locked: !isLibraryModuleEnabled,
     },
     {
       title: "Acquisitions",
       url: "/library/acquisitions",
       icon: ShoppingCart,
-      locked: !isLibraryModuleEnabled,
     },
   ];
 
@@ -198,11 +190,15 @@ export function buildSidebarNavigation({
         icon: Shield,
         items: navConservation,
       },
-      {
-        title: "Library",
-        icon: Library,
-        items: navLibrary,
-      },
+      ...(isLibraryModuleEnabled
+        ? [
+            {
+              title: "Library",
+              icon: Library,
+              items: navLibrary,
+            } satisfies NavigationGroup,
+          ]
+        : []),
       {
         title: "Administration",
         icon: Settings2,
