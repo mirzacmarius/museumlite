@@ -1,19 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { cn } from "@v1/ui/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useReducer } from "react";
 import { AuthHeader } from "@/auth/auth-header";
 import { FormContainer } from "@/auth/common/container";
 import { AuthFormRoot } from "@/auth/form-root";
 import { SignInWithOAuth } from "@/auth/SignInWithOAuth";
+import { buildAuthPath } from "@/auth/search-params";
 import type {
   AuthErrorInfo,
   AuthMode,
   AuthStep,
   UniqueCodeFlow,
 } from "@/auth/types";
-import { buildAuthPath } from "@/auth/search-params";
 import { useCurrentLocale } from "@/locales/client";
 
 interface AuthRootProps {
@@ -42,7 +43,7 @@ type AuthRootAction =
   | { type: "setErrorInfo"; value: AuthErrorInfo | undefined }
   | { type: "setCodeFlow"; value: UniqueCodeFlow };
 
-interface AuthModeSwitchLinkProps {
+interface AuthModeTabsProps {
   email: string;
   mode: AuthMode;
   redirectTo?: string;
@@ -76,30 +77,57 @@ function authRootReducer(
       return { ...state, errorInfo: action.value };
     case "setCodeFlow":
       return { ...state, codeFlow: action.value };
+    default: {
+      const _exhaustive: never = action;
+      void _exhaustive;
+      return state;
+    }
   }
 }
 
-function AuthModeSwitchLink({
-  email,
-  mode,
-  redirectTo,
-}: AuthModeSwitchLinkProps) {
-  const nextMode = mode === "signIn" ? "signUp" : "signIn";
-  const href = buildAuthPath(nextMode === "signIn" ? "/login" : "/register", {
+function AuthModeTabs({ email, mode, redirectTo }: AuthModeTabsProps) {
+  const signInHref = buildAuthPath("/login", {
+    email: email || undefined,
+    returnTo: redirectTo,
+  });
+  const signUpHref = buildAuthPath("/register", {
     email: email || undefined,
     returnTo: redirectTo,
   });
 
   return (
-    <p className="pt-5 text-center text-sm text-muted-foreground">
-      {mode === "signIn" ? "No account yet?" : "Already have an account?"}{" "}
+    <div
+      aria-label="Choose log in or register"
+      className="grid w-full grid-cols-2 rounded-md bg-muted p-1 text-muted-foreground"
+      role="tablist"
+    >
       <Link
-        className="font-medium text-foreground underline underline-offset-4"
-        href={href}
+        aria-selected={mode === "signIn"}
+        className={cn(
+          "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+          mode === "signIn"
+            ? "bg-background text-foreground shadow-sm"
+            : "hover:text-foreground",
+        )}
+        href={signInHref}
+        role="tab"
       >
-        {mode === "signIn" ? "Create one" : "Sign in"}
+        Log in
       </Link>
-    </p>
+      <Link
+        aria-selected={mode === "signUp"}
+        className={cn(
+          "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+          mode === "signUp"
+            ? "bg-background text-foreground shadow-sm"
+            : "hover:text-foreground",
+        )}
+        href={signUpHref}
+        role="tab"
+      >
+        Register
+      </Link>
+    </div>
   );
 }
 
@@ -124,6 +152,12 @@ export function AuthRoot({
 
   return (
     <FormContainer>
+      <AuthModeTabs
+        email={state.email}
+        mode={state.mode}
+        redirectTo={redirectTo}
+      />
+
       {state.errorInfo ? (
         <div className="rounded-md border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm text-red-200">
           {state.errorInfo.message}
@@ -152,11 +186,6 @@ export function AuthRoot({
         setMode={(mode) => dispatch({ type: "setMode", value: mode })}
         setStep={(step) => dispatch({ type: "setStep", value: step })}
         step={state.step}
-      />
-      <AuthModeSwitchLink
-        email={state.email}
-        mode={state.mode}
-        redirectTo={redirectTo}
       />
     </FormContainer>
   );
