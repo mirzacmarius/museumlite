@@ -5,12 +5,13 @@ import {
   markCollectionActive,
   markCollectionDeaccessioned,
 } from "./collectionLifecycle";
+import { requireLoansAccess } from "./loanAccess";
 import {
   dispatchLoanItems,
   restoreLoanCollections,
   returnLoanItems,
 } from "./loanMovement";
-import { requireLoansAccess } from "./loanAccess";
+import { assertAllowedLoanTransition } from "./loanStatusTransitions";
 import {
   logActionAndGetRecipients,
   notifyOrganizationRecipients,
@@ -36,9 +37,11 @@ export async function returnLoanHandler(
     throw new Error("Loan not found");
   }
 
-  if (loan.status !== "active" && loan.status !== "dispatched") {
-    throw new Error("Loan must be active or dispatched to return");
-  }
+  assertAllowedLoanTransition(
+    loan.status,
+    "returned",
+    "Loan must be active or dispatched to return",
+  );
 
   await Promise.all([
     requireLoansAccess(ctx, loan.organizationId),
@@ -124,9 +127,11 @@ export async function dispatchLoanHandler(
     throw new Error("Loan not found");
   }
 
-  if (loan.status !== "active") {
-    throw new Error("Loan must be active to dispatch");
-  }
+  assertAllowedLoanTransition(
+    loan.status,
+    "dispatched",
+    "Loan must be active to dispatch",
+  );
 
   await Promise.all([
     requireLoansAccess(ctx, loan.organizationId),
@@ -181,13 +186,11 @@ export async function cancelLoanHandler(
     throw new Error("Loan not found");
   }
 
-  if (
-    loan.status !== "pending" &&
-    loan.status !== "active" &&
-    loan.status !== "dispatched"
-  ) {
-    throw new Error("Can only cancel pending, active, or dispatched loans");
-  }
+  assertAllowedLoanTransition(
+    loan.status,
+    "cancelled",
+    "Can only cancel pending, active, or dispatched loans",
+  );
 
   await Promise.all([
     requireLoansAccess(ctx, loan.organizationId),
