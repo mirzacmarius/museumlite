@@ -1,4 +1,4 @@
-import { v, type Infer } from "convex/values";
+import { type Infer, v } from "convex/values";
 import {
   customMutation,
   customQuery,
@@ -6,7 +6,7 @@ import {
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireAuthenticatedOrganization } from "./authorizationContext";
-import { enabledModuleValidator } from "./moduleValidators";
+import type { enabledModuleValidator } from "./moduleValidators";
 
 export type OrganizationAuthCtx = {
   userId: Id<"users">;
@@ -75,54 +75,3 @@ export function createOrganizationMutation(
     input: buildOrganizationAuthInput({ permission, moduleId }),
   });
 }
-
-/**
- * @deprecated Prefer `createOrganizationQuery(permission)` for per-permission builders.
- * Generic builder that requires `permission` on every call (not ergonomic for static permissions).
- */
-export const organizationQuery = customQuery(query, {
-  args: {
-    organizationId: v.id("organizations"),
-    permission: v.string(),
-    moduleId: v.optional(enabledModuleValidator),
-  },
-  input: async (ctx, args) => {
-    const auth = await requireAuthenticatedOrganization(ctx, {
-      organizationId: args.organizationId,
-      permission: args.permission,
-      moduleId: args.moduleId,
-    });
-    return {
-      ctx: {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-      },
-      args: {},
-    };
-  },
-});
-
-/**
- * @deprecated Prefer `createOrganizationMutation(permission)` for per-permission builders.
- */
-export const organizationMutation = customMutation(mutation, {
-  args: {
-    organizationId: v.id("organizations"),
-    permission: v.string(),
-    moduleId: v.optional(enabledModuleValidator),
-  },
-  input: async (ctx, args) => {
-    const auth = await requireAuthenticatedOrganization(ctx, {
-      organizationId: args.organizationId,
-      permission: args.permission,
-      moduleId: args.moduleId,
-    });
-    return {
-      ctx: {
-        userId: auth.userId,
-        organizationId: auth.organizationId,
-      },
-      args: {},
-    };
-  },
-});
