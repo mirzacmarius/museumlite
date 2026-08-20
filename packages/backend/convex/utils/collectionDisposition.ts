@@ -7,6 +7,7 @@ import {
   markCollectionActive,
   markCollectionDeaccessioned,
 } from "./collectionLifecycle";
+import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { requirePermission } from "./permissions";
 
 export async function deleteCollectionHandler(
@@ -24,9 +25,11 @@ export async function deleteCollectionHandler(
     throw new Error("Collection not found");
   }
 
-  if (collection.status === "loaned") {
-    throw new Error("Cannot deaccession an object that is currently on loan");
-  }
+  await assertCollectionNotOnLoan(
+    ctx,
+    args.collectionId,
+    "Cannot deaccession an object that is currently on loan",
+  );
 
   await Promise.all([
     requirePermission(ctx, collection.organizationId, "collections.delete"),
@@ -66,9 +69,11 @@ export async function archiveCollectionHandler(
     throw new Error("Collection not found");
   }
 
-  if (collection.status === "loaned") {
-    throw new Error("Cannot archive an object that is currently on loan");
-  }
+  await assertCollectionNotOnLoan(
+    ctx,
+    args.collectionId,
+    "Cannot archive an object that is currently on loan",
+  );
 
   await requirePermission(ctx, collection.organizationId, "collections.delete");
 
@@ -111,9 +116,11 @@ export async function softDeleteCollectionHandler(
     throw new Error("Collection not found");
   }
 
-  if (collection.status === "loaned") {
-    throw new Error("Cannot delete an object that is currently on loan");
-  }
+  await assertCollectionNotOnLoan(
+    ctx,
+    args.collectionId,
+    "Cannot delete an object that is currently on loan",
+  );
 
   await requirePermission(ctx, collection.organizationId, "collections.delete");
 

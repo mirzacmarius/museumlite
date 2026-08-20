@@ -6,6 +6,7 @@ import {
   loadExhibitionObjectMutationContext,
   requireExhibitionReadPermission,
 } from "./exhibitionContext";
+import { assertCollectionNotOnLoan } from "./loanOccupancy";
 
 export async function addExhibitionObjectHandler(
   ctx: MutationCtx,
@@ -28,9 +29,11 @@ export async function addExhibitionObjectHandler(
     throw new Error("Object does not belong to the same organization");
   }
 
-  if (collection.status === "loaned") {
-    throw new Error("Cannot add an object that is currently on loan");
-  }
+  await assertCollectionNotOnLoan(
+    ctx,
+    args.collectionId,
+    "Cannot add an object that is currently on loan",
+  );
 
   const existingEntry = await ctx.db
     .query("exhibitionObjects")
@@ -111,9 +114,11 @@ export async function installObjectHandler(
   if (!collection) {
     throw new Error("Collection object not found");
   }
-  if (collection.status === "loaned") {
-    throw new Error("Cannot install an object that is currently on loan");
-  }
+  await assertCollectionNotOnLoan(
+    ctx,
+    exhibitionObject.collectionId,
+    "Cannot install an object that is currently on loan",
+  );
 
   const newLocationId =
     args.exhibitionLocationId ??

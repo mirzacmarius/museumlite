@@ -15,6 +15,7 @@ import {
   canRestoreRejectedDisposition,
   markCollectionActive,
 } from "./utils/collectionLifecycle";
+import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import {
@@ -224,9 +225,11 @@ export async function createDeaccessionRecord(
     throw new Error("Collection does not belong to organization");
   }
 
-  if (collection.status === "loaned") {
-    throw new Error("Cannot remove an object that is currently on loan");
-  }
+  await assertCollectionNotOnLoan(
+    ctx,
+    args.collectionId,
+    "Cannot remove an object that is currently on loan",
+  );
 
   const deaccessionWorkflowEnabled = await isDeaccessionWorkflowEnabled(
     ctx,

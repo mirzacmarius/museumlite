@@ -7,6 +7,7 @@ import {
   requireExhibitionReadPermission,
   requireExhibitionUpdatePermission,
 } from "./exhibitionContext";
+import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
@@ -308,8 +309,10 @@ export async function activateExhibitionHandler(
 
   for (const obj of exhibitionObjects) {
     const collection = await ctx.db.get(obj.collectionId);
-    if (collection?.status === "loaned") {
-      throw new Error(
+    if (collection) {
+      await assertCollectionNotOnLoan(
+        ctx,
+        obj.collectionId,
         `Cannot activate exhibition: object "${collection.title}" is currently on loan`,
       );
     }

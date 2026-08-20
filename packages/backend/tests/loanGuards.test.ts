@@ -105,6 +105,33 @@ test("deleteCollection rejects loaned objects", async () => {
   ).rejects.toThrow("Cannot deaccession an object that is currently on loan");
 });
 
+test("deleteCollection rejects active objects on pending loans", async () => {
+  const t = createConvexTest();
+  const { authed, activeCollectionId, organizationId } =
+    await createExhibitionFixture(t);
+
+  await t.run(async (ctx) => {
+    const loanId = await ctx.db.insert("loans", {
+      organizationId,
+      loanNumber: "LOAN-PENDING-001",
+      type: "outgoing",
+      lenderBorrowerName: "Borrowing Museum",
+      startDate: Date.now(),
+      status: "pending",
+    });
+    await ctx.db.insert("loanItems", {
+      loanId,
+      collectionId: activeCollectionId,
+    });
+  });
+
+  await expect(
+    authed.mutation(api.collections.deleteCollection, {
+      collectionId: activeCollectionId,
+    }),
+  ).rejects.toThrow("Cannot deaccession an object that is currently on loan");
+});
+
 test("deleteCollection succeeds for active objects", async () => {
   const t = createConvexTest();
   const { authed, activeCollectionId } = await createExhibitionFixture(t);
