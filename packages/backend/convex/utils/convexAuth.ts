@@ -1,4 +1,4 @@
-import { v, type Infer } from "convex/values";
+import { type Infer, v } from "convex/values";
 import {
   customMutation,
   customQuery,
@@ -6,7 +6,7 @@ import {
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { requireAuthenticatedOrganization } from "./authorizationContext";
-import { enabledModuleValidator } from "./moduleValidators";
+import type { enabledModuleValidator } from "./moduleValidators";
 
 export type OrganizationAuthCtx = {
   userId: Id<"users">;
