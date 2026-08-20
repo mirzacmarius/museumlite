@@ -1,9 +1,8 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
-export const OCCUPYING_LOAN_STATUSES: ReadonlySet<
-  Doc<"loans">["status"]
-> = new Set(["pending", "active", "dispatched"]);
+export const OCCUPYING_LOAN_STATUSES: ReadonlySet<Doc<"loans">["status"]> =
+  new Set(["pending", "active", "dispatched"]);
 
 export async function collectionHasOccupyingLoan(
   ctx: MutationCtx | QueryCtx,
