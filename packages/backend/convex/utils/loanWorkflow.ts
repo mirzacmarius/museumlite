@@ -5,6 +5,10 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { markCollectionActive } from "./collectionLifecycle";
 import { requireLoansAccess } from "./loanAccess";
 import {
+  ALLOWED_LOAN_TRANSITIONS,
+  assertAllowedLoanTransition,
+} from "./loanStatusTransitions";
+import {
   getOrganizationNotificationRecipients,
   getWorkflowCreatorRecipient,
 } from "./notificationRecipients";
@@ -32,9 +36,7 @@ export async function approveLoanHandler(
     throw new Error("Loan not found");
   }
 
-  if (loan.status !== "pending") {
-    throw new Error("Loan is not pending");
-  }
+  assertAllowedLoanTransition(loan.status, "active", "Loan is not pending");
 
   await Promise.all([
     requireLoansAccess(ctx, loan.organizationId),
@@ -338,6 +340,11 @@ export async function rejectLoanHandler(
     approvedAt: Date.now(),
     comment: args.comment ? `Rejected: ${args.comment}` : "Rejected",
   });
+  assertAllowedLoanTransition(
+    loan.status,
+    "cancelled",
+    "Loan is not pending approval",
+  );
   await Promise.all([
     ctx.db.patch(args.loanId, {
       status: "cancelled",
@@ -469,8 +476,7 @@ export async function bulkApproveLoansHandler(
         return;
       }
 
-      // Only approve pending loans
-      if (loan.status !== "pending") {
+      if (!ALLOWED_LOAN_TRANSITIONS[loan.status].includes("active")) {
         errors.push(
           `Loan ${loan.loanNumber} is not pending (status: ${loan.status})`,
         );
@@ -654,12 +660,7 @@ export async function bulkCancelLoansHandler(
         return;
       }
 
-      // Only cancel pending, active, or dispatched loans
-      if (
-        loan.status !== "pending" &&
-        loan.status !== "active" &&
-        loan.status !== "dispatched"
-      ) {
+      if (!ALLOWED_LOAN_TRANSITIONS[loan.status].includes("cancelled")) {
         errors.push(
           `Loan ${loan.loanNumber} cannot be cancelled (status: ${loan.status})`,
         );
