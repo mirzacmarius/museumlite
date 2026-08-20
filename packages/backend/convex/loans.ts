@@ -4,7 +4,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
@@ -23,6 +23,7 @@ import {
   listLoanDocumentsHandler,
   uploadLoanDocumentHandler,
 } from "./utils/loanDocuments";
+import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import {
   approveLoanExtensionHandler,
   listLoanExtensionRequestsHandler,
@@ -45,47 +46,6 @@ import {
 } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
-
-/**
- * Loan statuses that block a collection from being added to a new loan.
- * Mirrors the check in `checkCollectionsInActiveLoans` (lines ~1266-1273),
- * which is the canonical authority for this set.
- * Note: objectMoves.ts:72 uses a narrower set (active + dispatched only)
- * for object-move blocking — that is intentionally different.
- */
-const BLOCKING_LOAN_STATUSES = new Set([
-  "pending",
-  "active",
-  "dispatched",
-] as const);
-
-/**
- * Throws if the given collection is currently on an active/pending/dispatched
- * loan.  Use this before inserting any new loanItems row.
- */
-async function assertCollectionNotOnActiveLoan(
-  ctx: MutationCtx,
-  collectionId: Id<"collections">,
-): Promise<void> {
-  const loanItems = await ctx.db
-    .query("loanItems")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-
-  for (const loanItem of loanItems) {
-    const loan = await ctx.db.get(loanItem.loanId);
-    if (
-      loan &&
-      BLOCKING_LOAN_STATUSES.has(
-        loan.status as "pending" | "active" | "dispatched",
-      )
-    ) {
-      throw new Error(
-        `Collection ${collectionId} is already in an active loan`,
-      );
-    }
-  }
-}
 
 /**
  * Create loan record
@@ -255,7 +215,11 @@ export const create = mutation({
             throw new Error(`Collection ${item.collectionId} is not active`);
           }
 
-          await assertCollectionNotOnActiveLoan(ctx, item.collectionId);
+          await assertCollectionNotOnLoan(
+            ctx,
+            item.collectionId,
+            `Collection ${item.collectionId} is already in an active loan`,
+          );
 
           await ctx.db.insert("loanItems", {
             loanId,
@@ -407,7 +371,11 @@ export const addItems = mutation({
           throw new Error(`Collection ${collectionId} is not active`);
         }
 
-        await assertCollectionNotOnActiveLoan(ctx, collectionId);
+        await assertCollectionNotOnLoan(
+          ctx,
+          collectionId,
+          `Collection ${collectionId} is already in an active loan`,
+        );
 
         // Create loan item
         await ctx.db.insert("loanItems", {

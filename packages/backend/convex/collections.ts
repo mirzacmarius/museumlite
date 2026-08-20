@@ -34,6 +34,7 @@ import {
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
 import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
+import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
   type CollectionType,
   getCollectionTypeModuleRequirement,
@@ -3136,7 +3137,10 @@ export const bulkDeaccession = mutation({
         continue;
       }
 
-      if (collection.status === "loaned") {
+      if (
+        collection.status === "loaned" ||
+        (await collectionHasOccupyingLoan(ctx, collectionId))
+      ) {
         failed++;
         continue;
       }
