@@ -33,7 +33,7 @@ export function ExhibitionSpacesDropdown({
         <button
           type="button"
           aria-label="Exhibition spaces"
-          className="inline-flex min-w-0 max-w-[16rem] items-center gap-1 rounded-md px-1 py-0.5 text-left font-medium text-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="inline-flex min-w-0 max-w-[16rem] items-center gap-1 rounded-md border-0 bg-transparent px-1 py-0.5 text-left font-medium text-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <span className="truncate">{triggerLabel}</span>
           <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
