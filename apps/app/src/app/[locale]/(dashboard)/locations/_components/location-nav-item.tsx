@@ -227,12 +227,26 @@ export function LocationNavTreeItem({
 }
 
 export function getInitialExpandedLocationIds({
+  exhibitionLocations,
   storageLocations,
+  getExhibitionChildren,
   getStorageChildren,
 }: {
+  exhibitionLocations: SidebarLocation[];
   storageLocations: SidebarLocation[];
+  getExhibitionChildren: (
+    parentLocationId: Id<"locations">,
+  ) => SidebarLocation[];
   getStorageChildren: (parentLocationId: Id<"locations">) => SidebarLocation[];
 }) {
+  const firstExhibitionLocation = exhibitionLocations[0];
+  if (firstExhibitionLocation) {
+    return getFirstDeepestPathParentIds(
+      firstExhibitionLocation,
+      getExhibitionChildren,
+    );
+  }
+
   const firstStorageLocation = storageLocations[0];
   if (firstStorageLocation) {
     return getFirstDeepestPathParentIds(

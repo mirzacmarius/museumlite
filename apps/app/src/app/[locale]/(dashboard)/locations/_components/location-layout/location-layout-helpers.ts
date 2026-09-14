@@ -12,7 +12,7 @@ export function buildLocationPath(
   const locationsById = new Map(
     locations.map((location) => [location._id, location]),
   );
-  const path: Array<{ _id: Id<"locations">; name: string }> = [];
+  const path: Array<{ _id: string; name: string }> = [];
   const visitedLocationIds = new Set<Id<"locations">>();
   let currentLocation = locationsById.get(locationId);
 
