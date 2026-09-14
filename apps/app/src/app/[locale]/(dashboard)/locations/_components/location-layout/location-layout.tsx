@@ -13,6 +13,7 @@ import {
   getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
   getDescendantLocations,
+  getExhibitionSpaceOptions,
   getVisibleSidebarLocations,
   isStorageLocation,
   shouldAutoDisplayChildLocations,
@@ -42,9 +43,8 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
 
   const allLocations = useQuery(api.locations.listAll, { organizationId });
 
-  const { exhibitionLocations, storageLocations } = getVisibleSidebarLocations(
-    allLocations ?? [],
-  );
+  const { storageLocations } = getVisibleSidebarLocations(allLocations ?? []);
+  const exhibitionSpaceOptions = getExhibitionSpaceOptions(allLocations ?? []);
   const firstVisibleLocationId = getDefaultLocationId(allLocations ?? []);
   const allLocationIdList = (allLocations ?? []).map(
     (location) => location._id,
@@ -145,7 +145,6 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
     <div className="flex h-full min-h-0 w-full">
       <LocationSidebar
         allLocations={allLocations ?? []}
-        exhibitionLocations={exhibitionLocations}
         storageLocations={storageLocations}
         selectedLocationId={selectedLocationId}
         onSelectLocation={setSelectedLocationId}
@@ -212,6 +211,8 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
             <LocationLayoutHeader
               selectedLocationPath={selectedLocationPath}
               selectedLocationId={selectedLocation._id}
+              exhibitionSpaceOptions={exhibitionSpaceOptions}
+              onSelectLocation={setSelectedLocationId}
               onDelete={() => setDeleteDialogOpen(true)}
               onAdd={() => setAddDialogOpen(true)}
               onEdit={() => setEditDialogOpen(true)}

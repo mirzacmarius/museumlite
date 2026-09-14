@@ -1,4 +1,4 @@
-const LOCATION_SECTION_SKELETON_KEYS = ["exhibition", "storage"];
+const LOCATION_SECTION_SKELETON_KEYS = ["storage"];
 const LOCATION_ROW_SKELETON_KEYS = ["root", "wing", "room", "case"];
 const LOCATION_METRIC_SKELETON_KEYS = [
   "objects",
