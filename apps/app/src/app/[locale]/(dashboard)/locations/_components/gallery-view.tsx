@@ -511,9 +511,7 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
           <div
             className={cn(
               "grid gap-3",
-              unit.objects.length === 1
-                ? "grid-cols-[minmax(0,12rem)]"
-                : "grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(8rem,1fr))]",
+              unit.objects.length === 1 ? "grid-cols-1" : "grid-cols-2",
             )}
           >
             {unit.objects.map((object) => (
