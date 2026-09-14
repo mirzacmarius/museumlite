@@ -5,6 +5,8 @@ import {
   getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
   getDescendantLocations,
+  getExhibitionDropdownLabel,
+  getExhibitionSpaceOptions,
   getVisibleSidebarLocations,
   isStorageLocation,
   shouldAutoDisplayChildLocations,
@@ -100,6 +102,120 @@ describe("location view helpers", () => {
     expect(storageLocations.map((location) => location._id)).toEqual([
       locationId("loc-storage"),
     ]);
+  });
+
+  test("exhibition space options flatten the exhibition sidebar tree", () => {
+    const locations = [
+      {
+        _id: locationId("loc-gallery"),
+        name: "Gallery A",
+        locationCode: "G-001",
+        type: "gallery",
+        isActive: true,
+      },
+      {
+        _id: locationId("loc-room"),
+        name: "Room A",
+        locationCode: "R-001",
+        type: "room",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+      {
+        _id: locationId("loc-cabinet"),
+        name: "Cabinet A-1",
+        locationCode: "CAB-001",
+        type: "cabinet",
+        isActive: true,
+        parentLocationId: locationId("loc-room"),
+      },
+      {
+        _id: locationId("loc-shelf"),
+        name: "Shelf 1",
+        locationCode: "SH-001",
+        type: "shelf",
+        isActive: true,
+        parentLocationId: locationId("loc-cabinet"),
+      },
+      {
+        _id: locationId("loc-storage"),
+        name: "Storage A",
+        locationCode: "ST-001",
+        type: "storage",
+        isActive: true,
+      },
+    ];
+
+    expect(
+      getExhibitionSpaceOptions(locations).map((option) => ({
+        id: option.location._id,
+        depth: option.depth,
+      })),
+    ).toEqual([
+      { id: locationId("loc-gallery"), depth: 0 },
+      { id: locationId("loc-room"), depth: 1 },
+      { id: locationId("loc-cabinet"), depth: 2 },
+    ]);
+  });
+
+  test("exhibition dropdown label uses the exhibition root while browsing nested units", () => {
+    const locations = [
+      {
+        _id: locationId("loc-gallery"),
+        name: "Gallery A",
+        locationCode: "G-001",
+        type: "gallery",
+        isActive: true,
+      },
+      {
+        _id: locationId("loc-cabinet"),
+        name: "Cabinet A-1",
+        locationCode: "CAB-001",
+        type: "cabinet",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+    ];
+
+    expect(
+      getExhibitionDropdownLabel({
+        selectedLocationId: locationId("loc-cabinet"),
+        selectedLocationPath: [
+          { _id: locationId("loc-gallery"), name: "Gallery A" },
+          { _id: locationId("loc-cabinet"), name: "Cabinet A-1" },
+        ],
+        exhibitionSpaceOptions: getExhibitionSpaceOptions(locations),
+      }),
+    ).toBe("Gallery A");
+  });
+
+  test("exhibition dropdown label falls back when viewing storage", () => {
+    const locations = [
+      {
+        _id: locationId("loc-gallery"),
+        name: "Gallery A",
+        locationCode: "G-001",
+        type: "gallery",
+        isActive: true,
+      },
+      {
+        _id: locationId("loc-storage"),
+        name: "Storage A",
+        locationCode: "ST-001",
+        type: "storage",
+        isActive: true,
+      },
+    ];
+
+    expect(
+      getExhibitionDropdownLabel({
+        selectedLocationId: locationId("loc-storage"),
+        selectedLocationPath: [
+          { _id: locationId("loc-storage"), name: "Storage A" },
+        ],
+        exhibitionSpaceOptions: getExhibitionSpaceOptions(locations),
+      }),
+    ).toBe("Exhibition Spaces");
   });
 
   test("storage detection matches operational location types", () => {

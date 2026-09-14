@@ -1,17 +1,25 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import {
+  getExhibitionDropdownLabel,
+  type ExhibitionSpaceOption,
+} from "../../location-view-helpers";
+import { ExhibitionSpacesDropdown } from "./exhibition-spaces-dropdown";
 
 interface LocationPathSegment {
-  _id: string;
+  _id: Id<"locations">;
   name: string;
 }
 
 interface LocationLayoutHeaderProps {
   selectedLocationPath: LocationPathSegment[];
-  selectedLocationId: string;
+  selectedLocationId: Id<"locations">;
+  exhibitionSpaceOptions: ExhibitionSpaceOption[];
+  onSelectLocation: (id: Id<"locations">) => void;
   onDelete: () => void;
   onAdd: () => void;
   onEdit: () => void;
@@ -20,32 +28,70 @@ interface LocationLayoutHeaderProps {
 export function LocationLayoutHeader({
   selectedLocationPath,
   selectedLocationId,
+  exhibitionSpaceOptions,
+  onSelectLocation,
   onDelete,
   onAdd,
   onEdit,
 }: LocationLayoutHeaderProps) {
+  const exhibitionRootIds = new Set(
+    exhibitionSpaceOptions
+      .filter((option) => option.depth === 0)
+      .map((option) => option.location._id),
+  );
+  const exhibitionRootIndex = selectedLocationPath.findIndex((pathLocation) =>
+    exhibitionRootIds.has(pathLocation._id),
+  );
+  const remainingPathLocations =
+    exhibitionRootIndex >= 0
+      ? selectedLocationPath.slice(exhibitionRootIndex + 1)
+      : selectedLocationPath;
+  const dropdownLabel = getExhibitionDropdownLabel({
+    selectedLocationId,
+    selectedLocationPath,
+    exhibitionSpaceOptions,
+  });
+
   return (
     <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-card/95 px-6 backdrop-blur-xl">
-      <div className="flex min-w-0 items-center gap-2 text-xs">
+      <nav
+        aria-label="Location breadcrumbs"
+        className="flex min-w-0 items-center gap-2 text-xs"
+      >
         <span className="shrink-0 text-muted-foreground">Locations</span>
-        {selectedLocationPath.map((pathLocation) => (
+        {exhibitionSpaceOptions.length > 0 ? (
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="shrink-0 text-muted-foreground/50">/</span>
+            <ExhibitionSpacesDropdown
+              exhibitionSpaceOptions={exhibitionSpaceOptions}
+              selectedLocationId={selectedLocationId}
+              triggerLabel={dropdownLabel}
+              onSelectLocation={onSelectLocation}
+            />
+          </div>
+        ) : null}
+        {remainingPathLocations.map((pathLocation) => (
           <div
             key={pathLocation._id}
             className="flex min-w-0 items-center gap-2"
           >
             <span className="shrink-0 text-muted-foreground/50">/</span>
-            <span
-              className={
-                pathLocation._id === selectedLocationId
-                  ? "truncate font-medium text-foreground"
-                  : "truncate text-muted-foreground"
-              }
-            >
-              {pathLocation.name}
-            </span>
+            {pathLocation._id === selectedLocationId ? (
+              <span className="truncate font-medium text-foreground">
+                {pathLocation.name}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onSelectLocation(pathLocation._id)}
+                className="truncate text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {pathLocation.name}
+              </button>
+            )}
           </div>
         ))}
-      </div>
+      </nav>
 
       <div className="flex items-center gap-3">
         <PermissionGate permission="locations.delete">

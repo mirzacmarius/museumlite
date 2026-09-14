@@ -134,6 +134,88 @@ export function getVisibleSidebarLocations(locations: SidebarLocation[] = []) {
   };
 }
 
+export interface ExhibitionSpaceOption {
+  location: SidebarLocation;
+  depth: number;
+}
+
+export function getExhibitionSpaceOptions(
+  locations: SidebarLocation[] = [],
+): ExhibitionSpaceOption[] {
+  const { exhibitionLocations } = getVisibleSidebarLocations(locations);
+  const childrenByParent = new Map<Id<"locations">, SidebarLocation[]>();
+
+  for (const location of locations) {
+    if (
+      !location.parentLocationId ||
+      !shouldShowInExhibitionSidebar(location.type)
+    ) {
+      continue;
+    }
+
+    const existingChildren = childrenByParent.get(location.parentLocationId);
+    if (existingChildren) {
+      existingChildren.push(location);
+      continue;
+    }
+
+    childrenByParent.set(location.parentLocationId, [location]);
+  }
+
+  const options: ExhibitionSpaceOption[] = [];
+  const pendingLocations: Array<{ location: SidebarLocation; depth: number }> =
+    exhibitionLocations.map((location) => ({ location, depth: 0 }));
+  const visitedLocationIds = new Set<Id<"locations">>();
+
+  while (pendingLocations.length > 0) {
+    const currentOption = pendingLocations.shift();
+    if (!currentOption || visitedLocationIds.has(currentOption.location._id)) {
+      continue;
+    }
+
+    visitedLocationIds.add(currentOption.location._id);
+    options.push(currentOption);
+
+    const childLocations =
+      childrenByParent.get(currentOption.location._id) ?? [];
+    pendingLocations.unshift(
+      ...childLocations.map((location) => ({
+        location,
+        depth: currentOption.depth + 1,
+      })),
+    );
+  }
+
+  return options;
+}
+
+export function getExhibitionDropdownLabel({
+  selectedLocationId,
+  selectedLocationPath,
+  exhibitionSpaceOptions,
+}: {
+  selectedLocationId: Id<"locations"> | null;
+  selectedLocationPath: Array<{ _id: Id<"locations">; name: string }>;
+  exhibitionSpaceOptions: ExhibitionSpaceOption[];
+}) {
+  const exhibitionRootIds = new Set(
+    exhibitionSpaceOptions
+      .filter((option) => option.depth === 0)
+      .map((option) => option.location._id),
+  );
+  const exhibitionRoot = selectedLocationPath.find((pathLocation) =>
+    exhibitionRootIds.has(pathLocation._id),
+  );
+
+  if (exhibitionRoot) return exhibitionRoot.name;
+
+  const selectedOption = exhibitionSpaceOptions.find(
+    (option) => option.location._id === selectedLocationId,
+  );
+
+  return selectedOption?.location.name ?? "Exhibition Spaces";
+}
+
 export function getDefaultLocationId(locations: SidebarLocation[] = []) {
   const { exhibitionLocations, storageLocations } =
     getVisibleSidebarLocations(locations);

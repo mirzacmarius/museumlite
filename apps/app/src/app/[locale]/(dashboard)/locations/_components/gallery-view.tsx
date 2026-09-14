@@ -201,68 +201,64 @@ export function GalleryView({
         </div>
       ) : null}
 
-      {hasWalls || hasCabinets ? (
-        <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2">
-          {hasWalls ? (
-            <div>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
-                Wall Mounted Display
-              </h3>
-              <div className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
-                {backgroundImageUrl ? (
-                  <>
-                    <Image
-                      src={backgroundImageUrl}
-                      alt=""
-                      aria-hidden
-                      fill
-                      sizes="100vw"
-                      className="object-cover opacity-15"
-                    />
-                    <div className="absolute inset-0 bg-background/80" />
-                  </>
-                ) : null}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-                <div
-                  className="relative z-10 grid gap-2"
-                  style={{
-                    gridTemplateColumns: `repeat(${Math.max(
-                      1,
-                      Math.min(normalizedWallCount, 6),
-                    )}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {wallSlots.map((slot) => (
-                    <WallSlot key={slot.id} slot={slot} />
-                  ))}
-                </div>
-                <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {wallSlots.length} walls configured ·{" "}
-                    {normalizedWallItemsPerWall} item
-                    {normalizedWallItemsPerWall === 1 ? "" : "s"} per wall
-                  </span>
-                  <span>{occupiedWalls.length} in use</span>
-                </div>
-              </div>
+      {hasWalls ? (
+        <div>
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
+            Wall Mounted Display
+          </h3>
+          <div className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
+            {backgroundImageUrl ? (
+              <>
+                <Image
+                  src={backgroundImageUrl}
+                  alt=""
+                  aria-hidden
+                  fill
+                  sizes="100vw"
+                  className="object-cover opacity-15"
+                />
+                <div className="absolute inset-0 bg-background/80" />
+              </>
+            ) : null}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+            <div
+              className="relative z-10 grid gap-2"
+              style={{
+                gridTemplateColumns: `repeat(${Math.max(
+                  1,
+                  Math.min(normalizedWallCount, 6),
+                )}, minmax(0, 1fr))`,
+              }}
+            >
+              {wallSlots.map((slot) => (
+                <WallSlot key={slot.id} slot={slot} />
+              ))}
             </div>
-          ) : null}
+            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {wallSlots.length} walls configured ·{" "}
+                {normalizedWallItemsPerWall} item
+                {normalizedWallItemsPerWall === 1 ? "" : "s"} per wall
+              </span>
+              <span>{occupiedWalls.length} in use</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-          {hasCabinets ? (
-            <div className={cn(!hasWalls && "2xl:col-span-2")}>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
-                Cabinets
-              </h3>
-              <div className="grid gap-4 xl:grid-cols-2">
-                {cabinets.map((cabinet) => (
-                  <UnitStackCard key={cabinet.id} unit={cabinet} />
-                ))}
-              </div>
-              <div className="mt-3 text-right text-xs text-muted-foreground">
-                {occupiedCabinets.length}/{cabinets.length} cabinets in use
-              </div>
-            </div>
-          ) : null}
+      {hasCabinets ? (
+        <div className="w-full">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
+            Cabinets
+          </h3>
+          <div className="grid w-full gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {cabinets.map((cabinet) => (
+              <UnitStackCard key={cabinet.id} unit={cabinet} />
+            ))}
+          </div>
+          <div className="mt-3 text-right text-xs text-muted-foreground">
+            {occupiedCabinets.length}/{cabinets.length} cabinets in use
+          </div>
         </div>
       ) : null}
 
@@ -510,9 +506,9 @@ function UnitStackCard({ unit }: UnitStackCardProps) {
         ) : (
           <div
             className={cn(
-              "grid gap-3",
+              "grid w-full gap-3",
               unit.objects.length === 1
-                ? "grid-cols-[minmax(0,12rem)]"
+                ? "grid-cols-1 sm:grid-cols-2"
                 : "grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(8rem,1fr))]",
             )}
           >
