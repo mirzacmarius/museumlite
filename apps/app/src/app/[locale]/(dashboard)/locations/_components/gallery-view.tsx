@@ -253,7 +253,7 @@ export function GalleryView({
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
                 Cabinets
               </h3>
-              <div className="grid gap-4 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
                 {cabinets.map((cabinet) => (
                   <UnitStackCard key={cabinet.id} unit={cabinet} />
                 ))}

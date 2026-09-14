@@ -74,12 +74,14 @@ function LocationNavItemRoot({
   return (
     <LocationNavItemContext.Provider value={value}>
       <div
-        className={`flex w-full items-center rounded-r transition-all ${
+        className={`flex w-full items-center transition-all ${
           selection === "selected"
             ? "border-l-2 border-primary bg-muted font-medium text-foreground shadow-sm"
             : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         }`}
-        style={{ paddingLeft: `${depth * 14 + 12}px` }}
+        style={{
+          paddingLeft: `${depth * 12 + (expansion === "leaf" ? 20 : 0)}px`,
+        }}
       >
         {children}
       </div>
@@ -92,14 +94,14 @@ function LocationNavItemTrigger() {
   const isExpanded = expansion === "expanded";
 
   if (expansion === "leaf") {
-    return <span className="h-7 w-5 shrink-0" />;
+    return <span className="h-[26px] w-0 shrink-0" />;
   }
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      className="flex h-7 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+      className="flex h-[26px] w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
       aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
       aria-expanded={isExpanded}
     >
@@ -129,7 +131,7 @@ function LocationNavItemLink() {
     <button
       type="button"
       onClick={onSelect}
-      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pr-3 text-left"
+      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-[8px] pr-2 text-left"
     >
       <span className="truncate">{location.name}</span>
       {isColdStorage ? (

@@ -33,6 +33,13 @@ const ENV_REL_PATHS = [
   "packages/backend/.env.local",
 ];
 
+// Root overrides are optional, and Convex accepts either backend env filename.
+const REQUIRED_ENV_GROUPS = [
+  ["apps/app/.env"],
+  ["apps/web/.env"],
+  ["packages/backend/.env", "packages/backend/.env.local"],
+];
+
 const EXAMPLE_FALLBACKS = [
   { dest: "apps/app/.env", example: "apps/app/.env.example" },
   { dest: "apps/web/.env", example: "apps/web/.env.example" },
@@ -137,14 +144,14 @@ function seedFromExamples() {
 }
 
 function listMissing() {
-  return ENV_REL_PATHS.filter((rel) => {
-    const abs = join(root, rel);
-    if (!isCompleteEnvFile(abs)) return true;
-    if (rel.endsWith("apps/app/.env") || rel.endsWith("apps/web/.env")) {
-      return !needsConvexUrl(abs);
-    }
-    return false;
-  });
+  return REQUIRED_ENV_GROUPS.filter(
+    (paths) =>
+      !paths.some((rel) => {
+        const abs = join(root, rel);
+        if (!isCompleteEnvFile(abs)) return false;
+        return !rel.startsWith("apps/") || needsConvexUrl(abs);
+      }),
+  ).map((paths) => paths.join(" or "));
 }
 
 function main() {
@@ -205,7 +212,8 @@ Fix options:
   2. Copy env manually from another checkout:
      cp /path/to/ml/apps/app/.env apps/app/.env
      cp /path/to/ml/apps/web/.env apps/web/.env
-     cp /path/to/ml/packages/backend/.env packages/backend/.env
+     cp /path/to/ml/packages/backend/.env.local packages/backend/.env.local
+     # Use packages/backend/.env instead if that is your source filename.
 
   3. Fill apps/app/.env and apps/web/.env from .env.example (need NEXT_PUBLIC_CONVEX_URL)
 `);

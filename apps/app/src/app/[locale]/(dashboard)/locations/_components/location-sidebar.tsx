@@ -92,13 +92,13 @@ function LocationSidebarNav({
   const expandedLocationIds = expandedOverrides ?? initialExpandedLocationIds;
 
   return (
-    <div className="h-full min-h-0 w-60 shrink-0 overflow-y-auto border-r border-border bg-card p-4 custom-scrollbar">
+    <div className="h-full min-h-0 w-52 shrink-0 overflow-y-auto border-r border-border bg-card py-4 custom-scrollbar">
       {exhibitionLocations.length > 0 && (
         <>
           <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Exhibition Spaces
           </div>
-          <ul className="mb-6 space-y-1 text-xs">
+          <ul className="mb-6 text-xs">
             {exhibitionLocations.map((location) => (
               <LocationNavTreeItem
                 key={location._id}
@@ -121,7 +121,7 @@ function LocationSidebarNav({
           <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Secure Storage
           </div>
-          <ul className="space-y-1 text-xs">
+          <ul className="text-xs">
             {storageLocations.map((location) => (
               <LocationNavTreeItem
                 key={location._id}
