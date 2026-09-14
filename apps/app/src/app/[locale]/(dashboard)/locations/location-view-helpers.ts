@@ -169,15 +169,19 @@ export function getExhibitionSpaceOptions(
 
   while (pendingLocations.length > 0) {
     const currentOption = pendingLocations.shift();
-    if (!currentOption || visitedLocationIds.has(currentOption.location._id)) {
+    if (!currentOption) {
       continue;
     }
 
-    visitedLocationIds.add(currentOption.location._id);
+    const locationId = currentOption.location._id;
+    if (visitedLocationIds.has(locationId)) {
+      continue;
+    }
+
+    visitedLocationIds.add(locationId);
     options.push(currentOption);
 
-    const childLocations =
-      childrenByParent.get(currentOption.location._id) ?? [];
+    const childLocations = childrenByParent.get(locationId) ?? [];
     pendingLocations.unshift(
       ...childLocations.map((location) => ({
         location,
@@ -189,6 +193,18 @@ export function getExhibitionSpaceOptions(
   return options;
 }
 
+export function getExhibitionRootIds(
+  exhibitionSpaceOptions: ExhibitionSpaceOption[],
+) {
+  const exhibitionRootIds = new Set<Id<"locations">>();
+
+  for (const option of exhibitionSpaceOptions) {
+    if (option.depth === 0) exhibitionRootIds.add(option.location._id);
+  }
+
+  return exhibitionRootIds;
+}
+
 export function getExhibitionDropdownLabel({
   selectedLocationId,
   selectedLocationPath,
@@ -198,11 +214,7 @@ export function getExhibitionDropdownLabel({
   selectedLocationPath: Array<{ _id: Id<"locations">; name: string }>;
   exhibitionSpaceOptions: ExhibitionSpaceOption[];
 }) {
-  const exhibitionRootIds = new Set(
-    exhibitionSpaceOptions
-      .filter((option) => option.depth === 0)
-      .map((option) => option.location._id),
-  );
+  const exhibitionRootIds = getExhibitionRootIds(exhibitionSpaceOptions);
   const exhibitionRoot = selectedLocationPath.find((pathLocation) =>
     exhibitionRootIds.has(pathLocation._id),
   );

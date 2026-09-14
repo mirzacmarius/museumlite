@@ -46,12 +46,13 @@ export function ExhibitionSpacesDropdown({
         <DropdownMenuLabel>Exhibition Spaces</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {exhibitionSpaceOptions.map((option) => {
-          const isSelected = option.location._id === selectedLocationId;
+          const locationId = option.location._id;
+          const isSelected = locationId === selectedLocationId;
 
           return (
             <DropdownMenuItem
-              key={option.location._id}
-              onClick={() => onSelectLocation(option.location._id)}
+              key={locationId}
+              onClick={() => onSelectLocation(locationId)}
               className="cursor-pointer"
               style={{ paddingLeft: `${option.depth * 12 + 8}px` }}
             >

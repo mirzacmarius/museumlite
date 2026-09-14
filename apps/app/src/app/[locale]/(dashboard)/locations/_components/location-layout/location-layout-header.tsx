@@ -6,6 +6,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
 import {
   getExhibitionDropdownLabel,
+  getExhibitionRootIds,
   type ExhibitionSpaceOption,
 } from "../../location-view-helpers";
 import { ExhibitionSpacesDropdown } from "./exhibition-spaces-dropdown";
@@ -34,11 +35,7 @@ export function LocationLayoutHeader({
   onAdd,
   onEdit,
 }: LocationLayoutHeaderProps) {
-  const exhibitionRootIds = new Set(
-    exhibitionSpaceOptions
-      .filter((option) => option.depth === 0)
-      .map((option) => option.location._id),
-  );
+  const exhibitionRootIds = getExhibitionRootIds(exhibitionSpaceOptions);
   const exhibitionRootIndex = selectedLocationPath.findIndex((pathLocation) =>
     exhibitionRootIds.has(pathLocation._id),
   );
