@@ -21,15 +21,18 @@ export function LocationUnitCard({
   const countLabel = `${objects.length} object${objects.length === 1 ? "" : "s"} inside ${name}`;
 
   return (
-    <article className="overflow-hidden rounded-lg border border-border/60 bg-card transition-colors duration-150 hover:border-indigo-500/40 focus-within:border-indigo-500 dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/25">
-      {isEmpty ? (
-        <div className="flex aspect-square flex-col items-center justify-center gap-2 bg-muted/30 text-muted-foreground dark:bg-zinc-950/60">
-          <Package className="size-7" strokeWidth={1.5} />
-          <span className="text-xs">No assigned objects</span>
-        </div>
-      ) : (
-        <div className="divide-y divide-border/60 dark:divide-white/10">
-          {objects.map((object) => (
+    <>
+      {(objects.length > 0 ? objects : [null]).map((object) => (
+        <article
+          key={object?._id ?? "empty"}
+          className="overflow-hidden rounded-lg border border-border/60 bg-card transition-colors duration-150 hover:border-indigo-500/40 focus-within:border-indigo-500 dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/25"
+        >
+          {object === null ? (
+            <div className="flex aspect-square flex-col items-center justify-center gap-2 bg-muted/30 text-muted-foreground dark:bg-zinc-950/60">
+              <Package className="size-7" strokeWidth={1.5} />
+              <span className="text-xs">No assigned objects</span>
+            </div>
+          ) : (
             <Link
               key={object._id}
               href={`/objects/${object._id}`}
@@ -58,52 +61,54 @@ export function LocationUnitCard({
                   </span>
                 ) : null}
               </div>
-              <div className="px-3 pb-2 pt-3">
+              <div className="px-3 pb-1 pt-3">
                 <h4
                   className="truncate text-xs font-medium text-foreground transition-colors duration-150 group-hover/object:text-indigo-500 dark:group-hover/object:text-indigo-300"
                   title={object.title}
                 >
                   {object.title}
                 </h4>
-                <p
-                  className="mt-1 truncate font-mono text-[10px] text-muted-foreground"
-                  title={object.accessionNumber}
-                >
-                  {object.accessionNumber ?? "No accession"}
-                </p>
               </div>
             </Link>
-          ))}
-        </div>
-      )}
-      <div className="flex justify-end px-3 pb-2 pt-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={countLabel}
-              className="inline-flex items-center gap-1.5 rounded text-[10px] tabular-nums text-muted-foreground outline-offset-2 focus-visible:outline focus-visible:outline-indigo-500"
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-1.5 rounded-full",
-                  isActive && !isEmpty
-                    ? "bg-emerald-500"
-                    : "bg-muted-foreground/40",
-                )}
-              />
-              {objects.length}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent
-            sideOffset={5}
-            className="rounded-lg px-2.5 py-1 text-xs"
-          >
-            {countLabel}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </article>
+          )}
+          <div className="flex min-w-0 items-center justify-between gap-2 px-3 pb-3">
+            {object ? (
+              <p
+                className="min-w-0 truncate font-mono text-[10px] text-muted-foreground"
+                title={object.accessionNumber}
+              >
+                {object.accessionNumber ?? "No accession"}
+              </p>
+            ) : null}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={countLabel}
+                  className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded text-[10px] tabular-nums text-muted-foreground outline-offset-2 focus-visible:outline focus-visible:outline-indigo-500"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      isActive && !isEmpty
+                        ? "bg-emerald-500"
+                        : "bg-muted-foreground/40",
+                    )}
+                  />
+                  {objects.length}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                sideOffset={5}
+                className="rounded-lg px-2.5 py-1 text-xs"
+              >
+                {countLabel}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </article>
+      ))}
+    </>
   );
 }
