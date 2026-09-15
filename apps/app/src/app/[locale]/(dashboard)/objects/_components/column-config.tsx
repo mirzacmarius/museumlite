@@ -1,15 +1,5 @@
 "use client";
 
-import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@v1/ui/dropdown-menu";
-import { Settings2 } from "lucide-react";
 import { useMemo } from "react";
 import { useScopedI18n } from "@/locales/client";
 
@@ -66,51 +56,5 @@ export function useDefaultColumns(): ColumnConfig[] {
         required: DEFAULT_COLUMN_CONFIG[id].required,
       })),
     [t],
-  );
-}
-
-interface ColumnConfigDropdownProps {
-  columns: ColumnConfig[];
-  onColumnToggle: (columnId: string, visible: boolean) => void;
-}
-
-export function ColumnConfigDropdown({
-  columns,
-  onColumnToggle,
-}: ColumnConfigDropdownProps) {
-  const t = useScopedI18n("objects.columnConfig");
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Settings2 className="size-4" />
-          <span className="sr-only">{t("title")}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel>{t("visibleColumns")}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <div className="p-2 space-y-2">
-          {columns.map((column) => (
-            <label
-              key={column.id}
-              htmlFor={`column-toggle-${column.id}`}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <Checkbox
-                id={`column-toggle-${column.id}`}
-                checked={column.visible}
-                onCheckedChange={(checked) =>
-                  onColumnToggle(column.id, !!checked)
-                }
-                disabled={column.required}
-              />
-              <span className="text-sm">{column.label}</span>
-            </label>
-          ))}
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

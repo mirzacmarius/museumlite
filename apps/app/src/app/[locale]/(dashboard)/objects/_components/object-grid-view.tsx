@@ -388,7 +388,9 @@ function ObjectGridItem({
       {onSelect && (
         <div
           className={`absolute top-2 left-2 z-20 transition-opacity ${
-            isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            isSelected
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
           }`}
         >
           <Checkbox
@@ -425,44 +427,55 @@ function ObjectGridItem({
           <h3 className="truncate text-xs font-medium text-card-foreground">
             {item.title}
           </h3>
-          <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
-            {item.accessionNumber}
-          </p>
-          {item.objectType && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {(() => {
-                try {
-                  const types = JSON.parse(item.objectType);
-                  if (Array.isArray(types) && types.length > 0) {
-                    return types.slice(0, 2).map((type: string) => (
+          <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+            <p className="shrink-0 font-mono text-[10px] text-muted-foreground">
+              {item.accessionNumber}
+            </p>
+            {item.objectType && (
+              <div className="flex min-w-0 justify-end gap-1 overflow-hidden">
+                {(() => {
+                  try {
+                    const types = JSON.parse(item.objectType);
+                    if (Array.isArray(types) && types.length > 0) {
+                      return types.slice(0, 2).map((type: string) => (
+                        <span
+                          key={type}
+                          title={type}
+                          className="block min-w-0 max-w-full truncate rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
+                        >
+                          {type}
+                        </span>
+                      ));
+                    }
+                    return (
                       <span
-                        key={type}
-                        className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
+                        title={item.objectType}
+                        className="block min-w-0 max-w-full truncate rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
                       >
-                        {type}
+                        {item.objectType}
                       </span>
-                    ));
+                    );
+                  } catch {
+                    return (
+                      <span
+                        title={item.objectType}
+                        className="block min-w-0 max-w-full truncate rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground"
+                      >
+                        {item.objectType}
+                      </span>
+                    );
                   }
-                  return (
-                    <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                      {item.objectType}
-                    </span>
-                  );
-                } catch {
-                  return (
-                    <span className="inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
-                      {item.objectType}
-                    </span>
-                  );
-                }
-              })()}
-            </div>
-          )}
+                })()}
+              </div>
+            )}
+          </div>
         </div>
       </Link>
 
-      <div className="absolute bottom-3 right-3 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-        <ObjectActionsMenu item={item} organizationId={organizationId} />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 aspect-square">
+        <div className="pointer-events-auto absolute bottom-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100 [@media(hover:none)]:opacity-100">
+          <ObjectActionsMenu item={item} organizationId={organizationId} />
+        </div>
       </div>
     </div>
   );
