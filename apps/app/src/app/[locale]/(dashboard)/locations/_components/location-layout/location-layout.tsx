@@ -2,11 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { MapPin, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { IconActionButton } from "@/components/icon-action-button";
 import { PermissionGate } from "@/components/permission-gate";
 import { LocationContentSkeleton } from "../../location-page-skeleton";
 import {
@@ -21,12 +21,9 @@ import { AddChildLocationDialog } from "../add-child-location-dialog/add-child-l
 import { DeleteLocationDialog } from "../delete-location-dialog";
 import { EditLocationDialog } from "../edit-location-dialog/edit-location-dialog";
 import { LocationSidebar } from "../location-sidebar";
+import { LocationActions } from "./location-actions";
 import { LocationLayoutContent } from "./location-layout-content";
-import { LocationLayoutHeader } from "./location-layout-header";
-import {
-  buildLocationPath,
-  getDisplayUnitLocations,
-} from "./location-layout-helpers";
+import { getDisplayUnitLocations } from "./location-layout-helpers";
 
 interface LocationLayoutProps {
   organizationId: Id<"organizations">;
@@ -132,17 +129,13 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
     selectedLocationId && shouldAutoDisplayDescendants
       ? getAutomaticDisplayUnitCounts(allLocations ?? [], selectedLocationId)
       : null;
-  const selectedLocationPath =
-    selectedLocationId && allLocations
-      ? buildLocationPath(allLocations, selectedLocationId)
-      : [];
   const displayUnitLocations = getDisplayUnitLocations(
     descendantLocations,
     allLocations ?? [],
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full">
+    <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
       <LocationSidebar
         allLocations={allLocations ?? []}
         exhibitionLocations={exhibitionLocations}
@@ -180,7 +173,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-background px-6 pb-6 pt-0 custom-scrollbar">
+      <div className="custom-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-background px-4 pb-6 pt-5 dark:bg-zinc-950 md:px-6">
         {allLocations === undefined && !selectedLocationId && (
           <LocationContentSkeleton />
         )}
@@ -195,10 +188,12 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
               </p>
             </div>
             <PermissionGate permission="locations.create">
-              <Button variant="outline" onClick={() => setAddDialogOpen(true)}>
-                <Plus className="mr-2 size-4" />
-                Add Location
-              </Button>
+              <IconActionButton
+                label="Add"
+                onClick={() => setAddDialogOpen(true)}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+              </IconActionButton>
             </PermissionGate>
           </div>
         )}
@@ -208,28 +203,25 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
         )}
 
         {selectedLocationId && selectedLocation && (
-          <>
-            <LocationLayoutHeader
-              selectedLocationPath={selectedLocationPath}
-              selectedLocationId={selectedLocation._id}
-              onDelete={() => setDeleteDialogOpen(true)}
-              onAdd={() => setAddDialogOpen(true)}
-              onEdit={() => setEditDialogOpen(true)}
-            />
-
-            <LocationLayoutContent
-              selectedLocation={selectedLocation}
-              environmentalData={environmentalData ?? null}
-              occupancy={occupancy ?? undefined}
-              isStorageView={isStorageView}
-              includesDescendants={includesDescendants}
-              objectsAtLocation={objectsAtLocation ?? undefined}
-              childLocations={childLocations}
-              descendantLocations={descendantLocations}
-              automaticDisplayUnitCounts={automaticDisplayUnitCounts}
-              displayUnitLocations={displayUnitLocations}
-            />
-          </>
+          <LocationLayoutContent
+            actions={
+              <LocationActions
+                onDelete={() => setDeleteDialogOpen(true)}
+                onAdd={() => setAddDialogOpen(true)}
+                onEdit={() => setEditDialogOpen(true)}
+              />
+            }
+            selectedLocation={selectedLocation}
+            environmentalData={environmentalData ?? null}
+            occupancy={occupancy ?? undefined}
+            isStorageView={isStorageView}
+            includesDescendants={includesDescendants}
+            objectsAtLocation={objectsAtLocation ?? undefined}
+            childLocations={childLocations}
+            descendantLocations={descendantLocations}
+            automaticDisplayUnitCounts={automaticDisplayUnitCounts}
+            displayUnitLocations={displayUnitLocations}
+          />
         )}
 
         {allLocations &&

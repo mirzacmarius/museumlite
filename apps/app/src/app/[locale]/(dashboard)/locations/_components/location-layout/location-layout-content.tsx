@@ -3,7 +3,7 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { getNumericCustomFieldNumber } from "../../location-custom-fields";
 import { GalleryView } from "../gallery-view";
 import { LocationHeader } from "../location-header";
@@ -17,6 +17,7 @@ type ObjectsAtLocation = FunctionReturnType<
 type OccupancyResult = FunctionReturnType<typeof api.locations.getOccupancy>;
 
 interface LocationLayoutContentProps {
+  actions: ReactNode;
   selectedLocation: LocationDetail;
   environmentalData: ComponentProps<typeof LocationHeader>["environmentalData"];
   occupancy: OccupancyResult | undefined;
@@ -47,6 +48,7 @@ interface LocationLayoutContentProps {
 }
 
 export function LocationLayoutContent({
+  actions,
   selectedLocation,
   environmentalData,
   occupancy,
@@ -91,10 +93,12 @@ export function LocationLayoutContent({
   return (
     <>
       <LocationHeader
+        actions={actions}
         location={selectedLocation}
         environmentalData={environmentalData}
-        totalObjects={occupancy?.objectCount ?? 0}
+        totalObjects={objectsAtLocation?.length ?? occupancy?.objectCount ?? 0}
         capacity={occupancy?.capacity ?? 0}
+        directObjectCount={occupancy?.objectCount ?? 0}
       />
 
       {!isStorageView && (

@@ -3,6 +3,7 @@
 import { cn } from "@v1/ui/utils";
 import Image from "next/image";
 import { LocationObjectThumbnail } from "./location-object-thumbnail";
+import { LocationUnitCard } from "./location-unit-card";
 
 interface GalleryObject {
   _id: string;
@@ -182,8 +183,8 @@ export function GalleryView({
 
       {hasVitrines ? (
         <div>
-          <div className="mb-4 flex items-end justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-medium text-foreground">
               Freestanding Vitrines
             </h3>
             <div className="text-xs text-muted-foreground">
@@ -193,7 +194,7 @@ export function GalleryView({
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4">
             {vitrines.map((vitrine) => (
               <VitrineCard key={vitrine.id} vitrine={vitrine} />
             ))}
@@ -205,10 +206,10 @@ export function GalleryView({
         <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2">
           {hasWalls ? (
             <div>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
+              <h3 className="mb-4 text-xs font-medium text-foreground">
                 Wall Mounted Display
               </h3>
-              <div className="relative overflow-hidden rounded-xl border border-border bg-card p-6">
+              <div className="relative overflow-hidden rounded-md border border-border/60 bg-muted/20 p-4 dark:border-white/10 dark:bg-zinc-900/40">
                 {backgroundImageUrl ? (
                   <>
                     <Image
@@ -222,16 +223,7 @@ export function GalleryView({
                     <div className="absolute inset-0 bg-background/80" />
                   </>
                 ) : null}
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-                <div
-                  className="relative z-10 grid gap-2"
-                  style={{
-                    gridTemplateColumns: `repeat(${Math.max(
-                      1,
-                      Math.min(normalizedWallCount, 6),
-                    )}, minmax(0, 1fr))`,
-                  }}
-                >
+                <div className="relative z-10 grid grid-cols-[repeat(auto-fit,minmax(min(100%,120px),1fr))] gap-3">
                   {wallSlots.map((slot) => (
                     <WallSlot key={slot.id} slot={slot} />
                   ))}
@@ -250,16 +242,19 @@ export function GalleryView({
 
           {hasCabinets ? (
             <div className={cn(!hasWalls && "2xl:col-span-2")}>
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-foreground">
-                Cabinets
-              </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xs font-medium text-foreground">
+                  Cabinets
+                </h3>
+                <span className="flex items-center gap-1.5 text-[10px] tabular-nums text-muted-foreground">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  {occupiedCabinets.length}/{cabinets.length} in use
+                </span>
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4">
                 {cabinets.map((cabinet) => (
                   <UnitStackCard key={cabinet.id} unit={cabinet} />
                 ))}
-              </div>
-              <div className="mt-3 text-right text-xs text-muted-foreground">
-                {occupiedCabinets.length}/{cabinets.length} cabinets in use
               </div>
             </div>
           ) : null}
@@ -268,17 +263,15 @@ export function GalleryView({
 
       {hasShelves ? (
         <div>
-          <div className="mb-4 flex items-end justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              Shelves
-            </h3>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-medium text-foreground">Shelves</h3>
             <div className="text-xs text-muted-foreground">
               <span className="text-foreground">
                 {occupiedShelves.length}/{shelves.length} shelves in use
               </span>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4">
             {shelves.map((shelf) => (
               <UnitStackCard key={shelf.id} unit={shelf} />
             ))}
@@ -326,7 +319,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
 
   if (!hasObjects) {
     return (
-      <div className="group relative aspect-[4/5] rounded-xl border border-border bg-card shadow-sm transition-all hover:border-border/80">
+      <div className="group relative aspect-[4/5] rounded-md border border-border/60 bg-muted/20 dark:border-white/10 dark:bg-zinc-900/40">
         <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-border bg-muted/30 p-3">
           <div className="min-w-0">
             <div className="truncate font-mono text-[10px] text-muted-foreground">
@@ -346,7 +339,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
   }
 
   return (
-    <div className="group relative aspect-[4/5] rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/40">
+    <div className="group relative aspect-[4/5] rounded-md border border-border/60 bg-muted/20 transition-colors duration-150 hover:border-indigo-500/50 dark:border-white/10 dark:bg-zinc-900/40">
       <div className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 border-b border-border bg-muted/30 p-3">
         <div className="min-w-0">
           <div className="truncate font-mono text-[10px] text-muted-foreground">
@@ -465,67 +458,11 @@ interface UnitStackCardProps {
 }
 
 function UnitStackCard({ unit }: UnitStackCardProps) {
-  const isEmpty = unit.objects.length === 0;
-  const isInactive = unit.isActive === false;
-  const statusColor = isInactive
-    ? "bg-muted-foreground"
-    : isEmpty
-      ? "bg-muted-foreground"
-      : "bg-emerald-500";
-
   return (
-    <div
-      className={`rounded-2xl border p-4 transition-colors ${
-        isEmpty
-          ? "border-border/50 bg-card opacity-70"
-          : "border-border bg-card"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-2.5">
-          <div className={`mt-1.5 size-1.5 rounded-full ${statusColor}`} />
-          <div className="min-w-0">
-            <div
-              className={`truncate font-mono text-xs ${
-                isEmpty ? "text-muted-foreground" : "text-foreground"
-              }`}
-            >
-              {unit.name ?? unit.id}
-            </div>
-            <div className="mt-0.5 truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-              {unit.name ? `${unit.id} · ${unit.type ?? "Cabinet"}` : unit.type}
-            </div>
-          </div>
-        </div>
-        <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
-          {isInactive ? "Inactive" : `${unit.objects.length}/2`}
-        </span>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        {unit.objects.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-[11px] text-muted-foreground">
-            Empty
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "grid gap-3",
-              unit.objects.length === 1 ? "grid-cols-1" : "grid-cols-2",
-            )}
-          >
-            {unit.objects.map((object) => (
-              <LocationObjectThumbnail
-                key={object._id}
-                object={object}
-                className="rounded-xl border-border"
-                imageClassName="aspect-[4/3]"
-                titleClassName="text-[10px]"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <LocationUnitCard
+      name={unit.name ?? unit.id}
+      isActive={unit.isActive}
+      objects={unit.objects}
+    />
   );
 }

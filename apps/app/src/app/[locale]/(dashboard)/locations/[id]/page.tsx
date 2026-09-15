@@ -10,6 +10,7 @@ import { Archive, ArrowLeft, Clock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import { IconActionButton } from "@/components/icon-action-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -67,15 +68,13 @@ export default function LocationDetailPage() {
             </Link>
           </Button>
           <PermissionGate permission="locations.delete">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive"
+            <IconActionButton
+              label={t("delete")}
+              className="hover:text-destructive"
               onClick={() => setDeleteDialogOpen(true)}
             >
-              <Trash2 className="mr-2 size-4" />
-              {t("delete")}
-            </Button>
+              <Trash2 className="size-4" aria-hidden="true" />
+            </IconActionButton>
           </PermissionGate>
         </div>
 

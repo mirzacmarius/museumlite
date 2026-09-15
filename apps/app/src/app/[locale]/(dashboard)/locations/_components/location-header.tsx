@@ -1,7 +1,8 @@
 "use client";
 
-import { Droplets, Image as ImageIcon, Thermometer } from "lucide-react";
+import { Droplets, ImageIcon, Thermometer } from "lucide-react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 const LAST_AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -10,6 +11,7 @@ const LAST_AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
 });
 
 interface LocationHeaderProps {
+  actions?: ReactNode;
   location: {
     name: string;
     locationCode: string;
@@ -28,14 +30,17 @@ interface LocationHeaderProps {
   } | null;
   totalObjects: number;
   capacity: number;
+  directObjectCount: number;
   lastAuditDate?: Date;
 }
 
 export function LocationHeader({
+  actions,
   location,
   environmentalData,
   totalObjects,
   capacity,
+  directObjectCount,
   lastAuditDate,
 }: LocationHeaderProps) {
   const storedTemperature =
@@ -50,7 +55,7 @@ export function LocationHeader({
     environmentalData?.temperature ?? storedTemperature;
   const displayHumidity = environmentalData?.humidity ?? storedHumidity;
   const occupancyPercent =
-    capacity > 0 ? Math.round((totalObjects / capacity) * 100) : 0;
+    capacity > 0 ? Math.round((directObjectCount / capacity) * 100) : 0;
 
   const getStatusBadge = () => {
     if (!location.isActive) {
@@ -84,107 +89,111 @@ export function LocationHeader({
   const statusBadge = getStatusBadge();
 
   return (
-    <div className="mb-8 grid gap-6 xl:grid-cols-[176px_minmax(0,1fr)] xl:items-start">
-      <div className="relative order-2 aspect-square w-44 max-w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm xl:order-1">
-        {location.imageUrl ? (
-          <>
-            <Image
-              src={location.imageUrl}
-              alt={location.name}
-              fill
-              sizes="(max-width: 768px) 100vw, 400px"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20" />
-          </>
-        ) : (
-          <div className="flex size-full items-center justify-center bg-muted/40">
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
-              <div className="rounded-full border border-border bg-background/80 p-3">
-                <ImageIcon className="size-6" />
-              </div>
-              <span className="text-sm font-medium">No location photo</span>
-            </div>
-          </div>
-        )}
-
-        {displayTemperature !== undefined || displayHumidity !== undefined ? (
-          <div className="absolute right-2 top-2 flex flex-wrap items-center gap-1.5">
-            {displayTemperature !== undefined ? (
-              <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-2 py-1 backdrop-blur-md">
-                <Thermometer className="size-3 text-blue-300" />
-                <span className="text-xs font-semibold text-foreground">
-                  {displayTemperature.toFixed(1)}°C
-                </span>
-              </div>
-            ) : null}
-
-            {displayHumidity !== undefined ? (
-              <div className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-2 py-1 backdrop-blur-md">
-                <Droplets className="size-3 text-cyan-300" />
-                <span className="text-xs font-semibold text-foreground">
-                  {displayHumidity.toFixed(0)}%
-                </span>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="order-1 min-w-0 xl:order-2">
-        <h2 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight text-foreground">
-          <span>{location.name}</span>
-          <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-normal ${statusBadge.className}`}
-          >
-            {statusBadge.text}
-          </span>
-        </h2>
-        <div className="mt-2 text-sm text-muted-foreground">
-          <span className="text-muted-foreground">Location ID</span>
-          <span className="mx-2 text-muted-foreground/60">•</span>
-          <span className="font-medium text-foreground">
-            {location.locationCode}
-          </span>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
-              Capacity
-            </div>
-            <div className="text-xl font-semibold text-foreground">
-              {occupancyPercent}% Full
-            </div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
+    <section className="mb-7 border-b border-border/60 pb-6 dark:border-white/10">
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="flex min-w-0 flex-1 items-start gap-4">
+          <div className="relative size-24 shrink-0 overflow-hidden rounded-md bg-muted/30 outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10 sm:size-28">
+            {location.imageUrl ? (
+              <Image
+                src={location.imageUrl}
+                alt={location.name}
+                fill
+                sizes="(min-width: 640px) 112px, 96px"
+                className="object-cover"
               />
-            </div>
+            ) : (
+              <div className="flex size-full flex-col items-center justify-center gap-2 px-2 text-center text-muted-foreground">
+                <ImageIcon className="size-5" />
+                <span className="text-[10px]">No location photo</span>
+              </div>
+            )}
           </div>
-
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
-              Total Items
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
+              <span className="font-mono tracking-wide text-muted-foreground">
+                {location.locationCode}
+              </span>
+              <span className="text-muted-foreground/40">/</span>
+              <span className="capitalize text-muted-foreground">
+                {location.type.replaceAll("_", " ")}
+              </span>
             </div>
-            <div className="text-xl font-semibold text-foreground">
-              {totalObjects.toLocaleString()} Objects
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h2 className="flex flex-wrap items-center gap-3 text-xl font-medium tracking-tight text-foreground">
+                {location.name}
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-normal tracking-normal ${statusBadge.className}`}
+                >
+                  <span className="size-1 rounded-full bg-current" />
+                  {statusBadge.text}
+                </span>
+              </h2>
+              {actions}
             </div>
-          </div>
-
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">
-              Last Audit
-            </div>
-            <div className="text-xl font-semibold text-foreground">
-              {lastAuditDate
-                ? LAST_AUDIT_DATE_FORMATTER.format(lastAuditDate)
-                : "Never"}
-            </div>
+            <dl className="mt-3 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-3">
+              <div>
+                <dt className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  Total objects
+                </dt>
+                <dd className="mt-1.5 text-lg font-medium tabular-nums text-foreground">
+                  {totalObjects.toLocaleString()}
+                </dd>
+              </div>
+              <div>
+                <dt
+                  className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
+                  title="Capacity of objects assigned directly to this location"
+                >
+                  Capacity
+                </dt>
+                <dd className="mt-1.5 flex flex-wrap items-center gap-3">
+                  <span className="text-sm tabular-nums text-foreground">
+                    {capacity > 0
+                      ? `${occupancyPercent}% full`
+                      : "Not configured"}
+                  </span>
+                  {capacity > 0 ? (
+                    <span className="h-1 w-20 overflow-hidden rounded-full bg-muted dark:bg-zinc-800">
+                      <span
+                        className="block h-full rounded-full bg-emerald-500"
+                        style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
+                      />
+                    </span>
+                  ) : null}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  Last audit
+                </dt>
+                <dd className="mt-1.5 text-sm text-muted-foreground">
+                  {lastAuditDate
+                    ? LAST_AUDIT_DATE_FORMATTER.format(lastAuditDate)
+                    : "No audit recorded"}
+                </dd>
+              </div>
+            </dl>
           </div>
         </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          {displayTemperature !== undefined ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 dark:border-white/10">
+              <Thermometer className="size-3.5 text-blue-400" />
+              <span className="tabular-nums">
+                {displayTemperature.toFixed(1)}°C
+              </span>
+            </span>
+          ) : null}
+          {displayHumidity !== undefined ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1.5 dark:border-white/10">
+              <Droplets className="size-3.5 text-cyan-400" />
+              <span className="tabular-nums">
+                {displayHumidity.toFixed(0)}%
+              </span>
+            </span>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

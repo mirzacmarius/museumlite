@@ -1,11 +1,6 @@
 const LOCATION_SECTION_SKELETON_KEYS = ["exhibition", "storage"];
 const LOCATION_ROW_SKELETON_KEYS = ["root", "wing", "room", "case"];
-const LOCATION_METRIC_SKELETON_KEYS = [
-  "objects",
-  "capacity",
-  "humidity",
-  "temperature",
-];
+const LOCATION_METRIC_SKELETON_KEYS = ["objects", "capacity", "audit"];
 const LOCATION_CARD_SKELETON_KEYS = [
   "vitrine",
   "wall",
@@ -17,13 +12,12 @@ const LOCATION_CARD_SKELETON_KEYS = [
 
 export function LocationsPageSkeleton() {
   return (
-    <div className="flex h-full min-h-0 w-full bg-background">
-      <aside className="hidden h-full w-72 shrink-0 border-r border-border bg-background/95 p-4 md:flex md:flex-col">
+    <div className="flex h-full min-h-0 w-full flex-col bg-background md:flex-row">
+      <aside className="h-56 w-full shrink-0 overflow-hidden border-b border-border/60 bg-background p-4 dark:border-white/10 md:h-full md:w-60 md:border-b-0 md:border-e">
         <div className="mb-5 flex items-center justify-between">
           <div className="h-5 w-24 rounded bg-muted/70" />
           <div className="size-8 rounded-md bg-muted/60" />
         </div>
-        <div className="mb-4 h-9 rounded-md bg-muted/50" />
         <div className="space-y-5">
           {LOCATION_SECTION_SKELETON_KEYS.map((sectionKey) => (
             <div key={sectionKey} className="space-y-2">
@@ -46,7 +40,7 @@ export function LocationsPageSkeleton() {
 
 export function LocationMainSkeleton() {
   return (
-    <main className="min-h-0 flex-1 overflow-hidden bg-gradient-to-br from-zinc-950 to-zinc-900/50 px-6 pb-6 pt-0">
+    <main className="min-h-0 min-w-0 flex-1 overflow-hidden bg-background px-4 pb-6 pt-5 dark:bg-zinc-950 md:px-6">
       <LocationContentSkeleton />
     </main>
   );
@@ -55,40 +49,25 @@ export function LocationMainSkeleton() {
 export function LocationContentSkeleton() {
   return (
     <>
-      <header className="-mx-6 sticky top-0 z-20 mb-8 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-16 rounded bg-muted/50" />
-          <div className="size-3 rounded bg-muted/30" />
-          <div className="h-3 w-32 rounded bg-muted/60" />
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-28 rounded-md bg-muted/50" />
-          <div className="h-8 w-28 rounded-md bg-muted/60" />
-        </div>
-      </header>
-
-      <section className="mb-6 rounded-xl border border-border/60 bg-card p-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <section className="mb-7 border-b border-border/60 pb-6 dark:border-white/10">
+        <div className="flex flex-col gap-6">
           <div className="space-y-3">
             <div className="h-7 w-64 rounded bg-muted/70" />
-            <div className="h-4 w-96 max-w-full rounded bg-muted/40" />
+            <div className="h-4 w-40 max-w-full rounded bg-muted/40" />
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-3">
             {LOCATION_METRIC_SKELETON_KEYS.map((key) => (
-              <div
-                key={key}
-                className="h-20 w-28 rounded-lg border border-border bg-muted/30"
-              />
+              <div key={key} className="h-12 rounded-md bg-muted/30" />
             ))}
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] gap-4">
         {LOCATION_CARD_SKELETON_KEYS.map((key) => (
           <div
             key={key}
-            className="h-40 rounded-xl border border-border/60 bg-card"
+            className="h-56 rounded-md border border-border/60 bg-muted/20 dark:border-white/10 dark:bg-zinc-900/40"
           />
         ))}
       </div>

@@ -74,13 +74,13 @@ function LocationNavItemRoot({
   return (
     <LocationNavItemContext.Provider value={value}>
       <div
-        className={`flex w-full items-center transition-all ${
+        className={`flex w-full items-center rounded-md border transition-colors duration-150 ${
           selection === "selected"
-            ? "border-l-2 border-primary bg-muted font-medium text-foreground shadow-sm"
-            : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            ? "border-indigo-500/20 bg-indigo-500/10 font-medium text-indigo-600 dark:text-indigo-300"
+            : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         }`}
         style={{
-          paddingLeft: `${depth * 12 + (expansion === "leaf" ? 20 : 0)}px`,
+          paddingInlineStart: `${depth * 12 + (expansion === "leaf" ? 20 : 0)}px`,
         }}
       >
         {children}
@@ -115,7 +115,7 @@ function LocationNavItemTrigger() {
 }
 
 function LocationNavItemLink() {
-  const { location, onSelect, storage } = useLocationNavItem();
+  const { location, onSelect, storage, selection } = useLocationNavItem();
   const isColdStorage = storage === "cold";
   const isSecure = storage !== "standard";
 
@@ -131,7 +131,9 @@ function LocationNavItemLink() {
     <button
       type="button"
       onClick={onSelect}
-      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-[8px] pr-2 text-left"
+      aria-current={selection === "selected" ? "location" : undefined}
+      title={location.name}
+      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pe-2 text-start"
     >
       <span className="truncate">{location.name}</span>
       {isColdStorage ? (

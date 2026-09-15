@@ -1,6 +1,7 @@
 "use client";
 
 import { LocationObjectThumbnail } from "./location-object-thumbnail";
+import { LocationUnitCard } from "./location-unit-card";
 
 interface StorageUnit {
   _id: string;
@@ -37,18 +38,28 @@ export function StorageView({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="mb-4 flex items-center justify-between gap-4">
+      <div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-xs font-medium text-foreground">
               Storage Units
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
               Shelves, cabinets, boxes, and rooms with their assigned objects
             </p>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {units.length.toLocaleString()} units
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              Occupied
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+              Empty
+            </span>
+            <span className="tabular-nums">
+              {units.length.toLocaleString()} units
+            </span>
           </div>
         </div>
 
@@ -57,11 +68,12 @@ export function StorageView({
             No storage units found
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4">
             {units.map((unit) => (
-              <StorageUnitCard
+              <LocationUnitCard
                 key={unit._id}
-                unit={unit}
+                name={unit.name}
+                isActive={unit.isActive}
                 objects={unitObjects.get(unit._id) ?? []}
               />
             ))}
@@ -69,11 +81,11 @@ export function StorageView({
         )}
       </div>
 
-      <div className="border border-border rounded-xl overflow-hidden bg-card">
-        <div className="border-b border-border bg-card px-4 py-3">
+      <div className="overflow-x-auto rounded-md border border-border/60 bg-background dark:border-white/10">
+        <div className="border-b border-border/60 bg-muted/20 px-4 py-3 dark:border-white/10">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">
+              <h3 className="text-xs font-medium text-foreground">
                 Objects in Active Location
               </h3>
               {includesDescendants && (
@@ -88,8 +100,8 @@ export function StorageView({
           </div>
         </div>
 
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-border bg-card text-muted-foreground font-medium">
+        <table className="w-full min-w-[440px] text-start text-xs">
+          <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground font-medium">
             <tr>
               <th className="px-4 py-3">Accession Number</th>
               <th className="px-4 py-3">Title</th>
@@ -140,90 +152,6 @@ export function StorageView({
             )}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-}
-
-interface StorageUnitCardProps {
-  unit: StorageUnit;
-  objects: StorageViewProps["objects"];
-}
-
-function StorageUnitCard({ unit, objects }: StorageUnitCardProps) {
-  const getStatusInfo = () => {
-    if (!unit.isActive) {
-      return {
-        text: "Holding",
-        className: "text-muted-foreground",
-      };
-    }
-
-    const type = unit.type.toLowerCase();
-    if (type.includes("restricted") || type.includes("secure")) {
-      return {
-        text: "Restricted",
-        className: "text-rose-500",
-      };
-    }
-
-    if (type.includes("locked")) {
-      return {
-        text: "Locked",
-        className: "text-amber-500",
-      };
-    }
-
-    return {
-      text: "Accessible",
-      className: "text-emerald-400",
-    };
-  };
-
-  const status = getStatusInfo();
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            {unit.name}
-          </div>
-          <div className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            {unit.locationCode} · {unit.type}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className={`text-xs font-medium ${status.className}`}>
-            {status.text}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            {objects.length} item{objects.length === 1 ? "" : "s"}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        {objects.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-[11px] text-muted-foreground">
-            No assigned objects
-          </div>
-        ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2">
-            {objects.slice(0, 4).map((object) => (
-              <LocationObjectThumbnail
-                key={object._id}
-                object={object}
-                metadataLabel="Stored In"
-                metadataValue={unit.name}
-                className="rounded-lg"
-                imageClassName="aspect-square"
-                titleClassName="text-[10px]"
-                showFooter
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

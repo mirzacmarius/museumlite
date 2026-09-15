@@ -92,36 +92,40 @@ function LocationSidebarNav({
   const expandedLocationIds = expandedOverrides ?? initialExpandedLocationIds;
 
   return (
-    <div className="h-full min-h-0 w-52 shrink-0 overflow-y-auto border-r border-border bg-card py-4 custom-scrollbar">
+    <nav
+      aria-label="Locations"
+      className="custom-scrollbar max-h-56 w-full shrink-0 overflow-y-auto border-b border-border/60 bg-background p-4 dark:border-white/10 dark:bg-zinc-950 md:h-full md:max-h-none md:w-60 md:border-b-0 md:border-e"
+    >
+      <div className="mb-6 flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground">Locations</span>
+        <span className="rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground dark:border-white/10">
+          {allLocations.length}
+        </span>
+      </div>
       {exhibitionLocations.length > 0 && (
-        <>
-          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            Exhibition Spaces
-          </div>
-          <ul className="mb-6 text-xs">
-            {exhibitionLocations.map((location) => (
-              <LocationNavTreeItem
-                key={location._id}
-                location={location}
-                childLocations={getExhibitionChildren(location._id)}
-                getChildren={getExhibitionChildren}
-                selectedLocationId={selectedLocationId}
-                onSelectLocation={onSelectLocation}
-                expandedLocationIds={expandedLocationIds}
-                onToggleLocation={toggleLocation}
-                isSecure={false}
-              />
-            ))}
-          </ul>
-        </>
+        <ul className="mb-7 space-y-1 text-xs">
+          {exhibitionLocations.map((location) => (
+            <LocationNavTreeItem
+              key={location._id}
+              location={location}
+              childLocations={getExhibitionChildren(location._id)}
+              getChildren={getExhibitionChildren}
+              selectedLocationId={selectedLocationId}
+              onSelectLocation={onSelectLocation}
+              expandedLocationIds={expandedLocationIds}
+              onToggleLocation={toggleLocation}
+              isSecure={false}
+            />
+          ))}
+        </ul>
       )}
 
       {storageLocations.length > 0 && (
         <>
-          <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             Secure Storage
           </div>
-          <ul className="text-xs">
+          <ul className="space-y-1 text-xs">
             {storageLocations.map((location) => (
               <LocationNavTreeItem
                 key={location._id}
@@ -144,6 +148,6 @@ function LocationSidebarNav({
           <p className="text-xs text-muted-foreground">No locations yet</p>
         </div>
       )}
-    </div>
+    </nav>
   );
 }
