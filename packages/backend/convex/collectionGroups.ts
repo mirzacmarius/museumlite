@@ -53,12 +53,23 @@ async function getCollectionGroupThumbnailUrl(
     )
     .take(20); // Limit to avoid scanning too many
 
-  if (groupItems.length === 0) {
+  const scopedGroupItems = (
+    await Promise.all(
+      groupItems.map(async (item) => {
+        const collection = await ctx.db.get(item.collectionId);
+        return collection?.organizationId === group.organizationId
+          ? item
+          : null;
+      }),
+    )
+  ).filter((item) => item !== null);
+
+  if (scopedGroupItems.length === 0) {
     return null;
   }
 
   const primaryUrls = await Promise.all(
-    groupItems.map(async (groupItem) => {
+    scopedGroupItems.map(async (groupItem) => {
       const primaryMedia = await ctx.db
         .query("mediaFiles")
         .withIndex("by_collection", (q) =>
@@ -72,7 +83,10 @@ async function getCollectionGroupThumbnailUrl(
         )
         .first();
 
-      if (!primaryMedia) {
+      if (
+        !primaryMedia ||
+        primaryMedia.organizationId !== group.organizationId
+      ) {
         return null;
       }
 
@@ -89,7 +103,7 @@ async function getCollectionGroupThumbnailUrl(
   }
 
   const anyUrls = await Promise.all(
-    groupItems.map(async (groupItem) => {
+    scopedGroupItems.map(async (groupItem) => {
       const anyMedia = await ctx.db
         .query("mediaFiles")
         .withIndex("by_collection", (q) =>
@@ -98,7 +112,7 @@ async function getCollectionGroupThumbnailUrl(
         .filter((q) => q.eq(q.field("fileType"), "image"))
         .first();
 
-      if (!anyMedia) {
+      if (!anyMedia || anyMedia.organizationId !== group.organizationId) {
         return null;
       }
 
@@ -263,6 +277,7 @@ export const get = query({
       imageUrl: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
       valuation: v.optional(v.number()),
+      storageLocation: v.optional(v.string()),
       createdAt: v.number(),
       createdBy: v.id("users"),
       lastModifiedAt: v.optional(v.number()),
@@ -274,6 +289,8 @@ export const get = query({
   handler: async (ctx, args) => {
     const group = await ctx.db.get(args.groupId);
     if (!group) return null;
+
+    await requirePermission(ctx, group.organizationId, "collections.read");
 
     let curatorName: string | undefined;
     if (group.curatorId) {
@@ -485,7 +502,10 @@ export const addItems = mutation({
         return 0;
       }),
     );
-    const addedCount = addResults.reduce<number>((total, added) => total + added, 0);
+    const addedCount = addResults.reduce<number>(
+      (total, added) => total + added,
+      0,
+    );
 
     // Update items count
     if (addedCount > 0) {

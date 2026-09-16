@@ -2027,6 +2027,8 @@ export const checkAppraisalForCoverage = query({
       };
     }
 
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+
     // Find most recent appraisal
     const appraisals = await ctx.db
       .query("appraisals")

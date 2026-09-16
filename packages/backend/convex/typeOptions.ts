@@ -24,6 +24,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("typeOptions")
       .withIndex("by_organization", (q) =>
@@ -109,6 +111,8 @@ export const checkUsage = query({
     if (!type) {
       return { isUsed: false, usageCount: 0, collectionNames: [] };
     }
+
+    await requirePermission(ctx, type.organizationId, "collections.read");
 
     // Check all collections in the organization for this type
     const collections = await ctx.db
@@ -208,6 +212,8 @@ export const incrementUsage = mutation({
     if (!type) {
       return null;
     }
+
+    await requirePermission(ctx, type.organizationId, "collections.update");
 
     await ctx.db.patch(args.typeId, {
       usageCount: (type.usageCount ?? 0) + 1,

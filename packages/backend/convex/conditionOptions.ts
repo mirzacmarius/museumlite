@@ -25,6 +25,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("conditionOptions")
       .withIndex("by_organization", (q) =>
@@ -183,6 +185,8 @@ export const checkUsage = query({
       return { isUsed: false, usageCount: 0, collectionNames: [] };
     }
 
+    await requirePermission(ctx, condition.organizationId, "collections.read");
+
     // Check all collections in the organization for this condition
     const collections = await ctx.db
       .query("collections")
@@ -258,6 +262,12 @@ export const incrementUsage = mutation({
     if (!condition) {
       return null;
     }
+
+    await requirePermission(
+      ctx,
+      condition.organizationId,
+      "collections.update",
+    );
 
     await ctx.db.patch(args.conditionId, {
       usageCount: (condition.usageCount ?? 0) + 1,

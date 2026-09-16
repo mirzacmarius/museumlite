@@ -1051,6 +1051,9 @@ export const checkMoveAllowed = query({
       };
     }
 
+    await requirePermission(ctx, collection.organizationId, "collections.read");
+    await requirePermission(ctx, collection.organizationId, "locations.read");
+
     const toLocation = await ctx.db.get(args.toLocationId);
     if (!toLocation) {
       return {
@@ -1060,6 +1063,12 @@ export const checkMoveAllowed = query({
           { type: "error", message: "Location not found", canOverride: false },
         ],
       };
+    }
+
+    if (toLocation.organizationId !== collection.organizationId) {
+      throw new Error(
+        "Location does not belong to the collection organization",
+      );
     }
 
     const issues: Array<{
@@ -1688,12 +1697,15 @@ export const getLocationPath = query({
     while (currentLocationId) {
       const location: {
         _id: Id<"locations">;
+        organizationId: Id<"organizations">;
         name: string;
         locationCode?: string;
         type: string;
         parentLocationId?: Id<"locations">;
       } | null = await ctx.db.get(currentLocationId);
       if (!location) break;
+
+      await requirePermission(ctx, location.organizationId, "locations.read");
 
       path.unshift({
         _id: location._id,
@@ -2111,6 +2123,8 @@ export const getLocationTypes = query({
   },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       throw new Error("Organization not found");

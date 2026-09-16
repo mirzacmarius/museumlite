@@ -1,3 +1,4 @@
+import type { PaginationResult } from "convex/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import {
@@ -6,29 +7,130 @@ import {
 } from "./collectionDisplayHelpers";
 import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
-/**
- * Whether catalog list pagination can use org/status indexes only (no filters).
- */
-export function shouldUseIndexedCollectionsPagination(args: {
-  collectionGroupId?: Id<"collectionGroups">;
+interface CollectionListFilters {
+  organizationId: Id<"organizations">;
+  status?: Doc<"collections">["status"];
+  includeDeaccessioned?: boolean;
+  locationId?: Id<"locations">;
+  objectType?: string;
+  displayStatus?: string;
   culture?: string;
   period?: string;
   materials?: string;
-  displayStatus?: string;
-  search?: string;
+  collectionGroupId?: Id<"collectionGroups">;
   catalogedFrom?: number;
   catalogedTo?: number;
-}) {
-  return (
-    !args.collectionGroupId &&
-    !args.culture &&
-    !args.period &&
-    !args.materials &&
-    !args.displayStatus &&
-    !args.search?.trim() &&
-    !args.catalogedFrom &&
-    !args.catalogedTo
+  search?: string;
+}
+
+/** Filter only the bounded database page; never load an organization's relations. */
+export async function filterCollectionListPage(
+  ctx: Pick<QueryCtx, "db">,
+  page: Doc<"collections">[],
+  args: CollectionListFilters,
+) {
+  const search = args.search?.trim() ? args.search : undefined;
+  const searchLower = search?.toLowerCase();
+  const titleMatches = new Map<string, Promise<boolean>>();
+  const matches = await Promise.all(
+    page.map(async (collection) => {
+      if (args.status && collection.status !== args.status) return false;
+      if (collection.status === "deleted" && args.status !== "deleted")
+        return false;
+      if (
+        collection.status === "deaccessioned" &&
+        args.status !== "deaccessioned" &&
+        !args.includeDeaccessioned
+      )
+        return false;
+      if (args.locationId && collection.currentLocationId !== args.locationId)
+        return false;
+      if (args.objectType && collection.objectType !== args.objectType)
+        return false;
+      if (args.displayStatus && collection.displayStatus !== args.displayStatus)
+        return false;
+      if (
+        args.catalogedFrom !== undefined &&
+        collection.catalogedAt < args.catalogedFrom
+      )
+        return false;
+      if (
+        args.catalogedTo !== undefined &&
+        collection.catalogedAt > args.catalogedTo
+      )
+        return false;
+      for (const field of ["culture", "period", "materials"] as const) {
+        const value = args[field];
+        if (
+          value &&
+          !collection[field]?.toLowerCase().includes(value.toLowerCase())
+        )
+          return false;
+      }
+      if (search && searchLower) {
+        const substringMatch = [
+          collection.accessionNumber,
+          collection.description,
+          collection.objectName,
+          collection.objectType,
+          collection.culture,
+          collection.period,
+          collection.materials,
+          collection.provenance,
+        ].some((value) => value?.toLowerCase().includes(searchLower));
+        if (!substringMatch) {
+          // Keep Convex's title token/prefix semantics. Exact-title filtering makes
+          // this an existence probe, without collecting every full-text match.
+          let match = titleMatches.get(collection.title);
+          if (!match) {
+            match = ctx.db
+              .query("collections")
+              .withSearchIndex("search_index", (q) =>
+                q
+                  .search("title", search)
+                  .eq("organizationId", args.organizationId)
+                  .eq("title", collection.title),
+              )
+              .first()
+              .then((result) => result !== null);
+            titleMatches.set(collection.title, match);
+          }
+          if (!(await match)) return false;
+        }
+      }
+      if (
+        args.collectionGroupId &&
+        collection.collectionGroupId !== args.collectionGroupId
+      ) {
+        const groupId = args.collectionGroupId;
+        const membership = await ctx.db
+          .query("collectionGroupItems")
+          .withIndex("by_collectionGroup_and_collection", (q) =>
+            q
+              .eq("collectionGroupId", groupId)
+              .eq("collectionId", collection._id),
+          )
+          .first();
+        if (!membership) return false;
+      }
+      if (args.status !== "deleted" && collection.status !== "deaccessioned") {
+        for (const status of ["pending", "approved"] as const) {
+          const deaccession = await ctx.db
+            .query("deaccessions")
+            .withIndex("by_organization_and_collection_and_status", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("collectionId", collection._id)
+                .eq("status", status),
+            )
+            .first();
+          if (deaccession?.organizationId === args.organizationId) return false;
+        }
+      }
+      return true;
+    }),
   );
+  return page.filter((_, index) => matches[index]);
 }
 
 export async function getCollectionsWithOpenDeaccessions(
@@ -81,15 +183,10 @@ export async function enrichCollectionListPage(
 
 export async function toCollectionListPaginationResult(
   ctx: Pick<QueryCtx, "db" | "storage">,
-  paginationResult: {
-    page: CollectionListPageItem[];
-    isDone: boolean;
-    continueCursor: string;
-  },
+  paginationResult: PaginationResult<CollectionListPageItem>,
 ) {
   return {
+    ...paginationResult,
     page: await enrichCollectionListPage(ctx, paginationResult.page),
-    isDone: paginationResult.isDone,
-    continueCursor: paginationResult.continueCursor,
   };
 }

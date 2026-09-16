@@ -537,6 +537,8 @@ export const checkUsage = query({
       return { isUsed: false, loanCount: 0, loanNumbers: [] };
     }
 
+    await requirePermission(ctx, account.organizationId, "accounts.read");
+
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))

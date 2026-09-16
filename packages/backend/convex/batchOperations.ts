@@ -316,6 +316,8 @@ export const getBatchJobStatus = query({
       return null;
     }
 
+    await requirePermission(ctx, job.organizationId, "collections.read");
+
     const createdBy = await ctx.db.get(job.createdBy);
 
     return {

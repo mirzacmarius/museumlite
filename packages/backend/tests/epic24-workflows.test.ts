@@ -642,12 +642,13 @@ describe("Epic 24: Workflow History", () => {
     // #given
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgWithRole(t, [
-      "collections.read",
+      "loans.read",
     ]);
 
     const entityId = "entity-history-query";
 
     await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { subscriptionTier: "pro" });
       await ctx.db.insert("workflowHistory", {
         organizationId,
         workflowType: "loan",
@@ -681,10 +682,12 @@ describe("Epic 24: Workflow History", () => {
     });
 
     // #when
-    const history = await t.query(api.workflows.getWorkflowHistoryForEntity, {
-      workflowType: "loan",
-      entityId,
-    });
+    const history = await t
+      .withIdentity({ subject: `${userId}|session-1` })
+      .query(api.workflows.getWorkflowHistoryForEntity, {
+        workflowType: "loan",
+        entityId,
+      });
 
     // #then
     expect(history.length).toBe(2);

@@ -390,12 +390,26 @@ export const getWorkflowHistoryForEntity = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const history = await ctx.db
       .query("workflowHistory")
       .withIndex("by_entity", (q) =>
         q.eq("workflowType", args.workflowType).eq("entityId", args.entityId),
       )
       .collect();
+
+    for (const organizationId of new Set(
+      history.map((entry) => entry.organizationId),
+    )) {
+      await requirePermission(
+        ctx,
+        organizationId,
+        args.workflowType === "loan" ? "loans.read" : "collections.read",
+      );
+    }
 
     return await Promise.all(
       history.map(async (h) => {

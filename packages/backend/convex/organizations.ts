@@ -879,6 +879,8 @@ export const getWorkflowConfigs = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("workflowConfigs")
       .withIndex("by_organization", (q) =>
@@ -1958,6 +1960,8 @@ export const getAccessionNumberPreview = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       return null;

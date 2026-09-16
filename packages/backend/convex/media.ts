@@ -636,6 +636,8 @@ export const getUploadProgress = query({
       return null;
     }
 
+    await requirePermission(ctx, media.organizationId, "media.upload");
+
     // Calculate progress based on upload status
     let progress = 0;
     if (media.uploadStatus === "completed") {

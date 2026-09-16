@@ -79,6 +79,13 @@ export function CollectionList({
   }, [collectionsStatus]);
 
   useEffect(() => {
+    // An empty filtered page can still have older matching objects.
+    if (collections.length === 0 && collectionsStatus === "CanLoadMore") {
+      onLoadMore();
+    }
+  }, [collections.length, collectionsStatus, onLoadMore]);
+
+  useEffect(() => {
     const root = scrollContainerRef.current;
     const target = loadMoreRef.current;
 
@@ -109,7 +116,7 @@ export function CollectionList({
     return () => observer.disconnect();
   }, [collectionsStatus, onLoadMore]);
 
-  if (collectionsStatus === "LoadingFirstPage" && collections.length === 0) {
+  if (collectionsStatus !== "Exhausted" && collections.length === 0) {
     return <ObjectCatalogTableSkeleton />;
   }
 

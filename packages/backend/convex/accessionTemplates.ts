@@ -28,6 +28,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("accessionTemplates")
       .withIndex("by_organization", (q) =>
@@ -304,6 +306,8 @@ export const incrementUsage = mutation({
     if (!template) {
       return null;
     }
+
+    await requirePermission(ctx, template.organizationId, "collections.update");
 
     await ctx.db.patch(args.templateId, {
       usageCount: (template.usageCount ?? 0) + 1,

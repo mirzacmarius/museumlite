@@ -566,7 +566,7 @@ export default defineSchema({
     .index("by_organization_and_publicSlug", ["organizationId", "publicSlug"])
     .searchIndex("search_index", {
       searchField: "title",
-      filterFields: ["organizationId", "status", "collectionType"],
+      filterFields: ["organizationId", "status", "collectionType", "title"],
     }),
 
   // Accession number counter tracking
@@ -1356,6 +1356,11 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
+    .index("by_organization_and_collection_and_status", [
+      "organizationId",
+      "collectionId",
+      "status",
+    ])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_dateDeaccessioned", [

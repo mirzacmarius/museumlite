@@ -24,6 +24,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("materialOptions")
       .withIndex("by_organization", (q) =>
@@ -109,6 +111,8 @@ export const checkUsage = query({
     if (!material) {
       return { isUsed: false, usageCount: 0, collectionNames: [] };
     }
+
+    await requirePermission(ctx, material.organizationId, "collections.read");
 
     // Check all collections in the organization for this material
     const collections = await ctx.db
@@ -208,6 +212,8 @@ export const incrementUsage = mutation({
     if (!material) {
       return null;
     }
+
+    await requirePermission(ctx, material.organizationId, "collections.update");
 
     await ctx.db.patch(args.materialId, {
       usageCount: (material.usageCount ?? 0) + 1,
