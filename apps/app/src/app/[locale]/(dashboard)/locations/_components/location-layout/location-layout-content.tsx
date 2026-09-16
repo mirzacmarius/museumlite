@@ -2,49 +2,37 @@
 
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
+import {
+  ChevronRight,
+  GitBranch,
+  LayoutGrid,
+  ListTree,
+  MapPin,
+  MessagesSquare,
+} from "lucide-react";
+import Link from "next/link";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { ComponentProps, ReactNode } from "react";
-import { getNumericCustomFieldNumber } from "../../location-custom-fields";
-import { GalleryView } from "../gallery-view";
 import { LocationHeader } from "../location-header";
-import { StorageView } from "../storage-view";
-import type { getDisplayUnitLocations } from "./location-layout-helpers";
+import { LocationUnitCard } from "../location-unit-card";
+import { LocationDiagram } from "./location-diagram";
+import { LocationGrid } from "./location-grid";
 
 type LocationDetail = NonNullable<FunctionReturnType<typeof api.locations.get>>;
 type ObjectsAtLocation = FunctionReturnType<
   typeof api.locations.getObjectsAtLocation
 >;
-type OccupancyResult = FunctionReturnType<typeof api.locations.getOccupancy>;
+type ThreadLocation = FunctionReturnType<typeof api.locations.listAll>[number];
 
 interface LocationLayoutContentProps {
   actions: ReactNode;
   selectedLocation: LocationDetail;
   environmentalData: ComponentProps<typeof LocationHeader>["environmentalData"];
-  occupancy: OccupancyResult | undefined;
-  isStorageView: boolean;
-  includesDescendants: boolean;
+  occupancy: FunctionReturnType<typeof api.locations.getOccupancy> | undefined;
   objectsAtLocation: ObjectsAtLocation | undefined;
-  childLocations: Array<{
-    _id: Id<"locations">;
-    name: string;
-    locationCode: string;
-    type: string;
-    isActive: boolean;
-  }>;
-  descendantLocations: Array<{
-    _id: Id<"locations">;
-    name: string;
-    locationCode: string;
-    type: string;
-    isActive: boolean;
-  }>;
-  automaticDisplayUnitCounts: {
-    vitrineCount?: number;
-    wallCount?: number;
-    cabinetCount?: number;
-    shelfCount?: number;
-  } | null;
-  displayUnitLocations: ReturnType<typeof getDisplayUnitLocations>;
+  locations: ThreadLocation[];
 }
 
 export function LocationLayoutContent({
@@ -52,43 +40,101 @@ export function LocationLayoutContent({
   selectedLocation,
   environmentalData,
   occupancy,
-  isStorageView,
-  includesDescendants,
   objectsAtLocation,
-  childLocations,
-  descendantLocations,
-  automaticDisplayUnitCounts,
-  displayUnitLocations,
+  locations,
 }: LocationLayoutContentProps) {
-  const galleryObjects =
-    objectsAtLocation?.map((obj) => ({
-      _id: obj._id,
-      title: obj.title,
-      accessionNumber: obj.accessionNumber,
-      status: obj.status,
-      currentLocationId: obj.currentLocationId,
-      thumbnailUrl: obj.thumbnailUrl,
-    })) ?? [];
+  const [viewStyle, setViewStyle] = useQueryState(
+    "view",
+    parseAsStringLiteral([
+      "thread",
+      "diagram",
+      "outline",
+      "grid",
+    ] as const).withDefault("thread"),
+  );
+  const children = new Map<Id<"locations">, ThreadLocation[]>();
+  for (const location of locations) {
+    if (!location.parentLocationId) continue;
+    const siblings = children.get(location.parentLocationId) ?? [];
+    siblings.push(location);
+    children.set(location.parentLocationId, siblings);
+  }
+  const objects = new Map<Id<"locations">, ObjectsAtLocation>();
+  for (const object of objectsAtLocation ?? []) {
+    if (!object.currentLocationId) continue;
+    const siblings = objects.get(object.currentLocationId) ?? [];
+    siblings.push(object);
+    objects.set(object.currentLocationId, siblings);
+  }
 
-  const storageObjects =
-    objectsAtLocation?.map((object) => ({
-      _id: object._id,
-      currentLocationId: object.currentLocationId,
-      accessionNumber: object.accessionNumber,
-      title: object.title,
-      status: object.status,
-      thumbnailUrl: object.thumbnailUrl,
-    })) ?? [];
-
-  const storageUnits = (
-    includesDescendants ? descendantLocations : childLocations
-  ).map((loc) => ({
-    _id: loc._id,
-    name: loc.name,
-    locationCode: loc.locationCode,
-    type: loc.type,
-    isActive: loc.isActive,
-  }));
+  function renderLocation(
+    location: ThreadLocation | LocationDetail,
+    ancestors: Set<Id<"locations">>,
+    root = false,
+  ): ReactNode {
+    if (ancestors.has(location._id)) return null;
+    const path = new Set(ancestors).add(location._id);
+    const assigned = objects.get(location._id) ?? [];
+    const nested = children.get(location._id) ?? [];
+    const content = (
+      <>
+        {assigned.length > 0 &&
+          (viewStyle === "outline" ? (
+            <div className="mb-3 divide-y divide-border/40">
+              {assigned.map((object) => (
+                <Link
+                  key={object._id}
+                  href={`/objects/${object._id}`}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded px-2 py-2 text-xs hover:bg-muted/40"
+                >
+                  <span className="truncate">{object.title}</span>
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    {object.accessionNumber}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4 pb-5">
+              <LocationUnitCard
+                name={location.name}
+                isActive={location.isActive}
+                objects={assigned}
+              />
+            </div>
+          ))}
+        {nested.length > 0 && (
+          <div className="space-y-3">
+            {nested.map((child) => renderLocation(child, path))}
+          </div>
+        )}
+        {assigned.length === 0 && nested.length === 0 && (
+          <p className="pb-3 text-xs text-muted-foreground">
+            No objects in this location
+          </p>
+        )}
+      </>
+    );
+    if (root) return content;
+    return (
+      <details key={location._id} open className="group/thread min-w-0">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md py-2 text-xs hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-open/thread:rotate-90" />
+          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 truncate font-medium">{location.name}</span>
+          <span className="text-[10px] capitalize text-muted-foreground">
+            {location.type.replaceAll("_", " ")}
+          </span>
+          <span className="ms-auto shrink-0 pe-2 text-[10px] tabular-nums text-muted-foreground">
+            {assigned.length} direct · {nested.length} locations
+          </span>
+        </summary>
+        <div className="ms-1.5 border-s border-border/60 ps-3 pt-3 dark:border-white/10 sm:ps-4">
+          {content}
+        </div>
+      </details>
+    );
+  }
 
   return (
     <>
@@ -100,62 +146,58 @@ export function LocationLayoutContent({
         capacity={occupancy?.capacity ?? 0}
         directObjectCount={occupancy?.objectCount ?? 0}
       />
-
-      {!isStorageView && (
-        <GalleryView
-          objects={galleryObjects}
-          vitrineCount={
-            automaticDisplayUnitCounts?.vitrineCount ||
-            getNumericCustomFieldNumber(
-              selectedLocation.customFields,
-              "vitrineCount",
-            ) ||
-            undefined
-          }
-          vitrineLocations={displayUnitLocations.vitrines}
-          wallCount={
-            automaticDisplayUnitCounts?.wallCount ||
-            getNumericCustomFieldNumber(
-              selectedLocation.customFields,
-              "wallCount",
-            ) ||
-            undefined
-          }
-          wallLocations={displayUnitLocations.walls}
-          wallItemsPerWall={
-            getNumericCustomFieldNumber(
-              selectedLocation.customFields,
-              "wallItemsPerWall",
-            ) ?? undefined
-          }
-          cabinetCount={
-            automaticDisplayUnitCounts?.cabinetCount ||
-            getNumericCustomFieldNumber(
-              selectedLocation.customFields,
-              "cabinetCount",
-            ) ||
-            undefined
-          }
-          cabinetLocations={displayUnitLocations.cabinets}
-          shelfCount={
-            automaticDisplayUnitCounts?.shelfCount ||
-            getNumericCustomFieldNumber(
-              selectedLocation.customFields,
-              "shelfCount",
-            ) ||
-            undefined
-          }
-          shelfLocations={displayUnitLocations.shelves}
-          backgroundImageUrl={selectedLocation.imageUrl}
-        />
-      )}
-
-      {isStorageView && (
-        <StorageView
-          units={storageUnits}
-          objects={storageObjects}
-          includesDescendants={includesDescendants}
-        />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <span className="text-xs font-medium">Locations & objects</span>
+        <fieldset
+          aria-label="Listing style"
+          className="inline-flex rounded-md border border-border p-0.5"
+        >
+          {(
+            [
+              { value: "grid", label: "Grid", icon: LayoutGrid },
+              { value: "thread", label: "Thread", icon: MessagesSquare },
+              { value: "diagram", label: "Diagram", icon: GitBranch },
+              { value: "outline", label: "Outline", icon: ListTree },
+            ] as const
+          ).map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={viewStyle === value}
+              onClick={() => setViewStyle(value)}
+              className={cn(
+                "flex h-7 items-center gap-1.5 rounded px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-indigo-400",
+                viewStyle === value
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {label}
+            </button>
+          ))}
+        </fieldset>
+      </div>
+      {objectsAtLocation === undefined ? (
+        <p className="text-xs text-muted-foreground">Loading objects…</p>
+      ) : viewStyle === "grid" ? (
+        <LocationGrid objects={objectsAtLocation} locations={locations} />
+      ) : viewStyle === "diagram" ? (
+        <section
+          key={selectedLocation._id}
+          aria-label="Location hierarchy diagram"
+          className="min-w-0 overflow-hidden rounded-xl border border-border/60"
+        >
+          <LocationDiagram
+            location={selectedLocation}
+            childrenById={children}
+            objectsById={objects}
+          />
+        </section>
+      ) : (
+        <div key={`${selectedLocation._id}-${viewStyle}`} className="min-w-0">
+          {renderLocation(selectedLocation, new Set(), true)}
+        </div>
       )}
     </>
   );

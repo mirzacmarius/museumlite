@@ -3,17 +3,19 @@ import { cn } from "@v1/ui/utils";
 import { Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { LocationObjectThumbnail } from "./location-object-thumbnail";
 
 interface LocationUnitCardProps {
   name: string;
+  locationIndicator?: ReactNode;
   isActive?: boolean;
   objects: ComponentProps<typeof LocationObjectThumbnail>["object"][];
 }
 
 export function LocationUnitCard({
   name,
+  locationIndicator,
   isActive = true,
   objects,
 }: LocationUnitCardProps) {
@@ -80,32 +82,34 @@ export function LocationUnitCard({
                 {object.accessionNumber ?? "No accession"}
               </p>
             ) : null}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={countLabel}
-                  className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded text-[10px] tabular-nums text-muted-foreground outline-offset-2 focus-visible:outline focus-visible:outline-indigo-500"
+            {locationIndicator ?? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={countLabel}
+                    className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded text-[10px] tabular-nums text-muted-foreground outline-offset-2 focus-visible:outline focus-visible:outline-indigo-500"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        isActive && !isEmpty
+                          ? "bg-emerald-500"
+                          : "bg-muted-foreground/40",
+                      )}
+                    />
+                    {objects.length}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  sideOffset={5}
+                  className="rounded-lg px-2.5 py-1 text-xs"
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "size-1.5 rounded-full",
-                      isActive && !isEmpty
-                        ? "bg-emerald-500"
-                        : "bg-muted-foreground/40",
-                    )}
-                  />
-                  {objects.length}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent
-                sideOffset={5}
-                className="rounded-lg px-2.5 py-1 text-xs"
-              >
-                {countLabel}
-              </TooltipContent>
-            </Tooltip>
+                  {countLabel}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </article>
       ))}

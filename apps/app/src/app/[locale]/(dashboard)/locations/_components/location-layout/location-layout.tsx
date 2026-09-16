@@ -10,12 +10,8 @@ import { IconActionButton } from "@/components/icon-action-button";
 import { PermissionGate } from "@/components/permission-gate";
 import { LocationContentSkeleton } from "../../location-page-skeleton";
 import {
-  getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
-  getDescendantLocations,
   getVisibleSidebarLocations,
-  isStorageLocation,
-  shouldAutoDisplayChildLocations,
 } from "../../location-view-helpers";
 import { AddChildLocationDialog } from "../add-child-location-dialog/add-child-location-dialog";
 import { DeleteLocationDialog } from "../delete-location-dialog";
@@ -23,7 +19,6 @@ import { EditLocationDialog } from "../edit-location-dialog/edit-location-dialog
 import { LocationSidebar } from "../location-sidebar";
 import { LocationActions } from "./location-actions";
 import { LocationLayoutContent } from "./location-layout-content";
-import { getDisplayUnitLocations } from "./location-layout-helpers";
 
 interface LocationLayoutProps {
   organizationId: Id<"organizations">;
@@ -67,22 +62,12 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
       : "skip",
   );
 
-  const selectedLocationType =
-    selectedLocation?.type ??
-    allLocations?.find((location) => location._id === selectedLocationId)?.type;
-  const shouldAutoDisplayDescendants =
-    !!selectedLocationType &&
-    shouldAutoDisplayChildLocations(selectedLocationType);
-  const includesDescendants = selectedLocationType
-    ? isStorageLocation(selectedLocationType) || shouldAutoDisplayDescendants
-    : false;
-
   const objectsAtLocation = useQuery(
     api.locations.getObjectsAtLocation,
     canQuerySelectedLocation && selectedLocationId
       ? {
           locationId: selectedLocationId,
-          ...(includesDescendants ? { includeDescendants: true } : {}),
+          includeDescendants: true,
         }
       : "skip",
   );
@@ -113,26 +98,6 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
     selectedLocationId,
     allLocationIdsKey,
   ]);
-
-  const isStorageView =
-    !!selectedLocationType && isStorageLocation(selectedLocationType);
-
-  const childLocations =
-    allLocations?.filter(
-      (loc) => loc.parentLocationId === selectedLocationId,
-    ) ?? [];
-  const descendantLocations =
-    selectedLocationId && allLocations
-      ? getDescendantLocations(allLocations, selectedLocationId)
-      : [];
-  const automaticDisplayUnitCounts =
-    selectedLocationId && shouldAutoDisplayDescendants
-      ? getAutomaticDisplayUnitCounts(allLocations ?? [], selectedLocationId)
-      : null;
-  const displayUnitLocations = getDisplayUnitLocations(
-    descendantLocations,
-    allLocations ?? [],
-  );
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
@@ -214,13 +179,8 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
             selectedLocation={selectedLocation}
             environmentalData={environmentalData ?? null}
             occupancy={occupancy ?? undefined}
-            isStorageView={isStorageView}
-            includesDescendants={includesDescendants}
+            locations={allLocations ?? []}
             objectsAtLocation={objectsAtLocation ?? undefined}
-            childLocations={childLocations}
-            descendantLocations={descendantLocations}
-            automaticDisplayUnitCounts={automaticDisplayUnitCounts}
-            displayUnitLocations={displayUnitLocations}
           />
         )}
 
