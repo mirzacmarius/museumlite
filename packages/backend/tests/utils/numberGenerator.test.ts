@@ -13,6 +13,7 @@ import schema from "../../convex/schema";
 import {
   generateNextAccountNumber,
   generateNextClaimNumber,
+  generateNextCustomerNumber,
   generateNextDeaccessionNumber,
   generateNextLoanNumber,
   generateNextTransitNumber,
@@ -50,8 +51,58 @@ describe("Pure utility functions", () => {
   });
 });
 
+describe("Customer number generation", () => {
+  test("should generate category-prefixed customer numbers", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org-customer",
+        type: "museum",
+        settings: {},
+      });
+    });
+
+    const [person, business, nonProfit] = await Promise.all([
+      t.run(async (ctx) => generateNextCustomerNumber(ctx, orgId, "person")),
+      t.run(async (ctx) => generateNextCustomerNumber(ctx, orgId, "business")),
+      t.run(async (ctx) =>
+        generateNextCustomerNumber(ctx, orgId, "nonProfit"),
+      ),
+    ]);
+
+    expect(person).toBe("0100000001");
+    expect(business).toBe("0200000001");
+    expect(nonProfit).toBe("0300000001");
+  });
+
+  test("should increment counters independently per category", async () => {
+    const t = convexTest(schema, modules);
+
+    const orgId = await t.run(async (ctx) => {
+      return await ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org-customer-seq",
+        type: "museum",
+        settings: {},
+      });
+    });
+
+    const [firstPerson, secondPerson, firstBusiness] = await Promise.all([
+      t.run(async (ctx) => generateNextCustomerNumber(ctx, orgId, "person")),
+      t.run(async (ctx) => generateNextCustomerNumber(ctx, orgId, "person")),
+      t.run(async (ctx) => generateNextCustomerNumber(ctx, orgId, "business")),
+    ]);
+
+    expect(firstPerson).toBe("0100000001");
+    expect(secondPerson).toBe("0100000002");
+    expect(firstBusiness).toBe("0200000001");
+  });
+});
+
 describe("Domain number interface", () => {
-  test("should generate account numbers without exposing counter details", async () => {
+  test("should generate legacy account numbers without exposing counter details", async () => {
     const t = convexTest(schema, modules);
 
     const orgId = await t.run(async (ctx) => {
