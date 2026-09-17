@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-
+import type { AdministrationAccess } from "./administration-access";
 import {
   buildSidebarNavigation,
   type NavigationGroup,
@@ -16,14 +16,17 @@ function buildNavigation({
     "reporting",
   ]),
   isLibraryModuleEnabled = true,
+  administrationAccess = "admin",
 }: {
   enabledFeatures?: Set<string>;
   isLibraryModuleEnabled?: boolean;
+  administrationAccess?: AdministrationAccess;
 } = {}) {
   return buildSidebarNavigation({
     hasFeature: (featureId) => enabledFeatures.has(featureId),
     isLibraryModuleEnabled,
     isLocationTrackingEnabled: true,
+    administrationAccess,
   });
 }
 
@@ -41,6 +44,10 @@ function findItem(items: NavigationItem[], title: string): NavigationItem {
   if (!item) throw new Error(`Expected ${title} navigation item`);
 
   return item;
+}
+
+function hasTitle(items: Array<{ title: string }>, title: string): boolean {
+  return items.some((item) => item.title === title);
 }
 
 describe("buildSidebarNavigation", () => {
@@ -98,5 +105,40 @@ describe("buildSidebarNavigation", () => {
     );
 
     expect(patrons.locked).toBe(true);
+  });
+
+  test("keeps the Administration group for administrators", () => {
+    const { topLevelNavigation, navigationGroups } = buildNavigation();
+
+    expect(hasTitle(navigationGroups, "Administration")).toBe(true);
+    expect(hasTitle(topLevelNavigation, "Accounts & CRM")).toBe(false);
+    expect(
+      findItem(findGroup(navigationGroups, "Administration").items, "Settings")
+        .url,
+    ).toBe("/settings/organization");
+  });
+
+  test("hides the Administration group for non-administrators", () => {
+    const { topLevelNavigation, navigationGroups } = buildNavigation({
+      administrationAccess: "member",
+    });
+
+    expect(hasTitle(navigationGroups, "Administration")).toBe(false);
+    expect(findItem(topLevelNavigation, "Accounts & CRM").url).toBe(
+      "/accounts",
+    );
+    expect(findItem(topLevelNavigation, "Digital Assets").url).toBe("/media");
+    expect(hasTitle(topLevelNavigation, "Settings")).toBe(false);
+    expect(hasTitle(topLevelNavigation, "Preferences")).toBe(false);
+  });
+
+  test("does not flash Administration or workspace shortcuts while access is unknown", () => {
+    const { topLevelNavigation, navigationGroups } = buildNavigation({
+      administrationAccess: "unknown",
+    });
+
+    expect(hasTitle(navigationGroups, "Administration")).toBe(false);
+    expect(hasTitle(topLevelNavigation, "Accounts & CRM")).toBe(false);
+    expect(hasTitle(topLevelNavigation, "Digital Assets")).toBe(false);
   });
 });

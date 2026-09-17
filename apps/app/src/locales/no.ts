@@ -78,6 +78,8 @@ export default {
       activity: "Aktivitet",
       developer: "Utvikler",
       data: "Dataimport/-eksport",
+      noAccess:
+        "Du har ikke tillatelse til å åpne organisasjonsinnstillingene. Kontakt administratoren din.",
     },
     roles: {
       title: "Rollehåndtering",

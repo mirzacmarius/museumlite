@@ -81,6 +81,8 @@ export default {
       activity: "Actividad",
       developer: "Desarrollador",
       data: "Importar/Exportar datos",
+      noAccess:
+        "No tienes permiso para acceder a la configuración de la organización. Contacta a tu administrador.",
     },
     roles: {
       title: "Gestión de Roles",

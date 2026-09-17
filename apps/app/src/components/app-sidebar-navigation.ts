@@ -1,7 +1,7 @@
 import {
   Activity,
-  BookOpen,
   Bookmark,
+  BookOpen,
   ChartColumn,
   Contact,
   Container,
@@ -26,6 +26,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import type { AdministrationAccess } from "@/components/administration-access";
 import type { FeatureId } from "@/hooks/use-feature-access";
 
 export type SidebarIcon = ComponentType<{ className?: string }>;
@@ -49,11 +50,17 @@ interface BuildSidebarNavigationInput {
   hasFeature: (featureId: FeatureId) => boolean;
   isLibraryModuleEnabled: boolean;
   isLocationTrackingEnabled: boolean;
+  administrationAccess: AdministrationAccess;
 }
 
 interface SidebarNavigation {
   topLevelNavigation: NavigationItem[];
   navigationGroups: NavigationGroup[];
+}
+
+interface AdministrationNavPlacement {
+  topLevelWorkspace: NavigationItem[];
+  administrationGroups: NavigationGroup[];
 }
 
 const PATRON_MANAGEMENT_NAV_ITEM = {
@@ -62,10 +69,39 @@ const PATRON_MANAGEMENT_NAV_ITEM = {
   icon: Users,
 } satisfies NavigationItem;
 
+function getAdministrationNavPlacement(
+  access: AdministrationAccess,
+  navWorkspace: NavigationItem[],
+  administrationGroup: NavigationGroup,
+): AdministrationNavPlacement {
+  switch (access) {
+    case "admin":
+      return {
+        topLevelWorkspace: [],
+        administrationGroups: [administrationGroup],
+      };
+    case "member":
+      return {
+        topLevelWorkspace: navWorkspace,
+        administrationGroups: [],
+      };
+    case "unknown":
+      return {
+        topLevelWorkspace: [],
+        administrationGroups: [],
+      };
+    default: {
+      const _exhaustive: never = access;
+      return _exhaustive;
+    }
+  }
+}
+
 export function buildSidebarNavigation({
   hasFeature,
   isLibraryModuleEnabled,
   isLocationTrackingEnabled,
+  administrationAccess,
 }: BuildSidebarNavigationInput): SidebarNavigation {
   const navCoreInventory: NavigationItem[] = [
     { title: "Overview", url: "/", icon: LayoutGrid },
@@ -162,6 +198,11 @@ export function buildSidebarNavigation({
     },
   ];
 
+  const navWorkspace: NavigationItem[] = [
+    { title: "Accounts & CRM", url: "/accounts", icon: Contact },
+    { title: "Digital Assets", url: "/media", icon: Image },
+  ];
+
   const navAdministration: NavigationItem[] = [
     {
       title: "Analytics & Reports",
@@ -169,14 +210,13 @@ export function buildSidebarNavigation({
       icon: ChartColumn,
       locked: !hasFeature("reporting"),
     },
-    { title: "Accounts & CRM", url: "/accounts", icon: Contact },
+    ...navWorkspace,
     {
       title: "Public Portal",
       url: "/portal",
       icon: Globe,
       locked: !hasFeature("public_portal"),
     },
-    { title: "Digital Assets", url: "/media", icon: Image },
     {
       title: "Preferences",
       url: "/settings/preferences",
@@ -185,8 +225,15 @@ export function buildSidebarNavigation({
     { title: "Settings", url: "/settings/organization", icon: Settings2 },
   ];
 
+  const { topLevelWorkspace, administrationGroups } =
+    getAdministrationNavPlacement(administrationAccess, navWorkspace, {
+      title: "Administration",
+      icon: Settings2,
+      items: navAdministration,
+    });
+
   return {
-    topLevelNavigation: navCoreInventory,
+    topLevelNavigation: [...navCoreInventory, ...topLevelWorkspace],
     navigationGroups: [
       {
         title: "Exhibitions & Loans",
@@ -203,11 +250,7 @@ export function buildSidebarNavigation({
         icon: Library,
         items: navLibrary,
       },
-      {
-        title: "Administration",
-        icon: Settings2,
-        items: navAdministration,
-      },
+      ...administrationGroups,
     ],
   };
 }

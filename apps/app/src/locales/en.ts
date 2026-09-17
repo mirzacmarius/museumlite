@@ -79,6 +79,8 @@ export default {
       activity: "Activity",
       developer: "Developer",
       data: "Data Import/Export",
+      noAccess:
+        "You don't have permission to access organization settings. Contact your administrator.",
     },
     roles: {
       title: "Role Management",

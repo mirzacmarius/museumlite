@@ -80,6 +80,8 @@ export default {
       activity: "Activité",
       developer: "Développeur",
       data: "Import/Export de données",
+      noAccess:
+        "Vous n'avez pas l'autorisation d'accéder aux paramètres de l'organisation. Contactez votre administrateur.",
     },
     roles: {
       title: "Gestion des Rôles",

@@ -166,6 +166,8 @@ export default {
       activity: "Activitate",
       developer: "Dezvoltator",
       data: "Import/Export Date",
+      noAccess:
+        "Nu ai permisiunea de a accesa setările organizației. Contactează administratorul.",
     },
     roles: {
       title: "Gestionare Roluri",

@@ -55,15 +55,20 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { Suspense } from "react";
+import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
+import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
+import {
+  ADMINISTRATOR_PERMISSION,
+  getAdministrationAccess,
+} from "@/components/administration-access";
 import {
   buildSidebarNavigation,
   type NavigationGroup,
   type NavigationItem,
 } from "@/components/app-sidebar-navigation";
-import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
-import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
+import { usePermissions } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 
 function getUserInitials(user: {
@@ -480,11 +485,13 @@ function CollectionGroupNav({
 
 function UserMenu({
   currentOrganizationId,
+  isAdministrator,
   isMobile,
   onSignOut,
   user,
 }: {
   currentOrganizationId: Id<"organizations"> | null | undefined;
+  isAdministrator: boolean;
   isMobile: boolean;
   onSignOut: () => void;
   user: SidebarUser | null | undefined;
@@ -553,7 +560,7 @@ function UserMenu({
                 </Link>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {currentOrganizationId ? (
+              {currentOrganizationId && isAdministrator ? (
                 <>
                   <DropdownMenuItem asChild>
                     <Link href="/settings/billing">Manage Billing</Link>
@@ -667,6 +674,11 @@ function AppSidebarClientInner({
   const isLibraryModuleEnabled = hasModule("library");
   const isLocationTrackingEnabled =
     currentOrg?.settings?.locationTrackingEnabled ?? true;
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  const administrationAccess = getAdministrationAccess({
+    isLoading: permissionsLoading,
+    isAdministrator: hasPermission(ADMINISTRATOR_PERMISSION),
+  });
 
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -688,6 +700,7 @@ function AppSidebarClientInner({
     hasFeature,
     isLibraryModuleEnabled,
     isLocationTrackingEnabled,
+    administrationAccess,
   });
 
   return (
@@ -722,6 +735,7 @@ function AppSidebarClientInner({
 
       <UserMenu
         currentOrganizationId={currentOrganizationId}
+        isAdministrator={administrationAccess === "admin"}
         isMobile={isMobile}
         onSignOut={signOut}
         user={user}

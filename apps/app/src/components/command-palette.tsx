@@ -30,8 +30,10 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { ADMINISTRATOR_PERMISSION } from "@/components/administration-access";
 import { useCommandPalette } from "./command-palette-provider";
 import { useOrganization } from "./organization-provider";
+import { usePermissions } from "./permission-gate";
 
 const CommandObjectItem = React.memo(
   ({
@@ -88,6 +90,8 @@ export function CommandPalette() {
   const [search, setSearch] = React.useState("");
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
+  const { hasPermission } = usePermissions();
+  const isAdministrator = hasPermission(ADMINISTRATOR_PERMISSION);
 
   const normalizedSearch = search.trim();
   const hasSearch = normalizedSearch.length > 1;
@@ -351,12 +355,16 @@ export function CommandPalette() {
               <Library className="mr-2 size-4" />
               <span>Library</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => push("/settings/organization"))}
-            >
-              <Settings className="mr-2 size-4" />
-              <span>Settings</span>
-            </CommandItem>
+            {isAdministrator ? (
+              <CommandItem
+                onSelect={() =>
+                  runCommand(() => push("/settings/organization"))
+                }
+              >
+                <Settings className="mr-2 size-4" />
+                <span>Settings</span>
+              </CommandItem>
+            ) : null}
           </CommandGroup>
         </CommandList>
       </CommandDialog>
