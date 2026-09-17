@@ -25,6 +25,7 @@ export function PlacementRelationshipsTab({
   const childObjects = useQuery(api.collections.getChildObjects, {
     collectionId,
   });
+  const currentLocation = locationPath.at(-1);
   const location = locationPath.map((item) => item.name).join(" / ");
   const isOnDisplay = collection.displayStatus === "on_display";
 
@@ -42,6 +43,15 @@ export function PlacementRelationshipsTab({
                 Current Location
               </span>
               <span className="text-sm text-foreground">{location || "-"}</span>
+            </div>
+
+            <div>
+              <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Location ID
+              </span>
+              <span className="font-mono text-sm text-foreground">
+                {currentLocation?.locationCode || "-"}
+              </span>
             </div>
 
             <div>

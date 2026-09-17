@@ -18,6 +18,7 @@ export interface HeroImageData {
 export interface LocationPathItem {
   _id: Id<"locations">;
   name: string;
+  locationCode: string;
 }
 
 export interface LoanForCollection {

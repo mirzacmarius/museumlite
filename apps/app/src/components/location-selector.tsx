@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
+import { formatLocationSelectorLabel } from "@/app/[locale]/(dashboard)/locations/location-label";
 
 interface LocationSelectorProps {
   organizationId: string;
@@ -61,38 +62,19 @@ export function LocationSelector({
     return aPath.localeCompare(bPath);
   });
 
-  const formatLocationLabel = (location: {
-    name: string;
-    type: string;
-    path: Array<{ name: string; type: string }>;
-  }) => {
-    if (location.path.length <= 1) {
-      return `${location.name} (${location.type})`;
-    }
-    const pathString = location.path
-      .slice(0, -1)
-      .map((p) => p.name)
-      .join(" → ");
-    return `${pathString} → ${location.name} (${location.type})`;
-  };
-
   const formatLocationPathLabel = (
-    path: Array<{ name: string; type: string }>,
+    path: Array<{ name: string; locationCode: string }>,
   ) => {
     const currentLocation = path[path.length - 1];
     if (!currentLocation) {
       return placeholder;
     }
 
-    if (path.length <= 1) {
-      return `${currentLocation.name} (${currentLocation.type})`;
-    }
-
-    const pathString = path
-      .slice(0, -1)
-      .map((p) => p.name)
-      .join(" → ");
-    return `${pathString} → ${currentLocation.name} (${currentLocation.type})`;
+    return formatLocationSelectorLabel({
+      name: currentLocation.name,
+      locationCode: currentLocation.locationCode,
+      path,
+    });
   };
 
   const hasSelectedLocation =
@@ -110,7 +92,7 @@ export function LocationSelector({
     Array.isArray(currentLocationPath) &&
     currentLocationPath.length > 0;
   const selectedLabel = selectedLocation
-    ? formatLocationLabel(selectedLocation)
+    ? formatLocationSelectorLabel(selectedLocation)
     : shouldShowCurrentInactiveLocation
       ? `${formatLocationPathLabel(currentLocationPath)} (current)`
       : placeholder;
@@ -136,7 +118,7 @@ export function LocationSelector({
         ) : null}
         {sortedLocations.map((location) => (
           <SelectItem key={location._id} value={location._id}>
-            {formatLocationLabel(location)}
+            {formatLocationSelectorLabel(location)}
           </SelectItem>
         ))}
       </SelectContent>

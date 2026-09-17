@@ -187,6 +187,7 @@ const objectDetailMediaValidator = v.object({
 const objectDetailLocationPathItemValidator = v.object({
   _id: v.id("locations"),
   name: v.string(),
+  locationCode: v.string(),
 });
 
 /**
@@ -280,6 +281,15 @@ async function getObjectDetailHeroImage(
   };
 }
 
+function getObjectDetailLocationCode(location: {
+  _id: Id<"locations">;
+  locationCode?: string;
+}) {
+  return (
+    location.locationCode ?? `LEGACY-${location._id.slice(-6).toUpperCase()}`
+  );
+}
+
 async function getObjectDetailLocationPath(
   ctx: QueryCtx,
   locationId: Id<"locations">,
@@ -287,6 +297,7 @@ async function getObjectDetailLocationPath(
   const path: Array<{
     _id: Id<"locations">;
     name: string;
+    locationCode: string;
   }> = [];
   let currentId: Id<"locations"> | undefined = locationId;
 
@@ -299,6 +310,7 @@ async function getObjectDetailLocationPath(
     path.unshift({
       _id: location._id,
       name: location.name,
+      locationCode: getObjectDetailLocationCode(location),
     });
     currentId = location.parentLocationId;
   }

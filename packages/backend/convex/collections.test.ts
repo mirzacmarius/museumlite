@@ -720,3 +720,85 @@ test("collections.get requires collections.read permission", async () => {
     asUnauthorizedUser.query(api.collections.get, { collectionId }),
   ).rejects.toThrow("Permission denied: collections.read");
 });
+
+test("collections.getObjectDetail includes location IDs in the placement path", async () => {
+  const t = convexTest(schema, modules);
+
+  const { collectionId, userId } = await t.run(async (ctx) => {
+    const [userId, organizationId, readPermissionId] = await Promise.all([
+      ctx.db.insert("users", { name: "Test User" }),
+      ctx.db.insert("organizations", {
+        name: "Test Org",
+        slug: "test-org-object-detail-location-id",
+        type: "museum",
+      }),
+      ctx.db.insert("permissions", {
+        name: "collections.read",
+        category: "collections",
+        description: "Read collections",
+      }),
+    ]);
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Reader",
+      description: "Read-only role",
+      isSystemRole: false,
+    });
+
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: readPermissionId,
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    const parentLocationId = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Building A",
+      locationCode: "B-001",
+      locationCodeNormalized: "b-001",
+      type: "building",
+      sortOrder: 0,
+      isActive: true,
+    });
+    const childLocationId = await ctx.db.insert("locations", {
+      organizationId,
+      name: "Gallery A",
+      locationCode: "G-001",
+      locationCodeNormalized: "g-001",
+      type: "gallery",
+      parentLocationId,
+      sortOrder: 0,
+      isActive: true,
+    });
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "LOC-0001",
+      title: "Placed Object",
+      status: "active",
+      currentLocationId: childLocationId,
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+
+    return { collectionId, userId };
+  });
+
+  const asUser = t.withIdentity({ subject: userId });
+  const detail = await asUser.query(api.collections.getObjectDetail, {
+    collectionId,
+  });
+
+  expect(detail?.locationPath.map((entry) => entry.name)).toEqual([
+    "Building A",
+    "Gallery A",
+  ]);
+  expect(detail?.locationPath.map((entry) => entry.locationCode)).toEqual([
+    "B-001",
+    "G-001",
+  ]);
+});
