@@ -362,14 +362,6 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <BillingOverviewSection
-        canManageBilling={canManageBilling}
-        locale={locale}
-        organizationId={currentOrganizationId}
-        organizationSubscription={organizationSubscription}
-        subscriptionTier={subscriptionTier}
-      />
-
       <section className="mt-6">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
           Operational flow
@@ -430,6 +422,14 @@ export default function DashboardPage() {
           </Link>
         </div>
       </section>
+
+      <BillingOverviewSection
+        canManageBilling={canManageBilling}
+        locale={locale}
+        organizationId={currentOrganizationId}
+        organizationSubscription={organizationSubscription}
+        subscriptionTier={subscriptionTier}
+      />
     </div>
   );
 }
