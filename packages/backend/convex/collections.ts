@@ -3697,7 +3697,7 @@ export const getPublicFilters = query({
       .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
       .unique();
 
-    if (!organization || !organization.settings?.portalSettings?.isEnabled) {
+    if (!organization?.settings?.portalSettings?.isEnabled) {
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
