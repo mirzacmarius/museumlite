@@ -284,7 +284,7 @@ async function getObjectDetailHeroImage(
 function getObjectDetailLocationCode(location: {
   _id: Id<"locations">;
   locationCode?: string;
-}) {
+}): string {
   return (
     location.locationCode ?? `LEGACY-${location._id.slice(-6).toUpperCase()}`
   );

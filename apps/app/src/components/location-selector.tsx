@@ -20,6 +20,27 @@ interface LocationSelectorProps {
   allowNone?: boolean;
 }
 
+interface LocationPathSegment {
+  name: string;
+  locationCode: string;
+}
+
+function formatLocationPathLabel(
+  path: LocationPathSegment[],
+  emptyLabel: string,
+): string {
+  const currentLocation = path.at(-1);
+  if (!currentLocation) {
+    return emptyLabel;
+  }
+
+  return formatLocationSelectorLabel({
+    name: currentLocation.name,
+    locationCode: currentLocation.locationCode,
+    path,
+  });
+}
+
 export function LocationSelector({
   organizationId,
   value,
@@ -50,52 +71,32 @@ export function LocationSelector({
     );
   }
 
-  // Sort locations by path depth and name for better UX
   const sortedLocations = locations.toSorted((a, b) => {
-    // First sort by path length (shallow to deep)
     if (a.path.length !== b.path.length) {
       return a.path.length - b.path.length;
     }
-    // Then sort by path string (alphabetically)
-    const aPath = a.path.map((p) => p.name).join(" → ");
-    const bPath = b.path.map((p) => p.name).join(" → ");
+    const aPath = a.path.map((segment) => segment.name).join(" → ");
+    const bPath = b.path.map((segment) => segment.name).join(" → ");
     return aPath.localeCompare(bPath);
   });
 
-  const formatLocationPathLabel = (
-    path: Array<{ name: string; locationCode: string }>,
-  ) => {
-    const currentLocation = path[path.length - 1];
-    if (!currentLocation) {
-      return placeholder;
-    }
-
-    return formatLocationSelectorLabel({
-      name: currentLocation.name,
-      locationCode: currentLocation.locationCode,
-      path,
-    });
-  };
-
-  const hasSelectedLocation =
-    !!value &&
-    value !== "__none__" &&
-    sortedLocations.some((location) => location._id === value);
-  const selectedLocation =
-    value && value !== "__none__"
-      ? sortedLocations.find((location) => location._id === value)
-      : undefined;
-  const shouldShowCurrentInactiveLocation =
-    !!value &&
-    value !== "__none__" &&
-    !hasSelectedLocation &&
+  const hasConcreteValue = !!value && value !== "__none__";
+  const selectedLocation = hasConcreteValue
+    ? sortedLocations.find((location) => location._id === value)
+    : undefined;
+  const inactiveLocationPath =
+    hasConcreteValue &&
+    !selectedLocation &&
     Array.isArray(currentLocationPath) &&
-    currentLocationPath.length > 0;
+    currentLocationPath.length > 0
+      ? currentLocationPath
+      : null;
+  const currentInactiveLocationLabel = inactiveLocationPath
+    ? `${formatLocationPathLabel(inactiveLocationPath, placeholder)} (current)`
+    : null;
   const selectedLabel = selectedLocation
     ? formatLocationSelectorLabel(selectedLocation)
-    : shouldShowCurrentInactiveLocation
-      ? `${formatLocationPathLabel(currentLocationPath)} (current)`
-      : placeholder;
+    : (currentInactiveLocationLabel ?? placeholder);
 
   return (
     <Select
@@ -111,10 +112,8 @@ export function LocationSelector({
             <span className="text-muted-foreground">None</span>
           </SelectItem>
         )}
-        {shouldShowCurrentInactiveLocation ? (
-          <SelectItem value={value}>
-            {`${formatLocationPathLabel(currentLocationPath)} (current)`}
-          </SelectItem>
+        {value && currentInactiveLocationLabel ? (
+          <SelectItem value={value}>{currentInactiveLocationLabel}</SelectItem>
         ) : null}
         {sortedLocations.map((location) => (
           <SelectItem key={location._id} value={location._id}>

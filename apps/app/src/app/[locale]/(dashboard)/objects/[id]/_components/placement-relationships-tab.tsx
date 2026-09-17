@@ -6,12 +6,29 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { Boxes, MapPin } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { CollectionData, LocationPathItem } from "./types";
 
 interface PlacementRelationshipsTabProps {
   collection: CollectionData;
   collectionId: Id<"collections">;
   locationPath: LocationPathItem[];
+}
+
+interface PlacementFieldProps {
+  label: string;
+  children: ReactNode;
+}
+
+function PlacementField({ label, children }: PlacementFieldProps) {
+  return (
+    <div>
+      <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
 }
 
 export function PlacementRelationshipsTab({
@@ -38,26 +55,17 @@ export function PlacementRelationshipsTab({
         </h3>
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Current Location
-              </span>
+            <PlacementField label="Current Location">
               <span className="text-sm text-foreground">{location || "-"}</span>
-            </div>
+            </PlacementField>
 
-            <div>
-              <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Location ID
-              </span>
+            <PlacementField label="Location ID">
               <span className="font-mono text-sm text-foreground">
                 {currentLocation?.locationCode || "-"}
               </span>
-            </div>
+            </PlacementField>
 
-            <div>
-              <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                On Display
-              </span>
+            <PlacementField label="On Display">
               <span
                 className={
                   isOnDisplay
@@ -67,7 +75,7 @@ export function PlacementRelationshipsTab({
               >
                 {isOnDisplay ? "Yes" : "No"}
               </span>
-            </div>
+            </PlacementField>
           </div>
         </div>
       </div>

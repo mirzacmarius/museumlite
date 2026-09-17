@@ -1,29 +1,29 @@
-export function formatLocationLabel(locationCode: string, name: string) {
+export function formatLocationLabel(
+  locationCode: string,
+  name: string,
+): string {
   return `${locationCode} · ${name}`;
 }
 
 export function formatLocationInfoWithId(
   locationInfo: string,
   locationCode: string,
-) {
+): string {
   return `${locationInfo} (${locationCode})`;
 }
 
-export function formatLocationSelectorLabel(location: {
+interface LocationSelectorLabelInput {
   name: string;
   locationCode: string;
   path: Array<{ name: string }>;
-}) {
-  if (location.path.length <= 1) {
-    return formatLocationInfoWithId(location.name, location.locationCode);
-  }
+}
 
-  const pathString = location.path
+export function formatLocationSelectorLabel(
+  location: LocationSelectorLabelInput,
+): string {
+  const ancestorNames = location.path
     .slice(0, -1)
-    .map((segment) => segment.name)
-    .join(" → ");
-  return formatLocationInfoWithId(
-    `${pathString} → ${location.name}`,
-    location.locationCode,
-  );
+    .map((segment) => segment.name);
+  const locationInfo = [...ancestorNames, location.name].join(" → ");
+  return formatLocationInfoWithId(locationInfo, location.locationCode);
 }
