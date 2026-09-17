@@ -1653,8 +1653,9 @@ describe("audit (notifications & activity)", () => {
         organizationId: orgId,
       });
 
-      expect(result.notifications).toHaveLength(1);
-      expect(result.notifications[0]?.title).toBe("Keep this notice");
+      expect(
+        result.notifications.map((notification) => notification.title),
+      ).toEqual(["Keep this notice"]);
       expect(result.unreadCount).toBe(1);
     });
   });

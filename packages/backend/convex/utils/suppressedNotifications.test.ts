@@ -32,21 +32,13 @@ test("suppresses missing insurance coverage notices by type or title", () => {
 });
 
 test("filters suppressed notices from a list", () => {
-  const visible = withoutSuppressedNotifications([
-    {
-      type: "loan_due_soon",
-      title: "Loan due soon",
-    },
-    {
-      type: "missing_coverage",
-      title: "Objects Missing Insurance Coverage",
-    },
-  ]);
-
-  expect(visible).toEqual([
-    {
-      type: "loan_due_soon",
-      title: "Loan due soon",
-    },
-  ]);
+  expect(
+    withoutSuppressedNotifications([
+      { type: "loan_due_soon", title: "Loan due soon" },
+      {
+        type: "missing_coverage",
+        title: "Objects Missing Insurance Coverage",
+      },
+    ]),
+  ).toEqual([{ type: "loan_due_soon", title: "Loan due soon" }]);
 });

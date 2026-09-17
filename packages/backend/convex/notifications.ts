@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalMutation,
   mutation,
@@ -136,28 +136,22 @@ export const getNotificationCenter = query({
 
     const categorizedNotifications = withoutSuppressedNotifications(
       notifications,
-    ).map((n) => ({
-      _id: n._id,
-      type: n.type,
-      title: n.title,
-      message: n.message,
-      read: n.read,
-      relatedEntityType: n.relatedEntityType,
-      relatedEntityId: n.relatedEntityId,
-      createdAt: n.createdAt,
-      category: getCategoryForType(n.type),
+    ).map((notification) => ({
+      _id: notification._id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      read: notification.read,
+      relatedEntityType: notification.relatedEntityType,
+      relatedEntityId: notification.relatedEntityId,
+      createdAt: notification.createdAt,
+      category: getCategoryForType(notification.type),
     }));
 
-    const unreadNotifications = withoutSuppressedNotifications(
-      await ctx.db
-        .query("notifications")
-        .withIndex("by_user_and_organization_and_read", (q) =>
-          q
-            .eq("userId", userId)
-            .eq("organizationId", args.organizationId)
-            .eq("read", false),
-        )
-        .collect(),
+    const unreadNotifications = await listVisibleUnreadNotifications(
+      ctx,
+      userId,
+      args.organizationId,
     );
 
     const unreadByCategory = {
@@ -168,8 +162,8 @@ export const getNotificationCenter = query({
       system: 0,
     };
 
-    for (const n of unreadNotifications) {
-      const category = getCategoryForType(n.type);
+    for (const notification of unreadNotifications) {
+      const category = getCategoryForType(notification.type);
       if (category in unreadByCategory) {
         unreadByCategory[category as keyof typeof unreadByCategory]++;
       }
@@ -197,16 +191,10 @@ export const getUnreadCount = query({
       return 0;
     }
 
-    const unreadNotifications = withoutSuppressedNotifications(
-      await ctx.db
-        .query("notifications")
-        .withIndex("by_user_and_organization_and_read", (q) =>
-          q
-            .eq("userId", userId)
-            .eq("organizationId", args.organizationId)
-            .eq("read", false),
-        )
-        .collect(),
+    const unreadNotifications = await listVisibleUnreadNotifications(
+      ctx,
+      userId,
+      args.organizationId,
     );
 
     return unreadNotifications.length;
@@ -267,20 +255,19 @@ export const getNotificationsByCategory = query({
       .order("desc")
       .take(limit * 2);
 
-    // Filter by category types
     const filtered = withoutSuppressedNotifications(notifications)
-      .filter((n) => categoryTypeSet.has(n.type))
+      .filter((notification) => categoryTypeSet.has(notification.type))
       .slice(0, limit);
 
-    return filtered.map((n) => ({
-      _id: n._id,
-      type: n.type,
-      title: n.title,
-      message: n.message,
-      read: n.read,
-      relatedEntityType: n.relatedEntityType,
-      relatedEntityId: n.relatedEntityId,
-      createdAt: n.createdAt,
+    return filtered.map((notification) => ({
+      _id: notification._id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      read: notification.read,
+      relatedEntityType: notification.relatedEntityType,
+      relatedEntityId: notification.relatedEntityId,
+      createdAt: notification.createdAt,
     }));
   },
 });
@@ -1027,6 +1014,24 @@ export const shouldSendNotification = internalMutation({
 
 function getCategoryForType(type: string): string {
   return NOTIFICATION_TYPE_TO_CATEGORY.get(type) ?? "system";
+}
+
+async function listVisibleUnreadNotifications(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+): Promise<Doc<"notifications">[]> {
+  const unreadNotifications = await ctx.db
+    .query("notifications")
+    .withIndex("by_user_and_organization_and_read", (q) =>
+      q
+        .eq("userId", userId)
+        .eq("organizationId", organizationId)
+        .eq("read", false),
+    )
+    .collect();
+
+  return withoutSuppressedNotifications(unreadNotifications);
 }
 
 /**

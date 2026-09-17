@@ -265,14 +265,9 @@ describe("notification queries with indexes", () => {
     });
 
     expect(center.unreadCount).toBe(1);
-    expect(center.notifications).toHaveLength(1);
-    expect(center.notifications[0]?.title).toBe("Loan due soon");
     expect(
-      center.notifications.some(
-        (notification) =>
-          notification.title === "Objects Missing Insurance Coverage",
-      ),
-    ).toBe(false);
+      center.notifications.map((notification) => notification.title),
+    ).toEqual(["Loan due soon"]);
   });
 
   test("should query notifications by user", async () => {

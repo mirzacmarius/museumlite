@@ -1,21 +1,23 @@
-const SUPPRESSED_NOTIFICATION_TYPES = new Set(["missing_coverage"]);
-const SUPPRESSED_NOTIFICATION_TITLES = new Set([
-  "Objects Missing Insurance Coverage",
-]);
-
-export function isSuppressedNotification(notification: {
+interface NotificationIdentity {
   type: string;
   title: string;
-}): boolean {
+}
+
+const SUPPRESSED_TYPE = "missing_coverage";
+const SUPPRESSED_TITLE = "Objects Missing Insurance Coverage";
+
+export function isSuppressedNotification(
+  notification: NotificationIdentity,
+): boolean {
   return (
-    SUPPRESSED_NOTIFICATION_TYPES.has(notification.type) ||
-    SUPPRESSED_NOTIFICATION_TITLES.has(notification.title)
+    notification.type === SUPPRESSED_TYPE ||
+    notification.title === SUPPRESSED_TITLE
   );
 }
 
-export function withoutSuppressedNotifications<
-  T extends { type: string; title: string },
->(notifications: readonly T[]): T[] {
+export function withoutSuppressedNotifications<T extends NotificationIdentity>(
+  notifications: readonly T[],
+): T[] {
   return notifications.filter(
     (notification) => !isSuppressedNotification(notification),
   );
