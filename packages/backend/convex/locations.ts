@@ -103,6 +103,13 @@ async function validateSite(
   return site;
 }
 
+async function requireLocationStructureWrite(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+) {
+  await requirePermission(ctx, organizationId, "locations.create");
+}
+
 /**
  * Create location
  */
@@ -132,8 +139,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "locations.create");
+    await requireLocationStructureWrite(ctx, args.organizationId);
 
     if (args.siteId) {
       await validateSite(ctx, args.organizationId, args.siteId);
@@ -552,8 +558,7 @@ export const update = mutation({
       throw new Error("Location not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, location.organizationId, "locations.update");
+    await requireLocationStructureWrite(ctx, location.organizationId);
 
     if (args.siteId !== undefined && args.siteId !== location.siteId) {
       if (args.siteId) {
@@ -1622,7 +1627,7 @@ export const updateStatus = mutation({
       throw new Error("Location not found");
     }
 
-    await requirePermission(ctx, location.organizationId, "locations.update");
+    await requireLocationStructureWrite(ctx, location.organizationId);
 
     // Check if there are objects at this location when closing
     if (args.status === "closed") {
@@ -1731,8 +1736,7 @@ export const reorder = mutation({
       throw new Error("Location not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, location.organizationId, "locations.update");
+    await requireLocationStructureWrite(ctx, location.organizationId);
 
     // Verify new parent location belongs to same organization
     if (args.newParentLocationId) {

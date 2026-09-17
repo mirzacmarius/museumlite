@@ -21,12 +21,12 @@ import {
 } from "./utils/featureGates";
 import type { ModuleId } from "./utils/moduleCatalog";
 import { enabledModuleValidator } from "./utils/moduleValidators";
+import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
+import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
-import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
-import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import {
   getCurrentUserOrganization,
   requirePermission,
@@ -1679,45 +1679,43 @@ export const createDefaultRoles = internalMutation({
       catalogerRole,
       viewerRole,
     ] = await Promise.all([
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: SUPER_ADMIN_ROLE_NAME,
-          description: "Owner with full organization control (SuperAdmin)",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "admin",
-          description: "Full organization access",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "curator",
-          description:
-            "Collection management and accession/deaccession approval",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "registrar",
-          description:
-            "Accession/deaccession workflows, location management, loans",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "cataloger",
-          description: "Object cataloging and media management",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "viewer",
-          description: "Read-only access",
-          isSystemRole: true,
-        }),
-      ] as const);
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: SUPER_ADMIN_ROLE_NAME,
+        description: "Owner with full organization control (SuperAdmin)",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "admin",
+        description: "Full organization access",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "curator",
+        description: "Collection management and accession/deaccession approval",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "registrar",
+        description: "Accession/deaccession workflows, object placement, loans",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "cataloger",
+        description: "Object cataloging and media management",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "viewer",
+        description: "Read-only access",
+        isSystemRole: true,
+      }),
+    ] as const);
     // Create default permissions (if they don't exist)
     const permissionNames = [
       // Collections
@@ -1807,7 +1805,7 @@ export const createDefaultRoles = internalMutation({
       ]),
     );
 
-    // Curator: collections + media + locations + sites
+    // Curator: collections + media + object placement + sites
     const curatorPerms = [
       "collections.create",
       "collections.read",
@@ -1818,10 +1816,8 @@ export const createDefaultRoles = internalMutation({
       "media.upload",
       "media.read",
       "media.delete",
-      "locations.create",
       "locations.read",
       "locations.update",
-      "locations.delete",
       "sites.read",
       "accounts.read",
     ];
@@ -1837,7 +1833,7 @@ export const createDefaultRoles = internalMutation({
       }),
     );
 
-    // Registrar: workflows + locations + loans + sites
+    // Registrar: workflows + object placement + loans + sites
     const registrarPerms = [
       "collections.create",
       "collections.read",
@@ -1851,10 +1847,8 @@ export const createDefaultRoles = internalMutation({
       "loans.approve",
       "loans.view_admin_overview",
       "loans.view_transport",
-      "locations.create",
       "locations.read",
       "locations.update",
-      "locations.delete",
       "sites.read",
       "media.read",
       "accounts.read",

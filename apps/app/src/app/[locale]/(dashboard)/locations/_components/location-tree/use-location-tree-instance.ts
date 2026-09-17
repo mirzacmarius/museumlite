@@ -15,12 +15,14 @@ interface UseLocationTreeInstanceOptions {
   items: Record<string, LocationItem>;
   initialExpandedItems: string[];
   unknownLabel: string;
+  canReorderLocations: boolean;
 }
 
 export function useLocationTreeInstance({
   items,
   initialExpandedItems,
   unknownLabel,
+  canReorderLocations,
 }: UseLocationTreeInstanceOptions) {
   const reorderLocation = useMutation(api.locations.reorder);
 
@@ -50,8 +52,10 @@ export function useLocationTreeInstance({
       getChildren: (itemId) => items[itemId]?.children ?? [],
     },
     canDrag: (draggedItems) =>
+      canReorderLocations &&
       draggedItems.every((item) => item.getItemData()._id !== "root"),
     canDrop: (draggedItems, target) => {
+      if (!canReorderLocations) return false;
       const draggedItem = draggedItems[0];
       if (!draggedItem) return false;
 
@@ -70,7 +74,7 @@ export function useLocationTreeInstance({
 
       return true;
     },
-    canReorder: true,
+    canReorder: canReorderLocations,
     onDrop: async (draggedItems, target) => {
       const item = draggedItems[0];
       if (!item) return;

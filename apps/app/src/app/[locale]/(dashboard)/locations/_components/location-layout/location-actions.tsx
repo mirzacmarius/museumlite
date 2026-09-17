@@ -30,8 +30,6 @@ export function LocationActions({
         <IconActionButton label="Add" onClick={onAdd}>
           <Plus className="size-4" aria-hidden="true" />
         </IconActionButton>
-      </PermissionGate>
-      <PermissionGate permission="locations.update">
         <IconActionButton label="Edit" onClick={onEdit}>
           <Pencil className="size-4" aria-hidden="true" />
         </IconActionButton>

@@ -1145,10 +1145,7 @@ export const backfillSuperAdminRoles = internalMutation({
           )
           .first();
 
-        if (
-          ownerMembership &&
-          ownerMembership.roleId !== superAdminRole._id
-        ) {
+        if (ownerMembership && ownerMembership.roleId !== superAdminRole._id) {
           await db.patch(ownerMembership._id, {
             roleId: superAdminRole._id,
           });
@@ -1176,5 +1173,70 @@ export const backfillSuperAdminRoles = internalMutation({
     );
 
     return result;
+  },
+});
+
+const NON_ADMIN_LOCATION_STRUCTURE_ROLES = ["curator", "registrar"] as const;
+const LOCATION_STRUCTURE_PERMISSION_NAMES = new Set([
+  "locations.create",
+  "locations.delete",
+]);
+
+/**
+ * Remove locations.create/delete from system curator and registrar roles.
+ * Object placement still uses locations.update.
+ *
+ * Run: npx convex run migrations:revokeNonAdminLocationStructurePermissions
+ */
+export const revokeNonAdminLocationStructurePermissions = internalMutation({
+  args: {},
+  returns: v.object({
+    rolePermissionsRemoved: v.number(),
+  }),
+  handler: async (ctx) => {
+    const locationPermissions = await ctx.db
+      .query("permissions")
+      .withIndex("by_category", (q) => q.eq("category", "locations"))
+      .collect();
+    const structurePermissionIds = new Set(
+      locationPermissions.flatMap((permission) =>
+        LOCATION_STRUCTURE_PERMISSION_NAMES.has(permission.name)
+          ? [permission._id]
+          : [],
+      ),
+    );
+
+    if (structurePermissionIds.size === 0) {
+      return { rolePermissionsRemoved: 0 };
+    }
+
+    const organizations = await ctx.db.query("organizations").collect();
+    let rolePermissionsRemoved = 0;
+
+    for (const organization of organizations) {
+      for (const roleName of NON_ADMIN_LOCATION_STRUCTURE_ROLES) {
+        const role = await ctx.db
+          .query("roles")
+          .withIndex("by_organization_and_name", (q) =>
+            q.eq("organizationId", organization._id).eq("name", roleName),
+          )
+          .first();
+        if (!role?.isSystemRole) continue;
+
+        const rolePermissions = await ctx.db
+          .query("rolePermissions")
+          .withIndex("by_role", (q) => q.eq("roleId", role._id))
+          .collect();
+
+        for (const rolePermission of rolePermissions) {
+          if (!structurePermissionIds.has(rolePermission.permissionId))
+            continue;
+          await ctx.db.delete(rolePermission._id);
+          rolePermissionsRemoved += 1;
+        }
+      }
+    }
+
+    return { rolePermissionsRemoved };
   },
 });
