@@ -13,6 +13,7 @@ import {
   CreditCard,
   Eye,
   FileClock,
+  MapPin,
   Package,
   PackagePlus,
   Warehouse,
@@ -25,6 +26,11 @@ import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { DashboardPageSkeleton } from "./dashboard-page-skeleton";
+import {
+  LOCATION_TRACKING_OVERVIEW_HREF,
+  LOCATION_TRACKING_OVERVIEW_TITLE,
+  shouldShowLocationTrackingOverview,
+} from "./overview-location-tracking";
 
 type SubscriptionTier = "free" | "pro" | "enterprise";
 type OrganizationSubscription = FunctionReturnType<
@@ -173,6 +179,63 @@ function BillingOverviewSection({
           organizationId={organizationId}
           showUpgradeLink={canManageBilling}
         />
+      </div>
+    </section>
+  );
+}
+
+interface LocationTrackingOverviewSectionProps {
+  interactiveMetricCardClassName: string;
+  kpiTitle: string;
+  locale: string;
+  locationTrackingEnabled: boolean | undefined;
+  metricLinkClassName: string;
+  totalLocations: number | undefined;
+}
+
+function LocationTrackingOverviewSection({
+  interactiveMetricCardClassName,
+  kpiTitle,
+  locale,
+  locationTrackingEnabled,
+  metricLinkClassName,
+  totalLocations,
+}: LocationTrackingOverviewSectionProps) {
+  if (!shouldShowLocationTrackingOverview(locationTrackingEnabled)) return null;
+
+  return (
+    <section className="mt-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+            {LOCATION_TRACKING_OVERVIEW_TITLE}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            View galleries, storage, and occupancy from the overview page.
+          </p>
+        </div>
+        <Button asChild size="sm" variant="outline">
+          <Link href={LOCATION_TRACKING_OVERVIEW_HREF}>Open locations</Link>
+        </Button>
+      </div>
+
+      <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+        <Link
+          href={LOCATION_TRACKING_OVERVIEW_HREF}
+          className={metricLinkClassName}
+        >
+          <KpiCard
+            title={kpiTitle}
+            value={
+              totalLocations === undefined
+                ? "—"
+                : formatNumber(totalLocations, locale)
+            }
+            icon={MapPin}
+            accentColor="amber"
+            className={interactiveMetricCardClassName}
+          />
+        </Link>
       </div>
     </section>
   );
@@ -430,6 +493,17 @@ export default function DashboardPage() {
           </Link>
         </div>
       </section>
+
+      <LocationTrackingOverviewSection
+        interactiveMetricCardClassName={interactiveMetricCardClassName}
+        kpiTitle={kpi("totalLocations")}
+        locale={locale}
+        locationTrackingEnabled={
+          currentOrganization?.settings?.locationTrackingEnabled
+        }
+        metricLinkClassName={metricLinkClassName}
+        totalLocations={analyticsData?.locations.total}
+      />
     </div>
   );
 }

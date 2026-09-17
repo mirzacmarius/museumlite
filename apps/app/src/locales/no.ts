@@ -889,6 +889,7 @@ export default {
     objectsOnLoan: "Objekter utlånt",
     activeLoans: "Aktive lån",
     pendingAccessions: "Ventende aksessjoner",
+    totalLocations: "Totalt plasseringer",
   },
   assignments: {
     pendingApprovals: "Ventende godkjenninger",

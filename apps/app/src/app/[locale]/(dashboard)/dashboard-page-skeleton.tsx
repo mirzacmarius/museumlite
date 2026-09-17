@@ -75,6 +75,23 @@ function BillingOverviewSkeleton() {
   );
 }
 
+function LocationTrackingOverviewSkeleton() {
+  return (
+    <section className="mt-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="h-4 w-40 rounded bg-muted/70" />
+          <div className="mt-2 h-4 w-80 max-w-full rounded bg-muted/50" />
+        </div>
+        <div className="h-8 w-28 rounded-md bg-muted/60" />
+      </div>
+      <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
+        <CompactKpiSkeleton />
+      </div>
+    </section>
+  );
+}
+
 export function DashboardAnalyticsSectionsSkeleton() {
   return (
     <>
@@ -106,6 +123,8 @@ export function DashboardAnalyticsSectionsSkeleton() {
           ))}
         </div>
       </section>
+
+      <LocationTrackingOverviewSkeleton />
     </>
   );
 }
