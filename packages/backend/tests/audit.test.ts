@@ -1607,5 +1607,55 @@ describe("audit (notifications & activity)", () => {
 
       expect(result.notifications).toHaveLength(5);
     });
+
+    test("hides missing insurance coverage notices", async () => {
+      const t = convexTest(schema, modules);
+
+      const { orgId, userId } = await t.run(async (ctx) => {
+        const [orgId, userId] = await Promise.all([
+          ctx.db.insert("organizations", {
+            name: "Test Org",
+            slug: "test-org",
+            type: "museum",
+          }),
+          ctx.db.insert("users", {
+            name: "Test User",
+            email: "test@example.com",
+          }),
+        ]);
+        return { orgId, userId };
+      });
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId,
+          type: "missing_coverage",
+          title: "Objects Missing Insurance Coverage",
+          message:
+            "3 of 10 objects (30%) are not covered by any insurance policy.",
+          read: false,
+          createdAt: Date.now(),
+        });
+        await ctx.db.insert("notifications", {
+          organizationId: orgId,
+          userId,
+          type: "info",
+          title: "Keep this notice",
+          message: "Visible notification",
+          read: false,
+          createdAt: Date.now() + 1,
+        });
+      });
+
+      const authed = authedForUser(t, userId);
+      const result = await authed.query(api.audit.listNotifications, {
+        organizationId: orgId,
+      });
+
+      expect(result.notifications).toHaveLength(1);
+      expect(result.notifications[0]?.title).toBe("Keep this notice");
+      expect(result.unreadCount).toBe(1);
+    });
   });
 });

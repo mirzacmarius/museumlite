@@ -1508,73 +1508,6 @@ export const checkExpiringPoliciesInternal = internalMutation({
   },
 });
 
-export const checkMissingCoverageInternal = internalMutation({
-  args: {},
-  returns: v.null(),
-  handler: async (ctx) => {
-    const organizations = await ctx.db.query("organizations").collect();
-
-    await Promise.all(
-      Array.from(organizations).map(async (org) => {
-        const allActiveObjects = await ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id).eq("status", "active"),
-          )
-          .collect();
-
-        if (allActiveObjects.length === 0) return;
-
-        const allCoverages = await ctx.db
-          .query("insuranceCoverages")
-          .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", org._id).eq("status", "active"),
-          )
-          .collect();
-
-        const coveredObjectIds = new Set<string>();
-        for (const coverage of allCoverages) {
-          if (coverage.collectionId) {
-            coveredObjectIds.add(coverage.collectionId);
-          }
-        }
-
-        const uncoveredCount = allActiveObjects.filter(
-          (obj) => !coveredObjectIds.has(obj._id),
-        ).length;
-
-        const coveragePercentage = Math.round(
-          (coveredObjectIds.size / allActiveObjects.length) * 100,
-        );
-
-        if (uncoveredCount > 0 && coveragePercentage < 90) {
-          const coordinatorUserIds = await getUserIdsWithPermission(
-            ctx,
-            org._id,
-            "organization.manage_settings",
-          );
-
-          await Promise.all(
-            coordinatorUserIds.map((userId) =>
-              ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: org._id,
-                userId,
-                type: "missing_coverage",
-                title: "Objects Missing Insurance Coverage",
-                message: `${uncoveredCount} of ${allActiveObjects.length} objects (${100 - coveragePercentage}%) are not covered by any insurance policy.`,
-                relatedEntityType: "organization",
-                relatedEntityId: org._id,
-              }),
-            ),
-          );
-        }
-      }),
-    );
-
-    return null;
-  },
-});
-
 // ============================================================================
 // Dispute Workflow
 // ============================================================================
@@ -1892,10 +1825,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
       throw new Error("User is not a member of this organization");
     }
 
-    const claimNumber = await generateNextClaimNumber(
-      ctx,
-      args.organizationId,
-    );
+    const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
     const now = Date.now();
 
     const [claimId, coordinatorUserIds] = await Promise.all([

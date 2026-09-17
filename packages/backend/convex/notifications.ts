@@ -9,6 +9,7 @@ import {
   query,
 } from "./_generated/server";
 import { getUserIdsWithPermission } from "./utils/permissions";
+import { withoutSuppressedNotifications } from "./utils/suppressedNotifications";
 
 // ============================================
 // Notification Type Constants
@@ -133,7 +134,9 @@ export const getNotificationCenter = query({
       .order("desc")
       .take(limit);
 
-    const categorizedNotifications = notifications.map((n) => ({
+    const categorizedNotifications = withoutSuppressedNotifications(
+      notifications,
+    ).map((n) => ({
       _id: n._id,
       type: n.type,
       title: n.title,
@@ -145,15 +148,17 @@ export const getNotificationCenter = query({
       category: getCategoryForType(n.type),
     }));
 
-    const unreadNotifications = await ctx.db
-      .query("notifications")
-      .withIndex("by_user_and_organization_and_read", (q) =>
-        q
-          .eq("userId", userId)
-          .eq("organizationId", args.organizationId)
-          .eq("read", false),
-      )
-      .collect();
+    const unreadNotifications = withoutSuppressedNotifications(
+      await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_organization_and_read", (q) =>
+          q
+            .eq("userId", userId)
+            .eq("organizationId", args.organizationId)
+            .eq("read", false),
+        )
+        .collect(),
+    );
 
     const unreadByCategory = {
       approvals: 0,
@@ -192,15 +197,17 @@ export const getUnreadCount = query({
       return 0;
     }
 
-    const unreadNotifications = await ctx.db
-      .query("notifications")
-      .withIndex("by_user_and_organization_and_read", (q) =>
-        q
-          .eq("userId", userId)
-          .eq("organizationId", args.organizationId)
-          .eq("read", false),
-      )
-      .collect();
+    const unreadNotifications = withoutSuppressedNotifications(
+      await ctx.db
+        .query("notifications")
+        .withIndex("by_user_and_organization_and_read", (q) =>
+          q
+            .eq("userId", userId)
+            .eq("organizationId", args.organizationId)
+            .eq("read", false),
+        )
+        .collect(),
+    );
 
     return unreadNotifications.length;
   },
@@ -261,7 +268,7 @@ export const getNotificationsByCategory = query({
       .take(limit * 2);
 
     // Filter by category types
-    const filtered = notifications
+    const filtered = withoutSuppressedNotifications(notifications)
       .filter((n) => categoryTypeSet.has(n.type))
       .slice(0, limit);
 

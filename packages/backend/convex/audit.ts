@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { auditLogChanges } from "./schema";
 import { requirePermission } from "./utils/permissions";
+import { withoutSuppressedNotifications } from "./utils/suppressedNotifications";
 
 /**
  * Get organization activity logs with pagination and filters
@@ -345,8 +346,8 @@ export const listNotifications = query({
     ]);
 
     return {
-      notifications,
-      unreadCount: unreadNotifications.length,
+      notifications: withoutSuppressedNotifications(notifications),
+      unreadCount: withoutSuppressedNotifications(unreadNotifications).length,
     };
   },
 });

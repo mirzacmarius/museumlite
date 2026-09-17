@@ -10,12 +10,6 @@ crons.interval(
 );
 
 crons.interval(
-  "check-missing-coverage",
-  { hours: 24 },
-  internal.insurance.checkMissingCoverageInternal,
-);
-
-crons.interval(
   "check-upcoming-deliveries",
   { hours: 24 },
   internal.transit.checkUpcomingDeliveriesInternal,
