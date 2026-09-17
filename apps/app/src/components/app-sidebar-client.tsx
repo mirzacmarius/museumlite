@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "@v1/backend/convex/_generated/api";
+import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import {
@@ -25,9 +25,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -40,7 +38,7 @@ import {
 } from "@v1/ui/sidebar";
 import { Skeleton } from "@v1/ui/skeleton";
 import { cn } from "@v1/ui/utils";
-import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import { type Preloaded, usePreloadedQuery } from "convex/react";
 import {
   Building2,
   Check,
@@ -48,20 +46,19 @@ import {
   ChevronsUpDown,
   Lock,
   LogOut,
-  Plus,
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { Suspense } from "react";
+import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
+import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import {
   buildSidebarNavigation,
   type NavigationGroup,
   type NavigationItem,
 } from "@/components/app-sidebar-navigation";
-import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
-import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -82,15 +79,6 @@ function getUserInitials(user: {
   return initials || user.email?.[0]?.toUpperCase() || "U";
 }
 
-const COLLECTION_COLORS = [
-  "#d97706",
-  "#059669",
-  "#2563eb",
-  "#e11d48",
-  "#7c3aed",
-  "#0891b2",
-];
-
 interface SidebarOrganization {
   _id: Id<"organizations">;
   name: string;
@@ -106,6 +94,13 @@ interface SidebarUser {
   image?: string | null;
 }
 
+function navigationItemClassName(locked?: boolean): string {
+  return cn(
+    "h-7 text-xs font-medium",
+    locked && "pointer-events-none opacity-60",
+  );
+}
+
 function TopLevelNavigation({
   items,
   isPathActive,
@@ -119,76 +114,6 @@ function TopLevelNavigation({
         <SidebarMenu>
           {items.map((item) => {
             const ItemIcon = item.icon;
-            const itemActive = isPathActive(item.url);
-            const subItems = item.subItems ?? [];
-
-            if (subItems.length > 0) {
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    size="sm"
-                    tooltip={item.title}
-                    isActive={itemActive}
-                    aria-disabled={item.locked}
-                    className={cn(
-                      "h-7 text-xs font-medium",
-                      item.locked && "pointer-events-none opacity-60",
-                    )}
-                  >
-                    <Link
-                      href={item.url}
-                      onClick={
-                        item.locked
-                          ? (event) => event.preventDefault()
-                          : undefined
-                      }
-                    >
-                      {ItemIcon ? <ItemIcon /> : null}
-                      <span>{item.title}</span>
-                      {item.locked ? <Lock className="ml-auto size-3" /> : null}
-                    </Link>
-                  </SidebarMenuButton>
-                  <SidebarMenuSub className="gap-0 py-0.5">
-                    {subItems.map((subItem) => {
-                      const SubItemIcon = subItem.icon;
-                      const subItemActive = isPathActive(subItem.url);
-
-                      return (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            asChild
-                            size="sm"
-                            isActive={subItemActive}
-                            aria-disabled={subItem.locked}
-                            className={cn(
-                              "h-7 text-xs font-medium",
-                              subItem.locked &&
-                                "pointer-events-none opacity-60",
-                            )}
-                          >
-                            <Link
-                              href={subItem.url}
-                              onClick={
-                                subItem.locked
-                                  ? (event) => event.preventDefault()
-                                  : undefined
-                              }
-                            >
-                              {SubItemIcon ? <SubItemIcon /> : null}
-                              <span>{subItem.title}</span>
-                              {subItem.locked ? (
-                                <Lock className="ml-auto size-3" />
-                              ) : null}
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      );
-                    })}
-                  </SidebarMenuSub>
-                </SidebarMenuItem>
-              );
-            }
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -196,12 +121,9 @@ function TopLevelNavigation({
                   asChild
                   size="sm"
                   tooltip={item.title}
-                  isActive={itemActive}
+                  isActive={isPathActive(item.url)}
                   aria-disabled={item.locked}
-                  className={cn(
-                    "h-7 text-xs font-medium",
-                    item.locked && "pointer-events-none opacity-60",
-                  )}
+                  className={navigationItemClassName(item.locked)}
                 >
                   <Link
                     href={item.url}
@@ -264,19 +186,15 @@ function NavigationGroups({
                     <SidebarMenuSub className="gap-0 py-0.5">
                       {group.items.map((item) => {
                         const ItemIcon = item.icon;
-                        const itemActive = isPathActive(item.url);
 
                         return (
                           <SidebarMenuSubItem key={item.title}>
                             <SidebarMenuSubButton
                               asChild
                               size="sm"
-                              isActive={itemActive}
+                              isActive={isPathActive(item.url)}
                               aria-disabled={item.locked}
-                              className={cn(
-                                "h-7 text-xs font-medium",
-                                item.locked && "pointer-events-none opacity-60",
-                              )}
+                              className={navigationItemClassName(item.locked)}
                             >
                               <Link
                                 href={item.url}
@@ -396,82 +314,6 @@ function SidebarSearch({ onOpen }: { onOpen: () => void }) {
               </kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
-}
-
-function CollectionGroupNav({
-  groups,
-  activeCollectionGroupId,
-  onCreate,
-}: {
-  groups:
-    | {
-        _id: string;
-        name: string;
-      }[]
-    | undefined;
-  activeCollectionGroupId: string | null;
-  onCreate: () => void;
-}) {
-  return (
-    <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel className="h-6 px-2 text-[10px] font-medium uppercase tracking-widest">
-        Collection Groups
-      </SidebarGroupLabel>
-      <SidebarGroupAction
-        className="top-1.5"
-        onClick={onCreate}
-        title="New collection group"
-      >
-        <Plus />
-        <span className="sr-only">New collection group</span>
-      </SidebarGroupAction>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {groups?.slice(0, 5).map((group, index) => (
-            <SidebarMenuItem key={group._id}>
-              <SidebarMenuButton
-                asChild
-                size="sm"
-                isActive={activeCollectionGroupId === group._id}
-                className="h-7 text-xs font-medium"
-              >
-                <Link href={`/objects?collectionGroupId=${group._id}`}>
-                  <span
-                    className="size-2 rounded-full"
-                    style={{
-                      backgroundColor:
-                        COLLECTION_COLORS[index % COLLECTION_COLORS.length],
-                    }}
-                  />
-                  <span>{group.name}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          {(!groups || groups.length === 0) && (
-            <SidebarMenuItem>
-              <div className="px-2 py-1.5 text-xs text-sidebar-foreground/60">
-                No collection groups yet
-              </div>
-            </SidebarMenuItem>
-          )}
-          {groups && groups.length > 5 ? (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                size="sm"
-                className="h-7 text-xs font-medium"
-              >
-                <Link href="/collections">
-                  <span>View all {groups.length} collection groups</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : null}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -637,9 +479,7 @@ function AppSidebarClientInner({
   const user = usePreloadedQuery(preloadedUser);
   const { signOut } = useAuthActions();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const getSearchParam = searchParams.get.bind(searchParams);
-  const { push, replace } = useRouter();
+  const { replace } = useRouter();
 
   const handleOrganizationChange = React.useCallback(
     (organizationId: Id<"organizations">) => {
@@ -650,7 +490,7 @@ function AppSidebarClientInner({
       setCurrentOrganizationId(organizationId);
       replace("/");
     },
-    [currentOrganizationId, push, replace, setCurrentOrganizationId],
+    [currentOrganizationId, replace, setCurrentOrganizationId],
   );
 
   const openCommandPalette = React.useCallback(() => {
@@ -667,13 +507,6 @@ function AppSidebarClientInner({
   const isLibraryModuleEnabled = hasModule("library");
   const isLocationTrackingEnabled =
     currentOrg?.settings?.locationTrackingEnabled ?? true;
-
-  const collectionGroups = useQuery(
-    api.collectionGroups.list,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
 
   const isPathActive = (url: string) => {
     if (url === "/") return pathname === "/";
@@ -711,12 +544,6 @@ function AppSidebarClientInner({
         <NavigationGroups
           groups={navigationGroups}
           isPathActive={isPathActive}
-        />
-
-        <CollectionGroupNav
-          groups={collectionGroups}
-          activeCollectionGroupId={getSearchParam("collectionGroupId")}
-          onCreate={() => push("/collections/new")}
         />
       </SidebarContent>
 

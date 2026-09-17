@@ -1,13 +1,14 @@
 import {
   Activity,
-  BookOpen,
   Bookmark,
+  BookOpen,
   ChartColumn,
   Contact,
   Container,
   Database,
   FileCheck,
   FileX,
+  Folder,
   GalleryVerticalEnd,
   Globe,
   Hammer,
@@ -35,7 +36,6 @@ export interface NavigationItem {
   url: string;
   icon?: SidebarIcon;
   locked?: boolean;
-  subItems?: NavigationItem[];
 }
 
 export interface NavigationGroup {
@@ -70,6 +70,7 @@ export function buildSidebarNavigation({
   const navCoreInventory: NavigationItem[] = [
     { title: "Overview", url: "/", icon: LayoutGrid },
     { title: "Object Catalog", url: "/objects", icon: Database },
+    { title: "Collection Groups", url: "/collections", icon: Folder },
     ...(isLocationTrackingEnabled
       ? [{ title: "Location & Tracking", url: "/locations", icon: MapPin }]
       : []),

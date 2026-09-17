@@ -44,6 +44,17 @@ function findItem(items: NavigationItem[], title: string): NavigationItem {
 }
 
 describe("buildSidebarNavigation", () => {
+  test("adds Collection Groups as a top-level item after Object Catalog", () => {
+    const { topLevelNavigation } = buildNavigation();
+    const objectCatalog = findItem(topLevelNavigation, "Object Catalog");
+    const collectionGroups = findItem(topLevelNavigation, "Collection Groups");
+
+    expect(collectionGroups.url).toBe("/collections");
+    expect(topLevelNavigation.indexOf(collectionGroups)).toBe(
+      topLevelNavigation.indexOf(objectCatalog) + 1,
+    );
+  });
+
   test("adds Patron Management to Exhibitions & Loans and Library", () => {
     const { navigationGroups } = buildNavigation();
 
