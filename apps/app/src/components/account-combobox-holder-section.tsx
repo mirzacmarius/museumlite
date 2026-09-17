@@ -5,7 +5,10 @@ import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { cn } from "@v1/ui/utils";
 import type { Dispatch, SetStateAction } from "react";
-import type { AccountHolderType } from "@/lib/account-holder";
+import {
+  type AccountHolderType,
+  isAccountHolderType,
+} from "@/lib/account-holder";
 import type { NewAccountForm } from "./account-combobox-types";
 
 interface AccountComboboxHolderSectionProps {
@@ -13,10 +16,20 @@ interface AccountComboboxHolderSectionProps {
   setFormData: Dispatch<SetStateAction<NewAccountForm>>;
 }
 
+interface HolderTypeOptionProps {
+  checked: boolean;
+  description: string;
+  id: string;
+  label: string;
+  value: AccountHolderType;
+}
+
 export function AccountComboboxHolderSection({
   formData,
   setFormData,
 }: AccountComboboxHolderSectionProps) {
+  const isOrganization = formData.holderType === "organization";
+
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Account Holder</h4>
@@ -26,60 +39,30 @@ export function AccountComboboxHolderSection({
           <RadioGroup
             className="grid gap-3 sm:grid-cols-2"
             value={formData.holderType}
-            onValueChange={(value) =>
-              setFormData((prev) => ({
-                ...prev,
-                holderType: value as AccountHolderType,
-              }))
-            }
+            onValueChange={(value) => {
+              if (!isAccountHolderType(value)) return;
+              setFormData((prev) => ({ ...prev, holderType: value }));
+            }}
           >
-            <Label
-              htmlFor="holderType-organization"
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
-                formData.holderType === "organization" &&
-                  "border-primary bg-primary/5",
-              )}
-            >
-              <RadioGroupItem
-                id="holderType-organization"
-                value="organization"
-                className="mt-0.5"
-              />
-              <div className="space-y-1">
-                <div className="font-medium">Business / Organization</div>
-                <p className="text-sm text-muted-foreground">
-                  Use this for companies, museums, galleries, and institutions.
-                </p>
-              </div>
-            </Label>
-            <Label
-              htmlFor="holderType-privatePerson"
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
-                formData.holderType === "privatePerson" &&
-                  "border-primary bg-primary/5",
-              )}
-            >
-              <RadioGroupItem
-                id="holderType-privatePerson"
-                value="privatePerson"
-                className="mt-0.5"
-              />
-              <div className="space-y-1">
-                <div className="font-medium">Private Person</div>
-                <p className="text-sm text-muted-foreground">
-                  Use this for individuals acting in their own name.
-                </p>
-              </div>
-            </Label>
+            <HolderTypeOption
+              checked={formData.holderType === "privatePerson"}
+              description="Use this for individuals acting in their own name."
+              id="holderType-privatePerson"
+              label="Private Person"
+              value="privatePerson"
+            />
+            <HolderTypeOption
+              checked={isOrganization}
+              description="Use this for companies, museums, galleries, and institutions."
+              id="holderType-organization"
+              label="Business / Organization"
+              value="organization"
+            />
           </RadioGroup>
         </div>
         <div>
           <Label htmlFor="businessName">
-            {formData.holderType === "organization"
-              ? "Business Name / Organisation *"
-              : "Full Name *"}
+            {isOrganization ? "Business Name / Organisation *" : "Full Name *"}
           </Label>
           <Input
             id="businessName"
@@ -91,13 +74,13 @@ export function AccountComboboxHolderSection({
               }))
             }
             placeholder={
-              formData.holderType === "organization"
+              isOrganization
                 ? "Enter business or organization name"
                 : "Enter full name"
             }
           />
         </div>
-        {formData.holderType === "organization" ? (
+        {isOrganization ? (
           <div>
             <Label htmlFor="taxId">Organization Number</Label>
             <Input
@@ -152,5 +135,29 @@ export function AccountComboboxHolderSection({
         </div>
       </div>
     </div>
+  );
+}
+
+function HolderTypeOption({
+  checked,
+  description,
+  id,
+  label,
+  value,
+}: HolderTypeOptionProps) {
+  return (
+    <Label
+      htmlFor={id}
+      className={cn(
+        "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
+        checked && "border-primary bg-primary/5",
+      )}
+    >
+      <RadioGroupItem id={id} value={value} className="mt-0.5" />
+      <div className="space-y-1">
+        <div className="font-medium">{label}</div>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </Label>
   );
 }

@@ -24,6 +24,7 @@ import { useOrganization } from "@/components/organization-provider";
 import {
   type AccountHolderType,
   DEFAULT_ACCOUNT_HOLDER_TYPE,
+  isAccountHolderType,
   parseDateInputValue,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
@@ -279,23 +280,24 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
           <RadioGroup
             className="grid gap-3 md:grid-cols-2"
             value={formData.holderType}
-            onValueChange={(value) =>
-              onChange("holderType", value as AccountHolderType)
-            }
+            onValueChange={(value) => {
+              if (!isAccountHolderType(value)) return;
+              onChange("holderType", value);
+            }}
           >
-            <HolderTypeOption
-              checked={isOrganization}
-              description="Companies, museums, galleries, and institutions."
-              id="holder-type-organization"
-              label="Business / Organization"
-              value="organization"
-            />
             <HolderTypeOption
               checked={formData.holderType === "privatePerson"}
               description="Individuals acting in their own name."
               id="holder-type-privatePerson"
               label="Private Person"
               value="privatePerson"
+            />
+            <HolderTypeOption
+              checked={isOrganization}
+              description="Companies, museums, galleries, and institutions."
+              id="holder-type-organization"
+              label="Business / Organization"
+              value="organization"
             />
           </RadioGroup>
         </div>
