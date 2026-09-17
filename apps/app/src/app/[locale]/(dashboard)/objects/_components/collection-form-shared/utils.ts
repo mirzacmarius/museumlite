@@ -283,8 +283,6 @@ export function createInitialFormData(
   collection: CollectionDoc,
   collectionGroups: Array<{ _id: Id<"collectionGroups"> }> = [],
 ): CollectionFormData {
-  const objectTypeArray = parseStringListField(collection.objectType);
-
   const collectionGroupIds =
     collectionGroups.length > 0
       ? collectionGroups.map((group) => group._id as string)
@@ -295,7 +293,7 @@ export function createInitialFormData(
   return {
     title: collection.title,
     creator: collection.creator || "",
-    objectType: objectTypeArray,
+    objectType: parseStringListField(collection.objectType),
     objectName: collection.objectName || "",
     culture: collection.culture || "",
     period: collection.period || "",

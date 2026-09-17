@@ -23,6 +23,11 @@ describe("parseStringListField", () => {
   test("preserves legacy plain-string values", () => {
     expect(parseStringListField("Oil on canvas")).toEqual(["Oil on canvas"]);
   });
+
+  test("keeps non-list JSON as the original string", () => {
+    expect(parseStringListField("123")).toEqual(["123"]);
+    expect(parseStringListField("true")).toEqual(["true"]);
+  });
 });
 
 describe("serializeStringListField", () => {

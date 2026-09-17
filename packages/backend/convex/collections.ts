@@ -3678,6 +3678,10 @@ export const getPublic = query({
   },
 });
 
+function uniqueSortedStrings(values: string[]): string[] {
+  return [...new Set(values)].sort();
+}
+
 export const getPublicFilters = query({
   args: {
     organizationSlug: v.string(),
@@ -3693,11 +3697,7 @@ export const getPublicFilters = query({
       .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
       .unique();
 
-    if (!organization) {
-      return { objectTypes: [], cultures: [], periods: [] };
-    }
-
-    if (!organization.settings?.portalSettings?.isEnabled) {
+    if (!organization || !organization.settings?.portalSettings?.isEnabled) {
       return { objectTypes: [], cultures: [], periods: [] };
     }
 
@@ -3706,18 +3706,14 @@ export const getPublicFilters = query({
       getPublicLibraryCatalogItems(ctx, organization),
     ] as const);
 
-    const objectTypes = [
-      ...new Set([
+    return {
+      objectTypes: uniqueSortedStrings([
         ...collections.flatMap((collection) =>
           parseStoredStringList(collection.objectType),
         ),
-        ...libraryItems.flatMap((item) =>
-          parseStoredStringList(item.itemType),
-        ),
+        ...libraryItems.flatMap((item) => parseStoredStringList(item.itemType)),
       ]),
-    ] as string[];
-    const cultures = [
-      ...new Set([
+      cultures: uniqueSortedStrings([
         ...collections.flatMap((collection) =>
           collection.culture ? [collection.culture] : [],
         ),
@@ -3725,9 +3721,7 @@ export const getPublicFilters = query({
           item.language ? [item.language] : [],
         ),
       ]),
-    ] as string[];
-    const periods = [
-      ...new Set([
+      periods: uniqueSortedStrings([
         ...collections.flatMap((collection) =>
           collection.period ? [collection.period] : [],
         ),
@@ -3736,12 +3730,6 @@ export const getPublicFilters = query({
           return publicationYear ? [publicationYear] : [];
         }),
       ]),
-    ] as string[];
-
-    return {
-      objectTypes: objectTypes.sort(),
-      cultures: cultures.sort(),
-      periods: periods.sort(),
     };
   },
 });

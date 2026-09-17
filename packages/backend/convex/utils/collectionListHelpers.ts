@@ -8,7 +8,7 @@ import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
 /**
  * Whether catalog list pagination can use org/status/location indexes only.
- * Text and membership filters (including JSON-stored object types) skip this path.
+ * Search, membership, and object-type filters skip this path.
  */
 export function shouldUseIndexedCollectionsPagination(args: {
   collectionGroupId?: Id<"collectionGroups">;

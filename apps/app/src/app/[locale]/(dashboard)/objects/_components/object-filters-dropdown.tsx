@@ -12,7 +12,6 @@ import type {
   ObjectDisplayStatus,
   ObjectStatus,
 } from "@/hooks/use-url-filters";
-import { formatStringListField } from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
 import { CatalogFilterSelect } from "./catalog-filter-select";
 import type { ColumnConfig } from "./column-config";
@@ -208,7 +207,7 @@ export function ObjectFiltersDropdown({
                   .toSorted((a, b) => a.localeCompare(b))
                   .map((type) => ({
                     value: type,
-                    label: formatStringListField(type, type),
+                    label: type,
                   })),
               ]}
               onChange={(objectType) => onChange({ objectType })}

@@ -226,12 +226,14 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     );
   }, [collectionGroups, filters.collectionGroupId]);
 
-  const objectTypeOptions = useMemo(() => {
-    return collectUniqueStringListValues([
-      ...(typeOptions?.map((option: TypeOption) => option.name) ?? []),
-      ...collections.map((item: CollectionListItem) => item.objectType),
-    ]);
-  }, [collections, typeOptions]);
+  const objectTypeOptions = useMemo(
+    () =>
+      collectUniqueStringListValues([
+        ...(typeOptions ?? []).map((option: TypeOption) => option.name),
+        ...collections.map((item: CollectionListItem) => item.objectType),
+      ]),
+    [collections, typeOptions],
+  );
 
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {
     setSelectedIds((prev) => {

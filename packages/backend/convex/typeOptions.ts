@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
-import { parseStoredStringList } from "./utils/stringListField";
+import { storedStringListIncludes } from "./utils/stringListField";
 
 /**
  * List all custom type options for an organization
@@ -121,7 +121,6 @@ export const checkUsage = query({
 
     // Filter collections that use this type (excluding the specified collection if provided)
     const collectionsUsingType = collections.filter((collection) => {
-      // Exclude the current collection being edited
       if (
         args.excludeCollectionId &&
         collection._id === args.excludeCollectionId
@@ -129,9 +128,7 @@ export const checkUsage = query({
         return false;
       }
 
-      if (!collection.objectType) return false;
-
-      return parseStoredStringList(collection.objectType).includes(type.name);
+      return storedStringListIncludes(collection.objectType, type.name);
     });
 
     return {

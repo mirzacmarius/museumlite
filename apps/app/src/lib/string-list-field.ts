@@ -1,11 +1,13 @@
+function nonEmptyTrimmed(value: string): string[] {
+  const trimmed = value.trim();
+  return trimmed ? [trimmed] : [];
+}
+
 export function parseStringListField(
   value?: string | string[] | null,
 ): string[] {
   if (Array.isArray(value)) {
-    return value.flatMap((item) => {
-      const trimmedItem = item.trim();
-      return trimmedItem ? [trimmedItem] : [];
-    });
+    return value.flatMap(nonEmptyTrimmed);
   }
 
   if (typeof value !== "string") {
@@ -19,20 +21,13 @@ export function parseStringListField(
 
   try {
     const parsedValue: unknown = JSON.parse(trimmedValue);
-
     if (Array.isArray(parsedValue)) {
-      return parsedValue.flatMap((item) => {
-        if (typeof item !== "string") {
-          return [];
-        }
-
-        const trimmedItem = item.trim();
-        return trimmedItem ? [trimmedItem] : [];
-      });
+      return parsedValue.flatMap((item) =>
+        typeof item === "string" ? nonEmptyTrimmed(item) : [],
+      );
     }
-
     if (typeof parsedValue === "string") {
-      return [parsedValue.trim()].filter(Boolean);
+      return nonEmptyTrimmed(parsedValue);
     }
   } catch {
     return [trimmedValue];
@@ -63,18 +58,13 @@ export function formatStringListField(
   value?: string | string[] | null,
   emptyLabel = "",
 ): string {
-  const normalizedItems = parseStringListField(value);
-  return normalizedItems.length > 0 ? normalizedItems.join(", ") : emptyLabel;
+  return parseStringListField(value).join(", ") || emptyLabel;
 }
 
 export function collectUniqueStringListValues(
   values: Array<string | string[] | null | undefined>,
 ): string[] {
-  const uniqueValues = new Set<string>();
-  for (const value of values) {
-    for (const item of parseStringListField(value)) {
-      uniqueValues.add(item);
-    }
-  }
-  return Array.from(uniqueValues).sort((a, b) => a.localeCompare(b));
+  return [
+    ...new Set(values.flatMap((value) => parseStringListField(value))),
+  ].sort((a, b) => a.localeCompare(b));
 }

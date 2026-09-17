@@ -16,6 +16,11 @@ describe("parseStoredStringList", () => {
     expect(parseStoredStringList("Painting")).toEqual(["Painting"]);
   });
 
+  test("keeps non-list JSON as the original string", () => {
+    expect(parseStoredStringList("123")).toEqual(["123"]);
+    expect(parseStoredStringList("true")).toEqual(["true"]);
+  });
+
   test("returns an empty list for empty values", () => {
     expect(parseStoredStringList("[]")).toEqual([]);
     expect(parseStoredStringList("")).toEqual([]);

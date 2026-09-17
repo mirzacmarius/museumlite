@@ -1,3 +1,8 @@
+function nonEmptyTrimmed(value: string): string[] {
+  const trimmed = value.trim();
+  return trimmed ? [trimmed] : [];
+}
+
 export function parseStoredStringList(value?: string | null): string[] {
   if (typeof value !== "string") {
     return [];
@@ -10,20 +15,13 @@ export function parseStoredStringList(value?: string | null): string[] {
 
   try {
     const parsedValue: unknown = JSON.parse(trimmedValue);
-
     if (Array.isArray(parsedValue)) {
-      return parsedValue.flatMap((item) => {
-        if (typeof item !== "string") {
-          return [];
-        }
-
-        const trimmedItem = item.trim();
-        return trimmedItem ? [trimmedItem] : [];
-      });
+      return parsedValue.flatMap((item) =>
+        typeof item === "string" ? nonEmptyTrimmed(item) : [],
+      );
     }
-
     if (typeof parsedValue === "string") {
-      return [parsedValue.trim()].filter(Boolean);
+      return nonEmptyTrimmed(parsedValue);
     }
   } catch {
     return [trimmedValue];
