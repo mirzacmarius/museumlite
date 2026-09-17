@@ -44,6 +44,24 @@ export function isStorageLocation(type: string) {
   return storageTypes.some((value) => normalizedType.includes(value));
 }
 
+export type LocationNavStorage = "standard" | "secure" | "cold";
+export type LocationNavAccessoryKind = "cold" | "status";
+
+const LOCATION_NAV_ACCESSORY_KIND: Record<
+  LocationNavStorage,
+  LocationNavAccessoryKind
+> = {
+  standard: "status",
+  secure: "status",
+  cold: "cold",
+};
+
+export function getLocationNavAccessoryKind(
+  storage: LocationNavStorage,
+): LocationNavAccessoryKind {
+  return LOCATION_NAV_ACCESSORY_KIND[storage];
+}
+
 export function shouldAutoDisplayChildLocations(type: string) {
   const normalizedType = type.toLowerCase();
   return autoDisplayContainerTypes.some((value) =>

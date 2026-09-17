@@ -5,6 +5,7 @@ import {
   getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
   getDescendantLocations,
+  getLocationNavAccessoryKind,
   getVisibleSidebarLocations,
   isStorageLocation,
   shouldAutoDisplayChildLocations,
@@ -105,6 +106,12 @@ describe("location view helpers", () => {
   test("storage detection matches operational location types", () => {
     expect(isStorageLocation("archive box")).toBe(true);
     expect(isStorageLocation("gallery")).toBe(false);
+  });
+
+  test("location sidebar never uses a lock accessory", () => {
+    expect(getLocationNavAccessoryKind("standard")).toBe("status");
+    expect(getLocationNavAccessoryKind("secure")).toBe("status");
+    expect(getLocationNavAccessoryKind("cold")).toBe("cold");
   });
 
   test("auto-display detection matches exhibition container types", () => {

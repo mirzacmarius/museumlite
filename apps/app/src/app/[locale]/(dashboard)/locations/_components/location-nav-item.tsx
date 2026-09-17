@@ -1,9 +1,13 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { ChevronRight, Lock, Thermometer } from "lucide-react";
+import { ChevronRight, Thermometer } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
-import { isStorageLocation } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
+import {
+  getLocationNavAccessoryKind,
+  isStorageLocation,
+  type LocationNavStorage,
+} from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 
 export interface SidebarLocation {
   _id: Id<"locations">;
@@ -20,7 +24,7 @@ interface LocationNavItemContextValue {
   onSelect: () => void;
   expansion: "leaf" | "expanded" | "collapsed";
   onToggle: () => void;
-  storage: "standard" | "secure" | "cold";
+  storage: LocationNavStorage;
   depth: number;
 }
 
@@ -114,18 +118,39 @@ function LocationNavItemTrigger() {
   );
 }
 
+function getLocationNavStatusColor(
+  isActive: boolean,
+  storage: LocationNavStorage,
+): string {
+  if (!isActive) return "bg-muted-foreground";
+  if (storage !== "standard") return "bg-amber-500";
+  return "bg-emerald-500";
+}
+
+function LocationNavItemAccessory() {
+  const { location, storage } = useLocationNavItem();
+
+  if (getLocationNavAccessoryKind(storage) === "cold") {
+    return (
+      <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
+        <Thermometer className="size-2.5" />
+        4°C
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`size-1.5 shrink-0 rounded-full ${getLocationNavStatusColor(
+        location.isActive,
+        storage,
+      )}`}
+    />
+  );
+}
+
 function LocationNavItemLink() {
-  const { location, onSelect, storage, selection } = useLocationNavItem();
-  const isColdStorage = storage === "cold";
-  const isSecure = storage !== "standard";
-
-  const getStatusColor = () => {
-    if (!location.isActive) return "bg-muted-foreground";
-    if (isSecure) return "bg-amber-500";
-    return "bg-emerald-500";
-  };
-
-  const statusColor = getStatusColor();
+  const { location, onSelect, selection } = useLocationNavItem();
 
   return (
     <button
@@ -136,16 +161,7 @@ function LocationNavItemLink() {
       className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pe-2 text-start"
     >
       <span className="truncate">{location.name}</span>
-      {isColdStorage ? (
-        <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
-          <Thermometer className="size-2.5" />
-          4°C
-        </span>
-      ) : isSecure ? (
-        <Lock className="size-3 shrink-0 text-muted-foreground" />
-      ) : (
-        <span className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
-      )}
+      <LocationNavItemAccessory />
     </button>
   );
 }
