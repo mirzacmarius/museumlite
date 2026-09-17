@@ -346,6 +346,11 @@ export default {
       name: "Beholdningsvurdering",
       description: "Spor verditotaler for kunst, vin og kjøretøy i Analytics.",
     },
+    insurance: {
+      name: "Forsikring",
+      description:
+        "Administrer forsikringspoliser, dekninger og krav uavhengig av konservering.",
+    },
     coins_stamps: {
       name: "Mynter og frimerker",
       description:

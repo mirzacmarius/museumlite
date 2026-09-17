@@ -27,6 +27,7 @@ async function setupInsuranceFixture(t: ConvexTest): Promise<InsuranceFixture> {
     {
       subscriptionTier: "pro",
       slugPrefix: "insurance-test",
+      enabledModules: ["insurance"],
     },
   );
 
@@ -393,4 +394,31 @@ test("should reject auto-claim for non-member actor", async () => {
       actorUserId: outsiderUserId,
     }),
   ).rejects.toThrow("User is not a member of this organization");
+});
+
+test("rejects insurance writes when the insurance module is disabled", async () => {
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...insurancePermissions],
+    {
+      subscriptionTier: "pro",
+      slugPrefix: "insurance-disabled",
+      enabledModules: [],
+    },
+  );
+  const authed = authedForUser(t, userId);
+  const now = Date.now();
+
+  await expect(
+    authed.mutation(api.insurance.createPolicy, {
+      organizationId,
+      policyNumber: "POL-DISABLED",
+      carrier: "No Module Carrier",
+      policyType: "blanket",
+      coverageAmount: 1_000_000,
+      effectiveDate: now,
+      expirationDate: now + 365 * 24 * 60 * 60 * 1000,
+    }),
+  ).rejects.toThrow("Module not enabled: insurance");
 });

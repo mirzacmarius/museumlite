@@ -16,13 +16,16 @@ function buildNavigation({
     "reporting",
   ]),
   isLibraryModuleEnabled = true,
+  isInsuranceModuleEnabled = false,
 }: {
   enabledFeatures?: Set<string>;
   isLibraryModuleEnabled?: boolean;
+  isInsuranceModuleEnabled?: boolean;
 } = {}) {
   return buildSidebarNavigation({
     hasFeature: (featureId) => enabledFeatures.has(featureId),
     isLibraryModuleEnabled,
+    isInsuranceModuleEnabled,
     isLocationTrackingEnabled: true,
   });
 }
@@ -98,5 +101,43 @@ describe("buildSidebarNavigation", () => {
     );
 
     expect(patrons.locked).toBe(true);
+  });
+
+  test("keeps Insurance out of Conservation & Care", () => {
+    const { navigationGroups } = buildNavigation({
+      isInsuranceModuleEnabled: true,
+    });
+
+    const conservationItems = findGroup(
+      navigationGroups,
+      "Conservation & Care",
+    ).items.map((item) => item.title);
+
+    expect(conservationItems).toEqual(["Conservation"]);
+    expect(conservationItems).not.toContain("Insurance");
+  });
+
+  test("omits the Insurance group when the insurance module is disabled", () => {
+    const { navigationGroups } = buildNavigation({
+      isInsuranceModuleEnabled: false,
+    });
+
+    expect(
+      navigationGroups.find((group) => group.title === "Insurance"),
+    ).toBeUndefined();
+  });
+
+  test("adds an Insurance group when the insurance module is enabled", () => {
+    const { navigationGroups } = buildNavigation({
+      isInsuranceModuleEnabled: true,
+    });
+
+    const insurance = findItem(
+      findGroup(navigationGroups, "Insurance").items,
+      "Insurance",
+    );
+
+    expect(insurance.url).toBe("/insurance");
+    expect(insurance.locked).toBeUndefined();
   });
 });

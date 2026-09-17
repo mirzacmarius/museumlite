@@ -411,6 +411,11 @@ export default {
         description:
           "Urmărește totalurile de evaluare ale colecției pentru artă, vin și vehicule în Analytics.",
       },
+      insurance: {
+        name: "Asigurări",
+        description:
+          "Gestionează polițe, acoperiri și daune independent de conservare.",
+      },
       library: {
         title: "Bibliotecă",
         description: "Gestionează catalogul bibliotecii, membrii și circulația",

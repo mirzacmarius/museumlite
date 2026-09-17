@@ -48,6 +48,7 @@ export interface NavigationGroup {
 interface BuildSidebarNavigationInput {
   hasFeature: (featureId: FeatureId) => boolean;
   isLibraryModuleEnabled: boolean;
+  isInsuranceModuleEnabled: boolean;
   isLocationTrackingEnabled: boolean;
 }
 
@@ -65,6 +66,7 @@ const PATRON_MANAGEMENT_NAV_ITEM = {
 export function buildSidebarNavigation({
   hasFeature,
   isLibraryModuleEnabled,
+  isInsuranceModuleEnabled,
   isLocationTrackingEnabled,
 }: BuildSidebarNavigationInput): SidebarNavigation {
   const navCoreInventory: NavigationItem[] = [
@@ -116,11 +118,13 @@ export function buildSidebarNavigation({
       icon: Activity,
       locked: !hasFeature("conservation"),
     },
+  ];
+
+  const navInsurance: NavigationItem[] = [
     {
       title: "Insurance",
       url: "/insurance",
       icon: Shield,
-      locked: !hasFeature("conservation"),
     },
   ];
 
@@ -195,9 +199,18 @@ export function buildSidebarNavigation({
       },
       {
         title: "Conservation & Care",
-        icon: Shield,
+        icon: Activity,
         items: navConservation,
       },
+      ...(isInsuranceModuleEnabled
+        ? [
+            {
+              title: "Insurance",
+              icon: Shield,
+              items: navInsurance,
+            } satisfies NavigationGroup,
+          ]
+        : []),
       {
         title: "Library",
         icon: Library,

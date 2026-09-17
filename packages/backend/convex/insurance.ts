@@ -4,16 +4,31 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { createOrganizationQuery } from "./utils/convexAuth";
+import { hasModuleEnabled } from "./utils/featureGates";
 import { computeCoverageAlerts } from "./utils/insuranceCoverageAlerts";
 import { computeInsuranceStats } from "./utils/insuranceStats";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
 import {
   getUserIdsWithPermission,
-  requirePermission,
+  requireModuleAndPermission,
 } from "./utils/permissions";
 
-const insuranceReadQuery = createOrganizationQuery("loans.read");
+const insuranceReadQuery = createOrganizationQuery("loans.read", "insurance");
+
+async function requireInsurancePermission(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  permissionName: string,
+) {
+  await requireModuleAndPermission(
+    ctx,
+    organizationId,
+    "insurance",
+    permissionName,
+  );
+}
 
 const policyTypeValidator = v.union(
   v.literal("blanket"),
@@ -102,7 +117,7 @@ export const createPolicy = mutation({
   handler: async (ctx, args) => {
     const [userId] = await Promise.all([
       getAuthUserId(ctx),
-      requirePermission(
+      requireInsurancePermission(
         ctx,
         args.organizationId,
         "organization.manage_settings",
@@ -208,7 +223,7 @@ export const updatePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       policy.organizationId,
       "organization.manage_settings",
@@ -272,7 +287,7 @@ export const deletePolicy = mutation({
     }
 
     const [, activeCoverages] = await Promise.all([
-      requirePermission(
+      requireInsurancePermission(
         ctx,
         policy.organizationId,
         "organization.manage_settings",
@@ -495,7 +510,7 @@ export const getPolicy = query({
     }
 
     const [, documentUrls, coverages, claims] = await Promise.all([
-      requirePermission(ctx, policy.organizationId, "loans.read"),
+      requireInsurancePermission(ctx, policy.organizationId, "loans.read"),
       policy.documentIds
         ? Promise.all(policy.documentIds.map((id) => ctx.storage.getUrl(id)))
         : Promise.resolve(undefined),
@@ -626,7 +641,7 @@ export const addCoverage = mutation({
       );
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       policy.organizationId,
       "organization.manage_settings",
@@ -704,7 +719,7 @@ export const removeCoverage = mutation({
       throw new Error("Coverage not found");
     }
     await Promise.all([
-      requirePermission(
+      requireInsurancePermission(
         ctx,
         coverage.organizationId,
         "organization.manage_settings",
@@ -750,7 +765,7 @@ export const getCoverageForObject = query({
     }
 
     const [, coverages] = await Promise.all([
-      requirePermission(ctx, collection.organizationId, "loans.read"),
+      requireInsurancePermission(ctx, collection.organizationId, "loans.read"),
       ctx.db
         .query("insuranceCoverages")
         .withIndex("by_collection", (q) =>
@@ -805,7 +820,7 @@ export const createClaim = mutation({
     }
 
     const [, policy] = await Promise.all([
-      requirePermission(
+      requireInsurancePermission(
         ctx,
         args.organizationId,
         "organization.manage_settings",
@@ -885,7 +900,7 @@ export const updateClaim = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
@@ -1100,7 +1115,7 @@ export const getClaim = query({
       return null;
     }
 
-    await requirePermission(ctx, claim.organizationId, "loans.read");
+    await requireInsurancePermission(ctx, claim.organizationId, "loans.read");
 
     const policy = await ctx.db.get(claim.policyId);
 
@@ -1371,7 +1386,7 @@ export const uploadPolicyDocument = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       policy.organizationId,
       "organization.manage_settings",
@@ -1409,7 +1424,7 @@ export const uploadClaimDocument = mutation({
       throw new Error("Claim not found");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
@@ -1448,6 +1463,10 @@ export const checkExpiringPoliciesInternal = internalMutation({
 
     await Promise.all(
       Array.from(organizations).map(async (org) => {
+        if (!(await hasModuleEnabled(ctx, org._id, "insurance"))) {
+          return;
+        }
+
         const activePolicies = await ctx.db
           .query("insurancePolicies")
           .withIndex("by_organization_and_status", (q) =>
@@ -1516,6 +1535,10 @@ export const checkMissingCoverageInternal = internalMutation({
 
     await Promise.all(
       Array.from(organizations).map(async (org) => {
+        if (!(await hasModuleEnabled(ctx, org._id, "insurance"))) {
+          return;
+        }
+
         const allActiveObjects = await ctx.db
           .query("collections")
           .withIndex("by_organization_and_status", (q) =>
@@ -1619,7 +1642,7 @@ export const openDispute = mutation({
       throw new Error("Claim already has an open dispute");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
@@ -1675,7 +1698,7 @@ export const updateDisputeStatus = mutation({
       throw new Error("Claim does not have an open dispute");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
@@ -1736,7 +1759,7 @@ export const resolveDispute = mutation({
       throw new Error("Claim does not have an open dispute");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
@@ -1807,7 +1830,7 @@ export const uploadDisputeDocument = mutation({
       throw new Error("Claim does not have an open dispute");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       claim.organizationId,
       "organization.manage_settings",
@@ -1844,6 +1867,10 @@ export const createAutoClaimForTransitDamage = internalMutation({
   },
   returns: v.union(v.id("insuranceClaims"), v.null()),
   handler: async (ctx, args) => {
+    if (!(await hasModuleEnabled(ctx, args.organizationId, "insurance"))) {
+      return null;
+    }
+
     // Find active transit or loan policy
     const policies = await ctx.db
       .query("insurancePolicies")
@@ -1892,10 +1919,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
       throw new Error("User is not a member of this organization");
     }
 
-    const claimNumber = await generateNextClaimNumber(
-      ctx,
-      args.organizationId,
-    );
+    const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
     const now = Date.now();
 
     const [claimId, coordinatorUserIds] = await Promise.all([
@@ -1969,7 +1993,7 @@ export const linkAppraisalToCoverage = mutation({
       throw new Error("Coverage not found");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       coverage.organizationId,
       "organization.manage_settings",
@@ -2026,6 +2050,12 @@ export const checkAppraisalForCoverage = query({
         warning: "Collection not found",
       };
     }
+
+    await requireInsurancePermission(
+      ctx,
+      collection.organizationId,
+      "loans.read",
+    );
 
     // Find most recent appraisal
     const appraisals = await ctx.db
@@ -2231,7 +2261,7 @@ export const addCoverageWithAppraisalCheck = mutation({
       throw new Error("Policy not found");
     }
 
-    await requirePermission(
+    await requireInsurancePermission(
       ctx,
       policy.organizationId,
       "organization.manage_settings",

@@ -357,6 +357,11 @@ export default {
       description:
         "Siga los totales de valoración de colecciones para bellas artes, vino y vehículos en Analytics.",
     },
+    insurance: {
+      name: "Seguros",
+      description:
+        "Gestione pólizas, coberturas y siniestros de forma independiente a la conservación.",
+    },
     coins_stamps: {
       name: "Monedas y sellos",
       description:

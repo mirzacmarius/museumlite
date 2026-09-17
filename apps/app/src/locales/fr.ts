@@ -359,6 +359,11 @@ export default {
       description:
         "Suivez les totaux de valorisation des collections pour les beaux-arts, le vin et les véhicules dans Analytics.",
     },
+    insurance: {
+      name: "Assurance",
+      description:
+        "Gérez les polices, couvertures et sinistres indépendamment de la conservation.",
+    },
     coins_stamps: {
       name: "Monnaies et timbres",
       description:

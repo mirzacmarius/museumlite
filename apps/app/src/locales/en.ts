@@ -409,6 +409,11 @@ export default {
       description:
         "Track collection valuation totals across fine art, wine, and vehicle holdings in Analytics.",
     },
+    insurance: {
+      name: "Insurance",
+      description:
+        "Manage insurance policies, coverages, and claims independently of conservation.",
+    },
     coins_stamps: {
       name: "Coins and Stamps",
       description:

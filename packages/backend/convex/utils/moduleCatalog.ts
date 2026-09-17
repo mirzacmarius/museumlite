@@ -8,6 +8,7 @@ export const MODULE_IDS = [
   "accounts",
   "coins_stamps",
   "inventory_valuation",
+  "insurance",
 ] as const;
 
 export type ModuleId = (typeof MODULE_IDS)[number];
@@ -22,6 +23,7 @@ export const SETTINGS_MODULE_IDS = [
   "library",
   "coins_stamps",
   "inventory_valuation",
+  "insurance",
 ] as const satisfies ReadonlyArray<ModuleId>;
 
 export const COLLECTION_MODULE_IDS = [

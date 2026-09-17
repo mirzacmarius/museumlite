@@ -35,6 +35,7 @@ describe("Feature Gates - Shared Policy", () => {
   test("shared module ids include backend-only and app-visible modules", () => {
     expect(MODULE_IDS).toContain("accounts");
     expect(MODULE_IDS).toContain("library");
+    expect(MODULE_IDS).toContain("insurance");
   });
 
   test("tier limits are centralized with unlimited enterprise quotas", () => {
