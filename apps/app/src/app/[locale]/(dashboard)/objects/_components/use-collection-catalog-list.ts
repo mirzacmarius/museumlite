@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { useObjectFilters } from "@/hooks/use-url-filters";
+import { collectUniqueStringListValues } from "@/lib/string-list-field";
 import { exportCollectionsToCsv } from "./collection-bulk-export";
 import {
   INITIAL_OBJECTS_PAGE_SIZE,
@@ -226,16 +227,10 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   }, [collectionGroups, filters.collectionGroupId]);
 
   const objectTypeOptions = useMemo(() => {
-    const types = new Set<string>();
-    typeOptions?.forEach((option: TypeOption) => {
-      if (option.name) types.add(option.name);
-    });
-    collections.forEach((item: CollectionListItem) => {
-      if (item.objectType) types.add(item.objectType);
-    });
-    return Array.from(types)
-      .filter((typeName) => typeName.trim() !== "")
-      .sort();
+    return collectUniqueStringListValues([
+      ...(typeOptions?.map((option: TypeOption) => option.name) ?? []),
+      ...collections.map((item: CollectionListItem) => item.objectType),
+    ]);
   }, [collections, typeOptions]);
 
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {

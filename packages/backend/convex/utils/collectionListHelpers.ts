@@ -7,13 +7,15 @@ import {
 import { countOpenDeaccessionCollectionIds } from "./indexedCounts";
 
 /**
- * Whether catalog list pagination can use org/status indexes only (no filters).
+ * Whether catalog list pagination can use org/status/location indexes only.
+ * Text and membership filters (including JSON-stored object types) skip this path.
  */
 export function shouldUseIndexedCollectionsPagination(args: {
   collectionGroupId?: Id<"collectionGroups">;
   culture?: string;
   period?: string;
   materials?: string;
+  objectType?: string;
   displayStatus?: string;
   search?: string;
   catalogedFrom?: number;
@@ -24,6 +26,7 @@ export function shouldUseIndexedCollectionsPagination(args: {
     !args.culture &&
     !args.period &&
     !args.materials &&
+    !args.objectType &&
     !args.displayStatus &&
     !args.search?.trim() &&
     !args.catalogedFrom &&

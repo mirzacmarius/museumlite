@@ -66,3 +66,15 @@ export function formatStringListField(
   const normalizedItems = parseStringListField(value);
   return normalizedItems.length > 0 ? normalizedItems.join(", ") : emptyLabel;
 }
+
+export function collectUniqueStringListValues(
+  values: Array<string | string[] | null | undefined>,
+): string[] {
+  const uniqueValues = new Set<string>();
+  for (const value of values) {
+    for (const item of parseStringListField(value)) {
+      uniqueValues.add(item);
+    }
+  }
+  return Array.from(uniqueValues).sort((a, b) => a.localeCompare(b));
+}

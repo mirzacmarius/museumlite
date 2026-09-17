@@ -306,6 +306,95 @@ test("collections.list paginates newest objects and enriches visible rows", asyn
   expect(typeFiltered.page.map((c) => c.title)).toEqual(["Middle item"]);
 });
 
+test("collections.list matches JSON-serialized objectType arrays", async () => {
+  const t = convexTest(schema, modules);
+
+  const { organizationId, userId } = await t.run(async (ctx) => {
+    const [userId, organizationId, collectionsReadPermissionId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Test User" }),
+        ctx.db.insert("organizations", {
+          name: "JSON Type Org",
+          slug: "json-type-org",
+          type: "museum",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+          description: "Read collections",
+        }),
+      ]);
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Reader",
+      description: "Test role",
+      isSystemRole: false,
+    });
+    await ctx.db.insert("rolePermissions", {
+      roleId,
+      permissionId: collectionsReadPermissionId,
+    });
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0001",
+      title: "JSON painting",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 1,
+      objectType: '["Painting"]',
+    });
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0002",
+      title: "Multi-type object",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 2,
+      objectType: '["Painting","Sculpture"]',
+    });
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0003",
+      title: "Plain sculpture",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: 3,
+      objectType: "Sculpture",
+    });
+
+    return { organizationId, userId };
+  });
+
+  const asUser = t.withIdentity({ subject: userId });
+
+  const paintingMatches = await asUser.query(api.collections.list, {
+    organizationId,
+    objectType: "Painting",
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(paintingMatches.page.map((c) => c.title)).toEqual([
+    "Multi-type object",
+    "JSON painting",
+  ]);
+
+  const sculptureMatches = await asUser.query(api.collections.list, {
+    organizationId,
+    objectType: "Sculpture",
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(sculptureMatches.page.map((c) => c.title)).toEqual([
+    "Plain sculpture",
+    "Multi-type object",
+  ]);
+});
+
 test("collections.emptyDeletedCollections permanently deletes deleted objects", async () => {
   const t = convexTest(schema, modules);
 

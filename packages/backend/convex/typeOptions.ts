@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
+import { parseStoredStringList } from "./utils/stringListField";
 
 /**
  * List all custom type options for an organization
@@ -130,21 +131,7 @@ export const checkUsage = query({
 
       if (!collection.objectType) return false;
 
-      // Safely parse objectType - handle both JSON arrays and plain strings
-      let types: string[];
-      try {
-        types = JSON.parse(collection.objectType) as string[];
-      } catch {
-        // If parsing fails, treat as a single type string
-        types = [collection.objectType];
-      }
-
-      // Ensure types is an array
-      if (!Array.isArray(types)) {
-        types = [types];
-      }
-
-      return types.includes(type.name);
+      return parseStoredStringList(collection.objectType).includes(type.name);
     });
 
     return {

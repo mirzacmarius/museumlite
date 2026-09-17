@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  collectUniqueStringListValues,
   formatStringListField,
   parseStringListField,
   serializeStringListField,
@@ -49,5 +50,18 @@ describe("formatStringListField", () => {
 
   test("returns the provided empty label when nothing is specified", () => {
     expect(formatStringListField("[]", "Not specified")).toBe("Not specified");
+  });
+});
+
+describe("collectUniqueStringListValues", () => {
+  test("unwraps JSON array object types and dedupes plain names", () => {
+    expect(
+      collectUniqueStringListValues([
+        '["Painting"]',
+        "Painting",
+        '["Sculpture","Photograph"]',
+        undefined,
+      ]),
+    ).toEqual(["Painting", "Photograph", "Sculpture"]);
   });
 });

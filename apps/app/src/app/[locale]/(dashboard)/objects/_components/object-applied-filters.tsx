@@ -7,6 +7,7 @@ import type {
   ObjectDisplayStatus,
   ObjectStatus,
 } from "@/hooks/use-url-filters";
+import { formatStringListField } from "@/lib/string-list-field";
 import { useScopedI18n } from "@/locales/client";
 
 interface LocationPathItem {
@@ -137,7 +138,7 @@ export function ObjectAppliedFilters({
       {filters.objectType !== "" && (
         <AppliedFilterChip
           label={t("filters.objectType")}
-          value={filters.objectType}
+          value={formatStringListField(filters.objectType, filters.objectType)}
           onRemove={() => onChange({ objectType: "" })}
         />
       )}

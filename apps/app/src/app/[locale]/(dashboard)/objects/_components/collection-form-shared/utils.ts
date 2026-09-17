@@ -283,17 +283,7 @@ export function createInitialFormData(
   collection: CollectionDoc,
   collectionGroups: Array<{ _id: Id<"collectionGroups"> }> = [],
 ): CollectionFormData {
-  let objectTypeArray: string[] = [];
-  if (collection.objectType) {
-    try {
-      const parsed = JSON.parse(collection.objectType);
-      objectTypeArray = Array.isArray(parsed)
-        ? parsed
-        : [collection.objectType];
-    } catch {
-      objectTypeArray = [collection.objectType];
-    }
-  }
+  const objectTypeArray = parseStringListField(collection.objectType);
 
   const collectionGroupIds =
     collectionGroups.length > 0

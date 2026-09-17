@@ -42,6 +42,10 @@ import {
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import {
+  parseStoredStringList,
+  storedStringListIncludes,
+} from "./utils/stringListField";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
 const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
@@ -1782,32 +1786,6 @@ export const list = query({
         });
       }
 
-      if (args.objectType && !args.status && !args.locationId) {
-        const paginationResult = await ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_objectType", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("objectType", args.objectType),
-          )
-          .filter((q) =>
-            args.includeDeaccessioned
-              ? q.neq(q.field("status"), "deleted")
-              : q.and(
-                  q.neq(q.field("status"), "deleted"),
-                  q.neq(q.field("status"), "deaccessioned"),
-                ),
-          )
-          .order("desc")
-          .paginate(args.paginationOpts);
-
-        return await toCollectionListPaginationResult(ctx, {
-          page: filterOpenDeaccessions(paginationResult.page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        });
-      }
-
       if (!args.status && !args.locationId && !args.objectType) {
         const paginationResult = await ctx.db
           .query("collections")
@@ -1927,12 +1905,6 @@ export const list = query({
         );
       }
 
-      if (args.objectType) {
-        query = query.filter((q) =>
-          q.eq(q.field("objectType"), args.objectType),
-        );
-      }
-
       if (args.displayStatus) {
         query = query.filter((q) =>
           q.eq(q.field("displayStatus"), args.displayStatus),
@@ -2004,16 +1976,18 @@ export const list = query({
       );
     }
 
+    if (args.objectType) {
+      const selectedObjectType = args.objectType;
+      allResults = allResults.filter((c) =>
+        storedStringListIncludes(c.objectType, selectedObjectType),
+      );
+    }
+
     // Apply location filter if not already applied (for search case)
     if (args.locationId && args.search) {
       allResults = allResults.filter(
         (c) => c.currentLocationId === args.locationId,
       );
-    }
-
-    // Apply objectType filter if not already applied (for search case)
-    if (args.objectType && args.search) {
-      allResults = allResults.filter((c) => c.objectType === args.objectType);
     }
 
     if (args.displayStatus && args.search) {
@@ -3394,8 +3368,9 @@ export const listPublic = query({
     }
 
     if (args.objectType) {
-      filtered = filtered.filter(
-        (entry) => entry.objectType === args.objectType,
+      const selectedObjectType = args.objectType;
+      filtered = filtered.filter((entry) =>
+        storedStringListIncludes(entry.objectType, selectedObjectType),
       );
     }
     if (args.culture) {
@@ -3734,10 +3709,10 @@ export const getPublicFilters = query({
     const objectTypes = [
       ...new Set([
         ...collections.flatMap((collection) =>
-          collection.objectType ? [collection.objectType] : [],
+          parseStoredStringList(collection.objectType),
         ),
         ...libraryItems.flatMap((item) =>
-          item.itemType ? [item.itemType] : [],
+          parseStoredStringList(item.itemType),
         ),
       ]),
     ] as string[];
