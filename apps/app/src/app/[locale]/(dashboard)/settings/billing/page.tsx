@@ -7,9 +7,11 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { PermissionGate } from "@/components/permission-gate";
 import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { OrganizationDeletionZone } from "../organization/organization-deletion-zone";
 
 type BillingInterval = "month" | "year";
 type PaidTier = "pro" | "enterprise";
@@ -532,6 +534,7 @@ function BillingSettingsContent() {
     organizationDetails?.preservedSubscriptionTier ??
     organizationDetails?.subscriptionTier ??
     "free";
+  const isSubOrganization = Boolean(currentOrganization.parentOrganizationId);
 
   return (
     <div className="flex size-full flex-col gap-6">
@@ -616,6 +619,13 @@ function BillingSettingsContent() {
           onManageSubscription={handleManageSubscription}
         />
       ) : null}
+
+      <PermissionGate permission="organization.manage_settings">
+        <OrganizationDeletionZone
+          organizationId={currentOrganizationId}
+          isSubOrganization={isSubOrganization}
+        />
+      </PermissionGate>
     </div>
   );
 }

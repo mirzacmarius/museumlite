@@ -129,9 +129,7 @@ export function OrganizationDeletionZone({
     try {
       await requestDeletion({ organizationId });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("requestError"),
-      );
+      setError(err instanceof Error ? err.message : t("requestError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -143,9 +141,7 @@ export function OrganizationDeletionZone({
     try {
       await cancelDeletion({ organizationId });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("cancelError"),
-      );
+      setError(err instanceof Error ? err.message : t("cancelError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -164,28 +160,26 @@ export function OrganizationDeletionZone({
       });
       setSelectedOwnerId("");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("transferError"),
-      );
+      setError(err instanceof Error ? err.message : t("transferError"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="mt-8 border-t border-border pt-8">
-      <h3 className="mb-4 text-lg font-medium text-destructive">
+    <div className="flex w-full flex-col gap-4">
+      <h3 className="text-lg font-medium text-destructive">
         {t("dangerZone")}
       </h3>
 
       {error ? (
-        <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       ) : null}
 
       {deletionStatus ? (
-        <div className="mb-4 space-y-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+        <div className="space-y-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
             <div className="space-y-1">
@@ -230,19 +224,27 @@ export function OrganizationDeletionZone({
             </p>
             <div className="space-y-2">
               <Label>{t("transferCandidateLabel")}</Label>
-              <Select value={selectedOwnerId} onValueChange={setSelectedOwnerId}>
+              <Select
+                value={selectedOwnerId}
+                onValueChange={setSelectedOwnerId}
+              >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={t("transferCandidatePlaceholder")}
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {(transferCandidates ?? []).map((candidate: TransferCandidate) => (
-                    <SelectItem key={candidate.userId} value={candidate.userId}>
-                      {candidate.name ?? candidate.email ?? candidate.userId}
-                      {candidate.roleName ? ` (${candidate.roleName})` : ""}
-                    </SelectItem>
-                  ))}
+                  {(transferCandidates ?? []).map(
+                    (candidate: TransferCandidate) => (
+                      <SelectItem
+                        key={candidate.userId}
+                        value={candidate.userId}
+                      >
+                        {candidate.name ?? candidate.email ?? candidate.userId}
+                        {candidate.roleName ? ` (${candidate.roleName})` : ""}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -274,7 +276,9 @@ export function OrganizationDeletionZone({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t("confirmDialog.title")}</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t("confirmDialog.title")}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("confirmDialog.description")}
                   </AlertDialogDescription>
