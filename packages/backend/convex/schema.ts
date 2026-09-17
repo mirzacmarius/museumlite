@@ -1596,7 +1596,18 @@ export default defineSchema({
   // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({
     organizationId: v.id("organizations"),
-    accountNumber: v.string(), // ACC-XXXXX format
+    // Customer number / ID: {4-digit-prefix}{6-digit-seq} e.g. 0100123456 (person),
+    // 0200123456 (business), 0300123456 (non-profit). Legacy ACC-XXXXX preserved.
+    accountNumber: v.string(),
+
+    // Customer category for number prefix (person=0100, business=0200, nonProfit=0300)
+    customerCategory: v.optional(
+      v.union(
+        v.literal("person"),
+        v.literal("business"),
+        v.literal("nonProfit"),
+      ),
+    ),
 
     // Account type - distinguishes museum vs library accounts
     // Optional to support existing accounts before migration
@@ -1751,12 +1762,24 @@ export default defineSchema({
     .index("by_role", ["roleId"])
     .index("by_account_and_role", ["accountId", "roleId"]),
 
-  // Account number counter tracking
+  // Customer number counter tracking (scoped per org + category)
   accountCounters: defineTable({
     organizationId: v.id("organizations"),
+    customerCategory: v.optional(
+      v.union(
+        v.literal("person"),
+        v.literal("business"),
+        v.literal("nonProfit"),
+      ),
+    ),
     currentValue: v.number(),
     lastGeneratedAt: v.number(),
-  }).index("by_organization", ["organizationId"]),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_organization_and_customerCategory", [
+      "organizationId",
+      "customerCategory",
+    ]),
 
   // Platform-wide organization account number counter (ORG-XXXXX)
   organizationRegistryCounter: defineTable({

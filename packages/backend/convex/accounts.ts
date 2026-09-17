@@ -10,7 +10,10 @@ import {
   validateAccountProfileForCreate,
 } from "./utils/accountProfile";
 import { requireModuleEnabled } from "./utils/featureGates";
-import { generateNextAccountNumber } from "./utils/numberGenerator";
+import {
+  generateNextCustomerNumber,
+  resolveCustomerCategory,
+} from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 
 const accountTypeValidator = v.union(
@@ -24,6 +27,12 @@ const accountTypeValidator = v.union(
 const holderTypeValidator = v.union(
   v.literal("organization"),
   v.literal("privatePerson"),
+);
+
+const customerCategoryValidator = v.union(
+  v.literal("person"),
+  v.literal("business"),
+  v.literal("nonProfit"),
 );
 
 const BOUNDED_ACCOUNT_SEARCH_SCAN_LIMIT = 500;
@@ -212,6 +221,7 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     accountType: accountTypeValidator,
     holderType: v.optional(holderTypeValidator),
+    customerCategory: v.optional(customerCategoryValidator),
 
     // Business/Organization info (for institutions)
     businessName: v.optional(v.string()),
@@ -267,20 +277,28 @@ export const create = mutation({
 
     validateAccountProfileForCreate(args);
 
-    const accountNumber = await generateNextAccountNumber(
+    const holderType = args.holderType ?? "organization";
+    const customerCategory = resolveCustomerCategory(
+      holderType,
+      args.customerCategory,
+    );
+    const accountNumber = await generateNextCustomerNumber(
       ctx,
       args.organizationId,
+      customerCategory,
     );
-    const holderType = args.holderType ?? "organization";
     const now = Date.now();
 
     const accountId = await ctx.db.insert(
       "accounts",
-      buildAccountCreateDocument(args, {
-        accountNumber,
-        createdBy: userId,
-        createdAt: now,
-      }),
+      buildAccountCreateDocument(
+        { ...args, customerCategory },
+        {
+          accountNumber,
+          createdBy: userId,
+          createdAt: now,
+        },
+      ),
     );
 
     // Associate roles with account if provided
@@ -306,6 +324,7 @@ export const create = mutation({
       changes: {
         accountType: args.accountType,
         holderType,
+        customerCategory,
         accountNumber,
         businessName: args.businessName?.trim() || undefined,
         firstName: args.firstName?.trim() || undefined,

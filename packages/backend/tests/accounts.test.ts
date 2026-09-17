@@ -127,7 +127,8 @@ describe("Accounts CRUD", () => {
 
     const account = await authed.query(api.accounts.get, { accountId });
     expect(account).toBeDefined();
-    expect(account?.accountNumber).toMatch(/^ACC-\d{5}$/);
+    expect(account?.accountNumber).toMatch(/^(0100|0200|0300)\d{6}$/);
+    expect(account?.customerCategory).toBe("business");
     expect(account?.businessName).toBe("Test Lender Inc");
     expect(account?.accountType).toBe("lender");
   });
@@ -154,6 +155,8 @@ describe("Accounts CRUD", () => {
 
     const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.holderType).toBe("privatePerson");
+    expect(account?.customerCategory).toBe("person");
+    expect(account?.accountNumber).toMatch(/^0100\d{6}$/);
     expect(account?.businessName).toBe("Jane Doe");
     expect(account?.dateOfBirth).toBe(dateOfBirth);
     expect(account?.notes).toBe("Private lender");
@@ -178,7 +181,70 @@ describe("Accounts CRUD", () => {
 
     const account = await authed.query(api.accounts.get, { accountId });
     expect(account?.holderType).toBe("organization");
+    expect(account?.customerCategory).toBe("business");
+    expect(account?.accountNumber).toMatch(/^0200\d{6}$/);
     expect(account?.taxId).toBe("987 654 321");
+  });
+
+  test("should create a non-profit account with 0300 prefix", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-nonprofit`,
+      issuer: "https://example.test",
+    });
+
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "institution",
+      holderType: "organization",
+      customerCategory: "nonProfit",
+      businessName: "Arts Foundation",
+    });
+
+    const account = await authed.query(api.accounts.get, { accountId });
+    expect(account?.customerCategory).toBe("nonProfit");
+    expect(account?.accountNumber).toMatch(/^0300\d{6}$/);
+  });
+
+  test("should assign independent sequences per customer category", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+
+    const authed = t.withIdentity({
+      subject: `${userId}|session-category-seq`,
+      issuer: "https://example.test",
+    });
+
+    const personId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      holderType: "privatePerson",
+      businessName: "Person One",
+    });
+    const businessId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "borrower",
+      holderType: "organization",
+      businessName: "Business One",
+    });
+    const nonProfitId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "institution",
+      customerCategory: "nonProfit",
+      businessName: "Non Profit One",
+    });
+
+    const [person, business, nonProfit] = await Promise.all([
+      authed.query(api.accounts.get, { accountId: personId }),
+      authed.query(api.accounts.get, { accountId: businessId }),
+      authed.query(api.accounts.get, { accountId: nonProfitId }),
+    ]);
+
+    expect(person?.accountNumber).toBe("0100000001");
+    expect(business?.accountNumber).toBe("0200000001");
+    expect(nonProfit?.accountNumber).toBe("0300000001");
   });
 
   test("should list accounts with pagination", async () => {

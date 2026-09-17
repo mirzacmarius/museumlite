@@ -14,7 +14,7 @@ export function AccountComboboxContactSection({
   formData,
   setFormData,
 }: AccountComboboxContactSectionProps) {
-  if (formData.holderType !== "organization") return null;
+  if (formData.customerCategory === "person") return null;
 
   return (
     <div className="space-y-4">

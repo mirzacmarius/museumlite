@@ -46,7 +46,7 @@ export function AccountDetailHeader({
             <h1 className="text-xl font-medium">{businessName}</h1>
           </div>
           <p className="font-mono text-sm text-muted-foreground">
-            Account: {accountNumber}
+            Customer number: {accountNumber}
           </p>
         </div>
       </div>

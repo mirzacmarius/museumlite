@@ -22,8 +22,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import {
-  type AccountHolderType,
-  DEFAULT_ACCOUNT_HOLDER_TYPE,
+  type CustomerCategory,
+  customerCategoryToHolderType,
+  DEFAULT_CUSTOMER_CATEGORY,
   parseDateInputValue,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
@@ -31,7 +32,7 @@ import { useScopedI18n } from "@/locales/client";
 type AccountType = "lender" | "borrower" | "both" | "institution";
 
 interface AccountFormData {
-  holderType: AccountHolderType;
+  customerCategory: CustomerCategory;
   businessName: string;
   taxId: string;
   dateOfBirth: string;
@@ -58,7 +59,7 @@ interface RoleWithPermissions {
 }
 
 const initialFormData: AccountFormData = {
-  holderType: DEFAULT_ACCOUNT_HOLDER_TYPE,
+  customerCategory: DEFAULT_CUSTOMER_CATEGORY,
   businessName: "",
   taxId: "",
   dateOfBirth: "",
@@ -129,13 +130,14 @@ export default function NewAccountPage() {
       return;
     }
 
-    const isOrganization = formData.holderType === "organization";
+    const isOrganization = formData.customerCategory !== "person";
 
     setIsSubmitting(true);
     try {
       await createAccount({
         organizationId: currentOrganizationId,
-        holderType: formData.holderType,
+        holderType: customerCategoryToHolderType(formData.customerCategory),
+        customerCategory: formData.customerCategory,
         businessName: formData.businessName,
         taxId: isOrganization ? formData.taxId || undefined : undefined,
         dateOfBirth: isOrganization
@@ -198,7 +200,7 @@ export default function NewAccountPage() {
               t={t}
               onChange={updateFormData}
             />
-            {formData.holderType === "organization" && (
+            {formData.customerCategory !== "person" && (
               <ContactPersonSection
                 formData={formData}
                 t={t}
@@ -266,7 +268,33 @@ interface FormSectionProps {
 }
 
 function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
-  const isOrganization = formData.holderType === "organization";
+  const isOrganization = formData.customerCategory !== "person";
+
+  const categoryOptions: Array<{
+    value: CustomerCategory;
+    label: string;
+    description: string;
+    prefix: string;
+  }> = [
+    {
+      value: "person",
+      label: "Private Person",
+      description: "Individuals acting in their own name.",
+      prefix: "0100",
+    },
+    {
+      value: "business",
+      label: "Business / Organization",
+      description: "Companies, museums, galleries, and institutions.",
+      prefix: "0200",
+    },
+    {
+      value: "nonProfit",
+      label: "Non-profit organisation",
+      description: "Registered non-profit or charitable organisations.",
+      prefix: "0300",
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -275,28 +303,25 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
       </h3>
       <div className="space-y-4">
         <div className="space-y-3">
-          <Label>Holder Type</Label>
+          <Label>Customer category</Label>
           <RadioGroup
-            className="grid gap-3 md:grid-cols-2"
-            value={formData.holderType}
+            className="grid gap-3"
+            value={formData.customerCategory}
             onValueChange={(value) =>
-              onChange("holderType", value as AccountHolderType)
+              onChange("customerCategory", value as CustomerCategory)
             }
           >
-            <HolderTypeOption
-              checked={isOrganization}
-              description="Companies, museums, galleries, and institutions."
-              id="holder-type-organization"
-              label="Business / Organization"
-              value="organization"
-            />
-            <HolderTypeOption
-              checked={formData.holderType === "privatePerson"}
-              description="Individuals acting in their own name."
-              id="holder-type-privatePerson"
-              label="Private Person"
-              value="privatePerson"
-            />
+            {categoryOptions.map((option) => (
+              <CustomerCategoryOption
+                key={option.value}
+                checked={formData.customerCategory === option.value}
+                description={option.description}
+                id={`customer-category-${option.value}`}
+                label={option.label}
+                prefix={option.prefix}
+                value={option.value}
+              />
+            ))}
           </RadioGroup>
         </div>
         <div className="space-y-2">
@@ -355,18 +380,20 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
   );
 }
 
-function HolderTypeOption({
+function CustomerCategoryOption({
   checked,
   description,
   id,
   label,
+  prefix,
   value,
 }: {
   checked: boolean;
   description: string;
   id: string;
   label: string;
-  value: AccountHolderType;
+  prefix: string;
+  value: CustomerCategory;
 }) {
   return (
     <Label
@@ -377,7 +404,12 @@ function HolderTypeOption({
     >
       <RadioGroupItem id={id} value={value} className="mt-0.5" />
       <div className="space-y-1">
-        <div className="font-medium">{label}</div>
+        <div className="font-medium">
+          {label}{" "}
+          <span className="font-mono text-xs text-muted-foreground">
+            ({prefix})
+          </span>
+        </div>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </Label>
