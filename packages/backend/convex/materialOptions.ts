@@ -2,6 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
+import {
+  assertOptionUsageIndexReady,
+  loadOptionUsage,
+  optionUsageResultValidator,
+  unusedOptionUsage,
+} from "./utils/collectionOptionUsages";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -101,61 +107,37 @@ export const checkUsage = query({
     materialId: v.id("materialOptions"),
     excludeCollectionId: v.optional(v.id("collections")),
   },
-  returns: v.object({
-    isUsed: v.boolean(),
-    usageCount: v.number(),
-    collectionNames: v.array(v.string()),
-  }),
+  returns: optionUsageResultValidator,
   handler: async (ctx, args) => {
-    const material = await ctx.db.get(args.materialId);
-    if (!material) {
-      return { isUsed: false, usageCount: 0, collectionNames: [] };
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, material.organizationId, "collections.read");
+    const material = await ctx.db.get(args.materialId);
+    if (!material) {
+      return unusedOptionUsage();
+    }
 
-    // Check all collections in the organization for this material
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", material.organizationId),
-      )
-      .collect();
-
-    // Filter collections that use this material (excluding the specified collection if provided)
-    const collectionsUsingMaterial = collections.filter((collection) => {
-      // Exclude the current collection being edited
+    try {
+      await requirePermission(ctx, material.organizationId, "collections.read");
+    } catch (error) {
       if (
-        args.excludeCollectionId &&
-        collection._id === args.excludeCollectionId
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
       ) {
-        return false;
+        return unusedOptionUsage();
       }
+      throw error;
+    }
 
-      if (!collection.materials) return false;
+    await assertOptionUsageIndexReady(ctx, material.organizationId);
 
-      // Safely parse materials - handle both JSON arrays and plain strings
-      let materials: string[];
-      try {
-        materials = JSON.parse(collection.materials) as string[];
-      } catch {
-        // If parsing fails, treat as a single material string
-        materials = [collection.materials];
-      }
-
-      // Ensure materials is an array
-      if (!Array.isArray(materials)) {
-        materials = [materials];
-      }
-
-      return materials.includes(material.name);
+    return await loadOptionUsage(ctx, {
+      organizationId: material.organizationId,
+      kind: "material",
+      value: material.name,
+      excludeCollectionId: args.excludeCollectionId,
     });
-
-    return {
-      isUsed: collectionsUsingMaterial.length > 0,
-      usageCount: collectionsUsingMaterial.length,
-      collectionNames: collectionsUsingMaterial.map((c) => c.accessionNumber),
-    };
   },
 });
 
@@ -194,31 +176,6 @@ export const remove = mutation({
         changes: { name: material.name },
       }),
     ] as const);
-
-    return null;
-  },
-});
-
-/**
- * Increment usage counter for a material option
- */
-export const incrementUsage = mutation({
-  args: {
-    materialId: v.id("materialOptions"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const material = await ctx.db.get(args.materialId);
-    if (!material) {
-      return null;
-    }
-
-    await requirePermission(ctx, material.organizationId, "collections.update");
-
-    await ctx.db.patch(args.materialId, {
-      usageCount: (material.usageCount ?? 0) + 1,
-      lastUsedAt: Date.now(),
-    });
 
     return null;
   },

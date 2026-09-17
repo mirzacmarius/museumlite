@@ -21,11 +21,12 @@ import {
 } from "./utils/featureGates";
 import type { ModuleId } from "./utils/moduleCatalog";
 import { enabledModuleValidator } from "./utils/moduleValidators";
+import { markOptionUsageIndexReady } from "./utils/collectionOptionUsages";
+import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
-import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import {
   getCurrentUserOrganization,
@@ -203,6 +204,7 @@ export const create = mutation({
         "organizationUsageCounters",
         createEmptyUsageCounter(organizationId),
       ),
+      markOptionUsageIndexReady(ctx, organizationId),
       ctx.runMutation(internal.organizations.createDefaultRoles, {
         organizationId,
       }),
@@ -1949,6 +1951,7 @@ export const validateAccessionFormat = query({
 export const getAccessionNumberPreview = query({
   args: {
     organizationId: v.id("organizations"),
+    now: v.number(),
   },
   returns: v.union(
     v.object({
@@ -1972,7 +1975,7 @@ export const getAccessionNumberPreview = query({
       return null;
     }
 
-    const now = new Date();
+    const now = new Date(args.now);
     const counterScope =
       org.settings?.accessionCounterScope ||
       accessionParser.getCounterScopeFromTemplate(template);

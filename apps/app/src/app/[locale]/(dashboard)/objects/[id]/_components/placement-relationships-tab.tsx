@@ -93,9 +93,9 @@ export function PlacementRelationshipsTab({
             </span>
             {childObjects === undefined ? (
               <span className="text-sm text-muted-foreground">Loading…</span>
-            ) : childObjects.length > 0 ? (
+            ) : childObjects.children.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {childObjects.map((child) => (
+                {childObjects.children.map((child) => (
                   <Button key={child._id} variant="outline" size="sm" asChild>
                     <Link href={`/objects/${child._id}`}>
                       {child.title} ({child.accessionNumber})

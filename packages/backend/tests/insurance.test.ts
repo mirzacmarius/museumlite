@@ -394,3 +394,65 @@ test("should reject auto-claim for non-member actor", async () => {
     }),
   ).rejects.toThrow("User is not a member of this organization");
 });
+
+const DAY = 24 * 60 * 60 * 1000;
+const COVERAGE_NOW = Date.UTC(2026, 8, 17, 12);
+
+test.each([
+  { ageDays: 730, appraisalValid: true, warning: undefined },
+  {
+    ageDays: 731,
+    appraisalValid: true,
+    warning: "Appraisal is over 2 years old and should be updated soon",
+  },
+  {
+    ageDays: 1095,
+    appraisalValid: true,
+    warning: "Appraisal is over 2 years old and should be updated soon",
+  },
+  {
+    ageDays: 1096,
+    appraisalValid: false,
+    warning: "Appraisal is 3 years old and may be stale",
+  },
+])(
+  "checkAppraisalForCoverage treats $ageDays days as the literal cutoff",
+  async ({ ageDays, appraisalValid, warning }) => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(
+      t,
+      ["collections.read"],
+      { subscriptionTier: "pro", slugPrefix: "appraisal-age" },
+    );
+    const authed = authedForUser(t, userId);
+    const collectionId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: `INS-AGE-${ageDays}`,
+        title: "Appraised Object",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: COVERAGE_NOW,
+      });
+      await ctx.db.insert("appraisals", {
+        organizationId,
+        collectionId: id,
+        appraisalDate: COVERAGE_NOW - ageDays * DAY,
+        appraiserName: "Appraiser",
+        appraisalType: "insurance",
+        value: 1000,
+        currency: "EUR",
+        createdBy: userId,
+        createdAt: COVERAGE_NOW,
+      });
+      return id;
+    });
+    const coverage = await authed.query(
+      api.insurance.checkAppraisalForCoverage,
+      { collectionId, now: COVERAGE_NOW },
+    );
+    expect(coverage.appraisalAgeDays).toBe(ageDays);
+    expect(coverage.appraisalValid).toBe(appraisalValid);
+    expect(coverage.warning).toBe(warning);
+  },
+);

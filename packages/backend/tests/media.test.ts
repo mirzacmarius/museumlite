@@ -89,6 +89,47 @@ async function createMediaFile(
   return { mediaId, storageId };
 }
 
+async function createChunkedUpload(
+  t: ReturnType<typeof convexTest>,
+  {
+    organizationId,
+    collectionId,
+    userId,
+    chunkedUploadId,
+    uploadStatus,
+  }: {
+    organizationId: Id<"organizations">;
+    collectionId: Id<"collections">;
+    userId: Id<"users">;
+    chunkedUploadId: string;
+    uploadStatus: "pending" | "processing" | "completed" | "failed";
+  },
+) {
+  const storageId = await t.run(async (ctx) => {
+    return await ctx.storage.store(
+      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+    );
+  });
+
+  await t.run(async (ctx) => {
+    await ctx.db.insert("mediaFiles", {
+      organizationId,
+      collectionId,
+      storageId,
+      fileName: "chunked.jpg",
+      fileType: "image",
+      fileSize: 1024,
+      mimeType: "image/jpeg",
+      mediaCategory: "image",
+      isPrimary: false,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+      uploadStatus,
+      chunkedUploadId,
+    });
+  });
+}
+
 // Note: media.create tests use generateUploadUrl as a proxy because the
 // media.create mutation's storageId argument is validated before the handler
 // runs (the Convex runtime validates v.id("_storage") before executing the
@@ -226,6 +267,84 @@ describe("media.getStorageUrls", () => {
     });
 
     expect(urls).toEqual([{ storageId: foreignStorageId, url: null }]);
+  });
+});
+
+describe("media.getUploadProgress", () => {
+  test("member sees own upload progress shape", async () => {
+    const t = createConvexTest();
+    const org = await setupOrgWithMediaUpload(t);
+    const authed = authedForUser(t, org.userId);
+
+    await createChunkedUpload(t, {
+      organizationId: org.organizationId,
+      collectionId: org.collectionId,
+      userId: org.userId,
+      chunkedUploadId: "own-chunk",
+      uploadStatus: "processing",
+    });
+
+    expect(
+      await authed.query(api.media.getUploadProgress, {
+        organizationId: org.organizationId,
+        chunkId: "own-chunk",
+      }),
+    ).toEqual({ progress: 50, status: "processing" });
+  });
+
+  test("foreign-org member gets null on a live chunk id", async () => {
+    const t = createConvexTest();
+    const orgA = await setupOrgWithMediaUpload(t);
+    const orgB = await setupOrgWithMediaUpload(t);
+    const authedB = authedForUser(t, orgB.userId);
+
+    await createChunkedUpload(t, {
+      organizationId: orgA.organizationId,
+      collectionId: orgA.collectionId,
+      userId: orgA.userId,
+      chunkedUploadId: "live-chunk",
+      uploadStatus: "processing",
+    });
+
+    expect(
+      await authedB.query(api.media.getUploadProgress, {
+        organizationId: orgB.organizationId,
+        chunkId: "live-chunk",
+      }),
+    ).toBeNull();
+  });
+
+  test("anonymous is denied", async () => {
+    const t = createConvexTest();
+    const org = await setupOrgWithMediaUpload(t);
+
+    await createChunkedUpload(t, {
+      organizationId: org.organizationId,
+      collectionId: org.collectionId,
+      userId: org.userId,
+      chunkedUploadId: "anon-chunk",
+      uploadStatus: "processing",
+    });
+
+    await expect(
+      t.query(api.media.getUploadProgress, {
+        organizationId: org.organizationId,
+        chunkId: "anon-chunk",
+      }),
+    ).rejects.toThrow("Permission denied: media.upload");
+  });
+
+  test("unknown chunk id returns null for a member", async () => {
+    const t = createConvexTest();
+    const org = await setupOrgWithMediaUpload(t);
+    const authed = authedForUser(t, org.userId);
+
+    expect(
+      await authed.query(api.media.getUploadProgress, {
+        organizationId: org.organizationId,
+        chunkId: "missing-chunk",
+      }),
+    ).toBeNull();
   });
 });
 

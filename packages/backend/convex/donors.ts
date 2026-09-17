@@ -2,6 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
+import {
+  assertOptionUsageIndexReady,
+  loadOptionUsage,
+  optionUsageResultValidator,
+  unusedOptionUsage,
+} from "./utils/collectionOptionUsages";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -147,47 +153,37 @@ export const checkUsage = query({
     donorId: v.id("donors"),
     excludeCollectionId: v.optional(v.id("collections")),
   },
-  returns: v.object({
-    isUsed: v.boolean(),
-    usageCount: v.number(),
-    collectionNames: v.array(v.string()),
-  }),
+  returns: optionUsageResultValidator,
   handler: async (ctx, args) => {
-    const donor = await ctx.db.get(args.donorId);
-    if (!donor) {
-      return { isUsed: false, usageCount: 0, collectionNames: [] };
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, donor.organizationId, "collections.read");
+    const donor = await ctx.db.get(args.donorId);
+    if (!donor) {
+      return unusedOptionUsage();
+    }
 
-    // Check all collections in the organization for this donor
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", donor.organizationId),
-      )
-      .collect();
-
-    // Filter collections that use this donor (excluding the specified collection if provided)
-    const collectionsUsingDonor = collections.filter((collection) => {
-      // Exclude the current collection being edited
+    try {
+      await requirePermission(ctx, donor.organizationId, "collections.read");
+    } catch (error) {
       if (
-        args.excludeCollectionId &&
-        collection._id === args.excludeCollectionId
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
       ) {
-        return false;
+        return unusedOptionUsage();
       }
+      throw error;
+    }
 
-      if (!collection.donated_by) return false;
+    await assertOptionUsageIndexReady(ctx, donor.organizationId);
 
-      return collection.donated_by.includes(donor.name);
+    return await loadOptionUsage(ctx, {
+      organizationId: donor.organizationId,
+      kind: "donor",
+      value: donor.name,
+      excludeCollectionId: args.excludeCollectionId,
     });
-
-    return {
-      isUsed: collectionsUsingDonor.length > 0,
-      usageCount: collectionsUsingDonor.length,
-      collectionNames: collectionsUsingDonor.map((c) => c.accessionNumber),
-    };
   },
 });
 
@@ -226,31 +222,6 @@ export const remove = mutation({
         changes: { name: donor.name },
       }),
     ] as const);
-
-    return null;
-  },
-});
-
-/**
- * Increment usage counter for a donor
- */
-export const incrementUsage = mutation({
-  args: {
-    donorId: v.id("donors"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const donor = await ctx.db.get(args.donorId);
-    if (!donor) {
-      return null;
-    }
-
-    await requirePermission(ctx, donor.organizationId, "collections.update");
-
-    await ctx.db.patch(args.donorId, {
-      usageCount: (donor.usageCount ?? 0) + 1,
-      lastUsedAt: Date.now(),
-    });
 
     return null;
   },

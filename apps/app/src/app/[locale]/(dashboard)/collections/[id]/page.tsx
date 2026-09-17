@@ -48,6 +48,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
@@ -320,27 +321,25 @@ function CollectionObjectsList({
     );
   }, [groupItemImageUrls]);
 
-  // Get all collections for the "add existing" dialog
-  const collections = useQuery(
-    api.collections.list,
-    organizationId && isAddDialogOpen
-      ? {
-          organizationId,
-          paginationOpts: { numItems: 100, cursor: null },
-          status: "active",
-          search: searchQuery || undefined,
-        }
-      : "skip",
-  );
+  const { items: collections, isComplete: isCollectionListComplete } =
+    useDrainedCollectionList(
+      organizationId && isAddDialogOpen
+        ? {
+            organizationId,
+            status: "active",
+            search: searchQuery || undefined,
+          }
+        : "skip",
+    );
 
   const addItems = useMutation(api.collectionGroups.addItems);
   const removeItems = useMutation(api.collectionGroups.removeItems);
 
   // Filter out collections already in this group
   const availableCollections = useMemo(() => {
-    if (!collections?.page || !groupItems) return [];
+    if (!groupItems) return [];
     const existingIds = new Set(groupItems.map((item) => item.collectionId));
-    return collections.page.filter((c) => !existingIds.has(c._id));
+    return collections.filter((c) => !existingIds.has(c._id));
   }, [collections, groupItems]);
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -426,7 +425,7 @@ function CollectionObjectsList({
                   className="pl-9"
                 />
               </div>
-              {collections === undefined ? (
+              {!isCollectionListComplete && collections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {t("importDialog.loadingObjects")}
                 </p>
@@ -487,9 +486,7 @@ function CollectionObjectsList({
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {selectedCollectionIds.map((id) => {
-                      const collection = collections?.page.find(
-                        (c) => c._id === id,
-                      );
+                      const collection = collections.find((c) => c._id === id);
                       return (
                         <div
                           key={id}

@@ -1,6 +1,8 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
+import { processOptionUsageBackfillPage } from "./utils/collectionOptionUsages";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 
@@ -1174,6 +1176,35 @@ export const backfillSuperAdminRoles = internalMutation({
     console.log(
       `Migration complete: ${result.rolesCreated} super_admin roles created, ${result.membershipsUpdated} memberships updated`,
     );
+
+    return result;
+  },
+});
+
+export const backfillCollectionOptionUsages = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    cursor: v.union(v.string(), v.null()),
+  },
+  returns: v.object({
+    isDone: v.boolean(),
+    continueCursor: v.union(v.string(), v.null()),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ isDone: boolean; continueCursor: string | null }> => {
+    const result = await processOptionUsageBackfillPage(ctx, args);
+    if (!result.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.backfillCollectionOptionUsages,
+        {
+          organizationId: args.organizationId,
+          cursor: result.continueCursor,
+        },
+      );
+    }
 
     return result;
   },

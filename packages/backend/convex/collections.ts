@@ -32,6 +32,10 @@ import {
   getCollectionsWithOpenDeaccessions,
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
+import {
+  clearCollectionOptionUsages,
+  syncCollectionOptionUsages,
+} from "./utils/collectionOptionUsages";
 import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
 import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
@@ -513,6 +517,7 @@ async function deleteCollectionDependents(
   await deleteCollectionMedia(ctx, collectionId);
 
   await Promise.all([
+    clearCollectionOptionUsages(ctx, collectionId),
     (async () => {
       const collectionGroupItems = await ctx.db
         .query("collectionGroupItems")
@@ -1037,6 +1042,7 @@ export const create = mutation({
     });
 
     await Promise.all([
+      syncCollectionOptionUsages(ctx, collectionId),
       applyUsageCounterDelta(ctx, args.organizationId, {
         objectCount: 1,
       }),
@@ -1087,16 +1093,47 @@ export const resolveId = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
     const collectionId = ctx.db.normalizeId("collections", args.id);
     const collection = collectionId ? await ctx.db.get(collectionId) : null;
     if (collection) {
-      return { type: "collection" as const, id: collection._id };
+      try {
+        await requirePermission(
+          ctx,
+          collection.organizationId,
+          "collections.read",
+        );
+        return { type: "collection" as const, id: collection._id };
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          return null;
+        }
+        throw error;
+      }
     }
 
     const groupId = ctx.db.normalizeId("collectionGroups", args.id);
     const group = groupId ? await ctx.db.get(groupId) : null;
     if (group) {
-      return { type: "collectionGroup" as const, id: group._id };
+      try {
+        await requirePermission(ctx, group.organizationId, "collections.read");
+        return { type: "collectionGroup" as const, id: group._id };
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          return null;
+        }
+        throw error;
+      }
     }
 
     return null;
@@ -2144,6 +2181,7 @@ export const update = mutation({
     updates.lastModifiedAt = Date.now();
 
     await ctx.db.patch(args.collectionId, updates);
+    await syncCollectionOptionUsages(ctx, args.collectionId);
 
     if (args.collectionGroupIds !== undefined) {
       await syncCollectionGroupMemberships(
@@ -2553,15 +2591,32 @@ export const getParentObject = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
-    if (collection) {
+    if (!collection) {
+      return null;
+    }
+
+    try {
       await requirePermission(
         ctx,
         collection.organizationId,
         "collections.read",
       );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
     }
-    if (!collection?.parentObjectId) {
+
+    if (!collection.parentObjectId) {
       return null;
     }
 
@@ -2578,6 +2633,9 @@ export const getParentObject = query({
   },
 });
 
+const CHILD_OBJECT_CAP = 100;
+const emptyChildObjects = { children: [], truncated: false };
+
 /**
  * Get child objects (objects that have this collection as parent)
  */
@@ -2585,42 +2643,69 @@ export const getChildObjects = query({
   args: {
     collectionId: v.id("collections"),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("collections"),
-      title: v.string(),
-      accessionNumber: v.string(),
-      status: v.union(
-        v.literal("active"),
-        v.literal("loaned"),
-        v.literal("deaccessioned"),
-        v.literal("archived"),
-        v.literal("deleted"),
-      ),
-      thumbnailUrl: v.union(v.string(), v.null()),
-    }),
-  ),
+  returns: v.object({
+    children: v.array(
+      v.object({
+        _id: v.id("collections"),
+        title: v.string(),
+        accessionNumber: v.string(),
+        status: v.union(
+          v.literal("active"),
+          v.literal("loaned"),
+          v.literal("deaccessioned"),
+          v.literal("archived"),
+          v.literal("deleted"),
+        ),
+        thumbnailUrl: v.union(v.string(), v.null()),
+      }),
+    ),
+    truncated: v.boolean(),
+  }),
   handler: async (ctx, args) => {
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection) return [];
-    await requirePermission(ctx, collection.organizationId, "collections.read");
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
 
-    const children = await ctx.db
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) return emptyChildObjects;
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return emptyChildObjects;
+      }
+      throw error;
+    }
+
+    const page = await ctx.db
       .query("collections")
       .withIndex("by_parentObject", (q) =>
         q.eq("parentObjectId", args.collectionId),
       )
-      .collect();
+      .take(CHILD_OBJECT_CAP + 1);
+    const truncated = page.length > CHILD_OBJECT_CAP;
 
     const results = await Promise.all(
-      children
+      page
+        .slice(0, CHILD_OBJECT_CAP)
         .filter((child) => child.organizationId === collection.organizationId)
         .map(async (child) => {
-          // Get primary image for thumbnail
           const primaryMedia = await ctx.db
             .query("mediaFiles")
-            .withIndex("by_collection", (q) => q.eq("collectionId", child._id))
-            .filter((q) => q.eq(q.field("isPrimary"), true))
+            .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
+              q
+                .eq("collectionId", child._id)
+                .eq("isPrimary", true)
+                .eq("fileType", "image"),
+            )
             .first();
 
           let thumbnailUrl: string | null = null;
@@ -2641,7 +2726,7 @@ export const getChildObjects = query({
         }),
     );
 
-    return results;
+    return { children: results, truncated };
   },
 });
 
@@ -2661,15 +2746,32 @@ export const getSiblingObjects = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
-    if (collection) {
+    if (!collection) {
+      return [];
+    }
+
+    try {
       await requirePermission(
         ctx,
         collection.organizationId,
         "collections.read",
       );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return [];
+      }
+      throw error;
     }
-    if (!collection?.parentObjectId) {
+
+    if (!collection.parentObjectId) {
       return [];
     }
 
@@ -2682,9 +2784,8 @@ export const getSiblingObjects = query({
       .withIndex("by_parentObject", (q) =>
         q.eq("parentObjectId", collection.parentObjectId),
       )
-      .collect();
+      .take(5);
 
-    // Filter out the current collection and get thumbnails
     const results = await Promise.all(
       siblings
         .filter(
@@ -2692,15 +2793,15 @@ export const getSiblingObjects = query({
             s._id !== args.collectionId &&
             s.organizationId === collection.organizationId,
         )
-        .slice(0, 5) // Limit to 5 siblings
         .map(async (sibling) => {
-          // Get primary image for thumbnail
           const primaryMedia = await ctx.db
             .query("mediaFiles")
-            .withIndex("by_collection", (q) =>
-              q.eq("collectionId", sibling._id),
+            .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
+              q
+                .eq("collectionId", sibling._id)
+                .eq("isPrimary", true)
+                .eq("fileType", "image"),
             )
-            .filter((q) => q.eq(q.field("isPrimary"), true))
             .first();
 
           let thumbnailUrl: string | null = null;
@@ -2741,15 +2842,32 @@ export const getParentObjectWithThumbnail = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
-    if (collection) {
+    if (!collection) {
+      return null;
+    }
+
+    try {
       await requirePermission(
         ctx,
         collection.organizationId,
         "collections.read",
       );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
     }
-    if (!collection?.parentObjectId) {
+
+    if (!collection.parentObjectId) {
       return null;
     }
 

@@ -12,6 +12,7 @@ import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { toJSON, toXML } from "./utils/formatConverters";
 import { normalizeAccessionImportRow } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
+import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { requirePermission } from "./utils/permissions";
 import {
   accessionsToSpectrumEntries,
@@ -1149,7 +1150,7 @@ export const importObjectsBatch = mutation({
         const accessionNumber =
           row.accessionNumber || `IMP-${Date.now()}-${args.batchIndex}-${i}`;
 
-        await ctx.db.insert("collections", {
+        const collectionId = await ctx.db.insert("collections", {
           organizationId: args.organizationId,
           accessionNumber,
           title: row.title.trim(),
@@ -1172,6 +1173,7 @@ export const importObjectsBatch = mutation({
           catalogedBy: userId,
           catalogedAt: Date.now(),
         });
+        await syncCollectionOptionUsages(ctx, collectionId);
 
         processed++;
       } catch (err) {
@@ -1268,7 +1270,7 @@ export const importObjectsDublinCore = mutation({
         const accessionNumber =
           row.accessionNumber || `IMP-DC-${Date.now()}-${i}`;
 
-        await ctx.db.insert("collections", {
+        const collectionId = await ctx.db.insert("collections", {
           organizationId: args.organizationId,
           accessionNumber,
           title: row.title.trim(),
@@ -1288,6 +1290,7 @@ export const importObjectsDublinCore = mutation({
           catalogedBy: userId,
           catalogedAt: Date.now(),
         });
+        await syncCollectionOptionUsages(ctx, collectionId);
 
         processed++;
       } catch (err) {

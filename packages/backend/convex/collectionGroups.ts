@@ -72,14 +72,11 @@ async function getCollectionGroupThumbnailUrl(
     scopedGroupItems.map(async (groupItem) => {
       const primaryMedia = await ctx.db
         .query("mediaFiles")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", groupItem.collectionId),
-        )
-        .filter((q) =>
-          q.and(
-            q.eq(q.field("isPrimary"), true),
-            q.eq(q.field("fileType"), "image"),
-          ),
+        .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
+          q
+            .eq("collectionId", groupItem.collectionId)
+            .eq("isPrimary", true)
+            .eq("fileType", "image"),
         )
         .first();
 
@@ -106,10 +103,9 @@ async function getCollectionGroupThumbnailUrl(
     scopedGroupItems.map(async (groupItem) => {
       const anyMedia = await ctx.db
         .query("mediaFiles")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", groupItem.collectionId),
+        .withIndex("by_collection_and_fileType", (q) =>
+          q.eq("collectionId", groupItem.collectionId).eq("fileType", "image"),
         )
-        .filter((q) => q.eq(q.field("fileType"), "image"))
         .first();
 
       if (!anyMedia || anyMedia.organizationId !== group.organizationId) {
@@ -287,10 +283,24 @@ export const get = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const group = await ctx.db.get(args.groupId);
     if (!group) return null;
 
-    await requirePermission(ctx, group.organizationId, "collections.read");
+    try {
+      await requirePermission(ctx, group.organizationId, "collections.read");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
+    }
 
     let curatorName: string | undefined;
     if (group.curatorId) {

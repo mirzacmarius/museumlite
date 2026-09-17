@@ -1036,26 +1036,49 @@ export const checkMoveAllowed = query({
     ),
   }),
   handler: async (ctx, args) => {
-    const collection = await ctx.db.get(args.collectionId);
-    if (!collection) {
-      return {
-        allowed: false,
-        requiresOverride: false,
-        issues: [
-          {
-            type: "error",
-            message: "Collection not found",
-            canOverride: false,
-          },
-        ],
-      };
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, collection.organizationId, "collections.read");
-    await requirePermission(ctx, collection.organizationId, "locations.read");
+    const collectionMissing = {
+      allowed: false,
+      requiresOverride: false,
+      issues: [
+        {
+          type: "error",
+          message: "Collection not found",
+          canOverride: false,
+        },
+      ],
+    };
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) {
+      return collectionMissing;
+    }
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+      await requirePermission(ctx, collection.organizationId, "locations.read");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return collectionMissing;
+      }
+      throw error;
+    }
 
     const toLocation = await ctx.db.get(args.toLocationId);
-    if (!toLocation) {
+    if (
+      !toLocation ||
+      toLocation.organizationId !== collection.organizationId
+    ) {
       return {
         allowed: false,
         requiresOverride: false,
@@ -1063,12 +1086,6 @@ export const checkMoveAllowed = query({
           { type: "error", message: "Location not found", canOverride: false },
         ],
       };
-    }
-
-    if (toLocation.organizationId !== collection.organizationId) {
-      throw new Error(
-        "Location does not belong to the collection organization",
-      );
     }
 
     const issues: Array<{
@@ -1685,6 +1702,10 @@ export const getLocationPath = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const path: Array<{
       _id: Id<"locations">;
       name: string;
@@ -1705,7 +1726,21 @@ export const getLocationPath = query({
       } | null = await ctx.db.get(currentLocationId);
       if (!location) break;
 
-      await requirePermission(ctx, location.organizationId, "locations.read");
+      try {
+        await requirePermission(
+          ctx,
+          location.organizationId,
+          "locations.read",
+        );
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          break;
+        }
+        throw error;
+      }
 
       path.unshift({
         _id: location._id,

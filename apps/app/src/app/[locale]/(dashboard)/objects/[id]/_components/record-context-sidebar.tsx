@@ -96,7 +96,7 @@ export function RecordContextSidebar({
     ...(parentObject
       ? [{ ...parentObject, relationship: "Parent" as const }]
       : []),
-    ...(childObjects?.map((c) => ({
+    ...(childObjects?.children.map((c) => ({
       ...c,
       relationship: "Child" as const,
     })) ?? []),

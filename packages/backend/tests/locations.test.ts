@@ -1,8 +1,14 @@
 import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
+import {
+  authedForUser,
+  createConvexTest,
+  createOrgUserCollectionWithPermissions,
+  createOrgUserWithPermissions,
+} from "./testHarness";
 import { modules } from "./testSetup";
 
 function buildLocationCode(locationCode: string) {
@@ -1150,4 +1156,58 @@ test("should reject update with inactive siteId", async () => {
       siteId: inactiveSiteId,
     }),
   ).rejects.toThrow("Site is not active");
+});
+
+describe("locations.checkMoveAllowed destination miss", () => {
+  test("member gets the same miss for an unknown location and a live foreign location", async () => {
+    const t = createConvexTest();
+    const member = await createOrgUserCollectionWithPermissions(t, [
+      "collections.read",
+      "locations.read",
+    ]);
+    const foreign = await createOrgUserWithPermissions(t, [
+      "collections.read",
+      "locations.read",
+    ]);
+    const authed = authedForUser(t, member.userId);
+
+    const { unknownLocationId, foreignLocationId } = await t.run(
+      async (ctx) => {
+        const unknownLocationId = await ctx.db.insert("locations", {
+          organizationId: member.organizationId,
+          name: "Own deleted room",
+          type: "storage",
+          sortOrder: 0,
+          isActive: true,
+        });
+        await ctx.db.delete(unknownLocationId);
+        const foreignLocationId = await ctx.db.insert("locations", {
+          organizationId: foreign.organizationId,
+          name: "Foreign live room",
+          type: "storage",
+          sortOrder: 0,
+          isActive: true,
+        });
+        return { unknownLocationId, foreignLocationId };
+      },
+    );
+
+    const unknownMiss = await authed.query(api.locations.checkMoveAllowed, {
+      collectionId: member.collectionId,
+      toLocationId: unknownLocationId,
+    });
+    const foreignMiss = await authed.query(api.locations.checkMoveAllowed, {
+      collectionId: member.collectionId,
+      toLocationId: foreignLocationId,
+    });
+
+    expect(unknownMiss).toEqual({
+      allowed: false,
+      requiresOverride: false,
+      issues: [
+        { type: "error", message: "Location not found", canOverride: false },
+      ],
+    });
+    expect(foreignMiss).toEqual(unknownMiss);
+  });
 });

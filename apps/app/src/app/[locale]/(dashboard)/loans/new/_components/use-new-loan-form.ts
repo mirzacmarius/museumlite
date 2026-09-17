@@ -30,31 +30,25 @@ export function useNewLoanForm() {
   >(new Set());
 
   const selectedCollections = useQuery(
-    api.collections.list,
+    api.collections.getBatch,
     currentOrganizationId && selectedCollectionIds.length > 0
       ? {
           organizationId: currentOrganizationId as Id<"organizations">,
-          paginationOpts: { numItems: 1000, cursor: null },
-          status: "active",
+          collectionIds: selectedCollectionIds as Id<"collections">[],
         }
       : "skip",
   );
 
-  const selectedCollectionsList = useMemo(() => {
-    if (!selectedCollections?.page) return [];
-    return selectedCollections.page.filter((c) =>
-      selectedCollectionIds.includes(c._id),
-    );
-  }, [selectedCollections?.page, selectedCollectionIds]);
+  const selectedCollectionsList = selectedCollections ?? [];
 
   const validCollectionIds = useMemo(() => {
-    if (!selectedCollections?.page || selectedCollectionIds.length === 0) {
+    if (!selectedCollections || selectedCollectionIds.length === 0) {
       return [];
     }
     return selectedCollectionIds.filter((id) =>
-      selectedCollections.page.some((c) => c._id === id),
+      selectedCollections.some((c) => c._id === id),
     );
-  }, [selectedCollections?.page, selectedCollectionIds]);
+  }, [selectedCollections, selectedCollectionIds]);
 
   const collectionsInActiveLoans = useQuery(
     api.loans.checkCollectionsInActiveLoans,

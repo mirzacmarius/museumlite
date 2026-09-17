@@ -85,6 +85,18 @@ async function setup() {
       roleId: noPermissionRoleId,
       joinedAt: Date.now(),
     });
+    const missingCollectionId = await ctx.db.insert("collections", {
+      ...collection,
+      accessionNumber: "MISSING",
+    });
+    await ctx.db.delete(missingCollectionId);
+    const missingGroupId = await ctx.db.insert("collectionGroups", {
+      organizationId: owner.organizationId,
+      name: "Missing group",
+      createdAt: Date.now(),
+      createdBy: owner.userId,
+    });
+    await ctx.db.delete(missingGroupId);
     return {
       parentId,
       childId,
@@ -94,6 +106,8 @@ async function setup() {
       locationId,
       foreignLocationId,
       groupId,
+      missingCollectionId,
+      missingGroupId,
       noPermissionUserId,
     };
   });
@@ -108,11 +122,11 @@ async function setup() {
   };
 }
 
-const relationQueries = [
-  ["parent", api.collections.getParentObject],
-  ["parent thumbnail", api.collections.getParentObjectWithThumbnail],
-  ["children", api.collections.getChildObjects],
-  ["siblings", api.collections.getSiblingObjects],
+const relationOracles = [
+  ["parent", api.collections.getParentObject, null],
+  ["parent thumbnail", api.collections.getParentObjectWithThumbnail, null],
+  ["children", api.collections.getChildObjects, { children: [], truncated: false }],
+  ["siblings", api.collections.getSiblingObjects, []],
 ] as const;
 
 describe("collection relation read authorization", () => {
@@ -194,7 +208,7 @@ describe("collection relation read authorization", () => {
         await authed.query(api.collections.getChildObjects, {
           collectionId: parentId,
         })
-      ).every((row) => row.thumbnailUrl === null),
+      ).children.every((row) => row.thumbnailUrl === null),
     ).toBe(true);
     expect(
       await authed.query(api.collections.getSiblingObjects, {
@@ -209,14 +223,29 @@ describe("collection relation read authorization", () => {
   });
 
   test.each(
-    relationQueries,
-  )("%s rejects anonymous, cross-tenant and unprivileged members", async (_name, query) => {
+    relationOracles,
+  )("%s rejects anonymous callers", async (_name, query) => {
     const fixture = await setup();
-    for (const caller of [fixture.t, fixture.outsider, fixture.noPermission]) {
-      await expect(
-        caller.query(query, { collectionId: fixture.childId }),
-      ).rejects.toThrow("Permission denied: collections.read");
-    }
+    await expect(
+      fixture.t.query(query, { collectionId: fixture.childId }),
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test.each(
+    relationOracles,
+  )("%s hides a live foreign collection behind the missing sentinel", async (_name, query, sentinel) => {
+    const fixture = await setup();
+    const memberMiss = await fixture.authed.query(query, {
+      collectionId: fixture.missingCollectionId,
+    });
+    const foreignLive = await fixture.outsider.query(query, {
+      collectionId: fixture.childId,
+    });
+    expect(memberMiss).toEqual(sentinel);
+    expect(foreignLive).toEqual(memberMiss);
+    await expect(
+      fixture.t.query(query, { collectionId: fixture.missingCollectionId }),
+    ).rejects.toThrow("Not authenticated");
   });
 
   test("authorized reads preserve own relations and exclude corrupt foreign references", async () => {
@@ -233,12 +262,28 @@ describe("collection relation read authorization", () => {
       }),
     ).toMatchObject({ _id: parentId, thumbnailUrl: null });
     expect(
-      (
-        await authed.query(api.collections.getChildObjects, {
-          collectionId: parentId,
-        })
-      ).map((row) => row._id),
-    ).toEqual([childId, siblingId]);
+      await authed.query(api.collections.getChildObjects, {
+        collectionId: parentId,
+      }),
+    ).toEqual({
+      children: [
+        expect.objectContaining({
+          _id: childId,
+          title: "Own object",
+          accessionNumber: "CHILD",
+          status: "active",
+          thumbnailUrl: null,
+        }),
+        expect.objectContaining({
+          _id: siblingId,
+          title: "Own object",
+          accessionNumber: "SIBLING",
+          status: "active",
+          thumbnailUrl: null,
+        }),
+      ],
+      truncated: false,
+    });
     expect(
       (
         await authed.query(api.collections.getSiblingObjects, {
@@ -263,6 +308,166 @@ describe("collection relation read authorization", () => {
     ).toEqual([]);
   });
 
+  test("group thumbnail helper picks the primary image among non-primary and non-image files", async () => {
+    const { t, authed, owner, groupId, childId } = await setup();
+    const primaryImageUrl = await t.run(async (ctx) => {
+      await ctx.db.insert("collectionGroupItems", {
+        collectionGroupId: groupId,
+        collectionId: childId,
+        addedAt: Date.now(),
+        addedBy: owner.userId,
+      });
+      const nonPrimaryImageStorageId = await ctx.storage.store(
+        new Blob(["alt-image"], { type: "image/png" }),
+      );
+      const documentStorageId = await ctx.storage.store(
+        new Blob(["notes-pdf"], { type: "application/pdf" }),
+      );
+      const primaryImageStorageId = await ctx.storage.store(
+        new Blob(["hero-image"], { type: "image/png" }),
+      );
+      await ctx.db.insert("mediaFiles", {
+        collectionId: childId,
+        organizationId: owner.organizationId,
+        storageId: nonPrimaryImageStorageId,
+        fileName: "alt.png",
+        fileType: "image",
+        fileSize: 9,
+        mimeType: "image/png",
+        isPrimary: false,
+        uploadedBy: owner.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      });
+      await ctx.db.insert("mediaFiles", {
+        collectionId: childId,
+        organizationId: owner.organizationId,
+        storageId: documentStorageId,
+        fileName: "notes.pdf",
+        fileType: "document",
+        fileSize: 8,
+        mimeType: "application/pdf",
+        isPrimary: true,
+        uploadedBy: owner.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      });
+      await ctx.db.insert("mediaFiles", {
+        collectionId: childId,
+        organizationId: owner.organizationId,
+        storageId: primaryImageStorageId,
+        fileName: "hero.png",
+        fileType: "image",
+        fileSize: 10,
+        mimeType: "image/png",
+        isPrimary: true,
+        uploadedBy: owner.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      });
+      const url = await ctx.storage.getUrl(primaryImageStorageId);
+      if (!url) throw new Error("missing primary image storage URL");
+      return url;
+    });
+
+    expect(
+      (await authed.query(api.collectionGroups.get, { groupId }))?.imageUrl,
+    ).toBe(primaryImageUrl);
+  });
+
+  test("child and sibling media picks ignore non-images", async () => {
+    const { t, authed, owner, parentId, childId, siblingId } = await setup();
+    const childImageUrl = await t.run(async (ctx) => {
+      const childDocumentStorageId = await ctx.storage.store(
+        new Blob(["child-pdf"], { type: "application/pdf" }),
+      );
+      const childImageStorageId = await ctx.storage.store(
+        new Blob(["child-img"], { type: "image/png" }),
+      );
+      const siblingDocumentStorageId = await ctx.storage.store(
+        new Blob(["sibling-pdf"], { type: "application/pdf" }),
+      );
+      await ctx.db.insert("mediaFiles", {
+        collectionId: childId,
+        organizationId: owner.organizationId,
+        storageId: childDocumentStorageId,
+        fileName: "child.pdf",
+        fileType: "document",
+        fileSize: 9,
+        mimeType: "application/pdf",
+        isPrimary: true,
+        uploadedBy: owner.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      });
+      await ctx.db.insert("mediaFiles", {
+        collectionId: childId,
+        organizationId: owner.organizationId,
+        storageId: childImageStorageId,
+        fileName: "child.png",
+        fileType: "image",
+        fileSize: 9,
+        mimeType: "image/png",
+        isPrimary: true,
+        uploadedBy: owner.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      });
+      await ctx.db.insert("mediaFiles", {
+        collectionId: siblingId,
+        organizationId: owner.organizationId,
+        storageId: siblingDocumentStorageId,
+        fileName: "sibling.pdf",
+        fileType: "document",
+        fileSize: 11,
+        mimeType: "application/pdf",
+        isPrimary: true,
+        uploadedBy: owner.userId,
+        uploadedAt: Date.now(),
+        uploadStatus: "completed",
+      });
+      const url = await ctx.storage.getUrl(childImageStorageId);
+      if (!url) throw new Error("missing child image storage URL");
+      return url;
+    });
+
+    expect(
+      await authed.query(api.collections.getChildObjects, {
+        collectionId: parentId,
+      }),
+    ).toEqual({
+      children: [
+        {
+          _id: childId,
+          title: "Own object",
+          accessionNumber: "CHILD",
+          status: "active",
+          thumbnailUrl: childImageUrl,
+        },
+        {
+          _id: siblingId,
+          title: "Own object",
+          accessionNumber: "SIBLING",
+          status: "active",
+          thumbnailUrl: null,
+        },
+      ],
+      truncated: false,
+    });
+    expect(
+      await authed.query(api.collections.getSiblingObjects, {
+        collectionId: childId,
+      }),
+    ).toEqual([
+      {
+        _id: siblingId,
+        title: "Own object",
+        accessionNumber: "SIBLING",
+        thumbnailUrl: null,
+      },
+    ]);
+  });
+
   test("group reads require collection permission and preserve schema fields", async () => {
     const fixture = await setup();
     expect(
@@ -274,11 +479,127 @@ describe("collection relation read authorization", () => {
       storageLocation: "West wing",
       curatorName: "Test User",
     });
-    for (const caller of [fixture.t, fixture.outsider, fixture.noPermission]) {
-      await expect(
-        caller.query(api.collectionGroups.get, { groupId: fixture.groupId }),
-      ).rejects.toThrow("Permission denied: collections.read");
-    }
+    await expect(
+      fixture.t.query(api.collectionGroups.get, { groupId: fixture.groupId }),
+    ).rejects.toThrow("Not authenticated");
+    const memberMiss = await fixture.authed.query(api.collectionGroups.get, {
+      groupId: fixture.missingGroupId,
+    });
+    const foreignLive = await fixture.outsider.query(api.collectionGroups.get, {
+      groupId: fixture.groupId,
+    });
+    expect(memberMiss).toBeNull();
+    expect(foreignLive).toEqual(memberMiss);
+    await expect(
+      fixture.t.query(api.collectionGroups.get, {
+        groupId: fixture.missingGroupId,
+      }),
+    ).rejects.toThrow("Not authenticated");
+  });
+
+  test("getChildObjects caps at 100 and sets truncated at 101", async () => {
+    const { t, authed, owner } = await setup();
+    const childNumbers = Array.from(
+      { length: 101 },
+      (_, index) => `CH-${String(index + 1).padStart(3, "0")}`,
+    );
+    const parentId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("collections", {
+        organizationId: owner.organizationId,
+        title: "Cap parent",
+        accessionNumber: "CH-PARENT",
+        status: "active",
+        catalogedAt: Date.now(),
+        catalogedBy: owner.userId,
+      });
+      for (const accessionNumber of childNumbers.slice(0, 100)) {
+        await ctx.db.insert("collections", {
+          organizationId: owner.organizationId,
+          title: accessionNumber,
+          accessionNumber,
+          status: "active",
+          catalogedAt: Date.now(),
+          catalogedBy: owner.userId,
+          parentObjectId: id,
+        });
+      }
+      return id;
+    });
+
+    const atCap = await authed.query(api.collections.getChildObjects, {
+      collectionId: parentId,
+    });
+    expect(atCap.truncated).toBe(false);
+    expect(atCap.children.map((row) => row.accessionNumber)).toEqual(
+      childNumbers.slice(0, 100),
+    );
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("collections", {
+        organizationId: owner.organizationId,
+        title: "CH-101",
+        accessionNumber: "CH-101",
+        status: "active",
+        catalogedAt: Date.now(),
+        catalogedBy: owner.userId,
+        parentObjectId: parentId,
+      });
+    });
+
+    const overCap = await authed.query(api.collections.getChildObjects, {
+      collectionId: parentId,
+    });
+    expect(overCap.truncated).toBe(true);
+    expect(overCap.children.map((row) => row.accessionNumber)).toEqual(
+      childNumbers.slice(0, 100),
+    );
+  });
+
+  test("getSiblingObjects takes 5 index rows then drops self", async () => {
+    const { t, authed, owner } = await setup();
+    const siblingNumbers = [
+      "SB-1",
+      "SB-2",
+      "SB-3",
+      "SB-4",
+      "SB-5",
+      "SB-6",
+      "SB-7",
+    ];
+    const childIds = await t.run(async (ctx) => {
+      const parentId = await ctx.db.insert("collections", {
+        organizationId: owner.organizationId,
+        title: "Sibling parent",
+        accessionNumber: "SB-PARENT",
+        status: "active",
+        catalogedAt: Date.now(),
+        catalogedBy: owner.userId,
+      });
+      return await Promise.all(
+        siblingNumbers.map((accessionNumber) =>
+          ctx.db.insert("collections", {
+            organizationId: owner.organizationId,
+            title: accessionNumber,
+            accessionNumber,
+            status: "active",
+            catalogedAt: Date.now(),
+            catalogedBy: owner.userId,
+            parentObjectId: parentId,
+          }),
+        ),
+      );
+    });
+
+    expect(
+      await authed.query(api.collections.getSiblingObjects, {
+        collectionId: childIds[0]!,
+      }),
+    ).toEqual([
+      expect.objectContaining({ _id: childIds[1], accessionNumber: "SB-2" }),
+      expect.objectContaining({ _id: childIds[2], accessionNumber: "SB-3" }),
+      expect.objectContaining({ _id: childIds[3], accessionNumber: "SB-4" }),
+      expect.objectContaining({ _id: childIds[4], accessionNumber: "SB-5" }),
+    ]);
   });
 });
 

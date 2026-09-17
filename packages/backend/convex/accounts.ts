@@ -519,6 +519,9 @@ export const getByCardNumber = query({
   },
 });
 
+const ACCOUNT_LOAN_USAGE_COUNT_PROBE = 1001;
+const ACCOUNT_LOAN_USAGE_NUMBER_CAP = 20;
+
 /**
  * Check usage of an account in loans
  */
@@ -530,24 +533,51 @@ export const checkUsage = query({
     isUsed: v.boolean(),
     loanCount: v.number(),
     loanNumbers: v.array(v.string()),
+    truncated: v.boolean(),
   }),
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
-    if (!account) {
-      return { isUsed: false, loanCount: 0, loanNumbers: [] };
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, account.organizationId, "accounts.read");
+    const unused = {
+      isUsed: false,
+      loanCount: 0,
+      loanNumbers: [] as string[],
+      truncated: false,
+    };
+
+    const account = await ctx.db.get(args.accountId);
+    if (!account) {
+      return unused;
+    }
+
+    try {
+      await requirePermission(ctx, account.organizationId, "accounts.read");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return unused;
+      }
+      throw error;
+    }
 
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
-      .collect();
+      .take(ACCOUNT_LOAN_USAGE_COUNT_PROBE);
 
     return {
       isUsed: loans.length > 0,
       loanCount: loans.length,
-      loanNumbers: loans.map((l) => l.loanNumber),
+      loanNumbers: loans
+        .slice(0, ACCOUNT_LOAN_USAGE_NUMBER_CAP)
+        .map((l) => l.loanNumber),
+      truncated:
+        loans.length > ACCOUNT_LOAN_USAGE_NUMBER_CAP ||
+        loans.length >= ACCOUNT_LOAN_USAGE_COUNT_PROBE,
     };
   },
 });

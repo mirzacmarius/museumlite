@@ -109,6 +109,7 @@ describe("library tenant authorization", () => {
     await expect(
       authed.query(api.library.reports.getDashboardStats, {
         organizationId: organizationBId,
+        asOf: 0,
       }),
     ).rejects.toThrow("Permission denied: collections.read");
   });

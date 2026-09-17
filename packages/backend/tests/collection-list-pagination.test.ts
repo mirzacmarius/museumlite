@@ -231,17 +231,26 @@ test("resolveId uses typed IDs and preserves null for invalid, unrelated and del
       createdBy: f.owner.userId,
     }),
   );
+  const asOther = authedForUser(f.t, f.other.userId);
   expect(
     await f.t.query(api.collections.resolveId, { id: collectionId }),
+  ).toBeNull();
+  expect(
+    await asOther.query(api.collections.resolveId, { id: collectionId }),
+  ).toBeNull();
+  expect(
+    await f.asUser.query(api.collections.resolveId, { id: collectionId }),
   ).toEqual({ type: "collection", id: collectionId });
-  expect(await f.t.query(api.collections.resolveId, { id: groupId })).toEqual({
+  expect(
+    await f.asUser.query(api.collections.resolveId, { id: groupId }),
+  ).toEqual({
     type: "collectionGroup",
     id: groupId,
   });
   for (const id of ["invalid", "", f.owner.organizationId])
-    expect(await f.t.query(api.collections.resolveId, { id })).toBeNull();
+    expect(await f.asUser.query(api.collections.resolveId, { id })).toBeNull();
   await f.t.run((ctx) => ctx.db.delete(collectionId));
   expect(
-    await f.t.query(api.collections.resolveId, { id: collectionId }),
+    await f.asUser.query(api.collections.resolveId, { id: collectionId }),
   ).toBeNull();
 });

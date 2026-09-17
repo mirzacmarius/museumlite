@@ -1,5 +1,5 @@
 import type { FunctionReturnType } from "convex/server";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Doc } from "../convex/_generated/dataModel";
 import {
@@ -238,6 +238,7 @@ async function readAll(
       api.library.reports.getDashboardStats,
       {
         organizationId: fixture.owner.organizationId,
+        asOf: NOW,
         pageSize,
         continuation: continuation ?? undefined,
       },
@@ -249,14 +250,10 @@ async function readAll(
   return pages;
 }
 
-afterEach(() => vi.useRealTimers());
-
 describe("bounded library dashboard statistics", () => {
   test.each([
     1, 2, 100,
   ])("all pages preserve exact totals with page size %i", async (pageSize) => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
     const fixture = await setup();
     const pages = await readAll(fixture, pageSize);
     expect(pages.length).toBeGreaterThanOrEqual(5);
@@ -308,6 +305,7 @@ describe("bounded library dashboard statistics", () => {
     });
     const pages = await readAll(fixture, 250);
     expect(pages.length).toBeGreaterThanOrEqual(7);
+    expect(pages.every((page) => page.asOf === NOW)).toBe(true);
     expect(
       pages.every((page) => page.partialStats.collection.totalItems <= 250),
     ).toBe(true);
@@ -324,26 +322,43 @@ describe("bounded library dashboard statistics", () => {
     const fixture = await setup();
     const page: StatsPage = await fixture.client.query(
       api.library.reports.getDashboardStats,
-      { organizationId: fixture.owner.organizationId, pageSize: 2 },
+      {
+        organizationId: fixture.owner.organizationId,
+        asOf: NOW,
+        pageSize: 2,
+      },
     );
     expect(page.partialStats.collection.totalItems).toBe(2);
+    expect(page.asOf).toBe(NOW);
     expect(page.next).toMatchObject({
       section: "collection",
       organizationId: fixture.owner.organizationId,
+      asOf: NOW,
     });
     expect(page.next?.cursor).toEqual(expect.any(String));
     expect(page).not.toHaveProperty("collection");
   });
 
   test("clock boundaries stay fixed when subsequent pages cross midnight and month end", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
     const fixture = await setup();
     const first = await fixture.client.query(
       api.library.reports.getDashboardStats,
-      { organizationId: fixture.owner.organizationId, pageSize: 2 },
+      {
+        organizationId: fixture.owner.organizationId,
+        asOf: NOW,
+        pageSize: 2,
+      },
     );
-    vi.setSystemTime(Date.UTC(2026, 9, 2));
+    expect(first.asOf).toBe(NOW);
+    if (!first.next) throw new Error("Expected a continuation");
+    await expect(
+      fixture.client.query(api.library.reports.getDashboardStats, {
+        organizationId: fixture.owner.organizationId,
+        asOf: Date.UTC(2026, 9, 2),
+        pageSize: 2,
+        continuation: first.next,
+      }),
+    ).rejects.toThrow("continuation asOf does not match query asOf");
     const pages = [first];
     let continuation = first.next;
     while (continuation !== null) {
@@ -351,6 +366,7 @@ describe("bounded library dashboard statistics", () => {
         api.library.reports.getDashboardStats,
         {
           organizationId: fixture.owner.organizationId,
+          asOf: NOW,
           pageSize: 2,
           continuation,
         },
@@ -376,6 +392,7 @@ describe("bounded library dashboard statistics", () => {
     const fixture = await setup(false);
     const pages = await readAll(fixture, 1);
     expect(pages).toHaveLength(5);
+    expect(pages.every((page) => page.asOf === NOW)).toBe(true);
     expect(
       Object.values(sumPages(pages))
         .flatMap((section) => Object.values(section))
@@ -390,6 +407,7 @@ describe("bounded library dashboard statistics", () => {
     await expect(
       fixture.client.query(api.library.reports.getDashboardStats, {
         organizationId: fixture.owner.organizationId,
+        asOf: NOW,
         pageSize,
       }),
     ).rejects.toThrow("page size");
@@ -399,7 +417,11 @@ describe("bounded library dashboard statistics", () => {
     const fixture = await setup();
     const first = await fixture.client.query(
       api.library.reports.getDashboardStats,
-      { organizationId: fixture.owner.organizationId, pageSize: 1 },
+      {
+        organizationId: fixture.owner.organizationId,
+        asOf: NOW,
+        pageSize: 1,
+      },
     );
     if (!first.next) throw new Error("Expected a continuation");
     for (const client of [
@@ -409,6 +431,7 @@ describe("bounded library dashboard statistics", () => {
       await expect(
         client.query(api.library.reports.getDashboardStats, {
           organizationId: fixture.owner.organizationId,
+          asOf: NOW,
           continuation: first.next,
         }),
       ).rejects.toThrow("Permission denied");
@@ -418,10 +441,18 @@ describe("bounded library dashboard statistics", () => {
         api.library.reports.getDashboardStats,
         {
           organizationId: fixture.other.organizationId,
+          asOf: NOW,
           continuation: first.next,
         },
       ),
     ).rejects.toThrow("continuation belongs to another organization");
+    await expect(
+      fixture.client.query(api.library.reports.getDashboardStats, {
+        organizationId: fixture.owner.organizationId,
+        asOf: NOW + 1,
+        continuation: first.next,
+      }),
+    ).rejects.toThrow("continuation asOf does not match query asOf");
     await fixture.t.run(async (ctx) => {
       const permissions = await ctx.db
         .query("rolePermissions")
@@ -432,6 +463,7 @@ describe("bounded library dashboard statistics", () => {
     await expect(
       fixture.client.query(api.library.reports.getDashboardStats, {
         organizationId: fixture.owner.organizationId,
+        asOf: NOW,
         continuation: first.next,
       }),
     ).rejects.toThrow("Permission denied");
