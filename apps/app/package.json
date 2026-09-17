@@ -14,8 +14,8 @@
     "typecheck:i18n": "NODE_OPTIONS='--max-old-space-size=8192' tsc -p tsconfig.i18n.json --noEmit"
   },
   "dependencies": {
-    "@auth/core": "0.37.0",
-    "@convex-dev/auth": "^0.0.80",
+    "@auth/core": "0.41.1",
+    "@convex-dev/auth": "^0.0.95",
     "@convex-dev/polar": "npm:@erquhart/convex-polar@0.2.0-alpha.5",
     "@dagrejs/dagre": "^3.1.1",
     "@hugeicons/core-free-icons": "^4.1.1",

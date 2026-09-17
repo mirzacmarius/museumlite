@@ -612,6 +612,7 @@ export const getBatchPrimaryImageUrls = query({
  */
 export const getUploadProgress = query({
   args: {
+    organizationId: v.id("organizations"),
     chunkId: v.string(),
   },
   returns: v.union(
@@ -627,16 +628,19 @@ export const getUploadProgress = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "media.upload");
+
     const media = await ctx.db
       .query("mediaFiles")
-      .filter((q) => q.eq(q.field("chunkedUploadId"), args.chunkId))
+      .withIndex("by_chunkedUploadId", (q) =>
+        q.eq("chunkedUploadId", args.chunkId),
+      )
       .first();
 
-    if (!media) {
+    if (!media || media.organizationId !== args.organizationId) {
       return null;
     }
 
-    // Calculate progress based on upload status
     let progress = 0;
     if (media.uploadStatus === "completed") {
       progress = 100;

@@ -566,7 +566,7 @@ export default defineSchema({
     .index("by_organization_and_publicSlug", ["organizationId", "publicSlug"])
     .searchIndex("search_index", {
       searchField: "title",
-      filterFields: ["organizationId", "status", "collectionType"],
+      filterFields: ["organizationId", "status", "collectionType", "title"],
     }),
 
   // Accession number counter tracking
@@ -656,6 +656,29 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_name", ["organizationId", "name"]),
+
+  collectionOptionUsages: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    kind: v.union(
+      v.literal("condition"),
+      v.literal("material"),
+      v.literal("type"),
+      v.literal("donor"),
+    ),
+    value: v.string(),
+  })
+    .index("by_organization_kind_and_value", [
+      "organizationId",
+      "kind",
+      "value",
+    ])
+    .index("by_collection", ["collectionId"]),
+
+  collectionOptionUsageBackfills: defineTable({
+    organizationId: v.id("organizations"),
+    completedAt: v.number(),
+  }).index("by_organization", ["organizationId"]),
 
   // Media attachments for objects
   mediaFiles: defineTable({
@@ -758,6 +781,12 @@ export default defineSchema({
     versionCount: v.optional(v.number()),
   })
     .index("by_collection", ["collectionId"])
+    .index("by_collection_and_fileType", ["collectionId", "fileType"])
+    .index("by_collection_and_isPrimary_and_fileType", [
+      "collectionId",
+      "isPrimary",
+      "fileType",
+    ])
     .index("by_organization", ["organizationId"])
     .index("by_organization_and_uploadedAt", ["organizationId", "uploadedAt"])
     .index("by_organization_and_fileType_and_uploadedAt", [
@@ -769,6 +798,7 @@ export default defineSchema({
     .index("by_collection_and_category", ["collectionId", "mediaCategory"])
     .index("by_content_hash", ["organizationId", "contentHash"])
     .index("by_rights_status", ["organizationId", "rightsStatus"])
+    .index("by_chunkedUploadId", ["chunkedUploadId"])
     .searchIndex("search_media_files", {
       searchField: "fileName",
       filterFields: ["organizationId", "fileType"],
@@ -1356,6 +1386,11 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
+    .index("by_organization_and_collection_and_status", [
+      "organizationId",
+      "collectionId",
+      "status",
+    ])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_dateDeaccessioned", [

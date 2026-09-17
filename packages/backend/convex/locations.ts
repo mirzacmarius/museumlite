@@ -1036,23 +1036,49 @@ export const checkMoveAllowed = query({
     ),
   }),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
+    const collectionMissing = {
+      allowed: false,
+      requiresOverride: false,
+      issues: [
+        {
+          type: "error",
+          message: "Collection not found",
+          canOverride: false,
+        },
+      ],
+    };
+
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
-      return {
-        allowed: false,
-        requiresOverride: false,
-        issues: [
-          {
-            type: "error",
-            message: "Collection not found",
-            canOverride: false,
-          },
-        ],
-      };
+      return collectionMissing;
+    }
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+      await requirePermission(ctx, collection.organizationId, "locations.read");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return collectionMissing;
+      }
+      throw error;
     }
 
     const toLocation = await ctx.db.get(args.toLocationId);
-    if (!toLocation) {
+    if (
+      !toLocation ||
+      toLocation.organizationId !== collection.organizationId
+    ) {
       return {
         allowed: false,
         requiresOverride: false,
@@ -1676,6 +1702,10 @@ export const getLocationPath = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const path: Array<{
       _id: Id<"locations">;
       name: string;
@@ -1688,12 +1718,29 @@ export const getLocationPath = query({
     while (currentLocationId) {
       const location: {
         _id: Id<"locations">;
+        organizationId: Id<"organizations">;
         name: string;
         locationCode?: string;
         type: string;
         parentLocationId?: Id<"locations">;
       } | null = await ctx.db.get(currentLocationId);
       if (!location) break;
+
+      try {
+        await requirePermission(
+          ctx,
+          location.organizationId,
+          "locations.read",
+        );
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          break;
+        }
+        throw error;
+      }
 
       path.unshift({
         _id: location._id,
@@ -2111,6 +2158,8 @@ export const getLocationTypes = query({
   },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "locations.read");
+
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       throw new Error("Organization not found");

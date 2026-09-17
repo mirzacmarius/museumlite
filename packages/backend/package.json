@@ -16,9 +16,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@auth/core": "0.37.0",
-    "@convex-dev/auth": "^0.0.80",
+    "@auth/core": "0.41.1",
+    "@convex-dev/auth": "^0.0.95",
     "@convex-dev/polar": "npm:@erquhart/convex-polar@0.2.0-alpha.5",
+    "@oslojs/crypto": "^1.0.1",
     "@polar-sh/sdk": "^0.26.1",
     "convex": "^1.38.0",
     "convex-helpers": "^0.1.63",

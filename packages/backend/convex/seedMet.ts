@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
   applyUsageCounterDelta,
   createEmptyUsageCounter,
@@ -289,9 +290,12 @@ export const createCollection = internalMutation({
       catalogedAt: Date.now(),
     });
 
-    await applyUsageCounterDelta(ctx, args.organizationId, {
-      objectCount: 1,
-    });
+    await Promise.all([
+      syncCollectionOptionUsages(ctx, collectionId),
+      applyUsageCounterDelta(ctx, args.organizationId, {
+        objectCount: 1,
+      }),
+    ]);
 
     return collectionId;
   },

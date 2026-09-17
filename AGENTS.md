@@ -1,3 +1,13 @@
+Scope note: the Next.js block below covers UI and routing only. All data, auth, storage, and scheduled work stays in Convex per the rules in this file.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This project runs Next.js 16.2, and its APIs, conventions, and file structure differ from your training data. Before any Next.js UI or routing work, find and read the relevant doc in `node_modules/next/dist/docs/` (resolved from the repository root). Heed deprecation notices.
+
+<!-- END:nextjs-agent-rules -->
+
 # `AGENTS.md - Coding Agent Guidelines
 
 Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 16 App Router, Bun, Biome.
@@ -189,9 +199,9 @@ status: v.union(v.literal("pending"), v.literal("active"))
 - Icons: lucide-react, `h-4 w-4`
 - Activity format: "You [action] [entity] [identifier]"
 
-## Middleware Note
+## Proxy Note
 
-Non-standard location: `apps/app/src/proxy.ts` (not `middleware.ts`)
+Next.js 16 standard location: `apps/app/src/proxy.ts` (the framework renamed `middleware.ts` to `proxy.ts`; do not create `middleware.ts`).
 
 ## Cursor Cloud specific instructions
 
@@ -229,3 +239,17 @@ Lint, typecheck, and tests all work without Convex authentication:
 ## Linear handoff
 
 When finishing work delegated from a MUS Linear issue: post a **Review checklist** on the issue (grouped `- [ ]` QA steps with navigation paths and expected UI — canonical example: `MUS-485`), plus PR link and branch; set status to **In Review**; do **not** mark **Done**. See `.cursor/rules/linear-delegation-handoff.mdc` and `docs/agents/issue-tracker.md`.
+
+<!-- convex-ai-start -->
+
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running
+`npx convex ai-files install`.
+
+<!-- convex-ai-end -->

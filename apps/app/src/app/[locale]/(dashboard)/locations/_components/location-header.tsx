@@ -128,7 +128,6 @@ export function LocationHeader({
                   {statusBadge.text}
                 </span>
               </h2>
-              {actions}
             </div>
             <dl className="mt-3 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-3">
               <div>
@@ -194,6 +193,7 @@ export function LocationHeader({
           ) : null}
         </div>
       </div>
+      {actions ? <div className="mt-4 flex justify-end">{actions}</div> : null}
     </section>
   );
 }

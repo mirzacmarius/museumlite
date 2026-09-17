@@ -9,6 +9,10 @@ import {
   query,
 } from "./_generated/server";
 import { customFieldValue } from "./schema";
+import {
+  replaceCollectionOptionUsages,
+  syncCollectionOptionUsages,
+} from "./utils/collectionOptionUsages";
 import { requirePermission } from "./utils/permissions";
 
 // ============================================
@@ -311,9 +315,25 @@ export const getBatchJobStatus = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const job = await ctx.db.get(args.jobId);
     if (!job) {
       return null;
+    }
+
+    try {
+      await requirePermission(ctx, job.organizationId, "collections.read");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
     }
 
     const createdBy = await ctx.db.get(job.createdBy);
@@ -635,6 +655,10 @@ async function processBulkEdit(
   }
 
   await ctx.db.patch(collection._id, updates);
+  if (payload.condition !== undefined) {
+    const updated = await ctx.db.get(collection._id);
+    if (updated) await replaceCollectionOptionUsages(ctx, updated);
+  }
 }
 
 async function processBulkMove(
@@ -825,6 +849,9 @@ export const quickBulkEdit = mutation({
           }
 
           await ctx.db.patch(collectionId, updates);
+          if (args.updates.condition !== undefined) {
+            await syncCollectionOptionUsages(ctx, collectionId);
+          }
           return { success: true as const };
         } catch (error) {
           const errorMessage =

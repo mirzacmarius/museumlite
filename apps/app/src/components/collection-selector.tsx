@@ -1,6 +1,5 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
@@ -11,9 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { useQuery } from "convex/react";
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
 
 interface CollectionSelectorProps {
   organizationId: string;
@@ -39,12 +38,10 @@ export function CollectionSelector({
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
-  const collections = useQuery(
-    api.collections.list,
+  const { items: collections, isComplete } = useDrainedCollectionList(
     organizationId
       ? {
           organizationId: organizationId as Id<"organizations">,
-          paginationOpts: { numItems: 100, cursor: null },
           search: searchQuery || undefined,
           status:
             filterStatus !== "all"
@@ -57,17 +54,12 @@ export function CollectionSelector({
   );
 
   const filteredCollections = useMemo(() => {
-    if (!collections?.page) return [];
+    let filtered = [...collections];
 
-    // Additional client-side filtering if needed
-    let filtered = collections.page;
-
-    // Filter out deaccessioned if requested
     if (excludeDeaccessioned && filterStatus === "all") {
       filtered = filtered.filter((c) => c.status !== "deaccessioned");
     }
 
-    // Sort by accession number for easier browsing
     return filtered.sort((a, b) =>
       a.accessionNumber.localeCompare(b.accessionNumber),
     );
@@ -75,7 +67,7 @@ export function CollectionSelector({
 
   const selectedCollection = filteredCollections.find((c) => c._id === value);
 
-  if (collections === undefined) {
+  if (!isComplete && collections.length === 0) {
     return (
       <div className="space-y-2">
         {label && (

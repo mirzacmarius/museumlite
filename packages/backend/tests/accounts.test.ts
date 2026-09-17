@@ -614,4 +614,135 @@ describe("Accounts CRUD", () => {
       "Unique Search Target Museum",
     );
   });
+
+  test("checkUsage returns unused sentinel when the account has no loans", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-usage-empty`,
+      issuer: "https://example.test",
+    });
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      businessName: "Unused Lender",
+    });
+    expect(await authed.query(api.accounts.checkUsage, { accountId })).toEqual({
+      isUsed: false,
+      loanCount: 0,
+      loanNumbers: [],
+      truncated: false,
+    });
+  });
+
+  test("checkUsage keeps 20 loan numbers without truncation", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-usage-20`,
+      issuer: "https://example.test",
+    });
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      businessName: "Twenty Loan Lender",
+    });
+    const loanNumbers = Array.from(
+      { length: 20 },
+      (_, index) => `L-${String(index + 1).padStart(4, "0")}`,
+    );
+    await t.run(async (ctx) => {
+      for (const loanNumber of loanNumbers) {
+        await ctx.db.insert("loans", {
+          organizationId,
+          loanNumber,
+          type: "incoming",
+          accountId,
+          lenderBorrowerName: "Twenty Loan Lender",
+          startDate: Date.now(),
+          status: "pending",
+        });
+      }
+    });
+    expect(await authed.query(api.accounts.checkUsage, { accountId })).toEqual({
+      isUsed: true,
+      loanCount: 20,
+      loanNumbers,
+      truncated: false,
+    });
+  });
+
+  test("checkUsage truncates loan numbers at 21", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-usage-21`,
+      issuer: "https://example.test",
+    });
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      businessName: "Twenty One Loan Lender",
+    });
+    const loanNumbers = Array.from(
+      { length: 21 },
+      (_, index) => `L-${String(index + 1).padStart(4, "0")}`,
+    );
+    await t.run(async (ctx) => {
+      for (const loanNumber of loanNumbers) {
+        await ctx.db.insert("loans", {
+          organizationId,
+          loanNumber,
+          type: "incoming",
+          accountId,
+          lenderBorrowerName: "Twenty One Loan Lender",
+          startDate: Date.now(),
+          status: "pending",
+        });
+      }
+    });
+    expect(await authed.query(api.accounts.checkUsage, { accountId })).toEqual({
+      isUsed: true,
+      loanCount: 21,
+      loanNumbers: loanNumbers.slice(0, 20),
+      truncated: true,
+    });
+  });
+
+  test("checkUsage caps loanCount at 1001", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createTestSetup(t);
+    const authed = t.withIdentity({
+      subject: `${userId}|session-usage-1001`,
+      issuer: "https://example.test",
+    });
+    const accountId = await authed.mutation(api.accounts.create, {
+      organizationId,
+      accountType: "lender",
+      businessName: "Probe Cap Lender",
+    });
+    const loanNumbers = Array.from(
+      { length: 1002 },
+      (_, index) => `L-${String(index + 1).padStart(4, "0")}`,
+    );
+    await t.run(async (ctx) => {
+      for (const loanNumber of loanNumbers) {
+        await ctx.db.insert("loans", {
+          organizationId,
+          loanNumber,
+          type: "incoming",
+          accountId,
+          lenderBorrowerName: "Probe Cap Lender",
+          startDate: Date.now(),
+          status: "pending",
+        });
+      }
+    });
+    expect(await authed.query(api.accounts.checkUsage, { accountId })).toEqual({
+      isUsed: true,
+      loanCount: 1001,
+      loanNumbers: loanNumbers.slice(0, 20),
+      truncated: true,
+    });
+  }, 60_000);
 });

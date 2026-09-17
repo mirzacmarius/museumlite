@@ -62,7 +62,8 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
                   className="pl-9"
                 />
               </div>
-              {manager.collections === undefined ? (
+              {!manager.isCollectionListComplete &&
+              manager.collections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Loading collections…
                 </p>
@@ -123,7 +124,7 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {manager.selectedCollectionIds.map((id) => {
-                      const collection = manager.collections?.page.find(
+                      const collection = manager.collections.find(
                         (c) => c._id === id,
                       );
                       return (

@@ -111,6 +111,7 @@ import type * as utils_collectionDisplayHelpers from "../utils/collectionDisplay
 import type * as utils_collectionDisposition from "../utils/collectionDisposition.js";
 import type * as utils_collectionLifecycle from "../utils/collectionLifecycle.js";
 import type * as utils_collectionListHelpers from "../utils/collectionListHelpers.js";
+import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsages.js";
 import type * as utils_convexAuth from "../utils/convexAuth.js";
 import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_dublinCore from "../utils/dublinCore.js";
@@ -157,6 +158,7 @@ import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_superAdmins from "../utils/superAdmins.js";
 import type * as utils_validators from "../utils/validators.js";
+import type * as utils_verificationCode from "../utils/verificationCode.js";
 import type * as utils_webhookEvents from "../utils/webhookEvents.js";
 import type * as utils_workflowConfigs from "../utils/workflowConfigs.js";
 import type * as utils_workflowExecution from "../utils/workflowExecution.js";
@@ -279,6 +281,7 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionDisposition": typeof utils_collectionDisposition;
   "utils/collectionLifecycle": typeof utils_collectionLifecycle;
   "utils/collectionListHelpers": typeof utils_collectionListHelpers;
+  "utils/collectionOptionUsages": typeof utils_collectionOptionUsages;
   "utils/convexAuth": typeof utils_convexAuth;
   "utils/dashboardAnalytics": typeof utils_dashboardAnalytics;
   "utils/dublinCore": typeof utils_dublinCore;
@@ -325,6 +328,7 @@ declare const fullApi: ApiFromModules<{
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/superAdmins": typeof utils_superAdmins;
   "utils/validators": typeof utils_validators;
+  "utils/verificationCode": typeof utils_verificationCode;
   "utils/webhookEvents": typeof utils_webhookEvents;
   "utils/workflowConfigs": typeof utils_workflowConfigs;
   "utils/workflowExecution": typeof utils_workflowExecution;

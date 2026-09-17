@@ -2,6 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
+import {
+  assertOptionUsageIndexReady,
+  loadOptionUsage,
+  optionUsageResultValidator,
+  unusedOptionUsage,
+} from "./utils/collectionOptionUsages";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -25,6 +31,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("conditionOptions")
       .withIndex("by_organization", (q) =>
@@ -172,36 +180,40 @@ export const checkUsage = query({
   args: {
     conditionId: v.id("conditionOptions"),
   },
-  returns: v.object({
-    isUsed: v.boolean(),
-    usageCount: v.number(),
-    collectionNames: v.array(v.string()),
-  }),
+  returns: optionUsageResultValidator,
   handler: async (ctx, args) => {
-    const condition = await ctx.db.get(args.conditionId);
-    if (!condition) {
-      return { isUsed: false, usageCount: 0, collectionNames: [] };
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
     }
 
-    // Check all collections in the organization for this condition
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", condition.organizationId),
-      )
-      .collect();
+    const condition = await ctx.db.get(args.conditionId);
+    if (!condition) {
+      return unusedOptionUsage();
+    }
 
-    // Filter collections that use this condition
-    const collectionsUsingCondition = collections.filter((collection) => {
-      if (!collection.condition) return false;
-      return collection.condition === condition.name;
+    try {
+      await requirePermission(
+        ctx,
+        condition.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return unusedOptionUsage();
+      }
+      throw error;
+    }
+
+    await assertOptionUsageIndexReady(ctx, condition.organizationId);
+
+    return await loadOptionUsage(ctx, {
+      organizationId: condition.organizationId,
+      kind: "condition",
+      value: condition.name,
     });
-
-    return {
-      isUsed: collectionsUsingCondition.length > 0,
-      usageCount: collectionsUsingCondition.length,
-      collectionNames: collectionsUsingCondition.map((c) => c.accessionNumber),
-    };
   },
 });
 
@@ -240,29 +252,6 @@ export const remove = mutation({
         changes: { name: condition.name },
       }),
     ] as const);
-
-    return null;
-  },
-});
-
-/**
- * Increment usage counter for a condition option
- */
-export const incrementUsage = mutation({
-  args: {
-    conditionId: v.id("conditionOptions"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const condition = await ctx.db.get(args.conditionId);
-    if (!condition) {
-      return null;
-    }
-
-    await ctx.db.patch(args.conditionId, {
-      usageCount: (condition.usageCount ?? 0) + 1,
-      lastUsedAt: Date.now(),
-    });
 
     return null;
   },

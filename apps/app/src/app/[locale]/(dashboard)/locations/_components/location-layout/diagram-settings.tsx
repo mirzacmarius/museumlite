@@ -11,16 +11,16 @@ export function useDiagramSettings(storageKey: string) {
   const [direction, setDirection] = useQueryState(
     "direction",
     parseAsStringLiteral(["horizontal", "vertical"] as const).withDefault(
-      "horizontal",
+      "vertical",
     ),
   );
   const [items, setItems] = useQueryState(
     "items",
-    parseAsStringLiteral(["list", "grid"] as const).withDefault("list"),
+    parseAsStringLiteral(["list", "grid"] as const).withDefault("grid"),
   );
   const [size, setSize] = useQueryState(
     "thumbs",
-    parseAsStringLiteral(["small", "large"] as const).withDefault("small"),
+    parseAsStringLiteral(["small", "large"] as const).withDefault("large"),
   );
   const [spacing, setSpacing] = useQueryState(
     "spacing",
@@ -34,7 +34,7 @@ export function useDiagramSettings(storageKey: string) {
       "smoothstep",
       "default",
       "straight",
-    ] as const).withDefault("smoothstep"),
+    ] as const).withDefault("default"),
   );
   useEffect(() => {
     const saved = readDiagramState(storageKey);

@@ -183,6 +183,32 @@ export function CollectionMultiSelectCombobox({
     [collectionsResult, state.cursor, state.isLoadingMore],
   );
 
+  React.useEffect(() => {
+    // Filtering may leave a page too short to scroll. Keep filling the visible
+    // list, including through empty pages, until it can scroll or is exhausted.
+    const list = listRef.current;
+    if (
+      state.open &&
+      list &&
+      collectionsResult &&
+      !collectionsResult.isDone &&
+      !state.isLoadingMore &&
+      collectionsResult.continueCursor !== state.cursor &&
+      list.scrollHeight <= list.clientHeight
+    ) {
+      dispatch({
+        type: "startLoadMore",
+        cursor: collectionsResult.continueCursor,
+      });
+    }
+  }, [
+    collectionsResult,
+    state.open,
+    state.cursor,
+    state.isLoadingMore,
+    state.allCollections,
+  ]);
+
   const handleToggle = (collectionId: string) => {
     if (selectedIds.includes(collectionId)) {
       onSelectionChange(selectedIds.filter((id) => id !== collectionId));
@@ -233,7 +259,7 @@ export function CollectionMultiSelectCombobox({
           >
             <CommandEmpty>
               <div className="p-4 text-sm text-center text-muted-foreground">
-                {collectionsResult === undefined
+                {collectionsResult === undefined || !collectionsResult.isDone
                   ? "Loading…"
                   : "No collections found."}
               </div>

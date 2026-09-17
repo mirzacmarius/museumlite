@@ -28,11 +28,14 @@ import {
   softDeleteCollectionHandler,
 } from "./utils/collectionDisposition";
 import {
-  enrichCollectionListPage,
+  filterCollectionListPage,
   getCollectionsWithOpenDeaccessions,
-  shouldUseIndexedCollectionsPagination,
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
+import {
+  clearCollectionOptionUsages,
+  syncCollectionOptionUsages,
+} from "./utils/collectionOptionUsages";
 import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
 import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
@@ -45,6 +48,28 @@ import { requirePermission } from "./utils/permissions";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
 const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
+
+async function validateCollectionReferences(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  references: {
+    parentObjectId?: Id<"collections">;
+    currentLocationId?: Id<"locations">;
+  },
+) {
+  if (references.parentObjectId) {
+    const parent = await ctx.db.get(references.parentObjectId);
+    if (!parent || parent.organizationId !== organizationId) {
+      throw new Error("Parent object not found in this organization");
+    }
+  }
+  if (references.currentLocationId) {
+    const location = await ctx.db.get(references.currentLocationId);
+    if (!location || location.organizationId !== organizationId) {
+      throw new Error("Location not found in this organization");
+    }
+  }
+}
 
 function isPublicCatalogStatus(status: Doc<"collections">["status"]) {
   return status === "active" || status === "loaned";
@@ -492,6 +517,7 @@ async function deleteCollectionDependents(
   await deleteCollectionMedia(ctx, collectionId);
 
   await Promise.all([
+    clearCollectionOptionUsages(ctx, collectionId),
     (async () => {
       const collectionGroupItems = await ctx.db
         .query("collectionGroupItems")
@@ -924,6 +950,7 @@ export const create = mutation({
       ),
       enforceObjectQuota(ctx, args.organizationId),
     ] as const);
+    await validateCollectionReferences(ctx, args.organizationId, args);
 
     // Generate or validate accession number
     let accessionNumber: string;
@@ -1015,6 +1042,7 @@ export const create = mutation({
     });
 
     await Promise.all([
+      syncCollectionOptionUsages(ctx, collectionId),
       applyUsageCounterDelta(ctx, args.organizationId, {
         objectCount: 1,
       }),
@@ -1065,20 +1093,47 @@ export const resolveId = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const collection = await ctx.db
-      .query("collections")
-      .filter((q) => q.eq(q.field("_id"), args.id))
-      .first();
-    if (collection) {
-      return { type: "collection" as const, id: collection._id };
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
     }
 
-    const group = await ctx.db
-      .query("collectionGroups")
-      .filter((q) => q.eq(q.field("_id"), args.id))
-      .first();
+    const collectionId = ctx.db.normalizeId("collections", args.id);
+    const collection = collectionId ? await ctx.db.get(collectionId) : null;
+    if (collection) {
+      try {
+        await requirePermission(
+          ctx,
+          collection.organizationId,
+          "collections.read",
+        );
+        return { type: "collection" as const, id: collection._id };
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          return null;
+        }
+        throw error;
+      }
+    }
+
+    const groupId = ctx.db.normalizeId("collectionGroups", args.id);
+    const group = groupId ? await ctx.db.get(groupId) : null;
     if (group) {
-      return { type: "collectionGroup" as const, id: group._id };
+      try {
+        await requirePermission(ctx, group.organizationId, "collections.read");
+        return { type: "collectionGroup" as const, id: group._id };
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          return null;
+        }
+        throw error;
+      }
     }
 
     return null;
@@ -1705,364 +1760,67 @@ export const list = query({
     ),
     isDone: v.boolean(),
     continueCursor: v.string(),
+    splitCursor: v.optional(v.union(v.string(), v.null())),
+    pageStatus: v.optional(
+      v.union(
+        v.literal("SplitRecommended"),
+        v.literal("SplitRequired"),
+        v.null(),
+      ),
+    ),
   }),
   handler: async (ctx, args) => {
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.read");
 
-    const shouldHideObjectsWithDeaccessionRecords =
-      args.status !== "deaccessioned" && args.status !== "deleted";
-    const collectionIdsWithOpenDeaccessions =
-      shouldHideObjectsWithDeaccessionRecords
-        ? await getCollectionsWithOpenDeaccessions(ctx, args.organizationId)
-        : null;
-
-    // If filtering by collectionGroupId, get all collection IDs from the many-to-many table
-    let collectionGroupCollectionIds: Set<string> | null = null;
-    if (args.collectionGroupId) {
-      const collectionGroupItems = await ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collectionGroup", (q) =>
-          q.eq("collectionGroupId", args.collectionGroupId!),
-        )
-        .collect();
-      collectionGroupCollectionIds = new Set(
-        collectionGroupItems.map((item) => item.collectionId),
-      );
-    }
-
-    if (shouldUseIndexedCollectionsPagination(args)) {
-      const filterOpenDeaccessions = (page: Doc<"collections">[]) =>
-        page.filter(
-          (collection) =>
-            !collectionIdsWithOpenDeaccessions?.has(collection._id) ||
-            collection.status === "deaccessioned",
-        );
-
-      if (args.status && !args.locationId && !args.objectType) {
-        const status = args.status;
-        const paginationResult = await ctx.db
+    // Equality indexes preserve creation-time order within the selected range.
+    const source = args.status
+      ? ctx.db
           .query("collections")
           .withIndex("by_organization_and_status", (q) =>
-            q.eq("organizationId", args.organizationId).eq("status", status),
-          )
-          .order("desc")
-          .paginate(args.paginationOpts);
-
-        return await toCollectionListPaginationResult(ctx, {
-          page: filterOpenDeaccessions(paginationResult.page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        });
-      }
-
-      if (args.locationId && !args.status && !args.objectType) {
-        const paginationResult = await ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_location", (q) =>
             q
               .eq("organizationId", args.organizationId)
-              .eq("currentLocationId", args.locationId),
+              .eq("status", args.status!),
           )
-          .filter((q) =>
-            args.includeDeaccessioned
-              ? q.neq(q.field("status"), "deleted")
-              : q.and(
-                  q.neq(q.field("status"), "deleted"),
-                  q.neq(q.field("status"), "deaccessioned"),
-                ),
-          )
-          .order("desc")
-          .paginate(args.paginationOpts);
+      : args.locationId
+        ? ctx.db
+            .query("collections")
+            .withIndex("by_organization_and_location", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("currentLocationId", args.locationId),
+            )
+        : args.objectType
+          ? ctx.db
+              .query("collections")
+              .withIndex("by_organization_and_objectType", (q) =>
+                q
+                  .eq("organizationId", args.organizationId)
+                  .eq("objectType", args.objectType),
+              )
+          : ctx.db
+              .query("collections")
+              .withIndex("by_organization", (q) =>
+                q.eq("organizationId", args.organizationId),
+              );
 
-        return await toCollectionListPaginationResult(ctx, {
-          page: filterOpenDeaccessions(paginationResult.page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        });
-      }
-
-      if (args.objectType && !args.status && !args.locationId) {
-        const paginationResult = await ctx.db
-          .query("collections")
-          .withIndex("by_organization_and_objectType", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("objectType", args.objectType),
-          )
-          .filter((q) =>
-            args.includeDeaccessioned
-              ? q.neq(q.field("status"), "deleted")
-              : q.and(
-                  q.neq(q.field("status"), "deleted"),
-                  q.neq(q.field("status"), "deaccessioned"),
-                ),
-          )
-          .order("desc")
-          .paginate(args.paginationOpts);
-
-        return await toCollectionListPaginationResult(ctx, {
-          page: filterOpenDeaccessions(paginationResult.page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        });
-      }
-
-      if (!args.status && !args.locationId && !args.objectType) {
-        const paginationResult = await ctx.db
-          .query("collections")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .filter((q) =>
-            args.includeDeaccessioned
-              ? q.neq(q.field("status"), "deleted")
-              : q.and(
-                  q.neq(q.field("status"), "deleted"),
-                  q.neq(q.field("status"), "deaccessioned"),
-                ),
-          )
-          .order("desc")
-          .paginate(args.paginationOpts);
-
-        return await toCollectionListPaginationResult(ctx, {
-          page: filterOpenDeaccessions(paginationResult.page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        });
-      }
-    }
-
-    let allResults: Array<{
-      _id: Id<"collections">;
-      title: string;
-      accessionNumber: string;
-      collectionGroupId?: Id<"collectionGroups">;
-      objectType?: string;
-      displayStatus?: string;
-      currentLocationId?: Id<"locations">;
-      status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
-      culture?: string;
-      period?: string;
-      materials?: string;
-      description?: string;
-      objectName?: string;
-      provenance?: string;
-      catalogedAt: number;
-      _creationTime: number;
-    }>;
-
-    // Use searchIndex when search term is provided for better performance
-    if (args.search && args.search.trim().length > 0) {
-      // Use searchIndex for efficient full-text search on title
-      const searchQuery = ctx.db
-        .query("collections")
-        .withSearchIndex("search_index", (q) => {
-          let filter = q
-            .search("title", args.search!)
-            .eq("organizationId", args.organizationId);
-
-          if (args.status) {
-            filter = filter.eq("status", args.status);
-          }
-
-          return filter;
-        });
-
-      const searchResults = await searchQuery.collect();
-
-      // Also search other fields that aren't in the searchIndex
-      const regularQuery = ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-
-      let filteredQuery = regularQuery;
-      if (args.status) {
-        filteredQuery = filteredQuery.filter((q) =>
-          q.eq(q.field("status"), args.status),
-        );
-      }
-
-      const allCollections = await filteredQuery.collect();
-      const searchLower = args.search.toLowerCase();
-      const searchResultIds = new Set(searchResults.map((r) => r._id));
-
-      // Find additional matches in fields not covered by searchIndex
-      const additionalResults = allCollections.filter((c) => {
-        if (searchResultIds.has(c._id)) return false;
-
-        return (
-          c.accessionNumber?.toLowerCase().includes(searchLower) ||
-          c.description?.toLowerCase().includes(searchLower) ||
-          c.objectName?.toLowerCase().includes(searchLower) ||
-          c.objectType?.toLowerCase().includes(searchLower) ||
-          c.culture?.toLowerCase().includes(searchLower) ||
-          c.period?.toLowerCase().includes(searchLower) ||
-          c.materials?.toLowerCase().includes(searchLower) ||
-          c.provenance?.toLowerCase().includes(searchLower) ||
-          false
-        );
-      });
-
-      // Combine and deduplicate
-      allResults = [...searchResults, ...additionalResults];
-    } else {
-      // No search term - use regular index
-      let query = ctx.db
-        .query("collections")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        );
-
-      // Apply database-level filters
-      if (args.status) {
-        query = query.filter((q) => q.eq(q.field("status"), args.status));
-      }
-
-      if (args.locationId) {
-        query = query.filter((q) =>
-          q.eq(q.field("currentLocationId"), args.locationId),
-        );
-      }
-
-      if (args.objectType) {
-        query = query.filter((q) =>
-          q.eq(q.field("objectType"), args.objectType),
-        );
-      }
-
-      if (args.displayStatus) {
-        query = query.filter((q) =>
-          q.eq(q.field("displayStatus"), args.displayStatus),
-        );
-      }
-
-      // Date range filters
-      if (args.catalogedFrom || args.catalogedTo) {
-        query = query.filter((q) => {
-          let condition = q.gte(
-            q.field("catalogedAt"),
-            args.catalogedFrom ?? 0,
-          );
-          if (args.catalogedTo) {
-            condition = q.and(
-              condition,
-              q.lte(q.field("catalogedAt"), args.catalogedTo),
-            );
-          }
-          return condition;
-        });
-      }
-
-      allResults = await query.collect();
-    }
-
-    allResults = allResults.filter((collection) => {
-      if (collection.status === "deleted" && args.status !== "deleted") {
-        return false;
-      }
-
-      if (
-        collection.status === "deaccessioned" &&
-        args.status !== "deaccessioned" &&
-        !args.includeDeaccessioned
-      ) {
-        return false;
-      }
-
-      if (
-        collectionIdsWithOpenDeaccessions?.has(collection._id) &&
-        collection.status !== "deaccessioned"
-      ) {
-        return false;
-      }
-
-      return true;
+    // Filters may yield short or empty pages. The native cursor still advances,
+    // and split metadata keeps reactive pages contiguous as records change.
+    const result = await source.order("desc").paginate({
+      ...args.paginationOpts,
+      maximumRowsRead: Math.min(
+        args.paginationOpts.maximumRowsRead ?? 1000,
+        1000,
+      ),
+      maximumBytesRead: Math.min(
+        args.paginationOpts.maximumBytesRead ?? 2_000_000,
+        2_000_000,
+      ),
     });
-
-    // Apply JavaScript-level filters (partial matching for text fields)
-    if (args.culture) {
-      const cultureLower = args.culture.toLowerCase();
-      allResults = allResults.filter(
-        (c) => c.culture?.toLowerCase().includes(cultureLower) ?? false,
-      );
-    }
-
-    if (args.period) {
-      const periodLower = args.period.toLowerCase();
-      allResults = allResults.filter(
-        (c) => c.period?.toLowerCase().includes(periodLower) ?? false,
-      );
-    }
-
-    if (args.materials) {
-      const materialsLower = args.materials.toLowerCase();
-      allResults = allResults.filter(
-        (c) => c.materials?.toLowerCase().includes(materialsLower) ?? false,
-      );
-    }
-
-    // Apply location filter if not already applied (for search case)
-    if (args.locationId && args.search) {
-      allResults = allResults.filter(
-        (c) => c.currentLocationId === args.locationId,
-      );
-    }
-
-    // Apply objectType filter if not already applied (for search case)
-    if (args.objectType && args.search) {
-      allResults = allResults.filter((c) => c.objectType === args.objectType);
-    }
-
-    if (args.displayStatus && args.search) {
-      allResults = allResults.filter(
-        (c) => c.displayStatus === args.displayStatus,
-      );
-    }
-
-    if (args.collectionGroupId) {
-      allResults = allResults.filter(
-        (c) =>
-          c.collectionGroupId === args.collectionGroupId ||
-          collectionGroupCollectionIds?.has(c._id),
-      );
-    }
-
-    // Apply date range filters if not already applied (for search case)
-    if ((args.catalogedFrom || args.catalogedTo) && args.search) {
-      allResults = allResults.filter((c) => {
-        if (args.catalogedFrom && c.catalogedAt < args.catalogedFrom) {
-          return false;
-        }
-        if (args.catalogedTo && c.catalogedAt > args.catalogedTo) {
-          return false;
-        }
-        return true;
-      });
-    }
-
-    // Sort by creation time (newest first)
-    allResults.sort((a, b) => b._creationTime - a._creationTime);
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      allResults.length,
-    );
-    const page = allResults.slice(startIndex, endIndex);
-    const enrichedPage = await enrichCollectionListPage(ctx, page);
-
-    return {
-      page: enrichedPage,
-      isDone: endIndex >= allResults.length,
-      continueCursor: endIndex.toString(),
-    };
+    return await toCollectionListPaginationResult(ctx, {
+      ...result,
+      page: await filterCollectionListPage(ctx, result.page, args),
+    });
   },
 });
 
@@ -2316,6 +2074,7 @@ export const update = mutation({
       collection.organizationId,
       "collections.update",
     );
+    await validateCollectionReferences(ctx, collection.organizationId, args);
 
     // Build update object - using any to avoid verbose type definition
     const updates: Record<string, unknown> = {};
@@ -2422,6 +2181,7 @@ export const update = mutation({
     updates.lastModifiedAt = Date.now();
 
     await ctx.db.patch(args.collectionId, updates);
+    await syncCollectionOptionUsages(ctx, args.collectionId);
 
     if (args.collectionGroupIds !== undefined) {
       await syncCollectionGroupMemberships(
@@ -2831,13 +2591,37 @@ export const getParentObject = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection?.parentObjectId) {
+    if (!collection) {
+      return null;
+    }
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
+    }
+
+    if (!collection.parentObjectId) {
       return null;
     }
 
     const parent = await ctx.db.get(collection.parentObjectId);
-    if (!parent) {
+    if (!parent || parent.organizationId !== collection.organizationId) {
       return null;
     }
 
@@ -2849,6 +2633,9 @@ export const getParentObject = query({
   },
 });
 
+const CHILD_OBJECT_CAP = 100;
+const emptyChildObjects = { children: [], truncated: false };
+
 /**
  * Get child objects (objects that have this collection as parent)
  */
@@ -2856,54 +2643,90 @@ export const getChildObjects = query({
   args: {
     collectionId: v.id("collections"),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("collections"),
-      title: v.string(),
-      accessionNumber: v.string(),
-      status: v.union(
-        v.literal("active"),
-        v.literal("loaned"),
-        v.literal("deaccessioned"),
-        v.literal("archived"),
-        v.literal("deleted"),
-      ),
-      thumbnailUrl: v.union(v.string(), v.null()),
-    }),
-  ),
+  returns: v.object({
+    children: v.array(
+      v.object({
+        _id: v.id("collections"),
+        title: v.string(),
+        accessionNumber: v.string(),
+        status: v.union(
+          v.literal("active"),
+          v.literal("loaned"),
+          v.literal("deaccessioned"),
+          v.literal("archived"),
+          v.literal("deleted"),
+        ),
+        thumbnailUrl: v.union(v.string(), v.null()),
+      }),
+    ),
+    truncated: v.boolean(),
+  }),
   handler: async (ctx, args) => {
-    const children = await ctx.db
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
+    const collection = await ctx.db.get(args.collectionId);
+    if (!collection) return emptyChildObjects;
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return emptyChildObjects;
+      }
+      throw error;
+    }
+
+    const page = await ctx.db
       .query("collections")
       .withIndex("by_parentObject", (q) =>
         q.eq("parentObjectId", args.collectionId),
       )
-      .collect();
+      .take(CHILD_OBJECT_CAP + 1);
+    const truncated = page.length > CHILD_OBJECT_CAP;
 
     const results = await Promise.all(
-      children.map(async (child) => {
-        // Get primary image for thumbnail
-        const primaryMedia = await ctx.db
-          .query("mediaFiles")
-          .withIndex("by_collection", (q) => q.eq("collectionId", child._id))
-          .filter((q) => q.eq(q.field("isPrimary"), true))
-          .first();
+      page
+        .slice(0, CHILD_OBJECT_CAP)
+        .filter((child) => child.organizationId === collection.organizationId)
+        .map(async (child) => {
+          const primaryMedia = await ctx.db
+            .query("mediaFiles")
+            .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
+              q
+                .eq("collectionId", child._id)
+                .eq("isPrimary", true)
+                .eq("fileType", "image"),
+            )
+            .first();
 
-        let thumbnailUrl: string | null = null;
-        if (primaryMedia?.storageId) {
-          thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
-        }
+          let thumbnailUrl: string | null = null;
+          if (
+            primaryMedia?.storageId &&
+            primaryMedia.organizationId === collection.organizationId
+          ) {
+            thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
+          }
 
-        return {
-          _id: child._id,
-          title: child.title,
-          accessionNumber: child.accessionNumber,
-          status: child.status,
-          thumbnailUrl,
-        };
-      }),
+          return {
+            _id: child._id,
+            title: child.title,
+            accessionNumber: child.accessionNumber,
+            status: child.status,
+            thumbnailUrl,
+          };
+        }),
     );
 
-    return results;
+    return { children: results, truncated };
   },
 });
 
@@ -2923,35 +2746,69 @@ export const getSiblingObjects = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection?.parentObjectId) {
+    if (!collection) {
       return [];
     }
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return [];
+      }
+      throw error;
+    }
+
+    if (!collection.parentObjectId) {
+      return [];
+    }
+
+    const parent = await ctx.db.get(collection.parentObjectId);
+    if (!parent || parent.organizationId !== collection.organizationId)
+      return [];
 
     const siblings = await ctx.db
       .query("collections")
       .withIndex("by_parentObject", (q) =>
         q.eq("parentObjectId", collection.parentObjectId),
       )
-      .collect();
+      .take(5);
 
-    // Filter out the current collection and get thumbnails
     const results = await Promise.all(
       siblings
-        .filter((s) => s._id !== args.collectionId)
-        .slice(0, 5) // Limit to 5 siblings
+        .filter(
+          (s) =>
+            s._id !== args.collectionId &&
+            s.organizationId === collection.organizationId,
+        )
         .map(async (sibling) => {
-          // Get primary image for thumbnail
           const primaryMedia = await ctx.db
             .query("mediaFiles")
-            .withIndex("by_collection", (q) =>
-              q.eq("collectionId", sibling._id),
+            .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
+              q
+                .eq("collectionId", sibling._id)
+                .eq("isPrimary", true)
+                .eq("fileType", "image"),
             )
-            .filter((q) => q.eq(q.field("isPrimary"), true))
             .first();
 
           let thumbnailUrl: string | null = null;
-          if (primaryMedia?.storageId) {
+          if (
+            primaryMedia?.storageId &&
+            primaryMedia.organizationId === collection.organizationId
+          ) {
             thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
           }
 
@@ -2985,13 +2842,37 @@ export const getParentObjectWithThumbnail = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const collection = await ctx.db.get(args.collectionId);
-    if (!collection?.parentObjectId) {
+    if (!collection) {
+      return null;
+    }
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
+    }
+
+    if (!collection.parentObjectId) {
       return null;
     }
 
     const parent = await ctx.db.get(collection.parentObjectId);
-    if (!parent) {
+    if (!parent || parent.organizationId !== collection.organizationId) {
       return null;
     }
 
@@ -3003,7 +2884,10 @@ export const getParentObjectWithThumbnail = query({
       .first();
 
     let thumbnailUrl: string | null = null;
-    if (primaryMedia?.storageId) {
+    if (
+      primaryMedia?.storageId &&
+      primaryMedia.organizationId === collection.organizationId
+    ) {
       thumbnailUrl = await ctx.storage.getUrl(primaryMedia.storageId);
     }
 

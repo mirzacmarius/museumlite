@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { insertCompletedMediaAsset } from "./mediaAssets";
+import { syncCollectionOptionUsages } from "./collectionOptionUsages";
 import {
   applyUsageCounterDelta,
   ensureUsageCounter,
@@ -87,6 +88,8 @@ export async function publishAccessionObjectDraft(
       ),
     ),
   ] as const);
+
+  await syncCollectionOptionUsages(ctx, collectionId);
 
   await Promise.all([
     ...uniqueCollectionGroupIds.flatMap((collectionGroupId, index) => {

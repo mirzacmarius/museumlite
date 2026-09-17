@@ -2,8 +2,9 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useMemo, useState } from "react";
+import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
 import { useScopedI18n } from "@/locales/client";
 import type { ItemToReturn, ManagedLoanItem } from "./types";
 
@@ -34,25 +35,23 @@ export function useLoanItemsManager({
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const collections = useQuery(
-    api.collections.list,
-    organizationId && isAddDialogOpen
-      ? {
-          organizationId: organizationId as Id<"organizations">,
-          paginationOpts: { numItems: 100, cursor: null },
-          status: "active",
-          search: searchQuery || undefined,
-        }
-      : "skip",
-  );
+  const { items: collections, isComplete: isCollectionListComplete } =
+    useDrainedCollectionList(
+      organizationId && isAddDialogOpen
+        ? {
+            organizationId: organizationId as Id<"organizations">,
+            status: "active",
+            search: searchQuery || undefined,
+          }
+        : "skip",
+    );
 
   const addItems = useMutation(api.loans.addItems);
   const removeItems = useMutation(api.loans.removeItems);
   const returnItem = useMutation(api.loans.returnItem);
 
   const availableCollections = useMemo(() => {
-    if (!collections?.page) return [];
-    return collections.page.filter((collection) => {
+    return collections.filter((collection) => {
       return !loanItems.some((item) => item.collectionId === collection._id);
     });
   }, [collections, loanItems]);
@@ -148,6 +147,7 @@ export function useLoanItemsManager({
     canRemoveItems,
     canReturnItems,
     collections,
+    isCollectionListComplete,
     availableCollections,
     searchQuery,
     setSearchQuery,

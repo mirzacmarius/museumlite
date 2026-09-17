@@ -638,20 +638,26 @@ describe("Epic 24: Workflow History", () => {
     expect(history?.comment).toBe("Looks good");
   });
 
-  test("getWorkflowHistoryForEntity returns correct history records", async () => {
-    // #given
+  test("getWorkflowHistoryForEntity returns newest history first", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createOrgWithRole(t, [
-      "collections.read",
+      "loans.read",
     ]);
 
-    const entityId = "entity-history-query";
-
-    await t.run(async (ctx) => {
+    const entityId = await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { subscriptionTier: "pro" });
+      const loanId = await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "WF-HIST-LOAN",
+        type: "incoming",
+        lenderBorrowerName: "History lender",
+        startDate: Date.now(),
+        status: "pending",
+      });
       await ctx.db.insert("workflowHistory", {
         organizationId,
         workflowType: "loan",
-        entityId,
+        entityId: loanId,
         fromStep: 0,
         toStep: 1,
         action: "submitted",
@@ -661,7 +667,7 @@ describe("Epic 24: Workflow History", () => {
       await ctx.db.insert("workflowHistory", {
         organizationId,
         workflowType: "loan",
-        entityId,
+        entityId: loanId,
         fromStep: 1,
         toStep: 2,
         action: "approved",
@@ -678,18 +684,102 @@ describe("Epic 24: Workflow History", () => {
         performedBy: userId,
         performedAt: Date.now(),
       });
+      return loanId;
     });
 
-    // #when
-    const history = await t.query(api.workflows.getWorkflowHistoryForEntity, {
-      workflowType: "loan",
-      entityId,
+    const history = await t
+      .withIdentity({ subject: `${userId}|session-1` })
+      .query(api.workflows.getWorkflowHistoryForEntity, {
+        workflowType: "loan",
+        entityId,
+      });
+
+    expect(history.map((row) => row.action)).toEqual(["approved", "submitted"]);
+  });
+
+  test("getWorkflowHistoryForEntity caps at 200 newest rows", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "loans.read",
+    ]);
+    const comments = Array.from(
+      { length: 201 },
+      (_, index) => `h-${index + 1}`,
+    );
+    const entityId = await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { subscriptionTier: "pro" });
+      const loanId = await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "WF-HIST-CAP",
+        type: "incoming",
+        lenderBorrowerName: "History lender",
+        startDate: Date.now(),
+        status: "pending",
+      });
+      for (const comment of comments) {
+        await ctx.db.insert("workflowHistory", {
+          organizationId,
+          workflowType: "loan",
+          entityId: loanId,
+          fromStep: 0,
+          toStep: 1,
+          action: "submitted",
+          performedBy: userId,
+          performedAt: Date.now(),
+          comment,
+        });
+      }
+      return loanId;
     });
 
-    // #then
-    expect(history.length).toBe(2);
-    expect(history[0]?.action).toBe("submitted");
-    expect(history[1]?.action).toBe("approved");
+    const history = await t
+      .withIdentity({ subject: `${userId}|session-1` })
+      .query(api.workflows.getWorkflowHistoryForEntity, {
+        workflowType: "loan",
+        entityId,
+      });
+
+    expect(history.map((row) => row.comment)).toEqual(
+      comments.slice(1).reverse(),
+    );
+  });
+
+  test("acquisition history keeps the per-org loop because there is no entity table", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createOrgWithRole(t, [
+      "collections.read",
+    ]);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("workflowHistory", {
+        organizationId,
+        workflowType: "acquisition",
+        entityId: "acq-no-table",
+        fromStep: 0,
+        toStep: 1,
+        action: "submitted",
+        performedBy: userId,
+        performedAt: Date.now(),
+        comment: "Acquisition row",
+      });
+    });
+    const authed = t.withIdentity({ subject: `${userId}|session-1` });
+    expect(
+      await authed.query(api.workflows.getWorkflowHistoryForEntity, {
+        workflowType: "acquisition",
+        entityId: "acq-no-table",
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        action: "submitted",
+        comment: "Acquisition row",
+      }),
+    ]);
+    expect(
+      await authed.query(api.workflows.getWorkflowHistoryForEntity, {
+        workflowType: "acquisition",
+        entityId: "acq-missing",
+      }),
+    ).toEqual([]);
   });
 
   test("getWorkflowHistoryByUser returns user actions across entities", async () => {

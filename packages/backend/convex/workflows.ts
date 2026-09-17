@@ -7,6 +7,7 @@ import {
   internalQuery,
   mutation,
   query,
+  type QueryCtx,
 } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
@@ -20,6 +21,67 @@ const workflowTypeValidator = v.union(
   v.literal("exhibition"),
   v.literal("conservation"),
 );
+
+type WorkflowType =
+  | "accession"
+  | "deaccession"
+  | "loan"
+  | "acquisition"
+  | "exhibition"
+  | "conservation";
+
+type WorkflowEntityOrganization =
+  | { kind: "found"; organizationId: Id<"organizations"> }
+  | { kind: "missing" }
+  | { kind: "unresolved" };
+
+const WORKFLOW_HISTORY_CAP = 200;
+
+async function organizationFromTable(
+  ctx: QueryCtx,
+  table:
+    | "accessions"
+    | "deaccessions"
+    | "loans"
+    | "exhibitions"
+    | "conservationTreatments",
+  entityId: string,
+): Promise<WorkflowEntityOrganization> {
+  const id = ctx.db.normalizeId(table, entityId);
+  if (!id) return { kind: "missing" };
+  const doc = await ctx.db.get(id);
+  if (!doc) return { kind: "missing" };
+  return { kind: "found", organizationId: doc.organizationId };
+}
+
+async function resolveWorkflowEntityOrganization(
+  ctx: QueryCtx,
+  workflowType: WorkflowType,
+  entityId: string,
+): Promise<WorkflowEntityOrganization> {
+  switch (workflowType) {
+    case "accession":
+      return await organizationFromTable(ctx, "accessions", entityId);
+    case "deaccession":
+      return await organizationFromTable(ctx, "deaccessions", entityId);
+    case "loan":
+      return await organizationFromTable(ctx, "loans", entityId);
+    case "exhibition":
+      return await organizationFromTable(ctx, "exhibitions", entityId);
+    case "conservation":
+      return await organizationFromTable(
+        ctx,
+        "conservationTreatments",
+        entityId,
+      );
+    case "acquisition":
+      return { kind: "unresolved" };
+    default: {
+      const _exhaustive: never = workflowType;
+      return _exhaustive;
+    }
+  }
+}
 
 const approvalModeValidator = v.union(
   v.literal("single"),
@@ -390,15 +452,75 @@ export const getWorkflowHistoryForEntity = query({
     }),
   ),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
+    const entityOrg = await resolveWorkflowEntityOrganization(
+      ctx,
+      args.workflowType,
+      args.entityId,
+    );
+    if (entityOrg.kind === "missing") {
+      return [];
+    }
+
+    const permissionName =
+      args.workflowType === "loan" ? "loans.read" : "collections.read";
+
+    if (entityOrg.kind === "found") {
+      try {
+        await requirePermission(
+          ctx,
+          entityOrg.organizationId,
+          permissionName,
+        );
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Permission denied")
+        ) {
+          return [];
+        }
+        throw error;
+      }
+    }
+
     const history = await ctx.db
       .query("workflowHistory")
       .withIndex("by_entity", (q) =>
         q.eq("workflowType", args.workflowType).eq("entityId", args.entityId),
       )
-      .collect();
+      .order("desc")
+      .take(WORKFLOW_HISTORY_CAP);
+
+    if (entityOrg.kind === "unresolved") {
+      for (const organizationId of new Set(
+        history.map((entry) => entry.organizationId),
+      )) {
+        try {
+          await requirePermission(ctx, organizationId, permissionName);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.startsWith("Permission denied")
+          ) {
+            return [];
+          }
+          throw error;
+        }
+      }
+    }
+
+    const scopedHistory =
+      entityOrg.kind === "found"
+        ? history.filter(
+            (entry) => entry.organizationId === entityOrg.organizationId,
+          )
+        : history;
 
     return await Promise.all(
-      history.map(async (h) => {
+      scopedHistory.map(async (h) => {
         const performer = await ctx.db.get(h.performedBy);
         const assignee = h.assignedTo ? await ctx.db.get(h.assignedTo) : null;
 

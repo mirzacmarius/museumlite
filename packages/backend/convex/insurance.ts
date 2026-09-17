@@ -2007,6 +2007,7 @@ export const linkAppraisalToCoverage = mutation({
 export const checkAppraisalForCoverage = query({
   args: {
     collectionId: v.id("collections"),
+    now: v.number(),
   },
   returns: v.object({
     hasAppraisal: v.boolean(),
@@ -2018,13 +2019,35 @@ export const checkAppraisalForCoverage = query({
     warning: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
+    const missingCollection = {
+      hasAppraisal: false,
+      appraisalValid: false,
+      warning: "Collection not found",
+    };
+
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) {
-      return {
-        hasAppraisal: false,
-        appraisalValid: false,
-        warning: "Collection not found",
-      };
+      return missingCollection;
+    }
+
+    try {
+      await requirePermission(
+        ctx,
+        collection.organizationId,
+        "collections.read",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return missingCollection;
+      }
+      throw error;
     }
 
     // Find most recent appraisal
@@ -2047,7 +2070,7 @@ export const checkAppraisalForCoverage = query({
       appraisal.appraisalDate > newest.appraisalDate ? appraisal : newest,
     );
 
-    const now = Date.now();
+    const now = args.now;
     const ageDays = Math.floor(
       (now - latestAppraisal.appraisalDate) / (24 * 60 * 60 * 1000),
     );

@@ -28,6 +28,8 @@ export const list = query({
     }),
   ),
   handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+
     return await ctx.db
       .query("accessionTemplates")
       .withIndex("by_organization", (q) =>
@@ -300,9 +302,29 @@ export const incrementUsage = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    if (!(await getAuthUserId(ctx))) {
+      throw new Error("Not authenticated");
+    }
+
     const template = await ctx.db.get(args.templateId);
     if (!template) {
       return null;
+    }
+
+    try {
+      await requirePermission(
+        ctx,
+        template.organizationId,
+        "collections.update",
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("Permission denied")
+      ) {
+        return null;
+      }
+      throw error;
     }
 
     await ctx.db.patch(args.templateId, {

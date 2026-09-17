@@ -489,3 +489,28 @@ describe("watermark settings", () => {
     expect(org?.settings?.watermarkSettings?.position).toBe("bottom-right");
   });
 });
+
+describe("organizations.getAccessionNumberPreview", () => {
+  test("formats the next number from the supplied timestamp", async () => {
+    const t = createConvexTest();
+    const { organizationId, userId } = await createOrgUserWithPermissions(t, [
+      "collections.read",
+    ]);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, {
+        settings: { accessionNumberFormat: "{YYYY}.{####}" },
+      });
+    });
+    const now = Date.UTC(2026, 5, 15, 12);
+    const preview = await authedForUser(t, userId).query(
+      api.organizations.getAccessionNumberPreview,
+      { organizationId, now },
+    );
+    expect(preview).toEqual({
+      preview: "2026.0001",
+      nextNumber: "2026.0001",
+      template: "{YYYY}.{####}",
+      scope: "year",
+    });
+  });
+});

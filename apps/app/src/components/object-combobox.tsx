@@ -1,6 +1,5 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
@@ -12,9 +11,9 @@ import {
 } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
+import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
 
 interface ObjectComboboxProps {
   organizationId?: string;
@@ -37,35 +36,26 @@ export function ObjectCombobox({
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
 
-  // Fetch collections for the organization
-  const collections = useQuery(
-    api.collections.list,
+  const { items: collections, isComplete } = useDrainedCollectionList(
     organizationId
       ? {
           organizationId: organizationId as Id<"organizations">,
-          paginationOpts: { numItems: 1000, cursor: null },
         }
       : "skip",
+    { pageSize: 1000 },
   );
 
-  // Convert collections to options format, excluding current collection
   const objectOptions = React.useMemo(() => {
-    if (!collections) return [];
-    return collections.page.flatMap(
-      (obj: {
-        _id: Id<"collections">;
-        title: string;
-        accessionNumber: string;
-      }) =>
-        obj._id === collectionId
-          ? []
-          : [
-              {
-                value: obj._id,
-                label: obj.title,
-                accessionNumber: obj.accessionNumber,
-              },
-            ],
+    return collections.flatMap((obj) =>
+      obj._id === collectionId
+        ? []
+        : [
+            {
+              value: obj._id,
+              label: obj.title,
+              accessionNumber: obj.accessionNumber,
+            },
+          ],
     );
   }, [collections, collectionId]);
 
@@ -118,7 +108,9 @@ export function ObjectCombobox({
       <PopoverContent className="w-full p-0" align="start">
         <Command>
           <CommandList id={listId}>
-            <CommandEmpty>No objects found.</CommandEmpty>
+            <CommandEmpty>
+              {isComplete ? "No objects found." : "Loading collections..."}
+            </CommandEmpty>
             <CommandGroup>
               {filteredObjects.map(
                 (obj: {
