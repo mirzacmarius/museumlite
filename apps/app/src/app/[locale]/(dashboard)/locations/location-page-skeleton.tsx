@@ -1,6 +1,6 @@
 const LOCATION_SECTION_SKELETON_KEYS = ["exhibition", "storage"];
 const LOCATION_ROW_SKELETON_KEYS = ["root", "wing", "room", "case"];
-const LOCATION_METRIC_SKELETON_KEYS = ["objects", "capacity", "audit"];
+const LOCATION_METRIC_SKELETON_KEYS = ["objects", "capacity", "audit", "actions"];
 const LOCATION_CARD_SKELETON_KEYS = [
   "vitrine",
   "wall",
@@ -55,7 +55,7 @@ export function LocationContentSkeleton() {
             <div className="h-7 w-64 rounded bg-muted/70" />
             <div className="h-4 w-40 max-w-full rounded bg-muted/40" />
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-4">
             {LOCATION_METRIC_SKELETON_KEYS.map((key) => (
               <div key={key} className="h-12 rounded-md bg-muted/30" />
             ))}

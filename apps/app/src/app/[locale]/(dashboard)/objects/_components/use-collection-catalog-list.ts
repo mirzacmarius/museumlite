@@ -32,6 +32,24 @@ type CatalogPreferencesAction =
   | { type: "setViewMode"; viewMode: ViewMode }
   | { type: "setColumns"; columns: ColumnConfig[] };
 
+function expandStoredStringList(value: string): string[] {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap((item) =>
+          typeof item === "string" ? expandStoredStringList(item) : [],
+        );
+      }
+    } catch {
+      // Keep the raw value when it is not valid JSON.
+    }
+  }
+  return [trimmed];
+}
+
 function catalogPreferencesReducer(
   state: CatalogPreferencesState,
   action: CatalogPreferencesAction,
@@ -183,9 +201,10 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
       collectionGroupId: filters.collectionGroupId
         ? (filters.collectionGroupId as Id<"collectionGroups">)
         : undefined,
-      locationId: filters.locationId
-        ? (filters.locationId as Id<"locations">)
-        : undefined,
+      locationIds:
+        filters.locationIds.length > 0
+          ? (filters.locationIds as Id<"locations">[])
+          : undefined,
       catalogedFrom: filters.catalogedFrom
         ? new Date(filters.catalogedFrom).getTime()
         : undefined,
@@ -199,7 +218,7 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const shouldLoadFilterMetadata =
     collectionsStatus !== "LoadingFirstPage" ||
     filters.objectType !== "" ||
-    filters.locationId !== "" ||
+    filters.locationIds.length > 0 ||
     filters.collectionGroupId !== "";
   const collectionGroups = useQuery(
     api.collectionGroups.list,
@@ -227,15 +246,21 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
 
   const objectTypeOptions = useMemo(() => {
     const types = new Set<string>();
+
+    function addObjectType(value: string) {
+      for (const part of expandStoredStringList(value)) {
+        const trimmed = part.trim();
+        if (trimmed) types.add(trimmed);
+      }
+    }
+
     typeOptions?.forEach((option: TypeOption) => {
-      if (option.name) types.add(option.name);
+      if (option.name) addObjectType(option.name);
     });
     collections.forEach((item: CollectionListItem) => {
-      if (item.objectType) types.add(item.objectType);
+      if (item.objectType) addObjectType(item.objectType);
     });
-    return Array.from(types)
-      .filter((typeName) => typeName.trim() !== "")
-      .sort();
+    return Array.from(types).sort((left, right) => left.localeCompare(right));
   }, [collections, typeOptions]);
 
   const handleSelectItem = (id: Id<"collections">, selected: boolean) => {

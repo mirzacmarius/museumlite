@@ -14,10 +14,17 @@ import { Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useScopedI18n } from "@/locales/client";
 
+interface CatalogFilterOption<Value extends string> {
+  value: Value;
+  label: string;
+  depth?: number;
+  keywords?: string[];
+}
+
 interface CatalogFilterSelectProps<Value extends string> {
   label: string;
   value: Value;
-  options: { value: Value; label: string }[];
+  options: CatalogFilterOption<Value>[];
   onChange: (value: Value) => void;
 }
 
@@ -60,25 +67,35 @@ export function CatalogFilterSelect<Value extends string>({
             <CommandList className="max-h-64">
               <CommandEmpty>{common("noResults")}</CommandEmpty>
               <CommandGroup>
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value || "__any__"}
-                    keywords={[option.label]}
-                    onSelect={() => {
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                    className="items-start gap-2 rounded-md py-2 text-xs"
-                  >
-                    <span className="min-w-0 flex-1 whitespace-normal break-words">
-                      {option.label}
-                    </span>
-                    {value === option.value ? (
-                      <Check className="mt-0.5 size-3.5 shrink-0 text-indigo-400" />
-                    ) : null}
-                  </CommandItem>
-                ))}
+                {options.map((option) => {
+                  const depth = option.depth ?? 0;
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value || "__any__"}
+                      keywords={[
+                        option.label,
+                        ...(option.keywords ?? []),
+                      ]}
+                      onSelect={() => {
+                        onChange(option.value);
+                        setOpen(false);
+                      }}
+                      className="items-center gap-2 rounded-md py-1.5 text-xs"
+                    >
+                      <span
+                        className="min-w-0 flex-1 truncate"
+                        style={{ paddingInlineStart: `${depth * 12}px` }}
+                        title={option.label}
+                      >
+                        {option.label}
+                      </span>
+                      {value === option.value ? (
+                        <Check className="size-3.5 shrink-0 text-indigo-400" />
+                      ) : null}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             </CommandList>
           </Command>

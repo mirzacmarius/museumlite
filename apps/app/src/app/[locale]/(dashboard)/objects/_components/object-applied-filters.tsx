@@ -28,7 +28,7 @@ export interface ObjectAppliedFiltersValue {
   status: ObjectStatus;
   objectType: string;
   displayStatus: ObjectDisplayStatus;
-  locationId: string;
+  locationIds: string[];
   collectionGroupId: string;
 }
 
@@ -91,12 +91,17 @@ export function ObjectAppliedFilters({
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
 
-  const locationLabel = useMemo(() => {
-    if (!filters.locationId) return null;
-    const match = locations?.find((l) => l._id === filters.locationId);
-    if (!match) return null;
-    return match.path.map((p) => p.name).join(" > ");
-  }, [filters.locationId, locations]);
+  const locationLabels = useMemo(() => {
+    if (filters.locationIds.length === 0) return [];
+    return filters.locationIds.map((locationId) => {
+      const match = locations?.find((location) => location._id === locationId);
+      if (!match) return locationId;
+      return (
+        match.path[match.path.length - 1]?.name ??
+        match.path.map((part) => part.name).join(" > ")
+      );
+    });
+  }, [filters.locationIds, locations]);
 
   const groupLabel = useMemo(() => {
     if (!filters.collectionGroupId) return null;
@@ -111,7 +116,7 @@ export function ObjectAppliedFilters({
     filters.status !== "any" ||
     filters.objectType !== "" ||
     filters.displayStatus !== "" ||
-    filters.locationId !== "" ||
+    filters.locationIds.length > 0 ||
     (!hideCollectionGroupFilter && filters.collectionGroupId !== "");
 
   if (!showBar) return null;
@@ -150,13 +155,24 @@ export function ObjectAppliedFilters({
         />
       )}
 
-      {filters.locationId !== "" && (
-        <AppliedFilterChip
-          label={t("filters.location")}
-          value={locationLabel ?? filters.locationId}
-          onRemove={() => onChange({ locationId: "" })}
-        />
-      )}
+      {locationLabels.map((label, index) => {
+        const locationId = filters.locationIds[index];
+        if (!locationId) return null;
+        return (
+          <AppliedFilterChip
+            key={locationId}
+            label={t("filters.location")}
+            value={label}
+            onRemove={() =>
+              onChange({
+                locationIds: filters.locationIds.filter(
+                  (id) => id !== locationId,
+                ),
+              })
+            }
+          />
+        );
+      })}
 
       {!hideCollectionGroupFilter && filters.collectionGroupId !== "" && (
         <AppliedFilterChip

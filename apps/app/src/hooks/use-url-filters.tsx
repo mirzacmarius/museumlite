@@ -3,11 +3,12 @@
 import "@/lib/nuqs-localstorage-shim";
 import {
   createParser,
+  parseAsArrayOf,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from "nuqs";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 export type ObjectStatus =
   | "any"
@@ -105,7 +106,11 @@ export function useObjectFilters() {
     "collectionGroupId",
     parseAsString.withDefault(""),
   );
-  const [locationId, setLocationId] = useQueryState(
+  const [locationIds, setLocationIds] = useQueryState(
+    "locationIds",
+    parseAsArrayOf(parseAsString).withDefault([]),
+  );
+  const [legacyLocationId, setLegacyLocationId] = useQueryState(
     "locationId",
     parseAsString.withDefault(""),
   );
@@ -128,6 +133,12 @@ export function useObjectFilters() {
     parseAsStringLiteral(["AND", "OR"] as const).withDefault("AND"),
   );
 
+  useEffect(() => {
+    if (!legacyLocationId || locationIds.length > 0) return;
+    void setLocationIds([legacyLocationId]);
+    void setLegacyLocationId(null);
+  }, [legacyLocationId, locationIds.length, setLegacyLocationId, setLocationIds]);
+
   const filters = useMemo(
     () => ({
       search,
@@ -138,7 +149,7 @@ export function useObjectFilters() {
       period,
       materials,
       collectionGroupId,
-      locationId,
+      locationIds,
       catalogedFrom,
       catalogedTo,
       advancedFilters,
@@ -153,7 +164,7 @@ export function useObjectFilters() {
       period,
       materials,
       collectionGroupId,
-      locationId,
+      locationIds,
       catalogedFrom,
       catalogedTo,
       advancedFilters,
@@ -176,8 +187,12 @@ export function useObjectFilters() {
         setMaterials(newFilters.materials || null);
       if (newFilters.collectionGroupId !== undefined)
         setCollectionGroupId(newFilters.collectionGroupId || null);
-      if (newFilters.locationId !== undefined)
-        setLocationId(newFilters.locationId || null);
+      if (newFilters.locationIds !== undefined) {
+        void setLegacyLocationId(null);
+        setLocationIds(
+          newFilters.locationIds.length > 0 ? newFilters.locationIds : null,
+        );
+      }
       if (newFilters.catalogedFrom !== undefined)
         setCatalogedFrom(newFilters.catalogedFrom || null);
       if (newFilters.catalogedTo !== undefined)
@@ -200,7 +215,8 @@ export function useObjectFilters() {
       setPeriod,
       setMaterials,
       setCollectionGroupId,
-      setLocationId,
+      setLocationIds,
+      setLegacyLocationId,
       setCatalogedFrom,
       setCatalogedTo,
       setAdvancedFilters,
@@ -217,7 +233,8 @@ export function useObjectFilters() {
     setPeriod(null);
     setMaterials(null);
     setCollectionGroupId(null);
-    setLocationId(null);
+    setLocationIds(null);
+    setLegacyLocationId(null);
     setCatalogedFrom(null);
     setCatalogedTo(null);
     setAdvancedFilters(null);
@@ -231,7 +248,8 @@ export function useObjectFilters() {
     setPeriod,
     setMaterials,
     setCollectionGroupId,
-    setLocationId,
+    setLocationIds,
+    setLegacyLocationId,
     setCatalogedFrom,
     setCatalogedTo,
     setAdvancedFilters,
@@ -252,7 +270,7 @@ export function useObjectFilters() {
       period !== "" ||
       materials !== "" ||
       collectionGroupId !== "" ||
-      locationId !== "" ||
+      locationIds.length > 0 ||
       catalogedFrom !== "" ||
       catalogedTo !== "" ||
       hasAdvancedFilters
@@ -266,7 +284,7 @@ export function useObjectFilters() {
     period,
     materials,
     collectionGroupId,
-    locationId,
+    locationIds,
     catalogedFrom,
     catalogedTo,
     advancedFilters,
@@ -285,7 +303,7 @@ export function useObjectFilters() {
     setPeriod,
     setMaterials,
     setCollectionGroupId,
-    setLocationId,
+    setLocationIds,
     setCatalogedFrom,
     setCatalogedTo,
     setAdvancedFilters,

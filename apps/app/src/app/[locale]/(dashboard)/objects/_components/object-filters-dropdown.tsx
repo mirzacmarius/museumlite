@@ -15,14 +15,17 @@ import type {
 import { useScopedI18n } from "@/locales/client";
 import { CatalogFilterSelect } from "./catalog-filter-select";
 import type { ColumnConfig } from "./column-config";
+import { LocationTreeFilter } from "./location-tree-filter";
 import type { ViewMode } from "./view-toggle";
 
 interface LocationPathItem {
+  _id?: Id<"locations">;
   name: string;
 }
 
 interface LocationOption {
   _id: Id<"locations">;
+  name?: string;
   path: LocationPathItem[];
 }
 
@@ -35,7 +38,7 @@ export interface ObjectFiltersDropdownValue {
   status: ObjectStatus;
   objectType: string;
   displayStatus: ObjectDisplayStatus;
-  locationId: string;
+  locationIds: string[];
   collectionGroupId: string;
 }
 
@@ -118,7 +121,7 @@ export function ObjectFiltersDropdown({
     (filters.status !== "any" ? 1 : 0) +
     (filters.objectType !== "" ? 1 : 0) +
     (filters.displayStatus !== "" ? 1 : 0) +
-    (filters.locationId !== "" ? 1 : 0) +
+    (filters.locationIds.length > 0 ? 1 : 0) +
     (!hideCollectionGroupFilter && filters.collectionGroupId !== "" ? 1 : 0);
 
   return (
@@ -209,17 +212,11 @@ export function ObjectFiltersDropdown({
               ]}
               onChange={(objectType) => onChange({ objectType })}
             />
-            <CatalogFilterSelect
+            <LocationTreeFilter
               label={t("filters.location")}
-              value={filters.locationId}
-              options={[
-                { value: "", label: t("filters.allLocations") },
-                ...(locations ?? []).map((location) => ({
-                  value: location._id,
-                  label: location.path.map((part) => part.name).join(" > "),
-                })),
-              ]}
-              onChange={(locationId) => onChange({ locationId })}
+              value={filters.locationIds}
+              locations={locations ?? []}
+              onChange={(locationIds) => onChange({ locationIds })}
             />
             {!hideCollectionGroupFilter ? (
               <CatalogFilterSelect
@@ -296,7 +293,7 @@ export function ObjectFiltersDropdown({
                 status: "any",
                 objectType: "",
                 displayStatus: "",
-                locationId: "",
+                locationIds: [],
                 ...(!hideCollectionGroupFilter
                   ? { collectionGroupId: "" }
                   : {}),

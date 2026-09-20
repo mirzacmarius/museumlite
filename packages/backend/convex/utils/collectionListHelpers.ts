@@ -12,6 +12,7 @@ interface CollectionListFilters {
   status?: Doc<"collections">["status"];
   includeDeaccessioned?: boolean;
   locationId?: Id<"locations">;
+  locationIds?: Id<"locations">[];
   objectType?: string;
   displayStatus?: string;
   culture?: string;
@@ -23,6 +24,35 @@ interface CollectionListFilters {
   search?: string;
 }
 
+function parseStoredStringList(value: string): string[] {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap((item) =>
+          typeof item === "string" ? parseStoredStringList(item) : [],
+        );
+      }
+    } catch {
+      // Keep the raw value when it is not valid JSON.
+    }
+  }
+  return [trimmed];
+}
+
+function matchesObjectType(
+  stored: string | undefined,
+  filter: string,
+): boolean {
+  if (!stored) return false;
+  if (stored === filter) return true;
+  const storedValues = parseStoredStringList(stored);
+  const filterValues = parseStoredStringList(filter);
+  return filterValues.some((value) => storedValues.includes(value));
+}
+
 /** Filter only the bounded database page; never load an organization's relations. */
 export async function filterCollectionListPage(
   ctx: Pick<QueryCtx, "db">,
@@ -32,6 +62,13 @@ export async function filterCollectionListPage(
   const search = args.search?.trim() ? args.search : undefined;
   const searchLower = search?.toLowerCase();
   const titleMatches = new Map<string, Promise<boolean>>();
+  const locationIdSet = new Set(
+    args.locationIds && args.locationIds.length > 0
+      ? args.locationIds
+      : args.locationId
+        ? [args.locationId]
+        : [],
+  );
   const matches = await Promise.all(
     page.map(async (collection) => {
       if (args.status && collection.status !== args.status) return false;
@@ -43,9 +80,13 @@ export async function filterCollectionListPage(
         !args.includeDeaccessioned
       )
         return false;
-      if (args.locationId && collection.currentLocationId !== args.locationId)
+      if (
+        locationIdSet.size > 0 &&
+        (!collection.currentLocationId ||
+          !locationIdSet.has(collection.currentLocationId))
+      )
         return false;
-      if (args.objectType && collection.objectType !== args.objectType)
+      if (args.objectType && !matchesObjectType(collection.objectType, args.objectType))
         return false;
       if (args.displayStatus && collection.displayStatus !== args.displayStatus)
         return false;

@@ -43,7 +43,7 @@ interface ObjectFilters {
   period: string;
   materials: string;
   collectionGroupId: string;
-  locationId: string;
+  locationIds: string[];
   catalogedFrom: string;
   catalogedTo: string;
 }
@@ -91,7 +91,7 @@ export function SavedViewsDropdown({
       try {
         const filters = JSON.parse(
           defaultView.filters,
-        ) as Partial<ObjectFilters>;
+        ) as Partial<ObjectFilters> & { locationId?: string };
         onApplyViewRef.current({
           search: filters.search || "",
           status: filters.status || "all",
@@ -100,7 +100,9 @@ export function SavedViewsDropdown({
           period: filters.period || "",
           materials: filters.materials || "",
           collectionGroupId: filters.collectionGroupId || "",
-          locationId: filters.locationId || "",
+          locationIds:
+            filters.locationIds ??
+            (filters.locationId ? [filters.locationId] : []),
           catalogedFrom: filters.catalogedFrom || "",
           catalogedTo: filters.catalogedTo || "",
         });
@@ -134,7 +136,9 @@ export function SavedViewsDropdown({
     filters: string;
   }) => {
     try {
-      const filters = JSON.parse(view.filters) as Partial<ObjectFilters>;
+      const filters = JSON.parse(view.filters) as Partial<ObjectFilters> & {
+        locationId?: string;
+      };
       onApplyView({
         search: filters.search || "",
         status: filters.status || "all",
@@ -143,7 +147,9 @@ export function SavedViewsDropdown({
         period: filters.period || "",
         materials: filters.materials || "",
         collectionGroupId: filters.collectionGroupId || "",
-        locationId: filters.locationId || "",
+        locationIds:
+          filters.locationIds ??
+          (filters.locationId ? [filters.locationId] : []),
         catalogedFrom: filters.catalogedFrom || "",
         catalogedTo: filters.catalogedTo || "",
       });

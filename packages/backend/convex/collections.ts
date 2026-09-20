@@ -1731,6 +1731,7 @@ export const list = query({
       ),
     ),
     locationId: v.optional(v.id("locations")),
+    locationIds: v.optional(v.array(v.id("locations"))),
     objectType: v.optional(v.string()),
     displayStatus: v.optional(v.string()),
     culture: v.optional(v.string()),
@@ -1778,6 +1779,15 @@ export const list = query({
     // Check permission
     await requirePermission(ctx, args.organizationId, "collections.read");
 
+    const locationIds =
+      args.locationIds && args.locationIds.length > 0
+        ? args.locationIds
+        : args.locationId
+          ? [args.locationId]
+          : undefined;
+    const singleLocationId =
+      locationIds?.length === 1 ? locationIds[0] : undefined;
+
     // Equality indexes preserve creation-time order within the selected range.
     const source = args.status
       ? ctx.db
@@ -1787,27 +1797,19 @@ export const list = query({
               .eq("organizationId", args.organizationId)
               .eq("status", args.status!),
           )
-      : args.locationId
+      : singleLocationId
         ? ctx.db
             .query("collections")
             .withIndex("by_organization_and_location", (q) =>
               q
                 .eq("organizationId", args.organizationId)
-                .eq("currentLocationId", args.locationId),
+                .eq("currentLocationId", singleLocationId),
             )
-        : args.objectType
-          ? ctx.db
-              .query("collections")
-              .withIndex("by_organization_and_objectType", (q) =>
-                q
-                  .eq("organizationId", args.organizationId)
-                  .eq("objectType", args.objectType),
-              )
-          : ctx.db
-              .query("collections")
-              .withIndex("by_organization", (q) =>
-                q.eq("organizationId", args.organizationId),
-              );
+        : ctx.db
+            .query("collections")
+            .withIndex("by_organization", (q) =>
+              q.eq("organizationId", args.organizationId),
+            );
 
     // Filters may yield short or empty pages. The native cursor still advances,
     // and split metadata keeps reactive pages contiguous as records change.
@@ -1824,7 +1826,10 @@ export const list = query({
     });
     return await toCollectionListPaginationResult(ctx, {
       ...result,
-      page: await filterCollectionListPage(ctx, result.page, args),
+      page: await filterCollectionListPage(ctx, result.page, {
+        ...args,
+        locationIds,
+      }),
     });
   },
 });

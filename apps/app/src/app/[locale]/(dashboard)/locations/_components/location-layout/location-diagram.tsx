@@ -2,10 +2,10 @@
 
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import {
   Background,
+  ControlButton,
   Controls,
   type Edge,
   Handle,
@@ -16,14 +16,24 @@ import {
   Position,
   ReactFlow,
   useReactFlow,
+  useStore,
   type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { FunctionReturnType } from "convex/server";
-import { ChevronRight, Package, Sparkles } from "lucide-react";
+import {
+  ChevronRight,
+  type LucideIcon,
+  Package,
+  Scan,
+  Sparkles,
+  UnfoldHorizontal,
+  UnfoldVertical,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   isExhibitionLocation,
   isStorageLocation,
@@ -389,43 +399,153 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
 
 const nodeTypes = { location: LocationNode };
 
-const FIT_VIEW_OPTIONS = { padding: 0.15, maxZoom: 1 } as const;
+const FIT_VIEW_OPTIONS = { padding: 0.04, maxZoom: 1 } as const;
+const MIN_ZOOM = 0.1;
+const VIEWPORT_DURATION_MS = 240;
+const FIT_TOP_PADDING_PX = 16;
+
+type FitAxis = "width" | "height" | "both";
+
+function clampZoom(zoom: number) {
+  return Math.min(FIT_VIEW_OPTIONS.maxZoom, Math.max(MIN_ZOOM, zoom));
+}
+
+function viewportForFit({
+  axis,
+  bounds,
+  paneWidth,
+  paneHeight,
+}: {
+  axis: FitAxis;
+  bounds: { x: number; y: number; width: number; height: number };
+  paneWidth: number;
+  paneHeight: number;
+}): Viewport | null {
+  if (paneWidth <= 0 || paneHeight <= 0) return null;
+  if (bounds.width <= 0 || bounds.height <= 0) return null;
+
+  const usable = 1 - FIT_VIEW_OPTIONS.padding * 2;
+  const widthZoom = (paneWidth * usable) / bounds.width;
+  const heightZoom = (paneHeight * usable) / bounds.height;
+  const zoom = clampZoom(
+    axis === "width"
+      ? widthZoom
+      : axis === "height"
+        ? heightZoom
+        : Math.min(widthZoom, heightZoom),
+  );
+
+  return {
+    x: paneWidth / 2 - (bounds.x + bounds.width / 2) * zoom,
+    y: FIT_TOP_PADDING_PX - bounds.y * zoom,
+    zoom,
+  };
+}
+
+const FIT_AXIS_CONTROLS: {
+  axis: Exclude<FitAxis, "both">;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { axis: "width", label: "Fit Width", Icon: UnfoldHorizontal },
+  { axis: "height", label: "Fit Height", Icon: UnfoldVertical },
+];
 
 function DiagramToolbar({
   settings,
-  arrangeToken,
-  nodeCount,
-  onAutoArrange,
 }: {
   settings: ReturnType<typeof useDiagramSettings>;
-  arrangeToken: number;
-  nodeCount: number;
-  onAutoArrange: () => void;
 }) {
-  const { fitView } = useReactFlow();
-
-  useEffect(() => {
-    if (arrangeToken === 0) return;
-    const timeoutId = window.setTimeout(() => {
-      void fitView({ ...FIT_VIEW_OPTIONS, duration: 240 });
-    }, 50);
-    return () => window.clearTimeout(timeoutId);
-  }, [arrangeToken, nodeCount, fitView]);
-
   return (
-    <Panel position="top-right" className="flex items-center gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-8 gap-2 border-border/60 bg-card/95 text-xs shadow-md backdrop-blur-sm hover:bg-accent"
-        onClick={onAutoArrange}
-      >
-        <Sparkles className="size-3.5" />
-        Auto arrange
-      </Button>
+    <Panel position="top-right">
       <DiagramSettingsPopover settings={settings} />
     </Panel>
+  );
+}
+
+function DiagramControls({
+  arrangeToken,
+  nodeCount,
+  fitOnMount,
+  onAutoArrange,
+}: {
+  arrangeToken: number;
+  nodeCount: number;
+  fitOnMount: boolean;
+  onAutoArrange: () => void;
+}) {
+  const { getNodes, getNodesBounds, setViewport } = useReactFlow();
+  const paneWidth = useStore((state) => state.width);
+  const paneHeight = useStore((state) => state.height);
+  const didFitOnMount = useRef(false);
+  const lastArrangedToken = useRef(0);
+
+  function fitDiagram(axis: FitAxis) {
+    const nodes = getNodes();
+    if (nodes.length === 0) return;
+
+    const viewport = viewportForFit({
+      axis,
+      bounds: getNodesBounds(nodes),
+      paneWidth,
+      paneHeight,
+    });
+    if (!viewport) return;
+
+    void setViewport(viewport, { duration: VIEWPORT_DURATION_MS });
+  }
+
+  useEffect(() => {
+    if (paneWidth <= 0 || paneHeight <= 0 || nodeCount === 0) return;
+
+    const shouldFitFromArrange = arrangeToken > lastArrangedToken.current;
+    const shouldFitFromMount = fitOnMount && !didFitOnMount.current;
+    if (!shouldFitFromArrange && !shouldFitFromMount) return;
+
+    if (shouldFitFromMount) didFitOnMount.current = true;
+    if (shouldFitFromArrange) lastArrangedToken.current = arrangeToken;
+
+    const timeoutId = window.setTimeout(() => {
+      fitDiagram("both");
+    }, 50);
+    return () => window.clearTimeout(timeoutId);
+  }, [arrangeToken, nodeCount, fitOnMount, paneWidth, paneHeight]);
+
+  return (
+    <Controls
+      showInteractive={false}
+      showFitView={false}
+      fitViewOptions={FIT_VIEW_OPTIONS}
+    >
+      <ControlButton
+        type="button"
+        title="Fit View"
+        aria-label="Fit View"
+        className="react-flow__controls-fitview"
+        onClick={() => fitDiagram("both")}
+      >
+        <Scan className="!size-3.5" />
+      </ControlButton>
+      {FIT_AXIS_CONTROLS.map(({ axis, label, Icon }) => (
+        <ControlButton
+          key={axis}
+          type="button"
+          title={label}
+          aria-label={label}
+          onClick={() => fitDiagram(axis)}
+        >
+          <Icon className="!size-3.5" />
+        </ControlButton>
+      ))}
+      <ControlButton
+        type="button"
+        title="Auto arrange"
+        aria-label="Auto arrange"
+        onClick={onAutoArrange}
+      >
+        <Sparkles className="!size-3.5" />
+      </ControlButton>
+    </Controls>
   );
 }
 
@@ -437,6 +557,8 @@ export function LocationDiagram({
 }: LocationDiagramProps) {
   const storageKey = `museumlite:diagram:${location._id}`;
   const settings = useDiagramSettings(storageKey);
+  const { resolvedTheme } = useTheme();
+  const colorMode = resolvedTheme === "light" ? "light" : "dark";
   const { direction, items, size, spacing, lines } = settings;
   const diagramSettings: DiagramSettings = useMemo(
     () => ({ direction, items, size, spacing, lines }),
@@ -676,7 +798,7 @@ export function LocationDiagram({
             edgesReconnectable={false}
             elementsSelectable={false}
             deleteKeyCode={null}
-            fitView={!initialViewport}
+            fitView={false}
             defaultViewport={initialViewport}
             onMoveEnd={(_, viewport) =>
               saveDiagramState(storageKey, {
@@ -685,29 +807,37 @@ export function LocationDiagram({
               })
             }
             fitViewOptions={FIT_VIEW_OPTIONS}
-            minZoom={0.1}
+            minZoom={MIN_ZOOM}
             maxZoom={1.6}
-            colorMode="dark"
+            colorMode={colorMode}
           >
-            <DiagramToolbar
-              settings={settings}
-              arrangeToken={arrangeToken}
-              nodeCount={nodes.length}
-              onAutoArrange={autoArrange}
-            />
+            <DiagramToolbar settings={settings} />
             <Panel
-              position="top-left"
+              position="bottom-center"
               className="rounded-md border border-border/60 bg-card/90 px-3 py-1.5 text-[11px] text-muted-foreground"
             >
               Drag to explore · Scroll to zoom
             </Panel>
-            <Background gap={24} size={1} color="#303036" />
-            <Controls showInteractive={false} />
+            <Background
+              gap={24}
+              size={1}
+              color={colorMode === "light" ? "#d4d4d8" : "#303036"}
+            />
+            <DiagramControls
+              arrangeToken={arrangeToken}
+              nodeCount={nodes.length}
+              fitOnMount={!initialViewport}
+              onAutoArrange={autoArrange}
+            />
             <MiniMap
               pannable
               zoomable
               nodeColor="#6366f1"
-              maskColor="rgba(0,0,0,0.5)"
+              maskColor={
+                colorMode === "light"
+                  ? "rgba(255,255,255,0.7)"
+                  : "rgba(0,0,0,0.5)"
+              }
               className="!h-20 !w-32"
             />
           </ReactFlow>

@@ -44,7 +44,7 @@ export function CollectionCatalogToolbar({
     filters.status !== "any" ||
     filters.objectType !== "" ||
     filters.displayStatus !== "" ||
-    filters.locationId !== "" ||
+    filters.locationIds.length > 0 ||
     (!isCollectionGroupView && filters.collectionGroupId !== "");
 
   const secondaryFilters = {
@@ -52,7 +52,7 @@ export function CollectionCatalogToolbar({
     status: filters.status,
     objectType: filters.objectType,
     displayStatus: filters.displayStatus,
-    locationId: filters.locationId,
+    locationIds: filters.locationIds,
     collectionGroupId: isCollectionGroupView ? "" : filters.collectionGroupId,
   };
 
@@ -101,7 +101,7 @@ export function CollectionCatalogToolbar({
               status: filters.status,
               objectType: filters.objectType,
               displayStatus: filters.displayStatus,
-              locationId: filters.locationId,
+              locationIds: filters.locationIds,
               collectionGroupId: filters.collectionGroupId,
             }}
             viewMode={viewMode}
