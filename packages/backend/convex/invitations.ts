@@ -63,7 +63,12 @@ export const listPendingInvitations = query({
     }
 
     // Check permission to view invitations (users.invite permission allows viewing pending invitations)
-    const [, invitations] = await Promise.all([
+    const [, , invitations] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, args.organizationId, "users.invite"),
       ctx.db
         .query("organizationInvitations")
@@ -372,7 +377,14 @@ export const resendInvitation = mutation({
       };
     }
 
-    await requirePermission(ctx, invitation.organizationId, "users.invite");
+    await Promise.all([
+      requirePermission(
+        ctx,
+        invitation.organizationId,
+        "organization.manage_settings",
+      ),
+      requirePermission(ctx, invitation.organizationId, "users.invite"),
+    ]);
 
     // Generate new token and extend expiration
     const newToken = generateInvitationToken();
@@ -444,7 +456,14 @@ export const cancelInvitation = mutation({
       throw new Error(`Cannot cancel ${invitation.status} invitation`);
     }
 
-    await requirePermission(ctx, invitation.organizationId, "users.invite");
+    await Promise.all([
+      requirePermission(
+        ctx,
+        invitation.organizationId,
+        "organization.manage_settings",
+      ),
+      requirePermission(ctx, invitation.organizationId, "users.invite"),
+    ]);
 
     await Promise.all([
       ctx.db.delete(args.invitationId),
@@ -564,7 +583,14 @@ export const createInvitation = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "users.invite");
+    await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      requirePermission(ctx, args.organizationId, "users.invite"),
+    ]);
 
     // Call internal mutation
     return await ctx.runMutation(

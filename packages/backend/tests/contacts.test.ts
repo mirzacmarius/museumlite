@@ -86,6 +86,14 @@ describe("contacts", () => {
       });
     });
 
+    await t.run(async (ctx) => {
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "organization.manage_settings",
+        category: "organization",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+    });
+
     const authed = t.withIdentity({
       subject: `${userId}|session-setup`,
       issuer: "https://example.test",

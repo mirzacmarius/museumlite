@@ -1,7 +1,7 @@
 import {
   Activity,
-  BookOpen,
   Bookmark,
+  BookOpen,
   ChartColumn,
   Contact,
   Container,
@@ -49,6 +49,7 @@ interface BuildSidebarNavigationInput {
   hasFeature: (featureId: FeatureId) => boolean;
   isLibraryModuleEnabled: boolean;
   isLocationTrackingEnabled: boolean;
+  canAccessAdministration: boolean;
 }
 
 interface SidebarNavigation {
@@ -66,6 +67,7 @@ export function buildSidebarNavigation({
   hasFeature,
   isLibraryModuleEnabled,
   isLocationTrackingEnabled,
+  canAccessAdministration,
 }: BuildSidebarNavigationInput): SidebarNavigation {
   const navCoreInventory: NavigationItem[] = [
     { title: "Overview", url: "/", icon: LayoutGrid },
@@ -203,11 +205,15 @@ export function buildSidebarNavigation({
         icon: Library,
         items: navLibrary,
       },
-      {
-        title: "Administration",
-        icon: Settings2,
-        items: navAdministration,
-      },
+      ...(canAccessAdministration
+        ? [
+            {
+              title: "Administration",
+              icon: Settings2,
+              items: navAdministration,
+            },
+          ]
+        : []),
     ],
   };
 }

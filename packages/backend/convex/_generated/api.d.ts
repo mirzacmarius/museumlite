@@ -103,6 +103,7 @@ import type * as usersMutations from "../usersMutations.js";
 import type * as utils_accessionCounter from "../utils/accessionCounter.js";
 import type * as utils_accessionNumberParser from "../utils/accessionNumberParser.js";
 import type * as utils_accessionObjectDraftPublication from "../utils/accessionObjectDraftPublication.js";
+import type * as utils_accountAdministration from "../utils/accountAdministration.js";
 import type * as utils_accountProfile from "../utils/accountProfile.js";
 import type * as utils_authorizationContext from "../utils/authorizationContext.js";
 import type * as utils_batchLookup from "../utils/batchLookup.js";
@@ -273,6 +274,7 @@ declare const fullApi: ApiFromModules<{
   "utils/accessionCounter": typeof utils_accessionCounter;
   "utils/accessionNumberParser": typeof utils_accessionNumberParser;
   "utils/accessionObjectDraftPublication": typeof utils_accessionObjectDraftPublication;
+  "utils/accountAdministration": typeof utils_accountAdministration;
   "utils/accountProfile": typeof utils_accountProfile;
   "utils/authorizationContext": typeof utils_authorizationContext;
   "utils/batchLookup": typeof utils_batchLookup;

@@ -21,6 +21,11 @@ export const create = mutation({
       getAuthUserId(ctx),
 
       requireFeatureAccess(ctx, args.organizationId, "public_portal"),
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, args.organizationId, "sites.create"),
     ] as const);
     if (!userId) {
@@ -169,7 +174,14 @@ export const update = mutation({
     await requireFeatureAccess(ctx, site.organizationId, "public_portal");
 
     // Check permission
-    await requirePermission(ctx, site.organizationId, "sites.update");
+    await Promise.all([
+      requirePermission(
+        ctx,
+        site.organizationId,
+        "organization.manage_settings",
+      ),
+      requirePermission(ctx, site.organizationId, "sites.update"),
+    ]);
 
     // If marking as primary, unset any existing primary site
     if (args.isPrimary) {
@@ -231,6 +243,11 @@ export const archive = mutation({
 
     await Promise.all([
       requireFeatureAccess(ctx, site.organizationId, "public_portal"),
+      requirePermission(
+        ctx,
+        site.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, site.organizationId, "sites.delete"),
     ]);
 
@@ -265,6 +282,11 @@ export const grantUserSiteAccess = mutation({
     }
     await Promise.all([
       requireFeatureAccess(ctx, site.organizationId, "public_portal"),
+      requirePermission(
+        ctx,
+        site.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, site.organizationId, "sites.update"),
     ]);
     const user = await ctx.db.get(args.userId);
@@ -331,6 +353,11 @@ export const revokeUserSiteAccess = mutation({
     }
     await Promise.all([
       requireFeatureAccess(ctx, site.organizationId, "public_portal"),
+      requirePermission(
+        ctx,
+        site.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, site.organizationId, "sites.update"),
     ]);
     const userSite = await ctx.db

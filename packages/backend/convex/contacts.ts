@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
+import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
   requireAuthenticatedUser,
   requireAuthorizedOrganization,
@@ -218,6 +219,7 @@ export const create = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
 
     await requireAuthorizedOrganization(ctx, {
       organizationId: account.organizationId,
@@ -313,6 +315,7 @@ export const update = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
 
     await requireAuthorizedOrganization(ctx, {
       organizationId: account.organizationId,
@@ -397,6 +400,7 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
     await Promise.all([
       requireAuthorizedOrganization(ctx, {
         organizationId: account.organizationId,
@@ -443,6 +447,7 @@ export const setPrimary = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
 
     const [, existingPrimaryContacts] = await Promise.all([
       requireAuthorizedOrganization(ctx, {

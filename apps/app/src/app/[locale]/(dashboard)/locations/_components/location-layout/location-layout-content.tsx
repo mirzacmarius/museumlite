@@ -35,6 +35,94 @@ interface LocationLayoutContentProps {
   locations: ThreadLocation[];
 }
 
+function LocationBranch({
+  location,
+  ancestors,
+  root = false,
+  objects,
+  childrenById,
+  viewStyle,
+}: {
+  location: ThreadLocation | LocationDetail;
+  ancestors: Set<Id<"locations">>;
+  root?: boolean;
+  objects: Map<Id<"locations">, ObjectsAtLocation>;
+  childrenById: Map<Id<"locations">, ThreadLocation[]>;
+  viewStyle: "thread" | "outline";
+}): ReactNode {
+  if (ancestors.has(location._id)) return null;
+  const path = new Set(ancestors).add(location._id);
+  const assigned = objects.get(location._id) ?? [];
+  const nested = childrenById.get(location._id) ?? [];
+  const content = (
+    <>
+      {assigned.length > 0 &&
+        (viewStyle === "outline" ? (
+          <div className="mb-3 divide-y divide-border/40">
+            {assigned.map((object) => (
+              <Link
+                key={object._id}
+                href={`/objects/${object._id}`}
+                className="flex min-w-0 items-center justify-between gap-3 rounded p-2 text-xs hover:bg-muted/40"
+              >
+                <span className="truncate">{object.title}</span>
+                <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                  {object.accessionNumber}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4 pb-5">
+            <LocationUnitCard
+              name={location.name}
+              isActive={location.isActive}
+              objects={assigned}
+            />
+          </div>
+        ))}
+      {nested.length > 0 && (
+        <div className="space-y-3">
+          {nested.map((child) => (
+            <LocationBranch
+              key={child._id}
+              location={child}
+              ancestors={path}
+              objects={objects}
+              childrenById={childrenById}
+              viewStyle={viewStyle}
+            />
+          ))}
+        </div>
+      )}
+      {assigned.length === 0 && nested.length === 0 && (
+        <p className="pb-3 text-xs text-muted-foreground">
+          No objects in this location
+        </p>
+      )}
+    </>
+  );
+  if (root) return content;
+  return (
+    <details key={location._id} open className="group/thread min-w-0">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md py-2 text-xs hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-open/thread:rotate-90" />
+        <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 truncate font-medium">{location.name}</span>
+        <span className="text-[10px] capitalize text-muted-foreground">
+          {location.type.replaceAll("_", " ")}
+        </span>
+        <span className="ms-auto shrink-0 pe-2 text-[10px] tabular-nums text-muted-foreground">
+          {assigned.length} direct · {nested.length} locations
+        </span>
+      </summary>
+      <div className="ms-1.5 border-s border-border/60 ps-3 pt-3 dark:border-white/10 sm:ps-4">
+        {content}
+      </div>
+    </details>
+  );
+}
+
 export function LocationLayoutContent({
   actions,
   selectedLocation,
@@ -65,75 +153,6 @@ export function LocationLayoutContent({
     const siblings = objects.get(object.currentLocationId) ?? [];
     siblings.push(object);
     objects.set(object.currentLocationId, siblings);
-  }
-
-  function renderLocation(
-    location: ThreadLocation | LocationDetail,
-    ancestors: Set<Id<"locations">>,
-    root = false,
-  ): ReactNode {
-    if (ancestors.has(location._id)) return null;
-    const path = new Set(ancestors).add(location._id);
-    const assigned = objects.get(location._id) ?? [];
-    const nested = children.get(location._id) ?? [];
-    const content = (
-      <>
-        {assigned.length > 0 &&
-          (viewStyle === "outline" ? (
-            <div className="mb-3 divide-y divide-border/40">
-              {assigned.map((object) => (
-                <Link
-                  key={object._id}
-                  href={`/objects/${object._id}`}
-                  className="flex min-w-0 items-center justify-between gap-3 rounded px-2 py-2 text-xs hover:bg-muted/40"
-                >
-                  <span className="truncate">{object.title}</span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                    {object.accessionNumber}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4 pb-5">
-              <LocationUnitCard
-                name={location.name}
-                isActive={location.isActive}
-                objects={assigned}
-              />
-            </div>
-          ))}
-        {nested.length > 0 && (
-          <div className="space-y-3">
-            {nested.map((child) => renderLocation(child, path))}
-          </div>
-        )}
-        {assigned.length === 0 && nested.length === 0 && (
-          <p className="pb-3 text-xs text-muted-foreground">
-            No objects in this location
-          </p>
-        )}
-      </>
-    );
-    if (root) return content;
-    return (
-      <details key={location._id} open className="group/thread min-w-0">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md py-2 text-xs hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
-          <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-open/thread:rotate-90" />
-          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate font-medium">{location.name}</span>
-          <span className="text-[10px] capitalize text-muted-foreground">
-            {location.type.replaceAll("_", " ")}
-          </span>
-          <span className="ms-auto shrink-0 pe-2 text-[10px] tabular-nums text-muted-foreground">
-            {assigned.length} direct · {nested.length} locations
-          </span>
-        </summary>
-        <div className="ms-1.5 border-s border-border/60 ps-3 pt-3 dark:border-white/10 sm:ps-4">
-          {content}
-        </div>
-      </details>
-    );
   }
 
   return (
@@ -196,7 +215,14 @@ export function LocationLayoutContent({
         </section>
       ) : (
         <div key={`${selectedLocation._id}-${viewStyle}`} className="min-w-0">
-          {renderLocation(selectedLocation, new Set(), true)}
+          <LocationBranch
+            location={selectedLocation}
+            ancestors={new Set()}
+            root
+            objects={objects}
+            childrenById={children}
+            viewStyle={viewStyle}
+          />
         </div>
       )}
     </>

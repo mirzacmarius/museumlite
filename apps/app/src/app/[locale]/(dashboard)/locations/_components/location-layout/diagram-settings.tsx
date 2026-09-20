@@ -3,49 +3,51 @@
 import { Button } from "@v1/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { SlidersHorizontal } from "lucide-react";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useEffect } from "react";
 import { readDiagramState, saveDiagramState } from "./diagram-storage";
 
 export function useDiagramSettings(storageKey: string) {
-  const [direction, setDirection] = useQueryState(
-    "direction",
-    parseAsStringLiteral(["horizontal", "vertical"] as const).withDefault(
-      "vertical",
-    ),
-  );
-  const [items, setItems] = useQueryState(
-    "items",
-    parseAsStringLiteral(["list", "grid"] as const).withDefault("grid"),
-  );
-  const [size, setSize] = useQueryState(
-    "thumbs",
-    parseAsStringLiteral(["small", "large"] as const).withDefault("large"),
-  );
-  const [spacing, setSpacing] = useQueryState(
-    "spacing",
-    parseAsStringLiteral(["compact", "comfortable"] as const).withDefault(
-      "comfortable",
-    ),
-  );
-  const [lines, setLines] = useQueryState(
-    "lines",
-    parseAsStringLiteral([
-      "smoothstep",
-      "default",
-      "straight",
-    ] as const).withDefault("default"),
-  );
+  const [{ direction, items, size, spacing, lines }, setSettings] =
+    useQueryStates(
+      {
+        direction: parseAsStringLiteral([
+          "horizontal",
+          "vertical",
+        ] as const).withDefault("vertical"),
+        items: parseAsStringLiteral(["list", "grid"] as const).withDefault(
+          "grid",
+        ),
+        size: parseAsStringLiteral(["small", "large"] as const).withDefault(
+          "large",
+        ),
+        spacing: parseAsStringLiteral([
+          "compact",
+          "comfortable",
+        ] as const).withDefault("comfortable"),
+        lines: parseAsStringLiteral([
+          "smoothstep",
+          "default",
+          "straight",
+        ] as const).withDefault("default"),
+      },
+      { urlKeys: { size: "thumbs" } },
+    );
   useEffect(() => {
     const saved = readDiagramState(storageKey);
     const params = new URLSearchParams(window.location.search);
-    if (!params.has("direction") && saved.direction)
-      void setDirection(saved.direction);
-    if (!params.has("items") && saved.items) void setItems(saved.items);
-    if (!params.has("thumbs") && saved.size) void setSize(saved.size);
-    if (!params.has("spacing") && saved.spacing) void setSpacing(saved.spacing);
-    if (!params.has("lines") && saved.lines) void setLines(saved.lines);
-  }, [storageKey, setDirection, setItems, setSize, setSpacing, setLines]);
+    void setSettings({
+      ...(!params.has("direction") && saved.direction
+        ? { direction: saved.direction }
+        : {}),
+      ...(!params.has("items") && saved.items ? { items: saved.items } : {}),
+      ...(!params.has("thumbs") && saved.size ? { size: saved.size } : {}),
+      ...(!params.has("spacing") && saved.spacing
+        ? { spacing: saved.spacing }
+        : {}),
+      ...(!params.has("lines") && saved.lines ? { lines: saved.lines } : {}),
+    });
+  }, [storageKey, setSettings]);
   return {
     direction,
     items,
@@ -60,7 +62,7 @@ export function useDiagramSettings(storageKey: string) {
         lines,
         direction: value,
       });
-      return setDirection(value);
+      return setSettings({ direction: value });
     },
     setItems: (value: typeof items) => {
       saveDiagramState(storageKey, {
@@ -70,7 +72,7 @@ export function useDiagramSettings(storageKey: string) {
         lines,
         items: value,
       });
-      return setItems(value);
+      return setSettings({ items: value });
     },
     setSize: (value: typeof size) => {
       saveDiagramState(storageKey, {
@@ -80,7 +82,7 @@ export function useDiagramSettings(storageKey: string) {
         lines,
         size: value,
       });
-      return setSize(value);
+      return setSettings({ size: value });
     },
     setSpacing: (value: typeof spacing) => {
       saveDiagramState(storageKey, {
@@ -90,7 +92,7 @@ export function useDiagramSettings(storageKey: string) {
         lines,
         spacing: value,
       });
-      return setSpacing(value);
+      return setSettings({ spacing: value });
     },
     setLines: (value: typeof lines) => {
       saveDiagramState(storageKey, {
@@ -100,7 +102,7 @@ export function useDiagramSettings(storageKey: string) {
         spacing,
         lines: value,
       });
-      return setLines(value);
+      return setSettings({ lines: value });
     },
   };
 }

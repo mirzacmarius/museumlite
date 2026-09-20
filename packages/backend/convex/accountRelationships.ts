@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { metadataRecord } from "./schema";
+import { requireAccountAdministration } from "./utils/accountAdministration";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -238,6 +239,7 @@ export const create = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),
@@ -295,6 +297,9 @@ export const update = mutation({
     if (!relationship) {
       throw new Error("Relationship not found");
     }
+    const account = await ctx.db.get(relationship.accountId);
+    if (!account) throw new Error("Account not found");
+    await requireAccountAdministration(ctx, account);
 
     await Promise.all([
       requireModuleEnabled(ctx, relationship.organizationId, "accounts"),
@@ -342,6 +347,9 @@ export const remove = mutation({
     if (!relationship) {
       throw new Error("Relationship not found");
     }
+    const account = await ctx.db.get(relationship.accountId);
+    if (!account) throw new Error("Account not found");
+    await requireAccountAdministration(ctx, account);
     await Promise.all([
       requireModuleEnabled(ctx, relationship.organizationId, "accounts"),
       requirePermission(ctx, relationship.organizationId, "accounts.delete"),

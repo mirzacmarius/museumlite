@@ -1,9 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
   buildAccountCreateDocument,
   buildAccountUpdatePatch,
@@ -11,7 +12,7 @@ import {
 } from "./utils/accountProfile";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { generateNextAccountNumber } from "./utils/numberGenerator";
-import { requirePermission } from "./utils/permissions";
+import { hasPermission, requirePermission } from "./utils/permissions";
 
 const accountTypeValidator = v.union(
   v.literal("lender"),
@@ -110,10 +111,7 @@ export const list = query({
         .take(BOUNDED_ACCOUNT_SEARCH_SCAN_LIMIT);
 
       const filteredAccounts = recentAccounts.filter((account) => {
-        if (
-          args.accountType &&
-          account.accountType !== args.accountType
-        ) {
+        if (args.accountType && account.accountType !== args.accountType) {
           return false;
         }
 
@@ -149,6 +147,27 @@ export const list = query({
       .paginate(paginationOpts);
 
     return toAccountsListResult(paginationResult);
+  },
+});
+
+// Reactive route authorization also covers account edit pages.
+export const canAccessDetail = query({
+  args: { accountId: v.id("accounts") },
+  returns: v.boolean(),
+  handler: async (ctx, { accountId }) => {
+    const account = await ctx.db.get(accountId);
+    if (!account) return false;
+    if (!(await hasPermission(ctx, account.organizationId, "accounts.read"))) {
+      return false;
+    }
+    return (
+      account.accountType === "patron" ||
+      (await hasPermission(
+        ctx,
+        account.organizationId,
+        "organization.manage_settings",
+      ))
+    );
   },
 });
 
@@ -265,6 +284,8 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
+    await requireAccountAdministration(ctx, args);
+
     validateAccountProfileForCreate(args);
 
     const accountNumber = await generateNextAccountNumber(
@@ -369,6 +390,17 @@ export const update = mutation({
       throw new Error("Account not found");
     }
 
+    if (
+      account.accountType !== "patron" ||
+      (args.accountType !== undefined && args.accountType !== "patron")
+    ) {
+      await requirePermission(
+        ctx,
+        account.organizationId,
+        "organization.manage_settings",
+      );
+    }
+
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),
@@ -450,6 +482,8 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
+
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.delete"),
@@ -633,6 +667,8 @@ export const archive = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
+
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.delete"),
@@ -679,6 +715,8 @@ export const restore = mutation({
       throw new Error("Can only restore archived accounts");
     }
 
+    await requireAccountAdministration(ctx, account);
+
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.manage"),
@@ -721,6 +759,8 @@ export const updateStatus = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
+
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.manage"),
@@ -760,6 +800,8 @@ export const updateNotes = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
+
     await Promise.all([
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),

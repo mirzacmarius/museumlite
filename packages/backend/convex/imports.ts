@@ -854,6 +854,7 @@ export const importAccountsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
+    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
     const [, job] = await Promise.all([
       requirePermission(ctx, args.organizationId, "loans.create"),
       ctx.db.get(args.jobId),

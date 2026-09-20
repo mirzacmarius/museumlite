@@ -57,12 +57,13 @@ async function setup() {
       "media.upload",
       "loans.read",
     ]) {
-      const permissionId = await ctx.db.insert("permissions", {
+      const insert = ctx.db.insert.bind(ctx.db);
+      const permissionId = await insert("permissions", {
         name,
         category: "collections",
       });
-      await ctx.db.insert("rolePermissions", { roleId, permissionId });
-      await ctx.db.insert("rolePermissions", {
+      await insert("rolePermissions", { roleId, permissionId });
+      await insert("rolePermissions", {
         roleId: foreignRoleId,
         permissionId,
       });
@@ -455,10 +456,13 @@ test("appraisal coverage hides a live foreign collection behind the missing sent
   const { t, fixture } = await setup();
   const owner = t.withIdentity({ subject: fixture.ownerId });
   const outsider = t.withIdentity({ subject: fixture.outsiderId });
-  const memberMiss = await owner.query(api.insurance.checkAppraisalForCoverage, {
-    collectionId: fixture.missingCollectionId,
-    now: COVERAGE_NOW,
-  });
+  const memberMiss = await owner.query(
+    api.insurance.checkAppraisalForCoverage,
+    {
+      collectionId: fixture.missingCollectionId,
+      now: COVERAGE_NOW,
+    },
+  );
   const foreignLive = await outsider.query(
     api.insurance.checkAppraisalForCoverage,
     {
