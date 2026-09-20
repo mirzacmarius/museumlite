@@ -25,9 +25,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -40,7 +38,7 @@ import {
 } from "@v1/ui/sidebar";
 import { Skeleton } from "@v1/ui/skeleton";
 import { cn } from "@v1/ui/utils";
-import { type Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import { type Preloaded, usePreloadedQuery } from "convex/react";
 import {
   Building2,
   Check,
@@ -48,11 +46,10 @@ import {
   ChevronsUpDown,
   Lock,
   LogOut,
-  Plus,
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { Suspense } from "react";
 import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
@@ -82,15 +79,6 @@ function getUserInitials(user: {
 
   return initials || user.email?.[0]?.toUpperCase() || "U";
 }
-
-const COLLECTION_COLORS = [
-  "#d97706",
-  "#059669",
-  "#2563eb",
-  "#e11d48",
-  "#7c3aed",
-  "#0891b2",
-];
 
 interface SidebarOrganization {
   _id: Id<"organizations">;
@@ -403,82 +391,6 @@ function SidebarSearch({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function CollectionGroupNav({
-  groups,
-  activeCollectionGroupId,
-  onCreate,
-}: {
-  groups:
-    | {
-        _id: string;
-        name: string;
-      }[]
-    | undefined;
-  activeCollectionGroupId: string | null;
-  onCreate: () => void;
-}) {
-  return (
-    <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel className="h-6 px-2 text-[10px] font-medium uppercase tracking-widest">
-        Collection Groups
-      </SidebarGroupLabel>
-      <SidebarGroupAction
-        className="top-1.5"
-        onClick={onCreate}
-        title="New collection group"
-      >
-        <Plus />
-        <span className="sr-only">New collection group</span>
-      </SidebarGroupAction>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {groups?.slice(0, 5).map((group, index) => (
-            <SidebarMenuItem key={group._id}>
-              <SidebarMenuButton
-                asChild
-                size="sm"
-                isActive={activeCollectionGroupId === group._id}
-                className="h-7 text-xs font-medium"
-              >
-                <Link href={`/objects?collectionGroupId=${group._id}`}>
-                  <span
-                    className="size-2 rounded-full"
-                    style={{
-                      backgroundColor:
-                        COLLECTION_COLORS[index % COLLECTION_COLORS.length],
-                    }}
-                  />
-                  <span>{group.name}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          {(!groups || groups.length === 0) && (
-            <SidebarMenuItem>
-              <div className="px-2 py-1.5 text-xs text-sidebar-foreground/60">
-                No collection groups yet
-              </div>
-            </SidebarMenuItem>
-          )}
-          {groups && groups.length > 5 ? (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                size="sm"
-                className="h-7 text-xs font-medium"
-              >
-                <Link href="/collections">
-                  <span>View all {groups.length} collection groups</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : null}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
-}
-
 function UserMenu({
   currentOrganizationId,
   isMobile,
@@ -639,9 +551,7 @@ function AppSidebarClientInner({
   const user = usePreloadedQuery(preloadedUser);
   const { signOut } = useAuthActions();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const getSearchParam = searchParams.get.bind(searchParams);
-  const { push, replace } = useRouter();
+  const { replace } = useRouter();
 
   const handleOrganizationChange = React.useCallback(
     (organizationId: Id<"organizations">) => {
@@ -652,7 +562,7 @@ function AppSidebarClientInner({
       setCurrentOrganizationId(organizationId);
       replace("/");
     },
-    [currentOrganizationId, push, replace, setCurrentOrganizationId],
+    [currentOrganizationId, replace, setCurrentOrganizationId],
   );
 
   const openCommandPalette = React.useCallback(() => {
@@ -670,13 +580,6 @@ function AppSidebarClientInner({
   const isInsuranceModuleEnabled = hasModule("insurance");
   const isLocationTrackingEnabled =
     currentOrg?.settings?.locationTrackingEnabled ?? true;
-
-  const collectionGroups = useQuery(
-    api.collectionGroups.list,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
 
   const isPathActive = (url: string) => {
     if (url === "/") return pathname === "/";
@@ -716,12 +619,6 @@ function AppSidebarClientInner({
         <NavigationGroups
           groups={navigationGroups}
           isPathActive={isPathActive}
-        />
-
-        <CollectionGroupNav
-          groups={collectionGroups}
-          activeCollectionGroupId={getSearchParam("collectionGroupId")}
-          onCreate={() => push("/collections/new")}
         />
       </SidebarContent>
 

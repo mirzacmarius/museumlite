@@ -284,18 +284,18 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
             }
           >
             <HolderTypeOption
-              checked={isOrganization}
-              description="Companies, museums, galleries, and institutions."
-              id="holder-type-organization"
-              label="Business / Organization"
-              value="organization"
-            />
-            <HolderTypeOption
               checked={formData.holderType === "privatePerson"}
               description="Individuals acting in their own name."
               id="holder-type-privatePerson"
               label="Private Person"
               value="privatePerson"
+            />
+            <HolderTypeOption
+              checked={isOrganization}
+              description="Companies, museums, galleries, and institutions."
+              id="holder-type-organization"
+              label="Business / Organization"
+              value="organization"
             />
           </RadioGroup>
         </div>

@@ -1,4 +1,10 @@
-const KPI_SKELETON_KEYS = ["objects", "display", "loans"];
+const KPI_SKELETON_KEYS = [
+  "objects",
+  "display",
+  "loans",
+  "locations",
+  "collection-groups",
+];
 const COMMAND_SKELETON_KEYS = ["add-object", "new-collection", "analytics"];
 const USAGE_SKELETON_KEYS = ["storage", "objects", "exports"];
 const WORKFLOW_SKELETON_KEYS = [
@@ -96,8 +102,6 @@ export function DashboardAnalyticsSectionsSkeleton() {
         </div>
       </section>
 
-      <BillingOverviewSkeleton />
-
       <section className="mt-6">
         <div className="h-4 w-32 rounded bg-muted/70" />
         <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
@@ -106,6 +110,8 @@ export function DashboardAnalyticsSectionsSkeleton() {
           ))}
         </div>
       </section>
+
+      <BillingOverviewSkeleton />
     </>
   );
 }

@@ -34,26 +34,6 @@ export function AccountComboboxHolderSection({
             }
           >
             <Label
-              htmlFor="holderType-organization"
-              className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
-                formData.holderType === "organization" &&
-                  "border-primary bg-primary/5",
-              )}
-            >
-              <RadioGroupItem
-                id="holderType-organization"
-                value="organization"
-                className="mt-0.5"
-              />
-              <div className="space-y-1">
-                <div className="font-medium">Business / Organization</div>
-                <p className="text-sm text-muted-foreground">
-                  Use this for companies, museums, galleries, and institutions.
-                </p>
-              </div>
-            </Label>
-            <Label
               htmlFor="holderType-privatePerson"
               className={cn(
                 "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
@@ -70,6 +50,26 @@ export function AccountComboboxHolderSection({
                 <div className="font-medium">Private Person</div>
                 <p className="text-sm text-muted-foreground">
                   Use this for individuals acting in their own name.
+                </p>
+              </div>
+            </Label>
+            <Label
+              htmlFor="holderType-organization"
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-md border border-border p-4",
+                formData.holderType === "organization" &&
+                  "border-primary bg-primary/5",
+              )}
+            >
+              <RadioGroupItem
+                id="holderType-organization"
+                value="organization"
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <div className="font-medium">Business / Organization</div>
+                <p className="text-sm text-muted-foreground">
+                  Use this for companies, museums, galleries, and institutions.
                 </p>
               </div>
             </Label>

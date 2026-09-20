@@ -1,6 +1,6 @@
 export type AccountHolderType = "organization" | "privatePerson";
 
-export const DEFAULT_ACCOUNT_HOLDER_TYPE: AccountHolderType = "organization";
+export const DEFAULT_ACCOUNT_HOLDER_TYPE: AccountHolderType = "privatePerson";
 
 export function parseDateInputValue(value: string): number | undefined {
   if (!value) {

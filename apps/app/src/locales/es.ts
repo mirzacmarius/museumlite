@@ -920,6 +920,8 @@ export default {
     objectsOnLoan: "Objetos en Préstamo",
     activeLoans: "Préstamos Activos",
     pendingAccessions: "Adquisiciones Pendientes",
+    totalLocations: "Ubicaciones Totales",
+    totalCollectionGroups: "Grupos de Colección",
   },
   assignments: {
     pendingApprovals: "Aprobaciones Pendientes",

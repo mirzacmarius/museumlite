@@ -13,6 +13,8 @@ import {
   CreditCard,
   Eye,
   FileClock,
+  type LucideIcon,
+  MapPin,
   Package,
   PackagePlus,
   Warehouse,
@@ -33,6 +35,7 @@ type OrganizationSubscription = FunctionReturnType<
 type BillingInterval =
   NonNullable<OrganizationSubscription>["recurringInterval"];
 type BillingStatus = NonNullable<OrganizationSubscription>["status"];
+type KpiAccentColor = "indigo" | "emerald" | "amber" | "blue";
 
 interface BillingOverviewSectionProps {
   canManageBilling: boolean;
@@ -40,6 +43,70 @@ interface BillingOverviewSectionProps {
   organizationId: Id<"organizations">;
   organizationSubscription: OrganizationSubscription | undefined;
   subscriptionTier: SubscriptionTier;
+}
+
+interface MetricLinkCardProps {
+  href: string;
+  title: string;
+  value: string;
+  icon: LucideIcon;
+  accentColor: KpiAccentColor;
+}
+
+const INTERACTIVE_METRIC_CARD_CLASS_NAME =
+  "w-full px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40";
+const METRIC_LINK_CLASS_NAME =
+  "inline-flex w-full transition-[background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]";
+const METRIC_GRID_CLASS_NAME =
+  "mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none";
+
+function MetricLinkCard({
+  href,
+  title,
+  value,
+  icon,
+  accentColor,
+}: MetricLinkCardProps) {
+  return (
+    <Link href={href} className={METRIC_LINK_CLASS_NAME}>
+      <KpiCard
+        title={title}
+        value={value}
+        icon={icon}
+        accentColor={accentColor}
+        className={INTERACTIVE_METRIC_CARD_CLASS_NAME}
+      />
+    </Link>
+  );
+}
+
+interface MetricLinkSectionProps {
+  title: string;
+  metrics: MetricLinkCardProps[];
+  className?: string;
+}
+
+function MetricLinkSection({
+  title,
+  metrics,
+  className,
+}: MetricLinkSectionProps) {
+  return (
+    <section className={className}>
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+        {title}
+      </h3>
+      <div className={METRIC_GRID_CLASS_NAME}>
+        {metrics.map((metric) => (
+          <MetricLinkCard key={metric.title} {...metric} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function formatMetricValue(count: number | undefined, locale: string): string {
+  return count === undefined ? "—" : formatNumber(count, locale);
 }
 
 function getPlanDisplayName(tier: SubscriptionTier): string {
@@ -249,6 +316,79 @@ export default function DashboardPage() {
     );
   }
 
+  const canViewAnalytics = hasAnalyticsPermission === true;
+  const analyticsData = canViewAnalytics ? analytics : undefined;
+  const subscriptionTier = currentOrganization?.subscriptionTier ?? "free";
+
+  const liveMetrics: MetricLinkCardProps[] = [
+    {
+      href: "/objects",
+      title: kpi("totalObjects"),
+      value: formatMetricValue(analyticsData?.objects.total, locale),
+      icon: Package,
+      accentColor: "indigo",
+    },
+    {
+      href: "/objects?status=active&displayStatus=on_display",
+      title: kpi("itemsOnDisplay"),
+      value: formatMetricValue(analyticsData?.objects.onDisplay, locale),
+      icon: Eye,
+      accentColor: "emerald",
+    },
+    {
+      href: "/loans",
+      title: kpi("activeLoans"),
+      value: formatMetricValue(analyticsData?.loans.active, locale),
+      icon: ArrowLeftRight,
+      accentColor: "blue",
+    },
+    {
+      href: "/locations",
+      title: kpi("totalLocations"),
+      value: formatMetricValue(analyticsData?.locations.total, locale),
+      icon: MapPin,
+      accentColor: "amber",
+    },
+    {
+      href: "/collections",
+      title: kpi("totalCollectionGroups"),
+      value: formatMetricValue(analyticsData?.collections.total, locale),
+      icon: Warehouse,
+      accentColor: "indigo",
+    },
+  ];
+
+  const operationalMetrics: MetricLinkCardProps[] = [
+    {
+      href: "/accessions/transfers",
+      title: "Pending transfer approvals",
+      value: formatMetricValue(analyticsData?.transfers.pending, locale),
+      icon: ArrowLeftRight,
+      accentColor: "blue",
+    },
+    {
+      href: "/accessions",
+      title: "Pending accessions",
+      value: formatMetricValue(analyticsData?.accessions.pending, locale),
+      icon: FileClock,
+      accentColor: "amber",
+    },
+    {
+      href: "/deaccessions",
+      title: "Pending deaccessions",
+      value: formatMetricValue(analyticsData?.deaccessions.pending, locale),
+      icon: Package,
+      accentColor: "indigo",
+    },
+    {
+      href: "/loans",
+      title: "Pending loans",
+      value: formatMetricValue(analyticsData?.loans.pending, locale),
+      icon: ArrowLeftRight,
+      accentColor: "blue",
+    },
+  ];
+
   const commandQuickActions = [
     {
       href: "/objects/new",
@@ -267,14 +407,6 @@ export default function DashboardPage() {
     },
   ];
 
-  const canViewAnalytics = hasAnalyticsPermission === true;
-  const analyticsData = canViewAnalytics ? analytics : undefined;
-  const subscriptionTier = currentOrganization?.subscriptionTier ?? "free";
-  const interactiveMetricCardClassName =
-    "w-full px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40";
-  const metricLinkClassName =
-    "inline-flex w-full transition-[background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]";
-
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
       <div>
@@ -286,56 +418,11 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <section className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Live metrics
-        </h3>
-
-        <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
-          <Link href="/objects" className={metricLinkClassName}>
-            <KpiCard
-              title={kpi("totalObjects")}
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.objects.total, locale)
-                  : "—"
-              }
-              icon={Package}
-              accentColor="indigo"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-          <Link
-            href="/objects?status=active&displayStatus=on_display"
-            className={metricLinkClassName}
-          >
-            <KpiCard
-              title={kpi("itemsOnDisplay")}
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.objects.onDisplay, locale)
-                  : "—"
-              }
-              icon={Eye}
-              accentColor="emerald"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-          <Link href="/loans" className={metricLinkClassName}>
-            <KpiCard
-              title={kpi("activeLoans")}
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.loans.active, locale)
-                  : "—"
-              }
-              icon={ArrowLeftRight}
-              accentColor="blue"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-        </div>
-      </section>
+      <MetricLinkSection
+        className="mt-8"
+        title="Live metrics"
+        metrics={liveMetrics}
+      />
 
       <section className="mt-6">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
@@ -362,6 +449,12 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <MetricLinkSection
+        className="mt-6"
+        title="Operational flow"
+        metrics={operationalMetrics}
+      />
+
       <BillingOverviewSection
         canManageBilling={canManageBilling}
         locale={locale}
@@ -369,67 +462,6 @@ export default function DashboardPage() {
         organizationSubscription={organizationSubscription}
         subscriptionTier={subscriptionTier}
       />
-
-      <section className="mt-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Operational flow
-        </h3>
-
-        <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none">
-          <Link href="/accessions/transfers" className={metricLinkClassName}>
-            <KpiCard
-              title="Pending transfer approvals"
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.transfers.pending, locale)
-                  : "—"
-              }
-              icon={ArrowLeftRight}
-              accentColor="blue"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-          <Link href="/accessions" className={metricLinkClassName}>
-            <KpiCard
-              title="Pending accessions"
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.accessions.pending, locale)
-                  : "—"
-              }
-              icon={FileClock}
-              accentColor="amber"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-          <Link href="/deaccessions" className={metricLinkClassName}>
-            <KpiCard
-              title="Pending deaccessions"
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.deaccessions.pending, locale)
-                  : "—"
-              }
-              icon={Package}
-              accentColor="indigo"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-          <Link href="/loans" className={metricLinkClassName}>
-            <KpiCard
-              title="Pending loans"
-              value={
-                analyticsData
-                  ? formatNumber(analyticsData.loans.pending, locale)
-                  : "—"
-              }
-              icon={ArrowLeftRight}
-              accentColor="blue"
-              className={interactiveMetricCardClassName}
-            />
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }

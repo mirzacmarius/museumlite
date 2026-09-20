@@ -1053,6 +1053,8 @@ export default {
     objectsOnLoan: "Objects on Loan",
     activeLoans: "Active Loans",
     pendingAccessions: "Pending Accessions",
+    totalLocations: "Total Locations",
+    totalCollectionGroups: "Collection Groups",
   },
   assignments: {
     pendingApprovals: "Pending Approvals",
