@@ -14,7 +14,7 @@ export function useDiagramSettings(storageKey: string) {
         direction: parseAsStringLiteral([
           "horizontal",
           "vertical",
-        ] as const).withDefault("vertical"),
+        ] as const).withDefault("horizontal"),
         items: parseAsStringLiteral(["list", "grid"] as const).withDefault(
           "grid",
         ),
@@ -29,7 +29,7 @@ export function useDiagramSettings(storageKey: string) {
           "smoothstep",
           "default",
           "straight",
-        ] as const).withDefault("default"),
+        ] as const).withDefault("smoothstep"),
       },
       { urlKeys: { size: "thumbs" } },
     );
