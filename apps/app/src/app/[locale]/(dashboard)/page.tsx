@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { KpiCard } from "@v1/ui/kpi-card";
+import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -53,12 +54,20 @@ interface MetricLinkCardProps {
   accentColor: KpiAccentColor;
 }
 
-const INTERACTIVE_METRIC_CARD_CLASS_NAME =
-  "w-full px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40";
+const DASHBOARD_CARD_PADDING_CLASS_NAME = "px-3.5 py-3";
+const INTERACTIVE_METRIC_CARD_CLASS_NAME = cn(
+  "w-full p-0 px-3.5 py-5",
+  "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
+);
 const METRIC_LINK_CLASS_NAME =
   "inline-flex w-full transition-[background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]";
 const METRIC_GRID_CLASS_NAME =
   "mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none";
+const CREATE_REVIEW_CARD_CLASS_NAME = cn(
+  "group inline-flex w-full rounded-lg border border-border bg-card",
+  DASHBOARD_CARD_PADDING_CLASS_NAME,
+  "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
+);
 
 function MetricLinkCard({
   href,
@@ -434,7 +443,7 @@ export default function DashboardPage() {
             <Link
               key={action.href}
               href={action.href}
-              className="group inline-flex w-full rounded-lg border border-border bg-card px-3.5 py-3 transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40"
+              className={CREATE_REVIEW_CARD_CLASS_NAME}
             >
               <div className="flex items-center gap-3">
                 <div className="rounded-md border border-primary/20 bg-primary/10 p-2 text-primary transition-colors group-hover:border-primary/30 group-hover:bg-primary/15">

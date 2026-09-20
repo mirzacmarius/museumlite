@@ -577,16 +577,6 @@ export default function NotificationsPage() {
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
       <section className="border-b border-border/60 pb-6 dark:border-white/10">
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
-          <span className="font-mono tracking-wide text-muted-foreground">
-            ACTIVITY INBOX
-          </span>
-          <span className="text-muted-foreground/40">/</span>
-          <span className="tabular-nums text-muted-foreground">
-            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
-          </span>
-        </div>
-
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="flex flex-wrap items-center gap-3 text-xl font-medium tracking-tight text-foreground">

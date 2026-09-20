@@ -16,7 +16,7 @@ const WORKFLOW_SKELETON_KEYS = [
 
 function CompactKpiSkeleton() {
   return (
-    <div className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3.5 py-3">
+    <div className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3.5 py-5">
       <div className="size-8 rounded-md bg-muted/70" />
       <div className="space-y-1.5">
         <div className="h-2.5 w-24 rounded bg-muted/70" />

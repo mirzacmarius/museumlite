@@ -13,10 +13,6 @@ export function NotificationsPageSkeleton() {
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6">
       <section className="border-b border-border/60 pb-6 dark:border-white/10">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="h-2.5 w-24 rounded bg-muted/60" />
-          <div className="h-2.5 w-16 rounded bg-muted/40" />
-        </div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="h-6 w-40 rounded bg-muted/70" />

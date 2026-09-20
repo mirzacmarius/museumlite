@@ -68,9 +68,9 @@ export function ExportCSVButton({
       {...props}
     >
       {isExporting ? (
-        <Loader2 className="mr-2 size-4 animate-spin" />
+        <Loader2 className="animate-spin" strokeWidth={1.75} />
       ) : (
-        <Download className="mr-2 size-4" />
+        <Download strokeWidth={1.75} />
       )}
       {children || "Export CSV"}
     </Button>

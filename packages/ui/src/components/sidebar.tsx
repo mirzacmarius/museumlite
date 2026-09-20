@@ -1,6 +1,5 @@
 "use client";
 
-import { ViewVerticalIcon } from "@radix-ui/react-icons";
 import { Slot } from "@radix-ui/react-slot";
 import { Button } from "@v1/ui/button";
 import { usePlatform } from "@v1/ui/hooks";
@@ -22,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
+import { PanelLeft } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
@@ -281,7 +281,7 @@ const SidebarTrigger = ({
           }}
           {...props}
         >
-          <ViewVerticalIcon />
+          <PanelLeft />
           <span className="sr-only">Toggle Sidebar</span>
         </Button>
       </TooltipTrigger>
