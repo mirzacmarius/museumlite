@@ -61,30 +61,28 @@ export function DashboardPageSkeleton() {
           ))}
         </div>
 
-        <div className="grid gap-5 @min-[56rem]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <div className="min-w-0 rounded-lg border border-border bg-card p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="h-4 w-36 rounded bg-muted/70" />
-              <div className="h-7 w-40 rounded bg-muted/60" />
-            </div>
-            <CollectionGroupsGridSkeleton />
+        <div className="min-w-0 rounded-lg border border-border bg-card p-5">
+          <div className="h-4 w-32 rounded bg-muted/70" />
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 @min-[44rem]:grid-cols-4">
+            {WORKFLOW_SKELETON_KEYS.map((key) => (
+              <div
+                key={key}
+                className="flex items-center gap-3 rounded-md border border-border px-3 py-2.5"
+              >
+                <div className="size-8 shrink-0 rounded-md bg-muted/70" />
+                <div className="h-3 w-32 max-w-full rounded bg-muted/70" />
+                <div className="ms-auto h-4 w-5 shrink-0 rounded bg-muted/60" />
+              </div>
+            ))}
           </div>
-          <div className="min-w-0 rounded-lg border border-border bg-card p-5">
-            <div className="h-4 w-32 rounded bg-muted/70" />
-            <div className="mt-2 h-3 w-28 rounded bg-muted/50" />
-            <div className="mt-4 grid gap-2">
-              {WORKFLOW_SKELETON_KEYS.map((key) => (
-                <div
-                  key={key}
-                  className="flex items-center gap-3 rounded-md border border-border px-3 py-2.5"
-                >
-                  <div className="size-8 shrink-0 rounded-md bg-muted/70" />
-                  <div className="h-3 w-32 max-w-full rounded bg-muted/70" />
-                  <div className="ms-auto h-4 w-5 shrink-0 rounded bg-muted/60" />
-                </div>
-              ))}
-            </div>
+        </div>
+
+        <div className="min-w-0 rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="h-4 w-36 rounded bg-muted/70" />
+            <div className="h-7 w-40 rounded bg-muted/60" />
           </div>
+          <CollectionGroupsGridSkeleton />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-5">

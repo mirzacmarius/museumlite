@@ -123,10 +123,7 @@ function PendingReviewsSection({ metrics, total }: PendingReviewsSectionProps) {
           {total}
         </span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {t("pendingApprovals")}
-      </p>
-      <div className="mt-4 grid gap-2">
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 @min-[44rem]:grid-cols-4">
         {metrics.map((metric) => (
           <Link
             key={metric.title}
@@ -553,16 +550,15 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        <div className="grid gap-5 @min-[56rem]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <CollectionGroupsOverviewSection
-            organizationId={currentOrganizationId}
-            canCreate={canCreateCollectionGroup === true}
-          />
-          <PendingReviewsSection
-            metrics={operationalMetrics}
-            total={formatMetricValue(pendingTotal, locale)}
-          />
-        </div>
+        <PendingReviewsSection
+          metrics={operationalMetrics}
+          total={formatMetricValue(pendingTotal, locale)}
+        />
+
+        <CollectionGroupsOverviewSection
+          organizationId={currentOrganizationId}
+          canCreate={canCreateCollectionGroup === true}
+        />
 
         <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-5">
           <div className="flex items-center gap-3">
