@@ -667,6 +667,7 @@ function AppSidebarClientInner({
   );
 
   const isLibraryModuleEnabled = hasModule("library");
+  const isInsuranceModuleEnabled = hasModule("insurance");
   const isLocationTrackingEnabled =
     currentOrg?.settings?.locationTrackingEnabled ?? true;
 
@@ -689,6 +690,7 @@ function AppSidebarClientInner({
   const { topLevelNavigation, navigationGroups } = buildSidebarNavigation({
     hasFeature,
     isLibraryModuleEnabled,
+    isInsuranceModuleEnabled,
     isLocationTrackingEnabled,
     canAccessAdministration: hasPermission("organization.manage_settings"),
   });

@@ -540,6 +540,10 @@ export default {
       destructionMethod: "Destruction Method",
       witnessedBy: "Witnessed By",
     },
+    insurance: {
+      name: "Insurance",
+      description: "Insurance policies, coverage, and claims tracking.",
+    },
     library: {
       name: "Library",
       description:

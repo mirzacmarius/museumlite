@@ -16,13 +16,16 @@ function buildNavigation({
     "reporting",
   ]),
   isLibraryModuleEnabled = true,
+  isInsuranceModuleEnabled = true,
 }: {
   enabledFeatures?: Set<string>;
   isLibraryModuleEnabled?: boolean;
+  isInsuranceModuleEnabled?: boolean;
 } = {}) {
   return buildSidebarNavigation({
     hasFeature: (featureId) => enabledFeatures.has(featureId),
     isLibraryModuleEnabled,
+    isInsuranceModuleEnabled,
     isLocationTrackingEnabled: true,
     canAccessAdministration: true,
   });
@@ -99,5 +102,53 @@ describe("buildSidebarNavigation", () => {
     );
 
     expect(patrons.locked).toBe(true);
+  });
+
+  test("shows Conservation as a top-level item locked with the conservation feature", () => {
+    const { navigationGroups, topLevelNavigation } = buildNavigation({
+      enabledFeatures: new Set(),
+    });
+
+    expect(
+      navigationGroups.some((group) => group.title === "Conservation & Care"),
+    ).toBe(false);
+
+    const conservation = findItem(topLevelNavigation, "Conservation");
+    expect(conservation.url).toBe("/conservation");
+    expect(conservation.locked).toBe(true);
+  });
+
+  test("shows Insurance as a top-level item when the insurance module is enabled", () => {
+    const { topLevelNavigation } = buildNavigation({
+      isInsuranceModuleEnabled: true,
+    });
+
+    const insurance = findItem(topLevelNavigation, "Insurance");
+    expect(insurance.url).toBe("/insurance");
+    expect(insurance.locked).toBe(false);
+  });
+
+  test("hides Insurance when the insurance module is disabled", () => {
+    const { navigationGroups, topLevelNavigation } = buildNavigation({
+      isInsuranceModuleEnabled: false,
+    });
+
+    expect(
+      topLevelNavigation.some((item) => item.title === "Insurance"),
+    ).toBe(false);
+    expect(
+      navigationGroups.some((group) =>
+        group.items.some((item) => item.title === "Insurance"),
+      ),
+    ).toBe(false);
+  });
+
+  test("locks Insurance with the conservation feature", () => {
+    const { topLevelNavigation } = buildNavigation({
+      enabledFeatures: new Set(),
+      isInsuranceModuleEnabled: true,
+    });
+
+    expect(findItem(topLevelNavigation, "Insurance").locked).toBe(true);
   });
 });

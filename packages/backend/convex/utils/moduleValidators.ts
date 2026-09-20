@@ -14,6 +14,7 @@ export const enabledModuleValidator = v.union(
   v.literal("accounts"),
   v.literal("coins_stamps"),
   v.literal("inventory_valuation"),
+  v.literal("insurance"),
 );
 
 export const collectionTypeValidator = v.union(
