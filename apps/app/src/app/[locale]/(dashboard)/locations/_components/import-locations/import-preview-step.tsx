@@ -50,15 +50,17 @@ export function ImportPreviewStep({
             <X className="mr-2 size-4" />
             {t("cancel")}
           </Button>
-          <PermissionGate permission="locations.create">
-            <Button
-              onClick={onStartImport}
-              disabled={rows.length === 0}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Upload className="mr-2 size-4" />
-              {t("importLocations", { count: rows.length.toString() })}
-            </Button>
+          <PermissionGate permission="organization.manage_settings">
+            <PermissionGate permission="locations.create">
+              <Button
+                onClick={onStartImport}
+                disabled={rows.length === 0}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Upload className="mr-2 size-4" />
+                {t("importLocations", { count: rows.length.toString() })}
+              </Button>
+            </PermissionGate>
           </PermissionGate>
         </div>
       </div>

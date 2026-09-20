@@ -1,9 +1,9 @@
-const KPI_SKELETON_KEYS = [
-  "objects",
-  "display",
-  "loans",
-  "locations",
-  "collection-groups",
+const KPI_SKELETON_KEYS = ["objects", "display", "loans", "locations"];
+const COLLECTION_GROUP_SKELETON_KEYS = [
+  "group-1",
+  "group-2",
+  "group-3",
+  "group-4",
 ];
 const COMMAND_SKELETON_KEYS = ["add-object", "new-collection", "analytics"];
 const USAGE_SKELETON_KEYS = ["storage", "objects", "exports"];
@@ -16,7 +16,7 @@ const WORKFLOW_SKELETON_KEYS = [
 
 function CompactKpiSkeleton() {
   return (
-    <div className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3.5 py-5">
+    <div className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3.5 py-2.5">
       <div className="size-8 rounded-md bg-muted/70" />
       <div className="space-y-1.5">
         <div className="h-2.5 w-24 rounded bg-muted/70" />
@@ -34,6 +34,34 @@ function CompactActionSkeleton() {
         <div className="h-4 w-24 rounded bg-muted/70" />
       </div>
     </div>
+  );
+}
+
+export function CollectionGroupsGridSkeleton() {
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-start gap-1.5">
+      {COLLECTION_GROUP_SKELETON_KEYS.map((key) => (
+        <div
+          key={key}
+          className="h-6 w-28 rounded-md border border-border bg-card"
+        />
+      ))}
+    </div>
+  );
+}
+
+function CollectionGroupsOverviewSkeleton() {
+  return (
+    <section className="mt-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="h-4 w-36 rounded bg-muted/70" />
+        <div className="flex gap-2">
+          <div className="h-7 w-28 rounded bg-muted/60" />
+          <div className="h-7 w-20 rounded bg-muted/60" />
+        </div>
+      </div>
+      <CollectionGroupsGridSkeleton />
+    </section>
   );
 }
 
@@ -92,6 +120,8 @@ export function DashboardAnalyticsSectionsSkeleton() {
           ))}
         </div>
       </section>
+
+      <CollectionGroupsOverviewSkeleton />
 
       <section className="mt-6">
         <div className="h-4 w-32 rounded bg-muted/70" />

@@ -173,6 +173,17 @@ export async function requireModuleAndPermission(
   ]);
 }
 
+export async function requireLocationAdminPermission(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+  permission: "locations.create" | "locations.update" | "locations.delete",
+): Promise<void> {
+  await Promise.all([
+    requirePermission(ctx, organizationId, permission),
+    requirePermission(ctx, organizationId, "organization.manage_settings"),
+  ]);
+}
+
 export async function requirePermission(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,

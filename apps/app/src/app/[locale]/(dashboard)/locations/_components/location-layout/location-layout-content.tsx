@@ -27,7 +27,7 @@ type ObjectsAtLocation = FunctionReturnType<
 type ThreadLocation = FunctionReturnType<typeof api.locations.listAll>[number];
 
 interface LocationLayoutContentProps {
-  actions: ReactNode;
+  actions?: ReactNode;
   selectedLocation: LocationDetail;
   environmentalData: ComponentProps<typeof LocationHeader>["environmentalData"];
   occupancy: FunctionReturnType<typeof api.locations.getOccupancy> | undefined;

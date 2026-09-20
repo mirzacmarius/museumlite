@@ -355,71 +355,48 @@ test("should return null when no environmental readings exist", async () => {
   expect(result).toBeNull();
 });
 
+const LOCATION_CREATE_ADMIN_PERMISSIONS = [
+  "locations.create",
+  "organization.manage_settings",
+] as const;
+
+const LOCATION_UPDATE_ADMIN_PERMISSIONS = [
+  "locations.update",
+  "organization.manage_settings",
+] as const;
+
 // Site-Location Integration Tests
 test("should create location with siteId", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...LOCATION_CREATE_ADMIN_PERMISSIONS],
+    { slugPrefix: "test-museum-site-loc", enabledModules: [] },
+  );
 
-  const { orgId, siteId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-site-loc",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
+  const siteId = await t.run(async (ctx) =>
+    ctx.db.insert("sites", {
+      organizationId,
+      name: "Main Building",
+      isActive: true,
+      isPrimary: true,
+    }),
+  );
 
-    const [siteId, userId, roleId, permissionId] = await Promise.all([
-      ctx.db.insert("sites", {
-        organizationId: orgId,
-        name: "Main Building",
-        isActive: true,
-        isPrimary: true,
-      }),
-      ctx.db.insert("users", {
-        email: "test@example.com",
-      }),
-      ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      }),
-      ctx.db.insert("permissions", {
-        name: "locations.create",
-        category: "locations",
-      }),
-    ]);
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
-    });
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    return { orgId, siteId, userId };
-  });
-
-  const authed = t.withIdentity({
-    subject: `${userId}|session`,
-    issuer: "https://example.test",
-  });
-
-  const locationId = await authed.mutation(api.locations.create, {
-    organizationId: orgId,
-    name: "Storage Room A",
-    locationCode: "ST-A",
-    type: "storage",
-    siteId,
-  });
+  const locationId = await authedForUser(t, userId).mutation(
+    api.locations.create,
+    {
+      organizationId,
+      name: "Storage Room A",
+      locationCode: "ST-A",
+      type: "storage",
+      siteId,
+    },
+  );
 
   expect(locationId).toBeDefined();
 
-  const location = await t.run(async (ctx) => {
-    return await ctx.db.get(locationId);
-  });
+  const location = await t.run(async (ctx) => ctx.db.get(locationId));
 
   expect(location).toBeDefined();
   expect(location?.siteId).toBe(siteId);
@@ -427,67 +404,31 @@ test("should create location with siteId", async () => {
 });
 
 test("should reject location creation with invalid siteId", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...LOCATION_CREATE_ADMIN_PERMISSIONS],
+    { slugPrefix: "test-museum-invalid-site", enabledModules: [] },
+  );
 
-  const { orgId, userId, invalidSiteId } = await t.run(async (ctx) => {
-    const [orgId, otherOrgId] = await Promise.all([
-      ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-invalid-site",
-        type: "museum",
-        settings: { enabledModules: [] },
-      }),
-      ctx.db.insert("organizations", {
-        name: "Other Museum",
-        slug: "other-museum",
-        type: "museum",
-        settings: { enabledModules: [] },
-      }),
-    ]);
-    // Create site in different organization
-    const [invalidSiteId, userId, roleId, permissionId] = await Promise.all([
-      ctx.db.insert("sites", {
-        organizationId: otherOrgId,
-        name: "Other Building",
-        isActive: true,
-        isPrimary: true,
-      }),
-      ctx.db.insert("users", {
-        email: "test@example.com",
-      }),
-      ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      }),
-      ctx.db.insert("permissions", {
-        name: "locations.create",
-        category: "locations",
-      }),
-    ]);
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
+  const invalidSiteId = await t.run(async (ctx) => {
+    const otherOrgId = await ctx.db.insert("organizations", {
+      name: "Other Museum",
+      slug: "other-museum",
+      type: "museum",
+      settings: { enabledModules: [] },
     });
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
+    return ctx.db.insert("sites", {
+      organizationId: otherOrgId,
+      name: "Other Building",
+      isActive: true,
+      isPrimary: true,
     });
-
-    return { orgId, userId, invalidSiteId };
-  });
-
-  const authed = t.withIdentity({
-    subject: `${userId}|session`,
-    issuer: "https://example.test",
   });
 
   await expect(
-    authed.mutation(api.locations.create, {
-      organizationId: orgId,
+    authedForUser(t, userId).mutation(api.locations.create, {
+      organizationId,
       name: "Storage Room",
       locationCode: "ST-INVALID",
       type: "storage",
@@ -497,59 +438,25 @@ test("should reject location creation with invalid siteId", async () => {
 });
 
 test("should reject location creation with inactive siteId", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...LOCATION_CREATE_ADMIN_PERMISSIONS],
+    { slugPrefix: "test-museum-inactive-site", enabledModules: [] },
+  );
 
-  const { orgId, siteId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-inactive-site",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const [siteId, userId, roleId, permissionId] = await Promise.all([
-      ctx.db.insert("sites", {
-        organizationId: orgId,
-        name: "Closed Building",
-        isActive: false,
-        isPrimary: false,
-      }),
-      ctx.db.insert("users", {
-        email: "test@example.com",
-      }),
-      ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      }),
-      ctx.db.insert("permissions", {
-        name: "locations.create",
-        category: "locations",
-      }),
-    ]);
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
-    });
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    return { orgId, siteId, userId };
-  });
-
-  const authed = t.withIdentity({
-    subject: `${userId}|session`,
-    issuer: "https://example.test",
-  });
+  const siteId = await t.run(async (ctx) =>
+    ctx.db.insert("sites", {
+      organizationId,
+      name: "Closed Building",
+      isActive: false,
+      isPrimary: false,
+    }),
+  );
 
   await expect(
-    authed.mutation(api.locations.create, {
-      organizationId: orgId,
+    authedForUser(t, userId).mutation(api.locations.create, {
+      organizationId,
       name: "Storage Room",
       locationCode: "ST-INACTIVE",
       type: "storage",
@@ -936,154 +843,85 @@ test("should reject listBySite with invalid site", async () => {
 });
 
 test("should update location siteId", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...LOCATION_UPDATE_ADMIN_PERMISSIONS],
+    { slugPrefix: "test-museum-update-site", enabledModules: [] },
+  );
 
-  const { site2Id, locationId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-update-site",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
+  const { site2Id, locationId } = await t.run(async (ctx) => {
     const [site1Id, site2Id] = await Promise.all([
       ctx.db.insert("sites", {
-        organizationId: orgId,
+        organizationId,
         name: "Building A",
         isActive: true,
         isPrimary: true,
       }),
       ctx.db.insert("sites", {
-        organizationId: orgId,
+        organizationId,
         name: "Building B",
         isActive: true,
         isPrimary: false,
       }),
     ]);
-    const [locationId, userId, roleId, permissionId] = await Promise.all([
-      ctx.db.insert("locations", {
-        organizationId: orgId,
-        siteId: site1Id,
-        name: "Mobile Gallery",
-        ...buildLocationCode("MG-1"),
-        type: "gallery",
-        sortOrder: 1,
-        isActive: true,
-      }),
-      ctx.db.insert("users", {
-        email: "test@example.com",
-      }),
-      ctx.db.insert("roles", {
-        organizationId: orgId,
-        name: "Admin",
-        isSystemRole: true,
-      }),
-      ctx.db.insert("permissions", {
-        name: "locations.update",
-        category: "locations",
-      }),
-    ]);
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
+    const locationId = await ctx.db.insert("locations", {
+      organizationId,
+      siteId: site1Id,
+      name: "Mobile Gallery",
+      ...buildLocationCode("MG-1"),
+      type: "gallery",
+      sortOrder: 1,
+      isActive: true,
     });
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    return { orgId, site1Id, site2Id, locationId, userId };
+    return { site2Id, locationId };
   });
 
-  const authed = t.withIdentity({
-    subject: `${userId}|session`,
-    issuer: "https://example.test",
-  });
-
-  await authed.mutation(api.locations.update, {
+  await authedForUser(t, userId).mutation(api.locations.update, {
     locationId,
     siteId: site2Id,
   });
 
-  const updated = await t.run(async (ctx) => {
-    return await ctx.db.get(locationId);
-  });
-
+  const updated = await t.run(async (ctx) => ctx.db.get(locationId));
   expect(updated?.siteId).toBe(site2Id);
 });
 
 test("should reject update with invalid siteId", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...LOCATION_UPDATE_ADMIN_PERMISSIONS],
+    { slugPrefix: "test-museum-update-invalid", enabledModules: [] },
+  );
 
-  const { locationId, invalidSiteId, userId } = await t.run(async (ctx) => {
-    const [orgId, otherOrgId] = await Promise.all([
-      ctx.db.insert("organizations", {
-        name: "Test Museum",
-        slug: "test-museum-update-invalid",
-        type: "museum",
-        settings: { enabledModules: [] },
+  const { locationId, invalidSiteId } = await t.run(async (ctx) => {
+    const otherOrgId = await ctx.db.insert("organizations", {
+      name: "Other Museum",
+      slug: "other-museum-update",
+      type: "museum",
+      settings: { enabledModules: [] },
+    });
+    const [invalidSiteId, locationId] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId: otherOrgId,
+        name: "Other Site",
+        isActive: true,
+        isPrimary: true,
       }),
-      ctx.db.insert("organizations", {
-        name: "Other Museum",
-        slug: "other-museum-update",
-        type: "museum",
-        settings: { enabledModules: [] },
+      ctx.db.insert("locations", {
+        organizationId,
+        name: "Test Location",
+        ...buildLocationCode("T-1"),
+        type: "room",
+        sortOrder: 1,
+        isActive: true,
       }),
     ]);
-    const [invalidSiteId, locationId, userId, roleId, permissionId] =
-      await Promise.all([
-        ctx.db.insert("sites", {
-          organizationId: otherOrgId,
-          name: "Other Site",
-          isActive: true,
-          isPrimary: true,
-        }),
-        ctx.db.insert("locations", {
-          organizationId: orgId,
-          name: "Test Location",
-          ...buildLocationCode("T-1"),
-          type: "room",
-          sortOrder: 1,
-          isActive: true,
-        }),
-        ctx.db.insert("users", {
-          email: "test@example.com",
-        }),
-        ctx.db.insert("roles", {
-          organizationId: orgId,
-          name: "Admin",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("permissions", {
-          name: "locations.update",
-          category: "locations",
-        }),
-      ]);
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
-    });
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    return { locationId, invalidSiteId, userId };
-  });
-
-  const authed = t.withIdentity({
-    subject: `${userId}|session`,
-    issuer: "https://example.test",
+    return { locationId, invalidSiteId };
   });
 
   await expect(
-    authed.mutation(api.locations.update, {
+    authedForUser(t, userId).mutation(api.locations.update, {
       locationId,
       siteId: invalidSiteId,
     }),
@@ -1091,67 +929,35 @@ test("should reject update with invalid siteId", async () => {
 });
 
 test("should reject update with inactive siteId", async () => {
-  const t = convexTest(schema, modules);
+  const t = createConvexTest();
+  const { organizationId, userId } = await createOrgUserWithPermissions(
+    t,
+    [...LOCATION_UPDATE_ADMIN_PERMISSIONS],
+    { slugPrefix: "test-museum-update-inactive", enabledModules: [] },
+  );
 
-  const { locationId, inactiveSiteId, userId } = await t.run(async (ctx) => {
-    const orgId = await ctx.db.insert("organizations", {
-      name: "Test Museum",
-      slug: "test-museum-update-inactive",
-      type: "museum",
-      settings: { enabledModules: [] },
-    });
-
-    const [inactiveSiteId, locationId, userId, roleId, permissionId] =
-      await Promise.all([
-        ctx.db.insert("sites", {
-          organizationId: orgId,
-          name: "Closed Site",
-          isActive: false,
-          isPrimary: false,
-        }),
-        ctx.db.insert("locations", {
-          organizationId: orgId,
-          name: "Test Location",
-          ...buildLocationCode("T-2"),
-          type: "room",
-          sortOrder: 1,
-          isActive: true,
-        }),
-        ctx.db.insert("users", {
-          email: "test@example.com",
-        }),
-        ctx.db.insert("roles", {
-          organizationId: orgId,
-          name: "Admin",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("permissions", {
-          name: "locations.update",
-          category: "locations",
-        }),
-      ]);
-    await ctx.db.insert("rolePermissions", {
-      roleId,
-      permissionId,
-    });
-
-    await ctx.db.insert("userOrganizations", {
-      userId,
-      organizationId: orgId,
-      roleId,
-      joinedAt: Date.now(),
-    });
-
-    return { locationId, inactiveSiteId, userId };
-  });
-
-  const authed = t.withIdentity({
-    subject: `${userId}|session`,
-    issuer: "https://example.test",
+  const { locationId, inactiveSiteId } = await t.run(async (ctx) => {
+    const [inactiveSiteId, locationId] = await Promise.all([
+      ctx.db.insert("sites", {
+        organizationId,
+        name: "Closed Site",
+        isActive: false,
+        isPrimary: false,
+      }),
+      ctx.db.insert("locations", {
+        organizationId,
+        name: "Test Location",
+        ...buildLocationCode("T-2"),
+        type: "room",
+        sortOrder: 1,
+        isActive: true,
+      }),
+    ]);
+    return { locationId, inactiveSiteId };
   });
 
   await expect(
-    authed.mutation(api.locations.update, {
+    authedForUser(t, userId).mutation(api.locations.update, {
       locationId,
       siteId: inactiveSiteId,
     }),

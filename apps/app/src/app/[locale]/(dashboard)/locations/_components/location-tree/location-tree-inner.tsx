@@ -3,10 +3,12 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Tree, TreeDragLine, TreeItem, TreeItemLabel } from "@v1/ui/tree";
+import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useEffectEvent } from "react";
+import { usePermissions } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { TREE_INDENT } from "./constants";
 import { LocationTreeItemActions } from "./location-tree-item-actions";
@@ -27,6 +29,8 @@ export function LocationTreeInner({
   const { push } = useRouter();
   const t = useScopedI18n("locations.tree");
   const tCommon = useScopedI18n("common");
+  const { hasPermission } = usePermissions();
+  const canManageLocations = hasPermission("organization.manage_settings");
 
   const allLocations = useQuery(
     api.locations.listAll,
@@ -46,6 +50,7 @@ export function LocationTreeInner({
     items,
     initialExpandedItems,
     unknownLabel,
+    canManageLocations,
   });
 
   useEffect(() => {
@@ -111,7 +116,7 @@ export function LocationTreeInner({
         indent={TREE_INDENT}
         tree={tree}
       >
-        <TreeDragLine />
+        {canManageLocations ? <TreeDragLine /> : null}
         {tree.getItems().map((item) => {
           const itemData = item.getItemData();
           if (itemData._id === "root") return null;
@@ -123,7 +128,12 @@ export function LocationTreeInner({
             >
               <TreeItem
                 item={item}
-                className="flex-1 not-last:pb-0 cursor-grab active:cursor-grabbing"
+                className={cn(
+                  "flex-1 not-last:pb-0",
+                  canManageLocations
+                    ? "cursor-grab active:cursor-grabbing"
+                    : "cursor-pointer",
+                )}
                 onClick={(e) => navigateToLocation(itemData._id, e)}
               >
                 <TreeItemLabel className="relative flex items-center gap-2 before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:bg-background data-[drag-target=true]:ring-2 data-[drag-target=true]:ring-primary">

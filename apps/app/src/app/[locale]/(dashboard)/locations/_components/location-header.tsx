@@ -149,8 +149,8 @@ export function LocationHeader({
               </div>
             ) : null}
           </div>
-          <dl className="mt-3 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-4">
-            <div>
+          <dl className="mt-3 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-flow-col sm:auto-cols-fr">
+            <div className="min-w-0">
               <dt className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Total objects
               </dt>
@@ -158,7 +158,7 @@ export function LocationHeader({
                 {totalObjects.toLocaleString()}
               </dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt
                 className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
                 title="Capacity of objects assigned directly to this location"
@@ -181,7 +181,7 @@ export function LocationHeader({
                 ) : null}
               </dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Last audit
               </dt>
@@ -191,14 +191,7 @@ export function LocationHeader({
                   : "No audit recorded"}
               </dd>
             </div>
-              {actions ? (
-                <div className="sm:justify-self-end">
-                  <dt className="sr-only">Actions</dt>
-                  <dd className="mt-1.5 flex min-h-[1.75rem] items-end justify-end">
-                    {actions}
-                  </dd>
-                </div>
-              ) : null}
+            {actions}
           </dl>
         </div>
       </div>

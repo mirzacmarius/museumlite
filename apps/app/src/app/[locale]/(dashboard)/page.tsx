@@ -18,6 +18,7 @@ import {
   MapPin,
   Package,
   PackagePlus,
+  Plus,
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +28,10 @@ import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-import { DashboardPageSkeleton } from "./dashboard-page-skeleton";
+import {
+  CollectionGroupsGridSkeleton,
+  DashboardPageSkeleton,
+} from "./dashboard-page-skeleton";
 
 type SubscriptionTier = "free" | "pro" | "enterprise";
 type OrganizationSubscription = FunctionReturnType<
@@ -37,6 +41,21 @@ type BillingInterval =
   NonNullable<OrganizationSubscription>["recurringInterval"];
 type BillingStatus = NonNullable<OrganizationSubscription>["status"];
 type KpiAccentColor = "indigo" | "emerald" | "amber" | "blue";
+const COLLECTION_GROUP_COLORS = [
+  "#d97706",
+  "#059669",
+  "#2563eb",
+  "#e11d48",
+  "#7c3aed",
+  "#0891b2",
+] as const;
+const VISIBLE_COLLECTION_GROUPS = 8;
+const COLLECTION_GROUP_LIST_CLASS_NAME =
+  "mt-3 flex flex-wrap items-center justify-start gap-1.5";
+const COLLECTION_GROUP_CARD_CLASS_NAME = cn(
+  "inline-flex w-fit max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1",
+  "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
+);
 
 interface BillingOverviewSectionProps {
   canManageBilling: boolean;
@@ -56,7 +75,7 @@ interface MetricLinkCardProps {
 
 const DASHBOARD_CARD_PADDING_CLASS_NAME = "px-3.5 py-3";
 const INTERACTIVE_METRIC_CARD_CLASS_NAME = cn(
-  "w-full p-0 px-3.5 py-5",
+  "w-full p-0 px-3.5 py-2.5",
   "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
 );
 const METRIC_LINK_CLASS_NAME =
@@ -110,6 +129,99 @@ function MetricLinkSection({
           <MetricLinkCard key={metric.title} {...metric} />
         ))}
       </div>
+    </section>
+  );
+}
+
+function CollectionGroupsOverviewSection({
+  organizationId,
+  canCreate,
+}: {
+  organizationId: Id<"organizations">;
+  canCreate: boolean;
+}) {
+  const t = useScopedI18n("collections");
+  const kpi = useScopedI18n("kpi");
+  const groups = useQuery(api.collectionGroups.list, { organizationId });
+
+  const viewAllLabel =
+    groups && groups.length > 0 ? `View all (${groups.length})` : "View all";
+
+  return (
+    <section className="mt-6">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+          {kpi("totalCollectionGroups")}
+        </h3>
+        <div className="flex items-center gap-2">
+          {canCreate ? (
+            <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+              <Link href="/collections/new">
+                <Plus className="mr-1.5 size-3.5" />
+                {t("newCollection")}
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
+            <Link href="/collections">{viewAllLabel}</Link>
+          </Button>
+        </div>
+      </div>
+
+      {groups === undefined ? (
+        <CollectionGroupsGridSkeleton />
+      ) : groups.length === 0 ? (
+        <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-border bg-card px-3.5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">{t("noCollections")}</p>
+          {canCreate ? (
+            <Button asChild size="sm">
+              <Link href="/collections/new">
+                <Plus className="mr-1.5 size-3.5" />
+                {t("createFirst")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <div className={COLLECTION_GROUP_LIST_CLASS_NAME}>
+          {groups.slice(0, VISIBLE_COLLECTION_GROUPS).map((group, index) => (
+            <Link
+              key={group._id}
+              href={`/objects?collectionGroupId=${group._id}`}
+              className={COLLECTION_GROUP_CARD_CLASS_NAME}
+            >
+              <span
+                className="size-1.5 shrink-0 rounded-full"
+                style={{
+                  backgroundColor:
+                    COLLECTION_GROUP_COLORS[
+                      index % COLLECTION_GROUP_COLORS.length
+                    ] ?? "#d97706",
+                }}
+              />
+              <span className="truncate text-xs font-medium text-foreground">
+                {group.name}
+              </span>
+              {group.itemsCount !== undefined ? (
+                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                  {group.itemsCount}
+                </span>
+              ) : null}
+            </Link>
+          ))}
+          {groups.length > VISIBLE_COLLECTION_GROUPS ? (
+            <Link
+              href="/collections"
+              className={cn(
+                COLLECTION_GROUP_CARD_CLASS_NAME,
+                "border-dashed text-xs font-medium text-muted-foreground hover:text-foreground",
+              )}
+            >
+              View all {groups.length} groups
+            </Link>
+          ) : null}
+        </div>
+      )}
     </section>
   );
 }
@@ -273,6 +385,10 @@ export default function DashboardPage() {
     currentOrganizationId,
     "organization.manage_settings",
   );
+  const canCreateCollectionGroup = usePermission(
+    currentOrganizationId,
+    "collections.create",
+  );
 
   const analytics = useQuery(
     api.dashboard.getAnalytics,
@@ -358,13 +474,6 @@ export default function DashboardPage() {
       icon: MapPin,
       accentColor: "amber",
     },
-    {
-      href: "/collections",
-      title: kpi("totalCollectionGroups"),
-      value: formatMetricValue(analyticsData?.collections.total, locale),
-      icon: Warehouse,
-      accentColor: "indigo",
-    },
   ];
 
   const operationalMetrics: MetricLinkCardProps[] = [
@@ -431,6 +540,11 @@ export default function DashboardPage() {
         className="mt-8"
         title="Live metrics"
         metrics={liveMetrics}
+      />
+
+      <CollectionGroupsOverviewSection
+        organizationId={currentOrganizationId}
+        canCreate={canCreateCollectionGroup === true}
       />
 
       <section className="mt-6">

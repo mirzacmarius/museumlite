@@ -67,14 +67,16 @@ export default function LocationDetailPage() {
               {t("backToLocations")}
             </Link>
           </Button>
-          <PermissionGate permission="locations.delete">
-            <IconActionButton
-              label={t("delete")}
-              className="hover:text-destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="size-4" aria-hidden="true" />
-            </IconActionButton>
+          <PermissionGate permission="organization.manage_settings">
+            <PermissionGate permission="locations.delete">
+              <IconActionButton
+                label={t("delete")}
+                className="hover:text-destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+              </IconActionButton>
+            </PermissionGate>
           </PermissionGate>
         </div>
 

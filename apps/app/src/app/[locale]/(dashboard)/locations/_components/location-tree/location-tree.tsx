@@ -150,15 +150,17 @@ export function LocationTree({ organizationId }: LocationTreeProps) {
   return (
     <>
       <div className="px-6 pt-4">
-        <PermissionGate permission="locations.create">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => dispatch({ type: "openAddNewLocation" })}
-          >
-            <Plus className="mr-2 size-4" />
-            {t("tree.addNewLocation")}
-          </Button>
+        <PermissionGate permission="organization.manage_settings">
+          <PermissionGate permission="locations.create">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => dispatch({ type: "openAddNewLocation" })}
+            >
+              <Plus className="mr-2 size-4" />
+              {t("tree.addNewLocation")}
+            </Button>
+          </PermissionGate>
         </PermissionGate>
       </div>
 

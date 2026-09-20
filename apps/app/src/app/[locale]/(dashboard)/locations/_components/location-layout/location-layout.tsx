@@ -152,13 +152,15 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
                 Add your first location to start organizing objects
               </p>
             </div>
-            <PermissionGate permission="locations.create">
-              <IconActionButton
-                label="Add"
-                onClick={() => setAddDialogOpen(true)}
-              >
-                <Plus className="size-4" aria-hidden="true" />
-              </IconActionButton>
+            <PermissionGate permission="organization.manage_settings">
+              <PermissionGate permission="locations.create">
+                <IconActionButton
+                  label="Add"
+                  onClick={() => setAddDialogOpen(true)}
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                </IconActionButton>
+              </PermissionGate>
             </PermissionGate>
           </div>
         )}

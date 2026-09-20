@@ -13,7 +13,10 @@ import { toJSON, toXML } from "./utils/formatConverters";
 import { normalizeAccessionImportRow } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
-import { requirePermission } from "./utils/permissions";
+import {
+  requireLocationAdminPermission,
+  requirePermission,
+} from "./utils/permissions";
 import {
   accessionsToSpectrumEntries,
   collectionsToSpectrum,
@@ -696,7 +699,11 @@ export const importLocationsBatch = mutation({
     }
 
     const [, job] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "locations.create"),
+      requireLocationAdminPermission(
+        ctx,
+        args.organizationId,
+        "locations.create",
+      ),
       ctx.db.get(args.jobId),
     ]);
     if (!job || job.organizationId !== args.organizationId) {

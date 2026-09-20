@@ -15,12 +15,14 @@ interface UseLocationTreeInstanceOptions {
   items: Record<string, LocationItem>;
   initialExpandedItems: string[];
   unknownLabel: string;
+  canManageLocations: boolean;
 }
 
 export function useLocationTreeInstance({
   items,
   initialExpandedItems,
   unknownLabel,
+  canManageLocations,
 }: UseLocationTreeInstanceOptions) {
   const reorderLocation = useMutation(api.locations.reorder);
 
@@ -50,8 +52,11 @@ export function useLocationTreeInstance({
       getChildren: (itemId) => items[itemId]?.children ?? [],
     },
     canDrag: (draggedItems) =>
+      canManageLocations &&
       draggedItems.every((item) => item.getItemData()._id !== "root"),
     canDrop: (draggedItems, target) => {
+      if (!canManageLocations) return false;
+
       const draggedItem = draggedItems[0];
       if (!draggedItem) return false;
 
@@ -70,8 +75,10 @@ export function useLocationTreeInstance({
 
       return true;
     },
-    canReorder: true,
+    canReorder: canManageLocations,
     onDrop: async (draggedItems, target) => {
+      if (!canManageLocations) return;
+
       const item = draggedItems[0];
       if (!item) return;
 
@@ -87,7 +94,7 @@ export function useLocationTreeInstance({
           newSortOrder = target.childIndex;
         } else {
           newParentId = targetData._id === "root" ? undefined : targetData._id;
-          const targetChildren = items[targetData._id]?.children || [];
+          const targetChildren = items[targetData._id]?.children ?? [];
           newSortOrder = targetChildren.length;
         }
 
@@ -104,7 +111,7 @@ export function useLocationTreeInstance({
       syncDataLoaderFeature,
       selectionFeature,
       hotkeysCoreFeature,
-      dragAndDropFeature,
+      ...(canManageLocations ? [dragAndDropFeature] : []),
     ],
   });
 }

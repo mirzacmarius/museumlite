@@ -85,34 +85,39 @@ async function createOrgUserWithLocationPermissions() {
   const t = convexTest(schema, modules);
 
   const context = await t.run(async (ctx) => {
-    const [
-      userId,
-      organizationId,
-      readPermissionId,
-      createPermissionId,
-      updatePermissionId,
-    ] = await Promise.all([
+    const [userId, organizationId, permissionIds] = await Promise.all([
       ctx.db.insert("users", { name: "Location Manager" }),
       ctx.db.insert("organizations", {
         name: "Location Admin Org",
         slug: `location-admin-org-${Math.random().toString(36).slice(2, 8)}`,
         type: "museum",
       }),
-      ctx.db.insert("permissions", {
-        name: "locations.read",
-        category: "locations",
-        description: "Read locations",
-      }),
-      ctx.db.insert("permissions", {
-        name: "locations.create",
-        category: "locations",
-        description: "Create locations",
-      }),
-      ctx.db.insert("permissions", {
-        name: "locations.update",
-        category: "locations",
-        description: "Update locations",
-      }),
+      Promise.all(
+        [
+          {
+            name: "locations.read",
+            category: "locations" as const,
+            description: "Read locations",
+          },
+          {
+            name: "locations.create",
+            category: "locations" as const,
+            description: "Create locations",
+          },
+          {
+            name: "locations.update",
+            category: "locations" as const,
+            description: "Update locations",
+          },
+          {
+            name: "organization.manage_settings",
+            category: "organization" as const,
+            description: "Manage organization settings",
+          },
+        ].map(({ name, category, description }) =>
+          ctx.db.insert("permissions", { name, category, description }),
+        ),
+      ),
     ]);
     const roleId = await ctx.db.insert("roles", {
       organizationId,
@@ -122,12 +127,8 @@ async function createOrgUserWithLocationPermissions() {
     });
 
     await Promise.all(
-      [readPermissionId, createPermissionId, updatePermissionId].map(
-        (permissionId) =>
-          ctx.db.insert("rolePermissions", {
-            roleId,
-            permissionId,
-          }),
+      permissionIds.map((permissionId) =>
+        ctx.db.insert("rolePermissions", { roleId, permissionId }),
       ),
     );
 
@@ -165,6 +166,10 @@ async function createOrgUserWithLocationDeleteAndDeaccessionPermissions() {
           { name: "collections.create", category: "collections" as const },
           { name: "collections.delete", category: "collections" as const },
           { name: "locations.read", category: "locations" as const },
+          {
+            name: "organization.manage_settings",
+            category: "organization" as const,
+          },
         ].map(({ name, category }) =>
           ctx.db.insert("permissions", {
             name,

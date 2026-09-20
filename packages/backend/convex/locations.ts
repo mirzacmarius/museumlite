@@ -5,7 +5,11 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
-import { hasPermission, requirePermission } from "./utils/permissions";
+import {
+  hasPermission,
+  requireLocationAdminPermission,
+  requirePermission,
+} from "./utils/permissions";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
 type LocationCustomFields = Record<
@@ -132,8 +136,11 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
-    await requirePermission(ctx, args.organizationId, "locations.create");
+    await requireLocationAdminPermission(
+      ctx,
+      args.organizationId,
+      "locations.create",
+    );
 
     if (args.siteId) {
       await validateSite(ctx, args.organizationId, args.siteId);
@@ -552,8 +559,11 @@ export const update = mutation({
       throw new Error("Location not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, location.organizationId, "locations.update");
+    await requireLocationAdminPermission(
+      ctx,
+      location.organizationId,
+      "locations.update",
+    );
 
     if (args.siteId !== undefined && args.siteId !== location.siteId) {
       if (args.siteId) {
@@ -820,9 +830,12 @@ export const deleteLocation = mutation({
       throw new Error("Location not found");
     }
 
-    // Check permission
     const [, children] = await Promise.all([
-      requirePermission(ctx, location.organizationId, "locations.delete"),
+      requireLocationAdminPermission(
+        ctx,
+        location.organizationId,
+        "locations.delete",
+      ),
       ctx.db
         .query("locations")
         .withIndex("by_parentLocation", (q) =>
@@ -1648,7 +1661,11 @@ export const updateStatus = mutation({
       throw new Error("Location not found");
     }
 
-    await requirePermission(ctx, location.organizationId, "locations.update");
+    await requireLocationAdminPermission(
+      ctx,
+      location.organizationId,
+      "locations.update",
+    );
 
     // Check if there are objects at this location when closing
     if (args.status === "closed") {
@@ -1778,8 +1795,11 @@ export const reorder = mutation({
       throw new Error("Location not found");
     }
 
-    // Check permission
-    await requirePermission(ctx, location.organizationId, "locations.update");
+    await requireLocationAdminPermission(
+      ctx,
+      location.organizationId,
+      "locations.update",
+    );
 
     // Verify new parent location belongs to same organization
     if (args.newParentLocationId) {

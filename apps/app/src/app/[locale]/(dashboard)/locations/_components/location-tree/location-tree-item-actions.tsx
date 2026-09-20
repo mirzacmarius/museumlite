@@ -39,71 +39,73 @@ export function LocationTreeItemActions({
   };
 
   return (
-    <div className="ml-auto z-10">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="size-7 p-0"
-            onPointerDown={(event) => event.stopPropagation()}
-          >
-            <MoreHorizontal className="size-4" />
-            <span className="sr-only">{t("actions")}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-          <PermissionGate permission="locations.update">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(actionPayload);
-              }}
+    <PermissionGate permission="organization.manage_settings">
+      <div className="ml-auto z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-7 p-0"
+              onPointerDown={(event) => event.stopPropagation()}
             >
-              <Edit className="mr-2 size-4" />
-              {t("edit")}
-            </DropdownMenuItem>
-          </PermissionGate>
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">{t("actions")}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <PermissionGate permission="locations.update">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(actionPayload);
+                }}
+              >
+                <Edit className="mr-2 size-4" />
+                {t("edit")}
+              </DropdownMenuItem>
+            </PermissionGate>
 
-          <PermissionGate permission="locations.create">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddChild(actionPayload);
-              }}
-            >
-              <Plus className="mr-2 size-4" />
-              {t("addChild")}
-            </DropdownMenuItem>
-          </PermissionGate>
+            <PermissionGate permission="locations.create">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddChild(actionPayload);
+                }}
+              >
+                <Plus className="mr-2 size-4" />
+                {t("addChild")}
+              </DropdownMenuItem>
+            </PermissionGate>
 
-          <PermissionGate permission="locations.update">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onMove(actionPayload);
-              }}
-            >
-              <Move className="mr-2 size-4" />
-              {t("move")}
-            </DropdownMenuItem>
-          </PermissionGate>
+            <PermissionGate permission="locations.update">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(actionPayload);
+                }}
+              >
+                <Move className="mr-2 size-4" />
+                {t("move")}
+              </DropdownMenuItem>
+            </PermissionGate>
 
-          <PermissionGate permission="locations.delete">
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(actionPayload);
-              }}
-            >
-              <Trash2 className="mr-2 size-4" />
-              {t("delete")}
-            </DropdownMenuItem>
-          </PermissionGate>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            <PermissionGate permission="locations.delete">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(actionPayload);
+                }}
+              >
+                <Trash2 className="mr-2 size-4" />
+                {t("delete")}
+              </DropdownMenuItem>
+            </PermissionGate>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </PermissionGate>
   );
 }
