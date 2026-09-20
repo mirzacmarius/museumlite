@@ -1,10 +1,14 @@
 const KPI_SKELETON_KEYS = ["objects", "display", "loans", "locations"];
-const COLLECTION_GROUP_SKELETON_KEYS = [
-  "group-1",
-  "group-2",
-  "group-3",
-  "group-4",
-];
+const COLLECTION_GROUP_SKELETON_WIDTHS = [
+  "w-28",
+  "w-36",
+  "w-44",
+  "w-32",
+  "w-36",
+  "w-40",
+  "w-40",
+  "w-36",
+] as const;
 const COMMAND_SKELETON_KEYS = ["add-object", "new-collection", "analytics"];
 const USAGE_SKELETON_KEYS = ["storage", "objects", "exports"];
 const WORKFLOW_SKELETON_KEYS = [
@@ -40,10 +44,10 @@ function CompactActionSkeleton() {
 export function CollectionGroupsGridSkeleton() {
   return (
     <div className="mt-3 flex flex-wrap items-center justify-start gap-1.5">
-      {COLLECTION_GROUP_SKELETON_KEYS.map((key) => (
+      {COLLECTION_GROUP_SKELETON_WIDTHS.map((widthClass) => (
         <div
-          key={key}
-          className="h-6 w-28 rounded-md border border-border bg-card"
+          key={widthClass}
+          className={`h-6 rounded-md border border-border bg-card ${widthClass}`}
         />
       ))}
     </div>
@@ -55,10 +59,7 @@ function CollectionGroupsOverviewSkeleton() {
     <section className="mt-6">
       <div className="flex items-center justify-between gap-3">
         <div className="h-4 w-36 rounded bg-muted/70" />
-        <div className="flex gap-2">
-          <div className="h-7 w-28 rounded bg-muted/60" />
-          <div className="h-7 w-20 rounded bg-muted/60" />
-        </div>
+        <div className="h-7 w-40 rounded bg-muted/60" />
       </div>
       <CollectionGroupsGridSkeleton />
     </section>
@@ -148,9 +149,11 @@ export function DashboardAnalyticsSectionsSkeleton() {
 
 export function DashboardPageSkeleton() {
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6">
-      <div className="h-6 w-72 max-w-full rounded bg-muted/70" />
-      <div className="mt-2 h-4 w-[34rem] max-w-full rounded bg-muted/50" />
+    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div>
+        <div className="h-6 w-72 max-w-full rounded bg-muted/70" />
+        <div className="mt-2 h-4 w-[34rem] max-w-full rounded bg-muted/50" />
+      </div>
 
       <DashboardAnalyticsSectionsSkeleton />
     </div>

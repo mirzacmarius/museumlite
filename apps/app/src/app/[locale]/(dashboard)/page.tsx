@@ -144,28 +144,20 @@ function CollectionGroupsOverviewSection({
   const kpi = useScopedI18n("kpi");
   const groups = useQuery(api.collectionGroups.list, { organizationId });
 
-  const viewAllLabel =
-    groups && groups.length > 0 ? `View all (${groups.length})` : "View all";
-
   return (
     <section className="mt-6">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
           {kpi("totalCollectionGroups")}
         </h3>
-        <div className="flex items-center gap-2">
-          {canCreate ? (
-            <Button asChild variant="outline" size="sm" className="h-7 text-xs">
-              <Link href="/collections/new">
-                <Plus className="mr-1.5 size-3.5" />
-                {t("newCollection")}
-              </Link>
-            </Button>
-          ) : null}
-          <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-            <Link href="/collections">{viewAllLabel}</Link>
+        {canCreate ? (
+          <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+            <Link href="/collections/new">
+              <Plus className="mr-1.5 size-3.5" />
+              {t("newCollection")}
+            </Link>
           </Button>
-        </div>
+        ) : null}
       </div>
 
       {groups === undefined ? (
