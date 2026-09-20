@@ -1,9 +1,8 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { ChevronRight, Lock, Thermometer } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
-import { isStorageLocation } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 
 export interface SidebarLocation {
   _id: Id<"locations">;
@@ -20,7 +19,6 @@ interface LocationNavItemContextValue {
   onSelect: () => void;
   expansion: "leaf" | "expanded" | "collapsed";
   onToggle: () => void;
-  storage: "standard" | "secure" | "cold";
   depth: number;
 }
 
@@ -39,10 +37,7 @@ function useLocationNavItem() {
 
 interface LocationNavItemRootProps {
   location: SidebarLocation;
-  state: Pick<
-    LocationNavItemContextValue,
-    "selection" | "expansion" | "storage"
-  >;
+  state: Pick<LocationNavItemContextValue, "selection" | "expansion">;
   onSelect: () => void;
   onToggle: () => void;
   depth: number;
@@ -57,7 +52,7 @@ function LocationNavItemRoot({
   depth,
   children,
 }: LocationNavItemRootProps) {
-  const { selection, expansion, storage } = state;
+  const { selection, expansion } = state;
   const value = useMemo(
     () => ({
       location,
@@ -65,16 +60,15 @@ function LocationNavItemRoot({
       onSelect,
       expansion,
       onToggle,
-      storage,
       depth,
     }),
-    [location, selection, onSelect, expansion, onToggle, storage, depth],
+    [location, selection, onSelect, expansion, onToggle, depth],
   );
 
   return (
     <LocationNavItemContext.Provider value={value}>
       <div
-        className={`flex w-full items-center rounded-md border transition-colors duration-150 ${
+        className={`flex h-7 w-full items-center rounded-md border transition-colors duration-150 ${
           selection === "selected"
             ? "border-indigo-500/20 bg-indigo-500/10 font-medium text-indigo-600 dark:text-indigo-300"
             : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -94,14 +88,14 @@ function LocationNavItemTrigger() {
   const isExpanded = expansion === "expanded";
 
   if (expansion === "leaf") {
-    return <span className="h-[26px] w-0 shrink-0" />;
+    return <span className="h-7 w-0 shrink-0" />;
   }
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      className="flex h-[26px] w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+      className="flex h-7 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
       aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
       aria-expanded={isExpanded}
     >
@@ -115,17 +109,7 @@ function LocationNavItemTrigger() {
 }
 
 function LocationNavItemLink() {
-  const { location, onSelect, storage, selection } = useLocationNavItem();
-  const isColdStorage = storage === "cold";
-  const isSecure = storage !== "standard";
-
-  const getStatusColor = () => {
-    if (!location.isActive) return "bg-muted-foreground";
-    if (isSecure) return "bg-amber-500";
-    return "bg-emerald-500";
-  };
-
-  const statusColor = getStatusColor();
+  const { location, onSelect, selection } = useLocationNavItem();
 
   return (
     <button
@@ -133,19 +117,9 @@ function LocationNavItemLink() {
       onClick={onSelect}
       aria-current={selection === "selected" ? "location" : undefined}
       title={location.name}
-      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pe-2 text-start"
+      className="h-7 min-w-0 flex-1 truncate pe-2 text-start text-xs font-medium"
     >
-      <span className="truncate">{location.name}</span>
-      {isColdStorage ? (
-        <span className="flex shrink-0 items-center gap-0.5 rounded border border-blue-500/20 bg-blue-500/10 px-1 text-[9px] text-blue-400">
-          <Thermometer className="size-2.5" />
-          4°C
-        </span>
-      ) : isSecure ? (
-        <Lock className="size-3 shrink-0 text-muted-foreground" />
-      ) : (
-        <span className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
-      )}
+      {location.name}
     </button>
   );
 }
@@ -164,7 +138,6 @@ interface LocationNavTreeItemProps {
   onSelectLocation: (id: Id<"locations">) => void;
   expandedLocationIds: Set<Id<"locations">>;
   onToggleLocation: (id: Id<"locations">) => void;
-  isSecure: boolean;
   depth?: number;
 }
 
@@ -176,17 +149,10 @@ export function LocationNavTreeItem({
   onSelectLocation,
   expandedLocationIds,
   onToggleLocation,
-  isSecure,
   depth = 0,
 }: LocationNavTreeItemProps) {
-  const isLocationSecure = isSecure || isStorageLocation(location.type);
   const hasChildren = childLocations.length > 0;
   const isExpanded = hasChildren && expandedLocationIds.has(location._id);
-  const storage = location.type.toLowerCase().includes("cold")
-    ? "cold"
-    : isLocationSecure
-      ? "secure"
-      : "standard";
 
   return (
     <li>
@@ -199,7 +165,6 @@ export function LocationNavTreeItem({
               ? "expanded"
               : "collapsed"
             : "leaf",
-          storage,
         }}
         onSelect={() => onSelectLocation(location._id)}
         onToggle={() => onToggleLocation(location._id)}
@@ -209,7 +174,7 @@ export function LocationNavTreeItem({
         <LocationNavItem.Link />
       </LocationNavItem.Root>
       {isExpanded && (
-        <ul className="mt-1 space-y-1" aria-label={`${location.name} children`}>
+        <ul className="mt-0.5" aria-label={`${location.name} children`}>
           {childLocations.map((childLocation) => (
             <LocationNavTreeItem
               key={childLocation._id}
@@ -220,7 +185,6 @@ export function LocationNavTreeItem({
               onSelectLocation={onSelectLocation}
               expandedLocationIds={expandedLocationIds}
               onToggleLocation={onToggleLocation}
-              isSecure={isLocationSecure}
               depth={depth + 1}
             />
           ))}

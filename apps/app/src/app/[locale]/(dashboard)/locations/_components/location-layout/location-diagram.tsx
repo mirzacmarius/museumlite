@@ -1,8 +1,9 @@
 "use client";
 
-import dagre from "@dagrejs/dagre";
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import { cn } from "@v1/ui/utils";
 import {
   Background,
   Controls,
@@ -14,14 +15,20 @@ import {
   Panel,
   Position,
   ReactFlow,
+  useReactFlow,
   type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { FunctionReturnType } from "convex/server";
-import { ChevronRight, MapPin, Package } from "lucide-react";
+import { ChevronRight, Package, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  isExhibitionLocation,
+  isStorageLocation,
+} from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
+import { LocationTypeIcon } from "../location-type-icon";
 import {
   type DiagramSettings,
   DiagramSettingsPopover,
@@ -31,55 +38,215 @@ import { readDiagramState, saveDiagramState } from "./diagram-storage";
 
 type DiagramLocation = Pick<
   FunctionReturnType<typeof api.locations.listAll>[number],
-  "_id" | "name" | "type" | "isActive"
+  "_id" | "name" | "type" | "isActive" | "locationCode" | "sortOrder"
 >;
 type LocationObjects = FunctionReturnType<
   typeof api.locations.getObjectsAtLocation
 >;
+
 interface LocationDiagramProps {
-  location: DiagramLocation;
+  location: Omit<DiagramLocation, "sortOrder"> & { sortOrder?: number };
   childrenById: Map<Id<"locations">, DiagramLocation[]>;
   objectsById: Map<Id<"locations">, LocationObjects>;
+  onSelectLocation: (id: Id<"locations">) => void;
 }
+
 type LocationFlowNode = Node<
   {
     settings: DiagramSettings;
     location: DiagramLocation;
     objects: LocationObjects;
-    childCount: number;
+    children: DiagramLocation[];
     expanded: boolean;
+    horizontal: boolean;
     toggle: (id: Id<"locations">) => void;
+    onSelectLocation: (id: Id<"locations">) => void;
   },
   "location"
 >;
 
+const HEADER_HEIGHT = 64;
+const FOOTER_HEIGHT = 40;
+const SECTION_LABEL_HEIGHT = 24;
+const MAX_VISIBLE_OBJECT_ROWS = 4;
+const TITLE_HANDLE_ID = "title";
+const NODE_SOURCE_HANDLE_ID = "out";
+const NODE_TARGET_HANDLE_ID = "in";
+
+const LOCATION_ACCENT = {
+  storage: {
+    border: "border-amber-500/30",
+    icon: "bg-amber-500/10 text-amber-400",
+    stroke: "#f59e0b",
+  },
+  exhibition: {
+    border: "border-emerald-500/25",
+    icon: "bg-emerald-500/10 text-emerald-400",
+    stroke: "#34d399",
+  },
+  default: {
+    border: "border-border",
+    icon: "bg-indigo-500/10 text-indigo-400",
+    stroke: "#818cf8",
+  },
+} as const;
+
+function getLocationAccent(type: string) {
+  if (isStorageLocation(type)) return LOCATION_ACCENT.storage;
+  if (isExhibitionLocation(type)) return LOCATION_ACCENT.exhibition;
+  return LOCATION_ACCENT.default;
+}
+
+function formatLocationType(type: string) {
+  return type.replaceAll("_", " ");
+}
+
+function getObjectRowHeight(settings: DiagramSettings) {
+  if (settings.items === "grid") return settings.size === "large" ? 154 : 110;
+  return settings.size === "large" ? 68 : 44;
+}
+
+function getLocationRowHeight(settings: DiagramSettings) {
+  return settings.size === "large" ? 36 : 28;
+}
+
+function getNodeWidth(size: DiagramSettings["size"]) {
+  return size === "large" ? 320 : 256;
+}
+
+function estimateNodeHeight({
+  settings,
+  objectCount,
+  childCount,
+}: {
+  settings: DiagramSettings;
+  objectCount: number;
+  childCount: number;
+}) {
+  const objectRowHeight = getObjectRowHeight(settings);
+  const locationRowHeight = getLocationRowHeight(settings);
+  const visibleObjectRows =
+    settings.items === "grid"
+      ? Math.min(Math.ceil(objectCount / 2), 2)
+      : Math.min(objectCount, MAX_VISIBLE_OBJECT_ROWS);
+
+  return (
+    HEADER_HEIGHT +
+    FOOTER_HEIGHT +
+    (childCount > 0
+      ? SECTION_LABEL_HEIGHT + childCount * locationRowHeight
+      : 0) +
+    (objectCount > 0
+      ? SECTION_LABEL_HEIGHT + visibleObjectRows * objectRowHeight
+      : 0)
+  );
+}
+
+function sortLocations(locations: DiagramLocation[]) {
+  return [...locations].sort(
+    (left, right) =>
+      left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
+  );
+}
+
+function childSourceHandleId(childId: Id<"locations">) {
+  return `from-row-${childId}`;
+}
+
+function collectParentIds(
+  rootId: Id<"locations">,
+  childrenById: Map<Id<"locations">, DiagramLocation[]>,
+) {
+  const parentIds = new Set<Id<"locations">>();
+  for (const [parentId, children] of childrenById) {
+    if (children.length > 0) parentIds.add(parentId);
+  }
+  if ((childrenById.get(rootId) ?? []).length > 0) parentIds.add(rootId);
+  return parentIds;
+}
+
+function collectValidIds(
+  rootId: Id<"locations">,
+  parentIds: Set<Id<"locations">>,
+  childrenById: Map<Id<"locations">, DiagramLocation[]>,
+) {
+  const validIds = new Set([rootId, ...parentIds]);
+  for (const children of childrenById.values()) {
+    for (const child of children) validIds.add(child._id);
+  }
+  return validIds;
+}
+
 function LocationNode({ data }: NodeProps<LocationFlowNode>) {
-  const { location, objects, childCount, expanded, toggle, settings } = data;
+  const {
+    location,
+    objects,
+    children,
+    expanded,
+    horizontal,
+    toggle,
+    onSelectLocation,
+    settings,
+  } = data;
   const grid = settings.items === "grid";
   const large = settings.size === "large";
+  const accent = getLocationAccent(location.type);
+  const locationRowHeight = getLocationRowHeight(settings);
+  const hasChildren = children.length > 0;
+  const targetHandleId = horizontal ? TITLE_HANDLE_ID : NODE_TARGET_HANDLE_ID;
+
   return (
     <div
-      className="rounded-xl border border-border bg-card shadow-lg"
-      style={{ width: settings.size === "large" ? 320 : 256 }}
+      className={cn(
+        "relative overflow-visible rounded-xl border bg-card shadow-lg",
+        accent.border,
+      )}
+      style={{ width: getNodeWidth(settings.size) }}
     >
       <Handle
         type="target"
-        position={
-          settings.direction === "vertical" ? Position.Top : Position.Left
-        }
+        id={targetHandleId}
+        position={horizontal ? Position.Left : Position.Top}
         isConnectable={false}
-        className="!border-indigo-400 !bg-indigo-400"
+        className="!size-2.5 !border-2 !border-background !bg-indigo-400"
+        style={
+          horizontal
+            ? { top: HEADER_HEIGHT / 2, left: -5, transform: "translateY(-50%)" }
+            : { top: -5, left: "50%", transform: "translateX(-50%)" }
+        }
       />
-      <div className="flex h-16 items-center gap-2.5 px-3">
-        <span className="rounded-md bg-indigo-500/10 p-2 text-indigo-400">
-          <MapPin className="size-4" />
+      {!horizontal && hasChildren && expanded ? (
+        <Handle
+          type="source"
+          id={NODE_SOURCE_HANDLE_ID}
+          position={Position.Bottom}
+          isConnectable={false}
+          className="!size-2.5 !border-2 !border-background !bg-indigo-400"
+          style={{ bottom: -5, left: "50%", transform: "translateX(-50%)" }}
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={() => onSelectLocation(location._id)}
+        className="nodrag nopan flex h-16 w-full items-center gap-2.5 px-3 text-start hover:bg-muted/40"
+      >
+        <span className={cn("rounded-md p-2", accent.icon)}>
+          <LocationTypeIcon type={location.type} className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium" title={location.name}>
             {location.name}
           </p>
-          <p className="mt-1 text-[10px] capitalize text-muted-foreground">
-            {location.type.replaceAll("_", " ")}
+          <p className="mt-1 truncate text-[10px] text-muted-foreground">
+            <span className="capitalize">
+              {formatLocationType(location.type)}
+            </span>
+            {location.locationCode ? (
+              <>
+                {" · "}
+                <span className="font-mono">{location.locationCode}</span>
+              </>
+            ) : null}
           </p>
         </div>
         <span
@@ -89,10 +256,61 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
               : "size-1.5 shrink-0 rounded-full bg-muted-foreground"
           }
         />
-      </div>
+      </button>
+
+      {hasChildren && (
+        <div className="border-t border-border/60">
+          <div className="flex h-6 items-center px-3 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Locations
+          </div>
+          <div>
+            {children.map((child) => (
+              <div
+                key={child._id}
+                className="relative border-t border-border/40"
+                style={{ height: locationRowHeight }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onSelectLocation(child._id)}
+                  className="nodrag nopan flex h-full w-full items-center gap-2 px-3 pe-4 text-start text-[10px] hover:bg-muted/50"
+                >
+                  <LocationTypeIcon
+                    type={child.type}
+                    className="size-3 shrink-0 text-muted-foreground"
+                  />
+                  <span className="min-w-0 flex-1 truncate" title={child.name}>
+                    {child.name}
+                  </span>
+                  <span className="shrink-0 capitalize text-muted-foreground">
+                    {formatLocationType(child.type)}
+                  </span>
+                </button>
+                {horizontal && expanded ? (
+                  <Handle
+                    type="source"
+                    id={childSourceHandleId(child._id)}
+                    position={Position.Right}
+                    isConnectable={false}
+                    className="!size-2.5 !border-2 !border-background !bg-indigo-400"
+                    style={{
+                      top: "50%",
+                      right: -5,
+                      transform: "translateY(-50%)",
+                    }}
+                  />
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex h-10 items-center justify-between border-t border-border/60 px-3 text-[10px] text-muted-foreground">
-        <span>{objects.length} objects here</span>
-        {childCount > 0 ? (
+        <span>
+          {objects.length} object{objects.length === 1 ? "" : "s"} here
+        </span>
+        {hasChildren ? (
           <button
             type="button"
             aria-label={`${expanded ? "Collapse" : "Expand"} ${location.name}`}
@@ -100,105 +318,171 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
             onClick={() => toggle(location._id)}
             className="nodrag nopan flex items-center gap-1 rounded p-1 hover:bg-muted hover:text-foreground"
           >
-            {childCount} locations{" "}
+            {expanded ? "Hide tree" : "Show tree"}{" "}
             <ChevronRight
               className={expanded ? "size-3 rotate-90" : "size-3"}
             />
           </button>
         ) : (
-          <span>No child locations</span>
+          <span className="capitalize">{formatLocationType(location.type)}</span>
         )}
       </div>
+
       {objects.length > 0 && (
-        <div
-          className={`nodrag nopan nowheel overflow-y-auto rounded-b-xl border-t border-border/60 ${grid ? "grid grid-cols-2" : ""}`}
-          style={{ maxHeight: grid ? (large ? 308 : 220) : large ? 272 : 176 }}
-        >
-          {objects.map((object) => (
-            <Link
-              key={object._id}
-              href={`/objects/${object._id}`}
-              className={`flex gap-2 hover:bg-muted focus-visible:outline focus-visible:outline-indigo-400 ${grid ? "flex-col p-2" : "items-center px-3"}`}
-              style={{ height: grid ? (large ? 154 : 110) : large ? 68 : 44 }}
-            >
-              <span
-                className="relative flex shrink-0 items-center justify-center overflow-hidden rounded bg-muted"
-                style={{
-                  width: grid ? "100%" : large ? 52 : 32,
-                  height: grid ? (large ? 102 : 58) : large ? 52 : 32,
-                }}
+        <div className="border-t border-border/60">
+          <div className="flex h-6 items-center px-3 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Objects
+          </div>
+          <div
+            className={`nodrag nopan nowheel overflow-y-auto ${grid ? "grid grid-cols-2" : ""}`}
+            style={{
+              maxHeight:
+                (grid ? 2 : MAX_VISIBLE_OBJECT_ROWS) *
+                getObjectRowHeight(settings),
+            }}
+          >
+            {objects.map((object) => (
+              <Link
+                key={object._id}
+                href={`/objects/${object._id}`}
+                className={`flex gap-2 border-t border-border/40 hover:bg-muted focus-visible:outline focus-visible:outline-indigo-400 ${grid ? "flex-col p-2" : "items-center px-3"}`}
+                style={{ height: getObjectRowHeight(settings) }}
               >
-                {object.thumbnailUrl ? (
-                  <Image
-                    src={object.thumbnailUrl}
-                    alt=""
-                    fill
-                    sizes={grid ? "144px" : large ? "52px" : "32px"}
-                    className="object-cover"
-                  />
-                ) : (
-                  <Package className="size-4 text-muted-foreground" />
-                )}
-              </span>
-              <span className="min-w-0 w-full">
                 <span
-                  className="block truncate text-[10px]"
-                  title={object.title}
+                  className="relative flex shrink-0 items-center justify-center overflow-hidden rounded bg-muted"
+                  style={{
+                    width: grid ? "100%" : large ? 52 : 32,
+                    height: grid ? (large ? 102 : 58) : large ? 52 : 32,
+                  }}
                 >
-                  {object.title}
+                  {object.thumbnailUrl ? (
+                    <Image
+                      src={object.thumbnailUrl}
+                      alt=""
+                      fill
+                      sizes={grid ? "144px" : large ? "52px" : "32px"}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <Package className="size-4 text-muted-foreground" />
+                  )}
                 </span>
-                <span className="mt-0.5 block truncate font-mono text-[9px] text-muted-foreground">
-                  {object.accessionNumber}
+                <span className="min-w-0 w-full">
+                  <span
+                    className="block truncate text-[10px]"
+                    title={object.title}
+                  >
+                    {object.title}
+                  </span>
+                  <span className="mt-0.5 block truncate font-mono text-[9px] text-muted-foreground">
+                    {object.accessionNumber}
+                  </span>
                 </span>
-              </span>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-      )}
-      {childCount > 0 && (
-        <Handle
-          type="source"
-          position={
-            settings.direction === "vertical" ? Position.Bottom : Position.Right
-          }
-          isConnectable={false}
-          className="!border-indigo-400 !bg-indigo-400"
-        />
       )}
     </div>
   );
 }
+
 const nodeTypes = { location: LocationNode };
+
+const FIT_VIEW_OPTIONS = { padding: 0.15, maxZoom: 1 } as const;
+
+function DiagramToolbar({
+  settings,
+  arrangeToken,
+  nodeCount,
+  onAutoArrange,
+}: {
+  settings: ReturnType<typeof useDiagramSettings>;
+  arrangeToken: number;
+  nodeCount: number;
+  onAutoArrange: () => void;
+}) {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (arrangeToken === 0) return;
+    const timeoutId = window.setTimeout(() => {
+      void fitView({ ...FIT_VIEW_OPTIONS, duration: 240 });
+    }, 50);
+    return () => window.clearTimeout(timeoutId);
+  }, [arrangeToken, nodeCount, fitView]);
+
+  return (
+    <Panel position="top-right" className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 gap-2 border-border/60 bg-card/95 text-xs shadow-md backdrop-blur-sm hover:bg-accent"
+        onClick={onAutoArrange}
+      >
+        <Sparkles className="size-3.5" />
+        Auto arrange
+      </Button>
+      <DiagramSettingsPopover settings={settings} />
+    </Panel>
+  );
+}
 
 export function LocationDiagram({
   location,
   childrenById,
   objectsById,
+  onSelectLocation,
 }: LocationDiagramProps) {
   const storageKey = `museumlite:diagram:${location._id}`;
   const settings = useDiagramSettings(storageKey);
   const { direction, items, size, spacing, lines } = settings;
+  const diagramSettings: DiagramSettings = useMemo(
+    () => ({ direction, items, size, spacing, lines }),
+    [direction, items, size, spacing, lines],
+  );
+  const rootLocation: DiagramLocation = useMemo(
+    () => ({
+      _id: location._id,
+      name: location.name,
+      type: location.type,
+      isActive: location.isActive,
+      locationCode: location.locationCode,
+      sortOrder: location.sortOrder ?? 0,
+    }),
+    [
+      location._id,
+      location.name,
+      location.type,
+      location.isActive,
+      location.locationCode,
+      location.sortOrder,
+    ],
+  );
   const [{ collapsed, restored, initialViewport }, setDiagramState] = useState<{
     collapsed: Set<Id<"locations">>;
     restored: boolean;
     initialViewport?: Viewport;
   }>(() => ({ collapsed: new Set(), restored: false }));
+  const [arrangeToken, setArrangeToken] = useState(0);
+
   useEffect(() => {
     const saved = readDiagramState(storageKey);
-    const validIds = new Set([
-      location._id,
-      ...Array.from(childrenById.values())
-        .flat()
-        .map((child) => child._id),
-    ]);
+    const parentIds = collectParentIds(location._id, childrenById);
+    const validIds = collectValidIds(location._id, parentIds, childrenById);
+
     setDiagramState({
       initialViewport: saved.viewport,
-      collapsed: new Set(
-        Array.from(validIds).filter((id) => saved.collapsed?.includes(id)),
-      ),
+      collapsed: Array.isArray(saved.collapsed)
+        ? new Set(
+            Array.from(validIds).filter((id) => saved.collapsed?.includes(id)),
+          )
+        : new Set(),
       restored: true,
     });
-  }, [storageKey]);
+  }, [storageKey, childrenById, location._id]);
+
   const toggle = useCallback(
     (id: Id<"locations">) => {
       setDiagramState((previous) => {
@@ -211,94 +495,174 @@ export function LocationDiagram({
     },
     [storageKey],
   );
+
+  const autoArrange = useCallback(() => {
+    setDiagramState((previous) => ({
+      ...previous,
+      collapsed: new Set(),
+      initialViewport: undefined,
+    }));
+    saveDiagramState(storageKey, {
+      collapsed: [],
+      viewport: undefined,
+      ...diagramSettings,
+    });
+    setArrangeToken((token) => token + 1);
+  }, [storageKey, diagramSettings]);
+
   const { nodes, edges } = useMemo(() => {
     const nodes: LocationFlowNode[] = [];
     const edges: Edge[] = [];
-    const graph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-    graph.setGraph({
-      rankdir: direction === "vertical" ? "TB" : "LR",
-      ranksep: spacing === "compact" ? 60 : 100,
-      nodesep: spacing === "compact" ? 20 : 40,
-      marginx: 30,
-      marginy: 30,
-    });
+    const horizontal = diagramSettings.direction === "horizontal";
+    const rankGap = diagramSettings.spacing === "compact" ? 64 : 96;
+    const siblingGap = diagramSettings.spacing === "compact" ? 16 : 24;
+    const nodeById = new Map<Id<"locations">, LocationFlowNode>();
+    const childrenOf = new Map<Id<"locations">, Id<"locations">[]>();
     const visited = new Set<Id<"locations">>();
+
     function visit(current: DiagramLocation) {
       if (visited.has(current._id)) return;
       visited.add(current._id);
+
       const objects = objectsById.get(current._id) ?? [];
-      const children = childrenById.get(current._id) ?? [];
-      const width = size === "large" ? 320 : 256;
-      const rowHeight =
-        items === "grid"
-          ? size === "large"
-            ? 154
-            : 110
-          : size === "large"
-            ? 68
-            : 44;
-      const rows =
-        items === "grid"
-          ? Math.min(Math.ceil(objects.length / 2), 2)
-          : Math.min(objects.length, 4);
-      const height = 106 + rows * rowHeight;
-      nodes.push({
+      const children = sortLocations(childrenById.get(current._id) ?? []);
+      const width = getNodeWidth(diagramSettings.size);
+      const height = estimateNodeHeight({
+        settings: diagramSettings,
+        objectCount: objects.length,
+        childCount: children.length,
+      });
+      const expanded = !collapsed.has(current._id);
+      const node: LocationFlowNode = {
         id: current._id,
         type: "location",
-        sourcePosition:
-          direction === "vertical" ? Position.Bottom : Position.Right,
-        targetPosition: direction === "vertical" ? Position.Top : Position.Left,
+        sourcePosition: horizontal ? Position.Right : Position.Bottom,
+        targetPosition: horizontal ? Position.Left : Position.Top,
         position: { x: 0, y: 0 },
         data: {
-          settings: { direction, items, size, spacing, lines },
+          settings: diagramSettings,
           location: current,
           objects,
-          childCount: children.length,
-          expanded: !collapsed.has(current._id),
+          children,
+          expanded,
+          horizontal,
           toggle,
+          onSelectLocation,
         },
-        // Read-only nodes still contain clickable branch controls and object links.
-        style: { pointerEvents: "all" },
+        style: { pointerEvents: "all", overflow: "visible" },
         width,
         height,
-      });
-      graph.setNode(current._id, { width, height });
-      if (collapsed.has(current._id)) return;
+      };
+      nodes.push(node);
+      nodeById.set(current._id, node);
+
+      if (!expanded) {
+        childrenOf.set(current._id, []);
+        return;
+      }
+
+      const childIds: Id<"locations">[] = [];
       for (const child of children) {
-        if (visited.has(child._id)) continue;
         visit(child);
-        graph.setEdge(current._id, child._id);
+        childIds.push(child._id);
         edges.push({
           id: `${current._id}-${child._id}`,
           source: current._id,
+          sourceHandle: horizontal
+            ? childSourceHandleId(child._id)
+            : NODE_SOURCE_HANDLE_ID,
           target: child._id,
-          type: lines,
-          style: { stroke: "#818cf8", strokeWidth: 1.5 },
+          targetHandle: horizontal ? TITLE_HANDLE_ID : NODE_TARGET_HANDLE_ID,
+          type: diagramSettings.lines,
+          ...(diagramSettings.lines === "smoothstep"
+            ? { pathOptions: { borderRadius: 12, offset: 20 } }
+            : {}),
+          style: {
+            stroke: getLocationAccent(child.type).stroke,
+            strokeWidth: 1.5,
+          },
         });
       }
+      childrenOf.set(current._id, childIds);
     }
-    visit(location);
-    dagre.layout(graph);
-    for (const node of nodes) {
-      const position = graph.node(node.id);
-      node.position = {
-        x: position.x - (node.width ?? 256) / 2,
-        y: position.y - (node.height ?? 106) / 2,
+
+    visit(rootLocation);
+
+    function placeSubtree(
+      locationId: Id<"locations">,
+      originX: number,
+      originY: number,
+    ): { width: number; height: number } {
+      const node = nodeById.get(locationId);
+      if (!node) return { width: 0, height: 0 };
+
+      const nodeWidth = node.width ?? 256;
+      const nodeHeight = node.height ?? 106;
+      const childIds = childrenOf.get(locationId) ?? [];
+
+      if (childIds.length === 0) {
+        node.position = { x: originX, y: originY };
+        return { width: nodeWidth, height: nodeHeight };
+      }
+
+      if (horizontal) {
+        const childOriginX = originX + nodeWidth + rankGap;
+        let childY = originY;
+        let subtreeWidth = 0;
+        let subtreeHeight = 0;
+
+        for (const childId of childIds) {
+          const childSize = placeSubtree(childId, childOriginX, childY);
+          subtreeWidth = Math.max(subtreeWidth, childSize.width);
+          subtreeHeight += childSize.height + siblingGap;
+          childY += childSize.height + siblingGap;
+        }
+        subtreeHeight -= siblingGap;
+
+        // Keep parent at the top of its branch so edges stay in-band and do not
+        // cross neighboring siblings' links.
+        node.position = { x: originX, y: originY };
+
+        return {
+          width: nodeWidth + rankGap + subtreeWidth,
+          height: Math.max(nodeHeight, subtreeHeight),
+        };
+      }
+
+      const childOriginY = originY + nodeHeight + rankGap;
+      let childX = originX;
+      let subtreeWidth = 0;
+      let subtreeHeight = 0;
+
+      for (const childId of childIds) {
+        const childSize = placeSubtree(childId, childX, childOriginY);
+        subtreeHeight = Math.max(subtreeHeight, childSize.height);
+        subtreeWidth += childSize.width + siblingGap;
+        childX += childSize.width + siblingGap;
+      }
+      subtreeWidth -= siblingGap;
+
+      node.position = { x: originX, y: originY };
+
+      return {
+        width: Math.max(nodeWidth, subtreeWidth),
+        height: nodeHeight + rankGap + subtreeHeight,
       };
     }
+
+    placeSubtree(rootLocation._id, 40, 40);
+
     return { nodes, edges };
   }, [
-    location,
+    rootLocation,
     childrenById,
     objectsById,
     collapsed,
     toggle,
-    direction,
-    items,
-    size,
-    spacing,
-    lines,
+    onSelectLocation,
+    diagramSettings,
   ]);
+
   return (
     <div>
       <div className="h-[65vh] min-h-96 w-full">
@@ -317,21 +681,20 @@ export function LocationDiagram({
             onMoveEnd={(_, viewport) =>
               saveDiagramState(storageKey, {
                 viewport,
-                direction,
-                items,
-                size,
-                spacing,
-                lines,
+                ...diagramSettings,
               })
             }
-            fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
+            fitViewOptions={FIT_VIEW_OPTIONS}
             minZoom={0.1}
             maxZoom={1.6}
             colorMode="dark"
           >
-            <Panel position="top-right">
-              <DiagramSettingsPopover settings={settings} />
-            </Panel>
+            <DiagramToolbar
+              settings={settings}
+              arrangeToken={arrangeToken}
+              nodeCount={nodes.length}
+              onAutoArrange={autoArrange}
+            />
             <Panel
               position="top-left"
               className="rounded-md border border-border/60 bg-card/90 px-3 py-1.5 text-[11px] text-muted-foreground"

@@ -181,6 +181,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
             occupancy={occupancy ?? undefined}
             locations={allLocations ?? []}
             objectsAtLocation={objectsAtLocation ?? undefined}
+            onSelectLocation={setSelectedLocationId}
           />
         )}
 

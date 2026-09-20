@@ -30,10 +30,17 @@ export function readDiagramState(key: string): SavedDiagramState {
 
 export function saveDiagramState(key: string, patch: SavedDiagramState) {
   try {
-    localStorage.setItem(
-      key,
-      JSON.stringify({ ...readDiagramState(key), ...patch }),
-    );
+    const nextState = { ...readDiagramState(key), ...patch };
+    if (!("viewport" in patch)) {
+      localStorage.setItem(key, JSON.stringify(nextState));
+      return;
+    }
+    if (patch.viewport === undefined) {
+      const { viewport: _removed, ...withoutViewport } = nextState;
+      localStorage.setItem(key, JSON.stringify(withoutViewport));
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify(nextState));
   } catch {
     // Storage may be unavailable in private browsing; the diagram still works.
   }

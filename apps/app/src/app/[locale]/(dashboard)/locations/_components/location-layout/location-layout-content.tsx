@@ -9,13 +9,13 @@ import {
   GitBranch,
   LayoutGrid,
   ListTree,
-  MapPin,
   MessagesSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { ComponentProps, ReactNode } from "react";
 import { LocationHeader } from "../location-header";
+import { LocationTypeIcon } from "../location-type-icon";
 import { LocationUnitCard } from "../location-unit-card";
 import { LocationDiagram } from "./location-diagram";
 import { LocationGrid } from "./location-grid";
@@ -33,6 +33,7 @@ interface LocationLayoutContentProps {
   occupancy: FunctionReturnType<typeof api.locations.getOccupancy> | undefined;
   objectsAtLocation: ObjectsAtLocation | undefined;
   locations: ThreadLocation[];
+  onSelectLocation: (id: Id<"locations">) => void;
 }
 
 function LocationBranch({
@@ -107,7 +108,10 @@ function LocationBranch({
     <details key={location._id} open className="group/thread min-w-0">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md py-2 text-xs hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
         <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-open/thread:rotate-90" />
-        <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+        <LocationTypeIcon
+          type={location.type}
+          className="size-3.5 shrink-0 text-muted-foreground"
+        />
         <span className="min-w-0 truncate font-medium">{location.name}</span>
         <span className="text-[10px] capitalize text-muted-foreground">
           {location.type.replaceAll("_", " ")}
@@ -130,6 +134,7 @@ export function LocationLayoutContent({
   occupancy,
   objectsAtLocation,
   locations,
+  onSelectLocation,
 }: LocationLayoutContentProps) {
   const [viewStyle, setViewStyle] = useQueryState(
     "view",
@@ -211,6 +216,7 @@ export function LocationLayoutContent({
             location={selectedLocation}
             childrenById={children}
             objectsById={objects}
+            onSelectLocation={onSelectLocation}
           />
         </section>
       ) : (
