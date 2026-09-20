@@ -37,34 +37,50 @@ export function PlanUsageStats({
   organizationId,
   className,
   showUpgradeLink = true,
+  layout = "card",
 }: {
   organizationId: Id<"organizations"> | undefined;
   className?: string;
   showUpgradeLink?: boolean;
+  layout?: "card" | "inline";
 }) {
   const stats = useQuery(
     api.organizations.getUsageStats,
     organizationId ? { organizationId } : "skip",
   );
+  const containerClassName = cn(
+    layout === "inline"
+      ? "@container/usage min-w-0"
+      : "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
+    className,
+  );
+  const rowsClassName =
+    layout === "inline"
+      ? "grid gap-4 @min-[26rem]/usage:grid-cols-3"
+      : "space-y-3";
 
   if (!stats) {
     return (
-      <div
-        className={cn(
-          "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
-          className,
-        )}
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <div className="size-1.5 animate-pulse rounded-full bg-zinc-800" />
-            <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
+      <div className={containerClassName}>
+        {layout === "card" ? (
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="size-1.5 animate-pulse rounded-full bg-zinc-800" />
+              <div className="h-4 w-20 animate-pulse rounded bg-zinc-800" />
+            </div>
           </div>
-        </div>
-        <div className="space-y-3">
+        ) : null}
+        <div className={rowsClassName}>
           {["storage", "objects", "exports"].map((metric) => (
             <div key={metric}>
-              <div className="mb-1 flex items-end justify-between">
+              <div
+                className={cn(
+                  "mb-1 flex gap-2",
+                  layout === "inline"
+                    ? "flex-col items-start"
+                    : "items-end justify-between",
+                )}
+              >
                 <div className="h-3 w-16 animate-pulse rounded bg-zinc-800" />
                 <div className="h-3 w-20 animate-pulse rounded bg-zinc-800" />
               </div>
@@ -79,31 +95,29 @@ export function PlanUsageStats({
   const isEnterprise = stats.tier === "enterprise";
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-zinc-800/60 bg-zinc-950 p-5",
-        className,
-      )}
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="size-1.5 rounded-full bg-primary" />
-          <span className="text-sm font-semibold text-zinc-200">
-            {getTierDisplayName(stats.tier)}
-          </span>
+    <div className={containerClassName}>
+      {layout === "card" ? (
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <div className="size-1.5 rounded-full bg-primary" />
+            <span className="text-sm font-semibold text-zinc-200">
+              {getTierDisplayName(stats.tier)}
+            </span>
+          </div>
+          {showUpgradeLink && !isEnterprise ? (
+            <Link
+              href="/settings/billing"
+              className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-primary"
+            >
+              Upgrade
+            </Link>
+          ) : null}
         </div>
-        {showUpgradeLink && !isEnterprise ? (
-          <Link
-            href="/settings/billing"
-            className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-primary"
-          >
-            Upgrade
-          </Link>
-        ) : null}
-      </div>
+      ) : null}
 
-      <div className="space-y-3">
+      <div className={rowsClassName}>
         <UsageRow
+          layout={layout}
           label="Storage"
           value={
             stats.storage.limit === null ? (
@@ -125,6 +139,7 @@ export function PlanUsageStats({
           showProgress={stats.storage.limit !== null}
         />
         <UsageRow
+          layout={layout}
           label="Object Records"
           value={
             stats.objects.limit === null ? (
@@ -146,6 +161,7 @@ export function PlanUsageStats({
           showProgress={stats.objects.limit !== null}
         />
         <UsageRow
+          layout={layout}
           label="Monthly Exports"
           value={
             stats.exports.limit === null ? (
@@ -177,16 +193,25 @@ function UsageRow({
   percentage,
   showProgress,
   progressClassName,
+  layout,
 }: {
   label: string;
   value: ReactNode;
   percentage: number;
   showProgress: boolean;
   progressClassName: string;
+  layout: "card" | "inline";
 }) {
   return (
     <div>
-      <div className="mb-1 flex items-end justify-between">
+      <div
+        className={cn(
+          "mb-1 flex gap-2",
+          layout === "inline"
+            ? "flex-col items-start"
+            : "items-end justify-between",
+        )}
+      >
         <span className="text-xs font-medium text-zinc-500">{label}</span>
         {value}
       </div>

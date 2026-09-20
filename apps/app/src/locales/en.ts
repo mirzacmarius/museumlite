@@ -1,5 +1,11 @@
 export default {
   dashboard: {
+    overviewTitle: "Collections overview",
+    overviewDescription: "Your collections and work at a glance.",
+    needsReview: "Needs review",
+    pendingApprovals: "Pending approvals",
+    analyticsDescription: "View collection insights and reports.",
+    viewReports: "View reports",
     title: "Create your App",
     description:
       "Build your app on top of Convex SaaS, explore the documentation and start your journey.",
@@ -2226,6 +2232,14 @@ export default {
     },
   },
   collections: {
+    createPage: {
+      description:
+        "Group related objects and choose who manages the collection.",
+      detailsTitle: "Collection details",
+      managementTitle: "Management",
+      optional: "Optional",
+      objectsHint: "You can add objects after creating the collection group.",
+    },
     title: "Collection Groups",
     description: "Manage groups of objects in your collection",
     importCSV: "Import CSV",

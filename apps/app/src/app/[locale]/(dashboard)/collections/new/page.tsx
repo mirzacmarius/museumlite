@@ -14,12 +14,19 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, FolderOpen, Loader2, Save, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
+
+interface NewCollectionFormData {
+  name: string;
+  description: string;
+  curatorId: Id<"users"> | undefined;
+  managedByRoleId: Id<"roles"> | undefined;
+}
 
 export default function NewCollectionPage() {
   const t = useScopedI18n("collections");
@@ -30,11 +37,11 @@ export default function NewCollectionPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<NewCollectionFormData>({
     name: "",
     description: "",
-    curatorId: "" as string | Id<"users">,
-    managedByRoleId: "" as string | Id<"roles">,
+    curatorId: undefined,
+    managedByRoleId: undefined,
   });
 
   const members = useQuery(
@@ -46,7 +53,6 @@ export default function NewCollectionPage() {
     api.roles.listRoles,
     currentOrganizationId ? { organizationId: currentOrganizationId } : "skip",
   );
-  type Role = NonNullable<typeof roles>[number];
 
   if (!currentOrganizationId) {
     return (
@@ -58,6 +64,7 @@ export default function NewCollectionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError(null);
     if (!formData.name.trim()) {
       setError(t("form.nameError"));
@@ -70,12 +77,8 @@ export default function NewCollectionPage() {
         organizationId: currentOrganizationId,
         name: formData.name,
         description: formData.description,
-        curatorId: formData.curatorId
-          ? (formData.curatorId as Id<"users">)
-          : undefined,
-        managedByRoleId: formData.managedByRoleId
-          ? (formData.managedByRoleId as Id<"roles">)
-          : undefined,
+        curatorId: formData.curatorId,
+        managedByRoleId: formData.managedByRoleId,
       });
       push("/collections");
     } catch (err) {
@@ -86,126 +89,238 @@ export default function NewCollectionPage() {
   };
 
   return (
-    <div className="flex size-full bg-background px-6">
-      <div className="z-10 mx-auto flex size-full max-w-screen-md gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg p-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/collections">
-                  <ArrowLeft className="mr-2 size-4" />
-                  {t("back")}
-                </Link>
-              </Button>
-              <h2 className="text-xl font-medium text-primary">
-                {t("newCollection")}
-              </h2>
+    <div className="@container h-full min-h-0 w-full overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <header className="space-y-4">
+          <Link
+            href="/collections"
+            className="inline-flex items-center gap-2 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeft className="size-3.5" aria-hidden="true" />
+            {t("backToCollections")}
+          </Link>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {t("newCollection")}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {t("createPage.description")}
+            </p>
+          </div>
+        </header>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
+          aria-busy={isSubmitting}
+        >
+          {error ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              {error}
             </div>
-          </div>
+          ) : null}
 
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
-          </div>
+          <fieldset
+            disabled={isSubmitting}
+            className="grid min-w-0 gap-5 @min-[52rem]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"
+          >
+            <legend className="sr-only">{t("newCollection")}</legend>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {error && (
-              <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+            <section
+              aria-labelledby="collection-details-heading"
+              className="min-w-0 rounded-lg border border-border bg-card p-5 sm:p-6"
+            >
+              <div className="mb-6 flex items-center gap-3">
+                <span className="shrink-0 rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
+                  <FolderOpen className="size-4" aria-hidden="true" />
+                </span>
+                <h2
+                  id="collection-details-heading"
+                  className="text-sm font-semibold text-foreground"
+                >
+                  {t("createPage.detailsTitle")}
+                </h2>
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                {t("form.nameLabel")}{" "}
-                <span className="text-red-500">{t("form.nameRequired")}</span>
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder={t("form.namePlaceholder")}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">{t("form.descriptionLabel")}</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                placeholder={t("form.descriptionPlaceholder")}
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="curator">{t("form.curatorLabel")}</Label>
-              <Select
-                value={formData.curatorId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, curatorId: value }))
-                }
-              >
-                <SelectTrigger id="curator">
-                  <SelectValue placeholder={t("form.curatorPlaceholder")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {members?.map((member) => (
-                    <SelectItem key={member._id} value={member._id}>
-                      {member.name || member.email || t("form.unknown")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="managedByRole">
-                {t("form.managedByRoleLabel")}
-              </Label>
-              <Select
-                value={formData.managedByRoleId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, managedByRoleId: value }))
-                }
-              >
-                <SelectTrigger id="managedByRole">
-                  <SelectValue
-                    placeholder={t("form.managedByRolePlaceholder")}
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    {t("form.nameLabel")}{" "}
+                    <span className="text-red-500" aria-hidden="true">
+                      {t("form.nameRequired")}
+                    </span>
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    placeholder={t("form.namePlaceholder")}
+                    required
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles?.map((role: Role) => (
-                    <SelectItem key={role._id} value={role._id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {t("form.roleHint")}
-              </p>
-            </div>
+                </div>
 
-            <div className="flex justify-end gap-4 pt-4">
-              <Button type="button" variant="outline" asChild>
-                <Link href="/collections">{common("cancel")}</Link>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label htmlFor="description">
+                      {t("form.descriptionLabel")}
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      {t("createPage.optional")}
+                    </span>
+                  </div>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    placeholder={t("form.descriptionPlaceholder")}
+                    rows={6}
+                    className="resize-y"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section
+              aria-labelledby="collection-management-heading"
+              className="min-w-0 rounded-lg border border-border bg-card p-5 sm:p-6"
+            >
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="shrink-0 rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
+                    <Users className="size-4" aria-hidden="true" />
+                  </span>
+                  <h2
+                    id="collection-management-heading"
+                    className="text-sm font-semibold text-foreground"
+                  >
+                    {t("createPage.managementTitle")}
+                  </h2>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {t("createPage.optional")}
+                </span>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="curator">{t("form.curatorLabel")}</Label>
+                  <Select
+                    value={formData.curatorId ?? "none"}
+                    disabled={isSubmitting || members === undefined}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        curatorId: members?.find(
+                          (member) => member._id === value,
+                        )?._id,
+                      }))
+                    }
+                  >
+                    <SelectTrigger
+                      id="curator"
+                      className="min-w-0 [&>span]:truncate"
+                    >
+                      <SelectValue placeholder={t("form.curatorPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {t("form.noCurator")}
+                      </SelectItem>
+                      {members?.map((member) => (
+                        <SelectItem key={member._id} value={member._id}>
+                          {member.name || member.email || t("form.unknown")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="managedByRole">
+                    {t("form.managedByRoleLabel")}
+                  </Label>
+                  <Select
+                    value={formData.managedByRoleId ?? "none"}
+                    disabled={isSubmitting || roles === undefined}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        managedByRoleId: roles?.find(
+                          (role) => role._id === value,
+                        )?._id,
+                      }))
+                    }
+                  >
+                    <SelectTrigger
+                      id="managedByRole"
+                      aria-describedby="managed-by-role-hint"
+                      className="min-w-0 [&>span]:truncate"
+                    >
+                      <SelectValue
+                        placeholder={t("form.managedByRolePlaceholder")}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("form.anyRole")}</SelectItem>
+                      {roles?.map((role) => (
+                        <SelectItem key={role._id} value={role._id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p
+                    id="managed-by-role-hint"
+                    className="text-xs leading-relaxed text-muted-foreground"
+                  >
+                    {t("form.roleHint")}
+                  </p>
+                </div>
+              </div>
+            </section>
+          </fieldset>
+
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card px-5 py-4 sm:px-6">
+            <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
+              {t("createPage.objectsHint")}
+            </p>
+            <div className="flex w-full flex-wrap items-center gap-2 @min-[36rem]:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={() => push("/collections")}
+                className="flex-1 @min-[36rem]:flex-none"
+              >
+                {common("cancel")}
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                <Save className="mr-2 size-4" />
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-auto min-h-9 flex-1 whitespace-normal @min-[36rem]:flex-none"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Save className="size-4" aria-hidden="true" />
+                )}
                 {isSubmitting ? t("form.creating") : t("form.createButton")}
               </Button>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );

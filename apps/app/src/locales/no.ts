@@ -1,5 +1,11 @@
 export default {
   dashboard: {
+    overviewTitle: "Samlingsoversikt",
+    overviewDescription: "Samlingene og arbeidet ditt på et øyeblikk.",
+    needsReview: "Til gjennomgang",
+    pendingApprovals: "Ventende godkjenninger",
+    analyticsDescription: "Se analyser og rapporter for samlingene.",
+    viewReports: "Se rapporter",
     title: "Lag din App",
     description:
       "Bygg din app på toppen av Convex SaaS, utforsk dokumentasjonen og start din reise.",
@@ -2586,6 +2592,15 @@ export default {
     },
   },
   collections: {
+    createPage: {
+      description:
+        "Grupper relaterte objekter og velg hvem som forvalter samlingen.",
+      detailsTitle: "Samlingsdetaljer",
+      managementTitle: "Forvaltning",
+      optional: "Valgfritt",
+      objectsHint:
+        "Du kan legge til objekter etter at samlingsgruppen er opprettet.",
+    },
     title: "Samlingsgrupper",
     description: "Administrer samlingsgrupper av objekter",
     importCSV: "Importer CSV",

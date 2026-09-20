@@ -9,8 +9,9 @@ import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeftRight,
+  ArrowRight,
   Building2,
-  CalendarClock,
+  ChevronRight,
   CreditCard,
   Eye,
   FileClock,
@@ -19,14 +20,13 @@ import {
   Package,
   PackagePlus,
   Plus,
-  Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermission } from "@/components/permission-gate";
 import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { formatDate } from "@/lib/format-date";
-import { formatNumber } from "@/lib/format-number";
+import { type FormatLocale, formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import {
   CollectionGroupsGridSkeleton,
@@ -73,20 +73,18 @@ interface MetricLinkCardProps {
   accentColor: KpiAccentColor;
 }
 
-const DASHBOARD_CARD_PADDING_CLASS_NAME = "px-3.5 py-3";
 const INTERACTIVE_METRIC_CARD_CLASS_NAME = cn(
-  "w-full p-0 px-3.5 py-2.5",
+  "h-full w-full rounded-none border-0 px-5 py-4",
   "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
 );
 const METRIC_LINK_CLASS_NAME =
-  "inline-flex w-full transition-[background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]";
-const METRIC_GRID_CLASS_NAME =
-  "mt-3 inline-grid grid-cols-1 gap-3 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none";
-const CREATE_REVIEW_CARD_CLASS_NAME = cn(
-  "group inline-flex w-full rounded-lg border border-border bg-card",
-  DASHBOARD_CARD_PADDING_CLASS_NAME,
-  "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
-);
+  "min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
+const METRIC_ICON_CLASS_NAMES = {
+  indigo: "border-primary/20 bg-primary/10 text-primary",
+  emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+  amber: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+  blue: "border-blue-500/20 bg-blue-500/10 text-blue-400",
+} satisfies Record<KpiAccentColor, string>;
 
 function MetricLinkCard({
   href,
@@ -108,25 +106,52 @@ function MetricLinkCard({
   );
 }
 
-interface MetricLinkSectionProps {
-  title: string;
+interface PendingReviewsSectionProps {
   metrics: MetricLinkCardProps[];
-  className?: string;
+  total: string;
 }
 
-function MetricLinkSection({
-  title,
-  metrics,
-  className,
-}: MetricLinkSectionProps) {
+function PendingReviewsSection({ metrics, total }: PendingReviewsSectionProps) {
+  const t = useScopedI18n("dashboard");
   return (
-    <section className={className}>
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-        {title}
-      </h3>
-      <div className={METRIC_GRID_CLASS_NAME}>
+    <section className="min-w-0 rounded-lg border border-border bg-card p-5">
+      <div className="flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-foreground">
+          {t("needsReview")}
+        </h2>
+        <span className="rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-xs font-medium tabular-nums text-amber-400">
+          {total}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("pendingApprovals")}
+      </p>
+      <div className="mt-4 grid gap-2">
         {metrics.map((metric) => (
-          <MetricLinkCard key={metric.title} {...metric} />
+          <Link
+            key={metric.title}
+            href={metric.href}
+            className="flex min-w-0 items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span
+              className={cn(
+                "shrink-0 rounded-md border p-2",
+                METRIC_ICON_CLASS_NAMES[metric.accentColor],
+              )}
+            >
+              <metric.icon className="size-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 text-xs font-medium text-foreground">
+              {metric.title}
+            </span>
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+              {metric.value}
+            </span>
+            <ChevronRight
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </Link>
         ))}
       </div>
     </section>
@@ -145,11 +170,18 @@ function CollectionGroupsOverviewSection({
   const groups = useQuery(api.collectionGroups.list, { organizationId });
 
   return (
-    <section className="mt-6">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          {kpi("totalCollectionGroups")}
-        </h3>
+    <section className="min-w-0 rounded-lg border border-border bg-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-foreground">
+            {kpi("totalCollectionGroups")}
+          </h2>
+          {groups !== undefined ? (
+            <span className="rounded-md border border-border px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+              {groups.length}
+            </span>
+          ) : null}
+        </div>
         {canCreate ? (
           <Button asChild variant="outline" size="sm" className="h-7 text-xs">
             <Link href="/collections/new">
@@ -163,7 +195,7 @@ function CollectionGroupsOverviewSection({
       {groups === undefined ? (
         <CollectionGroupsGridSkeleton />
       ) : groups.length === 0 ? (
-        <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-border bg-card px-3.5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col items-start gap-3">
           <p className="text-sm text-muted-foreground">{t("noCollections")}</p>
           {canCreate ? (
             <Button asChild size="sm">
@@ -218,7 +250,10 @@ function CollectionGroupsOverviewSection({
   );
 }
 
-function formatMetricValue(count: number | undefined, locale: string): string {
+function formatMetricValue(
+  count: number | undefined,
+  locale: FormatLocale,
+): string {
   return count === undefined ? "—" : formatNumber(count, locale);
 }
 
@@ -286,74 +321,44 @@ function BillingOverviewSection({
   const actionLabel = getBillingActionLabel(subscriptionTier);
 
   return (
-    <section className="mt-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-            Billing overview
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Keep an eye on plan status and usage from the overview page.
-          </p>
+    <section
+      aria-label="Billing overview"
+      className="grid gap-6 rounded-lg border border-border bg-card p-5 @min-[56rem]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] @min-[56rem]:items-center"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="shrink-0 rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
+          <CreditCard className="size-4" aria-hidden="true" />
         </div>
-        {canManageBilling ? (
-          <Button asChild size="sm" variant="outline">
-            <Link href="/settings/billing">{actionLabel}</Link>
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]">
-        <div className="rounded-lg border border-border bg-card p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
-                <CreditCard className="size-4" />
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Current plan
-                </p>
-                <p className="mt-1 text-base font-semibold text-foreground">
-                  {currentPlan}
-                </p>
-              </div>
-            </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-semibold text-foreground">
+              {currentPlan}
+            </h2>
             <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium capitalize text-primary">
               {statusLabel}
             </span>
           </div>
-
-          <div className="mt-5 space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-              <span className="text-muted-foreground">Billing cycle</span>
-              <span className="font-medium capitalize text-foreground">
-                {billingInterval}
-              </span>
-            </div>
-            <div className="flex items-start justify-between gap-4 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <CalendarClock className="size-4" />
-                Status
-              </span>
-              <span className="text-right font-medium text-foreground">
-                {billingStatus}
-              </span>
-            </div>
-          </div>
-
-          {!canManageBilling ? (
-            <p className="mt-4 text-xs text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">{billingStatus}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Billing cycle: <span className="capitalize">{billingInterval}</span>
+          </p>
+          {canManageBilling ? (
+            <Button asChild size="sm" variant="outline" className="mt-3">
+              <Link href="/settings/billing">{actionLabel}</Link>
+            </Button>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
               Billing changes are managed by organization administrators.
             </p>
-          ) : null}
+          )}
         </div>
-
-        <PlanUsageStats
-          organizationId={organizationId}
-          showUpgradeLink={canManageBilling}
-        />
       </div>
+      <PlanUsageStats
+        organizationId={organizationId}
+        layout="inline"
+        showUpgradeLink={false}
+        className="border-t border-border pt-5 @min-[56rem]:border-s @min-[56rem]:border-t-0 @min-[56rem]:ps-6 @min-[56rem]:pt-0"
+      />
     </section>
   );
 }
@@ -499,84 +504,96 @@ export default function DashboardPage() {
     },
   ];
 
-  const commandQuickActions = [
-    {
-      href: "/objects/new",
-      title: "Add Object",
-      icon: PackagePlus,
-    },
-    {
-      href: "/collections/new",
-      title: "New Collection",
-      icon: Warehouse,
-    },
-    {
-      href: "/analytics",
-      title: "Analytics",
-      icon: Eye,
-    },
-  ];
+  const pendingTotal = analyticsData
+    ? analyticsData.transfers.pending +
+      analyticsData.accessions.pending +
+      analyticsData.deaccessions.pending +
+      analyticsData.loans.pending
+    : undefined;
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">
-          {currentOrganization?.name ?? "Museum"}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Navigate key museum pages from here.
-        </p>
-      </div>
+    <div className="@container h-full min-h-0 w-full overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div className="flex min-w-0 flex-col gap-5">
+        <header className="flex flex-wrap items-center justify-between gap-4 pb-1">
+          <div className="min-w-0">
+            <p className="text-sm text-muted-foreground">
+              {currentOrganization?.name ?? "Museum"}
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+              {t("overviewTitle")}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("overviewDescription")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild size="sm">
+              <Link href="/objects/new">
+                <PackagePlus className="size-4" aria-hidden="true" />
+                Add Object
+              </Link>
+            </Button>
+            {canCreateCollectionGroup === true ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href="/collections/new">
+                  <Plus className="size-4" aria-hidden="true" />
+                  New Collection
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        </header>
 
-      <MetricLinkSection
-        className="mt-8"
-        title="Live metrics"
-        metrics={liveMetrics}
-      />
-
-      <CollectionGroupsOverviewSection
-        organizationId={currentOrganizationId}
-        canCreate={canCreateCollectionGroup === true}
-      />
-
-      <section className="mt-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground">
-          Create and review
-        </h3>
-
-        <div className="mt-3 inline-grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {commandQuickActions.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className={CREATE_REVIEW_CARD_CLASS_NAME}
-            >
-              <div className="flex items-center gap-3">
-                <div className="rounded-md border border-primary/20 bg-primary/10 p-2 text-primary transition-colors group-hover:border-primary/30 group-hover:bg-primary/15">
-                  <action.icon className="size-4" />
-                </div>
-                <p className="text-sm font-semibold tracking-tight text-foreground">
-                  {action.title}
-                </p>
-              </div>
-            </Link>
+        <section
+          aria-label="Live metrics"
+          className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border @min-[20rem]:grid-cols-2 @min-[44rem]:grid-cols-4"
+        >
+          {liveMetrics.map((metric) => (
+            <MetricLinkCard key={metric.title} {...metric} />
           ))}
+        </section>
+
+        <div className="grid gap-5 @min-[56rem]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <CollectionGroupsOverviewSection
+            organizationId={currentOrganizationId}
+            canCreate={canCreateCollectionGroup === true}
+          />
+          <PendingReviewsSection
+            metrics={operationalMetrics}
+            total={formatMetricValue(pendingTotal, locale)}
+          />
         </div>
-      </section>
 
-      <MetricLinkSection
-        className="mt-6"
-        title="Operational flow"
-        metrics={operationalMetrics}
-      />
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card p-5">
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 rounded-md border border-primary/20 bg-primary/10 p-2 text-primary">
+              <Eye className="size-4" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Analytics
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("analyticsDescription")}
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/analytics">
+              {t("viewReports")}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        </section>
 
-      <BillingOverviewSection
-        canManageBilling={canManageBilling}
-        locale={locale}
-        organizationId={currentOrganizationId}
-        organizationSubscription={organizationSubscription}
-        subscriptionTier={subscriptionTier}
-      />
+        <BillingOverviewSection
+          canManageBilling={canManageBilling}
+          locale={locale}
+          organizationId={currentOrganizationId}
+          organizationSubscription={organizationSubscription}
+          subscriptionTier={subscriptionTier}
+        />
+      </div>
     </div>
   );
 }

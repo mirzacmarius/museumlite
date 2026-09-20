@@ -1,4 +1,14 @@
 export default {
+  collections: {
+    createPage: {
+      description:
+        "Grupează obiectele înrudite și alege cine gestionează colecția.",
+      detailsTitle: "Detaliile colecției",
+      managementTitle: "Administrare",
+      optional: "Opțional",
+      objectsHint: "Poți adăuga obiecte după crearea grupului de colecții.",
+    },
+  },
   loginPage: {
     title: "Autentificare",
     heading: "Bine ai revenit",
@@ -86,6 +96,12 @@ export default {
       "Identificatorul organizației este deja folosit. Alege unul diferit.",
   },
   dashboard: {
+    overviewTitle: "Prezentare generală a colecțiilor",
+    overviewDescription: "Colecțiile și activitatea ta dintr-o privire.",
+    needsReview: "De verificat",
+    pendingApprovals: "Aprobări în așteptare",
+    analyticsDescription: "Vezi analizele și rapoartele colecțiilor.",
+    viewReports: "Vezi rapoartele",
     title: "Creează Aplicația Ta",
     description:
       "Construiește-ți aplicația pe platforma Convex SaaS, explorează documentația și începe călătoria.",
