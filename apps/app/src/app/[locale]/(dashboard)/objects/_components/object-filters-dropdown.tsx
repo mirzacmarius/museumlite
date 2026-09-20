@@ -263,9 +263,8 @@ export function ObjectFiltersDropdown({
                 className="flex flex-wrap gap-2"
                 aria-label={t("columnConfig.visibleColumns")}
               >
-                {columns
-                  .filter((column) => column.id !== "checkbox")
-                  .map((column) => (
+                {columns.map((column) =>
+                  column.id === "checkbox" ? null : (
                     <button
                       key={column.id}
                       type="button"
@@ -281,7 +280,8 @@ export function ObjectFiltersDropdown({
                     >
                       {column.label}
                     </button>
-                  ))}
+                  ),
+                )}
               </fieldset>
             </div>
           ) : null}

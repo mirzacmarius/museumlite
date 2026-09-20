@@ -98,7 +98,7 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
             aria-label={`${expanded ? "Collapse" : "Expand"} ${location.name}`}
             aria-expanded={expanded}
             onClick={() => toggle(location._id)}
-            className="nodrag nopan flex items-center gap-1 rounded px-1 py-1 hover:bg-muted hover:text-foreground"
+            className="nodrag nopan flex items-center gap-1 rounded p-1 hover:bg-muted hover:text-foreground"
           >
             {childCount} locations{" "}
             <ChevronRight
@@ -178,35 +178,35 @@ export function LocationDiagram({
   const storageKey = `museumlite:diagram:${location._id}`;
   const settings = useDiagramSettings(storageKey);
   const { direction, items, size, spacing, lines } = settings;
-  const [collapsed, setCollapsed] = useState<Set<Id<"locations">>>(
-    () => new Set(),
-  );
-  const [restored, setRestored] = useState(false);
-  const [initialViewport, setInitialViewport] = useState<Viewport>();
+  const [{ collapsed, restored, initialViewport }, setDiagramState] = useState<{
+    collapsed: Set<Id<"locations">>;
+    restored: boolean;
+    initialViewport?: Viewport;
+  }>(() => ({ collapsed: new Set(), restored: false }));
   useEffect(() => {
     const saved = readDiagramState(storageKey);
-    setInitialViewport(saved.viewport);
     const validIds = new Set([
       location._id,
       ...Array.from(childrenById.values())
         .flat()
         .map((child) => child._id),
     ]);
-    setCollapsed(
-      new Set(
+    setDiagramState({
+      initialViewport: saved.viewport,
+      collapsed: new Set(
         Array.from(validIds).filter((id) => saved.collapsed?.includes(id)),
       ),
-    );
-    setRestored(true);
+      restored: true,
+    });
   }, [storageKey]);
   const toggle = useCallback(
     (id: Id<"locations">) => {
-      setCollapsed((previous) => {
-        const next = new Set(previous);
+      setDiagramState((previous) => {
+        const next = new Set(previous.collapsed);
         if (next.has(id)) next.delete(id);
         else next.add(id);
         saveDiagramState(storageKey, { collapsed: Array.from(next) });
-        return next;
+        return { ...previous, collapsed: next };
       });
     },
     [storageKey],

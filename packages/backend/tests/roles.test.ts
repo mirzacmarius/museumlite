@@ -77,6 +77,15 @@ describe("roles", () => {
           permissionId: manageRolesPermId,
         });
 
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: roleId,
+          permissionId: adminPermissionId,
+        });
+
         await ctx.db.insert("userOrganizations", {
           userId,
           organizationId: orgId,
@@ -162,6 +171,15 @@ describe("roles", () => {
           permissionId,
         });
 
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: roleId,
+          permissionId: adminPermissionId,
+        });
+
         await ctx.db.insert("userOrganizations", {
           userId,
           organizationId: orgId,
@@ -241,6 +259,15 @@ describe("roles", () => {
           isSystemRole: true,
         });
 
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: roleId,
+          permissionId: adminPermissionId,
+        });
+
         await ctx.db.insert("userOrganizations", {
           userId,
           organizationId: orgId,
@@ -301,6 +328,15 @@ describe("roles", () => {
         await ctx.db.insert("rolePermissions", {
           roleId: adminRoleId,
           permissionId: manageRolesPermId,
+        });
+
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRoleId,
+          permissionId: adminPermissionId,
         });
 
         await ctx.db.insert("userOrganizations", {
@@ -369,6 +405,15 @@ describe("roles", () => {
           await ctx.db.insert("rolePermissions", {
             roleId: adminRoleId,
             permissionId: manageRolesPermId,
+          });
+
+          const adminPermissionId = await ctx.db.insert("permissions", {
+            name: "organization.manage_settings",
+            category: "organization",
+          });
+          await ctx.db.insert("rolePermissions", {
+            roleId: adminRoleId,
+            permissionId: adminPermissionId,
           });
 
           await ctx.db.insert("userOrganizations", {
@@ -463,6 +508,15 @@ describe("roles", () => {
           permissionId: manageRolesPermId,
         });
 
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRoleId,
+          permissionId: adminPermissionId,
+        });
+
         await ctx.db.insert("userOrganizations", {
           userId,
           organizationId: orgId,
@@ -529,6 +583,15 @@ describe("roles", () => {
           permissionId: manageRolesPermId,
         });
 
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: systemRoleId,
+          permissionId: adminPermissionId,
+        });
+
         await ctx.db.insert("userOrganizations", {
           userId,
           organizationId: orgId,
@@ -583,6 +646,15 @@ describe("roles", () => {
         await ctx.db.insert("rolePermissions", {
           roleId: adminRoleId,
           permissionId: manageRolesPermId,
+        });
+
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRoleId,
+          permissionId: adminPermissionId,
         });
 
         await ctx.db.insert("userOrganizations", {
@@ -667,6 +739,15 @@ describe("roles", () => {
           permissionId: manageRolesPermId,
         });
 
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: systemRoleId,
+          permissionId: adminPermissionId,
+        });
+
         await ctx.db.insert("userOrganizations", {
           userId,
           organizationId: orgId,
@@ -722,6 +803,15 @@ describe("roles", () => {
         await ctx.db.insert("rolePermissions", {
           roleId: adminRoleId,
           permissionId: manageRolesPermId,
+        });
+
+        const adminPermissionId = await ctx.db.insert("permissions", {
+          name: "organization.manage_settings",
+          category: "organization",
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId: adminRoleId,
+          permissionId: adminPermissionId,
         });
 
         await ctx.db.insert("userOrganizations", {

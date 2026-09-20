@@ -2698,11 +2698,11 @@ export const getChildObjects = query({
       .take(CHILD_OBJECT_CAP + 1);
     const truncated = page.length > CHILD_OBJECT_CAP;
 
-    const results = await Promise.all(
-      page
-        .slice(0, CHILD_OBJECT_CAP)
-        .filter((child) => child.organizationId === collection.organizationId)
-        .map(async (child) => {
+    const tasks = [];
+    for (const child of page.slice(0, CHILD_OBJECT_CAP)) {
+      if (child.organizationId !== collection.organizationId) continue;
+      tasks.push(
+        (async () => {
           const primaryMedia = await ctx.db
             .query("mediaFiles")
             .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
@@ -2728,8 +2728,10 @@ export const getChildObjects = query({
             status: child.status,
             thumbnailUrl,
           };
-        }),
-    );
+        })(),
+      );
+    }
+    const results = await Promise.all(tasks);
 
     return { children: results, truncated };
   },
@@ -2791,14 +2793,15 @@ export const getSiblingObjects = query({
       )
       .take(5);
 
-    const results = await Promise.all(
-      siblings
-        .filter(
-          (s) =>
-            s._id !== args.collectionId &&
-            s.organizationId === collection.organizationId,
-        )
-        .map(async (sibling) => {
+    const tasks = [];
+    for (const sibling of siblings) {
+      if (
+        sibling._id === args.collectionId ||
+        sibling.organizationId !== collection.organizationId
+      )
+        continue;
+      tasks.push(
+        (async () => {
           const primaryMedia = await ctx.db
             .query("mediaFiles")
             .withIndex("by_collection_and_isPrimary_and_fileType", (q) =>
@@ -2823,8 +2826,10 @@ export const getSiblingObjects = query({
             accessionNumber: sibling.accessionNumber,
             thumbnailUrl,
           };
-        }),
-    );
+        })(),
+      );
+    }
+    const results = await Promise.all(tasks);
 
     return results;
   },
@@ -3101,9 +3106,11 @@ export const bulkExport = query({
     ).filter(
       (collection): collection is Doc<"collections"> => collection !== null,
     );
-    const organizationIds = [
-      ...new Set(collections.map((collection) => collection.organizationId)),
-    ];
+    const organizationIdSet = new Set<Id<"organizations">>();
+    for (const collection of collections) {
+      organizationIdSet.add(collection.organizationId);
+    }
+    const organizationIds = Array.from(organizationIdSet);
     await Promise.all(
       organizationIds.map((organizationId) =>
         requirePermission(ctx, organizationId, "collections.read"),

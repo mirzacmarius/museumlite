@@ -32,10 +32,11 @@ function walkTsFiles(dir: string): string[] {
       files.push(...walkTsFiles(path));
       continue;
     }
-    if (entry.name.endsWith(".test.ts") || entry.name.endsWith(".test.tsx")) {
+    const endsWith = entry.name.endsWith.bind(entry.name);
+    if (endsWith(".test.ts") || endsWith(".test.tsx")) {
       continue;
     }
-    if (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")) {
+    if (endsWith(".ts") || endsWith(".tsx")) {
       files.push(path);
     }
   }
@@ -53,8 +54,11 @@ function hasRuntimeListReference(source: string): boolean {
 describe("collections.list app importers", () => {
   test("only the two looping callers plus the drain helper import api.collections.list", () => {
     const importers = walkTsFiles(APP_SRC)
-      .filter((path) => hasRuntimeListReference(readFileSync(path, "utf8")))
-      .map(toPosix)
+      .flatMap((path) =>
+        hasRuntimeListReference(readFileSync(path, "utf8"))
+          ? [toPosix(path)]
+          : [],
+      )
       .sort();
 
     expect(importers).toEqual(
