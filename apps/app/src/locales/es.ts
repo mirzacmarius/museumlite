@@ -479,6 +479,11 @@ export default {
       destructionMethod: "Método de Destrucción",
       witnessedBy: "Presenciado por",
     },
+    insurance: {
+      name: "Seguros",
+      description:
+        "Pólizas de seguro, coberturas y seguimiento de reclamaciones.",
+    },
     library: {
       name: "Biblioteca",
       description:

@@ -100,18 +100,17 @@ export function OrganizationProvider({
   initialOrganizations,
   initialActiveOrgPreference,
 }: OrganizationProviderProps) {
+  // Always subscribe to the live queries: initial data is a server snapshot
+  // used only as a loading fallback. Skipping the live query here would
+  // freeze the provider on stale data (e.g. sidebar module gating would
+  // not reflect toggles until a full page reload).
   const liveOrganizations = useQuery(
     api.organizations.listUserOrganizations,
-    initialOrganizations ? "skip" : {},
+    {},
   );
-  const liveActiveOrgPreference = useQuery(
-    api.userPreferences.get,
-    initialActiveOrgPreference !== undefined
-      ? "skip"
-      : {
-          key: "organization.activeOrgId",
-        },
-  );
+  const liveActiveOrgPreference = useQuery(api.userPreferences.get, {
+    key: "organization.activeOrgId",
+  });
   const organizations = liveOrganizations ?? initialOrganizations;
   const activeOrgPreference =
     liveActiveOrgPreference === undefined

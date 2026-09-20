@@ -465,6 +465,10 @@ export default {
       destructionMethod: "Ødeleggelsesmetode",
       witnessedBy: "Vitnet av",
     },
+    insurance: {
+      name: "Forsikring",
+      description: "Forsikringspoliser, dekning og skadeoppfølging.",
+    },
     library: {
       name: "Bibliotek",
       description:

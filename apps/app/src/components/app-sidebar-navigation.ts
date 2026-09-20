@@ -48,6 +48,7 @@ export interface NavigationGroup {
 interface BuildSidebarNavigationInput {
   hasFeature: (featureId: FeatureId) => boolean;
   isLibraryModuleEnabled: boolean;
+  isInsuranceModuleEnabled: boolean;
   isLocationTrackingEnabled: boolean;
   canAccessAdministration: boolean;
 }
@@ -66,6 +67,7 @@ const PATRON_MANAGEMENT_NAV_ITEM = {
 export function buildSidebarNavigation({
   hasFeature,
   isLibraryModuleEnabled,
+  isInsuranceModuleEnabled,
   isLocationTrackingEnabled,
   canAccessAdministration,
 }: BuildSidebarNavigationInput): SidebarNavigation {
@@ -78,6 +80,22 @@ export function buildSidebarNavigation({
     { title: "Scan", url: "/scan", icon: QrCode },
     { title: "Accessions", url: "/accessions", icon: FileCheck },
     { title: "Deaccessions", url: "/deaccessions", icon: FileX },
+    {
+      title: "Conservation",
+      url: "/conservation",
+      icon: Activity,
+      locked: !hasFeature("conservation"),
+    },
+    ...(isInsuranceModuleEnabled
+      ? [
+          {
+            title: "Insurance",
+            url: "/insurance",
+            icon: Shield,
+            locked: !hasFeature("conservation"),
+          },
+        ]
+      : []),
   ];
 
   const navExhibitionsLoans: NavigationItem[] = [
@@ -108,21 +126,6 @@ export function buildSidebarNavigation({
       url: "/installations",
       icon: Hammer,
       locked: !hasFeature("installations"),
-    },
-  ];
-
-  const navConservation: NavigationItem[] = [
-    {
-      title: "Conservation",
-      url: "/conservation",
-      icon: Activity,
-      locked: !hasFeature("conservation"),
-    },
-    {
-      title: "Insurance",
-      url: "/insurance",
-      icon: Shield,
-      locked: !hasFeature("conservation"),
     },
   ];
 
@@ -194,11 +197,6 @@ export function buildSidebarNavigation({
         title: "Exhibitions & Loans",
         icon: Truck,
         items: navExhibitionsLoans,
-      },
-      {
-        title: "Conservation & Care",
-        icon: Shield,
-        items: navConservation,
       },
       ...(isLibraryModuleEnabled
         ? [
