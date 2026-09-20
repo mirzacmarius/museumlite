@@ -60,6 +60,7 @@ async function fetchObjectDetailFallback(
     locationPath: locationPath.map((location) => ({
       _id: location._id,
       name: location.name,
+      locationCode: location.locationCode,
     })),
     heroImage: heroImage
       ? {

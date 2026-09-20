@@ -55,15 +55,16 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { Suspense } from "react";
+import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
+import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import {
   buildSidebarNavigation,
   type NavigationGroup,
   type NavigationItem,
 } from "@/components/app-sidebar-navigation";
-import { LanguageSwitcher } from "@/app/[locale]/(dashboard)/_components/language-switcher";
-import { ThemeSwitcher } from "@/app/[locale]/(dashboard)/_components/theme-switcher";
 import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
+import { usePermissions } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 
 function getUserInitials(user: {
@@ -631,6 +632,7 @@ function AppSidebarClientInner({
 }) {
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
+  const { hasPermission } = usePermissions();
   const { hasFeature, hasModule } = useFeatureAccess();
   const { setOpen } = useCommandPalette();
   const { isMobile } = useSidebar();
@@ -688,6 +690,7 @@ function AppSidebarClientInner({
     hasFeature,
     isLibraryModuleEnabled,
     isLocationTrackingEnabled,
+    canAccessAdministration: hasPermission("organization.manage_settings"),
   });
 
   return (

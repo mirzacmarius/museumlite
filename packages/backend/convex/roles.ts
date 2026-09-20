@@ -26,7 +26,12 @@ export const createRole = mutation({
     }
 
     // Check permission
-    const [, existing] = await Promise.all([
+    const [, , existing] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, args.organizationId, "users.manage_roles"),
       ctx.db
         .query("roles")
@@ -99,7 +104,14 @@ export const updateRole = mutation({
       throw new Error("Cannot modify system roles");
     }
 
-    await requirePermission(ctx, role.organizationId, "users.manage_roles");
+    await Promise.all([
+      requirePermission(
+        ctx,
+        role.organizationId,
+        "organization.manage_settings",
+      ),
+      requirePermission(ctx, role.organizationId, "users.manage_roles"),
+    ]);
 
     // Update role details
     const updates: {
@@ -192,7 +204,12 @@ export const deleteRole = mutation({
       throw new Error("Cannot delete system roles");
     }
 
-    const [, usersWithRole] = await Promise.all([
+    const [, , usersWithRole] = await Promise.all([
+      requirePermission(
+        ctx,
+        role.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, role.organizationId, "users.manage_roles"),
       ctx.db
         .query("userOrganizations")

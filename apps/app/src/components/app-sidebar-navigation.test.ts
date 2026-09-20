@@ -24,6 +24,7 @@ function buildNavigation({
     hasFeature: (featureId) => enabledFeatures.has(featureId),
     isLibraryModuleEnabled,
     isLocationTrackingEnabled: true,
+    canAccessAdministration: true,
   });
 }
 

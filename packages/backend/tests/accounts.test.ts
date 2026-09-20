@@ -103,6 +103,13 @@ async function createTestSetup(
     });
   });
 
+  await t.run(async (ctx) => {
+    const permissionId = await ctx.db.insert("permissions", {
+      name: "organization.manage_settings",
+      category: "organization",
+    });
+    await ctx.db.insert("rolePermissions", { roleId, permissionId });
+  });
   return { organizationId, userId, roleId };
 }
 
@@ -572,9 +579,9 @@ describe("Accounts CRUD", () => {
 
     expect(page1.page).toHaveLength(5);
     expect(page1.isDone).toBe(false);
-    expect(page1.page.every((account) => account.accountType === "lender")).toBe(
-      true,
-    );
+    expect(
+      page1.page.every((account) => account.accountType === "lender"),
+    ).toBe(true);
 
     const page2 = await authed.query(api.accounts.list, {
       organizationId,
@@ -583,9 +590,9 @@ describe("Accounts CRUD", () => {
     });
 
     expect(page2.page.length).toBeGreaterThan(0);
-    expect(page2.page.every((account) => account.accountType === "lender")).toBe(
-      true,
-    );
+    expect(
+      page2.page.every((account) => account.accountType === "lender"),
+    ).toBe(true);
   });
 
   test("bounds account search to recent records window", async () => {
@@ -745,4 +752,121 @@ describe("Accounts CRUD", () => {
       truncated: true,
     });
   }, 60_000);
+});
+
+test("revoking administrator rights blocks CRM access and writes but preserves patrons", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, userId, roleId } = await createTestSetup(t);
+  const staff = t.withIdentity({
+    subject: `${userId}|session`,
+    issuer: "https://example.test",
+  });
+  const accountId = await staff.mutation(api.accounts.create, {
+    organizationId,
+    accountType: "lender",
+    businessName: "CRM",
+  });
+  const archivedId = await staff.mutation(api.accounts.create, {
+    organizationId,
+    accountType: "lender",
+    businessName: "Archived CRM",
+  });
+  await staff.mutation(api.accounts.archive, { accountId: archivedId });
+  await expect(
+    staff.query(api.accounts.canAccessDetail, { accountId }),
+  ).resolves.toBe(true);
+  await t.run(async (ctx) => {
+    const grants = await ctx.db
+      .query("rolePermissions")
+      .withIndex("by_role", (q) => q.eq("roleId", roleId))
+      .collect();
+    for (const grant of grants) {
+      const permission = await ctx.db.get(grant.permissionId);
+      if (permission?.name === "organization.manage_settings")
+        await ctx.db.delete(grant._id);
+    }
+  });
+  await expect(
+    staff.query(api.accounts.canAccessDetail, { accountId }),
+  ).resolves.toBe(false);
+  const writes = [
+    () =>
+      staff.mutation(api.accounts.create, {
+        organizationId,
+        accountType: "lender",
+        businessName: "Denied",
+      }),
+    () =>
+      staff.mutation(api.accounts.update, {
+        accountId,
+        businessName: "Denied",
+      }),
+    () =>
+      staff.mutation(api.accounts.updateNotes, { accountId, notes: "Denied" }),
+    () =>
+      staff.mutation(api.accounts.updateStatus, {
+        accountId,
+        status: "inactive",
+      }),
+    () => staff.mutation(api.accounts.archive, { accountId }),
+    () => staff.mutation(api.accounts.remove, { accountId }),
+    () => staff.mutation(api.accounts.restore, { accountId: archivedId }),
+  ];
+  for (const write of writes) {
+    await expect(write()).rejects.toThrow("organization.manage_settings");
+  }
+  await expect(
+    staff.mutation(api.contacts.create, {
+      accountId,
+      firstName: "Denied",
+      lastName: "Contact",
+      role: "primary",
+      isPrimary: true,
+      isActive: true,
+    }),
+  ).rejects.toThrow("organization.manage_settings");
+  await expect(
+    staff.mutation(api.accountRelationships.create, {
+      accountId,
+      relatedEntityType: "loan",
+      relatedEntityId: "LN-001",
+      relationshipType: "lender",
+      startDate: Date.now(),
+    }),
+  ).rejects.toThrow("organization.manage_settings");
+  const storageId = await t.run((ctx) =>
+    ctx.storage.store(new Blob(["document"])),
+  );
+  await expect(
+    staff.mutation(api.accountDocuments.create, {
+      accountId,
+      storageId,
+      filename: "denied.txt",
+      mimeType: "text/plain",
+      size: 8,
+      documentType: "other",
+    }),
+  ).rejects.toThrow("organization.manage_settings");
+  const patronId = await staff.mutation(api.accounts.create, {
+    organizationId,
+    accountType: "patron",
+    holderType: "privatePerson",
+    firstName: "Library",
+    lastName: "Patron",
+  });
+  await expect(
+    staff.query(api.accounts.canAccessDetail, { accountId: patronId }),
+  ).resolves.toBe(true);
+  await expect(
+    staff.mutation(api.accounts.updateNotes, {
+      accountId: patronId,
+      notes: "Allowed",
+    }),
+  ).resolves.toBeNull();
+  await expect(
+    staff.mutation(api.accounts.update, {
+      accountId: patronId,
+      accountType: "lender",
+    }),
+  ).rejects.toThrow("organization.manage_settings");
 });

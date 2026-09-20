@@ -13,6 +13,7 @@ import {
   AccessionNumberParser,
   accessionParser,
 } from "./utils/accessionNumberParser";
+import { markOptionUsageIndexReady } from "./utils/collectionOptionUsages";
 import {
   enforceUserQuota,
   getTierLimits,
@@ -21,13 +22,12 @@ import {
 } from "./utils/featureGates";
 import type { ModuleId } from "./utils/moduleCatalog";
 import { enabledModuleValidator } from "./utils/moduleValidators";
-import { markOptionUsageIndexReady } from "./utils/collectionOptionUsages";
 import { generateNextOrganizationAccountNumber } from "./utils/numberGenerator";
+import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
-import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import {
   getCurrentUserOrganization,
   requirePermission,
@@ -1353,7 +1353,14 @@ export const inviteUser = mutation({
     }
 
     // Check permission
-    await requirePermission(ctx, args.organizationId, "users.invite");
+    await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
+      requirePermission(ctx, args.organizationId, "users.invite"),
+    ]);
 
     const normalizedEmail = args.email.trim().toLowerCase();
     if (!normalizedEmail) {
@@ -1446,7 +1453,12 @@ export const removeUser = mutation({
     }
 
     // Check permission
-    const [, userOrganization] = await Promise.all([
+    const [, , userOrganization] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, args.organizationId, "users.remove"),
       ctx.db
         .query("userOrganizations")
@@ -1501,7 +1513,12 @@ export const updateUserRole = mutation({
     }
 
     // Check permission
-    const [, userOrganization] = await Promise.all([
+    const [, , userOrganization] = await Promise.all([
+      requirePermission(
+        ctx,
+        args.organizationId,
+        "organization.manage_settings",
+      ),
       requirePermission(ctx, args.organizationId, "users.manage_roles"),
       ctx.db
         .query("userOrganizations")
@@ -1683,45 +1700,44 @@ export const createDefaultRoles = internalMutation({
       catalogerRole,
       viewerRole,
     ] = await Promise.all([
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: SUPER_ADMIN_ROLE_NAME,
-          description: "Owner with full organization control (SuperAdmin)",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "admin",
-          description: "Full organization access",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "curator",
-          description:
-            "Collection management and accession/deaccession approval",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "registrar",
-          description:
-            "Accession/deaccession workflows, location management, loans",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "cataloger",
-          description: "Object cataloging and media management",
-          isSystemRole: true,
-        }),
-        ctx.db.insert("roles", {
-          organizationId: args.organizationId,
-          name: "viewer",
-          description: "Read-only access",
-          isSystemRole: true,
-        }),
-      ] as const);
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: SUPER_ADMIN_ROLE_NAME,
+        description: "Owner with full organization control (SuperAdmin)",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "admin",
+        description: "Full organization access",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "curator",
+        description: "Collection management and accession/deaccession approval",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "registrar",
+        description:
+          "Accession/deaccession workflows, location management, loans",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "cataloger",
+        description: "Object cataloging and media management",
+        isSystemRole: true,
+      }),
+      ctx.db.insert("roles", {
+        organizationId: args.organizationId,
+        name: "viewer",
+        description: "Read-only access",
+        isSystemRole: true,
+      }),
+    ] as const);
     // Create default permissions (if they don't exist)
     const permissionNames = [
       // Collections

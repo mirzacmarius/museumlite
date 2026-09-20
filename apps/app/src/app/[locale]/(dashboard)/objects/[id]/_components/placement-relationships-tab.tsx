@@ -26,6 +26,16 @@ export function PlacementRelationshipsTab({
     collectionId,
   });
   const location = locationPath.map((item) => item.name).join(" / ");
+  const currentLocation = locationPath.at(-1);
+  const locationCodeFromPath = currentLocation?.locationCode?.trim();
+  const currentLocationDetails = useQuery(
+    api.locations.get,
+    currentLocation && !locationCodeFromPath
+      ? { locationId: currentLocation._id }
+      : "skip",
+  );
+  const locationCode =
+    locationCodeFromPath || currentLocationDetails?.locationCode.trim();
   const isOnDisplay = collection.displayStatus === "on_display";
 
   return (
@@ -41,7 +51,16 @@ export function PlacementRelationshipsTab({
               <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Current Location
               </span>
-              <span className="text-sm text-foreground">{location || "-"}</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0 text-sm text-foreground">
+                  {location || "-"}
+                </span>
+                {collection.currentLocationId && locationCode && (
+                  <div className="shrink-0 rounded bg-secondary/60 px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                    {locationCode}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>

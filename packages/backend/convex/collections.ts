@@ -212,6 +212,7 @@ const objectDetailMediaValidator = v.object({
 const objectDetailLocationPathItemValidator = v.object({
   _id: v.id("locations"),
   name: v.string(),
+  locationCode: v.string(),
 });
 
 /**
@@ -312,6 +313,7 @@ async function getObjectDetailLocationPath(
   const path: Array<{
     _id: Id<"locations">;
     name: string;
+    locationCode: string;
   }> = [];
   let currentId: Id<"locations"> | undefined = locationId;
 
@@ -324,6 +326,9 @@ async function getObjectDetailLocationPath(
     path.unshift({
       _id: location._id,
       name: location.name,
+      locationCode:
+        location.locationCode ??
+        `LEGACY-${location._id.slice(-6).toUpperCase()}`,
     });
     currentId = location.parentLocationId;
   }

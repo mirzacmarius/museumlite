@@ -1,8 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
+import { requireAccountAdministration } from "./utils/accountAdministration";
 import { requireModuleAndPermission } from "./utils/permissions";
 
 const documentTypeValidator = v.union(
@@ -135,6 +135,7 @@ export const create = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
     await requireModuleAndPermission(
       ctx,
       account.organizationId,
@@ -199,6 +200,7 @@ export const remove = mutation({
     if (!account) {
       throw new Error("Account not found");
     }
+    await requireAccountAdministration(ctx, account);
     await requireModuleAndPermission(
       ctx,
       account.organizationId,
