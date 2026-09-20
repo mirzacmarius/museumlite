@@ -198,11 +198,15 @@ export function buildSidebarNavigation({
         icon: Truck,
         items: navExhibitionsLoans,
       },
-      {
-        title: "Library",
-        icon: Library,
-        items: navLibrary,
-      },
+      ...(isLibraryModuleEnabled
+        ? [
+            {
+              title: "Library",
+              icon: Library,
+              items: navLibrary,
+            },
+          ]
+        : []),
       ...(canAccessAdministration
         ? [
             {
