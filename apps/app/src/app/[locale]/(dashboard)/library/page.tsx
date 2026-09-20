@@ -113,7 +113,7 @@ export default function LibraryDashboardPage() {
       title: t("actions.patrons"),
       description: t("actions.patronsDescription"),
       icon: BookUser,
-      href: "/library/patrons",
+      href: "/accounts?type=patron",
       color: "text-green-500",
     },
     {

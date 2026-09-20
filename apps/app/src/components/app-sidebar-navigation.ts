@@ -200,11 +200,15 @@ export function buildSidebarNavigation({
         icon: Shield,
         items: navConservation,
       },
-      {
-        title: "Library",
-        icon: Library,
-        items: navLibrary,
-      },
+      ...(isLibraryModuleEnabled
+        ? [
+            {
+              title: "Library",
+              icon: Library,
+              items: navLibrary,
+            },
+          ]
+        : []),
       ...(canAccessAdministration
         ? [
             {

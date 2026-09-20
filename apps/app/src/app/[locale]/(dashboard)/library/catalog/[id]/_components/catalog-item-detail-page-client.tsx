@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { useScopedI18n } from "@/locales/client";
 import { CatalogItemAddCopyDialog } from "./catalog-item-add-copy-dialog";
 import { CatalogItemDetailBody } from "./catalog-item-detail-body";
@@ -71,16 +72,25 @@ export function CatalogItemDetailPageClient() {
   const { push } = useRouter();
   const itemId = params.id as Id<"libraryItems">;
   const { currentOrganizationId } = useOrganization();
+  const { hasModule } = useFeatureAccess();
   const tDetail = useScopedI18n("library.catalog.detail");
   const tLib = useScopedI18n("library");
+
+  const isLibraryEnabled = hasModule("library");
 
   const [state, dispatch] = useReducer(
     catalogItemDetailPageReducer,
     initialCatalogItemDetailPageState,
   );
 
-  const item = useQuery(api.library.items.get, { itemId });
-  const copies = useQuery(api.library.copies.listByItem, { itemId });
+  const item = useQuery(
+    api.library.items.get,
+    isLibraryEnabled ? { itemId } : "skip",
+  );
+  const copies = useQuery(
+    api.library.copies.listByItem,
+    isLibraryEnabled ? { itemId } : "skip",
+  );
 
   const publishItem = useMutation(api.library.items.publish);
   const archiveItem = useMutation(api.library.items.archive);
@@ -133,6 +143,21 @@ export function CatalogItemDetailPageClient() {
   const handleDeleteCopy = async (copyId: Id<"itemCopies">) => {
     await deleteCopy({ copyId });
   };
+
+  if (isLibraryEnabled === false) {
+    return (
+      <div className="flex size-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">{tLib("notEnabled")}</p>
+          <Button asChild className="mt-4">
+            <Link href="/settings/integrations">
+              {tLib("enableIntegration")}
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (item === undefined) {
     return (
