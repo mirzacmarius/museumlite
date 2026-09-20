@@ -21,6 +21,7 @@ import {
   Leaf,
   Loader2,
   Palette,
+  Shield,
   Users,
   Wine,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const MODULE_ICONS: Record<ModuleId, typeof Users> = {
   accounts: Users,
   coins_stamps: Coins,
   inventory_valuation: DollarSign,
+  insurance: Shield,
 };
 
 export default function ModulesSettingsPage() {

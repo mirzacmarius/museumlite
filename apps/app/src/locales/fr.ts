@@ -481,6 +481,10 @@ export default {
       destructionMethod: "Méthode de Destruction",
       witnessedBy: "Témoin",
     },
+    insurance: {
+      name: "Assurance",
+      description: "Polices d'assurance, couvertures et suivi des sinistres.",
+    },
     library: {
       name: "Bibliothèque",
       description:
