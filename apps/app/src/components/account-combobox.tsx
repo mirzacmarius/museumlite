@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import {
   defaultLoanAccountTypeForHolder,
   holderScopedAccountFields,
+  isOrganizationHolder,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import { AccountComboboxCreateDialog } from "./account-combobox-create-dialog";
@@ -85,6 +86,7 @@ export function AccountCombobox({
   disabled = false,
 }: AccountComboboxProps) {
   const tToast = useScopedI18n("common.toast");
+  const tAccounts = useScopedI18n("accounts");
   const [state, dispatch] = React.useReducer(
     accountComboboxReducer,
     initialAccountComboboxState,
@@ -145,7 +147,11 @@ export function AccountCombobox({
 
   const handleCreateAccount = async () => {
     if (!organizationId || !state.formData.businessName.trim()) {
-      toast.error(tToast("businessNameRequired"));
+      toast.error(
+        isOrganizationHolder(state.formData.holderType)
+          ? tAccounts("form.errors.businessNameRequired")
+          : tAccounts("form.errors.fullNameRequired"),
+      );
       return;
     }
 
