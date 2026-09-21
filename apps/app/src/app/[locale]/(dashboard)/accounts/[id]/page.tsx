@@ -44,6 +44,7 @@ import {
   FileText,
   History,
   Link as LinkIcon,
+  type LucideIcon,
   Mail,
   MapPin,
   Phone,
@@ -59,6 +60,12 @@ import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import {
+  type AccountHolderType,
+  formatDateInputValue,
+  isOrganizationHolder,
+  isPrivatePersonHolder,
+} from "@/lib/account-holder";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function AccountDetailPage() {
@@ -154,6 +161,11 @@ export default function AccountDetailPage() {
                   {account.businessName ||
                     `${account.firstName} ${account.lastName}`}
                 </h1>
+                {isPrivatePersonHolder(account.holderType) ? (
+                  <Badge variant="secondary">
+                    {t("form.holderPrivatePerson")}
+                  </Badge>
+                ) : null}
               </div>
               <p className="font-mono text-sm text-muted-foreground">
                 Account: {account.accountNumber}
@@ -287,9 +299,13 @@ type Account = {
   _creationTime: number;
   organizationId: Id<"organizations">;
   accountNumber: string;
+  accountType?: "lender" | "borrower" | "both" | "institution" | "patron";
+  holderType?: AccountHolderType;
   businessName?: string;
   firstName?: string;
   lastName?: string;
+  dateOfBirth?: number;
+  taxId?: string;
   email?: string;
   phone?: string;
   address?: string;
@@ -357,50 +373,55 @@ type TimelineEvent = {
 
 function OverviewTab({ account }: { account: Account }) {
   const t = useScopedI18n("accounts");
+  const isOrganization = isOrganizationHolder(account.holderType);
+  const dateOfBirth = formatDateInputValue(account.dateOfBirth);
+
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <h2 className="mb-6 text-lg font-medium">
         {t("detail.accountInformation")}
       </h2>
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Business Information */}
         <div className="space-y-4">
           <div>
             <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-              {t("form.businessInformation")}
+              {isOrganization
+                ? t("form.businessInformation")
+                : t("form.personalInformation")}
             </h3>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Building2 className="mt-0.5 size-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{account.businessName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("detail.businessName")}
-                  </p>
-                </div>
-              </div>
-              {account.phone && (
-                <div className="flex items-start gap-3">
-                  <Phone className="mt-0.5 size-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm">{account.phone}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("detail.phone")}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {account.email && (
-                <div className="flex items-start gap-3">
-                  <Mail className="mt-0.5 size-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm">{account.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("detail.email")}
-                    </p>
-                  </div>
-                </div>
-              )}
+              <OverviewField
+                emphasize
+                icon={isOrganization ? Building2 : User}
+                label={
+                  isOrganization ? t("detail.businessName") : t("form.fullName")
+                }
+                value={
+                  account.businessName ||
+                  `${account.firstName ?? ""} ${account.lastName ?? ""}`.trim()
+                }
+              />
+              {dateOfBirth ? (
+                <OverviewField
+                  icon={User}
+                  label={t("form.dateOfBirth")}
+                  value={dateOfBirth}
+                />
+              ) : null}
+              {account.phone ? (
+                <OverviewField
+                  icon={Phone}
+                  label={t("detail.phone")}
+                  value={account.phone}
+                />
+              ) : null}
+              {account.email ? (
+                <OverviewField
+                  icon={Mail}
+                  label={t("detail.email")}
+                  value={account.email}
+                />
+              ) : null}
             </div>
           </div>
         </div>
@@ -448,6 +469,28 @@ function OverviewTab({ account }: { account: Account }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function OverviewField({
+  emphasize,
+  icon: Icon,
+  label,
+  value,
+}: {
+  emphasize?: boolean;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <Icon className="mt-0.5 size-4 text-muted-foreground" />
+      <div>
+        <p className={emphasize ? "text-sm font-medium" : "text-sm"}>{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
   );

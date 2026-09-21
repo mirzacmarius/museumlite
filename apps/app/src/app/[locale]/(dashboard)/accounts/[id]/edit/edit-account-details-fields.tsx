@@ -11,7 +11,14 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { UserCog } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { TranslatedAccountHolderTypeFields } from "@/components/account-holder-type-fields";
+import {
+  formPatchForHolderType,
+  isOrganizationHolder,
+  type LoanAccountType,
+  loanAccountTypesForHolder,
+} from "@/lib/account-holder";
 import type { useScopedI18n } from "@/locales/client";
 import type { EditAccountFormData } from "./edit-account-form-types";
 
@@ -26,216 +33,196 @@ export function EditAccountDetailsFields({
   formData,
   setFormData,
 }: EditAccountDetailsFieldsProps) {
+  const isOrganization = isOrganizationHolder(formData.holderType);
+  const availableAccountTypes = loanAccountTypesForHolder(formData.holderType);
+
+  function setStringField(
+    key:
+      | "businessName"
+      | "taxId"
+      | "dateOfBirth"
+      | "phone"
+      | "email"
+      | "address"
+      | "address2"
+      | "zipCode"
+      | "city"
+      | "country"
+      | "contactPerson"
+      | "contactPhone"
+      | "contactEmail"
+      | "notes",
+    value: string,
+  ) {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  }
+
   return (
     <>
-      {/* Business Information */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-muted-foreground">
-          {t("form.businessInformation")}
+          {isOrganization
+            ? t("form.businessInformation")
+            : t("form.personalInformation")}
         </h3>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="businessName">
-              {t("form.businessName")} <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="businessName"
-              value={formData.businessName}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  businessName: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.businessName")}
-              required
+          <TranslatedAccountHolderTypeFields
+            holderType={formData.holderType}
+            idPrefix="edit-holder-type"
+            t={t}
+            onChange={(holderType) =>
+              setFormData((prev) => ({
+                ...prev,
+                ...formPatchForHolderType(holderType, prev.accountType),
+              }))
+            }
+          />
+          <TextField
+            id="businessName"
+            label={
+              <>
+                {isOrganization ? t("form.businessName") : t("form.fullName")}{" "}
+                <span className="text-red-500">*</span>
+              </>
+            }
+            value={formData.businessName}
+            onChange={(value) => setStringField("businessName", value)}
+            placeholder={
+              isOrganization
+                ? t("form.placeholders.businessName")
+                : t("form.placeholders.fullName")
+            }
+            required
+          />
+
+          {isOrganization ? (
+            <TextField
+              id="taxId"
+              label={t("form.organizationNumber")}
+              value={formData.taxId}
+              onChange={(value) => setStringField("taxId", value)}
+              placeholder={t("form.placeholders.organizationNumber")}
             />
-          </div>
+          ) : (
+            <TextField
+              id="dateOfBirth"
+              label={t("form.dateOfBirth")}
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={(value) => setStringField("dateOfBirth", value)}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t("form.phone")}</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    phone: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.phone")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("form.email")}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.email")}
-              />
-            </div>
+            <TextField
+              id="phone"
+              label={t("form.phone")}
+              value={formData.phone}
+              onChange={(value) => setStringField("phone", value)}
+              placeholder={t("form.placeholders.phone")}
+            />
+            <TextField
+              id="email"
+              label={t("form.email")}
+              type="email"
+              value={formData.email}
+              onChange={(value) => setStringField("email", value)}
+              placeholder={t("form.placeholders.email")}
+            />
           </div>
         </div>
       </div>
 
-      {/* Address */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-muted-foreground">
           {t("form.address")}
         </h3>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="address">{t("form.streetAddress")}</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  address: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.streetAddress")}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address2">{t("form.addressLine2")}</Label>
-            <Input
-              id="address2"
-              value={formData.address2}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  address2: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.addressLine2")}
-            />
-          </div>
+          <TextField
+            id="address"
+            label={t("form.streetAddress")}
+            value={formData.address}
+            onChange={(value) => setStringField("address", value)}
+            placeholder={t("form.placeholders.streetAddress")}
+          />
+          <TextField
+            id="address2"
+            label={t("form.addressLine2")}
+            value={formData.address2}
+            onChange={(value) => setStringField("address2", value)}
+            placeholder={t("form.placeholders.addressLine2")}
+          />
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">{t("form.city")}</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    city: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.city")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
-              <Input
-                id="zipCode"
-                value={formData.zipCode}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    zipCode: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.zipCode")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">{t("form.country")}</Label>
-              <Input
-                id="country"
-                value={formData.country}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    country: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.country")}
-              />
-            </div>
+            <TextField
+              id="city"
+              label={t("form.city")}
+              value={formData.city}
+              onChange={(value) => setStringField("city", value)}
+              placeholder={t("form.placeholders.city")}
+            />
+            <TextField
+              id="zipCode"
+              label={t("form.zipCode")}
+              value={formData.zipCode}
+              onChange={(value) => setStringField("zipCode", value)}
+              placeholder={t("form.placeholders.zipCode")}
+            />
+            <TextField
+              id="country"
+              label={t("form.country")}
+              value={formData.country}
+              onChange={(value) => setStringField("country", value)}
+              placeholder={t("form.placeholders.country")}
+            />
           </div>
         </div>
       </div>
 
-      {/* Contact Person */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          {t("form.contactPerson")}
-        </h3>
+      {isOrganization ? (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="contactPerson">{t("form.contactName")}</Label>
-            <Input
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {t("form.contactPerson")}
+          </h3>
+          <div className="space-y-4">
+            <TextField
               id="contactPerson"
+              label={t("form.contactName")}
               value={formData.contactPerson}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  contactPerson: e.target.value,
-                }))
-              }
+              onChange={(value) => setStringField("contactPerson", value)}
               placeholder={t("form.placeholders.contactName")}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">{t("form.contactPhone")}</Label>
-              <Input
+            <div className="grid grid-cols-2 gap-4">
+              <TextField
                 id="contactPhone"
+                label={t("form.contactPhone")}
                 value={formData.contactPhone}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    contactPhone: e.target.value,
-                  }))
-                }
+                onChange={(value) => setStringField("contactPhone", value)}
                 placeholder={t("form.placeholders.phone")}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">{t("form.contactEmail")}</Label>
-              <Input
+              <TextField
                 id="contactEmail"
+                label={t("form.contactEmail")}
                 type="email"
                 value={formData.contactEmail}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    contactEmail: e.target.value,
-                  }))
-                }
+                onChange={(value) => setStringField("contactEmail", value)}
                 placeholder={t("form.placeholders.contactEmail")}
               />
             </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
-      {/* Notes */}
       <div className="space-y-2">
         <Label htmlFor="notes">{t("form.notes")}</Label>
         <Textarea
           id="notes"
           value={formData.notes}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, notes: e.target.value }))
-          }
+          onChange={(e) => setStringField("notes", e.target.value)}
           placeholder={t("form.placeholders.notes")}
           rows={4}
         />
       </div>
 
-      {/* Account Type / Role */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <UserCog className="size-4" />
@@ -246,20 +233,19 @@ export function EditAccountDetailsFields({
             <Label htmlFor="accountType">{t("form.accountType")}</Label>
             <Select
               value={formData.accountType}
-              onValueChange={(
-                value: "lender" | "borrower" | "both" | "institution" | "",
-              ) => setFormData((prev) => ({ ...prev, accountType: value }))}
+              onValueChange={(value: LoanAccountType) =>
+                setFormData((prev) => ({ ...prev, accountType: value }))
+              }
             >
               <SelectTrigger id="accountType">
                 <SelectValue placeholder={t("form.placeholders.accountType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="lender">{t("types.lender")}</SelectItem>
-                <SelectItem value="borrower">{t("types.borrower")}</SelectItem>
-                <SelectItem value="both">{t("types.both")}</SelectItem>
-                <SelectItem value="institution">
-                  {t("types.institution")}
-                </SelectItem>
+                {availableAccountTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {t(`types.${type}`)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
@@ -269,5 +255,37 @@ export function EditAccountDetailsFields({
         </div>
       </div>
     </>
+  );
+}
+
+function TextField({
+  id,
+  label,
+  onChange,
+  placeholder,
+  required,
+  type = "text",
+  value,
+}: {
+  id: string;
+  label: ReactNode;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  type?: string;
+  value: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+      />
+    </div>
   );
 }

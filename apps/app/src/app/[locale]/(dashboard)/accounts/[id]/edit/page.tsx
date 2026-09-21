@@ -10,6 +10,15 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import {
+  DEFAULT_ACCOUNT_HOLDER_TYPE,
+  formatDateInputValue,
+  holderScopedAccountFields,
+  isLoanAccountType,
+  isOrganizationHolder,
+  resolveAccountHolderType,
+  resolveLoanAccountTypeForHolder,
+} from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import { EditAccountDetailsFields } from "./edit-account-details-fields";
 import type { EditAccountFormData } from "./edit-account-form-types";
@@ -40,7 +49,10 @@ export default function EditAccountPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<EditAccountFormData>({
+    holderType: DEFAULT_ACCOUNT_HOLDER_TYPE,
     businessName: "",
+    taxId: "",
+    dateOfBirth: "",
     phone: "",
     email: "",
     address: "",
@@ -58,8 +70,12 @@ export default function EditAccountPage() {
 
   useEffect(() => {
     if (account) {
+      const holderType = resolveAccountHolderType(account.holderType);
       setFormData({
+        holderType,
         businessName: account.businessName || "",
+        taxId: account.taxId || "",
+        dateOfBirth: formatDateInputValue(account.dateOfBirth),
         phone: account.phone || "",
         email: account.email || "",
         address: account.address || "",
@@ -71,12 +87,12 @@ export default function EditAccountPage() {
         contactPhone: account.contactPhone || "",
         contactEmail: account.contactEmail || "",
         notes: account.notes || "",
-        accountType: (account.accountType || "") as
-          | "lender"
-          | "borrower"
-          | "both"
-          | "institution"
-          | "",
+        accountType: resolveLoanAccountTypeForHolder(
+          holderType,
+          isLoanAccountType(account.accountType)
+            ? account.accountType
+            : undefined,
+        ),
         selectedRoles: account.roleIds || [],
       });
     }
@@ -142,8 +158,13 @@ export default function EditAccountPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const isOrganization = isOrganizationHolder(formData.holderType);
     if (!formData.businessName.trim()) {
-      setError(t("form.errors.businessNameRequired"));
+      setError(
+        isOrganization
+          ? t("form.errors.businessNameRequired")
+          : t("form.errors.fullNameRequired"),
+      );
       return;
     }
 
@@ -151,7 +172,9 @@ export default function EditAccountPage() {
     try {
       await updateAccount({
         accountId,
+        holderType: formData.holderType,
         businessName: formData.businessName,
+        ...holderScopedAccountFields(formData.holderType, formData),
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         address: formData.address || undefined,
@@ -159,9 +182,6 @@ export default function EditAccountPage() {
         zipCode: formData.zipCode || undefined,
         city: formData.city || undefined,
         country: formData.country || undefined,
-        contactPerson: formData.contactPerson || undefined,
-        contactPhone: formData.contactPhone || undefined,
-        contactEmail: formData.contactEmail || undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType || undefined,
         roleIds:

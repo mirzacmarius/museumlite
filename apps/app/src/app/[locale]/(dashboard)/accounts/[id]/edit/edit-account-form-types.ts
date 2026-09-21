@@ -1,7 +1,11 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import type { AccountHolderType, LoanAccountType } from "@/lib/account-holder";
 
 export interface EditAccountFormData {
+  holderType: AccountHolderType;
   businessName: string;
+  taxId: string;
+  dateOfBirth: string;
   phone: string;
   email: string;
   address: string;
@@ -13,6 +17,6 @@ export interface EditAccountFormData {
   contactPhone: string;
   contactEmail: string;
   notes: string;
-  accountType: "lender" | "borrower" | "both" | "institution" | "";
+  accountType: LoanAccountType | "";
   selectedRoles: Id<"roles">[];
 }

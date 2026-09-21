@@ -2883,6 +2883,14 @@ export default {
     },
     form: {
       businessInformation: "Informations Commerciales",
+      personalInformation: "Informations Personnelles",
+      accountHolder: "Titulaire du Compte",
+      holderType: "Type de Titulaire",
+      holderPrivatePerson: "Personne Privée",
+      holderOrganization: "Entreprise / Organisation",
+      holderPrivatePersonDescription: "Personnes agissant en leur nom propre.",
+      holderOrganizationDescription:
+        "Entreprises, musées, galeries et institutions.",
       address: "Adresse",
       contactPerson: "Personne de Contact",
       notes: "Notes",
@@ -2893,6 +2901,9 @@ export default {
       rolesDescription:
         "Sélectionnez quels rôles peuvent gérer ce compte. Les rôles avec permissions de prêt sont affichés ci-dessous.",
       businessName: "Nom Commercial",
+      fullName: "Nom Complet",
+      dateOfBirth: "Date de Naissance",
+      organizationNumber: "Numéro d'Organisation",
       phone: "Téléphone",
       email: "Email",
       streetAddress: "Adresse",
@@ -2906,6 +2917,8 @@ export default {
       accountType: "Type de Compte",
       placeholders: {
         businessName: "ex. Musée d'Art Moderne",
+        fullName: "ex. Jane Doe",
+        organizationNumber: "ex. 987 654 321",
         phone: "+33 1 23 45 67 89",
         email: "contact@exemple.fr",
         streetAddress: "123 Rue Principale",
@@ -2926,6 +2939,7 @@ export default {
       updateButton: "Mettre à Jour le Compte",
       errors: {
         businessNameRequired: "Le nom commercial est requis",
+        fullNameRequired: "Le nom complet est requis",
         createFailed: "Échec de la création du compte. Veuillez réessayer.",
         updateFailed: "Échec de la mise à jour du compte. Veuillez réessayer.",
       },

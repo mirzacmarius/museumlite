@@ -6,7 +6,6 @@ import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -20,15 +19,19 @@ import { ArrowLeft, Loader2, Save, Shield, UserCog } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { TranslatedAccountHolderTypeFields } from "@/components/account-holder-type-fields";
 import { useOrganization } from "@/components/organization-provider";
 import {
   type AccountHolderType,
   DEFAULT_ACCOUNT_HOLDER_TYPE,
-  parseDateInputValue,
+  defaultLoanAccountTypeForHolder,
+  formPatchForHolderType,
+  holderScopedAccountFields,
+  isOrganizationHolder,
+  type LoanAccountType,
+  loanAccountTypesForHolder,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
-
-type AccountType = "lender" | "borrower" | "both" | "institution";
 
 interface AccountFormData {
   holderType: AccountHolderType;
@@ -46,7 +49,7 @@ interface AccountFormData {
   contactPhone: string;
   contactEmail: string;
   notes: string;
-  accountType: AccountType;
+  accountType: LoanAccountType;
   selectedRoles: Id<"roles">[];
 }
 
@@ -73,7 +76,7 @@ const initialFormData: AccountFormData = {
   contactPhone: "",
   contactEmail: "",
   notes: "",
-  accountType: "institution",
+  accountType: defaultLoanAccountTypeForHolder(DEFAULT_ACCOUNT_HOLDER_TYPE),
   selectedRoles: [],
 };
 
@@ -112,6 +115,13 @@ export default function NewAccountPage() {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const changeHolderType = (holderType: AccountHolderType) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...formPatchForHolderType(holderType, prev.accountType),
+    }));
+  };
+
   const toggleRole = (roleId: Id<"roles">) => {
     setFormData((prev) => ({
       ...prev,
@@ -124,12 +134,15 @@ export default function NewAccountPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const isOrganization = isOrganizationHolder(formData.holderType);
     if (!formData.businessName.trim()) {
-      setError(t("form.errors.businessNameRequired"));
+      setError(
+        isOrganization
+          ? t("form.errors.businessNameRequired")
+          : t("form.errors.fullNameRequired"),
+      );
       return;
     }
-
-    const isOrganization = formData.holderType === "organization";
 
     setIsSubmitting(true);
     try {
@@ -137,10 +150,7 @@ export default function NewAccountPage() {
         organizationId: currentOrganizationId,
         holderType: formData.holderType,
         businessName: formData.businessName,
-        taxId: isOrganization ? formData.taxId || undefined : undefined,
-        dateOfBirth: isOrganization
-          ? undefined
-          : parseDateInputValue(formData.dateOfBirth),
+        ...holderScopedAccountFields(formData.holderType, formData),
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         address: formData.address || undefined,
@@ -148,15 +158,6 @@ export default function NewAccountPage() {
         zipCode: formData.zipCode || undefined,
         city: formData.city || undefined,
         country: formData.country || undefined,
-        contactPerson: isOrganization
-          ? formData.contactPerson || undefined
-          : undefined,
-        contactPhone: isOrganization
-          ? formData.contactPhone || undefined
-          : undefined,
-        contactEmail: isOrganization
-          ? formData.contactEmail || undefined
-          : undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType,
         roleIds:
@@ -192,13 +193,14 @@ export default function NewAccountPage() {
               formData={formData}
               t={t}
               onChange={updateFormData}
+              onHolderTypeChange={changeHolderType}
             />
             <AddressSection
               formData={formData}
               t={t}
               onChange={updateFormData}
             />
-            {formData.holderType === "organization" && (
+            {isOrganizationHolder(formData.holderType) && (
               <ContactPersonSection
                 formData={formData}
                 t={t}
@@ -212,6 +214,7 @@ export default function NewAccountPage() {
             />
             <AccountTypeSection
               accountType={formData.accountType}
+              holderType={formData.holderType}
               t={t}
               onChange={updateFormData}
             />
@@ -265,43 +268,30 @@ interface FormSectionProps {
   ) => void;
 }
 
-function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
-  const isOrganization = formData.holderType === "organization";
+function AccountHolderSection({
+  formData,
+  t,
+  onChange,
+  onHolderTypeChange,
+}: FormSectionProps & {
+  onHolderTypeChange: (holderType: AccountHolderType) => void;
+}) {
+  const isOrganization = isOrganizationHolder(formData.holderType);
 
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground">
-        Account Holder
+        {t("form.accountHolder")}
       </h3>
       <div className="space-y-4">
-        <div className="space-y-3">
-          <Label>Holder Type</Label>
-          <RadioGroup
-            className="grid gap-3 md:grid-cols-2"
-            value={formData.holderType}
-            onValueChange={(value) =>
-              onChange("holderType", value as AccountHolderType)
-            }
-          >
-            <HolderTypeOption
-              checked={formData.holderType === "privatePerson"}
-              description="Individuals acting in their own name."
-              id="holder-type-privatePerson"
-              label="Private Person"
-              value="privatePerson"
-            />
-            <HolderTypeOption
-              checked={isOrganization}
-              description="Companies, museums, galleries, and institutions."
-              id="holder-type-organization"
-              label="Business / Organization"
-              value="organization"
-            />
-          </RadioGroup>
-        </div>
+        <TranslatedAccountHolderTypeFields
+          holderType={formData.holderType}
+          t={t}
+          onChange={onHolderTypeChange}
+        />
         <div className="space-y-2">
           <Label htmlFor="businessName">
-            {isOrganization ? t("form.businessName") : "Full Name"}{" "}
+            {isOrganization ? t("form.businessName") : t("form.fullName")}{" "}
             <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -311,7 +301,7 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
             placeholder={
               isOrganization
                 ? t("form.placeholders.businessName")
-                : "e.g., Jane Doe"
+                : t("form.placeholders.fullName")
             }
             required
           />
@@ -319,15 +309,15 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
         {isOrganization ? (
           <TextInput
             id="taxId"
-            label="Organization Number"
-            placeholder="e.g., 987 654 321"
+            label={t("form.organizationNumber")}
+            placeholder={t("form.placeholders.organizationNumber")}
             value={formData.taxId}
             onChange={(value) => onChange("taxId", value)}
           />
         ) : (
           <TextInput
             id="dateOfBirth"
-            label="Date of Birth"
+            label={t("form.dateOfBirth")}
             type="date"
             value={formData.dateOfBirth}
             onChange={(value) => onChange("dateOfBirth", value)}
@@ -352,35 +342,6 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-function HolderTypeOption({
-  checked,
-  description,
-  id,
-  label,
-  value,
-}: {
-  checked: boolean;
-  description: string;
-  id: string;
-  label: string;
-  value: AccountHolderType;
-}) {
-  return (
-    <Label
-      htmlFor={id}
-      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${
-        checked ? "border-primary bg-primary/5" : "border-border"
-      }`}
-    >
-      <RadioGroupItem id={id} value={value} className="mt-0.5" />
-      <div className="space-y-1">
-        <div className="font-medium">{label}</div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-    </Label>
   );
 }
 
@@ -494,13 +455,17 @@ function NotesSection({
 
 function AccountTypeSection({
   accountType,
+  holderType,
   t,
   onChange,
 }: {
-  accountType: AccountType;
+  accountType: LoanAccountType;
+  holderType: AccountHolderType;
   t: ReturnType<typeof useScopedI18n>;
   onChange: FormSectionProps["onChange"];
 }) {
+  const availableAccountTypes = loanAccountTypesForHolder(holderType);
+
   return (
     <div className="space-y-4">
       <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -512,7 +477,7 @@ function AccountTypeSection({
           <Label htmlFor="accountType">{t("form.accountType")}</Label>
           <Select
             value={accountType}
-            onValueChange={(value: AccountType) =>
+            onValueChange={(value: LoanAccountType) =>
               onChange("accountType", value)
             }
           >
@@ -520,12 +485,11 @@ function AccountTypeSection({
               <SelectValue placeholder={t("form.placeholders.accountType")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="lender">{t("types.lender")}</SelectItem>
-              <SelectItem value="borrower">{t("types.borrower")}</SelectItem>
-              <SelectItem value="both">{t("types.both")}</SelectItem>
-              <SelectItem value="institution">
-                {t("types.institution")}
-              </SelectItem>
+              {availableAccountTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {t(`types.${type}`)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">

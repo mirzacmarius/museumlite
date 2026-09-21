@@ -9,7 +9,10 @@ import { useMutation, useQuery } from "convex/react";
 import { Building2, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
-import { parseDateInputValue } from "@/lib/account-holder";
+import {
+  defaultLoanAccountTypeForHolder,
+  holderScopedAccountFields,
+} from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import { AccountComboboxCreateDialog } from "./account-combobox-create-dialog";
 import { AccountComboboxListContent } from "./account-combobox-list-content";
@@ -146,21 +149,20 @@ export function AccountCombobox({
       return;
     }
 
-    const isOrganization = state.formData.holderType === "organization";
-
     dispatch({ type: "setIsSubmitting", value: true });
     try {
       const accountId = await createAccount({
         organizationId: organizationId as Id<"organizations">,
-        accountType: "institution",
+        accountType: defaultLoanAccountTypeForHolder(state.formData.holderType),
         holderType: state.formData.holderType,
         businessName: state.formData.businessName.trim(),
-        taxId: isOrganization
-          ? state.formData.taxId.trim() || undefined
-          : undefined,
-        dateOfBirth: isOrganization
-          ? undefined
-          : parseDateInputValue(state.formData.dateOfBirth),
+        ...holderScopedAccountFields(state.formData.holderType, {
+          taxId: state.formData.taxId.trim(),
+          dateOfBirth: state.formData.dateOfBirth,
+          contactPerson: state.formData.contactPerson.trim(),
+          contactPhone: state.formData.contactPhone.trim(),
+          contactEmail: state.formData.contactEmail.trim(),
+        }),
         phone: state.formData.phone.trim() || undefined,
         email: state.formData.email.trim() || undefined,
         address: state.formData.address.trim() || undefined,
@@ -168,15 +170,6 @@ export function AccountCombobox({
         zipCode: state.formData.zipCode.trim() || undefined,
         city: state.formData.city.trim() || undefined,
         country: state.formData.country.trim() || undefined,
-        contactPerson: isOrganization
-          ? state.formData.contactPerson.trim() || undefined
-          : undefined,
-        contactPhone: isOrganization
-          ? state.formData.contactPhone.trim() || undefined
-          : undefined,
-        contactEmail: isOrganization
-          ? state.formData.contactEmail.trim() || undefined
-          : undefined,
         notes: state.formData.notes.trim() || undefined,
       });
 

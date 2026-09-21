@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Building2,
   FileUp,
+  type LucideIcon,
   Mail,
   Phone,
   Plus,
@@ -25,14 +26,17 @@ import {
   Settings,
   User,
   Users,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useState, type ReactNode } from "react";
+import { type ReactNode, Suspense, useCallback, useState } from "react";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+import {
+  type AccountHolderType,
+  isPrivatePersonHolder,
+} from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import {
   AccountsListSkeleton,
@@ -45,6 +49,7 @@ type AccountTypeFilter = AccountType | "all";
 interface AccountListItem {
   _id: Id<"accounts">;
   accountType?: AccountType;
+  holderType?: AccountHolderType;
   accountNumber: string;
   businessName?: string;
   firstName?: string;
@@ -58,8 +63,7 @@ interface AccountListItem {
   status?: string;
 }
 
-const DEFAULT_TONE =
-  "border-border/60 bg-muted/40 text-muted-foreground";
+const DEFAULT_TONE = "border-border/60 bg-muted/40 text-muted-foreground";
 
 const STATUS_TONES: Record<string, string> = {
   active: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
@@ -182,9 +186,7 @@ function AccountsPageContent() {
       <AccountsPageHeader
         canAccessAdministration={canAccessAdministration}
         title={isPatronView ? t("patronsTitle") : t("title")}
-        description={
-          isPatronView ? t("patronsDescription") : t("description")
-        }
+        description={isPatronView ? t("patronsDescription") : t("description")}
         importLabel={t("importCSV")}
         newAccountLabel={t("newAccount")}
         onExport={handleExport}
@@ -195,9 +197,7 @@ function AccountsPageContent() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder={
-          isPatronView
-            ? t("patronsSearchPlaceholder")
-            : t("searchPlaceholder")
+          isPatronView ? t("patronsSearchPlaceholder") : t("searchPlaceholder")
         }
         accountTypeFilter={accountTypeFilter}
         onAccountTypeFilterChange={setAccountTypeFilter}
@@ -428,9 +428,7 @@ function ToneBadge({
   className?: string;
   children: ReactNode;
 }) {
-  return (
-    <span className={cn(TONE_BADGE, tone, className)}>{children}</span>
-  );
+  return <span className={cn(TONE_BADGE, tone, className)}>{children}</span>;
 }
 
 function ContactLine({
@@ -448,13 +446,7 @@ function ContactLine({
   );
 }
 
-function ContactLines({
-  email,
-  phone,
-}: {
-  email?: string;
-  phone?: string;
-}) {
+function ContactLines({ email, phone }: { email?: string; phone?: string }) {
   if (!email && !phone)
     return <span className="text-xs text-muted-foreground/50">—</span>;
 
@@ -544,9 +536,7 @@ function AccountList({
   }
 
   const gridClass = isPatronView ? PATRON_GRID : ACCOUNT_GRID;
-  const headers = isPatronView
-    ? PATRON_COLUMN_HEADERS
-    : ACCOUNT_COLUMN_HEADERS;
+  const headers = isPatronView ? PATRON_COLUMN_HEADERS : ACCOUNT_COLUMN_HEADERS;
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 dark:border-white/10 dark:bg-zinc-900/40">
@@ -578,6 +568,11 @@ function AccountList({
               t("list.unnamedPatron"),
               t("list.unnamedAccount"),
             )}
+            holderLabel={
+              isPrivatePersonHolder(account.holderType)
+                ? t("form.holderPrivatePerson")
+                : undefined
+            }
             typeLabel={
               account.accountType ? t(`types.${account.accountType}`) : "—"
             }
@@ -593,17 +588,20 @@ function AccountRow({
   isPatronView,
   gridClass,
   displayName,
+  holderLabel,
   typeLabel,
 }: {
   account: AccountListItem;
   isPatronView: boolean;
   gridClass: string;
   displayName: string;
+  holderLabel?: string;
   typeLabel: string;
 }) {
   const isPatron = account.accountType === "patron";
+  const isPersonal = isPrivatePersonHolder(account.holderType);
   const identifier = isPatron ? account.cardNumber : account.accountNumber;
-  const Icon = isPatron ? User : Users;
+  const Icon = isPatron || isPersonal ? User : Users;
   const typeTone = getTone(TYPE_TONES, account.accountType);
   const statusTone = getTone(STATUS_TONES, account.status);
 
@@ -623,6 +621,11 @@ function AccountRow({
           <p className="truncate text-sm font-medium tracking-tight text-foreground transition-colors group-hover:text-indigo-300">
             {displayName}
           </p>
+          {holderLabel ? (
+            <p className="mt-0.5 truncate text-[10px] uppercase tracking-widest text-muted-foreground">
+              {holderLabel}
+            </p>
+          ) : null}
           <p className="mt-0.5 truncate font-mono text-[10px] tracking-wide text-muted-foreground md:hidden">
             {identifier}
           </p>

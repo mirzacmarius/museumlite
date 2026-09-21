@@ -2847,6 +2847,14 @@ export default {
     },
     form: {
       businessInformation: "Bedriftsinformasjon",
+      personalInformation: "Personlig informasjon",
+      accountHolder: "Kontoinnehaver",
+      holderType: "Type kontoinnehaver",
+      holderPrivatePerson: "Privatperson",
+      holderOrganization: "Bedrift / Organisasjon",
+      holderPrivatePersonDescription: "Personer som opptrer i eget navn.",
+      holderOrganizationDescription:
+        "Selskaper, museer, gallerier og institusjoner.",
       address: "Adresse",
       contactPerson: "Kontaktperson",
       notes: "Notater",
@@ -2857,6 +2865,9 @@ export default {
       rolesDescription:
         "Velg hvilke roller som kan administrere denne kontoen. Roller med lånetillatelser vises nedenfor.",
       businessName: "Bedriftsnavn",
+      fullName: "Fullt navn",
+      dateOfBirth: "Fødselsdato",
+      organizationNumber: "Organisasjonsnummer",
       phone: "Telefon",
       email: "E-post",
       streetAddress: "Gateadresse",
@@ -2870,6 +2881,8 @@ export default {
       accountType: "Kontotype",
       placeholders: {
         businessName: "f.eks. Museum for Moderne Kunst",
+        fullName: "f.eks. Jane Doe",
+        organizationNumber: "f.eks. 987 654 321",
         phone: "+47 12 34 56 78",
         email: "kontakt@eksempel.no",
         streetAddress: "Hovedgata 123",
@@ -2890,6 +2903,7 @@ export default {
       updateButton: "Oppdater Konto",
       errors: {
         businessNameRequired: "Bedriftsnavn er påkrevd",
+        fullNameRequired: "Fullt navn er påkrevd",
         createFailed: "Kunne ikke opprette konto. Vennligst prøv igjen.",
         updateFailed: "Kunne ikke oppdatere konto. Vennligst prøv igjen.",
       },

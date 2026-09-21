@@ -2485,6 +2485,14 @@ export default {
     },
     form: {
       businessInformation: "Business Information",
+      personalInformation: "Personal Information",
+      accountHolder: "Account Holder",
+      holderType: "Holder Type",
+      holderPrivatePerson: "Private Person",
+      holderOrganization: "Business / Organization",
+      holderPrivatePersonDescription: "Individuals acting in their own name.",
+      holderOrganizationDescription:
+        "Companies, museums, galleries, and institutions.",
       address: "Address",
       contactPerson: "Contact Person",
       notes: "Notes",
@@ -2495,6 +2503,9 @@ export default {
       rolesDescription:
         "Select which roles can manage this account. Roles with loans permissions are shown below.",
       businessName: "Business Name",
+      fullName: "Full Name",
+      dateOfBirth: "Date of Birth",
+      organizationNumber: "Organization Number",
       phone: "Phone",
       email: "Email",
       streetAddress: "Street Address",
@@ -2508,6 +2519,8 @@ export default {
       accountType: "Account Type",
       placeholders: {
         businessName: "e.g., Museum of Modern Art",
+        fullName: "e.g., Jane Doe",
+        organizationNumber: "e.g., 987 654 321",
         phone: "+1 (555) 123-4567",
         email: "contact@example.com",
         streetAddress: "123 Main Street",
@@ -2528,6 +2541,7 @@ export default {
       updateButton: "Update Account",
       errors: {
         businessNameRequired: "Business name is required",
+        fullNameRequired: "Full name is required",
         createFailed: "Failed to create account. Please try again.",
         updateFailed: "Failed to update account. Please try again.",
       },

@@ -2866,6 +2866,15 @@ export default {
     },
     form: {
       businessInformation: "Información Comercial",
+      personalInformation: "Información Personal",
+      accountHolder: "Titular de la Cuenta",
+      holderType: "Tipo de Titular",
+      holderPrivatePerson: "Persona Privada",
+      holderOrganization: "Empresa / Organización",
+      holderPrivatePersonDescription:
+        "Personas que actúan en su propio nombre.",
+      holderOrganizationDescription:
+        "Empresas, museos, galerías e instituciones.",
       address: "Dirección",
       contactPerson: "Persona de Contacto",
       notes: "Notas",
@@ -2876,6 +2885,9 @@ export default {
       rolesDescription:
         "Selecciona qué roles pueden gestionar esta cuenta. Los roles con permisos de préstamos se muestran abajo.",
       businessName: "Nombre Comercial",
+      fullName: "Nombre Completo",
+      dateOfBirth: "Fecha de Nacimiento",
+      organizationNumber: "Número de Organización",
       phone: "Teléfono",
       email: "Email",
       streetAddress: "Dirección",
@@ -2889,6 +2901,8 @@ export default {
       accountType: "Tipo de Cuenta",
       placeholders: {
         businessName: "ej. Museo de Arte Moderno",
+        fullName: "ej. Jane Doe",
+        organizationNumber: "ej. 987 654 321",
         phone: "+34 912 34 56 78",
         email: "contacto@ejemplo.es",
         streetAddress: "Calle Principal 123",
@@ -2909,6 +2923,7 @@ export default {
       updateButton: "Actualizar Cuenta",
       errors: {
         businessNameRequired: "El nombre comercial es requerido",
+        fullNameRequired: "El nombre completo es requerido",
         createFailed: "Error al crear la cuenta. Por favor intenta de nuevo.",
         updateFailed:
           "Error al actualizar la cuenta. Por favor intenta de nuevo.",
