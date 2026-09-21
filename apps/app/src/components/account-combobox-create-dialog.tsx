@@ -38,15 +38,15 @@ export function AccountComboboxCreateDialog({
 }: AccountComboboxCreateDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-2xl flex-col overflow-hidden">
+        <DialogHeader className="shrink-0 pr-6">
           <DialogTitle>Create New Account</DialogTitle>
           <DialogDescription>
             Add a new lender/borrower account to your organization.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto py-2 custom-scrollbar">
           <AccountComboboxHolderSection
             formData={formData}
             setFormData={setFormData}
@@ -65,7 +65,7 @@ export function AccountComboboxCreateDialog({
           />
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t border-border pt-4">
           <Button
             type="button"
             variant="outline"

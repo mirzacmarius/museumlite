@@ -175,14 +175,12 @@ export default function NewAccountPage() {
   };
 
   return (
-    <div className="flex size-full bg-background px-6">
-      <div className="z-10 mx-auto flex size-full max-w-screen-md gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <NewAccountHeader title={t("newAccount")} backLabel={t("back")} />
-          <div className="flex w-full px-6">
-            <div className="w-full border-b border-border" />
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-6 p-6">
+    <div className="flex h-full min-h-0 w-full bg-background px-4 py-4 sm:px-6 sm:py-6">
+      <div className="z-10 mx-auto flex h-full min-h-0 w-full max-w-screen-md flex-col overflow-hidden rounded-lg border border-border bg-card">
+        <NewAccountHeader title={t("newAccount")} backLabel={t("back")} />
+        <div className="mx-6 shrink-0 border-b border-border" />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
             {error && (
               <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
@@ -221,14 +219,14 @@ export default function NewAccountPage() {
               t={t}
               onToggleRole={toggleRole}
             />
-            <FormActions
-              cancelLabel={tCommon("cancel")}
-              createLabel={t("form.createButton")}
-              creatingLabel={t("form.creating")}
-              isSubmitting={isSubmitting}
-            />
-          </form>
-        </div>
+          </div>
+          <FormActions
+            cancelLabel={tCommon("cancel")}
+            createLabel={t("form.createButton")}
+            creatingLabel={t("form.creating")}
+            isSubmitting={isSubmitting}
+          />
+        </form>
       </div>
     </div>
   );
@@ -242,7 +240,7 @@ function NewAccountHeader({
   backLabel: string;
 }) {
   return (
-    <div className="flex w-full items-center justify-between rounded-lg p-6">
+    <div className="flex w-full shrink-0 items-center justify-between rounded-lg p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/accounts">
@@ -630,7 +628,7 @@ function FormActions({
   isSubmitting: boolean;
 }) {
   return (
-    <div className="flex justify-end gap-4 pt-4">
+    <div className="flex shrink-0 justify-end gap-4 border-t border-border px-6 py-4">
       <Button type="button" variant="outline" asChild>
         <Link href="/accounts">{cancelLabel}</Link>
       </Button>

@@ -46,7 +46,8 @@ const DialogContent = ({
     >
       <div
         className={cn(
-          "relative grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg",
+          // min-h-0 lets max-h-* beat flex min-height:auto so tall dialogs can scroll
+          "relative grid min-h-0 w-full max-w-lg gap-4 border bg-background p-6 shadow-lg",
           className,
         )}
       >
