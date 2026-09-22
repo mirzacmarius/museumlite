@@ -1,30 +1,32 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { IconActionButton } from "@/components/icon-action-button";
 import { usePermissions } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface LocationActionsProps {
   onDelete: () => void;
   onAdd: () => void;
   onEdit: () => void;
+  onView: () => void;
 }
 
 export function LocationActions({
   onDelete,
   onAdd,
   onEdit,
+  onView,
 }: LocationActionsProps) {
+  const t = useScopedI18n("locations.form");
   const { hasPermission, isLoading } = usePermissions();
 
   if (isLoading) return null;
-  if (!hasPermission("organization.manage_settings")) return null;
 
-  const canDelete = hasPermission("locations.delete");
-  const canCreate = hasPermission("locations.create");
-  const canUpdate = hasPermission("locations.update");
-
-  if (!canDelete && !canCreate && !canUpdate) return null;
+  const canManageLocations = hasPermission("organization.manage_settings");
+  const canDelete = canManageLocations && hasPermission("locations.delete");
+  const canCreate = canManageLocations && hasPermission("locations.create");
+  const canUpdate = canManageLocations && hasPermission("locations.update");
 
   return (
     <div className="min-w-0 sm:justify-self-end">
@@ -46,6 +48,9 @@ export function LocationActions({
             <Plus className="size-4" aria-hidden="true" />
           </IconActionButton>
         ) : null}
+        <IconActionButton label={t("view")} onClick={onView}>
+          <Eye className="size-4" aria-hidden="true" />
+        </IconActionButton>
         {canUpdate ? (
           <IconActionButton label="Edit" onClick={onEdit}>
             <Pencil className="size-4" aria-hidden="true" />

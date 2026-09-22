@@ -1973,6 +1973,11 @@ export default {
       createRootLevel: "Opprett en ny rotplassering",
       editLocation: "Rediger Plassering",
       editDescription: "Oppdater plasseringsdetaljene nedenfor.",
+      view: "Vis",
+      viewLocation: "Vis plassering",
+      viewDescription:
+        "Fullstendig informasjon om plasseringen. Dette er skrivebeskyttet.",
+      close: "Lukk",
       nameLabel: "Navn *",
       namePlaceholder: "f.eks., Øst-fløy, Skuff 3",
       nameEnterPlaceholder: "Skriv inn plasseringsnavn",

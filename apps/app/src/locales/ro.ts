@@ -1000,6 +1000,11 @@ export default {
       createRootLevel: "Creează o locație nouă la nivel rădăcină",
       editLocation: "Editează locația",
       editDescription: "Actualizează detaliile locației de mai jos.",
+      view: "Vizualizează",
+      viewLocation: "Vizualizează locația",
+      viewDescription:
+        "Informații complete despre locație. Aceste date sunt doar pentru vizualizare.",
+      close: "Închide",
       nameLabel: "Nume *",
       namePlaceholder: "ex., Aripa Est, Sertarul 3",
       nameEnterPlaceholder: "Introdu numele locației",

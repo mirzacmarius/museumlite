@@ -2062,6 +2062,11 @@ export default {
       createRootLevel: "Créer un emplacement de niveau racine",
       editLocation: "Modifier l'Emplacement",
       editDescription: "Mettez à jour les détails de l'emplacement ci-dessous.",
+      view: "Voir",
+      viewLocation: "Voir l'emplacement",
+      viewDescription:
+        "Détails complets de l'emplacement. Ces informations sont en lecture seule.",
+      close: "Fermer",
       nameLabel: "Nom *",
       namePlaceholder: "ex., Aile Est, Tiroir 3",
       nameEnterPlaceholder: "Entrez le nom de l'emplacement",

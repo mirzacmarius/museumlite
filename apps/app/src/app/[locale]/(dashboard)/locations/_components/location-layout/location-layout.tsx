@@ -30,6 +30,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
     useState<Id<"locations"> | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const allLocations = useQuery(api.locations.listAll, { organizationId });
@@ -123,6 +124,12 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
         open={editDialogOpen && !!selectedLocationId}
         onOpenChange={setEditDialogOpen}
       />
+      <EditLocationDialog
+        locationId={selectedLocationId ?? ""}
+        open={viewDialogOpen && !!selectedLocationId}
+        onOpenChange={setViewDialogOpen}
+        readOnly
+      />
       <DeleteLocationDialog
         locationId={selectedLocationId ?? ""}
         locationName={selectedLocation?.name ?? ""}
@@ -176,6 +183,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
                 onDelete={() => setDeleteDialogOpen(true)}
                 onAdd={() => setAddDialogOpen(true)}
                 onEdit={() => setEditDialogOpen(true)}
+                onView={() => setViewDialogOpen(true)}
               />
             }
             selectedLocation={selectedLocation}

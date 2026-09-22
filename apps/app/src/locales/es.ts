@@ -1978,6 +1978,11 @@ export default {
       createRootLevel: "Crear una nueva ubicación de nivel raíz",
       editLocation: "Editar Ubicación",
       editDescription: "Actualice los detalles de la ubicación a continuación.",
+      view: "Ver",
+      viewLocation: "Ver ubicación",
+      viewDescription:
+        "Información completa de la ubicación. Estos datos son de solo lectura.",
+      close: "Cerrar",
       nameLabel: "Nombre *",
       namePlaceholder: "ej., Ala Este, Cajón 3",
       nameEnterPlaceholder: "Ingrese el nombre de la ubicación",

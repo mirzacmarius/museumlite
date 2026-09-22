@@ -16,6 +16,7 @@ interface LocationImageFieldProps {
   fileInputRef: RefObject<HTMLInputElement | null>;
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemove: () => void;
+  readOnly?: boolean;
 }
 
 export function LocationImageField({
@@ -27,6 +28,7 @@ export function LocationImageField({
   fileInputRef,
   onUpload,
   onRemove,
+  readOnly = false,
 }: LocationImageFieldProps) {
   const t = useScopedI18n("locations.form");
   const locationImageUrl =
@@ -52,48 +54,50 @@ export function LocationImageField({
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-4 py-3">
-          <p className="text-xs text-muted-foreground">
-            {t("locationPhotoHint")}
-          </p>
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={onUpload}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingImage}
-            >
-              {isUploadingImage ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                <Upload className="mr-2 size-4" />
-              )}
-              {locationImageId
-                ? t("replaceLocationPhoto")
-                : t("uploadLocationPhoto")}
-            </Button>
-            {locationImageId ? (
+        {readOnly ? null : (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              {t("locationPhotoHint")}
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={onUpload}
+              />
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={onRemove}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
               >
-                <Trash2 className="mr-2 size-4" />
-                {t("removeLocationPhoto")}
+                {isUploadingImage ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 size-4" />
+                )}
+                {locationImageId
+                  ? t("replaceLocationPhoto")
+                  : t("uploadLocationPhoto")}
               </Button>
-            ) : null}
+              {locationImageId ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={onRemove}
+                >
+                  <Trash2 className="mr-2 size-4" />
+                  {t("removeLocationPhoto")}
+                </Button>
+              ) : null}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
