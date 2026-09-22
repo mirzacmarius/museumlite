@@ -141,6 +141,51 @@ export function getDefaultLocationId(locations: SidebarLocation[] = []) {
   return exhibitionLocations[0]?._id ?? storageLocations[0]?._id ?? null;
 }
 
+export function resolveMenuLocationSelection({
+  knownLocationIds,
+  requestedLocationId,
+  selectedLocationId,
+  isSelectedLocationMissing,
+  defaultLocationId,
+}: {
+  knownLocationIds: ReadonlySet<Id<"locations">>;
+  requestedLocationId: string | null;
+  selectedLocationId: Id<"locations"> | null;
+  isSelectedLocationMissing: boolean;
+  defaultLocationId: Id<"locations"> | null;
+}) {
+  const requestedId = requestedLocationId as Id<"locations"> | null;
+  const hasRequestedLocation = Boolean(
+    requestedId && knownLocationIds.has(requestedId),
+  );
+  const hasSelectedLocation = Boolean(
+    selectedLocationId && knownLocationIds.has(selectedLocationId),
+  );
+  const fallbackLocationId =
+    !hasSelectedLocation || isSelectedLocationMissing
+      ? (defaultLocationId ?? selectedLocationId)
+      : selectedLocationId;
+
+  if (requestedLocationId && !hasRequestedLocation) {
+    return {
+      selectedLocationId: fallbackLocationId,
+      clearRequestedLocation: true,
+    };
+  }
+
+  if (hasRequestedLocation && requestedId) {
+    return {
+      selectedLocationId: requestedId,
+      clearRequestedLocation: false,
+    };
+  }
+
+  return {
+    selectedLocationId: fallbackLocationId,
+    clearRequestedLocation: false,
+  };
+}
+
 export function getAncestorLocationIds(
   locations: SidebarLocation[],
   locationId: Id<"locations">,

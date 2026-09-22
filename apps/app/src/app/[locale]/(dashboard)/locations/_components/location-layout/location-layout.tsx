@@ -13,6 +13,7 @@ import { LocationContentSkeleton } from "../../location-page-skeleton";
 import {
   getDefaultLocationId,
   getVisibleSidebarLocations,
+  resolveMenuLocationSelection,
 } from "../../location-view-helpers";
 import { AddChildLocationDialog } from "../add-child-location-dialog/add-child-location-dialog";
 import { DeleteLocationDialog } from "../delete-location-dialog";
@@ -89,35 +90,20 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
       return;
     }
 
-    const knownLocationIds = new Set(
-      allLocations.map((location) => location._id),
-    );
-    const requestedLocationId =
-      locationQuery && knownLocationIds.has(locationQuery as Id<"locations">)
-        ? (locationQuery as Id<"locations">)
-        : null;
+    const resolution = resolveMenuLocationSelection({
+      knownLocationIds: new Set(allLocations.map((location) => location._id)),
+      requestedLocationId: locationQuery,
+      selectedLocationId,
+      isSelectedLocationMissing: selectedLocation === null,
+      defaultLocationId: firstVisibleLocationId,
+    });
 
-    if (locationQuery && !requestedLocationId) {
+    if (resolution.clearRequestedLocation) {
       void setLocationQuery(null);
     }
 
-    if (requestedLocationId) {
-      if (selectedLocationId !== requestedLocationId) {
-        setSelectedLocationId(requestedLocationId);
-      }
-      return;
-    }
-
-    if (!firstVisibleLocationId) {
-      return;
-    }
-
-    if (
-      !selectedLocationId ||
-      !knownLocationIds.has(selectedLocationId) ||
-      selectedLocation === null
-    ) {
-      setSelectedLocationId(firstVisibleLocationId);
+    if (resolution.selectedLocationId !== selectedLocationId) {
+      setSelectedLocationId(resolution.selectedLocationId);
     }
   }, [
     allLocations,

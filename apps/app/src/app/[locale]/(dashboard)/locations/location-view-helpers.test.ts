@@ -8,6 +8,7 @@ import {
   getDescendantLocations,
   getVisibleSidebarLocations,
   isStorageLocation,
+  resolveMenuLocationSelection,
   shouldAutoDisplayChildLocations,
   shouldShowInExhibitionSidebar,
 } from "./location-view-helpers";
@@ -263,5 +264,55 @@ describe("location view helpers", () => {
     expect(
       getAncestorLocationIds(locations, locationId("loc-building")).size,
     ).toBe(0);
+  });
+
+  test("uses the default location when the menu has no selection", () => {
+    expect(
+      resolveMenuLocationSelection({
+        knownLocationIds: new Set([locationId("loc-gallery")]),
+        requestedLocationId: null,
+        selectedLocationId: null,
+        isSelectedLocationMissing: false,
+        defaultLocationId: locationId("loc-gallery"),
+      }),
+    ).toEqual({
+      selectedLocationId: locationId("loc-gallery"),
+      clearRequestedLocation: false,
+    });
+  });
+
+  test("opens the requested location from the object placement link", () => {
+    const knownLocationIds = new Set([
+      locationId("loc-gallery"),
+      locationId("loc-case"),
+    ]);
+
+    expect(
+      resolveMenuLocationSelection({
+        knownLocationIds,
+        requestedLocationId: "loc-case",
+        selectedLocationId: null,
+        isSelectedLocationMissing: false,
+        defaultLocationId: locationId("loc-gallery"),
+      }),
+    ).toEqual({
+      selectedLocationId: locationId("loc-case"),
+      clearRequestedLocation: false,
+    });
+  });
+
+  test("drops an unknown location link and keeps the current menu selection", () => {
+    expect(
+      resolveMenuLocationSelection({
+        knownLocationIds: new Set([locationId("loc-gallery")]),
+        requestedLocationId: "loc-missing",
+        selectedLocationId: locationId("loc-gallery"),
+        isSelectedLocationMissing: false,
+        defaultLocationId: locationId("loc-gallery"),
+      }),
+    ).toEqual({
+      selectedLocationId: locationId("loc-gallery"),
+      clearRequestedLocation: true,
+    });
   });
 });
