@@ -52,13 +52,25 @@ export function PlacementRelationshipsTab({
                 Current Location
               </span>
               <div className="flex items-center justify-between gap-3">
-                <span className="min-w-0 text-sm text-foreground">
-                  {location || "-"}
-                </span>
-                {collection.currentLocationId && locationCode && (
-                  <div className="shrink-0 rounded bg-secondary/60 px-2 py-1 font-mono text-[10px] text-muted-foreground">
-                    {locationCode}
-                  </div>
+                {collection.currentLocationId && location ? (
+                  <Link
+                    href={`/locations?location=${collection.currentLocationId}`}
+                    className="group flex min-w-0 flex-1 items-center justify-between gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`Open ${currentLocation?.name ?? "location"} in Locations`}
+                  >
+                    <span className="min-w-0 text-sm text-foreground underline decoration-border/80 underline-offset-4 group-hover:decoration-foreground">
+                      {location}
+                    </span>
+                    {locationCode ? (
+                      <span className="shrink-0 rounded bg-secondary/60 px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                        {locationCode}
+                      </span>
+                    ) : null}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 text-sm text-foreground">
+                    {location || "-"}
+                  </span>
                 )}
               </div>
             </div>

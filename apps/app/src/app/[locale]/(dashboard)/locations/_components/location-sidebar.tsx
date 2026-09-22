@@ -1,8 +1,11 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useMemo, useState } from "react";
-import { shouldShowInExhibitionSidebar } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getAncestorLocationIds,
+  shouldShowInExhibitionSidebar,
+} from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 import {
   getInitialExpandedLocationIds,
   LocationNavTreeItem,
@@ -63,16 +66,27 @@ function LocationSidebarNav({
     [allLocations],
   );
 
-  const initialExpandedLocationIds = useMemo(
-    () =>
-      getInitialExpandedLocationIds({
-        exhibitionLocations,
-        storageLocations,
-        getExhibitionChildren,
-        getStorageChildren: getChildren,
-      }),
-    [locationsStructureKey],
-  );
+  const initialExpandedLocationIds = useMemo(() => {
+    const expandedLocationIds = getInitialExpandedLocationIds({
+      exhibitionLocations,
+      storageLocations,
+      getExhibitionChildren,
+      getStorageChildren: getChildren,
+    });
+
+    if (!selectedLocationId) {
+      return expandedLocationIds;
+    }
+
+    for (const ancestorId of getAncestorLocationIds(
+      allLocations,
+      selectedLocationId,
+    )) {
+      expandedLocationIds.add(ancestorId);
+    }
+
+    return expandedLocationIds;
+  }, [locationsStructureKey, selectedLocationId]);
 
   const toggleLocation = (locationId: Id<"locations">) => {
     setExpandedOverrides((currentLocationIds) => {
@@ -90,6 +104,17 @@ function LocationSidebarNav({
   };
 
   const expandedLocationIds = expandedOverrides ?? initialExpandedLocationIds;
+
+  useEffect(() => {
+    if (!selectedLocationId) {
+      return;
+    }
+
+    const selectedItem = document.querySelector(
+      `[data-location-id="${CSS.escape(selectedLocationId)}"]`,
+    );
+    selectedItem?.scrollIntoView({ block: "nearest" });
+  }, [selectedLocationId, locationsStructureKey]);
 
   return (
     <nav

@@ -140,3 +140,23 @@ export function getDefaultLocationId(locations: SidebarLocation[] = []) {
 
   return exhibitionLocations[0]?._id ?? storageLocations[0]?._id ?? null;
 }
+
+export function getAncestorLocationIds(
+  locations: SidebarLocation[],
+  locationId: Id<"locations">,
+) {
+  const locationsById = new Map(
+    locations.map((location) => [location._id, location]),
+  );
+  const ancestorIds = new Set<Id<"locations">>();
+  const visitedParentIds = new Set<Id<"locations">>();
+  let parentLocationId = locationsById.get(locationId)?.parentLocationId;
+
+  while (parentLocationId && !visitedParentIds.has(parentLocationId)) {
+    visitedParentIds.add(parentLocationId);
+    ancestorIds.add(parentLocationId);
+    parentLocationId = locationsById.get(parentLocationId)?.parentLocationId;
+  }
+
+  return ancestorIds;
+}

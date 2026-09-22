@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { MapPin, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { parseAsString, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { IconActionButton } from "@/components/icon-action-button";
 import { PermissionGate } from "@/components/permission-gate";
@@ -26,6 +27,10 @@ interface LocationLayoutProps {
 
 export function LocationLayout({ organizationId }: LocationLayoutProps) {
   const { push } = useRouter();
+  const [locationQuery, setLocationQuery] = useQueryState(
+    "location",
+    parseAsString,
+  );
   const [selectedLocationId, setSelectedLocationId] =
     useState<Id<"locations"> | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -80,24 +85,54 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
   );
 
   useEffect(() => {
-    if (!allLocations || !firstVisibleLocationId) {
+    if (!allLocations) {
+      return;
+    }
+
+    const knownLocationIds = new Set(
+      allLocations.map((location) => location._id),
+    );
+    const requestedLocationId =
+      locationQuery && knownLocationIds.has(locationQuery as Id<"locations">)
+        ? (locationQuery as Id<"locations">)
+        : null;
+
+    if (locationQuery && !requestedLocationId) {
+      void setLocationQuery(null);
+    }
+
+    if (requestedLocationId) {
+      if (selectedLocationId !== requestedLocationId) {
+        setSelectedLocationId(requestedLocationId);
+      }
+      return;
+    }
+
+    if (!firstVisibleLocationId) {
       return;
     }
 
     if (
       !selectedLocationId ||
-      !allLocationIds.has(selectedLocationId) ||
+      !knownLocationIds.has(selectedLocationId) ||
       selectedLocation === null
     ) {
       setSelectedLocationId(firstVisibleLocationId);
     }
   }, [
     allLocations,
+    allLocationIdsKey,
     firstVisibleLocationId,
+    locationQuery,
     selectedLocation,
     selectedLocationId,
-    allLocationIdsKey,
+    setLocationQuery,
   ]);
+
+  const selectLocation = (locationId: Id<"locations">) => {
+    setSelectedLocationId(locationId);
+    void setLocationQuery(locationId);
+  };
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col md:flex-row">
@@ -106,7 +141,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
         exhibitionLocations={exhibitionLocations}
         storageLocations={storageLocations}
         selectedLocationId={selectedLocationId}
-        onSelectLocation={setSelectedLocationId}
+        onSelectLocation={selectLocation}
       />
 
       <AddChildLocationDialog
@@ -183,7 +218,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
             occupancy={occupancy ?? undefined}
             locations={allLocations ?? []}
             objectsAtLocation={objectsAtLocation ?? undefined}
-            onSelectLocation={setSelectedLocationId}
+            onSelectLocation={selectLocation}
           />
         )}
 

@@ -68,6 +68,7 @@ function LocationNavItemRoot({
   return (
     <LocationNavItemContext.Provider value={value}>
       <div
+        data-location-id={location._id}
         className={`flex h-7 w-full items-center rounded-md border transition-colors duration-150 ${
           selection === "selected"
             ? "border-indigo-500/20 bg-indigo-500/10 font-medium text-indigo-600 dark:text-indigo-300"

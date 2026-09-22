@@ -2,6 +2,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { describe, expect, test } from "vitest";
 
 import {
+  getAncestorLocationIds,
   getAutomaticDisplayUnitCounts,
   getDefaultLocationId,
   getDescendantLocations,
@@ -227,5 +228,40 @@ describe("location view helpers", () => {
       cabinetCount: 1,
       shelfCount: 1,
     });
+  });
+
+  test("collects ancestor ids so a nested location can be expanded in the menu", () => {
+    const locations = [
+      {
+        _id: locationId("loc-building"),
+        name: "Main Building",
+        locationCode: "B-001",
+        type: "building",
+        isActive: true,
+      },
+      {
+        _id: locationId("loc-gallery"),
+        name: "Gallery A",
+        locationCode: "G-001",
+        type: "gallery",
+        isActive: true,
+        parentLocationId: locationId("loc-building"),
+      },
+      {
+        _id: locationId("loc-case"),
+        name: "Case 1",
+        locationCode: "C-001",
+        type: "display case",
+        isActive: true,
+        parentLocationId: locationId("loc-gallery"),
+      },
+    ];
+
+    expect(getAncestorLocationIds(locations, locationId("loc-case"))).toEqual(
+      new Set([locationId("loc-gallery"), locationId("loc-building")]),
+    );
+    expect(
+      getAncestorLocationIds(locations, locationId("loc-building")).size,
+    ).toBe(0);
   });
 });
