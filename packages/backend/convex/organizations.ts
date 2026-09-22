@@ -39,6 +39,11 @@ import {
   requireSuperAdmin,
   SUPER_ADMIN_ROLE_NAME,
 } from "./utils/superAdmins";
+import {
+  COLLECTION_MANAGER_ROLE_DESCRIPTION,
+  COLLECTION_MANAGER_ROLE_NAME,
+  isCollectionManagerRoleName,
+} from "./utils/systemRoles";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { getPositiveWorkflowSteps } from "./utils/workflowSteps";
 
@@ -220,8 +225,8 @@ export const create = mutation({
       (r) => r.name === SUPER_ADMIN_ROLE_NAME && r.isSystemRole,
     );
     const adminRole = roles.find((r) => r.name === "admin" && r.isSystemRole);
-    const registrarRole = roles.find(
-      (r) => r.name === "registrar" && r.isSystemRole,
+    const collectionManagerRole = roles.find(
+      (role) => isCollectionManagerRoleName(role.name) && role.isSystemRole,
     );
     const curatorRole = roles.find(
       (r) => r.name === "curator" && r.isSystemRole,
@@ -243,7 +248,7 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: registrarRole?._id ?? workflowAdminRole._id,
+              roleId: collectionManagerRole?._id ?? workflowAdminRole._id,
               name: "Registrar Review",
             },
             {
@@ -254,7 +259,7 @@ export const create = mutation({
           ],
           canInitiateRoles: [
             workflowAdminRole._id,
-            ...(registrarRole ? [registrarRole._id] : []),
+            ...(collectionManagerRole ? [collectionManagerRole._id] : []),
           ],
         }),
         ctx.db.insert("workflowConfigs", {
@@ -283,7 +288,7 @@ export const create = mutation({
           steps: [
             {
               stepNumber: 1,
-              roleId: registrarRole?._id ?? workflowAdminRole._id,
+              roleId: collectionManagerRole?._id ?? workflowAdminRole._id,
               name: "Registrar Review",
             },
             {
@@ -294,7 +299,7 @@ export const create = mutation({
           ],
           canInitiateRoles: [
             workflowAdminRole._id,
-            ...(registrarRole ? [registrarRole._id] : []),
+            ...(collectionManagerRole ? [collectionManagerRole._id] : []),
           ],
         }),
         ctx.db.insert("workflowConfigs", {
@@ -339,7 +344,7 @@ export const create = mutation({
           ],
           canInitiateRoles: [
             workflowAdminRole._id,
-            ...(registrarRole ? [registrarRole._id] : []),
+            ...(collectionManagerRole ? [collectionManagerRole._id] : []),
             ...(curatorRole ? [curatorRole._id] : []),
           ],
         }),
@@ -1696,7 +1701,7 @@ export const createDefaultRoles = internalMutation({
       superAdminRole,
       adminRole,
       curatorRole,
-      registrarRole,
+      collectionManagerRole,
       catalogerRole,
       viewerRole,
     ] = await Promise.all([
@@ -1720,9 +1725,8 @@ export const createDefaultRoles = internalMutation({
       }),
       ctx.db.insert("roles", {
         organizationId: args.organizationId,
-        name: "registrar",
-        description:
-          "Accession/deaccession workflows, location management, loans",
+        name: COLLECTION_MANAGER_ROLE_NAME,
+        description: COLLECTION_MANAGER_ROLE_DESCRIPTION,
         isSystemRole: true,
       }),
       ctx.db.insert("roles", {
@@ -1857,8 +1861,8 @@ export const createDefaultRoles = internalMutation({
       }),
     );
 
-    // Registrar: workflows + locations + loans + sites
-    const registrarPerms = [
+    // Collection Manager: workflows + locations + loans + sites
+    const collectionManagerPerms = [
       "collections.create",
       "collections.read",
       "collections.update",
@@ -1882,11 +1886,11 @@ export const createDefaultRoles = internalMutation({
       "organization.view_analytics",
     ];
     await Promise.all(
-      Array.from(registrarPerms).map(async (permName) => {
+      Array.from(collectionManagerPerms).map(async (permName) => {
         const permId = permissionMap.get(permName);
         if (permId) {
           await ctx.db.insert("rolePermissions", {
-            roleId: registrarRole,
+            roleId: collectionManagerRole,
             permissionId: permId,
           });
         }

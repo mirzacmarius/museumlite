@@ -5,6 +5,12 @@ import { internalMutation } from "./_generated/server";
 import { processOptionUsageBackfillPage } from "./utils/collectionOptionUsages";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
+import {
+  COLLECTION_MANAGER_ROLE_DESCRIPTION,
+  COLLECTION_MANAGER_ROLE_NAME,
+  findCollectionManagerRole,
+  LEGACY_REGISTRAR_ROLE_NAME,
+} from "./utils/systemRoles";
 
 function getLocationCodePrefix(type: string) {
   switch (type.trim().toLowerCase()) {
@@ -653,7 +659,7 @@ export const backfillLoanAdminPermissions = internalMutation({
 
     await Promise.all(
       Array.from(organizations).map(async (org) => {
-        const [adminRole, registrarRole] = await Promise.all([
+        const [adminRole, collectionManagerRole] = await Promise.all([
           ctx.db
             .query("roles")
             .withIndex("by_organization", (q) =>
@@ -666,23 +672,15 @@ export const backfillLoanAdminPermissions = internalMutation({
               ),
             )
             .first(),
-          ctx.db
-            .query("roles")
-            .withIndex("by_organization", (q) =>
-              q.eq("organizationId", org._id),
-            )
-            .filter((q) =>
-              q.and(
-                q.eq(q.field("name"), "registrar"),
-                q.eq(q.field("isSystemRole"), true),
-              ),
-            )
-            .first(),
+          findCollectionManagerRole(ctx, org._id),
         ]);
 
         const rolesToUpdate = [
           { role: adminRole, name: "admin" },
-          { role: registrarRole, name: "registrar" },
+          {
+            role: collectionManagerRole,
+            name: collectionManagerRole?.name ?? COLLECTION_MANAGER_ROLE_NAME,
+          },
         ];
 
         await Promise.all(
@@ -812,7 +810,13 @@ export const addSitesPermissions = internalMutation({
           );
         }
 
-        const readOnlyRoles = ["curator", "registrar", "cataloger", "viewer"];
+        const readOnlyRoles = [
+          "curator",
+          LEGACY_REGISTRAR_ROLE_NAME,
+          COLLECTION_MANAGER_ROLE_NAME,
+          "cataloger",
+          "viewer",
+        ];
         const sitesReadPermId = permissionIds.get("sites.read");
 
         if (sitesReadPermId) {
@@ -1147,10 +1151,7 @@ export const backfillSuperAdminRoles = internalMutation({
           )
           .first();
 
-        if (
-          ownerMembership &&
-          ownerMembership.roleId !== superAdminRole._id
-        ) {
+        if (ownerMembership && ownerMembership.roleId !== superAdminRole._id) {
           await db.patch(ownerMembership._id, {
             roleId: superAdminRole._id,
           });
@@ -1207,5 +1208,86 @@ export const backfillCollectionOptionUsages = internalMutation({
     }
 
     return result;
+  },
+});
+
+/**
+ * Migration: Rename the system registrar role to Collection Manager.
+ *
+ * Patches the existing role document so memberships and permissions stay attached.
+ * Run: bunx convex run migrations:renameRegistrarToCollectionManager
+ */
+export const renameRegistrarToCollectionManager = internalMutation({
+  args: {},
+  returns: v.object({
+    organizationsScanned: v.number(),
+    renamed: v.number(),
+    descriptionsUpdated: v.number(),
+    skippedNameConflicts: v.number(),
+  }),
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query("organizations").collect();
+    let renamed = 0;
+    let descriptionsUpdated = 0;
+    let skippedNameConflicts = 0;
+
+    for (const organization of organizations) {
+      const legacyRole = await ctx.db
+        .query("roles")
+        .withIndex("by_organization_and_name", (q) =>
+          q
+            .eq("organizationId", organization._id)
+            .eq("name", LEGACY_REGISTRAR_ROLE_NAME),
+        )
+        .first();
+      const currentRole = await ctx.db
+        .query("roles")
+        .withIndex("by_organization_and_name", (q) =>
+          q
+            .eq("organizationId", organization._id)
+            .eq("name", COLLECTION_MANAGER_ROLE_NAME),
+        )
+        .first();
+
+      if (legacyRole?.isSystemRole) {
+        if (currentRole && currentRole._id !== legacyRole._id) {
+          skippedNameConflicts += 1;
+          continue;
+        }
+
+        const descriptionChanged =
+          legacyRole.description !== COLLECTION_MANAGER_ROLE_DESCRIPTION;
+        await ctx.db.patch(legacyRole._id, {
+          name: COLLECTION_MANAGER_ROLE_NAME,
+          description: COLLECTION_MANAGER_ROLE_DESCRIPTION,
+        });
+        renamed += 1;
+        if (descriptionChanged) {
+          descriptionsUpdated += 1;
+        }
+        continue;
+      }
+
+      if (
+        currentRole?.isSystemRole &&
+        currentRole.description !== COLLECTION_MANAGER_ROLE_DESCRIPTION
+      ) {
+        await ctx.db.patch(currentRole._id, {
+          description: COLLECTION_MANAGER_ROLE_DESCRIPTION,
+        });
+        descriptionsUpdated += 1;
+      }
+    }
+
+    console.log(
+      `Renamed ${renamed} registrar roles to ${COLLECTION_MANAGER_ROLE_NAME}, updated ${descriptionsUpdated} descriptions, skipped ${skippedNameConflicts} name conflicts`,
+    );
+
+    return {
+      organizationsScanned: organizations.length,
+      renamed,
+      descriptionsUpdated,
+      skippedNameConflicts,
+    };
   },
 });
