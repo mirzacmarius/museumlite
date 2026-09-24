@@ -59,7 +59,6 @@ export function CollectionEditFormLayout({
     setShowUnsavedDialog,
     images,
     documents,
-    heroImage,
     hasActiveLoan,
     hasConditionChanged,
     requiresConditionChangeNote,
@@ -106,7 +105,19 @@ export function CollectionEditFormLayout({
           <CollectionEditFormHero
             collection={collection}
             formData={formData}
-            heroImage={heroImage}
+            images={images.flatMap((image) =>
+              image.url
+                ? [
+                    {
+                      id: image._id,
+                      src: image.url,
+                      thumbnailSrc: image.thumbnailUrl,
+                      alt: image.fileName,
+                      isPrimary: image.isPrimary,
+                    },
+                  ]
+                : [],
+            )}
             pendingMoveRequest={pendingMoveRequest}
             placeholders={placeholders}
             common={common}
@@ -116,6 +127,9 @@ export function CollectionEditFormLayout({
             getStatusBadgeClass={getStatusBadgeClass}
             onTitleChange={(value) => updateField("title", value)}
             onTabSelect={setActiveTab}
+            fileInputRef={fileInputRef}
+            cameraInputRef={cameraInputRef}
+            handleFileSelect={handleFileSelect}
           />
 
           <CollectionEditFormTabShell
@@ -148,10 +162,7 @@ export function CollectionEditFormLayout({
             documents={documents}
             common={common}
             t={t}
-            fileInputRef={fileInputRef}
-            cameraInputRef={cameraInputRef}
             documentInputRef={documentInputRef}
-            handleFileSelect={handleFileSelect}
             handleDocumentSelect={handleDocumentSelect}
             handleSetPrimary={handleSetPrimary}
             handleDeleteMedia={handleDeleteMedia}

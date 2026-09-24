@@ -14,7 +14,6 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { Plus } from "lucide-react";
 import { RolePermissionsSelector } from "./role-permissions-selector";
 import type { RoleFormData } from "./use-roles-settings";
 
@@ -145,14 +144,5 @@ export function RoleFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {dialog}
     </Dialog>
-  );
-}
-
-export function CreateRoleButton({ label }: { label: string }) {
-  return (
-    <Button>
-      <Plus className="mr-2 size-4" />
-      {label}
-    </Button>
   );
 }

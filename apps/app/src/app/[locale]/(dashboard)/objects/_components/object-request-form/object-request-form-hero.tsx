@@ -2,64 +2,50 @@
 
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Image as ImageIcon } from "lucide-react";
-import Image from "next/image";
-import type {
-  CollectionEditTabId,
-  CollectionFormData,
-} from "../collection-form-shared/types";
 
-interface HeroImagePreview {
-  previewUrl: string;
-  file: File;
-}
+import type * as React from "react";
+import type { RefObject } from "react";
+
+import {
+  ObjectImageGallery,
+  type ObjectImageGalleryItem,
+} from "../collection-form-shared/object-image-gallery";
+import type { CollectionFormData } from "../collection-form-shared/types";
 
 interface ObjectRequestFormHeroProps {
   formData: CollectionFormData;
-  heroImage?: HeroImagePreview | null;
+  images: ObjectImageGalleryItem[];
   pageBadge: string;
   isDraftCurrent: boolean;
   hasSavedFieldDraft: boolean;
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  cameraInputRef: RefObject<HTMLInputElement | null>;
+  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholders: (key: string) => string;
   onTitleChange: (value: string) => void;
-  onTabSelect: (tabId: CollectionEditTabId) => void;
 }
 
 export function ObjectRequestFormHero({
   formData,
-  heroImage,
+  images,
   pageBadge,
   isDraftCurrent,
   hasSavedFieldDraft,
+  fileInputRef,
+  cameraInputRef,
+  handleFileSelect,
   placeholders,
   onTitleChange,
-  onTabSelect,
 }: ObjectRequestFormHeroProps) {
   return (
     <div className="border-b border-border/60 bg-secondary/10 px-6 py-8 sm:px-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
-        <button
-          type="button"
-          className="group relative shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary transition-colors hover:border-primary/40"
-          onClick={() => onTabSelect("media")}
-        >
-          {heroImage ? (
-            <Image
-              src={heroImage.previewUrl}
-              alt={heroImage.file.name}
-              width={192}
-              height={192}
-              className="size-48 object-cover"
-            />
-          ) : (
-            <div className="flex size-48 items-center justify-center">
-              <ImageIcon className="size-12 text-muted-foreground" />
-            </div>
-          )}
-          <div className="absolute inset-x-0 bottom-0 bg-zinc-950/55 px-3 py-2 text-left text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-            Open media tab
-          </div>
-        </button>
+        <ObjectImageGallery
+          images={images}
+          fileInputRef={fileInputRef}
+          cameraInputRef={cameraInputRef}
+          onFileSelect={handleFileSelect}
+        />
 
         <div className="flex-1 space-y-6">
           <div className="flex flex-wrap items-center gap-2.5">

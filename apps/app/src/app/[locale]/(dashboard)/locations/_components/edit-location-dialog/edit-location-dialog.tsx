@@ -19,6 +19,7 @@ export function EditLocationDialog({
   locationId,
   open,
   onOpenChange,
+  readOnly = false,
 }: EditLocationDialogProps) {
   const t = useScopedI18n("locations.form");
   const tCommon = useScopedI18n("common");
@@ -28,18 +29,34 @@ export function EditLocationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(96vw,960px)] overflow-y-auto sm:max-w-[960px]">
         <DialogHeader>
-          <DialogTitle>{t("editLocation")}</DialogTitle>
-          <DialogDescription>{t("editDescription")}</DialogDescription>
+          <DialogTitle>
+            {readOnly ? t("viewLocation") : t("editLocation")}
+          </DialogTitle>
+          <DialogDescription>
+            {readOnly ? t("viewDescription") : t("editDescription")}
+          </DialogDescription>
         </DialogHeader>
 
         {!form.location ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
+        ) : readOnly ? (
+          <div>
+            <EditLocationForm form={form} readOnly />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                {tCommon("close")}
+              </Button>
+            </DialogFooter>
+          </div>
         ) : (
           <form onSubmit={form.handleSubmit}>
             <EditLocationForm form={form} />
-
             <DialogFooter>
               <Button
                 type="button"

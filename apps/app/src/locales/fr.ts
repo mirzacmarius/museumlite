@@ -2062,6 +2062,8 @@ export default {
       createRootLevel: "Créer un emplacement de niveau racine",
       editLocation: "Modifier l'Emplacement",
       editDescription: "Mettez à jour les détails de l'emplacement ci-dessous.",
+      viewLocation: "Voir l'emplacement",
+      viewDescription: "Les détails de l'emplacement sont en lecture seule.",
       nameLabel: "Nom *",
       namePlaceholder: "ex., Aile Est, Tiroir 3",
       nameEnterPlaceholder: "Entrez le nom de l'emplacement",
@@ -2526,6 +2528,8 @@ export default {
         deleteDocumentConfirm:
           "Êtes-vous sûr de vouloir supprimer ce document ? Cette action ne peut pas être annulée.",
         primary: "Principal",
+        primaryImageTooltip:
+          "Cette image est affichée comme image principale de l’objet.",
       },
       errors: {
         titleRequired: "Le titre est requis",

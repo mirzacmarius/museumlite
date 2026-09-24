@@ -1973,6 +1973,8 @@ export default {
       createRootLevel: "Opprett en ny rotplassering",
       editLocation: "Rediger Plassering",
       editDescription: "Oppdater plasseringsdetaljene nedenfor.",
+      viewLocation: "Vis plassering",
+      viewDescription: "Plasseringsdetaljene er skrivebeskyttet.",
       nameLabel: "Navn *",
       namePlaceholder: "f.eks., Øst-fløy, Skuff 3",
       nameEnterPlaceholder: "Skriv inn plasseringsnavn",
@@ -2494,6 +2496,7 @@ export default {
         deleteDocumentConfirm:
           "Er du sikker på at du vil slette dette dokumentet? Denne handlingen kan ikke angres.",
         primary: "Primær",
+        primaryImageTooltip: "Dette bildet vises som objektets hovedbilde.",
       },
       errors: {
         titleRequired: "Tittel er påkrevd",

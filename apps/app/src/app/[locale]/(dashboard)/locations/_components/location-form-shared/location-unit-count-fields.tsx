@@ -18,6 +18,7 @@ interface LocationUnitCountFieldsProps {
   onShelfCountChange: (value: string) => void;
   gridClassName?: string;
   fieldWrapperClassName?: string;
+  disabled?: boolean;
 }
 
 export function LocationUnitCountFields({
@@ -33,6 +34,7 @@ export function LocationUnitCountFields({
   onShelfCountChange,
   gridClassName = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
   fieldWrapperClassName = "grid gap-2",
+  disabled = false,
 }: LocationUnitCountFieldsProps) {
   const t = useScopedI18n("locations.form");
 
@@ -63,6 +65,7 @@ export function LocationUnitCountFields({
               value={valueByKey[field.key]}
               onChange={(e) => setterByKey[field.key](e.target.value)}
               placeholder={t(field.placeholderKey)}
+              disabled={disabled}
             />
           </div>
         ))}
@@ -75,6 +78,7 @@ export function LocationUnitCountFields({
             value={wallItemsPerWall}
             onChange={(e) => onWallItemsPerWallChange(e.target.value)}
             placeholder={t("wallItemsPerWallPlaceholder")}
+            disabled={disabled}
           />
         </div>
       </div>

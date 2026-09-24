@@ -20,9 +20,13 @@ type EditLocationFormState = ReturnType<typeof useEditLocationForm>;
 
 interface EditLocationFormProps {
   form: EditLocationFormState;
+  readOnly?: boolean;
 }
 
-export function EditLocationForm({ form }: EditLocationFormProps) {
+export function EditLocationForm({
+  form,
+  readOnly = false,
+}: EditLocationFormProps) {
   const t = useScopedI18n("locations.form");
   const tLocations = useScopedI18n("locations");
   const tMove = useScopedI18n("locations.move");
@@ -44,6 +48,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
               value={form.name}
               onChange={(e) => form.setName(e.target.value)}
               placeholder={t("nameEnterPlaceholder")}
+              disabled={readOnly}
               required
             />
           </div>
@@ -55,12 +60,17 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
               value={form.locationCode}
               onChange={(e) => form.setLocationCode(e.target.value)}
               placeholder={t("locationIdPlaceholder")}
+              disabled={readOnly}
               required
               maxLength={50}
             />
           </div>
 
-          <LocationTypeSelect value={form.type} onChange={form.setType} />
+          <LocationTypeSelect
+            value={form.type}
+            onChange={form.setType}
+            disabled={readOnly}
+          />
 
           <div className="grid gap-2">
             <Label htmlFor="parent-location">
@@ -69,6 +79,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
             <Select
               value={form.parentLocationId}
               onValueChange={form.setParentLocationId}
+              disabled={readOnly}
             >
               <SelectTrigger id="parent-location">
                 <SelectValue
@@ -101,6 +112,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
               value={form.address}
               onChange={(e) => form.setAddress(e.target.value)}
               placeholder={t("addressEnterPlaceholder")}
+              disabled={readOnly}
             />
           </div>
 
@@ -113,6 +125,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
               value={form.capacity}
               onChange={(e) => form.setCapacity(e.target.value)}
               placeholder={t("capacityPlaceholder")}
+              disabled={readOnly}
             />
           </div>
         </div>
@@ -128,6 +141,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
           onWallItemsPerWallChange={form.setWallItemsPerWall}
           onCabinetCountChange={form.setCabinetCount}
           onShelfCountChange={form.setShelfCount}
+          disabled={readOnly}
         />
 
         <div className="grid gap-2">
@@ -138,6 +152,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
             onChange={(e) => form.setNotes(e.target.value)}
             placeholder={t("notesEnterPlaceholder")}
             rows={3}
+            disabled={readOnly}
           />
         </div>
       </div>
@@ -152,6 +167,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
           fileInputRef={form.fileInputRef}
           onUpload={form.handleLocationImageUpload}
           onRemove={form.removeLocationImage}
+          readOnly={readOnly}
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -164,6 +180,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
               value={form.temperature}
               onChange={(e) => form.setTemperature(e.target.value)}
               placeholder={t("temperaturePlaceholder")}
+              disabled={readOnly}
             />
           </div>
           <div className="grid gap-2">
@@ -176,6 +193,7 @@ export function EditLocationForm({ form }: EditLocationFormProps) {
               value={form.humidity}
               onChange={(e) => form.setHumidity(e.target.value)}
               placeholder={t("humidityPlaceholder")}
+              disabled={readOnly}
             />
           </div>
         </div>

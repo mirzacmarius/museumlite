@@ -16,6 +16,7 @@ interface LocationTypeSelectProps {
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export function LocationTypeSelect({
@@ -23,6 +24,7 @@ export function LocationTypeSelect({
   value,
   onChange,
   required = true,
+  disabled = false,
 }: LocationTypeSelectProps) {
   const t = useScopedI18n("locations.form");
 
@@ -35,6 +37,7 @@ export function LocationTypeSelect({
           onChange(val.charAt(0).toUpperCase() + val.slice(1))
         }
         required={required}
+        disabled={disabled}
       >
         <SelectTrigger id={id}>
           <SelectValue placeholder={t("typePlaceholder")} />

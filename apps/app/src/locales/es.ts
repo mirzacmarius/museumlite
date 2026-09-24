@@ -1978,6 +1978,8 @@ export default {
       createRootLevel: "Crear una nueva ubicación de nivel raíz",
       editLocation: "Editar Ubicación",
       editDescription: "Actualice los detalles de la ubicación a continuación.",
+      viewLocation: "Ver ubicación",
+      viewDescription: "Los detalles de la ubicación son de solo lectura.",
       nameLabel: "Nombre *",
       namePlaceholder: "ej., Ala Este, Cajón 3",
       nameEnterPlaceholder: "Ingrese el nombre de la ubicación",
@@ -2507,6 +2509,8 @@ export default {
         deleteDocumentConfirm:
           "¿Estás seguro de que quieres eliminar este documento? Esta acción no se puede deshacer.",
         primary: "Principal",
+        primaryImageTooltip:
+          "Esta imagen se muestra como la imagen principal del objeto.",
       },
       errors: {
         titleRequired: "El título es obligatorio",

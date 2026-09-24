@@ -29,7 +29,6 @@ export function ObjectRequestFormLayout({
     error,
     isSubmitting,
     isSavingDraft,
-    heroImage,
     pageTitle,
     resolvedBackHref,
     handleNavigate,
@@ -61,6 +60,27 @@ export function ObjectRequestFormLayout({
     pageBadge,
   } = form;
 
+  const galleryImages = [
+    ...selectedFiles.map((file) => ({
+      id: file.id,
+      src: file.previewUrl,
+      alt: file.file.name,
+      isPrimary: file.isPrimary,
+    })),
+    ...persistedDraftMedia.flatMap((item) =>
+      item.mediaCategory === "image" && item.url
+        ? [
+            {
+              id: item.storageId,
+              src: item.url,
+              alt: item.fileName,
+              isPrimary: item.isPrimary,
+            },
+          ]
+        : [],
+    ),
+  ];
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
       <ObjectRequestFormHeader
@@ -80,13 +100,15 @@ export function ObjectRequestFormLayout({
         <form id="object-create-form" onSubmit={handleSubmit}>
           <ObjectRequestFormHero
             formData={formData}
-            heroImage={heroImage}
+            images={galleryImages}
             pageBadge={pageBadge}
             isDraftCurrent={isDraftCurrent}
             hasSavedFieldDraft={hasSavedFieldDraft}
+            fileInputRef={fileInputRef}
+            cameraInputRef={cameraInputRef}
+            handleFileSelect={handleFileSelect}
             placeholders={placeholders}
             onTitleChange={(value) => updateField("title", value)}
-            onTabSelect={setActiveTab}
           />
 
           <ObjectRequestFormTabShell
@@ -101,13 +123,10 @@ export function ObjectRequestFormLayout({
             isLocationTrackingEnabled={isLocationTrackingEnabled}
             enabledModules={enabledModules}
             common={common}
-            fileInputRef={fileInputRef}
-            cameraInputRef={cameraInputRef}
             documentInputRef={documentInputRef}
             selectedFiles={selectedFiles}
             selectedDocuments={selectedDocuments}
             persistedDraftMedia={persistedDraftMedia}
-            handleFileSelect={handleFileSelect}
             handleDocumentSelect={handleDocumentSelect}
             handleSetPrimary={handleSetPrimary}
             handleDeleteImage={handleDeleteImage}

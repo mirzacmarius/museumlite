@@ -36,6 +36,7 @@ function LocationDetailContent() {
   const { currentOrganizationId } = useOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const allLocations = useQuery(
     api.locations.listAll,
@@ -123,6 +124,7 @@ function LocationDetailContent() {
                   onDelete={() => setDeleteDialogOpen(true)}
                   onAdd={() => setAddDialogOpen(true)}
                   onEdit={() => setEditDialogOpen(true)}
+                  onView={() => setViewDialogOpen(true)}
                 />
               }
               selectedLocation={location}
@@ -199,6 +201,12 @@ function LocationDetailContent() {
               locationId={locationId}
               open={editDialogOpen}
               onOpenChange={setEditDialogOpen}
+            />
+            <EditLocationDialog
+              locationId={locationId}
+              open={viewDialogOpen}
+              onOpenChange={setViewDialogOpen}
+              readOnly
             />
             <DeleteLocationDialog
               locationId={locationId}

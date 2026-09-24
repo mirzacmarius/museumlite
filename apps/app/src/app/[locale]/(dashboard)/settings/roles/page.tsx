@@ -1,7 +1,9 @@
 "use client";
 
+import { Button } from "@v1/ui/button";
+import { Plus } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { CreateRoleButton, RoleFormDialog } from "./role-form-dialog";
+import { RoleFormDialog } from "./role-form-dialog";
 import { RolesList } from "./roles-list";
 import { useRolesSettings } from "./use-roles-settings";
 
@@ -65,7 +67,12 @@ export default function RolesSettingsPage() {
             onCancel={closeCreateDialog}
             onTogglePermission={togglePermission}
             t={t}
-            trigger={<CreateRoleButton label={t("createButton")} />}
+            trigger={
+              <Button type="button">
+                <Plus className="mr-2 size-4" />
+                {t("createButton")}
+              </Button>
+            }
           />
         </PermissionGate>
       </div>

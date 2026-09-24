@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { Camera, Star, Upload, X } from "lucide-react";
+import { Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { EditSection } from "../../collection-form-shared/edit-section";
@@ -12,8 +12,6 @@ import type {
 
 export interface ObjectRequestMediaTabProps extends CollectionFormTabProps {
   common: (key: string) => string;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  cameraInputRef: React.RefObject<HTMLInputElement | null>;
   documentInputRef: React.RefObject<HTMLInputElement | null>;
   selectedFiles: Array<{
     id: string;
@@ -23,7 +21,6 @@ export interface ObjectRequestMediaTabProps extends CollectionFormTabProps {
   }>;
   selectedDocuments: Array<{ id: string; file: File; fileName: string }>;
   persistedDraftMedia: DraftMediaItem[];
-  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleDocumentSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleSetPrimary: (fileId: string) => void;
   handleDeleteImage: (fileId: string) => void;
@@ -32,13 +29,10 @@ export interface ObjectRequestMediaTabProps extends CollectionFormTabProps {
 
 export function ObjectRequestMediaTab({
   common,
-  fileInputRef,
-  cameraInputRef,
   documentInputRef,
   selectedFiles,
   selectedDocuments,
   persistedDraftMedia,
-  handleFileSelect,
   handleDocumentSelect,
   handleSetPrimary,
   handleDeleteImage,
@@ -50,43 +44,6 @@ export function ObjectRequestMediaTab({
         title="Images"
         description="Select images for the object and choose which one becomes primary after approval."
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          className="hidden"
-          multiple
-        />
-
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-
-        <div className="mb-5 flex flex-wrap gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="mr-2 size-4" />
-            Upload Images
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => cameraInputRef.current?.click()}
-          >
-            <Camera className="mr-2 size-4" />
-            Take Photo
-          </Button>
-        </div>
-
         {persistedDraftMedia.filter((item) => item.mediaCategory === "image")
           .length > 0 ? (
           <div className="mb-5 space-y-3">

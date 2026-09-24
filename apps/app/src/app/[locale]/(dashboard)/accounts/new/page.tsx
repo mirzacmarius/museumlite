@@ -175,8 +175,8 @@ export default function NewAccountPage() {
   };
 
   return (
-    <div className="flex size-full bg-background px-6">
-      <div className="z-10 mx-auto flex size-full max-w-screen-md gap-12">
+    <div className="h-full min-h-0 w-full overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div className="z-10 mx-auto flex w-full max-w-screen-md flex-col">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
           <NewAccountHeader title={t("newAccount")} backLabel={t("back")} />
           <div className="flex w-full px-6">

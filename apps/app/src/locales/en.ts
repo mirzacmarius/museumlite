@@ -1590,6 +1590,8 @@ export default {
       createRootLevel: "Create a new root-level location",
       editLocation: "Edit Location",
       editDescription: "Update the location details below.",
+      viewLocation: "View Location",
+      viewDescription: "Location details are read-only.",
       nameLabel: "Name *",
       namePlaceholder: "e.g., East Wing, Drawer 3",
       nameEnterPlaceholder: "Enter location name",
@@ -2103,6 +2105,7 @@ export default {
         deleteDocumentConfirm:
           "Are you sure you want to delete this document? This action cannot be undone.",
         primary: "Primary",
+        primaryImageTooltip: "This image is shown as the object's main image.",
       },
       errors: {
         titleRequired: "Title is required",

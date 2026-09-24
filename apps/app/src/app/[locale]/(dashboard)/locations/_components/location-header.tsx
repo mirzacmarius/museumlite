@@ -120,7 +120,7 @@ export function LocationHeader({
               {location.type.replaceAll("_", " ")}
             </span>
           </div>
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex flex-wrap items-center gap-3 text-xl font-medium tracking-tight text-foreground">
               {location.name}
               <span
@@ -151,6 +151,7 @@ export function LocationHeader({
                 ) : null}
               </div>
             ) : null}
+            {actions}
           </div>
           <dl className="mt-3 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-flow-col sm:auto-cols-fr">
             <div className="min-w-0">
@@ -194,7 +195,6 @@ export function LocationHeader({
                   : "No audit recorded"}
               </dd>
             </div>
-            {actions}
           </dl>
         </div>
       </div>

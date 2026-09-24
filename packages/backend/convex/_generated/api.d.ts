@@ -158,6 +158,7 @@ import type * as utils_reportingCatalogAnalytics from "../utils/reportingCatalog
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_superAdmins from "../utils/superAdmins.js";
+import type * as utils_systemRoles from "../utils/systemRoles.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as utils_verificationCode from "../utils/verificationCode.js";
 import type * as utils_webhookEvents from "../utils/webhookEvents.js";
@@ -329,6 +330,7 @@ declare const fullApi: ApiFromModules<{
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/superAdmins": typeof utils_superAdmins;
+  "utils/systemRoles": typeof utils_systemRoles;
   "utils/validators": typeof utils_validators;
   "utils/verificationCode": typeof utils_verificationCode;
   "utils/webhookEvents": typeof utils_webhookEvents;

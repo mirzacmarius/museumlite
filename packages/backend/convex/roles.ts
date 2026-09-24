@@ -7,6 +7,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { getRolePresentation } from "./utils/systemRoles";
 
 /**
  * Create a custom role
@@ -291,6 +292,7 @@ export const listRoles = query({
 
     const rolesWithPermissions = await Promise.all(
       roles.map(async (role) => {
+        const presentation = getRolePresentation(role);
         const rolePermissions = await ctx.db
           .query("rolePermissions")
           .withIndex("by_role", (q) => q.eq("roleId", role._id))
@@ -305,8 +307,8 @@ export const listRoles = query({
 
         return {
           _id: role._id,
-          name: role.name,
-          description: role.description,
+          name: presentation.name,
+          description: presentation.description,
           isSystemRole: role.isSystemRole,
           permissions: permissions.filter(
             (p): p is NonNullable<typeof p> => p !== null,
@@ -359,6 +361,7 @@ export const getRole = query({
       return null;
     }
 
+    const presentation = getRolePresentation(role);
     const rolePermissions = await ctx.db
       .query("rolePermissions")
       .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
@@ -373,8 +376,8 @@ export const getRole = query({
 
     return {
       _id: role._id,
-      name: role.name,
-      description: role.description,
+      name: presentation.name,
+      description: presentation.description,
       isSystemRole: role.isSystemRole,
       permissions: permissions.filter(
         (p): p is NonNullable<typeof p> => p !== null,

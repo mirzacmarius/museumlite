@@ -14,6 +14,7 @@ import {
 } from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { ImageLightbox } from "@v1/ui/image-lightbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import {
   Edit,
@@ -301,9 +302,20 @@ export function MediaGalleryImageGrid({
 
                   <div className="absolute left-2 top-2 flex flex-col gap-1">
                     {file.isPrimary && (
-                      <div className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground">
-                        {tMedia("primary")}
-                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={tMedia("primary")}
+                            className="flex size-7 items-center justify-center rounded bg-primary text-primary-foreground"
+                          >
+                            <Star className="size-4 fill-current" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          {tMedia("primaryImageTooltip")}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                     <MediaGalleryFileTypeBadge
                       kind={displayKind}

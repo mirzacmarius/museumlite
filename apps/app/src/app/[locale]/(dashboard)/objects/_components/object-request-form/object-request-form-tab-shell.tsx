@@ -35,13 +35,10 @@ interface ObjectRequestFormTabShellProps {
   isLocationTrackingEnabled: boolean;
   enabledModules: ObjectRequestGeneralTabProps["enabledModules"];
   common: (key: string) => string;
-  fileInputRef: RefObject<HTMLInputElement | null>;
-  cameraInputRef: RefObject<HTMLInputElement | null>;
   documentInputRef: RefObject<HTMLInputElement | null>;
   selectedFiles: ObjectRequestMediaTabProps["selectedFiles"];
   selectedDocuments: ObjectRequestMediaTabProps["selectedDocuments"];
   persistedDraftMedia: DraftMediaItem[];
-  handleFileSelect: ObjectRequestMediaTabProps["handleFileSelect"];
   handleDocumentSelect: ObjectRequestMediaTabProps["handleDocumentSelect"];
   handleSetPrimary: ObjectRequestMediaTabProps["handleSetPrimary"];
   handleDeleteImage: ObjectRequestMediaTabProps["handleDeleteImage"];
@@ -60,13 +57,10 @@ export function ObjectRequestFormTabShell({
   isLocationTrackingEnabled,
   enabledModules,
   common,
-  fileInputRef,
-  cameraInputRef,
   documentInputRef,
   selectedFiles,
   selectedDocuments,
   persistedDraftMedia,
-  handleFileSelect,
   handleDocumentSelect,
   handleSetPrimary,
   handleDeleteImage,
@@ -126,13 +120,10 @@ export function ObjectRequestFormTabShell({
             <ObjectRequestMediaTab
               {...tabProps}
               common={common}
-              fileInputRef={fileInputRef}
-              cameraInputRef={cameraInputRef}
               documentInputRef={documentInputRef}
               selectedFiles={selectedFiles}
               selectedDocuments={selectedDocuments}
               persistedDraftMedia={persistedDraftMedia}
-              handleFileSelect={handleFileSelect}
               handleDocumentSelect={handleDocumentSelect}
               handleSetPrimary={handleSetPrimary}
               handleDeleteImage={handleDeleteImage}

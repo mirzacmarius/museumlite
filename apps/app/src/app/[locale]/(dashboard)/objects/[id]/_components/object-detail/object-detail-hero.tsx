@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import type { ObjectDetailData } from "../types";
 
 interface PendingMoveRequest {
@@ -48,36 +49,87 @@ export function ObjectDetailHero({
   onDisplayLabel,
   unknownLabel,
 }: ObjectDetailHeroProps) {
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const primaryImageIndex = heroLightboxImages.findIndex(
+    (image) => image.id === heroImage?._id,
+  );
+  const selectedImageIndex = heroLightboxImages.findIndex(
+    (image) => image.id === selectedImageId,
+  );
+  const activeImageIndex =
+    selectedImageIndex >= 0
+      ? selectedImageIndex
+      : Math.max(primaryImageIndex, 0);
+  const activeImage = heroLightboxImages[activeImageIndex];
+
   return (
     <div className="border-b border-border/60 bg-secondary/10 p-8">
       <div className="mx-auto flex max-w-5xl items-start gap-8">
-        <button
-          type="button"
-          className="group relative shrink-0 cursor-zoom-in"
-          onClick={() => heroImage?.url && onHeroLightboxOpenChange(true)}
-          aria-label={viewFullSizeLabel}
-        >
-          {heroImage?.url ? (
-            <Image
-              src={heroImage.thumbnailUrl || heroImage.url}
-              alt={collection.title}
-              width={192}
-              height={192}
-              className="size-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
-            />
-          ) : (
-            <div className="flex size-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
-              <ImageIcon className="size-12 text-muted-foreground" />
+        <div className="shrink-0">
+          <button
+            type="button"
+            className="group relative block cursor-zoom-in"
+            onClick={() =>
+              (activeImage?.url || heroImage?.url) &&
+              onHeroLightboxOpenChange(true)
+            }
+            aria-label={viewFullSizeLabel}
+          >
+            {activeImage?.url || heroImage?.url ? (
+              <Image
+                src={
+                  activeImage?.thumbnailUrl ||
+                  activeImage?.url ||
+                  heroImage?.thumbnailUrl ||
+                  heroImage?.url ||
+                  ""
+                }
+                alt={activeImage?.title || collection.title}
+                width={192}
+                height={192}
+                className="size-48 rounded-xl border border-border/60 bg-secondary object-cover shadow-2xl transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+            ) : (
+              <div className="flex size-48 items-center justify-center rounded-xl border border-border/60 bg-secondary">
+                <ImageIcon className="size-12 text-muted-foreground" />
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
+              <Maximize2 className="size-6 text-white" />
             </div>
-          )}
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
-            <Maximize2 className="size-6 text-white" />
-          </div>
-        </button>
+          </button>
+
+          {heroLightboxImages.length > 1 ? (
+            <div className="mt-3 flex max-w-48 gap-2 overflow-x-auto pb-1">
+              {heroLightboxImages.map((image, index) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  aria-label={`Show image ${index + 1}: ${image.title || collection.title}`}
+                  aria-current={activeImageIndex === index ? "true" : undefined}
+                  className={`relative size-14 shrink-0 overflow-hidden rounded-md border transition-colors ${
+                    activeImageIndex === index
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-border/60 hover:border-primary/50"
+                  }`}
+                  onClick={() => setSelectedImageId(image.id)}
+                >
+                  <Image
+                    src={image.thumbnailUrl || image.url}
+                    alt=""
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         <ImageLightbox
           images={heroLightboxImages}
-          initialIndex={0}
+          initialIndex={activeImageIndex}
           isOpen={isHeroLightboxOpen}
           onClose={() => onHeroLightboxOpenChange(false)}
         />

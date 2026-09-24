@@ -162,6 +162,7 @@ function ObjectDetailView({
     api.objectMoves.getPendingForCollection,
     collection ? { collectionId } : "skip",
   );
+  const objectMedia = useQuery(api.media.list, { collectionId });
 
   const tabs = useMemo(() => {
     return getObjectViewTabs({
@@ -206,17 +207,20 @@ function ObjectDetailView({
   }, [collectionId]);
 
   const heroLightboxImages: LightboxImage[] = useMemo(() => {
-    if (!heroImage?.url || heroImage.fileType !== "image") return [];
-    return [
-      {
-        id: heroImage._id,
-        url: heroImage.url,
-        thumbnailUrl: heroImage.thumbnailUrl || undefined,
-        title: heroImage.fileName,
-        caption: heroImage.caption || undefined,
-      },
-    ];
-  }, [heroImage]);
+    return (objectMedia ?? []).flatMap((image) =>
+      image.url && image.fileType === "image"
+        ? [
+            {
+              id: image._id,
+              url: image.url,
+              thumbnailUrl: image.thumbnailUrl || undefined,
+              title: image.fileName,
+              caption: image.caption || undefined,
+            },
+          ]
+        : [],
+    );
+  }, [objectMedia]);
 
   if (!currentOrganizationId) {
     return (

@@ -60,10 +60,7 @@ interface CollectionEditFormTabShellProps {
   documents: CollectionEditMediaTabProps["documents"];
   common: (key: string) => string;
   t: (key: string) => string;
-  fileInputRef: RefObject<HTMLInputElement | null>;
-  cameraInputRef: RefObject<HTMLInputElement | null>;
   documentInputRef: RefObject<HTMLInputElement | null>;
-  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleDocumentSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSetPrimary: CollectionEditMediaTabProps["handleSetPrimary"];
   handleDeleteMedia: CollectionEditMediaTabProps["handleDeleteMedia"];
@@ -98,10 +95,7 @@ export function CollectionEditFormTabShell({
   documents,
   common,
   t,
-  fileInputRef,
-  cameraInputRef,
   documentInputRef,
-  handleFileSelect,
   handleDocumentSelect,
   handleSetPrimary,
   handleDeleteMedia,
@@ -194,10 +188,7 @@ export function CollectionEditFormTabShell({
               documents={documents}
               common={common}
               t={t}
-              fileInputRef={fileInputRef}
-              cameraInputRef={cameraInputRef}
               documentInputRef={documentInputRef}
-              handleFileSelect={handleFileSelect}
               handleDocumentSelect={handleDocumentSelect}
               handleSetPrimary={handleSetPrimary}
               handleDeleteMedia={handleDeleteMedia}

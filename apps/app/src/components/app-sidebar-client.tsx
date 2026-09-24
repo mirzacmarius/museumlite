@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "@v1/backend/convex/_generated/api";
+import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import {
@@ -98,9 +98,11 @@ interface SidebarUser {
 function TopLevelNavigation({
   items,
   isPathActive,
+  onNavigate,
 }: {
   items: NavigationItem[];
   isPathActive: (url: string) => boolean;
+  onNavigate: () => void;
 }) {
   return (
     <SidebarGroup className="px-2 py-1">
@@ -130,7 +132,7 @@ function TopLevelNavigation({
                       onClick={
                         item.locked
                           ? (event) => event.preventDefault()
-                          : undefined
+                          : onNavigate
                       }
                     >
                       {ItemIcon ? <ItemIcon /> : null}
@@ -161,7 +163,7 @@ function TopLevelNavigation({
                               onClick={
                                 subItem.locked
                                   ? (event) => event.preventDefault()
-                                  : undefined
+                                  : onNavigate
                               }
                             >
                               {SubItemIcon ? <SubItemIcon /> : null}
@@ -197,7 +199,7 @@ function TopLevelNavigation({
                     onClick={
                       item.locked
                         ? (event) => event.preventDefault()
-                        : undefined
+                        : onNavigate
                     }
                   >
                     {ItemIcon ? <ItemIcon /> : null}
@@ -217,9 +219,11 @@ function TopLevelNavigation({
 function NavigationGroups({
   groups,
   isPathActive,
+  onNavigate,
 }: {
   groups: NavigationGroup[];
   isPathActive: (url: string) => boolean;
+  onNavigate: () => void;
 }) {
   return (
     <SidebarGroup className="px-2 py-1">
@@ -272,7 +276,7 @@ function NavigationGroups({
                                 onClick={
                                   item.locked
                                     ? (event) => event.preventDefault()
-                                    : undefined
+                                    : onNavigate
                                 }
                               >
                                 {ItemIcon ? <ItemIcon /> : null}
@@ -394,11 +398,13 @@ function SidebarSearch({ onOpen }: { onOpen: () => void }) {
 function UserMenu({
   currentOrganizationId,
   isMobile,
+  onNavigate,
   onSignOut,
   user,
 }: {
   currentOrganizationId: Id<"organizations"> | null | undefined;
   isMobile: boolean;
+  onNavigate: () => void;
   onSignOut: () => void;
   user: SidebarUser | null | undefined;
 }) {
@@ -444,6 +450,7 @@ function UserMenu({
               <DropdownMenuLabel className="p-0 font-normal">
                 <Link
                   href="/settings"
+                  onClick={onNavigate}
                   className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                 >
                   <Avatar className="size-8 rounded-lg">
@@ -469,7 +476,9 @@ function UserMenu({
               {currentOrganizationId ? (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href="/settings/billing">Manage Billing</Link>
+                    <Link href="/settings/billing" onClick={onNavigate}>
+                      Manage Billing
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -547,7 +556,7 @@ function AppSidebarClientInner({
   const { hasPermission } = usePermissions();
   const { hasFeature, hasModule } = useFeatureAccess();
   const { setOpen } = useCommandPalette();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const user = usePreloadedQuery(preloadedUser);
   const { signOut } = useAuthActions();
   const pathname = usePathname();
@@ -571,6 +580,12 @@ function AppSidebarClientInner({
       window.dispatchEvent(new CustomEvent("command-palette:open"));
     }
   }, [setOpen]);
+
+  const closeMobileSidebar = React.useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, setOpenMobile]);
 
   const currentOrg = organizations.find(
     (org) => org._id === currentOrganizationId,
@@ -614,17 +629,20 @@ function AppSidebarClientInner({
         <TopLevelNavigation
           items={topLevelNavigation}
           isPathActive={isPathActive}
+          onNavigate={closeMobileSidebar}
         />
 
         <NavigationGroups
           groups={navigationGroups}
           isPathActive={isPathActive}
+          onNavigate={closeMobileSidebar}
         />
       </SidebarContent>
 
       <UserMenu
         currentOrganizationId={currentOrganizationId}
         isMobile={isMobile}
+        onNavigate={closeMobileSidebar}
         onSignOut={signOut}
         user={user}
       />
