@@ -52,9 +52,16 @@ export function PlacementRelationshipsTab({
                 Current Location
               </span>
               <div className="flex items-center justify-between gap-3">
-                <span className="min-w-0 text-sm text-foreground">
-                  {location || "-"}
-                </span>
+                {currentLocation ? (
+                  <Link
+                    href={`/locations/${currentLocation._id}`}
+                    className="min-w-0 rounded-sm text-sm text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {location}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 text-sm text-foreground">-</span>
+                )}
                 {collection.currentLocationId && locationCode && (
                   <div className="shrink-0 rounded bg-secondary/60 px-2 py-1 font-mono text-[10px] text-muted-foreground">
                     {locationCode}

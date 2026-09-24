@@ -1,8 +1,9 @@
 "use client";
 
-import { Droplets, ImageIcon, Thermometer } from "lucide-react";
+import { Droplets, Thermometer } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { LocationTypeIcon } from "./location-type-icon";
 
 const LAST_AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -102,8 +103,10 @@ export function LocationHeader({
             />
           ) : (
             <div className="flex size-full flex-col items-center justify-center gap-2 px-2 text-center text-muted-foreground">
-              <ImageIcon className="size-5" />
-              <span className="text-[10px]">No location photo</span>
+              <LocationTypeIcon type={location.type} className="size-8" />
+              <span className="text-[10px] capitalize">
+                {location.type.replaceAll("_", " ")}
+              </span>
             </div>
           )}
         </div>

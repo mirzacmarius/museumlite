@@ -160,6 +160,8 @@ export function LocationLayoutContent({
     objects.set(object.currentLocationId, siblings);
   }
 
+  const hasSublocations = selectedLocation.children.length > 0;
+
   return (
     <>
       <LocationHeader
@@ -171,41 +173,49 @@ export function LocationLayoutContent({
         directObjectCount={occupancy?.objectCount ?? 0}
       />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs font-medium">Locations & objects</span>
-        <fieldset
-          aria-label="Listing style"
-          className="inline-flex rounded-md border border-border p-0.5"
-        >
-          {(
-            [
-              { value: "grid", label: "Grid", icon: LayoutGrid },
-              { value: "thread", label: "Thread", icon: MessagesSquare },
-              { value: "diagram", label: "Diagram", icon: GitBranch },
-              { value: "outline", label: "Outline", icon: ListTree },
-            ] as const
-          ).map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={viewStyle === value}
-              onClick={() => setViewStyle(value)}
-              className={cn(
-                "flex h-7 items-center gap-1.5 rounded px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-indigo-400",
-                viewStyle === value
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </button>
-          ))}
-        </fieldset>
+        <span className="text-xs font-medium">
+          {hasSublocations ? "Locations & objects" : "Objects"}
+        </span>
+        {hasSublocations && (
+          <fieldset
+            aria-label="Listing style"
+            className="inline-flex rounded-md border border-border p-0.5"
+          >
+            {(
+              [
+                { value: "grid", label: "Grid", icon: LayoutGrid },
+                { value: "thread", label: "Thread", icon: MessagesSquare },
+                { value: "diagram", label: "Diagram", icon: GitBranch },
+                { value: "outline", label: "Outline", icon: ListTree },
+              ] as const
+            ).map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={viewStyle === value}
+                onClick={() => setViewStyle(value)}
+                className={cn(
+                  "flex h-7 items-center gap-1.5 rounded px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-indigo-400",
+                  viewStyle === value
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon className="size-3.5" />
+                {label}
+              </button>
+            ))}
+          </fieldset>
+        )}
       </div>
       {objectsAtLocation === undefined ? (
         <p className="text-xs text-muted-foreground">Loading objects…</p>
-      ) : viewStyle === "grid" ? (
-        <LocationGrid objects={objectsAtLocation} locations={locations} />
+      ) : !hasSublocations || viewStyle === "grid" ? (
+        <LocationGrid
+          objects={objectsAtLocation}
+          locations={locations}
+          showLocationIndicator={hasSublocations}
+        />
       ) : viewStyle === "diagram" ? (
         <section
           key={selectedLocation._id}

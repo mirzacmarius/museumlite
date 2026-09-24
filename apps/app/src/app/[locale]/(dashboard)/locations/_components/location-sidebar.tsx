@@ -63,16 +63,31 @@ function LocationSidebarNav({
     [allLocations],
   );
 
-  const initialExpandedLocationIds = useMemo(
-    () =>
-      getInitialExpandedLocationIds({
-        exhibitionLocations,
-        storageLocations,
-        getExhibitionChildren,
-        getStorageChildren: getChildren,
-      }),
-    [locationsStructureKey],
-  );
+  const initialExpandedLocationIds = useMemo(() => {
+    const expandedIds = getInitialExpandedLocationIds({
+      exhibitionLocations,
+      storageLocations,
+      getExhibitionChildren,
+      getStorageChildren: getChildren,
+    });
+    const locationsById = new Map(
+      allLocations.map((location) => [location._id, location]),
+    );
+    let currentLocation = selectedLocationId
+      ? locationsById.get(selectedLocationId)
+      : undefined;
+    const visitedIds = new Set<Id<"locations">>();
+
+    while (currentLocation && !visitedIds.has(currentLocation._id)) {
+      visitedIds.add(currentLocation._id);
+      expandedIds.add(currentLocation._id);
+      currentLocation = currentLocation.parentLocationId
+        ? locationsById.get(currentLocation.parentLocationId)
+        : undefined;
+    }
+
+    return expandedIds;
+  }, [locationsStructureKey, selectedLocationId]);
 
   const toggleLocation = (locationId: Id<"locations">) => {
     setExpandedOverrides((currentLocationIds) => {
