@@ -1,3 +1,3 @@
 {
-  "buildCommand": "node ../../scripts/build-web-vercel.mjs"
+  "buildCommand": "npx turbo run build"
 }
