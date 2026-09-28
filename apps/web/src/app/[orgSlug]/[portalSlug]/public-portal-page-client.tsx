@@ -46,6 +46,7 @@ function PublicPortalPageClientInner() {
 
   const filters = useQuery(api.collections.getPublicFilters, {
     organizationSlug: orgSlug,
+    portalSlug,
   });
 
   const collections = useQuery(api.collections.listPublic, {

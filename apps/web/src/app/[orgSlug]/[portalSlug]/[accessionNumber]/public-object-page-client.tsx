@@ -18,6 +18,7 @@ export function PublicPortalObjectPageClient() {
 
   const object = useQuery(api.collections.getPublic, {
     organizationSlug: orgSlug,
+    portalSlug,
     accessionNumber,
   });
 

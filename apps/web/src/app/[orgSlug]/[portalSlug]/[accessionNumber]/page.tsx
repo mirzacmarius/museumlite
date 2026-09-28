@@ -15,12 +15,13 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { orgSlug, accessionNumber } = await params;
+  const { orgSlug, portalSlug, accessionNumber } = await params;
   const decodedAccessionNumber = decodeURIComponent(accessionNumber);
 
   try {
     const object = await fetchQuery(api.collections.getPublic, {
       organizationSlug: orgSlug,
+      portalSlug,
       accessionNumber: decodedAccessionNumber,
     });
 

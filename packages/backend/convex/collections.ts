@@ -45,6 +45,7 @@ import {
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { findPublicPortalOrganization } from "./utils/publicPortal";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
 const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
@@ -3207,17 +3208,23 @@ export const listPublic = query({
     ),
   }),
   handler: async (ctx, args) => {
-    const organization = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
-      .unique();
+    const { organization, hasOrganization, hasEnabledPortal } =
+      await findPublicPortalOrganization(
+        ctx,
+        args.organizationSlug,
+        args.portalSlug,
+      );
 
     if (!organization) {
       return {
         items: [],
         nextCursor: undefined,
         hasMore: false,
-        portalStatus: "org_not_found" as const,
+        portalStatus: !hasOrganization
+          ? ("org_not_found" as const)
+          : hasEnabledPortal
+            ? ("portal_slug_mismatch" as const)
+            : ("portal_disabled" as const),
       };
     }
 
@@ -3227,19 +3234,6 @@ export const listPublic = query({
         nextCursor: undefined,
         hasMore: false,
         portalStatus: "portal_disabled" as const,
-      };
-    }
-
-    if (
-      args.portalSlug &&
-      organization.settings.portalSettings.portalSlug &&
-      args.portalSlug !== organization.settings.portalSettings.portalSlug
-    ) {
-      return {
-        items: [],
-        nextCursor: undefined,
-        hasMore: false,
-        portalStatus: "portal_slug_mismatch" as const,
       };
     }
 
@@ -3385,6 +3379,7 @@ export const listPublic = query({
 export const getPublic = query({
   args: {
     organizationSlug: v.string(),
+    portalSlug: v.optional(v.string()),
     accessionNumber: v.string(),
   },
   returns: v.union(
@@ -3430,10 +3425,11 @@ export const getPublic = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const organization = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
-      .unique();
+    const { organization } = await findPublicPortalOrganization(
+      ctx,
+      args.organizationSlug,
+      args.portalSlug,
+    );
 
     if (!organization) {
       return null;
@@ -3607,6 +3603,7 @@ export const getPublic = query({
 export const getPublicFilters = query({
   args: {
     organizationSlug: v.string(),
+    portalSlug: v.optional(v.string()),
   },
   returns: v.object({
     objectTypes: v.array(v.string()),
@@ -3614,10 +3611,11 @@ export const getPublicFilters = query({
     periods: v.array(v.string()),
   }),
   handler: async (ctx, args) => {
-    const organization = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug))
-      .unique();
+    const { organization } = await findPublicPortalOrganization(
+      ctx,
+      args.organizationSlug,
+      args.portalSlug,
+    );
 
     if (!organization) {
       return { objectTypes: [], cultures: [], periods: [] };

@@ -13,7 +13,10 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
   const orgSlug = params.orgSlug as string;
   const portalSlug = params.portalSlug as string;
 
-  const organization = useQuery(api.organizations.getBySlug, { slug: orgSlug });
+  const organization = useQuery(api.organizations.getBySlug, {
+    slug: orgSlug,
+    portalSlug,
+  });
 
   const orgTypeLabels: Record<string, string> = {
     museum: "Museum",

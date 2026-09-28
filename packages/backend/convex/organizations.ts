@@ -32,6 +32,7 @@ import {
   getCurrentUserOrganization,
   requirePermission,
 } from "./utils/permissions";
+import { findPublicPortalOrganization } from "./utils/publicPortal";
 import {
   assertCanRemoveSuperAdminMember,
   assertCanRemoveSuperAdminStatus,
@@ -480,6 +481,7 @@ export const get = query({
 export const getBySlug = query({
   args: {
     slug: v.string(),
+    portalSlug: v.optional(v.string()),
   },
   returns: v.union(
     v.object({
@@ -511,10 +513,11 @@ export const getBySlug = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const org = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-      .first();
+    const { organization: org } = await findPublicPortalOrganization(
+      ctx,
+      args.slug,
+      args.portalSlug,
+    );
 
     if (!org) return null;
 

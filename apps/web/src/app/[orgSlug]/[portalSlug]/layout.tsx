@@ -17,6 +17,7 @@ export async function generateMetadata({
   try {
     const organization = await fetchQuery(api.organizations.getBySlug, {
       slug: orgSlug,
+      portalSlug,
     });
 
     const name = organization?.name ?? orgSlug;

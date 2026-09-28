@@ -13,13 +13,13 @@ if (!targetEnvironment) {
 }
 
 if (targetEnvironment === "production") {
-  // The admin app writes to this deployment. The public portal must read it.
-  const productionConvexUrl = "https://limitless-canary-667.convex.cloud";
+  // Use the same Convex deployment as the live admin app.
+  const liveAdminConvexUrl = "https://limitless-canary-667.convex.cloud";
   const result = spawnSync("npx", ["turbo", "run", "build"], {
     cwd: webDirectory,
     env: {
       ...process.env,
-      NEXT_PUBLIC_CONVEX_URL: productionConvexUrl,
+      NEXT_PUBLIC_CONVEX_URL: liveAdminConvexUrl,
     },
     stdio: "inherit",
   });
