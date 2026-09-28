@@ -47,7 +47,7 @@ import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
-const PUBLIC_CATALOG_STATUSES = ["active", "loaned", "archived"] as const;
+const PUBLIC_CATALOG_STATUSES = ["active", "loaned"] as const;
 
 async function validateCollectionReferences(
   ctx: MutationCtx,
@@ -72,7 +72,7 @@ async function validateCollectionReferences(
 }
 
 function isPublicCatalogStatus(status: Doc<"collections">["status"]) {
-  return status === "active" || status === "loaned" || status === "archived";
+  return status === "active" || status === "loaned";
 }
 
 async function requireCollectionTypeModuleEnabled(
