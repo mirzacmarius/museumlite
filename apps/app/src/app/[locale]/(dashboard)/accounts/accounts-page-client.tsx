@@ -264,7 +264,7 @@ function AccountsPageHeader({
   description: string;
   importLabel: string;
   newAccountLabel: string;
-  onExport: () => Promise<unknown[]>;
+  onExport: () => Promise<Record<string, unknown>[] | undefined>;
 }) {
   return (
     <section className="border-b border-border/60 pb-6 dark:border-white/10">
@@ -295,7 +295,7 @@ function AccountsHeaderActions({
 }: {
   importLabel: string;
   newAccountLabel: string;
-  onExport: () => Promise<unknown[]>;
+  onExport: () => Promise<Record<string, unknown>[] | undefined>;
 }) {
   const actionClassName =
     "h-8 gap-1.5 border-border/60 px-3 text-xs font-medium tracking-normal dark:border-white/10 [&_svg]:size-3.5";

@@ -21,8 +21,8 @@ import {
   TooltipTrigger,
 } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
-import { PanelLeft } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { PanelLeft } from "lucide-react";
 import * as React from "react";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";

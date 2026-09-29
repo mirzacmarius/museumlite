@@ -239,7 +239,7 @@ export function EditAccountDetailsFields({
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <UserCog className="size-4" />
-          {t("form.accountTypeRole")}
+          {t("form.accountType")}
         </h3>
         <div className="space-y-4">
           <div className="space-y-2">

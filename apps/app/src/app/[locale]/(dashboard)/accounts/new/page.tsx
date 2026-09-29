@@ -1,9 +1,7 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { Checkbox } from "@v1/ui/checkbox";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
@@ -15,8 +13,8 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
-import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Loader2, Save, Shield, UserCog } from "lucide-react";
+import { useMutation } from "convex/react";
+import { ArrowLeft, Loader2, Save, UserCog } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -47,14 +45,6 @@ interface AccountFormData {
   contactEmail: string;
   notes: string;
   accountType: AccountType;
-  selectedRoles: Id<"roles">[];
-}
-
-interface RoleWithPermissions {
-  _id: Id<"roles">;
-  name: string;
-  description?: string;
-  permissions: Array<{ category: string }>;
 }
 
 const initialFormData: AccountFormData = {
@@ -74,7 +64,6 @@ const initialFormData: AccountFormData = {
   contactEmail: "",
   notes: "",
   accountType: "institution",
-  selectedRoles: [],
 };
 
 export default function NewAccountPage() {
@@ -86,16 +75,6 @@ export default function NewAccountPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AccountFormData>(initialFormData);
-
-  const roles = useQuery(
-    api.roles.listRoles,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
-  const rolesWithLoansPermissions = roles?.filter((role) =>
-    role.permissions.some((permission) => permission.category === "loans"),
-  );
 
   if (!currentOrganizationId) {
     return (
@@ -110,15 +89,6 @@ export default function NewAccountPage() {
     value: AccountFormData[Key],
   ) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const toggleRole = (roleId: Id<"roles">) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedRoles: prev.selectedRoles.includes(roleId)
-        ? prev.selectedRoles.filter((id) => id !== roleId)
-        : [...prev.selectedRoles, roleId],
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,10 +129,6 @@ export default function NewAccountPage() {
           : undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType,
-        roleIds:
-          formData.selectedRoles.length > 0
-            ? formData.selectedRoles
-            : undefined,
       });
       push("/accounts");
     } catch (err) {
@@ -214,12 +180,6 @@ export default function NewAccountPage() {
               accountType={formData.accountType}
               t={t}
               onChange={updateFormData}
-            />
-            <RolesSection
-              roles={rolesWithLoansPermissions}
-              selectedRoles={formData.selectedRoles}
-              t={t}
-              onToggleRole={toggleRole}
             />
             <FormActions
               cancelLabel={tCommon("cancel")}
@@ -505,7 +465,7 @@ function AccountTypeSection({
     <div className="space-y-4">
       <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <UserCog className="size-4" />
-        {t("form.accountTypeRole")}
+        {t("form.accountType")}
       </h3>
       <div className="space-y-4">
         <div className="space-y-2">
@@ -531,58 +491,6 @@ function AccountTypeSection({
           <p className="text-xs text-muted-foreground">
             {t("form.accountTypeDescription")}
           </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RolesSection({
-  roles,
-  selectedRoles,
-  t,
-  onToggleRole,
-}: {
-  roles: RoleWithPermissions[] | undefined;
-  selectedRoles: Id<"roles">[];
-  t: ReturnType<typeof useScopedI18n>;
-  onToggleRole: (roleId: Id<"roles">) => void;
-}) {
-  if (!roles || roles.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-4">
-      <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <Shield className="size-4" />
-        {t("form.rolesWithAccess")}
-      </h3>
-      <div className="space-y-4 rounded-lg border border-border p-4">
-        <p className="text-sm text-muted-foreground">
-          {t("form.rolesDescription")}
-        </p>
-        <div className="space-y-3">
-          {roles.map((role) => (
-            <div key={role._id} className="flex items-center gap-x-2">
-              <Checkbox
-                id={`role-${role._id}`}
-                checked={selectedRoles.includes(role._id)}
-                onCheckedChange={() => onToggleRole(role._id)}
-              />
-              <Label
-                htmlFor={`role-${role._id}`}
-                className="flex-1 cursor-pointer text-sm font-normal"
-              >
-                {role.name}
-                {role.description && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    - {role.description}
-                  </span>
-                )}
-              </Label>
-            </div>
-          ))}
         </div>
       </div>
     </div>

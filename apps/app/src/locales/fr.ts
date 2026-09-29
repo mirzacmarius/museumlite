@@ -2905,12 +2905,8 @@ export default {
       address: "Adresse",
       contactPerson: "Personne de Contact",
       notes: "Notes",
-      accountTypeRole: "Type et Rôle du Compte",
       accountTypeDescription:
         "Catégoriser ce compte par son rôle dans les transactions de prêt",
-      rolesWithAccess: "Rôles avec Accès au Compte",
-      rolesDescription:
-        "Sélectionnez quels rôles peuvent gérer ce compte. Les rôles avec permissions de prêt sont affichés ci-dessous.",
       businessName: "Nom Commercial",
       phone: "Téléphone",
       email: "Email",

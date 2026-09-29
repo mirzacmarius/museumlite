@@ -93,13 +93,6 @@ export default function AccountDetailPage() {
   const timeline = timelineResult?.events;
 
   const deleteAccount = useMutation(api.accounts.remove);
-  const _roles = useQuery(
-    api.roles.listRoles,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
-
   if (!currentOrganizationId) {
     return (
       <div className="flex size-full items-center justify-center">

@@ -2505,12 +2505,8 @@ export default {
       address: "Address",
       contactPerson: "Contact Person",
       notes: "Notes",
-      accountTypeRole: "Account Type & Role",
       accountTypeDescription:
         "Categorize this account by its role in loan transactions",
-      rolesWithAccess: "Roles with Account Access",
-      rolesDescription:
-        "Select which roles can manage this account. Roles with loans permissions are shown below.",
       businessName: "Business Name",
       phone: "Phone",
       email: "Email",

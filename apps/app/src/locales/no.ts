@@ -2868,12 +2868,8 @@ export default {
       address: "Adresse",
       contactPerson: "Kontaktperson",
       notes: "Notater",
-      accountTypeRole: "Kontotype og Rolle",
       accountTypeDescription:
         "Kategoriser denne kontoen etter dens rolle i lånetransaksjoner",
-      rolesWithAccess: "Roller med Kontotilgang",
-      rolesDescription:
-        "Velg hvilke roller som kan administrere denne kontoen. Roller med lånetillatelser vises nedenfor.",
       businessName: "Bedriftsnavn",
       phone: "Telefon",
       email: "E-post",

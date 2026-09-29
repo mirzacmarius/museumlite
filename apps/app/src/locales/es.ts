@@ -2888,12 +2888,8 @@ export default {
       address: "Dirección",
       contactPerson: "Persona de Contacto",
       notes: "Notas",
-      accountTypeRole: "Tipo y Rol de Cuenta",
       accountTypeDescription:
         "Categorizar esta cuenta por su rol en transacciones de préstamo",
-      rolesWithAccess: "Roles con Acceso a la Cuenta",
-      rolesDescription:
-        "Selecciona qué roles pueden gestionar esta cuenta. Los roles con permisos de préstamos se muestran abajo.",
       businessName: "Nombre Comercial",
       phone: "Teléfono",
       email: "Email",

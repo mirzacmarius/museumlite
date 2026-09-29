@@ -13,7 +13,6 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { EditAccountDetailsFields } from "./edit-account-details-fields";
 import type { EditAccountFormData } from "./edit-account-form-types";
-import { EditAccountPermissionsFields } from "./edit-account-permissions-fields";
 
 export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
@@ -25,18 +24,6 @@ export default function EditAccountPage() {
   const updateAccount = useMutation(api.accounts.update);
 
   const account = useQuery(api.accounts.get, { accountId });
-  const roles = useQuery(
-    api.roles.listRoles,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
-  const permissions = useQuery(api.roles.listPermissions, {});
-
-  type Role = NonNullable<typeof roles>[number];
-  type Permission = NonNullable<typeof permissions>[number];
-  type PermissionCategory = Permission["category"];
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<EditAccountFormData>({
@@ -53,7 +40,6 @@ export default function EditAccountPage() {
     contactEmail: "",
     notes: "",
     accountType: "",
-    selectedRoles: [],
   });
 
   useEffect(() => {
@@ -77,43 +63,9 @@ export default function EditAccountPage() {
           | "both"
           | "institution"
           | "",
-        selectedRoles: account.roleIds || [],
       });
     }
   }, [account]);
-
-  // Get roles that have loans permissions
-  const rolesWithLoansPermissions = roles?.filter((role: Role) => {
-    // Check if role has any loans-related permissions
-    return role.permissions.some((perm) => perm.category === "loans");
-  });
-
-  const groupedPermissions = permissions?.reduce(
-    (
-      acc: Partial<Record<PermissionCategory, Permission[]>>,
-      perm: Permission,
-    ) => {
-      const category = perm.category;
-      const existing = acc[category] ?? [];
-      acc[category] = [...existing, perm];
-      return acc;
-    },
-    {},
-  );
-  const groupedPermissionEntries = groupedPermissions
-    ? (Object.entries(groupedPermissions) as Array<
-        [PermissionCategory, Permission[]]
-      >)
-    : [];
-
-  const toggleRole = (roleId: Id<"roles">) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedRoles: prev.selectedRoles.includes(roleId)
-        ? prev.selectedRoles.filter((id) => id !== roleId)
-        : [...prev.selectedRoles, roleId],
-    }));
-  };
 
   if (!currentOrganizationId) {
     return (
@@ -164,10 +116,6 @@ export default function EditAccountPage() {
         contactEmail: formData.contactEmail || undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType || undefined,
-        roleIds:
-          formData.selectedRoles.length > 0
-            ? formData.selectedRoles
-            : undefined,
       });
       push(`/accounts/${accountId}`);
     } catch (err) {
@@ -204,14 +152,6 @@ export default function EditAccountPage() {
                 formData={formData}
                 setFormData={setFormData}
               />
-              <EditAccountPermissionsFields
-                t={t}
-                formData={formData}
-                toggleRole={toggleRole}
-                rolesWithLoansPermissions={rolesWithLoansPermissions}
-                groupedPermissionEntries={groupedPermissionEntries}
-              />
-
               <div className="flex justify-end gap-4">
                 <Button type="button" variant="outline" onClick={() => back()}>
                   {tCommon("cancel")}

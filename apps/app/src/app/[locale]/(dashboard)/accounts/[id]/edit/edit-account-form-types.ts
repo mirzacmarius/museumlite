@@ -1,5 +1,3 @@
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
-
 export interface EditAccountFormData {
   businessName: string;
   phone: string;
@@ -14,5 +12,4 @@ export interface EditAccountFormData {
   contactEmail: string;
   notes: string;
   accountType: "lender" | "borrower" | "both" | "institution" | "";
-  selectedRoles: Id<"roles">[];
 }
