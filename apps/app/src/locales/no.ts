@@ -1900,6 +1900,21 @@ export default {
     subLocations: "underplasseringer",
     locationHistory: "Plasseringshistorikk",
     objectCount: "Objekter på denne Plasseringen",
+    header: {
+      totalObjects: "Objekter totalt",
+      capacity: "Kapasitet",
+      capacityHint:
+        "Kapasitet for objekter som er tilordnet direkte til denne plasseringen",
+      notConfigured: "Ikke konfigurert",
+      overCapacity: "Over kapasitet",
+      openToPublic: "Åpent for publikum",
+      restrictedAccess: "Begrenset tilgang",
+    },
+    sidebar: {
+      empty: "Ingen plasseringer ennå",
+      expand: "Utvid {name}",
+      collapse: "Skjul {name}",
+    },
     importTitle: "Importer Plasseringer fra CSV",
     importDescription:
       "Last opp en CSV-fil med plasseringsdata. Obligatoriske kolonner: name, locationCode, type.",

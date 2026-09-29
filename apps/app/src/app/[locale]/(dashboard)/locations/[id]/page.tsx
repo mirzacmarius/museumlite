@@ -84,7 +84,7 @@ function LocationDetailContent() {
                 href="/locations"
                 className="rounded-sm hover:text-foreground hover:underline focus-visible:outline focus-visible:outline-ring"
               >
-                Locations
+                {t("locations")}
               </Link>
             </li>
             {locationPath.map((item) => (

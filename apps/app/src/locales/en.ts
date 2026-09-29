@@ -1517,6 +1517,20 @@ export default {
     subLocations: "sub-locations",
     locationHistory: "Location History",
     objectCount: "Objects at this Location",
+    header: {
+      totalObjects: "Total objects",
+      capacity: "Capacity",
+      capacityHint: "Capacity of objects assigned directly to this location",
+      notConfigured: "Not configured",
+      overCapacity: "Over capacity",
+      openToPublic: "Open to Public",
+      restrictedAccess: "Restricted Access",
+    },
+    sidebar: {
+      empty: "No locations yet",
+      expand: "Expand {name}",
+      collapse: "Collapse {name}",
+    },
     importTitle: "Import Locations from CSV",
     importDescription:
       "Upload a CSV file with your location data. Required columns: name, locationCode, type.",

@@ -1988,6 +1988,21 @@ export default {
     subLocations: "sous-emplacements",
     locationHistory: "Historique de l'Emplacement",
     objectCount: "Objets à cet Emplacement",
+    header: {
+      totalObjects: "Objets au total",
+      capacity: "Capacité",
+      capacityHint:
+        "Capacité des objets assignés directement à cet emplacement",
+      notConfigured: "Non configurée",
+      overCapacity: "Au-dessus de la capacité",
+      openToPublic: "Ouvert au public",
+      restrictedAccess: "Accès restreint",
+    },
+    sidebar: {
+      empty: "Aucun emplacement pour le moment",
+      expand: "Développer {name}",
+      collapse: "Réduire {name}",
+    },
     importTitle: "Importer des Emplacements depuis CSV",
     importDescription:
       "Téléchargez un fichier CSV avec vos données d'emplacement. Colonnes requises : nom, locationCode, type.",

@@ -1,15 +1,12 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
 import { Droplets, Thermometer } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { useScopedI18n } from "@/locales/client";
+import { occupancyBar } from "./location-occupancy";
 import { LocationTypeIcon } from "./location-type-icon";
-
-const LAST_AUDIT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
 
 interface LocationHeaderProps {
   actions?: ReactNode;
@@ -32,7 +29,6 @@ interface LocationHeaderProps {
   totalObjects: number;
   capacity: number;
   directObjectCount: number;
-  lastAuditDate?: Date;
 }
 
 export function LocationHeader({
@@ -42,8 +38,17 @@ export function LocationHeader({
   totalObjects,
   capacity,
   directObjectCount,
-  lastAuditDate,
 }: LocationHeaderProps) {
+  const t = useScopedI18n("locations.header");
+  const tCommon = useScopedI18n("common");
+  const bar = occupancyBar(directObjectCount, capacity);
+  const capacityRatio = `${directObjectCount.toLocaleString()} / ${capacity.toLocaleString()}`;
+  const capacityLabel =
+    bar.kind === "unconfigured"
+      ? t("notConfigured")
+      : bar.kind === "over"
+        ? `${capacityRatio} · ${t("overCapacity")}`
+        : capacityRatio;
   const storedTemperature =
     typeof location.customFields?.temperature === "number"
       ? location.customFields.temperature
@@ -55,13 +60,10 @@ export function LocationHeader({
   const displayTemperature =
     environmentalData?.temperature ?? storedTemperature;
   const displayHumidity = environmentalData?.humidity ?? storedHumidity;
-  const occupancyPercent =
-    capacity > 0 ? Math.round((directObjectCount / capacity) * 100) : 0;
-
   const getStatusBadge = () => {
     if (!location.isActive) {
       return {
-        text: "Inactive",
+        text: tCommon("inactive"),
         className: "text-muted-foreground bg-muted border-muted-foreground/20",
       };
     }
@@ -69,20 +71,20 @@ export function LocationHeader({
     const type = location.type.toLowerCase();
     if (type.includes("gallery") || type.includes("exhibition")) {
       return {
-        text: "Open to Public",
+        text: t("openToPublic"),
         className: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
       };
     }
 
     if (type.includes("storage") || type.includes("vault")) {
       return {
-        text: "Restricted Access",
+        text: t("restrictedAccess"),
         className: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       };
     }
 
     return {
-      text: "Active",
+      text: tCommon("active"),
       className: "text-blue-400 bg-blue-500/10 border-blue-500/20",
     };
   };
@@ -156,7 +158,7 @@ export function LocationHeader({
           <dl className="mt-3 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-flow-col sm:auto-cols-fr">
             <div className="min-w-0">
               <dt className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Total objects
+                {t("totalObjects")}
               </dt>
               <dd className="mt-1.5 text-lg font-medium tabular-nums text-foreground">
                 {totalObjects.toLocaleString()}
@@ -165,34 +167,30 @@ export function LocationHeader({
             <div className="min-w-0">
               <dt
                 className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground"
-                title="Capacity of objects assigned directly to this location"
+                title={t("capacityHint")}
               >
-                Capacity
+                {t("capacity")}
               </dt>
               <dd className="mt-1.5 flex flex-wrap items-center gap-3">
-                <span className="text-sm tabular-nums text-foreground">
-                  {capacity > 0
-                    ? `${occupancyPercent}% full`
-                    : "Not configured"}
+                <span
+                  className={cn(
+                    "text-sm tabular-nums text-foreground",
+                    bar.kind === "over" && "text-amber-400",
+                  )}
+                >
+                  {capacityLabel}
                 </span>
-                {capacity > 0 ? (
+                {bar.kind === "unconfigured" ? null : (
                   <span className="h-1 w-20 overflow-hidden rounded-full bg-muted dark:bg-zinc-800">
                     <span
-                      className="block h-full rounded-full bg-emerald-500"
-                      style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
+                      className={cn(
+                        "block h-full rounded-full",
+                        bar.kind === "over" ? "bg-amber-500" : "bg-emerald-500",
+                      )}
+                      style={{ width: `${bar.barWidthPercent}%` }}
                     />
                   </span>
-                ) : null}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Last audit
-              </dt>
-              <dd className="mt-1.5 text-sm text-muted-foreground">
-                {lastAuditDate
-                  ? LAST_AUDIT_DATE_FORMATTER.format(lastAuditDate)
-                  : "No audit recorded"}
+                )}
               </dd>
             </div>
           </dl>

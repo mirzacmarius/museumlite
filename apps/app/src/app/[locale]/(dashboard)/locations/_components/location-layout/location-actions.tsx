@@ -3,6 +3,7 @@
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { IconActionButton } from "@/components/icon-action-button";
 import { usePermissions } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface LocationActionsProps {
   onDelete: () => void;
@@ -18,6 +19,8 @@ export function LocationActions({
   onView,
 }: LocationActionsProps) {
   const { hasPermission, isLoading } = usePermissions();
+  const tForm = useScopedI18n("locations.form");
+  const tCommon = useScopedI18n("common");
 
   if (isLoading) return null;
 
@@ -32,13 +35,13 @@ export function LocationActions({
   return (
     <div className="ms-auto flex shrink-0 items-center justify-end gap-2">
       {canView ? (
-        <IconActionButton label="View" onClick={onView}>
+        <IconActionButton label={tForm("viewLocation")} onClick={onView}>
           <Eye className="size-4" aria-hidden="true" />
         </IconActionButton>
       ) : null}
       {canDelete ? (
         <IconActionButton
-          label="Delete"
+          label={tCommon("delete")}
           className="hover:text-destructive"
           onClick={onDelete}
         >
@@ -46,12 +49,12 @@ export function LocationActions({
         </IconActionButton>
       ) : null}
       {canCreate ? (
-        <IconActionButton label="Add" onClick={onAdd}>
+        <IconActionButton label={tForm("addChildLocation")} onClick={onAdd}>
           <Plus className="size-4" aria-hidden="true" />
         </IconActionButton>
       ) : null}
       {canUpdate ? (
-        <IconActionButton label="Edit" onClick={onEdit}>
+        <IconActionButton label={tCommon("edit")} onClick={onEdit}>
           <Pencil className="size-4" aria-hidden="true" />
         </IconActionButton>
       ) : null}

@@ -1904,6 +1904,21 @@ export default {
     subLocations: "sub-ubicaciones",
     locationHistory: "Historial de Ubicación",
     objectCount: "Objetos en esta Ubicación",
+    header: {
+      totalObjects: "Objetos en total",
+      capacity: "Capacidad",
+      capacityHint:
+        "Capacidad de los objetos asignados directamente a esta ubicación",
+      notConfigured: "Sin configurar",
+      overCapacity: "Por encima de la capacidad",
+      openToPublic: "Abierto al público",
+      restrictedAccess: "Acceso restringido",
+    },
+    sidebar: {
+      empty: "Aún no hay ubicaciones",
+      expand: "Expandir {name}",
+      collapse: "Contraer {name}",
+    },
     importTitle: "Importar Ubicaciones desde CSV",
     importDescription:
       "Suba un archivo CSV con sus datos de ubicación. Columnas requeridas: name, locationCode, type.",
