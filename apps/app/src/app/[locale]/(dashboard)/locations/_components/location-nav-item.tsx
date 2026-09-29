@@ -74,7 +74,7 @@ function LocationNavItemRoot({
             : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         }`}
         style={{
-          paddingInlineStart: `${depth * 12 + (expansion === "leaf" ? 20 : 0)}px`,
+          paddingInlineStart: `${depth * 8 + (expansion === "leaf" ? 20 : 0)}px`,
         }}
       >
         {children}
@@ -88,7 +88,7 @@ function LocationNavItemTrigger() {
   const isExpanded = expansion === "expanded";
 
   if (expansion === "leaf") {
-    return <span className="h-7 w-0 shrink-0" />;
+    return null;
   }
 
   return (
@@ -192,6 +192,32 @@ export function LocationNavTreeItem({
       )}
     </li>
   );
+}
+
+export function getLocationPathIds(
+  locations: SidebarLocation[],
+  selectedLocationId: Id<"locations"> | null,
+) {
+  const pathIds = new Set<Id<"locations">>();
+  if (!selectedLocationId) {
+    return pathIds;
+  }
+
+  const locationsById = new Map(
+    locations.map((location) => [location._id, location]),
+  );
+  let currentLocation = locationsById.get(selectedLocationId);
+  const visitedIds = new Set<Id<"locations">>();
+
+  while (currentLocation && !visitedIds.has(currentLocation._id)) {
+    visitedIds.add(currentLocation._id);
+    pathIds.add(currentLocation._id);
+    currentLocation = currentLocation.parentLocationId
+      ? locationsById.get(currentLocation.parentLocationId)
+      : undefined;
+  }
+
+  return pathIds;
 }
 
 export function getInitialExpandedLocationIds({

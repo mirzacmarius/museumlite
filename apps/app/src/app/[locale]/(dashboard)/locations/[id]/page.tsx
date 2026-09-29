@@ -73,7 +73,7 @@ function LocationDetailContent() {
         allLocations={allLocations ?? []}
         exhibitionLocations={exhibitionLocations}
         storageLocations={storageLocations}
-        selectedLocationId={location?.parentLocationId ?? location?._id ?? null}
+        selectedLocationId={locationId}
         onSelectLocation={(id) => push(`/locations/${id}`)}
       />
       <div className="custom-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-background px-4 pb-6 pt-5 dark:bg-zinc-950 md:px-6">
