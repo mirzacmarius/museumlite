@@ -131,6 +131,9 @@ export default {
       typeCannotChange: "El tipo de organización no se puede cambiar",
       slugLabel: "Slug",
       slugCannotChange: "El slug no se puede cambiar",
+      accountNumberLabel: "Número de cuenta",
+      accountNumberCannotChange:
+        "El número de cuenta no se puede cambiar. Indíquelo cuando contacte con soporte.",
       accessionNumberSettings: "Configuración del Número de Accesión",
       formatTemplate: "Plantilla de Formato",
       chooseTemplate: "Elige una plantilla...",

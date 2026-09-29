@@ -128,6 +128,9 @@ export default {
       typeCannotChange: "Le type d'organisation ne peut pas être modifié",
       slugLabel: "Slug",
       slugCannotChange: "Le slug ne peut pas être modifié",
+      accountNumberLabel: "Numéro de compte",
+      accountNumberCannotChange:
+        "Le numéro de compte ne peut pas être modifié. Indiquez-le lorsque vous contactez le support.",
       accessionNumberSettings: "Paramètres du Numéro d'Accession",
       formatTemplate: "Modèle de Format",
       chooseTemplate: "Choisir un modèle...",

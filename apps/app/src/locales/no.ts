@@ -125,6 +125,9 @@ export default {
       typeCannotChange: "Organisasjonstypen kan ikke endres",
       slugLabel: "Slug",
       slugCannotChange: "Slug kan ikke endres",
+      accountNumberLabel: "Kontonummer",
+      accountNumberCannotChange:
+        "Kontonummeret kan ikke endres. Oppgi det når du kontakter support.",
       accessionNumberSettings: "Innstillinger for Aksesjonsnummer",
       formatTemplate: "Formatmal",
       chooseTemplate: "Velg mal...",

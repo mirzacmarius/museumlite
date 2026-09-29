@@ -197,7 +197,7 @@ export function PreferencesSettingsForm({
       >
         {organizationAccountNumber ? (
           <p className="mb-4 text-sm text-muted-foreground">
-            Your organization account number is{" "}
+            Your transfer ID is{" "}
             <span className="font-mono text-foreground">
               {organizationAccountNumber}
             </span>
