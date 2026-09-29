@@ -126,6 +126,9 @@ export default {
       typeCannotChange: "Organization type cannot be changed",
       slugLabel: "Slug",
       slugCannotChange: "Slug cannot be changed",
+      accountNumberLabel: "Account number",
+      accountNumberCannotChange:
+        "Account number cannot be changed. Quote it when you contact support.",
       accessionNumberSettings: "Accession Number Settings",
       formatTemplate: "Format Template",
       chooseTemplate: "Choose template...",

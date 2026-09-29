@@ -15,6 +15,10 @@ import {
 } from "./utils/accessionNumberParser";
 import { markOptionUsageIndexReady } from "./utils/collectionOptionUsages";
 import {
+  mintCustomerNumber,
+  parseCustomerNumber,
+} from "./utils/customerNumber";
+import {
   enforceUserQuota,
   getTierLimits,
   requireFeatureAccess,
@@ -196,11 +200,13 @@ export const create = mutation({
       : defaultSettings;
 
     const accountNumber = await generateNextOrganizationAccountNumber(ctx);
+    const customerNumber = await mintCustomerNumber(ctx, args.type);
 
     const organizationId = await ctx.db.insert("organizations", {
       name,
       slug: normalizedSlug,
       accountNumber,
+      customerNumber,
       allowsIncomingTransferRequests: false,
       type: args.type,
       settings: mergedSettings,
@@ -389,6 +395,7 @@ export const get = query({
       name: v.string(),
       slug: v.string(),
       accountNumber: v.optional(v.string()),
+      customerNumber: v.optional(v.string()),
       allowsIncomingTransferRequests: v.optional(v.boolean()),
       type: v.union(
         v.literal("museum"),
@@ -472,6 +479,39 @@ export const get = query({
     }
     const org = await ctx.db.get(args.organizationId);
     return org;
+  },
+});
+
+export const getByCustomerNumber = internalQuery({
+  args: { customerNumber: v.string() },
+  returns: v.union(
+    v.object({
+      organizationId: v.id("organizations"),
+      name: v.string(),
+      customerNumber: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const parsed = parseCustomerNumber(args.customerNumber);
+    if (!parsed) {
+      return null;
+    }
+
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_customerNumber", (q) => q.eq("customerNumber", parsed))
+      .unique();
+
+    if (!organization) {
+      return null;
+    }
+
+    return {
+      organizationId: organization._id,
+      name: organization.name,
+      customerNumber: parsed,
+    };
   },
 });
 
@@ -1346,7 +1386,8 @@ export const listChildOrganizations = query({
 
     return children
       .filter((child) => child._id !== args.organizationId)
-      .sort((left, right) => left.name.localeCompare(right.name));
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map(({ customerNumber: _customerNumber, ...child }) => child);
   },
 });
 

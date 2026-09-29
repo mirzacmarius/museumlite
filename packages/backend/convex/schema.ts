@@ -126,6 +126,7 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     accountNumber: v.optional(v.string()),
+    customerNumber: v.optional(v.string()),
     allowsIncomingTransferRequests: v.optional(v.boolean()),
     logoId: v.optional(v.id("_storage")),
     type: v.union(
@@ -196,6 +197,7 @@ export default defineSchema({
   })
     .index("by_slug", ["slug"])
     .index("by_accountNumber", ["accountNumber"])
+    .index("by_customerNumber", ["customerNumber"])
     .index("by_allowsIncomingTransferRequests", [
       "allowsIncomingTransferRequests",
     ])
@@ -1798,6 +1800,11 @@ export default defineSchema({
     scopeKey: v.literal("global"),
     currentValue: v.number(),
     lastGeneratedAt: v.number(),
+  }).index("by_scopeKey", ["scopeKey"]),
+
+  customerNumberCounter: defineTable({
+    scopeKey: v.literal("global"),
+    currentValue: v.number(),
   }).index("by_scopeKey", ["scopeKey"]),
 
   // Loan number counter tracking (per year)

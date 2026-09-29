@@ -87,8 +87,11 @@ function BasicInformationCard({
   name,
   onNameChange,
   organization,
+  customerNumber,
 }: {
   labels: {
+    accountNumberCannotChange: string;
+    accountNumberLabel: string;
     basicInformation: string;
     nameLabel: string;
     slugCannotChange: string;
@@ -102,6 +105,7 @@ function BasicInformationCard({
     slug: string;
     type: string;
   };
+  customerNumber: string | null;
 }) {
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -121,6 +125,20 @@ function BasicInformationCard({
             />
           </PermissionGate>
         </div>
+        {customerNumber ? (
+          <div className="space-y-2">
+            <Label htmlFor="account-number">{labels.accountNumberLabel}</Label>
+            <Input
+              id="account-number"
+              readOnly
+              value={customerNumber}
+              className="bg-muted font-mono"
+            />
+            <p className="text-xs text-muted-foreground">
+              {labels.accountNumberCannotChange}
+            </p>
+          </div>
+        ) : null}
         <div className="space-y-2">
           <Label>{labels.typeLabel}</Label>
           <Input value={organization.type} disabled className="bg-muted" />
@@ -437,6 +455,10 @@ export default function OrganizationSettingsPage() {
 
         <BasicInformationCard
           labels={{
+            accountNumberCannotChange: t(
+              "organization.accountNumberCannotChange",
+            ),
+            accountNumberLabel: t("organization.accountNumberLabel"),
             basicInformation: t("organization.basicInformation"),
             nameLabel: t("organization.nameLabel"),
             slugCannotChange: t("organization.slugCannotChange"),
@@ -447,6 +469,7 @@ export default function OrganizationSettingsPage() {
           name={name}
           onNameChange={setName}
           organization={organization}
+          customerNumber={organization.customerNumber ?? null}
         />
 
         <PermissionGate permission="organization.manage_settings">
