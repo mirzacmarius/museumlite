@@ -125,7 +125,7 @@ function LocationSidebarNav({
   return (
     <nav
       aria-label={t("locations")}
-      className="custom-scrollbar max-h-56 w-full shrink-0 overflow-x-hidden overflow-y-auto border-b border-border/60 bg-background px-2 py-3 dark:border-white/10 dark:bg-zinc-950 md:h-full md:max-h-none md:w-72 md:border-b-0 md:border-e"
+      className="custom-scrollbar max-h-56 w-full shrink-0 overflow-x-hidden overflow-y-auto border-b border-border/60 bg-background px-2 py-3 dark:border-white/10 dark:bg-zinc-950 md:h-full md:max-h-none md:w-56 md:border-b-0 md:border-e"
     >
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">
