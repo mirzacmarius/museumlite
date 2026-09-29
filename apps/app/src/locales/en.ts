@@ -2456,6 +2456,7 @@ export default {
     patronsDescription: "Manage library members and their accounts",
     importCSV: "Import CSV",
     newAccount: "New Account",
+    editAccount: "Edit Account",
     back: "Back",
     createOrganization: "Create Organization",
     searchPlaceholder:

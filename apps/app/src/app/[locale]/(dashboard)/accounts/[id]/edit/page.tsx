@@ -10,24 +10,35 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { parseDateInputValue } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
-import { EditAccountDetailsFields } from "./edit-account-details-fields";
-import type { EditAccountFormData } from "./edit-account-form-types";
+import {
+  AccountFormFields,
+  type AccountFormValues,
+} from "../../_components/account-form-fields";
+
+function formatDateInputValue(timestamp: number | undefined) {
+  return timestamp === undefined
+    ? ""
+    : new Date(timestamp).toISOString().slice(0, 10);
+}
 
 export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
-  const params = useParams();
+  const params = useParams<{ id: Id<"accounts"> }>();
+  const accountId = params.id;
   const { push, back } = useRouter();
-  const accountId = params.id as Id<"accounts">;
   const { currentOrganizationId } = useOrganization();
   const updateAccount = useMutation(api.accounts.update);
-
   const account = useQuery(api.accounts.get, { accountId });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<EditAccountFormData>({
+  const [formData, setFormData] = useState<AccountFormValues>({
+    holderType: "organization",
     businessName: "",
+    taxId: "",
+    dateOfBirth: "",
     phone: "",
     email: "",
     address: "",
@@ -45,24 +56,22 @@ export default function EditAccountPage() {
   useEffect(() => {
     if (account) {
       setFormData({
-        businessName: account.businessName || "",
-        phone: account.phone || "",
-        email: account.email || "",
-        address: account.address || "",
-        address2: account.address2 || "",
-        zipCode: account.zipCode || "",
-        city: account.city || "",
-        country: account.country || "",
-        contactPerson: account.contactPerson || "",
-        contactPhone: account.contactPhone || "",
-        contactEmail: account.contactEmail || "",
-        notes: account.notes || "",
-        accountType: (account.accountType || "") as
-          | "lender"
-          | "borrower"
-          | "both"
-          | "institution"
-          | "",
+        holderType: account.holderType ?? "organization",
+        businessName: account.businessName ?? "",
+        taxId: account.taxId ?? "",
+        dateOfBirth: formatDateInputValue(account.dateOfBirth),
+        phone: account.phone ?? "",
+        email: account.email ?? "",
+        address: account.address ?? "",
+        address2: account.address2 ?? "",
+        zipCode: account.zipCode ?? "",
+        city: account.city ?? "",
+        country: account.country ?? "",
+        contactPerson: account.contactPerson ?? "",
+        contactPhone: account.contactPhone ?? "",
+        contactEmail: account.contactEmail ?? "",
+        notes: account.notes ?? "",
+        accountType: account.accountType ?? "",
       });
     }
   }, [account]);
@@ -74,7 +83,6 @@ export default function EditAccountPage() {
       </div>
     );
   }
-
   if (account === undefined) {
     return (
       <div className="flex size-full items-center justify-center">
@@ -82,7 +90,6 @@ export default function EditAccountPage() {
       </div>
     );
   }
-
   if (account === null) {
     return (
       <div className="flex size-full items-center justify-center">
@@ -91,19 +98,31 @@ export default function EditAccountPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const updateFormData = <Key extends keyof AccountFormValues>(
+    key: Key,
+    value: AccountFormValues[Key],
+  ) => {
+    setFormData((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(null);
     if (!formData.businessName.trim()) {
       setError(t("form.errors.businessNameRequired"));
       return;
     }
-
+    const isOrganization = formData.holderType === "organization";
     setIsSubmitting(true);
     try {
       await updateAccount({
         accountId,
+        holderType: formData.holderType,
         businessName: formData.businessName,
+        taxId: isOrganization ? formData.taxId : undefined,
+        dateOfBirth: isOrganization
+          ? undefined
+          : parseDateInputValue(formData.dateOfBirth),
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         address: formData.address || undefined,
@@ -111,9 +130,15 @@ export default function EditAccountPage() {
         zipCode: formData.zipCode || undefined,
         city: formData.city || undefined,
         country: formData.country || undefined,
-        contactPerson: formData.contactPerson || undefined,
-        contactPhone: formData.contactPhone || undefined,
-        contactEmail: formData.contactEmail || undefined,
+        contactPerson: isOrganization
+          ? formData.contactPerson || undefined
+          : undefined,
+        contactPhone: isOrganization
+          ? formData.contactPhone || undefined
+          : undefined,
+        contactEmail: isOrganization
+          ? formData.contactEmail || undefined
+          : undefined,
         notes: formData.notes || undefined,
         accountType: formData.accountType || undefined,
       });
@@ -128,48 +153,50 @@ export default function EditAccountPage() {
   };
 
   return (
-    <div className="flex size-full bg-background px-6">
-      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
-        <div className="flex min-h-0 w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full shrink-0 items-center justify-between rounded-lg border-b border-border p-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={`/accounts/${accountId}`}>
-                <ArrowLeft className="mr-2 size-4" />
-                {t("back")}
-              </Link>
-            </Button>
+    <div className="h-full min-h-0 w-full overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div className="z-10 mx-auto flex w-full max-w-screen-md flex-col">
+        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/accounts/${accountId}`}>
+                  <ArrowLeft className="mr-2 size-4" />
+                  {t("back")}
+                </Link>
+              </Button>
+              <h2 className="text-xl font-medium text-primary">
+                {t("editAccount")}
+              </h2>
+            </div>
           </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="min-h-0 flex-1 overflow-y-auto p-6 custom-scrollbar"
-          >
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-border" />
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {error && (
-              <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
-            <div className="@container mx-auto max-w-4xl space-y-5">
-              <EditAccountDetailsFields
-                t={t}
-                formData={formData}
-                setFormData={setFormData}
-              />
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => back()}>
-                  {tCommon("cancel")}
+            <AccountFormFields
+              formData={formData}
+              t={t}
+              onChange={updateFormData}
+            />
+            <div className="flex justify-end gap-4 pt-4">
+              <Button type="button" variant="outline" onClick={() => back()}>
+                {tCommon("cancel")}
+              </Button>
+              <PermissionGate permission="loans.update">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 size-4" />
+                  )}
+                  {isSubmitting ? t("form.updating") : t("form.updateButton")}
                 </Button>
-                <PermissionGate permission="loans.update">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 size-4" />
-                    )}
-                    {isSubmitting ? t("form.updating") : t("form.updateButton")}
-                  </Button>
-                </PermissionGate>
-              </div>
+              </PermissionGate>
             </div>
           </form>
         </div>

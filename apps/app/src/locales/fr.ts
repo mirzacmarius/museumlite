@@ -2854,6 +2854,7 @@ export default {
     patronsDescription: "Gérer les membres de la bibliothèque et leurs comptes",
     importCSV: "Importer CSV",
     newAccount: "Nouveau Compte",
+    editAccount: "Modifier le compte",
     back: "Retour",
     createOrganization: "Créer une Organisation",
     searchPlaceholder:

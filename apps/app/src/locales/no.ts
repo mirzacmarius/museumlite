@@ -2818,6 +2818,7 @@ export default {
     patronsDescription: "Administrer bibliotekmedlemmer og deres kontoer",
     importCSV: "Importer CSV",
     newAccount: "Ny Konto",
+    editAccount: "Rediger konto",
     back: "Tilbake",
     createOrganization: "Opprett Organisasjon",
     searchPlaceholder:
