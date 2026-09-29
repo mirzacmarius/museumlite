@@ -3,6 +3,10 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 import { processOptionUsageBackfillPage } from "./utils/collectionOptionUsages";
+import {
+  assignCustomerNumberIfMissing,
+  parseCustomerNumber,
+} from "./utils/customerNumber";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
@@ -1072,6 +1076,56 @@ export const backfillOrganizationTransferFields = internalMutation({
 
     console.log(
       `Migration complete: ${result.accountNumbersAssigned} account numbers assigned, ${result.transferFlagsSynced} transfer flags synced (${result.totalOrganizations} organizations)`,
+    );
+
+    return result;
+  },
+});
+
+/**
+ * Run: bunx convex run migrations:backfillCustomerNumbers
+ */
+export const backfillCustomerNumbers = internalMutation({
+  args: {},
+  returns: v.object({
+    totalOrganizations: v.number(),
+    customerNumbersAssigned: v.number(),
+    alreadyAssigned: v.number(),
+  }),
+  handler: async (ctx) => {
+    console.log("Starting migration: Backfill organization customer numbers");
+
+    const organizations = await ctx.db.query("organizations").collect();
+    const sortedOrganizations = organizations.sort(
+      (a, b) => a._creationTime - b._creationTime,
+    );
+
+    let customerNumbersAssigned = 0;
+    let alreadyAssigned = 0;
+
+    for (const organization of sortedOrganizations) {
+      const hadValidCustomerNumber = Boolean(
+        organization.customerNumber &&
+          parseCustomerNumber(organization.customerNumber),
+      );
+
+      await assignCustomerNumberIfMissing(ctx, organization);
+
+      if (hadValidCustomerNumber) {
+        alreadyAssigned++;
+      } else {
+        customerNumbersAssigned++;
+      }
+    }
+
+    const result = {
+      totalOrganizations: sortedOrganizations.length,
+      customerNumbersAssigned,
+      alreadyAssigned,
+    };
+
+    console.log(
+      `Migration complete: ${result.customerNumbersAssigned} customer numbers assigned, ${result.alreadyAssigned} already assigned (${result.totalOrganizations} organizations)`,
     );
 
     return result;
