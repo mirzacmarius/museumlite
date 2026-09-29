@@ -149,7 +149,7 @@ export default function EditAccountPage() {
                 {error}
               </div>
             )}
-            <div className="mx-auto max-w-2xl space-y-6">
+            <div className="@container mx-auto max-w-4xl space-y-5">
               <EditAccountDetailsFields
                 t={t}
                 formData={formData}

@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
-import { UserCog } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { useScopedI18n } from "@/locales/client";
 import type { EditAccountFormData } from "./edit-account-form-types";
@@ -28,244 +27,203 @@ export function EditAccountDetailsFields({
 }: EditAccountDetailsFieldsProps) {
   return (
     <>
-      {/* Business Information */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          {t("form.businessInformation")}
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="businessName">
-              {t("form.businessName")} <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="businessName"
-              value={formData.businessName}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  businessName: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.businessName")}
-              required
-            />
-          </div>
+      <div className="grid grid-cols-1 gap-4 @min-[28rem]:grid-cols-2 @min-[42rem]:grid-cols-3">
+        <div className="space-y-2 @min-[28rem]:col-span-2 @min-[42rem]:col-span-1">
+          <Label htmlFor="businessName">
+            {t("form.businessName")} <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="businessName"
+            value={formData.businessName}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                businessName: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.businessName")}
+            required
+          />
+        </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t("form.phone")}</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    phone: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.phone")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("form.email")}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.email")}
-              />
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">{t("form.phone")}</Label>
+          <Input
+            id="phone"
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, phone: e.target.value }))
+            }
+            placeholder={t("form.placeholders.phone")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">{t("form.email")}</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, email: e.target.value }))
+            }
+            placeholder={t("form.placeholders.email")}
+          />
         </div>
       </div>
 
-      {/* Address */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          {t("form.address")}
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="address">{t("form.streetAddress")}</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  address: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.streetAddress")}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address2">{t("form.addressLine2")}</Label>
-            <Input
-              id="address2"
-              value={formData.address2}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  address2: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.addressLine2")}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">{t("form.city")}</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    city: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.city")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
-              <Input
-                id="zipCode"
-                value={formData.zipCode}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    zipCode: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.zipCode")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">{t("form.country")}</Label>
-              <Input
-                id="country"
-                value={formData.country}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    country: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.country")}
-              />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 gap-4 @min-[28rem]:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="address">{t("form.streetAddress")}</Label>
+          <Input
+            id="address"
+            value={formData.address}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, address: e.target.value }))
+            }
+            placeholder={t("form.placeholders.streetAddress")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="address2">{t("form.addressLine2")}</Label>
+          <Input
+            id="address2"
+            value={formData.address2}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, address2: e.target.value }))
+            }
+            placeholder={t("form.placeholders.addressLine2")}
+          />
         </div>
       </div>
 
-      {/* Contact Person */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          {t("form.contactPerson")}
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="contactPerson">{t("form.contactName")}</Label>
-            <Input
-              id="contactPerson"
-              value={formData.contactPerson}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  contactPerson: e.target.value,
-                }))
-              }
-              placeholder={t("form.placeholders.contactName")}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">{t("form.contactPhone")}</Label>
-              <Input
-                id="contactPhone"
-                value={formData.contactPhone}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    contactPhone: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.phone")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">{t("form.contactEmail")}</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                value={formData.contactEmail}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    contactEmail: e.target.value,
-                  }))
-                }
-                placeholder={t("form.placeholders.contactEmail")}
-              />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 gap-4 @min-[28rem]:grid-cols-2 @min-[42rem]:grid-cols-3">
+        <div className="space-y-2">
+          <Label htmlFor="city">{t("form.city")}</Label>
+          <Input
+            id="city"
+            value={formData.city}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                city: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.city")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="zipCode">{t("form.zipCode")}</Label>
+          <Input
+            id="zipCode"
+            value={formData.zipCode}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                zipCode: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.zipCode")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="country">{t("form.country")}</Label>
+          <Input
+            id="country"
+            value={formData.country}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                country: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.country")}
+          />
         </div>
       </div>
 
-      {/* Notes */}
-      <div className="space-y-2">
-        <Label htmlFor="notes">{t("form.notes")}</Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, notes: e.target.value }))
-          }
-          placeholder={t("form.placeholders.notes")}
-          rows={4}
-        />
+      <div className="grid grid-cols-1 gap-4 @min-[28rem]:grid-cols-2 @min-[42rem]:grid-cols-3">
+        <div className="space-y-2 @min-[28rem]:col-span-2 @min-[42rem]:col-span-1">
+          <Label htmlFor="contactPerson">{t("form.contactName")}</Label>
+          <Input
+            id="contactPerson"
+            value={formData.contactPerson}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                contactPerson: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.contactName")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="contactPhone">{t("form.contactPhone")}</Label>
+          <Input
+            id="contactPhone"
+            value={formData.contactPhone}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                contactPhone: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.phone")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="contactEmail">{t("form.contactEmail")}</Label>
+          <Input
+            id="contactEmail"
+            type="email"
+            value={formData.contactEmail}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                contactEmail: e.target.value,
+              }))
+            }
+            placeholder={t("form.placeholders.contactEmail")}
+          />
+        </div>
       </div>
 
-      {/* Account Type / Role */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <UserCog className="size-4" />
-          {t("form.accountType")}
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="accountType">{t("form.accountType")}</Label>
-            <Select
-              value={formData.accountType}
-              onValueChange={(
-                value: "lender" | "borrower" | "both" | "institution" | "",
-              ) => setFormData((prev) => ({ ...prev, accountType: value }))}
-            >
-              <SelectTrigger id="accountType">
-                <SelectValue placeholder={t("form.placeholders.accountType")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="lender">{t("types.lender")}</SelectItem>
-                <SelectItem value="borrower">{t("types.borrower")}</SelectItem>
-                <SelectItem value="both">{t("types.both")}</SelectItem>
-                <SelectItem value="institution">
-                  {t("types.institution")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {t("form.accountTypeDescription")}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 gap-4 @min-[42rem]:grid-cols-3">
+        <div className="space-y-2 @min-[42rem]:col-span-2">
+          <Label htmlFor="notes">{t("form.notes")}</Label>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, notes: e.target.value }))
+            }
+            placeholder={t("form.placeholders.notes")}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="accountType">{t("form.accountType")}</Label>
+          <Select
+            value={formData.accountType}
+            onValueChange={(
+              value: "lender" | "borrower" | "both" | "institution" | "",
+            ) => setFormData((prev) => ({ ...prev, accountType: value }))}
+          >
+            <SelectTrigger id="accountType">
+              <SelectValue placeholder={t("form.placeholders.accountType")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lender">{t("types.lender")}</SelectItem>
+              <SelectItem value="borrower">{t("types.borrower")}</SelectItem>
+              <SelectItem value="both">{t("types.both")}</SelectItem>
+              <SelectItem value="institution">
+                {t("types.institution")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {t("form.accountTypeDescription")}
+          </p>
         </div>
       </div>
     </>
