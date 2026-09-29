@@ -130,8 +130,8 @@ export default function EditAccountPage() {
   return (
     <div className="flex size-full bg-background px-6">
       <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
-        <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
+        <div className="flex min-h-0 w-full flex-col rounded-lg border border-border bg-card">
+          <div className="flex w-full shrink-0 items-center justify-between rounded-lg border-b border-border p-6">
             <Button variant="ghost" size="sm" asChild>
               <Link href={`/accounts/${accountId}`}>
                 <ArrowLeft className="mr-2 size-4" />
@@ -140,7 +140,10 @@ export default function EditAccountPage() {
             </Button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
+          <form
+            onSubmit={handleSubmit}
+            className="min-h-0 flex-1 overflow-y-auto p-6 custom-scrollbar"
+          >
             {error && (
               <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
