@@ -910,6 +910,7 @@ export default {
     },
   },
   locations: {
+    locations: "Locații",
     title: "Locații",
     description: "Gestionează locațiile de depozitare și expunere",
     newLocation: "Locație Nouă",
@@ -929,6 +930,20 @@ export default {
     subLocations: "sub-locații",
     locationHistory: "Istoric locație",
     objectCount: "Obiecte în această locație",
+    header: {
+      totalObjects: "Total obiecte",
+      capacity: "Capacitate",
+      capacityHint: "Capacitatea obiectelor atribuite direct acestei locații",
+      notConfigured: "Neconfigurată",
+      overCapacity: "Peste capacitate",
+      openToPublic: "Deschis publicului",
+      restrictedAccess: "Acces restricționat",
+    },
+    sidebar: {
+      empty: "Nicio locație încă",
+      expand: "Extinde {name}",
+      collapse: "Restrânge {name}",
+    },
     importTitle: "Importă locații din CSV",
     importDescription:
       "Încarcă un fișier CSV cu datele locațiilor. Coloane necesare: name, locationCode, type.",

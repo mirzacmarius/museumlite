@@ -19,6 +19,7 @@ interface LocationNavItemContextValue {
   onSelect: () => void;
   expansion: "leaf" | "expanded" | "collapsed";
   onToggle: () => void;
+  toggleLabel: (name: string, isExpanded: boolean) => string;
   depth: number;
 }
 
@@ -40,6 +41,7 @@ interface LocationNavItemRootProps {
   state: Pick<LocationNavItemContextValue, "selection" | "expansion">;
   onSelect: () => void;
   onToggle: () => void;
+  toggleLabel: (name: string, isExpanded: boolean) => string;
   depth: number;
   children: ReactNode;
 }
@@ -49,6 +51,7 @@ function LocationNavItemRoot({
   state,
   onSelect,
   onToggle,
+  toggleLabel,
   depth,
   children,
 }: LocationNavItemRootProps) {
@@ -60,9 +63,10 @@ function LocationNavItemRoot({
       onSelect,
       expansion,
       onToggle,
+      toggleLabel,
       depth,
     }),
-    [location, selection, onSelect, expansion, onToggle, depth],
+    [location, selection, onSelect, expansion, onToggle, toggleLabel, depth],
   );
 
   return (
@@ -74,7 +78,7 @@ function LocationNavItemRoot({
             : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         }`}
         style={{
-          paddingInlineStart: `${depth * 12 + (expansion === "leaf" ? 20 : 0)}px`,
+          paddingInlineStart: `${depth * 8 + (expansion === "leaf" ? 20 : 0)}px`,
         }}
       >
         {children}
@@ -84,11 +88,11 @@ function LocationNavItemRoot({
 }
 
 function LocationNavItemTrigger() {
-  const { location, expansion, onToggle } = useLocationNavItem();
+  const { location, expansion, onToggle, toggleLabel } = useLocationNavItem();
   const isExpanded = expansion === "expanded";
 
   if (expansion === "leaf") {
-    return <span className="h-7 w-0 shrink-0" />;
+    return null;
   }
 
   return (
@@ -96,7 +100,7 @@ function LocationNavItemTrigger() {
       type="button"
       onClick={onToggle}
       className="flex h-7 w-5 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-      aria-label={`${isExpanded ? "Collapse" : "Expand"} ${location.name}`}
+      aria-label={toggleLabel(location.name, isExpanded)}
       aria-expanded={isExpanded}
     >
       <ChevronRight
@@ -138,6 +142,7 @@ interface LocationNavTreeItemProps {
   onSelectLocation: (id: Id<"locations">) => void;
   expandedLocationIds: Set<Id<"locations">>;
   onToggleLocation: (id: Id<"locations">) => void;
+  toggleLabel: (name: string, isExpanded: boolean) => string;
   depth?: number;
 }
 
@@ -149,6 +154,7 @@ export function LocationNavTreeItem({
   onSelectLocation,
   expandedLocationIds,
   onToggleLocation,
+  toggleLabel,
   depth = 0,
 }: LocationNavTreeItemProps) {
   const hasChildren = childLocations.length > 0;
@@ -168,6 +174,7 @@ export function LocationNavTreeItem({
         }}
         onSelect={() => onSelectLocation(location._id)}
         onToggle={() => onToggleLocation(location._id)}
+        toggleLabel={toggleLabel}
         depth={depth}
       >
         <LocationNavItem.Trigger />
@@ -185,6 +192,7 @@ export function LocationNavTreeItem({
               onSelectLocation={onSelectLocation}
               expandedLocationIds={expandedLocationIds}
               onToggleLocation={onToggleLocation}
+              toggleLabel={toggleLabel}
               depth={depth + 1}
             />
           ))}
@@ -192,6 +200,32 @@ export function LocationNavTreeItem({
       )}
     </li>
   );
+}
+
+export function getLocationPathIds(
+  locations: SidebarLocation[],
+  selectedLocationId: Id<"locations"> | null,
+) {
+  const pathIds = new Set<Id<"locations">>();
+  if (!selectedLocationId) {
+    return pathIds;
+  }
+
+  const locationsById = new Map(
+    locations.map((location) => [location._id, location]),
+  );
+  let currentLocation = locationsById.get(selectedLocationId);
+  const visitedIds = new Set<Id<"locations">>();
+
+  while (currentLocation && !visitedIds.has(currentLocation._id)) {
+    visitedIds.add(currentLocation._id);
+    pathIds.add(currentLocation._id);
+    currentLocation = currentLocation.parentLocationId
+      ? locationsById.get(currentLocation.parentLocationId)
+      : undefined;
+  }
+
+  return pathIds;
 }
 
 export function getInitialExpandedLocationIds({

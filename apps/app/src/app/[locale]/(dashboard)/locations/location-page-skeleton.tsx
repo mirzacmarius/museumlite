@@ -13,10 +13,10 @@ const LOCATION_CARD_SKELETON_KEYS = [
 export function LocationsPageSkeleton() {
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-background md:flex-row">
-      <aside className="h-56 w-full shrink-0 overflow-hidden border-b border-border/60 bg-background p-4 dark:border-white/10 md:h-full md:w-56 md:border-b-0 md:border-e">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="h-5 w-24 rounded bg-muted/70" />
-          <div className="size-8 rounded-md bg-muted/60" />
+      <aside className="h-56 w-full shrink-0 overflow-hidden border-b border-border/60 bg-background px-2 py-3 dark:border-white/10 md:h-full md:w-56 md:border-b-0 md:border-e">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="h-3 w-16 rounded bg-muted/70" />
+          <div className="h-4 w-6 rounded border border-border/60 bg-muted/50 dark:border-white/10" />
         </div>
         <div className="space-y-5">
           {LOCATION_SECTION_SKELETON_KEYS.map((sectionKey) => (
@@ -25,7 +25,7 @@ export function LocationsPageSkeleton() {
               {LOCATION_ROW_SKELETON_KEYS.map((rowKey) => (
                 <div
                   key={`${sectionKey}-${rowKey}`}
-                  className="h-9 rounded-md bg-muted/40"
+                  className="h-7 rounded-md bg-muted/40"
                 />
               ))}
             </div>

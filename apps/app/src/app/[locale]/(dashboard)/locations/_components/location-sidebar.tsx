@@ -3,8 +3,10 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 import { shouldShowInExhibitionSidebar } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
+import { useScopedI18n } from "@/locales/client";
 import {
   getInitialExpandedLocationIds,
+  getLocationPathIds,
   LocationNavTreeItem,
   type SidebarLocation,
 } from "./location-nav-item";
@@ -39,9 +41,14 @@ function LocationSidebarNav({
   selectedLocationId,
   onSelectLocation,
 }: LocationSidebarProps) {
+  const t = useScopedI18n("locations");
+  const tSidebar = useScopedI18n("locations.sidebar");
+  const tForm = useScopedI18n("locations.form");
   const [expandedOverrides, setExpandedOverrides] = useState<Set<
     Id<"locations">
   > | null>(null);
+  const [expandedForSelectedId, setExpandedForSelectedId] =
+    useState(selectedLocationId);
 
   const getChildren = (parentLocationId: Id<"locations">) =>
     allLocations.filter(
@@ -63,6 +70,11 @@ function LocationSidebarNav({
     [allLocations],
   );
 
+  const selectedPathIds = useMemo(
+    () => getLocationPathIds(allLocations, selectedLocationId),
+    [allLocations, selectedLocationId],
+  );
+
   const initialExpandedLocationIds = useMemo(() => {
     const expandedIds = getInitialExpandedLocationIds({
       exhibitionLocations,
@@ -70,24 +82,26 @@ function LocationSidebarNav({
       getExhibitionChildren,
       getStorageChildren: getChildren,
     });
-    const locationsById = new Map(
-      allLocations.map((location) => [location._id, location]),
-    );
-    let currentLocation = selectedLocationId
-      ? locationsById.get(selectedLocationId)
-      : undefined;
-    const visitedIds = new Set<Id<"locations">>();
-
-    while (currentLocation && !visitedIds.has(currentLocation._id)) {
-      visitedIds.add(currentLocation._id);
-      expandedIds.add(currentLocation._id);
-      currentLocation = currentLocation.parentLocationId
-        ? locationsById.get(currentLocation.parentLocationId)
-        : undefined;
+    for (const locationId of selectedPathIds) {
+      expandedIds.add(locationId);
     }
-
     return expandedIds;
-  }, [locationsStructureKey, selectedLocationId]);
+  }, [locationsStructureKey, selectedPathIds]);
+
+  if (selectedLocationId !== expandedForSelectedId) {
+    setExpandedForSelectedId(selectedLocationId);
+    setExpandedOverrides((currentLocationIds) => {
+      if (!currentLocationIds) {
+        return currentLocationIds;
+      }
+
+      const nextLocationIds = new Set(currentLocationIds);
+      for (const locationId of selectedPathIds) {
+        nextLocationIds.add(locationId);
+      }
+      return nextLocationIds;
+    });
+  }
 
   const toggleLocation = (locationId: Id<"locations">) => {
     setExpandedOverrides((currentLocationIds) => {
@@ -105,14 +119,18 @@ function LocationSidebarNav({
   };
 
   const expandedLocationIds = expandedOverrides ?? initialExpandedLocationIds;
+  const toggleLabel = (name: string, isExpanded: boolean) =>
+    tSidebar(isExpanded ? "collapse" : "expand", { name });
 
   return (
     <nav
-      aria-label="Locations"
-      className="custom-scrollbar max-h-56 w-full shrink-0 overflow-y-auto border-b border-border/60 bg-background p-4 dark:border-white/10 dark:bg-zinc-950 md:h-full md:max-h-none md:w-56 md:border-b-0 md:border-e"
+      aria-label={t("locations")}
+      className="custom-scrollbar max-h-56 w-full shrink-0 overflow-x-hidden overflow-y-auto border-b border-border/60 bg-background px-2 py-3 dark:border-white/10 dark:bg-zinc-950 md:h-full md:max-h-none md:w-56 md:border-b-0 md:border-e"
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-medium text-foreground">Locations</span>
+        <span className="text-xs font-medium text-foreground">
+          {t("locations")}
+        </span>
         <span className="rounded border border-border/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground dark:border-white/10">
           {allLocations.length}
         </span>
@@ -129,6 +147,7 @@ function LocationSidebarNav({
               onSelectLocation={onSelectLocation}
               expandedLocationIds={expandedLocationIds}
               onToggleLocation={toggleLocation}
+              toggleLabel={toggleLabel}
             />
           ))}
         </ul>
@@ -137,7 +156,7 @@ function LocationSidebarNav({
       {storageLocations.length > 0 && (
         <>
           <div className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Storage
+            {tForm("locationTypes.storage")}
           </div>
           <ul className="text-xs">
             {storageLocations.map((location) => (
@@ -150,6 +169,7 @@ function LocationSidebarNav({
                 onSelectLocation={onSelectLocation}
                 expandedLocationIds={expandedLocationIds}
                 onToggleLocation={toggleLocation}
+                toggleLabel={toggleLabel}
               />
             ))}
           </ul>
@@ -158,7 +178,7 @@ function LocationSidebarNav({
 
       {exhibitionLocations.length === 0 && storageLocations.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
-          <p className="text-xs text-muted-foreground">No locations yet</p>
+          <p className="text-xs text-muted-foreground">{tSidebar("empty")}</p>
         </div>
       )}
     </nav>

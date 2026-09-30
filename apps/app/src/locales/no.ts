@@ -1903,6 +1903,21 @@ export default {
     subLocations: "underplasseringer",
     locationHistory: "Plasseringshistorikk",
     objectCount: "Objekter på denne Plasseringen",
+    header: {
+      totalObjects: "Objekter totalt",
+      capacity: "Kapasitet",
+      capacityHint:
+        "Kapasitet for objekter som er tilordnet direkte til denne plasseringen",
+      notConfigured: "Ikke konfigurert",
+      overCapacity: "Over kapasitet",
+      openToPublic: "Åpent for publikum",
+      restrictedAccess: "Begrenset tilgang",
+    },
+    sidebar: {
+      empty: "Ingen plasseringer ennå",
+      expand: "Utvid {name}",
+      collapse: "Skjul {name}",
+    },
     importTitle: "Importer Plasseringer fra CSV",
     importDescription:
       "Last opp en CSV-fil med plasseringsdata. Obligatoriske kolonner: name, locationCode, type.",
@@ -2806,6 +2821,7 @@ export default {
     patronsDescription: "Administrer bibliotekmedlemmer og deres kontoer",
     importCSV: "Importer CSV",
     newAccount: "Ny Konto",
+    editAccount: "Rediger konto",
     back: "Tilbake",
     createOrganization: "Opprett Organisasjon",
     searchPlaceholder:
@@ -2865,12 +2881,8 @@ export default {
       address: "Adresse",
       contactPerson: "Kontaktperson",
       notes: "Notater",
-      accountTypeRole: "Kontotype og Rolle",
       accountTypeDescription:
         "Kategoriser denne kontoen etter dens rolle i lånetransaksjoner",
-      rolesWithAccess: "Roller med Kontotilgang",
-      rolesDescription:
-        "Velg hvilke roller som kan administrere denne kontoen. Roller med lånetillatelser vises nedenfor.",
       businessName: "Bedriftsnavn",
       phone: "Telefon",
       email: "E-post",

@@ -1991,6 +1991,21 @@ export default {
     subLocations: "sous-emplacements",
     locationHistory: "Historique de l'Emplacement",
     objectCount: "Objets à cet Emplacement",
+    header: {
+      totalObjects: "Objets au total",
+      capacity: "Capacité",
+      capacityHint:
+        "Capacité des objets assignés directement à cet emplacement",
+      notConfigured: "Non configurée",
+      overCapacity: "Au-dessus de la capacité",
+      openToPublic: "Ouvert au public",
+      restrictedAccess: "Accès restreint",
+    },
+    sidebar: {
+      empty: "Aucun emplacement pour le moment",
+      expand: "Développer {name}",
+      collapse: "Réduire {name}",
+    },
     importTitle: "Importer des Emplacements depuis CSV",
     importDescription:
       "Téléchargez un fichier CSV avec vos données d'emplacement. Colonnes requises : nom, locationCode, type.",
@@ -2842,6 +2857,7 @@ export default {
     patronsDescription: "Gérer les membres de la bibliothèque et leurs comptes",
     importCSV: "Importer CSV",
     newAccount: "Nouveau Compte",
+    editAccount: "Modifier le compte",
     back: "Retour",
     createOrganization: "Créer une Organisation",
     searchPlaceholder:
@@ -2902,12 +2918,8 @@ export default {
       address: "Adresse",
       contactPerson: "Personne de Contact",
       notes: "Notes",
-      accountTypeRole: "Type et Rôle du Compte",
       accountTypeDescription:
         "Catégoriser ce compte par son rôle dans les transactions de prêt",
-      rolesWithAccess: "Rôles avec Accès au Compte",
-      rolesDescription:
-        "Sélectionnez quels rôles peuvent gérer ce compte. Les rôles avec permissions de prêt sont affichés ci-dessous.",
       businessName: "Nom Commercial",
       phone: "Téléphone",
       email: "Email",

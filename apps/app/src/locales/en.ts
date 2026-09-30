@@ -1520,6 +1520,20 @@ export default {
     subLocations: "sub-locations",
     locationHistory: "Location History",
     objectCount: "Objects at this Location",
+    header: {
+      totalObjects: "Total objects",
+      capacity: "Capacity",
+      capacityHint: "Capacity of objects assigned directly to this location",
+      notConfigured: "Not configured",
+      overCapacity: "Over capacity",
+      openToPublic: "Open to Public",
+      restrictedAccess: "Restricted Access",
+    },
+    sidebar: {
+      empty: "No locations yet",
+      expand: "Expand {name}",
+      collapse: "Collapse {name}",
+    },
     importTitle: "Import Locations from CSV",
     importDescription:
       "Upload a CSV file with your location data. Required columns: name, locationCode, type.",
@@ -2445,6 +2459,7 @@ export default {
     patronsDescription: "Manage library members and their accounts",
     importCSV: "Import CSV",
     newAccount: "New Account",
+    editAccount: "Edit Account",
     back: "Back",
     createOrganization: "Create Organization",
     searchPlaceholder:
@@ -2504,12 +2519,8 @@ export default {
       address: "Address",
       contactPerson: "Contact Person",
       notes: "Notes",
-      accountTypeRole: "Account Type & Role",
       accountTypeDescription:
         "Categorize this account by its role in loan transactions",
-      rolesWithAccess: "Roles with Account Access",
-      rolesDescription:
-        "Select which roles can manage this account. Roles with loans permissions are shown below.",
       businessName: "Business Name",
       phone: "Phone",
       email: "Email",

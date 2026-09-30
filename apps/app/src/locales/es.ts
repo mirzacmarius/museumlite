@@ -1907,6 +1907,21 @@ export default {
     subLocations: "sub-ubicaciones",
     locationHistory: "Historial de Ubicación",
     objectCount: "Objetos en esta Ubicación",
+    header: {
+      totalObjects: "Objetos en total",
+      capacity: "Capacidad",
+      capacityHint:
+        "Capacidad de los objetos asignados directamente a esta ubicación",
+      notConfigured: "Sin configurar",
+      overCapacity: "Por encima de la capacidad",
+      openToPublic: "Abierto al público",
+      restrictedAccess: "Acceso restringido",
+    },
+    sidebar: {
+      empty: "Aún no hay ubicaciones",
+      expand: "Expandir {name}",
+      collapse: "Contraer {name}",
+    },
     importTitle: "Importar Ubicaciones desde CSV",
     importDescription:
       "Suba un archivo CSV con sus datos de ubicación. Columnas requeridas: name, locationCode, type.",
@@ -2824,6 +2839,7 @@ export default {
     patronsDescription: "Gestionar miembros de la biblioteca y sus cuentas",
     importCSV: "Importar CSV",
     newAccount: "Nueva Cuenta",
+    editAccount: "Editar cuenta",
     back: "Volver",
     createOrganization: "Crear Organización",
     searchPlaceholder:
@@ -2885,12 +2901,8 @@ export default {
       address: "Dirección",
       contactPerson: "Persona de Contacto",
       notes: "Notas",
-      accountTypeRole: "Tipo y Rol de Cuenta",
       accountTypeDescription:
         "Categorizar esta cuenta por su rol en transacciones de préstamo",
-      rolesWithAccess: "Roles con Acceso a la Cuenta",
-      rolesDescription:
-        "Selecciona qué roles pueden gestionar esta cuenta. Los roles con permisos de préstamos se muestran abajo.",
       businessName: "Nombre Comercial",
       phone: "Teléfono",
       email: "Email",

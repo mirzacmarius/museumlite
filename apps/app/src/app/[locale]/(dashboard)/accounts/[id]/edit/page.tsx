@@ -16,35 +16,23 @@ import {
   parseDateInputValue,
 } from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
-import { EditAccountDetailsFields } from "./edit-account-details-fields";
-import type { EditAccountFormData } from "./edit-account-form-types";
-import { EditAccountPermissionsFields } from "./edit-account-permissions-fields";
+import {
+  AccountFormFields,
+  type AccountFormValues,
+} from "../../_components/account-form-fields";
 
 export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
-  const params = useParams();
+  const params = useParams<{ id: Id<"accounts"> }>();
+  const accountId = params.id;
   const { push, back } = useRouter();
-  const accountId = params.id as Id<"accounts">;
   const { currentOrganizationId } = useOrganization();
   const updateAccount = useMutation(api.accounts.update);
-
   const account = useQuery(api.accounts.get, { accountId });
-  const roles = useQuery(
-    api.roles.listRoles,
-    currentOrganizationId
-      ? { organizationId: currentOrganizationId as Id<"organizations"> }
-      : "skip",
-  );
-  const permissions = useQuery(api.roles.listPermissions, {});
-
-  type Role = NonNullable<typeof roles>[number];
-  type Permission = NonNullable<typeof permissions>[number];
-  type PermissionCategory = Permission["category"];
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<EditAccountFormData>({
+  const [formData, setFormData] = useState<AccountFormValues>({
     holderType: "organization",
     businessName: "",
     taxId: "",
@@ -61,70 +49,30 @@ export default function EditAccountPage() {
     contactEmail: "",
     notes: "",
     accountType: "",
-    selectedRoles: [],
   });
 
   useEffect(() => {
     if (account) {
       setFormData({
         holderType: account.holderType ?? "organization",
-        businessName: account.businessName || "",
-        taxId: account.taxId || "",
+        businessName: account.businessName ?? "",
+        taxId: account.taxId ?? "",
         dateOfBirth: formatDateInputValue(account.dateOfBirth),
-        phone: account.phone || "",
-        email: account.email || "",
-        address: account.address || "",
-        address2: account.address2 || "",
-        zipCode: account.zipCode || "",
-        city: account.city || "",
-        country: account.country || "",
-        contactPerson: account.contactPerson || "",
-        contactPhone: account.contactPhone || "",
-        contactEmail: account.contactEmail || "",
-        notes: account.notes || "",
-        accountType: (account.accountType || "") as
-          | "lender"
-          | "borrower"
-          | "both"
-          | "institution"
-          | "",
-        selectedRoles: account.roleIds || [],
+        phone: account.phone ?? "",
+        email: account.email ?? "",
+        address: account.address ?? "",
+        address2: account.address2 ?? "",
+        zipCode: account.zipCode ?? "",
+        city: account.city ?? "",
+        country: account.country ?? "",
+        contactPerson: account.contactPerson ?? "",
+        contactPhone: account.contactPhone ?? "",
+        contactEmail: account.contactEmail ?? "",
+        notes: account.notes ?? "",
+        accountType: account.accountType ?? "",
       });
     }
   }, [account]);
-
-  // Get roles that have loans permissions
-  const rolesWithLoansPermissions = roles?.filter((role: Role) => {
-    // Check if role has any loans-related permissions
-    return role.permissions.some((perm) => perm.category === "loans");
-  });
-
-  const groupedPermissions = permissions?.reduce(
-    (
-      acc: Partial<Record<PermissionCategory, Permission[]>>,
-      perm: Permission,
-    ) => {
-      const category = perm.category;
-      const existing = acc[category] ?? [];
-      acc[category] = [...existing, perm];
-      return acc;
-    },
-    {},
-  );
-  const groupedPermissionEntries = groupedPermissions
-    ? (Object.entries(groupedPermissions) as Array<
-        [PermissionCategory, Permission[]]
-      >)
-    : [];
-
-  const toggleRole = (roleId: Id<"roles">) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedRoles: prev.selectedRoles.includes(roleId)
-        ? prev.selectedRoles.filter((id) => id !== roleId)
-        : [...prev.selectedRoles, roleId],
-    }));
-  };
 
   if (!currentOrganizationId) {
     return (
@@ -133,7 +81,6 @@ export default function EditAccountPage() {
       </div>
     );
   }
-
   if (account === undefined) {
     return (
       <div className="flex size-full items-center justify-center">
@@ -141,7 +88,6 @@ export default function EditAccountPage() {
       </div>
     );
   }
-
   if (account === null) {
     return (
       <div className="flex size-full items-center justify-center">
@@ -150,8 +96,15 @@ export default function EditAccountPage() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const updateFormData = <Key extends keyof AccountFormValues>(
+    key: Key,
+    value: AccountFormValues[Key],
+  ) => {
+    setFormData((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(null);
     const holder = accountHolderFields(formData.holderType);
     if (!formData.businessName.trim()) {
@@ -162,7 +115,6 @@ export default function EditAccountPage() {
       );
       return;
     }
-
     setIsSubmitting(true);
     try {
       await updateAccount({
@@ -191,10 +143,6 @@ export default function EditAccountPage() {
           : "",
         notes: formData.notes || undefined,
         accountType: formData.accountType || undefined,
-        roleIds:
-          formData.selectedRoles.length > 0
-            ? formData.selectedRoles
-            : undefined,
       });
       push(`/accounts/${accountId}`);
     } catch (err) {
@@ -207,53 +155,50 @@ export default function EditAccountPage() {
   };
 
   return (
-    <div className="flex size-full bg-background px-6">
-      <div className="z-10 mx-auto flex size-full max-w-screen-xl gap-12">
+    <div className="h-full min-h-0 w-full overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
+      <div className="z-10 mx-auto flex w-full max-w-screen-md flex-col">
         <div className="flex w-full flex-col rounded-lg border border-border bg-card">
-          <div className="flex w-full items-center justify-between rounded-lg border-b border-border p-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={`/accounts/${accountId}`}>
-                <ArrowLeft className="mr-2 size-4" />
-                {t("back")}
-              </Link>
-            </Button>
+          <div className="flex w-full items-center justify-between rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/accounts/${accountId}`}>
+                  <ArrowLeft className="mr-2 size-4" />
+                  {t("back")}
+                </Link>
+              </Button>
+              <h2 className="text-xl font-medium text-primary">
+                {t("editAccount")}
+              </h2>
+            </div>
           </div>
-
-          <form onSubmit={handleSubmit} className="p-6">
+          <div className="flex w-full px-6">
+            <div className="w-full border-b border-border" />
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {error && (
-              <div className="mb-6 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
-            <div className="mx-auto max-w-2xl space-y-6">
-              <EditAccountDetailsFields
-                t={t}
-                formData={formData}
-                setFormData={setFormData}
-              />
-              <EditAccountPermissionsFields
-                t={t}
-                formData={formData}
-                toggleRole={toggleRole}
-                rolesWithLoansPermissions={rolesWithLoansPermissions}
-                groupedPermissionEntries={groupedPermissionEntries}
-              />
-
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => back()}>
-                  {tCommon("cancel")}
+            <AccountFormFields
+              formData={formData}
+              t={t}
+              onChange={updateFormData}
+            />
+            <div className="flex justify-end gap-4 pt-4">
+              <Button type="button" variant="outline" onClick={() => back()}>
+                {tCommon("cancel")}
+              </Button>
+              <PermissionGate permission="loans.update">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 size-4" />
+                  )}
+                  {isSubmitting ? t("form.updating") : t("form.updateButton")}
                 </Button>
-                <PermissionGate permission="loans.update">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 size-4" />
-                    )}
-                    {isSubmitting ? t("form.updating") : t("form.updateButton")}
-                  </Button>
-                </PermissionGate>
-              </div>
+              </PermissionGate>
             </div>
           </form>
         </div>

@@ -1,28 +1,13 @@
 "use client";
 
-import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  Building2,
-  Mail,
-  MapPin,
-  Phone,
-  Shield,
-  User,
-  UserCog,
-} from "lucide-react";
-
-interface Role {
-  _id: Id<"roles">;
-  name: string;
-  description?: string;
-}
+import type { Doc } from "@v1/backend/convex/_generated/dataModel";
+import { Building2, Mail, MapPin, Phone, User, UserCog } from "lucide-react";
 
 interface AccountDetailInfoProps {
-  account: Doc<"accounts"> & { roleIds?: Id<"roles">[] };
-  roles: Role[] | undefined;
+  account: Doc<"accounts">;
 }
 
-export function AccountDetailInfo({ account, roles }: AccountDetailInfoProps) {
+export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <h2 className="mb-6 text-lg font-medium">Account Information</h2>
@@ -168,39 +153,6 @@ export function AccountDetailInfo({ account, roles }: AccountDetailInfoProps) {
                     {account.accountType}
                   </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {account.roleIds && account.roleIds.length > 0 && roles && (
-          <div className="space-y-4 md:col-span-2">
-            <div>
-              <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Shield className="size-4" />
-                Roles with Access
-              </h3>
-              <div className="space-y-2">
-                {account.roleIds.map((roleId) => {
-                  const role = roles.find((r) => r._id === roleId);
-                  if (!role) return null;
-                  return (
-                    <div
-                      key={roleId}
-                      className="flex items-center gap-2 rounded-lg border border-border bg-card p-3"
-                    >
-                      <Shield className="size-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">{role.name}</p>
-                        {role.description && (
-                          <p className="text-xs text-muted-foreground">
-                            {role.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </div>
