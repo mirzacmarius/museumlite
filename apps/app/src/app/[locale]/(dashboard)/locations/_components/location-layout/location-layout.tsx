@@ -24,14 +24,18 @@ interface LocationLayoutProps {
   organizationId: Id<"organizations">;
 }
 
+type LocationDialog = "add" | "edit" | "view" | "delete";
+
 export function LocationLayout({ organizationId }: LocationLayoutProps) {
   const { push } = useRouter();
   const [selectedLocationId, setSelectedLocationId] =
     useState<Id<"locations"> | null>(null);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<LocationDialog | null>(null);
+  const updateDialog = (dialog: LocationDialog, open: boolean) => {
+    setActiveDialog((currentDialog) =>
+      open ? dialog : currentDialog === dialog ? null : currentDialog,
+    );
+  };
 
   const allLocations = useQuery(api.locations.listAll, { organizationId });
 
@@ -116,27 +120,31 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
         parentLocationType={selectedLocation?.type}
         parentLocationAddress={selectedLocation?.address}
         organizationId={organizationId}
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
+        open={activeDialog === "add"}
+        onOpenChange={(open) => updateDialog("add", open)}
       />
       <EditLocationDialog
         locationId={selectedLocationId ?? ""}
-        open={editDialogOpen && !!selectedLocationId}
-        onOpenChange={setEditDialogOpen}
+        open={activeDialog === "edit" && !!selectedLocationId}
+        onOpenChange={(open) => updateDialog("edit", open)}
       />
       <EditLocationDialog
         locationId={selectedLocationId ?? ""}
-        open={viewDialogOpen && !!selectedLocationId}
-        onOpenChange={setViewDialogOpen}
+        open={activeDialog === "view" && !!selectedLocationId}
+        onOpenChange={(open) => updateDialog("view", open)}
         readOnly
       />
       <DeleteLocationDialog
         locationId={selectedLocationId ?? ""}
         locationName={selectedLocation?.name ?? ""}
-        open={deleteDialogOpen && !!selectedLocationId && !!selectedLocation}
-        onOpenChange={setDeleteDialogOpen}
+        open={
+          activeDialog === "delete" &&
+          !!selectedLocationId &&
+          !!selectedLocation
+        }
+        onOpenChange={(open) => updateDialog("delete", open)}
         onDeleted={({ sentToDeaccessions }) => {
-          setDeleteDialogOpen(false);
+          updateDialog("delete", false);
           if (sentToDeaccessions) {
             push("/deaccessions");
           } else {
@@ -163,7 +171,7 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
               <PermissionGate permission="locations.create">
                 <IconActionButton
                   label="Add"
-                  onClick={() => setAddDialogOpen(true)}
+                  onClick={() => updateDialog("add", true)}
                 >
                   <Plus className="size-4" aria-hidden="true" />
                 </IconActionButton>
@@ -180,10 +188,10 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
           <LocationLayoutContent
             actions={
               <LocationActions
-                onDelete={() => setDeleteDialogOpen(true)}
-                onAdd={() => setAddDialogOpen(true)}
-                onEdit={() => setEditDialogOpen(true)}
-                onView={() => setViewDialogOpen(true)}
+                onDelete={() => updateDialog("delete", true)}
+                onAdd={() => updateDialog("add", true)}
+                onEdit={() => updateDialog("edit", true)}
+                onView={() => updateDialog("view", true)}
               />
             }
             selectedLocation={selectedLocation}

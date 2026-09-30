@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Building2,
   FileUp,
+  type LucideIcon,
   Mail,
   Phone,
   Plus,
@@ -25,11 +26,10 @@ import {
   Settings,
   User,
   Users,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useState, type ReactNode } from "react";
+import { type ReactNode, Suspense, useCallback, useState } from "react";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
@@ -58,8 +58,7 @@ interface AccountListItem {
   status?: string;
 }
 
-const DEFAULT_TONE =
-  "border-border/60 bg-muted/40 text-muted-foreground";
+const DEFAULT_TONE = "border-border/60 bg-muted/40 text-muted-foreground";
 
 const STATUS_TONES: Record<string, string> = {
   active: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
@@ -103,7 +102,8 @@ function AccountsPageContent() {
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const canAccessAdministration = hasPermission("organization.manage_settings");
   const searchParams = useSearchParams();
-  const typeParam = searchParams.get("type") as AccountType | null;
+  const { get } = searchParams;
+  const typeParam = get.call(searchParams, "type") as AccountType | null;
   const [searchQuery, setSearchQuery] = useState("");
   const [accountTypeFilter, setAccountTypeFilter] = useState<AccountTypeFilter>(
     typeParam ?? "all",
@@ -182,9 +182,7 @@ function AccountsPageContent() {
       <AccountsPageHeader
         canAccessAdministration={canAccessAdministration}
         title={isPatronView ? t("patronsTitle") : t("title")}
-        description={
-          isPatronView ? t("patronsDescription") : t("description")
-        }
+        description={isPatronView ? t("patronsDescription") : t("description")}
         importLabel={t("importCSV")}
         newAccountLabel={t("newAccount")}
         onExport={handleExport}
@@ -195,9 +193,7 @@ function AccountsPageContent() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder={
-          isPatronView
-            ? t("patronsSearchPlaceholder")
-            : t("searchPlaceholder")
+          isPatronView ? t("patronsSearchPlaceholder") : t("searchPlaceholder")
         }
         accountTypeFilter={accountTypeFilter}
         onAccountTypeFilterChange={setAccountTypeFilter}
@@ -428,9 +424,7 @@ function ToneBadge({
   className?: string;
   children: ReactNode;
 }) {
-  return (
-    <span className={cn(TONE_BADGE, tone, className)}>{children}</span>
-  );
+  return <span className={cn(TONE_BADGE, tone, className)}>{children}</span>;
 }
 
 function ContactLine({
@@ -448,15 +442,9 @@ function ContactLine({
   );
 }
 
-function ContactLines({
-  email,
-  phone,
-}: {
-  email?: string;
-  phone?: string;
-}) {
+function ContactLines({ email, phone }: { email?: string; phone?: string }) {
   if (!email && !phone)
-    return <span className="text-xs text-muted-foreground/50">—</span>;
+    return <span className="text-xs text-muted-foreground/50">-</span>;
 
   return (
     <div className="space-y-0.5">
@@ -544,9 +532,7 @@ function AccountList({
   }
 
   const gridClass = isPatronView ? PATRON_GRID : ACCOUNT_GRID;
-  const headers = isPatronView
-    ? PATRON_COLUMN_HEADERS
-    : ACCOUNT_COLUMN_HEADERS;
+  const headers = isPatronView ? PATRON_COLUMN_HEADERS : ACCOUNT_COLUMN_HEADERS;
 
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 dark:border-white/10 dark:bg-zinc-900/40">

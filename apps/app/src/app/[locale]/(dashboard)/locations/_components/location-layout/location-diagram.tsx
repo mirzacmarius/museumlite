@@ -153,7 +153,7 @@ function estimateNodeHeight({
 }
 
 function sortLocations(locations: DiagramLocation[]) {
-  return [...locations].sort(
+  return locations.toSorted(
     (left, right) =>
       left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
   );
@@ -221,7 +221,11 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
         className="!size-2.5 !border-2 !border-background !bg-indigo-400"
         style={
           horizontal
-            ? { top: HEADER_HEIGHT / 2, left: -5, transform: "translateY(-50%)" }
+            ? {
+                top: HEADER_HEIGHT / 2,
+                left: -5,
+                transform: "translateY(-50%)",
+              }
             : { top: -5, left: "50%", transform: "translateX(-50%)" }
         }
       />
@@ -334,7 +338,9 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
             />
           </button>
         ) : (
-          <span className="capitalize">{formatLocationType(location.type)}</span>
+          <span className="capitalize">
+            {formatLocationType(location.type)}
+          </span>
         )}
       </div>
 
@@ -550,12 +556,13 @@ function DiagramControls({
 }
 
 export function LocationDiagram({
-  location,
+  location: currentLocation,
   childrenById,
   objectsById,
   onSelectLocation,
 }: LocationDiagramProps) {
-  const storageKey = `museumlite:diagram:${location._id}`;
+  const rootId = currentLocation._id;
+  const storageKey = `museumlite:diagram:${rootId}`;
   const settings = useDiagramSettings(storageKey);
   const { resolvedTheme } = useTheme();
   const colorMode = resolvedTheme === "light" ? "light" : "dark";
@@ -566,20 +573,20 @@ export function LocationDiagram({
   );
   const rootLocation: DiagramLocation = useMemo(
     () => ({
-      _id: location._id,
-      name: location.name,
-      type: location.type,
-      isActive: location.isActive,
-      locationCode: location.locationCode,
-      sortOrder: location.sortOrder ?? 0,
+      _id: rootId,
+      name: currentLocation.name,
+      type: currentLocation.type,
+      isActive: currentLocation.isActive,
+      locationCode: currentLocation.locationCode,
+      sortOrder: currentLocation.sortOrder ?? 0,
     }),
     [
-      location._id,
-      location.name,
-      location.type,
-      location.isActive,
-      location.locationCode,
-      location.sortOrder,
+      rootId,
+      currentLocation.name,
+      currentLocation.type,
+      currentLocation.isActive,
+      currentLocation.locationCode,
+      currentLocation.sortOrder,
     ],
   );
   const [{ collapsed, restored, initialViewport }, setDiagramState] = useState<{
@@ -591,8 +598,8 @@ export function LocationDiagram({
 
   useEffect(() => {
     const saved = readDiagramState(storageKey);
-    const parentIds = collectParentIds(location._id, childrenById);
-    const validIds = collectValidIds(location._id, parentIds, childrenById);
+    const parentIds = collectParentIds(rootId, childrenById);
+    const validIds = collectValidIds(rootId, parentIds, childrenById);
 
     setDiagramState({
       initialViewport: saved.viewport,
@@ -603,7 +610,7 @@ export function LocationDiagram({
         : new Set(),
       restored: true,
     });
-  }, [storageKey, childrenById, location._id]);
+  }, [storageKey, childrenById, rootId]);
 
   const toggle = useCallback(
     (id: Id<"locations">) => {

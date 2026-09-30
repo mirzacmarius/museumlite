@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { shouldShowInExhibitionSidebar } from "@/app/[locale]/(dashboard)/locations/location-view-helpers";
 import { useScopedI18n } from "@/locales/client";
 import {
@@ -47,8 +47,7 @@ function LocationSidebarNav({
   const [expandedOverrides, setExpandedOverrides] = useState<Set<
     Id<"locations">
   > | null>(null);
-  const [expandedForSelectedId, setExpandedForSelectedId] =
-    useState(selectedLocationId);
+  const previousSelectedLocationId = useRef(selectedLocationId);
 
   const getChildren = (parentLocationId: Id<"locations">) =>
     allLocations.filter(
@@ -88,20 +87,28 @@ function LocationSidebarNav({
     return expandedIds;
   }, [locationsStructureKey, selectedPathIds]);
 
-  if (selectedLocationId !== expandedForSelectedId) {
-    setExpandedForSelectedId(selectedLocationId);
+  useEffect(() => {
+    if (previousSelectedLocationId.current === selectedLocationId) {
+      return;
+    }
+    previousSelectedLocationId.current = selectedLocationId;
+
     setExpandedOverrides((currentLocationIds) => {
       if (!currentLocationIds) {
         return currentLocationIds;
       }
 
       const nextLocationIds = new Set(currentLocationIds);
+      let changed = false;
       for (const locationId of selectedPathIds) {
-        nextLocationIds.add(locationId);
+        if (!nextLocationIds.has(locationId)) {
+          nextLocationIds.add(locationId);
+          changed = true;
+        }
       }
-      return nextLocationIds;
+      return changed ? nextLocationIds : currentLocationIds;
     });
-  }
+  }, [selectedLocationId, selectedPathIds]);
 
   const toggleLocation = (locationId: Id<"locations">) => {
     setExpandedOverrides((currentLocationIds) => {

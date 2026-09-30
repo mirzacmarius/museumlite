@@ -59,7 +59,10 @@ import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { accountHolderFields } from "@/lib/account-holder";
+import {
+  accountHolderFields,
+  formatDateInputValue,
+} from "@/lib/account-holder";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function AccountDetailPage() {
@@ -387,7 +390,7 @@ function OverviewTab({ account }: { account: Account }) {
                   <span className="mt-0.5 size-4 shrink-0" />
                   <div>
                     <p className="text-sm">
-                      {new Date(account.dateOfBirth).toISOString().slice(0, 10)}
+                      {formatDateInputValue(account.dateOfBirth)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {t("detail.dateOfBirth")}

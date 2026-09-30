@@ -113,7 +113,8 @@ function AccountsPageSkeletonContent({
 
 function AccountsPageSkeletonFromSearchParams() {
   const searchParams = useSearchParams();
-  const isPatronView = searchParams.get("type") === "patron";
+  const { get } = searchParams;
+  const isPatronView = get.call(searchParams, "type") === "patron";
   return <AccountsPageSkeletonContent isPatronView={isPatronView} />;
 }
 
