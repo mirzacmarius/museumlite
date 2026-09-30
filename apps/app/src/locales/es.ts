@@ -2189,6 +2189,13 @@ export default {
     },
   },
   objects: {
+    qrLabel: {
+      showObjectName: "Mostrar nombre del objeto",
+    },
+    objectLabel: {
+      showQrCode: "Mostrar código QR",
+      qrCodeAlt: "Código QR que enlaza con este objeto",
+    },
     title: "Objetos de la Colección",
     description: "Explora y administra tus objetos",
     addObject: "Agregar Objeto",

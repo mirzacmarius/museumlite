@@ -327,6 +327,7 @@ function ObjectDetailView({
       <ObjectLabelModal
         collection={collection}
         isOpen={state.isObjectLabelModalOpen}
+        qrCodeUrl={state.qrCodeUrl}
         onClose={() =>
           dispatch({ type: "setObjectLabelModalOpen", value: false })
         }

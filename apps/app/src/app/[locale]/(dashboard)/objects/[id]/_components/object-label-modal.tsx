@@ -24,6 +24,7 @@ interface ObjectLabelModalProps {
   isOpen: boolean;
   onClose: () => void;
   collection: CollectionData;
+  qrCodeUrl: string;
 }
 
 const ACCESSION_FONT_SIZE_MIN = 7;
@@ -34,6 +35,7 @@ interface ObjectLabelFormState {
   labelSize: ObjectTextLabelSize;
   showBorder: boolean;
   accessionFontSize: number;
+  showQrCode: boolean;
   objectName: string;
   description: string;
 }
@@ -42,14 +44,18 @@ type ObjectLabelFormAction =
   | { type: "setLabelSize"; value: ObjectTextLabelSize }
   | { type: "setShowBorder"; value: boolean }
   | { type: "setAccessionFontSize"; value: number }
+  | { type: "setShowQrCode"; value: boolean }
   | { type: "setObjectName"; value: string }
   | { type: "setDescription"; value: string };
 
-function createInitialFormState(collection: CollectionData): ObjectLabelFormState {
+function createInitialFormState(
+  collection: CollectionData,
+): ObjectLabelFormState {
   return {
     labelSize: "medium",
     showBorder: true,
     accessionFontSize: ACCESSION_FONT_SIZE_DEFAULT,
+    showQrCode: false,
     objectName: collection.title,
     description: collection.description ?? "",
   };
@@ -66,6 +72,8 @@ function objectLabelFormReducer(
       return { ...state, showBorder: action.value };
     case "setAccessionFontSize":
       return { ...state, accessionFontSize: action.value };
+    case "setShowQrCode":
+      return { ...state, showQrCode: action.value };
     case "setObjectName":
       return { ...state, objectName: action.value };
     case "setDescription":
@@ -77,6 +85,7 @@ export function ObjectLabelModal({
   isOpen,
   onClose,
   collection,
+  qrCodeUrl,
 }: ObjectLabelModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -84,6 +93,7 @@ export function ObjectLabelModal({
         <ObjectLabelModalContent
           key={collection._id}
           collection={collection}
+          qrCodeUrl={qrCodeUrl}
           onClose={onClose}
         />
       ) : null}
@@ -93,11 +103,13 @@ export function ObjectLabelModal({
 
 interface ObjectLabelModalContentProps {
   collection: CollectionData;
+  qrCodeUrl: string;
   onClose: () => void;
 }
 
 function ObjectLabelModalContent({
   collection,
+  qrCodeUrl,
   onClose,
 }: ObjectLabelModalContentProps) {
   const t = useScopedI18n("objects.objectLabel");
@@ -222,8 +234,24 @@ function ObjectLabelModalContent({
               />
             </div>
 
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="object-label-qr-code" className="text-black">
+                {t("showQrCode")}
+              </Label>
+              <Switch
+                id="object-label-qr-code"
+                checked={formState.showQrCode}
+                onCheckedChange={(value) =>
+                  dispatch({ type: "setShowQrCode", value })
+                }
+              />
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="object-label-accession-size" className="text-black">
+              <Label
+                htmlFor="object-label-accession-size"
+                className="text-black"
+              >
                 {t("accessionFontSize")} ({formState.accessionFontSize}pt)
               </Label>
               <input
@@ -254,6 +282,9 @@ function ObjectLabelModalContent({
                 accessionNumber: collection.accessionNumber,
                 accessionNumberLabel: t("accessionNumberPrefix"),
               }}
+              showQrCode={formState.showQrCode}
+              qrCodeUrl={qrCodeUrl}
+              qrCodeAlt={t("qrCodeAlt")}
               size={formState.labelSize}
               showBorder={formState.showBorder}
               accessionFontSizePt={formState.accessionFontSize}

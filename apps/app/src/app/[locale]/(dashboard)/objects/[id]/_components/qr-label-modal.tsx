@@ -9,6 +9,7 @@ import {
 } from "@v1/ui/dialog";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
+import { Switch } from "@v1/ui/switch";
 import { Printer } from "lucide-react";
 import { useRef, useState } from "react";
 import type { LabelData, LabelSize } from "@/components/qr-label-generator";
@@ -34,6 +35,7 @@ export function QRLabelModal({
   const t = useScopedI18n("objects.qrLabel");
   const tCommon = useScopedI18n("common");
   const [labelSize, setLabelSize] = useState<LabelSize>("2x2");
+  const [showObjectName, setShowObjectName] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
   const labelData: LabelData = {
@@ -87,6 +89,16 @@ export function QRLabelModal({
                 </Label>
               </div>
             </RadioGroup>
+            <div className="mt-5 flex items-center justify-between gap-4">
+              <Label htmlFor="qr-label-object-name" className="text-black">
+                {t("showObjectName")}
+              </Label>
+              <Switch
+                id="qr-label-object-name"
+                checked={showObjectName}
+                onCheckedChange={setShowObjectName}
+              />
+            </div>
           </div>
 
           {/* Label Preview */}
@@ -95,7 +107,11 @@ export function QRLabelModal({
               ref={printRef}
               className="shadow-lg print:shadow-none print:m-0"
             >
-              <QRLabelGenerator data={labelData} size={labelSize} />
+              <QRLabelGenerator
+                data={labelData}
+                size={labelSize}
+                showObjectName={showObjectName}
+              />
             </div>
           </div>
 

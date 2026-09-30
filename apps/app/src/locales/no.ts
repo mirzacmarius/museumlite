@@ -2178,6 +2178,13 @@ export default {
     },
   },
   objects: {
+    qrLabel: {
+      showObjectName: "Vis objektnavn",
+    },
+    objectLabel: {
+      showQrCode: "Vis QR-kode",
+      qrCodeAlt: "QR-kode som lenker til dette objektet",
+    },
     title: "Samlingsobjekter",
     description: "Bla gjennom og administrer objektene dine",
     addObject: "Legg til Objekt",
