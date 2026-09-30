@@ -114,6 +114,7 @@ import type * as utils_collectionLifecycle from "../utils/collectionLifecycle.js
 import type * as utils_collectionListHelpers from "../utils/collectionListHelpers.js";
 import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsages.js";
 import type * as utils_convexAuth from "../utils/convexAuth.js";
+import type * as utils_customerNumber from "../utils/customerNumber.js";
 import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_dublinCore from "../utils/dublinCore.js";
 import type * as utils_exhibitionAccess from "../utils/exhibitionAccess.js";
@@ -287,6 +288,7 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionListHelpers": typeof utils_collectionListHelpers;
   "utils/collectionOptionUsages": typeof utils_collectionOptionUsages;
   "utils/convexAuth": typeof utils_convexAuth;
+  "utils/customerNumber": typeof utils_customerNumber;
   "utils/dashboardAnalytics": typeof utils_dashboardAnalytics;
   "utils/dublinCore": typeof utils_dublinCore;
   "utils/exhibitionAccess": typeof utils_exhibitionAccess;

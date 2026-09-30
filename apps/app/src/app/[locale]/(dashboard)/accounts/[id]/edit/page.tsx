@@ -10,18 +10,16 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { parseDateInputValue } from "@/lib/account-holder";
+import {
+  accountHolderFields,
+  formatDateInputValue,
+  parseDateInputValue,
+} from "@/lib/account-holder";
 import { useScopedI18n } from "@/locales/client";
 import {
   AccountFormFields,
   type AccountFormValues,
 } from "../../_components/account-form-fields";
-
-function formatDateInputValue(timestamp: number | undefined) {
-  return timestamp === undefined
-    ? ""
-    : new Date(timestamp).toISOString().slice(0, 10);
-}
 
 export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
@@ -108,21 +106,25 @@ export default function EditAccountPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    const holder = accountHolderFields(formData.holderType);
     if (!formData.businessName.trim()) {
-      setError(t("form.errors.businessNameRequired"));
+      setError(
+        holder.kind === "privatePerson"
+          ? t("form.errors.fullNameRequired")
+          : t("form.errors.businessNameRequired"),
+      );
       return;
     }
-    const isOrganization = formData.holderType === "organization";
     setIsSubmitting(true);
     try {
       await updateAccount({
         accountId,
         holderType: formData.holderType,
         businessName: formData.businessName,
-        taxId: isOrganization ? formData.taxId : undefined,
-        dateOfBirth: isOrganization
-          ? undefined
-          : parseDateInputValue(formData.dateOfBirth),
+        taxId: holder.showOrganizationNumber ? formData.taxId || undefined : "",
+        dateOfBirth: holder.showDateOfBirth
+          ? parseDateInputValue(formData.dateOfBirth)
+          : undefined,
         phone: formData.phone || undefined,
         email: formData.email || undefined,
         address: formData.address || undefined,
@@ -130,15 +132,15 @@ export default function EditAccountPage() {
         zipCode: formData.zipCode || undefined,
         city: formData.city || undefined,
         country: formData.country || undefined,
-        contactPerson: isOrganization
+        contactPerson: holder.showContactPerson
           ? formData.contactPerson || undefined
-          : undefined,
-        contactPhone: isOrganization
+          : "",
+        contactPhone: holder.showContactPerson
           ? formData.contactPhone || undefined
-          : undefined,
-        contactEmail: isOrganization
+          : "",
+        contactEmail: holder.showContactPerson
           ? formData.contactEmail || undefined
-          : undefined,
+          : "",
         notes: formData.notes || undefined,
         accountType: formData.accountType || undefined,
       });

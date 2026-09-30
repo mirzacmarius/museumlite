@@ -126,6 +126,9 @@ export default {
       typeCannotChange: "Organization type cannot be changed",
       slugLabel: "Slug",
       slugCannotChange: "Slug cannot be changed",
+      accountNumberLabel: "Account number",
+      accountNumberCannotChange:
+        "Account number cannot be changed. Quote it when you contact support.",
       accessionNumberSettings: "Accession Number Settings",
       formatTemplate: "Format Template",
       chooseTemplate: "Choose template...",
@@ -2503,6 +2506,16 @@ export default {
     },
     form: {
       businessInformation: "Business Information",
+      personalInformation: "Personal Information",
+      holderType: "Holder Type",
+      privatePerson: "Private Person",
+      privatePersonDescription: "Individuals acting in their own name.",
+      organization: "Business / Organization",
+      organizationDescription:
+        "Companies, museums, galleries, and institutions.",
+      fullName: "Full Name",
+      dateOfBirth: "Date of Birth",
+      organizationNumber: "Organization Number",
       address: "Address",
       contactPerson: "Contact Person",
       notes: "Notes",
@@ -2522,6 +2535,8 @@ export default {
       accountType: "Account Type",
       placeholders: {
         businessName: "e.g., Museum of Modern Art",
+        fullName: "e.g., Jane Doe",
+        organizationNumber: "e.g., 987 654 321",
         phone: "+1 (555) 123-4567",
         email: "contact@example.com",
         streetAddress: "123 Main Street",
@@ -2542,6 +2557,7 @@ export default {
       updateButton: "Update Account",
       errors: {
         businessNameRequired: "Business name is required",
+        fullNameRequired: "Full name is required",
         createFailed: "Failed to create account. Please try again.",
         updateFailed: "Failed to update account. Please try again.",
       },
@@ -2554,6 +2570,9 @@ export default {
       activity: "Activity",
       accountInformation: "Account Information",
       businessName: "Business Name",
+      personalInformation: "Personal Information",
+      fullName: "Full Name",
+      dateOfBirth: "Date of Birth",
       phone: "Phone",
       email: "Email",
       address: "Address",

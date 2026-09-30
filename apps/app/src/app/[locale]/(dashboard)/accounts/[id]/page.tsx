@@ -59,6 +59,7 @@ import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { accountHolderFields } from "@/lib/account-holder";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 export default function AccountDetailPage() {
@@ -280,7 +281,9 @@ type Account = {
   _creationTime: number;
   organizationId: Id<"organizations">;
   accountNumber: string;
+  holderType?: "organization" | "privatePerson";
   businessName?: string;
+  dateOfBirth?: number;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -350,28 +353,48 @@ type TimelineEvent = {
 
 function OverviewTab({ account }: { account: Account }) {
   const t = useScopedI18n("accounts");
+  const isPrivatePerson =
+    accountHolderFields(account.holderType).kind === "privatePerson";
+  const NameIcon = isPrivatePerson ? User : Building2;
+
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <h2 className="mb-6 text-lg font-medium">
         {t("detail.accountInformation")}
       </h2>
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Business Information */}
         <div className="space-y-4">
           <div>
             <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-              {t("form.businessInformation")}
+              {isPrivatePerson
+                ? t("detail.personalInformation")
+                : t("form.businessInformation")}
             </h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <Building2 className="mt-0.5 size-4 text-muted-foreground" />
+                <NameIcon className="mt-0.5 size-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">{account.businessName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {t("detail.businessName")}
+                    {isPrivatePerson
+                      ? t("detail.fullName")
+                      : t("detail.businessName")}
                   </p>
                 </div>
               </div>
+              {isPrivatePerson && account.dateOfBirth ? (
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 size-4 shrink-0" />
+                  <div>
+                    <p className="text-sm">
+                      {new Date(account.dateOfBirth).toISOString().slice(0, 10)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("detail.dateOfBirth")}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
               {account.phone && (
                 <div className="flex items-start gap-3">
                   <Phone className="mt-0.5 size-4 text-muted-foreground" />

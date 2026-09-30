@@ -224,6 +224,9 @@ export default {
       typeCannotChange: "Tipul organizației nu poate fi schimbat",
       slugLabel: "Slug",
       slugCannotChange: "Slug-ul nu poate fi schimbat",
+      accountNumberLabel: "Număr de cont",
+      accountNumberCannotChange:
+        "Numărul de cont nu poate fi schimbat. Menționați-l când contactați suportul.",
       accessionNumberSettings: "Setări Număr Accesiune",
       formatTemplate: "Format Șablon",
       chooseTemplate: "Alege șablonul...",
