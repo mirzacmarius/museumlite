@@ -2,6 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -112,7 +113,6 @@ export function PolicyForm({
               setForm((prev) => ({ ...prev, policyNumber: event.target.value }))
             }
             placeholder="POL-2024-001"
-            required
           />
         </div>
         <div className="space-y-2">
@@ -124,7 +124,6 @@ export function PolicyForm({
               setForm((prev) => ({ ...prev, carrier: event.target.value }))
             }
             placeholder="Chubb Insurance"
-            required
           />
         </div>
       </div>
@@ -175,32 +174,28 @@ export function PolicyForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="effectiveDate">Effective Date *</Label>
-          <Input
+          <DatePickerInput
             id="effectiveDate"
-            type="date"
             value={form.effectiveDate}
-            onChange={(event) =>
+            onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                effectiveDate: event.target.value,
+                effectiveDate: value,
               }))
             }
-            required
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="expirationDate">Expiration Date *</Label>
-          <Input
+          <DatePickerInput
             id="expirationDate"
-            type="date"
             value={form.expirationDate}
-            onChange={(event) =>
+            onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                expirationDate: event.target.value,
+                expirationDate: value,
               }))
             }
-            required
           />
         </div>
       </div>

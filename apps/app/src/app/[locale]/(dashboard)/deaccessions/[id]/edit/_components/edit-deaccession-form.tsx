@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -251,14 +252,13 @@ export function EditDeaccessionForm({
                     <Label htmlFor="proceedsDate">
                       {t("form.proceedsDate")}
                     </Label>
-                    <Input
+                    <DatePickerInput
                       id="proceedsDate"
-                      type="date"
                       value={formData.proceedsDate}
-                      onChange={(e) =>
+                      onChange={(value) =>
                         setFormData((prev) => ({
                           ...prev,
-                          proceedsDate: e.target.value,
+                          proceedsDate: value,
                         }))
                       }
                     />

@@ -1,9 +1,8 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { Calendar } from "@v1/ui/calendar";
+import { DatePicker } from "@v1/ui/date-picker";
 import { Label } from "@v1/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import {
   Select,
   SelectContent,
@@ -12,13 +11,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
-import { cn } from "@v1/ui/utils";
-import { format } from "date-fns";
-import {
-  AlertTriangle,
-  Calendar as CalendarIcon,
-  CheckCircle,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle } from "lucide-react";
 import type { DeaccessionWorkflowConfig } from "./deaccession-dialog-types";
 
 interface DeaccessionSoldFormProps {
@@ -100,30 +93,13 @@ export function DeaccessionSoldForm({
 
       <div className="space-y-2">
         <Label htmlFor="date">Date of Sale *</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !date && "text-muted-foreground",
-              )}
-            >
-              <CalendarIcon className="mr-2 size-4" />
-              {date ? format(date, "PPP") : "Pick a date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(selectedDate) =>
-                selectedDate && onDateChange(selectedDate)
-              }
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <DatePicker
+          id="date"
+          date={date}
+          onSelect={(selectedDate) =>
+            selectedDate && onDateChange(selectedDate)
+          }
+        />
       </div>
 
       <div className="space-y-2">

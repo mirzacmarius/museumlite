@@ -2,6 +2,7 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -132,14 +133,12 @@ export function ClaimForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="incidentDate">Incident Date *</Label>
-          <Input
+          <DatePickerInput
             id="incidentDate"
-            type="date"
             value={form.incidentDate}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, incidentDate: event.target.value }))
+            onChange={(value) =>
+              setForm((prev) => ({ ...prev, incidentDate: value }))
             }
-            required
           />
         </div>
         <div className="space-y-2">

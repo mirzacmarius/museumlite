@@ -1,5 +1,6 @@
 "use client";
 
+import { DatePicker } from "@v1/ui/date-picker";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -18,95 +19,30 @@ interface PartialDateFieldProps {
   disabled?: boolean;
 }
 
-interface ParsedPartialDate {
-  year: string;
-  month: string;
-  day: string;
+type Precision = "year" | "month" | "day";
+
+function getPrecision(value?: string): Precision {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value ?? "")) return "day";
+  if (/^\d{4}-\d{2}$/.test(value ?? "")) return "month";
+  return "year";
 }
 
-const EMPTY_SELECT_VALUE = "__empty__";
-
-const MONTH_OPTIONS = [
-  { value: "01", label: "January" },
-  { value: "02", label: "February" },
-  { value: "03", label: "March" },
-  { value: "04", label: "April" },
-  { value: "05", label: "May" },
-  { value: "06", label: "June" },
-  { value: "07", label: "July" },
-  { value: "08", label: "August" },
-  { value: "09", label: "September" },
-  { value: "10", label: "October" },
-  { value: "11", label: "November" },
-  { value: "12", label: "December" },
-] as const;
-
-function parsePartialDate(value?: string): ParsedPartialDate {
-  if (!value) {
-    return { year: "", month: "", day: "" };
-  }
-
-  const fullDateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (fullDateMatch) {
-    const [, year, month, day] = fullDateMatch;
-    return {
-      year: year ?? "",
-      month: month ?? "",
-      day: day ?? "",
-    };
-  }
-
-  const yearMonthMatch = value.match(/^(\d{4})-(\d{2})$/);
-  if (yearMonthMatch) {
-    const [, year, month] = yearMonthMatch;
-    return {
-      year: year ?? "",
-      month: month ?? "",
-      day: "",
-    };
-  }
-
-  const yearMatch = value.match(/^(\d{4})$/);
-  if (yearMatch) {
-    return {
-      year: yearMatch[1] ?? "",
-      month: "",
-      day: "",
-    };
-  }
-
-  return { year: "", month: "", day: "" };
+function getPickerDate(value?: string): Date | undefined {
+  const match = value?.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/);
+  if (!match) return undefined;
+  const [, year, month = "01", day = "01"] = match;
+  const date = new Date(0);
+  date.setHours(0, 0, 0, 0);
+  date.setFullYear(Number(year), Number(month) - 1, Number(day));
+  return date;
 }
 
-function getDaysInMonth(year: string, month: string) {
-  const numericYear = Number(year);
-  const numericMonth = Number(month);
-
-  if (
-    !Number.isInteger(numericYear) ||
-    !Number.isInteger(numericMonth) ||
-    numericMonth < 1 ||
-    numericMonth > 12
-  ) {
-    return 31;
-  }
-
-  return new Date(numericYear, numericMonth, 0).getDate();
-}
-
-function formatPartialDate({ year, month, day }: ParsedPartialDate): string {
-  if (!year) {
-    return "";
-  }
-
-  if (!month) {
-    return year;
-  }
-
-  if (!day) {
-    return `${year}-${month}`;
-  }
-
+function serializeDate(date: Date, precision: Precision): string {
+  const year = String(date.getFullYear()).padStart(4, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  if (precision === "year") return year;
+  if (precision === "month") return `${year}-${month}`;
   return `${year}-${month}-${day}`;
 }
 
@@ -117,133 +53,84 @@ export function PartialDateField({
   onChange,
   disabled = false,
 }: PartialDateFieldProps) {
-  const { year, month, day } = parsePartialDate(value);
-  const yearOptions = React.useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    return Array.from({ length: currentYear - 1499 }, (_, index) => {
-      const nextYear = String(currentYear - index);
-      return { value: nextYear, label: nextYear };
-    });
-  }, []);
-
-  const dayOptions = React.useMemo(() => {
-    const daysInMonth = getDaysInMonth(year, month);
-    return Array.from({ length: daysInMonth }, (_, index) => {
-      const nextDay = String(index + 1).padStart(2, "0");
-      return { value: nextDay, label: String(index + 1) };
-    });
-  }, [month, year]);
-
-  const handleYearChange = (nextYear: string) => {
-    const normalizedYear = nextYear === EMPTY_SELECT_VALUE ? "" : nextYear;
-    const normalizedMonth = normalizedYear ? month : "";
-    const normalizedDay = normalizedYear ? day : "";
-
-    onChange(
-      formatPartialDate({
-        year: normalizedYear,
-        month: normalizedMonth,
-        day: normalizedDay,
-      }),
-    );
-  };
-
-  const handleMonthChange = (nextMonth: string) => {
-    const normalizedMonth = nextMonth === EMPTY_SELECT_VALUE ? "" : nextMonth;
-
-    if (
-      day &&
-      normalizedMonth &&
-      Number(day) > getDaysInMonth(year, normalizedMonth)
-    ) {
-      onChange(
-        formatPartialDate({
-          year,
-          month: normalizedMonth,
-          day: "",
-        }),
-      );
-      return;
+  const [precision, setPrecision] = React.useState<Precision>(() =>
+    getPrecision(value),
+  );
+  const lastEmittedValue = React.useRef(value);
+  React.useEffect(() => {
+    if (value !== lastEmittedValue.current) {
+      lastEmittedValue.current = value;
+      setPrecision(getPrecision(value));
     }
+  }, [value]);
 
-    onChange(
-      formatPartialDate({
-        year,
-        month: normalizedMonth,
-        day: normalizedMonth ? day : "",
-      }),
-    );
-  };
-
-  const handleDayChange = (nextDay: string) => {
-    const normalizedDay = nextDay === EMPTY_SELECT_VALUE ? "" : nextDay;
-    onChange(
-      formatPartialDate({
-        year,
-        month,
-        day: normalizedDay,
-      }),
-    );
+  const storedPrecision = getPrecision(value);
+  const anchorDate = getPickerDate(value);
+  const dateIsPreciseEnough = Boolean(value) && precision === storedPrecision;
+  const handleChange = (nextValue: string) => {
+    lastEmittedValue.current = nextValue;
+    onChange(nextValue);
   };
 
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Select
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
+        <DatePicker
+          id={id}
+          date={dateIsPreciseEnough ? anchorDate : undefined}
+          defaultMonth={anchorDate}
+          placeholder="Pick a date"
           disabled={disabled}
-          value={year || undefined}
-          onValueChange={handleYearChange}
-        >
-          <SelectTrigger id={id}>
-            <SelectValue placeholder="Year" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={EMPTY_SELECT_VALUE}>Year not known</SelectItem>
-            {yearOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          disabled={disabled || !year}
-          value={month || undefined}
-          onValueChange={handleMonthChange}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Month" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={EMPTY_SELECT_VALUE}>Month not known</SelectItem>
-            {MONTH_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          disabled={disabled || !year || !month}
-          value={day || undefined}
-          onValueChange={handleDayChange}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Day" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={EMPTY_SELECT_VALUE}>Day not known</SelectItem>
-            {dayOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          displayFormat={
+            precision === "year"
+              ? "yyyy"
+              : precision === "month"
+                ? "MMMM yyyy"
+                : "PPP"
+          }
+          onSelect={(date) =>
+            handleChange(date ? serializeDate(date, precision) : "")
+          }
+        />
+        <div className="space-y-1">
+          <Label
+            htmlFor={id ? `${id}-precision` : undefined}
+            className="text-xs text-muted-foreground"
+          >
+            Precision
+          </Label>
+          <Select
+            value={precision}
+            disabled={disabled}
+            onValueChange={(nextPrecision: Precision) => {
+              setPrecision(nextPrecision);
+              if (
+                anchorDate &&
+                { year: 1, month: 2, day: 3 }[nextPrecision] <=
+                  { year: 1, month: 2, day: 3 }[storedPrecision]
+              ) {
+                handleChange(serializeDate(anchorDate, nextPrecision));
+              }
+            }}
+          >
+            <SelectTrigger id={id ? `${id}-precision` : undefined}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="year">Year</SelectItem>
+              <SelectItem value="month">Month</SelectItem>
+              <SelectItem value="day">Day</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+      {!dateIsPreciseEnough && value && (
+        <p className="text-xs text-muted-foreground">
+          Choose a date to add the selected precision; the current value stays
+          unchanged until then.
+        </p>
+      )}
     </div>
   );
 }
