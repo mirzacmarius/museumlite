@@ -1,6 +1,7 @@
 "use client";
 
 import type { Doc } from "@v1/backend/convex/_generated/dataModel";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
@@ -134,13 +135,14 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
             onChange={(value) => onChange("taxId", value)}
           />
         ) : (
-          <TextInput
-            id="dateOfBirth"
-            label="Date of Birth"
-            type="date"
-            value={formData.dateOfBirth}
-            onChange={(value) => onChange("dateOfBirth", value)}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+            <DatePickerInput
+              id="dateOfBirth"
+              value={formData.dateOfBirth}
+              onChange={(value) => onChange("dateOfBirth", value)}
+            />
+          </div>
         )}
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput

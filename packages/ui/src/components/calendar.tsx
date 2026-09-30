@@ -24,28 +24,29 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
-        root: "w-fit",
+        root: "relative w-fit",
         months: "flex flex-col gap-4 sm:flex-row sm:gap-4",
         month: "space-y-4",
-        month_caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        dropdowns: "flex w-full items-center justify-center gap-1.5",
+        month_caption:
+          "relative flex h-8 items-center justify-center px-10 pt-1",
+        caption_label: "inline-flex items-center gap-1 text-sm font-medium",
+        dropdowns: "flex items-center justify-center gap-1.5",
         dropdown_root:
-          "relative rounded-md border border-input bg-background text-foreground shadow-sm",
+          "relative inline-flex rounded-md border border-input bg-background text-foreground shadow-sm",
         dropdown:
           "absolute inset-0 z-10 cursor-pointer opacity-0 disabled:cursor-not-allowed",
         months_dropdown:
-          "h-8 rounded-md border-0 bg-background pr-8 pl-2 text-sm focus:outline-none",
+          "h-8 max-w-36 rounded-md border-0 bg-background pr-7 pl-2 text-sm focus:outline-none",
         years_dropdown:
-          "h-8 rounded-md border-0 bg-background pr-8 pl-2 text-sm focus:outline-none",
-        nav: "space-x-1 flex items-center",
+          "h-8 max-w-28 rounded-md border-0 bg-background pr-7 pl-2 text-sm focus:outline-none",
+        nav: "absolute inset-x-3 top-3 z-10 flex h-8 items-center justify-between",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1",
+          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1",
+          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
         ),
         month_grid: "w-full border-collapse space-y-1",
         weekdays: "flex",

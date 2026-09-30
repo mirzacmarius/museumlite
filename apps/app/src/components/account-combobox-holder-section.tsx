@@ -1,5 +1,6 @@
 "use client";
 
+import { DatePickerInput } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
@@ -112,14 +113,13 @@ export function AccountComboboxHolderSection({
         ) : (
           <div>
             <Label htmlFor="dateOfBirth">Date of Birth</Label>
-            <Input
+            <DatePickerInput
               id="dateOfBirth"
-              type="date"
               value={formData.dateOfBirth}
-              onChange={(e) =>
+              onChange={(value) =>
                 setFormData((prev) => ({
                   ...prev,
-                  dateOfBirth: e.target.value,
+                  dateOfBirth: value,
                 }))
               }
             />

@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
 import { DataTable } from "@v1/ui/data-table";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -507,28 +508,26 @@ function TransitForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="scheduledPickupDate">Scheduled Pickup</Label>
-          <Input
+          <DatePickerInput
             id="scheduledPickupDate"
-            type="date"
             value={form.scheduledPickupDate}
-            onChange={(event) =>
+            onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                scheduledPickupDate: event.target.value,
+                scheduledPickupDate: value,
               }))
             }
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="estimatedDeliveryDate">Estimated Delivery</Label>
-          <Input
+          <DatePickerInput
             id="estimatedDeliveryDate"
-            type="date"
             value={form.estimatedDeliveryDate}
-            onChange={(event) =>
+            onChange={(value) =>
               setForm((prev) => ({
                 ...prev,
-                estimatedDeliveryDate: event.target.value,
+                estimatedDeliveryDate: value,
               }))
             }
           />

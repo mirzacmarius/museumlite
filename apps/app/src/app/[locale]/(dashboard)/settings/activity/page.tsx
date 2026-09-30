@@ -4,8 +4,8 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { Button } from "@v1/ui/button";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import { FeatureGuard } from "@v1/ui/feature-guard";
-import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
   Select,
@@ -256,11 +256,10 @@ function ActivityFilters({
           <Label htmlFor="from-date" className="text-xs text-muted-foreground">
             {labels.fromDate}
           </Label>
-          <Input
+          <DatePickerInput
             id="from-date"
-            type="date"
             value={fromDate}
-            onChange={(event) => onFromDateChange(event.target.value)}
+            onChange={onFromDateChange}
             className="h-9"
           />
         </div>
@@ -269,11 +268,10 @@ function ActivityFilters({
           <Label htmlFor="to-date" className="text-xs text-muted-foreground">
             {labels.toDate}
           </Label>
-          <Input
+          <DatePickerInput
             id="to-date"
-            type="date"
             value={toDate}
-            onChange={(event) => onToDateChange(event.target.value)}
+            onChange={onToDateChange}
             className="h-9"
           />
         </div>

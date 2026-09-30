@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
+import { DatePickerInput } from "@v1/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -499,12 +500,11 @@ function TaskForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="dueDate">Due Date</Label>
-          <Input
+          <DatePickerInput
             id="dueDate"
-            type="date"
             value={form.dueDate}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, dueDate: event.target.value }))
+            onChange={(value) =>
+              setForm((prev) => ({ ...prev, dueDate: value }))
             }
           />
         </div>
