@@ -2270,6 +2270,10 @@ export default {
     },
   },
   objects: {
+    objectLabel: {
+      showQrCode: "Afficher le code QR",
+      qrCodeAlt: "Code QR menant à cet objet",
+    },
     title: "Objets de Collection",
     description: "Parcourir et gérer vos objets",
     addObject: "Ajouter un Objet",

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
+import QRCode from "qrcode";
 import type * as React from "react";
 
 export type ObjectTextLabelSize = "small" | "medium" | "large";
@@ -15,6 +16,9 @@ export interface ObjectTextLabelData {
 export interface ObjectTextLabelOptions {
   size?: ObjectTextLabelSize;
   showBorder?: boolean;
+  showQrCode?: boolean;
+  qrCodeUrl?: string;
+  qrCodeAlt?: string;
   accessionFontSizePt?: number;
 }
 
@@ -37,12 +41,29 @@ export function ObjectTextLabelGenerator({
   data,
   size = "medium",
   showBorder = true,
+  showQrCode = false,
+  qrCodeUrl = "",
+  qrCodeAlt = "QR code",
   accessionFontSizePt = 9,
   className,
   ref,
 }: ObjectTextLabelGeneratorProps) {
   const dimensions = LABEL_DIMENSIONS[size];
   const accessionText = `(${data.accessionNumberLabel}: ${data.accessionNumber})`;
+  const qrCode =
+    showQrCode && qrCodeUrl
+      ? QRCode.create(qrCodeUrl, { errorCorrectionLevel: "M" })
+      : null;
+  const qrCodeSize = qrCode?.modules.size ?? 0;
+  const qrCodePath = qrCode
+    ? Array.from({ length: qrCodeSize }, (_, row) =>
+        Array.from({ length: qrCodeSize }, (_, column) =>
+          qrCode.modules.get(row, column)
+            ? `M${column + 4},${row + 4}h1v1h-1z`
+            : "",
+        ).join(""),
+      ).join("")
+    : "";
 
   return (
     <div
@@ -75,12 +96,26 @@ export function ObjectTextLabelGenerator({
           </p>
         ) : null}
       </div>
-      <p
-        className="mt-auto shrink-0 leading-tight text-black"
-        style={{ fontSize: `${accessionFontSizePt}pt` }}
-      >
-        {accessionText}
-      </p>
+      <div className="mt-auto flex min-w-0 shrink-0 items-center gap-[0.08in]">
+        {qrCode ? (
+          <svg
+            aria-label={qrCodeAlt}
+            className="size-[0.65in] shrink-0"
+            role="img"
+            viewBox={`0 0 ${qrCodeSize + 8} ${qrCodeSize + 8}`}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="100%" height="100%" fill="white" />
+            <path d={qrCodePath} fill="black" />
+          </svg>
+        ) : null}
+        <p
+          className="min-w-0 flex-1 whitespace-normal break-words leading-tight text-black"
+          style={{ fontSize: `${accessionFontSizePt}pt` }}
+        >
+          {accessionText}
+        </p>
+      </div>
     </div>
   );
 }

@@ -1985,6 +1985,8 @@ export default {
       sizeMedium: 'Medium (4" × 2.5")',
       sizeLarge: 'Large (5" × 3")',
       showBorder: "Show border",
+      showQrCode: "Show QR code",
+      qrCodeAlt: "QR code linking to this object",
       accessionFontSize: "Accession number font size",
       print: "Print",
       printInstructions: "Print Instructions",
