@@ -45,32 +45,19 @@ export function MediaGalleryImageGrid({
   editable,
   onOpenLightbox,
 }: MediaGalleryImageGridProps) {
-  const tMedia = useScopedI18n("objects.form.media");
-  const tGallery = useScopedI18n("objects.mediaGallery");
   const {
-    common,
     images,
     lightboxImages,
     isLightboxOpen,
     lightboxIndex,
     closeLightbox,
-    editingMedia,
-    setEditingMedia,
     editingImageId,
     setEditingImageId,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
     draggedId,
     dragOverId,
-    handleSetPrimary,
-    handleDelete,
-    handleUpdateMedia,
-    handleDragStart,
     handleDragOver,
     handleDragLeave,
     handleDrop,
-    handleDragEnd,
-    openImageLightbox,
   } = gallery;
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -134,197 +121,16 @@ export function MediaGalleryImageGrid({
           const lightboxIdx = lightboxImages.findIndex(
             (img) => img.id === file._id,
           );
-          const isDragging = draggedId === mediaId;
-          const isDragOver = dragOverId === mediaId;
-          const displayKind = getMediaDisplayKind(file);
-          const fileTypeLabel =
-            displayKind === "video"
-              ? tGallery("fileType.video")
-              : tGallery("fileType.image");
-
           return (
-            <div
+            <MediaGalleryImageCard
               key={file._id}
-              data-media-id={mediaId}
-              className={cn(
-                "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-secondary transition-all",
-                isDragging && "opacity-50 scale-95",
-                isDragOver && "border-primary border-2 ring-2 ring-primary/20",
-                !isDragging && !isDragOver && "border-border",
-              )}
-            >
-              {file.url && (
-                <>
-                  {file.fileType === "image" ? (
-                    <button
-                      type="button"
-                      className="size-full cursor-pointer"
-                      onClick={() => openImageLightbox(lightboxIdx)}
-                      aria-label={`View ${file.caption || file.fileName}`}
-                    >
-                      <Image
-                        src={file.thumbnailUrl || file.url}
-                        alt={file.caption || file.fileName}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 400px"
-                        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                      />
-                    </button>
-                  ) : file.fileType === "video" ? (
-                    <video
-                      src={file.url}
-                      className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                      controls={false}
-                      aria-label={file.caption || file.fileName}
-                    >
-                      <track kind="captions" />
-                    </video>
-                  ) : (
-                    <div className="flex size-full items-center justify-center bg-muted">
-                      <ImageIcon className="size-12 text-muted-foreground" />
-                    </div>
-                  )}
-
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
-                    <p className="truncate font-medium">{file.fileName}</p>
-                    {file.caption && (
-                      <p className="truncate text-[10px] text-white/70">
-                        {file.caption}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Maximize2 className="size-6 text-white" />
-                  </div>
-
-                  {editable && !file.isPrimary && (
-                    <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                      <button
-                        type="button"
-                        draggable
-                        onDragStart={(event) => handleDragStart(event, mediaId)}
-                        onDragEnd={handleDragEnd}
-                        className="flex size-7 items-center justify-center rounded bg-zinc-950/50 cursor-grab active:cursor-grabbing"
-                        aria-label={`Reorder ${file.fileName}`}
-                      >
-                        <GripVertical className="size-3.5 text-white" />
-                      </button>
-                    </div>
-                  )}
-
-                  {editable && (
-                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                      <PermissionGate permission="media.upload">
-                        {!file.isPrimary && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleSetPrimary(file._id);
-                            }}
-                            title={common("setAsPrimary")}
-                            className="size-7 p-0"
-                          >
-                            <Star className="size-3.5" />
-                          </Button>
-                        )}
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setEditingImageId(file._id as Id<"mediaFiles">);
-                          }}
-                          title={common("edit")}
-                          className="size-7 p-0"
-                        >
-                          <Edit className="size-3.5" />
-                        </Button>
-                        <MediaEditDialog
-                          media={file}
-                          onUpdate={(updates) =>
-                            handleUpdateMedia(
-                              file._id as Id<"mediaFiles">,
-                              updates,
-                            )
-                          }
-                          open={editingMedia === file._id}
-                          onOpenChange={(open) =>
-                            setEditingMedia(open ? file._id : null)
-                          }
-                        />
-                        <AlertDialog
-                          open={deleteConfirmOpen === file._id}
-                          onOpenChange={(open) =>
-                            setDeleteConfirmOpen(open ? file._id : null)
-                          }
-                        >
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
-                              onClick={(event) => event.stopPropagation()}
-                              title={common("delete")}
-                              className="size-7 p-0"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {tMedia("deleteMedia")}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {tMedia("deleteMediaConfirm")}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {common("cancel")}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(file._id)}
-                              >
-                                {common("delete")}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </PermissionGate>
-                    </div>
-                  )}
-
-                  <div className="absolute left-2 top-2 flex flex-col gap-1">
-                    {file.isPrimary && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label={tMedia("primary")}
-                            className="flex size-7 items-center justify-center rounded bg-primary text-primary-foreground"
-                          >
-                            <Star className="size-4 fill-current" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-xs">
-                          {tMedia("primaryImageTooltip")}
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                    <MediaGalleryFileTypeBadge
-                      kind={displayKind}
-                      label={fileTypeLabel}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+              file={file}
+              gallery={gallery}
+              editable={editable}
+              lightboxIdx={lightboxIdx}
+              isDragging={draggedId === mediaId}
+              isDragOver={dragOverId === mediaId}
+            />
           );
         })}
       </div>
@@ -346,5 +152,223 @@ export function MediaGalleryImageGrid({
         />
       )}
     </>
+  );
+}
+
+type GalleryImageFile = ReturnType<typeof useMediaGallery>["images"][number];
+
+function MediaGalleryImageCard({
+  file,
+  gallery,
+  editable,
+  lightboxIdx,
+  isDragging,
+  isDragOver,
+}: {
+  file: GalleryImageFile;
+  gallery: ReturnType<typeof useMediaGallery>;
+  editable: boolean;
+  lightboxIdx: number;
+  isDragging: boolean;
+  isDragOver: boolean;
+}) {
+  const tMedia = useScopedI18n("objects.form.media");
+  const tGallery = useScopedI18n("objects.mediaGallery");
+  const {
+    common,
+    handleSetPrimary,
+    handleDelete,
+    handleUpdateMedia,
+    handleDragStart,
+    handleDragEnd,
+    openImageLightbox,
+    editingMedia,
+    setEditingMedia,
+    setEditingImageId,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+  } = gallery;
+  const mediaId = file._id as Id<"mediaFiles">;
+  const displayKind = getMediaDisplayKind(file);
+  const fileTypeLabel =
+    displayKind === "video"
+      ? tGallery("fileType.video")
+      : tGallery("fileType.image");
+
+  return (
+    <div
+      data-media-id={mediaId}
+      className={cn(
+        "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-secondary transition-all",
+        isDragging && "opacity-50 scale-95",
+        isDragOver && "border-primary border-2 ring-2 ring-primary/20",
+        !isDragging && !isDragOver && "border-border",
+      )}
+    >
+      {file.url && (
+        <>
+          {file.fileType === "image" ? (
+            <button
+              type="button"
+              className="size-full cursor-pointer"
+              onClick={() => openImageLightbox(lightboxIdx)}
+              aria-label={`View ${file.caption || file.fileName}`}
+            >
+              <Image
+                src={file.thumbnailUrl || file.url}
+                alt={file.caption || file.fileName}
+                fill
+                sizes="(max-width: 768px) 100vw, 400px"
+                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+            </button>
+          ) : file.fileType === "video" ? (
+            <video
+              src={file.url}
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              controls={false}
+              aria-label={file.caption || file.fileName}
+            >
+              <track kind="captions" />
+            </video>
+          ) : (
+            <div className="flex size-full items-center justify-center bg-muted">
+              <ImageIcon className="size-12 text-muted-foreground" />
+            </div>
+          )}
+
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6 text-xs text-white transition-opacity group-hover:opacity-0">
+            <p className="truncate font-medium">{file.fileName}</p>
+            {file.caption && (
+              <p className="truncate text-[10px] text-white/70">
+                {file.caption}
+              </p>
+            )}
+          </div>
+
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-zinc-950/50 opacity-0 transition-opacity group-hover:opacity-100">
+            <Maximize2 className="size-6 text-white" />
+          </div>
+
+          {editable && !file.isPrimary && (
+            <div className="absolute left-2 top-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <button
+                type="button"
+                draggable
+                onDragStart={(event) => handleDragStart(event, mediaId)}
+                onDragEnd={handleDragEnd}
+                className="flex size-7 items-center justify-center rounded bg-zinc-950/50 cursor-grab active:cursor-grabbing"
+                aria-label={`Reorder ${file.fileName}`}
+              >
+                <GripVertical className="size-3.5 text-white" />
+              </button>
+            </div>
+          )}
+
+          {editable && (
+            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <PermissionGate permission="media.upload">
+                {!file.isPrimary && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleSetPrimary(file._id);
+                    }}
+                    title={common("setAsPrimary")}
+                    className="size-7 p-0"
+                  >
+                    <Star className="size-3.5" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setEditingImageId(file._id as Id<"mediaFiles">);
+                  }}
+                  title={common("edit")}
+                  className="size-7 p-0"
+                >
+                  <Edit className="size-3.5" />
+                </Button>
+                <MediaEditDialog
+                  media={file}
+                  onUpdate={(updates) =>
+                    handleUpdateMedia(file._id as Id<"mediaFiles">, updates)
+                  }
+                  open={editingMedia === file._id}
+                  onOpenChange={(open) =>
+                    setEditingMedia(open ? file._id : null)
+                  }
+                />
+                <AlertDialog
+                  open={deleteConfirmOpen === file._id}
+                  onOpenChange={(open) =>
+                    setDeleteConfirmOpen(open ? file._id : null)
+                  }
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={(event) => event.stopPropagation()}
+                      title={common("delete")}
+                      className="size-7 p-0"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {tMedia("deleteMedia")}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {tMedia("deleteMediaConfirm")}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{common("cancel")}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(file._id)}>
+                        {common("delete")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </PermissionGate>
+            </div>
+          )}
+
+          <div className="absolute left-2 top-2 flex flex-col gap-1">
+            {file.isPrimary && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={tMedia("primary")}
+                    className="flex size-7 items-center justify-center rounded bg-primary text-primary-foreground"
+                  >
+                    <Star className="size-4 fill-current" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  {tMedia("primaryImageTooltip")}
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <MediaGalleryFileTypeBadge
+              kind={displayKind}
+              label={fileTypeLabel}
+            />
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -56,12 +56,11 @@ const locationTypeIconMatchers: Array<[string, LocationTypeIconKey]> = [
 
 export function getLocationTypeIconKey(type: string): LocationTypeIconKey {
   const normalizedType = type.toLowerCase();
+  const matcher = locationTypeIconMatchers.find(
+    ([match]) => normalizedType.indexOf(match) !== -1,
+  );
 
-  for (const [match, icon] of locationTypeIconMatchers) {
-    if (normalizedType.includes(match)) return icon;
-  }
-
-  return "other";
+  return matcher?.[1] ?? "other";
 }
 
 interface LocationTypeIconProps {

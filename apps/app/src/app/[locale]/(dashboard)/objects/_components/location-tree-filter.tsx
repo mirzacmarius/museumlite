@@ -229,7 +229,7 @@ export function LocationTreeFilter({
     }
     const toExpand = new Set<string>();
     for (const location of locations) {
-      if (!value.includes(location._id)) continue;
+      if (!selectedIds.has(location._id)) continue;
       for (const part of location.path.slice(0, -1)) {
         if (part._id) toExpand.add(part._id);
       }

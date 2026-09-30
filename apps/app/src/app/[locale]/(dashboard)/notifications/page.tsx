@@ -17,15 +17,15 @@ import {
   ClipboardCheck,
   FileText,
   Inbox,
+  type LucideIcon,
   MapPin,
   Package,
   Settings,
   Truck,
   UserCheck,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useI18n } from "@/locales/client";
@@ -86,12 +86,12 @@ const CATEGORY_ICONS: Record<CategoryType, LucideIcon> = {
   system: Settings,
 };
 
-const CATEGORY_TABS = (
-  ["all", ...NOTIFICATION_CATEGORIES] as const
-).map((value) => ({
-  value,
-  icon: CATEGORY_ICONS[value],
-}));
+const CATEGORY_TABS = (["all", ...NOTIFICATION_CATEGORIES] as const).map(
+  (value) => ({
+    value,
+    icon: CATEGORY_ICONS[value],
+  }),
+);
 
 const CATEGORY_TONES: Record<CategoryType, CategoryTone> = {
   all: {
@@ -165,6 +165,18 @@ const ENTITY_PATHS: Record<string, string> = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_FORMAT_OPTIONS = {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+} satisfies Intl.DateTimeFormatOptions;
+const dayFormatters = {
+  en: new Intl.DateTimeFormat("en", DAY_FORMAT_OPTIONS),
+  fr: new Intl.DateTimeFormat("fr", DAY_FORMAT_OPTIONS),
+  es: new Intl.DateTimeFormat("es", DAY_FORMAT_OPTIONS),
+  no: new Intl.DateTimeFormat("no", DAY_FORMAT_OPTIONS),
+  ro: new Intl.DateTimeFormat("ro", DAY_FORMAT_OPTIONS),
+} satisfies Record<ReturnType<typeof useCurrentLocale>, Intl.DateTimeFormat>;
 const FEED_LOADING_KEYS = ["a", "b", "c", "d"] as const;
 
 function isNotificationCategory(value: string): value is NotificationCategory {
@@ -196,23 +208,19 @@ function startOfLocalDay(timestamp: number) {
   return date.getTime();
 }
 
-function getDayGroupLabel(timestamp: number, locale: string) {
+function getDayGroupLabel(timestamp: number, formatter: Intl.DateTimeFormat) {
   const today = startOfLocalDay(Date.now());
   const day = startOfLocalDay(timestamp);
 
   if (day === today) return "Today";
   if (day === today - DAY_MS) return "Yesterday";
 
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(timestamp));
+  return formatter.format(new Date(timestamp));
 }
 
 function groupNotificationsByDay(
   notifications: NotificationItem[],
-  locale: string,
+  formatter: Intl.DateTimeFormat,
 ): DayGroup[] {
   const groups: DayGroup[] = [];
   const indexByDay = new Map<number, number>();
@@ -224,7 +232,7 @@ function groupNotificationsByDay(
     if (existingIndex === undefined) {
       indexByDay.set(day, groups.length);
       groups.push({
-        label: getDayGroupLabel(notification.createdAt, locale),
+        label: getDayGroupLabel(notification.createdAt, formatter),
         items: [notification],
       });
       continue;
@@ -301,8 +309,7 @@ function CategoryTabs({
   return (
     <SegmentedControl ariaLabel="Notification categories">
       {CATEGORY_TABS.map(({ value, icon: Icon }) => {
-        const count =
-          value === "all" ? unreadCount : unreadByCategory[value];
+        const count = value === "all" ? unreadCount : unreadByCategory[value];
         const tone = CATEGORY_TONES[value];
 
         return (
@@ -516,6 +523,7 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
 export default function NotificationsPage() {
   const t = useI18n();
   const locale = useCurrentLocale();
+  const dayFormatter = dayFormatters[locale];
   const { currentOrganizationId, isLoading } = useOrganization();
   const [filter, setFilter] = useState<FilterType>("all");
   const [category, setCategory] = useState<CategoryType>("all");
@@ -572,7 +580,7 @@ export default function NotificationsPage() {
     return matchesCategory && matchesFilter;
   });
 
-  const dayGroups = groupNotificationsByDay(notifications, locale);
+  const dayGroups = groupNotificationsByDay(notifications, dayFormatter);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto bg-background p-4 sm:p-6 custom-scrollbar">
