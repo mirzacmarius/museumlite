@@ -2270,6 +2270,9 @@ export default {
     },
   },
   objects: {
+    qrLabel: {
+      showObjectName: "Afficher le nom de l'objet",
+    },
     objectLabel: {
       showQrCode: "Afficher le code QR",
       qrCodeAlt: "Code QR menant à cet objet",

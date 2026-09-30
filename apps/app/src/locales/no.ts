@@ -2178,6 +2178,9 @@ export default {
     },
   },
   objects: {
+    qrLabel: {
+      showObjectName: "Vis objektnavn",
+    },
     objectLabel: {
       showQrCode: "Vis QR-kode",
       qrCodeAlt: "QR-kode som lenker til dette objektet",

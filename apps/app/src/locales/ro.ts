@@ -698,6 +698,9 @@ export default {
     createOrganization: "Creează Organizație",
   },
   objects: {
+    qrLabel: {
+      showObjectName: "Afișează numele obiectului",
+    },
     objectLabel: {
       showQrCode: "Afișează codul QR",
       qrCodeAlt: "Cod QR către acest obiect",

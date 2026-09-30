@@ -1967,6 +1967,7 @@ export default {
       labelSize: "Label Size",
       size2x2: "Square",
       size1x3: "Rectangle",
+      showObjectName: "Show object name",
       print: "Print",
       printInstructions: "Print Instructions",
       instructionPaperSize: "Use letter/A4 paper size",

@@ -2189,6 +2189,9 @@ export default {
     },
   },
   objects: {
+    qrLabel: {
+      showObjectName: "Mostrar nombre del objeto",
+    },
     objectLabel: {
       showQrCode: "Mostrar código QR",
       qrCodeAlt: "Código QR que enlaza con este objeto",
