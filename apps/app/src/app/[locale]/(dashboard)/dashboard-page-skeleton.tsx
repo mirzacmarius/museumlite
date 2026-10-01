@@ -46,17 +46,16 @@ export function DashboardPageSkeleton() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border @min-[20rem]:grid-cols-2 @min-[44rem]:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-card p-5 @min-[20rem]:grid-cols-2 @min-[44rem]:grid-cols-4">
           {KPI_SKELETON_KEYS.map((key) => (
             <div
               key={key}
-              className="flex items-center gap-3 bg-card px-5 py-4"
+              className="flex min-w-0 items-center gap-3 rounded-md border border-border px-3 py-2.5"
             >
               <div className="size-8 shrink-0 rounded-md bg-muted/70" />
-              <div className="min-w-0 space-y-1.5">
-                <div className="h-2.5 w-24 max-w-full rounded bg-muted/70" />
-                <div className="h-5 w-8 rounded bg-muted/70" />
-              </div>
+              <div className="h-3 min-w-0 flex-1 rounded bg-muted/70" />
+              <div className="h-4 w-8 shrink-0 rounded bg-muted/70" />
+              <div className="size-3.5 shrink-0 rounded bg-muted/50" />
             </div>
           ))}
         </div>

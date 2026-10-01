@@ -1,6 +1,6 @@
 export default {
   dashboard: {
-    overviewTitle: "Vue d'ensemble des collections",
+    overviewTitle: "Vue d'ensemble",
     overviewDescription: "Vos collections et votre travail en un coup d'œil.",
     needsReview: "À examiner",
     pendingApprovals: "Approbations en attente",

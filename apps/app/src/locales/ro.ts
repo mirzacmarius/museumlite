@@ -96,7 +96,7 @@ export default {
       "Identificatorul organizației este deja folosit. Alege unul diferit.",
   },
   dashboard: {
-    overviewTitle: "Prezentare generală a colecțiilor",
+    overviewTitle: "Prezentare generală",
     overviewDescription: "Colecțiile și activitatea ta dintr-o privire.",
     needsReview: "De verificat",
     pendingApprovals: "Aprobări în așteptare",
