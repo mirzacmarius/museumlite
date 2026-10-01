@@ -1455,3 +1455,92 @@ export const refreshSystemRoleDescriptions = internalMutation({
     };
   },
 });
+
+/**
+ * Grant media upload to existing system Collection Manager roles. Object drafts
+ * upload selected media before saving or submitting their accession request.
+ * Run once: bunx convex run migrations:grantCollectionManagerMediaUpload '{}'
+ * Remaining organization pages are scheduled automatically.
+ */
+export const grantCollectionManagerMediaUpload = internalMutation({
+  args: {
+    cursor: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.object({
+    organizationsScanned: v.number(),
+    rolePermissionsAdded: v.number(),
+    isDone: v.boolean(),
+    continueCursor: v.union(v.string(), v.null()),
+  }),
+  handler: async (ctx, args) => {
+    const mediaPermissions = await ctx.db
+      .query("permissions")
+      .withIndex("by_category", (q) => q.eq("category", "media"))
+      .collect();
+    const uploadPermissionId =
+      mediaPermissions.find((permission) => permission.name === "media.upload")
+        ?._id ??
+      (await ctx.db.insert("permissions", {
+        name: "media.upload",
+        category: "media",
+      }));
+
+    const organizationsPage = await ctx.db.query("organizations").paginate({
+      numItems: 100,
+      cursor: args.cursor ?? null,
+    });
+    let rolePermissionsAdded = 0;
+
+    for (const organization of organizationsPage.page) {
+      for (const roleName of [
+        COLLECTION_MANAGER_ROLE_NAME,
+        LEGACY_REGISTRAR_ROLE_NAME,
+      ]) {
+        const role = await ctx.db
+          .query("roles")
+          .withIndex("by_organization_and_name", (q) =>
+            q.eq("organizationId", organization._id).eq("name", roleName),
+          )
+          .first();
+        if (!role?.isSystemRole) {
+          continue;
+        }
+
+        const rolePermissions = await ctx.db
+          .query("rolePermissions")
+          .withIndex("by_role", (q) => q.eq("roleId", role._id))
+          .collect();
+        if (
+          rolePermissions.some(
+            (entry) => entry.permissionId === uploadPermissionId,
+          )
+        ) {
+          continue;
+        }
+
+        await ctx.db.insert("rolePermissions", {
+          roleId: role._id,
+          permissionId: uploadPermissionId,
+        });
+        rolePermissionsAdded += 1;
+      }
+    }
+
+    if (!organizationsPage.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.grantCollectionManagerMediaUpload,
+        { cursor: organizationsPage.continueCursor },
+      );
+    }
+
+    return {
+      organizationsScanned: organizationsPage.page.length,
+      rolePermissionsAdded,
+      isDone: organizationsPage.isDone,
+      continueCursor: organizationsPage.isDone
+        ? null
+        : organizationsPage.continueCursor,
+    };
+  },
+});

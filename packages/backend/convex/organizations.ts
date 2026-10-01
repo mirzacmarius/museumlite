@@ -1932,6 +1932,7 @@ export const createDefaultRoles = internalMutation({
       "locations.update",
       "locations.delete",
       "sites.read",
+      "media.upload",
       "media.read",
       "accounts.read",
       "accounts.write",
