@@ -1,6 +1,6 @@
 export default {
   dashboard: {
-    overviewTitle: "Samlingsoversikt",
+    overviewTitle: "Oversikt",
     overviewDescription: "Samlingene og arbeidet ditt på et øyeblikk.",
     needsReview: "Til gjennomgang",
     pendingApprovals: "Ventende godkjenninger",

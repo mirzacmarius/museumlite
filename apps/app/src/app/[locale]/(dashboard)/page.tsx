@@ -3,7 +3,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { KpiCard } from "@v1/ui/kpi-card";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
@@ -73,12 +72,6 @@ interface MetricLinkCardProps {
   accentColor: KpiAccentColor;
 }
 
-const INTERACTIVE_METRIC_CARD_CLASS_NAME = cn(
-  "h-full w-full rounded-none border-0 px-5 py-4",
-  "transition-[border-color,background-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/80 hover:bg-muted/40",
-);
-const METRIC_LINK_CLASS_NAME =
-  "min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
 const METRIC_ICON_CLASS_NAMES = {
   indigo: "border-primary/20 bg-primary/10 text-primary",
   emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
@@ -93,14 +86,29 @@ function MetricLinkCard({
   icon,
   accentColor,
 }: MetricLinkCardProps) {
+  const Icon = icon;
   return (
-    <Link href={href} className={METRIC_LINK_CLASS_NAME}>
-      <KpiCard
-        title={title}
-        value={value}
-        icon={icon}
-        accentColor={accentColor}
-        className={INTERACTIVE_METRIC_CARD_CLASS_NAME}
+    <Link
+      href={href}
+      className="flex min-w-0 items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span
+        className={cn(
+          "shrink-0 rounded-md border p-2",
+          METRIC_ICON_CLASS_NAMES[accentColor],
+        )}
+      >
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1 text-xs font-medium text-foreground">
+        {title}
+      </span>
+      <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+        {value}
+      </span>
+      <ChevronRight
+        className="size-3.5 shrink-0 text-muted-foreground"
+        aria-hidden="true"
       />
     </Link>
   );
@@ -125,30 +133,7 @@ function PendingReviewsSection({ metrics, total }: PendingReviewsSectionProps) {
       </div>
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 @min-[44rem]:grid-cols-4">
         {metrics.map((metric) => (
-          <Link
-            key={metric.title}
-            href={metric.href}
-            className="flex min-w-0 items-center gap-3 rounded-md border border-border px-3 py-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span
-              className={cn(
-                "shrink-0 rounded-md border p-2",
-                METRIC_ICON_CLASS_NAMES[metric.accentColor],
-              )}
-            >
-              <metric.icon className="size-4" aria-hidden="true" />
-            </span>
-            <span className="min-w-0 flex-1 text-xs font-medium text-foreground">
-              {metric.title}
-            </span>
-            <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-              {metric.value}
-            </span>
-            <ChevronRight
-              className="size-3.5 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-          </Link>
+          <MetricLinkCard key={metric.title} {...metric} />
         ))}
       </div>
     </section>
@@ -543,7 +528,7 @@ export default function DashboardPage() {
 
         <section
           aria-label="Live metrics"
-          className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border @min-[20rem]:grid-cols-2 @min-[44rem]:grid-cols-4"
+          className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-card p-5 @min-[20rem]:grid-cols-2 @min-[44rem]:grid-cols-4"
         >
           {liveMetrics.map((metric) => (
             <MetricLinkCard key={metric.title} {...metric} />

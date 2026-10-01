@@ -1,6 +1,6 @@
 export default {
   dashboard: {
-    overviewTitle: "Collections overview",
+    overviewTitle: "Overview",
     overviewDescription: "Your collections and work at a glance.",
     needsReview: "Needs review",
     pendingApprovals: "Pending approvals",

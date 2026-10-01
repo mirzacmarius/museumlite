@@ -2,7 +2,7 @@
 
 export default {
   dashboard: {
-    overviewTitle: "Resumen de colecciones",
+    overviewTitle: "Resumen",
     overviewDescription: "Tus colecciones y tareas de un vistazo.",
     needsReview: "Por revisar",
     pendingApprovals: "Aprobaciones pendientes",
