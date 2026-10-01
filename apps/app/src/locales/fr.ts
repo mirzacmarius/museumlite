@@ -56,6 +56,9 @@ export default {
       placeholder: "Votre nom",
       hint: "Veuillez utiliser un maximum de 64 caractères.",
       save: "Enregistrer",
+      saving: "Enregistrement…",
+      saved: "Nom mis à jour.",
+      error: "Impossible de modifier le nom. Réessayez.",
     },
     username: {
       title: "Votre Nom d'Utilisateur",
@@ -335,6 +338,75 @@ export default {
       searchUsers: "Rechercher des utilisateurs...",
       selectRole: "Sélectionner un rôle",
       stepName: "ex. Approbation du Conservateur",
+    },
+  },
+  account: {
+    openAccount: "Votre compte",
+    title: "Votre compte",
+    description:
+      "Gérez vos informations personnelles et de connexion pour toutes vos organisations.",
+    backToWorkspace: "Retour à l’espace de travail",
+    email: {
+      title: "Adresse e-mail",
+      description:
+        "Votre adresse e-mail sert à vous connecter et à recevoir les notifications du compte.",
+      label: "Adresse e-mail",
+      current: "E-mail actuel : {email}",
+      save: "Envoyer le code de vérification",
+      sending: "Envoi du code…",
+      codeLabel: "Code de vérification",
+      verify: "Vérifier et modifier l’adresse e-mail",
+      verifying: "Vérification…",
+      resend: "Renvoyer le code",
+      resendIn: "Renvoyer dans {seconds}s",
+      cancel: "Annuler le changement",
+      pending:
+        "Un code a été envoyé à {email}. L’adresse changera après vérification.",
+      changed: "Adresse e-mail mise à jour.",
+      error:
+        "Impossible de modifier l’adresse e-mail. Vérifiez-la et réessayez.",
+      supportError:
+        "Ce compte possède plusieurs connexions par e-mail. Contactez l’assistance pour modifier votre adresse.",
+      invalidEmail: "Saisissez une adresse e-mail valide.",
+      emailInUse: "Cette adresse e-mail est déjà associée à un autre compte.",
+      emailUnchanged: "Saisissez une autre adresse e-mail.",
+      throttled: "Veuillez patienter avant de demander un autre code.",
+      invalidCode: "Ce code est incorrect. Vérifiez-le et réessayez.",
+      expired: "Ce code a expiré. Demandez-en un nouveau pour continuer.",
+      noPending:
+        "Aucune modification d’e-mail n’est en attente. Demandez un nouveau code.",
+    },
+    phone: {
+      title: "Numéro de téléphone",
+      description: "Ajoutez un numéro de téléphone à votre compte personnel.",
+      label: "Numéro de téléphone",
+      invalid:
+        "Saisissez un numéro valide contenant 7 à 15 chiffres. Vous pouvez ajouter des espaces, parenthèses, tirets ou un + initial.",
+      save: "Enregistrer le numéro",
+      saving: "Enregistrement…",
+      saved: "Numéro de téléphone mis à jour.",
+      error: "Impossible de modifier le numéro. Réessayez.",
+    },
+    password: {
+      title: "Mot de passe",
+      description: "Modifiez le mot de passe utilisé pour vous connecter.",
+      currentLabel: "Mot de passe actuel",
+      newLabel: "Nouveau mot de passe",
+      confirmLabel: "Confirmer le nouveau mot de passe",
+      save: "Modifier le mot de passe",
+      saving: "Modification…",
+      changed: "Mot de passe modifié.",
+      mismatch: "Les mots de passe ne correspondent pas.",
+      tooShort: "Utilisez entre 8 et 1024 caractères.",
+      unavailable:
+        "Ce compte n’a pas de mot de passe. Connectez-vous avec votre fournisseur habituel.",
+      invalidCurrent: "Le mot de passe actuel est incorrect.",
+      error: "Impossible de modifier le mot de passe. Réessayez.",
+      unchanged: "Choisissez un mot de passe différent de l’actuel.",
+      rateLimited:
+        "Trop de tentatives infructueuses. Attendez avant de réessayer.",
+      oauthOnly:
+        "Ce compte utilise un fournisseur externe et n’a pas de mot de passe à modifier.",
     },
   },
   modules: {

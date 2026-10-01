@@ -55,6 +55,9 @@ export default {
       placeholder: "Your name",
       hint: "Please use 64 characters at maximum.",
       save: "Save",
+      saving: "Saving…",
+      saved: "Name updated.",
+      error: "Could not update your name. Please try again.",
     },
     username: {
       title: "Your Username",
@@ -388,6 +391,76 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Export to CSV",
+    },
+  },
+  account: {
+    openAccount: "Your account",
+    title: "Your account",
+    description:
+      "Manage the personal details and sign-in information used across all your organizations.",
+    backToWorkspace: "Back to workspace",
+    email: {
+      title: "Email address",
+      description:
+        "Your email is used to sign in and receive account notifications.",
+      label: "Email address",
+      current: "Current email: {email}",
+      save: "Send verification code",
+      sending: "Sending code…",
+      codeLabel: "Verification code",
+      verify: "Verify and update email",
+      resend: "Resend code",
+      resendIn: "Resend in {seconds}s",
+      cancel: "Cancel email change",
+      verifying: "Verifying…",
+      pending:
+        "A verification code was sent to {email}. Your email will change after you verify it.",
+      changed: "Email address updated.",
+      error:
+        "Could not complete this email change. Check the address or code, then try again.",
+      supportError:
+        "This account has multiple email sign-in records. Contact support to update your email.",
+      invalidEmail: "Enter a valid email address.",
+      emailInUse: "That email address is already connected to another account.",
+      emailUnchanged: "Enter a different email address.",
+      throttled: "Please wait before requesting another verification code.",
+      invalidCode:
+        "That verification code is incorrect. Check it and try again.",
+      expired:
+        "That verification code expired. Request a new code to continue.",
+      noPending:
+        "There is no pending email change. Request a new code to continue.",
+    },
+    phone: {
+      title: "Phone number",
+      description: "Add a phone number to your personal account.",
+      label: "Phone number",
+      invalid:
+        "Enter a valid phone number with 7 to 15 digits. You can include spaces, parentheses, hyphens, or a leading +.",
+      save: "Save phone number",
+      saving: "Saving…",
+      saved: "Phone number updated.",
+      error: "Could not update the phone number. Please try again.",
+    },
+    password: {
+      title: "Password",
+      description: "Change the password you use to sign in.",
+      currentLabel: "Current password",
+      newLabel: "New password",
+      confirmLabel: "Confirm new password",
+      save: "Change password",
+      saving: "Changing password…",
+      changed: "Password changed.",
+      mismatch: "The new passwords do not match.",
+      tooShort: "Use 8 to 1024 characters for your new password.",
+      unavailable:
+        "This account does not have a password. Sign in with your existing provider.",
+      invalidCurrent: "The current password is incorrect.",
+      error: "Could not change the password. Please try again.",
+      unchanged: "Choose a password different from your current password.",
+      rateLimited: "Too many unsuccessful attempts. Wait before trying again.",
+      oauthOnly:
+        "This account signs in with an external provider and has no password to change.",
     },
   },
   modules: {

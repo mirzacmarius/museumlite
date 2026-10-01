@@ -55,6 +55,9 @@ export default {
       placeholder: "Ditt navn",
       hint: "Vennligst bruk maksimalt 64 tegn.",
       save: "Lagre",
+      saving: "Lagrer…",
+      saved: "Navnet er oppdatert.",
+      error: "Kunne ikke oppdatere navnet. Prøv igjen.",
     },
     username: {
       title: "Ditt brukernavn",
@@ -326,6 +329,73 @@ export default {
       searchUsers: "Søk etter brukere...",
       selectRole: "Velg en rolle",
       stepName: "f.eks. Kurator-godkjenning",
+    },
+  },
+  account: {
+    openAccount: "Kontoen din",
+    title: "Kontoen din",
+    description:
+      "Administrer personopplysninger og innloggingsinformasjon for alle organisasjonene dine.",
+    backToWorkspace: "Tilbake til arbeidsområdet",
+    email: {
+      title: "E-postadresse",
+      description: "E-postadressen brukes til innlogging og kontovarsler.",
+      label: "E-postadresse",
+      current: "Nåværende e-post: {email}",
+      save: "Send bekreftelseskode",
+      sending: "Sender kode…",
+      codeLabel: "Bekreftelseskode",
+      verify: "Bekreft og oppdater e-post",
+      verifying: "Bekrefter…",
+      resend: "Send koden på nytt",
+      resendIn: "Send på nytt om {seconds}s",
+      cancel: "Avbryt e-postendring",
+      pending:
+        "En kode er sendt til {email}. E-postadressen endres etter bekreftelse.",
+      changed: "E-postadressen er oppdatert.",
+      error:
+        "Kunne ikke oppdatere e-postadressen. Kontroller den og prøv igjen.",
+      supportError:
+        "Kontoen har flere e-postinnlogginger. Kontakt kundestøtte for å endre e-postadressen.",
+      invalidEmail: "Skriv inn en gyldig e-postadresse.",
+      emailInUse: "E-postadressen er allerede knyttet til en annen konto.",
+      emailUnchanged: "Skriv inn en annen e-postadresse.",
+      throttled: "Vent før du ber om en ny bekreftelseskode.",
+      invalidCode: "Bekreftelseskoden er feil. Kontroller den og prøv igjen.",
+      expired: "Bekreftelseskoden er utløpt. Be om en ny kode.",
+      noPending:
+        "Ingen e-postendring venter. Be om en ny kode for å fortsette.",
+    },
+    phone: {
+      title: "Telefonnummer",
+      description: "Legg til et telefonnummer på den personlige kontoen din.",
+      label: "Telefonnummer",
+      invalid:
+        "Skriv inn et gyldig telefonnummer med 7 til 15 sifre. Du kan bruke mellomrom, parenteser, bindestreker eller + først.",
+      save: "Lagre telefonnummer",
+      saving: "Lagrer…",
+      saved: "Telefonnummeret er oppdatert.",
+      error: "Kunne ikke oppdatere telefonnummeret. Prøv igjen.",
+    },
+    password: {
+      title: "Passord",
+      description: "Endre passordet du bruker til å logge inn.",
+      currentLabel: "Nåværende passord",
+      newLabel: "Nytt passord",
+      confirmLabel: "Bekreft nytt passord",
+      save: "Endre passord",
+      saving: "Endrer…",
+      changed: "Passordet er endret.",
+      mismatch: "De nye passordene er ulike.",
+      tooShort: "Bruk mellom 8 og 1024 tegn.",
+      unavailable:
+        "Kontoen har ikke et passord. Logg inn med den eksisterende leverandøren.",
+      invalidCurrent: "Nåværende passord er feil.",
+      error: "Kunne ikke endre passordet. Prøv igjen.",
+      unchanged: "Velg et passord som er forskjellig fra det nåværende.",
+      rateLimited: "For mange mislykkede forsøk. Vent før du prøver igjen.",
+      oauthOnly:
+        "Denne kontoen bruker en ekstern leverandør og har ikke et passord å endre.",
     },
   },
   modules: {

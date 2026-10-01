@@ -10,7 +10,11 @@
 
 import type * as accessionTemplates from "../accessionTemplates.js";
 import type * as accessions from "../accessions.js";
+import type * as accountActions from "../accountActions.js";
+import type * as accountConstants from "../accountConstants.js";
 import type * as accountDocuments from "../accountDocuments.js";
+import type * as accountErrors from "../accountErrors.js";
+import type * as accountMutations from "../accountMutations.js";
 import type * as accountRelationships from "../accountRelationships.js";
 import type * as accountSegments from "../accountSegments.js";
 import type * as accounts from "../accounts.js";
@@ -184,7 +188,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   accessionTemplates: typeof accessionTemplates;
   accessions: typeof accessions;
+  accountActions: typeof accountActions;
+  accountConstants: typeof accountConstants;
   accountDocuments: typeof accountDocuments;
+  accountErrors: typeof accountErrors;
+  accountMutations: typeof accountMutations;
   accountRelationships: typeof accountRelationships;
   accountSegments: typeof accountSegments;
   accounts: typeof accounts;

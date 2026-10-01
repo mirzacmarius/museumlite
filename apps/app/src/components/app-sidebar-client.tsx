@@ -63,6 +63,7 @@ import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 
 function getUserInitials(user: {
   name?: string | null;
@@ -408,6 +409,7 @@ function UserMenu({
   onSignOut: () => void;
   user: SidebarUser | null | undefined;
 }) {
+  const t = useScopedI18n("account");
   const userAvatarUrl = user?.avatarUrl ?? user?.image ?? undefined;
   const userInitials = getUserInitials(user ?? {});
 
@@ -449,8 +451,11 @@ function UserMenu({
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <Link
-                  href="/settings"
+                  href="/account"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={onNavigate}
+                  aria-label={t("openAccount")}
                   className="flex items-center gap-2 rounded-sm px-1 py-1.5 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                 >
                   <Avatar className="size-8 rounded-lg">
@@ -464,7 +469,7 @@ function UserMenu({
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">
-                      {user?.name ?? undefined}
+                      {t("openAccount")}
                     </span>
                     <span className="truncate text-xs text-muted-foreground">
                       {user?.email ?? undefined}

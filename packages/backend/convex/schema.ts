@@ -119,7 +119,19 @@ export default defineSchema({
     // custom fields
     username: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
+    accountEmailOverride: v.optional(v.string()),
+    accountNameOverride: v.optional(v.string()),
   }).index("email", ["email"]),
+
+  accountEmailChanges: defineTable({
+    userId: v.id("users"),
+    email: v.string(),
+    codeHash: v.string(),
+    expiresAt: v.number(),
+    attemptsLeft: v.number(),
+    lastSentAt: v.number(),
+    cancelled: v.optional(v.boolean()),
+  }).index("by_userId", ["userId"]),
 
   // Multi-tenant organizations
   organizations: defineTable({

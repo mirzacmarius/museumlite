@@ -12,20 +12,25 @@ export const deleteUserAccount = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userOrganizations, authSessions, authAccounts] = await Promise.all([
-      ctx.db
-        .query("userOrganizations")
-        .withIndex("by_user", (q) => q.eq("userId", args.userId))
-        .collect(),
-      ctx.db
-        .query("authSessions")
-        .withIndex("userId", (q) => q.eq("userId", args.userId))
-        .collect(),
-      ctx.db
-        .query("authAccounts")
-        .withIndex("userIdAndProvider", (q) => q.eq("userId", args.userId))
-        .collect(),
-    ]);
+    const [userOrganizations, authSessions, authAccounts, pendingEmailChange] =
+      await Promise.all([
+        ctx.db
+          .query("userOrganizations")
+          .withIndex("by_user", (q) => q.eq("userId", args.userId))
+          .collect(),
+        ctx.db
+          .query("authSessions")
+          .withIndex("userId", (q) => q.eq("userId", args.userId))
+          .collect(),
+        ctx.db
+          .query("authAccounts")
+          .withIndex("userIdAndProvider", (q) => q.eq("userId", args.userId))
+          .collect(),
+        ctx.db
+          .query("accountEmailChanges")
+          .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+          .unique(),
+      ]);
 
     await Promise.all(
       userOrganizations.map((userOrganization) =>
@@ -63,9 +68,7 @@ export const deleteUserAccount = internalMutation({
           authAccounts.map((authAccount) =>
             ctx.db
               .query("authVerificationCodes")
-              .withIndex("accountId", (q) =>
-                q.eq("accountId", authAccount._id),
-              )
+              .withIndex("accountId", (q) => q.eq("accountId", authAccount._id))
               .unique()
               .then((verificationCode) => ({
                 authAccountId: authAccount._id,
@@ -86,6 +89,7 @@ export const deleteUserAccount = internalMutation({
       })(),
     ]);
 
+    if (pendingEmailChange) await ctx.db.delete(pendingEmailChange._id);
     await ctx.db.delete(args.userId);
     return null;
   },
