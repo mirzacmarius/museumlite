@@ -59,6 +59,9 @@ export default {
       placeholder: "Tu nombre",
       hint: "Por favor, utiliza un máximo de 64 caracteres.",
       save: "Guardar",
+      saving: "Guardando…",
+      saved: "Nombre actualizado.",
+      error: "No se pudo actualizar el nombre. Inténtalo de nuevo.",
     },
     username: {
       title: "Tu Nombre de Usuario",
@@ -336,6 +339,74 @@ export default {
       searchUsers: "Buscar usuarios...",
       selectRole: "Seleccionar un rol",
       stepName: "ej. Aprobación del Curador",
+    },
+  },
+  account: {
+    openAccount: "Tu cuenta",
+    title: "Tu cuenta",
+    description:
+      "Administra tus datos personales y de acceso para todas tus organizaciones.",
+    backToWorkspace: "Volver al espacio de trabajo",
+    email: {
+      title: "Correo electrónico",
+      description:
+        "Usamos tu correo para iniciar sesión y enviarte notificaciones de la cuenta.",
+      label: "Correo electrónico",
+      current: "Correo actual: {email}",
+      save: "Enviar código de verificación",
+      sending: "Enviando código…",
+      codeLabel: "Código de verificación",
+      verify: "Verificar y actualizar correo",
+      verifying: "Verificando…",
+      resend: "Reenviar código",
+      resendIn: "Reenviar en {seconds}s",
+      cancel: "Cancelar cambio de correo",
+      pending:
+        "Enviamos un código a {email}. El correo cambiará al verificarlo.",
+      changed: "Correo actualizado.",
+      error: "No se pudo actualizar el correo. Revísalo e inténtalo de nuevo.",
+      supportError:
+        "Esta cuenta tiene varios registros de acceso por correo. Contacta con soporte para cambiarlo.",
+      invalidEmail: "Introduce una dirección de correo válida.",
+      emailInUse: "Ese correo ya está asociado a otra cuenta.",
+      emailUnchanged: "Introduce una dirección de correo diferente.",
+      throttled: "Espera antes de solicitar otro código de verificación.",
+      invalidCode: "El código no es correcto. Revísalo e inténtalo de nuevo.",
+      expired: "El código ha caducado. Solicita otro para continuar.",
+      noPending:
+        "No hay ningún cambio de correo pendiente. Solicita otro código.",
+    },
+    phone: {
+      title: "Número de teléfono",
+      description: "Añade un número de teléfono a tu cuenta personal.",
+      label: "Número de teléfono",
+      invalid:
+        "Introduce un número válido de 7 a 15 dígitos. Puedes usar espacios, paréntesis, guiones o un + inicial.",
+      save: "Guardar número",
+      saving: "Guardando…",
+      saved: "Número de teléfono actualizado.",
+      error: "No se pudo actualizar el número. Inténtalo de nuevo.",
+    },
+    password: {
+      title: "Contraseña",
+      description: "Cambia la contraseña que usas para iniciar sesión.",
+      currentLabel: "Contraseña actual",
+      newLabel: "Nueva contraseña",
+      confirmLabel: "Confirmar nueva contraseña",
+      save: "Cambiar contraseña",
+      saving: "Cambiando…",
+      changed: "Contraseña actualizada.",
+      mismatch: "Las contraseñas nuevas no coinciden.",
+      tooShort: "Usa entre 8 y 1024 caracteres.",
+      unavailable:
+        "Esta cuenta no tiene contraseña. Inicia sesión con tu proveedor habitual.",
+      invalidCurrent: "La contraseña actual no es correcta.",
+      error: "No se pudo cambiar la contraseña. Inténtalo de nuevo.",
+      unchanged: "Elige una contraseña distinta de la actual.",
+      rateLimited:
+        "Hubo demasiados intentos fallidos. Espera antes de volver a intentarlo.",
+      oauthOnly:
+        "Esta cuenta usa un proveedor externo y no tiene una contraseña que cambiar.",
     },
   },
   modules: {

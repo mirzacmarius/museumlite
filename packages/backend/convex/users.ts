@@ -3,6 +3,11 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
+import { PASSWORD_PROVIDERS } from "./accountConstants";
+import {
+  type AccountErrorResult,
+  accountErrorResultValidator,
+} from "./accountErrors";
 import { polar } from "./subscriptions";
 import { username } from "./utils/validators";
 
@@ -33,6 +38,8 @@ export const getUser = query({
       emailVerificationTime: v.optional(v.number()),
       phone: v.optional(v.string()),
       phoneVerificationTime: v.optional(v.number()),
+      accountEmailOverride: v.optional(v.string()),
+      accountNameOverride: v.optional(v.string()),
       isAnonymous: v.optional(v.boolean()),
       subscription: v.any(),
       avatarUrl: v.optional(v.string()),
@@ -94,8 +101,108 @@ export const updateName = mutation({
     if (trimmedName.length === 0 || trimmedName.length > 64) {
       throw new Error("Name must be between 1 and 64 characters");
     }
-    await ctx.db.patch(userId, { name: trimmedName });
+    await ctx.db.patch(userId, {
+      name: trimmedName,
+      accountNameOverride: trimmedName,
+    });
     return null;
+  },
+});
+
+export const updatePhone = mutation({
+  args: { phone: v.string() },
+  returns: v.union(
+    v.object({ status: v.literal("saved") }),
+    accountErrorResultValidator,
+  ),
+  handler: async (
+    ctx,
+    { phone },
+  ): Promise<{ status: "saved" } | AccountErrorResult> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return { status: "error", code: "UNAUTHENTICATED" };
+    const normalized = phone.trim();
+    const digitCount = normalized.replace(/\D/g, "").length;
+    if (
+      normalized.length > 32 ||
+      (normalized &&
+        (!/^\+?[0-9 ()-]+$/.test(normalized) ||
+          digitCount < 7 ||
+          digitCount > 15))
+    ) {
+      return { status: "error", code: "INVALID_PHONE" };
+    }
+    await ctx.db.patch(userId, {
+      phone: normalized || undefined,
+      phoneVerificationTime: undefined,
+    });
+    return { status: "saved" };
+  },
+});
+
+export const getAccountCapabilities = query({
+  args: {},
+  returns: v.object({
+    hasPassword: v.boolean(),
+    pendingEmailChange: v.union(
+      v.object({
+        email: v.string(),
+        expiresAt: v.number(),
+        resendAt: v.number(),
+      }),
+      v.null(),
+    ),
+  }),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { hasPassword: false, pendingEmailChange: null };
+    }
+    const [accounts, pending] = await Promise.all([
+      ctx.db
+        .query("authAccounts")
+        .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
+        .take(32),
+      ctx.db
+        .query("accountEmailChanges")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .unique(),
+    ]);
+    return {
+      hasPassword: accounts.some(
+        (account) =>
+          PASSWORD_PROVIDERS.includes(account.provider) &&
+          Boolean(account.secret),
+      ),
+      pendingEmailChange:
+        pending && !pending.cancelled && pending.attemptsLeft > 0
+          ? {
+              email: pending.email,
+              expiresAt: pending.expiresAt,
+              resendAt: pending.lastSentAt + 60_000,
+            }
+          : null,
+    };
+  },
+});
+
+export const cancelEmailChange = mutation({
+  args: {},
+  returns: v.union(
+    v.object({ status: v.literal("cancelled") }),
+    accountErrorResultValidator,
+  ),
+  handler: async (
+    ctx,
+  ): Promise<{ status: "cancelled" } | AccountErrorResult> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return { status: "error", code: "UNAUTHENTICATED" };
+    const pending = await ctx.db
+      .query("accountEmailChanges")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (pending) await ctx.db.patch(pending._id, { cancelled: true });
+    return { status: "cancelled" };
   },
 });
 

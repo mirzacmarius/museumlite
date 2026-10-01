@@ -152,6 +152,9 @@ export default {
       placeholder: "Numele tău",
       hint: "Te rugăm să folosești maximum 64 de caractere.",
       save: "Salvează",
+      saving: "Se salvează…",
+      saved: "Numele a fost actualizat.",
+      error: "Numele nu a putut fi actualizat. Încearcă din nou.",
     },
     username: {
       title: "Numele Tău de Utilizator",
@@ -586,6 +589,77 @@ export default {
         errors: "Erori",
         downloadErrors: "Descarcă Erorile",
       },
+    },
+  },
+  account: {
+    openAccount: "Contul tău",
+    title: "Contul tău",
+    description:
+      "Gestionează datele personale și informațiile de autentificare pentru toate organizațiile tale.",
+    backToWorkspace: "Înapoi la spațiul de lucru",
+    email: {
+      title: "Adresă de e-mail",
+      description:
+        "Adresa de e-mail este folosită pentru autentificare și notificări.",
+      label: "Adresă de e-mail",
+      current: "E-mail actual: {email}",
+      save: "Trimite codul de verificare",
+      sending: "Se trimite codul…",
+      codeLabel: "Cod de verificare",
+      verify: "Verifică și actualizează e-mailul",
+      verifying: "Se verifică…",
+      resend: "Retrimite codul",
+      resendIn: "Retrimite în {seconds}s",
+      cancel: "Anulează schimbarea e-mailului",
+      pending:
+        "Am trimis un cod la {email}. Adresa se va schimba după verificare.",
+      changed: "Adresa de e-mail a fost actualizată.",
+      error:
+        "Adresa de e-mail nu a putut fi actualizată. Verific-o și încearcă din nou.",
+      supportError:
+        "Acest cont are mai multe înregistrări de autentificare prin e-mail. Contactează asistența pentru modificare.",
+      invalidEmail: "Introdu o adresă de e-mail validă.",
+      emailInUse: "Această adresă de e-mail este deja asociată altui cont.",
+      emailUnchanged: "Introdu o adresă de e-mail diferită.",
+      throttled: "Așteaptă înainte de a solicita un alt cod de verificare.",
+      invalidCode:
+        "Codul de verificare este incorect. Verifică-l și încearcă din nou.",
+      expired:
+        "Codul de verificare a expirat. Solicită un cod nou pentru a continua.",
+      noPending:
+        "Nu există o schimbare de e-mail în așteptare. Solicită un cod nou.",
+    },
+    phone: {
+      title: "Număr de telefon",
+      description: "Adaugă un număr de telefon contului personal.",
+      label: "Număr de telefon",
+      invalid:
+        "Introdu un număr valid cu 7–15 cifre. Poți folosi spații, paranteze, cratime sau + la început.",
+      save: "Salvează numărul",
+      saving: "Se salvează…",
+      saved: "Numărul de telefon a fost actualizat.",
+      error: "Numărul nu a putut fi actualizat. Încearcă din nou.",
+    },
+    password: {
+      title: "Parolă",
+      description: "Schimbă parola folosită pentru autentificare.",
+      currentLabel: "Parola actuală",
+      newLabel: "Parolă nouă",
+      confirmLabel: "Confirmă parola nouă",
+      save: "Schimbă parola",
+      saving: "Se schimbă…",
+      changed: "Parola a fost schimbată.",
+      mismatch: "Parolele noi nu coincid.",
+      tooShort: "Folosește între 8 și 1024 de caractere.",
+      unavailable:
+        "Acest cont nu are o parolă. Autentifică-te prin furnizorul existent.",
+      invalidCurrent: "Parola actuală este incorectă.",
+      error: "Parola nu a putut fi schimbată. Încearcă din nou.",
+      unchanged: "Alege o parolă diferită de cea actuală.",
+      rateLimited:
+        "Prea multe încercări nereușite. Așteaptă înainte să încerci din nou.",
+      oauthOnly:
+        "Acest cont folosește un furnizor extern și nu are o parolă de schimbat.",
     },
   },
   common: {

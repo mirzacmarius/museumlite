@@ -97,6 +97,7 @@ describe("usersMutations", () => {
       userId,
       userOrganizationId,
       verificationCodeId,
+      pendingEmailChangeId,
     } = await t.run(async (ctx) => {
       const [userId, organizationId] = await Promise.all([
         ctx.db.insert("users", {
@@ -143,6 +144,14 @@ describe("usersMutations", () => {
         expirationTime: Date.now() + 60_000,
         emailVerified: "deleted-user@test.com",
       });
+      const pendingEmailChangeId = await ctx.db.insert("accountEmailChanges", {
+        userId,
+        email: "new-deleted-user@test.com",
+        codeHash: "hashed-email-code",
+        expiresAt: Date.now() + 60_000,
+        attemptsLeft: 5,
+        lastSentAt: Date.now(),
+      });
 
       return {
         accountId,
@@ -152,6 +161,7 @@ describe("usersMutations", () => {
         userId,
         userOrganizationId,
         verificationCodeId,
+        pendingEmailChangeId,
       };
     });
 
@@ -166,6 +176,7 @@ describe("usersMutations", () => {
         user: await ctx.db.get(userId),
         userOrganization: await ctx.db.get(userOrganizationId),
         verificationCode: await ctx.db.get(verificationCodeId),
+        pendingEmailChange: await ctx.db.get(pendingEmailChangeId),
       };
     });
 
@@ -177,6 +188,7 @@ describe("usersMutations", () => {
       user: null,
       userOrganization: null,
       verificationCode: null,
+      pendingEmailChange: null,
     });
   });
 });

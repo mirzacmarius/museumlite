@@ -55,6 +55,21 @@ const passwordWithEmailLinkVerification = Password({
 });
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  callbacks: {
+    async afterUserCreatedOrUpdated(ctx, { userId }) {
+      const user = await ctx.db.get(userId);
+      if (user?.accountEmailOverride || user?.accountNameOverride) {
+        await ctx.db.patch(userId, {
+          ...(user.accountEmailOverride
+            ? { email: user.accountEmailOverride }
+            : {}),
+          ...(user.accountNameOverride
+            ? { name: user.accountNameOverride }
+            : {}),
+        });
+      }
+    },
+  },
   providers: [
     Google,
     magicLinkEmail,
