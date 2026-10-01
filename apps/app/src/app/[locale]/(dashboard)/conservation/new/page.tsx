@@ -163,20 +163,20 @@ export default function NewTreatmentPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-foreground/80">
-                  {t("form.datePerformed")}{" "}
-                  <span className="text-red-500">*</span>
-                </Label>
-                <DatePicker
-                  date={formData.performedAt}
-                  onSelect={(date) =>
-                    date &&
-                    setFormData((prev) => ({ ...prev, performedAt: date }))
-                  }
-                  className="w-full bg-muted/50 border-border text-foreground/80"
-                />
-              </div>
+              <DatePicker
+                label={
+                  <>
+                    {t("form.datePerformed")}{" "}
+                    <span className="text-red-500">*</span>
+                  </>
+                }
+                date={formData.performedAt}
+                onSelect={(date) =>
+                  date &&
+                  setFormData((prev) => ({ ...prev, performedAt: date }))
+                }
+                className="w-full bg-muted/50 border-border text-foreground/80"
+              />
             </div>
 
             <div className="space-y-2">

@@ -248,21 +248,17 @@ export function EditDeaccessionForm({
                       placeholder={t("form.proceedsRecipientPlaceholder")}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="proceedsDate">
-                      {t("form.proceedsDate")}
-                    </Label>
-                    <DatePickerInput
-                      id="proceedsDate"
-                      value={formData.proceedsDate}
-                      onChange={(value) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          proceedsDate: value,
-                        }))
-                      }
-                    />
-                  </div>
+                  <DatePickerInput
+                    label={t("form.proceedsDate")}
+                    id="proceedsDate"
+                    value={formData.proceedsDate}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        proceedsDate: value,
+                      }))
+                    }
+                  />
                 </div>
 
                 <div className="space-y-2">

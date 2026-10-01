@@ -506,32 +506,28 @@ function TransitForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="scheduledPickupDate">Scheduled Pickup</Label>
-          <DatePickerInput
-            id="scheduledPickupDate"
-            value={form.scheduledPickupDate}
-            onChange={(value) =>
-              setForm((prev) => ({
-                ...prev,
-                scheduledPickupDate: value,
-              }))
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="estimatedDeliveryDate">Estimated Delivery</Label>
-          <DatePickerInput
-            id="estimatedDeliveryDate"
-            value={form.estimatedDeliveryDate}
-            onChange={(value) =>
-              setForm((prev) => ({
-                ...prev,
-                estimatedDeliveryDate: value,
-              }))
-            }
-          />
-        </div>
+        <DatePickerInput
+          label="Scheduled Pickup"
+          id="scheduledPickupDate"
+          value={form.scheduledPickupDate}
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              scheduledPickupDate: value,
+            }))
+          }
+        />
+        <DatePickerInput
+          label="Estimated Delivery"
+          id="estimatedDeliveryDate"
+          value={form.estimatedDeliveryDate}
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              estimatedDeliveryDate: value,
+            }))
+          }
+        />
       </div>
 
       <div className="space-y-2">

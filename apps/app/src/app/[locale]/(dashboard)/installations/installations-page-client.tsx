@@ -498,16 +498,12 @@ function TaskForm({
             placeholder="Team member name"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="dueDate">Due Date</Label>
-          <DatePickerInput
-            id="dueDate"
-            value={form.dueDate}
-            onChange={(value) =>
-              setForm((prev) => ({ ...prev, dueDate: value }))
-            }
-          />
-        </div>
+        <DatePickerInput
+          label="Due Date"
+          id="dueDate"
+          value={form.dueDate}
+          onChange={(value) => setForm((prev) => ({ ...prev, dueDate: value }))}
+        />
       </div>
 
       <div className="flex justify-end">

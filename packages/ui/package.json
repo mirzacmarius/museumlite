@@ -72,7 +72,8 @@
     "./tree": "./src/components/tree.tsx",
     "./upload-input": "./src/components/upload-input.tsx",
     "./utils": "./src/utils/index.ts",
-    "./wizard": "./src/components/wizard.tsx"
+    "./wizard": "./src/components/wizard.tsx",
+    "./field": "./src/components/field.tsx"
   },
   "files": [
     "tailwind.config.ts",

@@ -252,29 +252,19 @@ function ActivityFilters({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="from-date" className="text-xs text-muted-foreground">
-            {labels.fromDate}
-          </Label>
-          <DatePickerInput
-            id="from-date"
-            value={fromDate}
-            onChange={onFromDateChange}
-            className="h-9"
-          />
-        </div>
+        <DatePickerInput
+          label={labels.fromDate}
+          id="from-date"
+          value={fromDate}
+          onChange={onFromDateChange}
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="to-date" className="text-xs text-muted-foreground">
-            {labels.toDate}
-          </Label>
-          <DatePickerInput
-            id="to-date"
-            value={toDate}
-            onChange={onToDateChange}
-            className="h-9"
-          />
-        </div>
+        <DatePickerInput
+          label={labels.toDate}
+          id="to-date"
+          value={toDate}
+          onChange={onToDateChange}
+        />
       </div>
     </div>
   );

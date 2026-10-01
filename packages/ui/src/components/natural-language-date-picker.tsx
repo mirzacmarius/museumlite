@@ -220,8 +220,9 @@ function NaturalLanguageDatePickerInner({
           <Button
             id={`${id}-picker`}
             variant="ghost"
-            className="absolute top-1/2 right-2 size-6 -translate-y-1/2 p-0 size-6"
+            className="absolute top-1/2 right-2 size-6 -translate-y-1/2 p-0"
             type="button"
+            disabled={disabled}
           >
             <CalendarIcon className="size-3.5" />
             <span className="sr-only">Select date</span>
@@ -229,8 +230,7 @@ function NaturalLanguageDatePickerInner({
         </PopoverTrigger>
         <PopoverContent
           className="w-auto overflow-hidden p-0"
-          align="end"
-          alignOffset={-8}
+          align="start"
           sideOffset={10}
         >
           <Calendar

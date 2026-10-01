@@ -136,22 +136,18 @@ export default function NewDeaccessionPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dateDeaccessioned">
-                    {t("form.dateDeaccessioned")}
-                  </Label>
-                  <DatePicker
-                    id="dateDeaccessioned"
-                    date={formData.dateDeaccessioned}
-                    onSelect={(date: Date | undefined) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dateDeaccessioned: date ?? prev.dateDeaccessioned,
-                      }))
-                    }
-                    placeholder={t("form.dateDeaccessionedPlaceholder")}
-                  />
-                </div>
+                <DatePicker
+                  label={t("form.dateDeaccessioned")}
+                  id="dateDeaccessioned"
+                  date={formData.dateDeaccessioned}
+                  onSelect={(date: Date | undefined) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      dateDeaccessioned: date ?? prev.dateDeaccessioned,
+                    }))
+                  }
+                  placeholder={t("form.dateDeaccessionedPlaceholder")}
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="method">{t("form.methodLabel")}</Label>

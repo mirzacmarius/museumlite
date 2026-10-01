@@ -1,14 +1,16 @@
 "use client";
 
-import { Button } from "@v1/ui/button";
-import { Calendar } from "@v1/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
-import { format, isValid, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import * as React from "react";
 import { cn } from "../utils";
+import { Button } from "./button";
+import { Calendar } from "./calendar";
+import { Field, FieldLabel } from "./field";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
 interface DatePickerProps {
   id?: string;
+  label: React.ReactNode;
   date?: Date;
   onSelect?: (date: Date | undefined) => void;
   placeholder?: string;
@@ -18,99 +20,77 @@ interface DatePickerProps {
   defaultMonth?: Date;
 }
 
-interface DatePickerInputProps {
-  id?: string;
-  value?: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
-}
-
-function monthAtYear(year: number): Date {
-  const date = new Date(0);
-  date.setFullYear(year, 0, 1);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
 export function DatePicker({
   id,
+  label,
   date,
   onSelect,
   placeholder = "Select date",
-  disabled = false,
+  disabled,
   className,
   displayFormat,
   defaultMonth,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
-  const startMonth =
-    date && date < monthAtYear(1500) ? date : monthAtYear(1500);
-  const nextCentury = new Date(new Date().getFullYear() + 100, 11, 31);
-  const endMonth = date && date > nextCentury ? date : nextCentury;
+  const generatedId = React.useId();
+  const inputId = id ?? generatedId;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          id={id}
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground",
-            className,
-          )}
-        >
-          {date
-            ? displayFormat
-              ? format(date, displayFormat)
-              : date.toLocaleDateString()
-            : placeholder}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={(selectedDate) => {
-            onSelect?.(selectedDate);
-            setOpen(false);
-          }}
-          defaultMonth={defaultMonth ?? date}
-          captionLayout="dropdown"
-          startMonth={startMonth}
-          endMonth={endMonth}
-        />
-      </PopoverContent>
-    </Popover>
+    <Field className={cn("mx-auto w-44", className)}>
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            id={inputId}
+            type="button"
+            className="justify-start font-normal"
+            disabled={disabled}
+          >
+            {date
+              ? displayFormat
+                ? format(date, displayFormat)
+                : date.toLocaleDateString()
+              : placeholder}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={date}
+            defaultMonth={defaultMonth ?? date}
+            captionLayout="dropdown"
+            onSelect={(date) => {
+              onSelect?.(date);
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    </Field>
   );
 }
 
-/** Adapts the yyyy-MM-dd form value convention to the shared calendar picker. */
+interface DatePickerInputProps
+  extends Omit<DatePickerProps, "date" | "onSelect"> {
+  value?: string;
+  onChange?: (value: string) => void;
+}
+
 export function DatePickerInput({
-  id,
   value,
   onChange,
-  placeholder,
-  disabled,
-  className,
+  ...props
 }: DatePickerInputProps) {
   const parsedDate = value ? parseISO(value) : undefined;
-  const date = parsedDate && isValid(parsedDate) ? parsedDate : undefined;
+  const date =
+    parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : undefined;
 
   return (
     <DatePicker
-      id={id}
+      {...props}
       date={date}
-      onSelect={(selectedDate) =>
-        onChange(selectedDate ? format(selectedDate, "yyyy-MM-dd") : "")
-      }
-      placeholder={placeholder}
-      disabled={disabled}
-      className={className}
+      onSelect={(date) => onChange?.(date ? format(date, "yyyy-MM-dd") : "")}
     />
   );
 }

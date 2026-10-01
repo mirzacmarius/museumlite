@@ -111,19 +111,17 @@ export function AccountComboboxHolderSection({
             />
           </div>
         ) : (
-          <div>
-            <Label htmlFor="dateOfBirth">Date of Birth</Label>
-            <DatePickerInput
-              id="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={(value) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  dateOfBirth: value,
-                }))
-              }
-            />
-          </div>
+          <DatePickerInput
+            label="Date of Birth"
+            id="dateOfBirth"
+            value={formData.dateOfBirth}
+            onChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                dateOfBirth: value,
+              }))
+            }
+          />
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

@@ -94,32 +94,28 @@ export function ExhibitionFormSections({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                {t("form.startDateLabel")}{" "}
-                <span className="text-red-500">*</span>
-              </Label>
-              <DatePicker
-                date={formData.startDate}
-                onSelect={(date) =>
-                  onFormDataChange((prev) => ({
-                    ...prev,
-                    startDate: date ?? prev.startDate,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-muted-foreground">
-                {t("form.endDateLabel")}
-              </Label>
-              <DatePicker
-                date={formData.endDate}
-                onSelect={(date) =>
-                  onFormDataChange((prev) => ({ ...prev, endDate: date }))
-                }
-              />
-            </div>
+            <DatePicker
+              label={
+                <>
+                  {t("form.startDateLabel")}{" "}
+                  <span className="text-red-500">*</span>
+                </>
+              }
+              date={formData.startDate}
+              onSelect={(date) =>
+                onFormDataChange((prev) => ({
+                  ...prev,
+                  startDate: date ?? prev.startDate,
+                }))
+              }
+            />
+            <DatePicker
+              label={t("form.endDateLabel")}
+              date={formData.endDate}
+              onSelect={(date) =>
+                onFormDataChange((prev) => ({ ...prev, endDate: date }))
+              }
+            />
           </div>
 
           <div className="flex items-center gap-x-2 rounded-lg border border-border bg-muted/50 p-4">

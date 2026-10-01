@@ -131,16 +131,14 @@ export function ClaimForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="incidentDate">Incident Date *</Label>
-          <DatePickerInput
-            id="incidentDate"
-            value={form.incidentDate}
-            onChange={(value) =>
-              setForm((prev) => ({ ...prev, incidentDate: value }))
-            }
-          />
-        </div>
+        <DatePickerInput
+          label="Incident Date *"
+          id="incidentDate"
+          value={form.incidentDate}
+          onChange={(value) =>
+            setForm((prev) => ({ ...prev, incidentDate: value }))
+          }
+        />
         <div className="space-y-2">
           <Label>Incident Type *</Label>
           <Select

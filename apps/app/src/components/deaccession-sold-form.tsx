@@ -91,16 +91,13 @@ export function DeaccessionSoldForm({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="date">Date of Sale *</Label>
-        <DatePicker
-          id="date"
-          date={date}
-          onSelect={(selectedDate) =>
-            selectedDate && onDateChange(selectedDate)
-          }
-        />
-      </div>
+      <DatePicker
+        label="Date of Sale *"
+        id="date"
+        date={date}
+        onSelect={(selectedDate) => selectedDate && onDateChange(selectedDate)}
+        placeholder="Pick a date"
+      />
 
       <div className="space-y-2">
         <Label htmlFor="reason">Reason for Sale *</Label>

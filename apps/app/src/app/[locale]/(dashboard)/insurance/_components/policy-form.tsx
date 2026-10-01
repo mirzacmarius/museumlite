@@ -172,32 +172,28 @@ export function PolicyForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="effectiveDate">Effective Date *</Label>
-          <DatePickerInput
-            id="effectiveDate"
-            value={form.effectiveDate}
-            onChange={(value) =>
-              setForm((prev) => ({
-                ...prev,
-                effectiveDate: value,
-              }))
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="expirationDate">Expiration Date *</Label>
-          <DatePickerInput
-            id="expirationDate"
-            value={form.expirationDate}
-            onChange={(value) =>
-              setForm((prev) => ({
-                ...prev,
-                expirationDate: value,
-              }))
-            }
-          />
-        </div>
+        <DatePickerInput
+          label="Effective Date *"
+          id="effectiveDate"
+          value={form.effectiveDate}
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              effectiveDate: value,
+            }))
+          }
+        />
+        <DatePickerInput
+          label="Expiration Date *"
+          id="expirationDate"
+          value={form.expirationDate}
+          onChange={(value) =>
+            setForm((prev) => ({
+              ...prev,
+              expirationDate: value,
+            }))
+          }
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

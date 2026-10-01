@@ -199,22 +199,22 @@ function AccessionIdentityFields({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="dateReceived">
-            {labels.dateReceived} {labels.required}
-          </Label>
-          <DatePicker
-            id="dateReceived"
-            date={formData.dateReceived}
-            onSelect={(date: Date | undefined) =>
-              setFormData((prev) => ({
-                ...prev,
-                dateReceived: date ?? prev.dateReceived,
-              }))
-            }
-            placeholder={labels.dateReceivedPlaceholder}
-          />
-        </div>
+        <DatePicker
+          label={
+            <>
+              {labels.dateReceived} {labels.required}
+            </>
+          }
+          id="dateReceived"
+          date={formData.dateReceived}
+          onSelect={(date: Date | undefined) =>
+            setFormData((prev) => ({
+              ...prev,
+              dateReceived: date ?? prev.dateReceived,
+            }))
+          }
+          placeholder={labels.dateReceivedPlaceholder}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="method">

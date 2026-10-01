@@ -135,14 +135,12 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
             onChange={(value) => onChange("taxId", value)}
           />
         ) : (
-          <div className="space-y-2">
-            <Label htmlFor="dateOfBirth">Date of Birth</Label>
-            <DatePickerInput
-              id="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={(value) => onChange("dateOfBirth", value)}
-            />
-          </div>
+          <DatePickerInput
+            label="Date of Birth"
+            id="dateOfBirth"
+            value={formData.dateOfBirth}
+            onChange={(value) => onChange("dateOfBirth", value)}
+          />
         )}
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput

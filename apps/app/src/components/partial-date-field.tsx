@@ -74,9 +74,9 @@ export function PartialDateField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
         <DatePicker
+          label={label}
           id={id}
           date={dateIsPreciseEnough ? anchorDate : undefined}
           defaultMonth={anchorDate}

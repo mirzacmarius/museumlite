@@ -26,29 +26,27 @@ export function EditLoanScheduleSection({
       </h2>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="startDate">
-            Start Date <span className="text-destructive">*</span>
-          </Label>
-          <DatePicker
-            id="startDate"
-            date={formData.startDate}
-            onSelect={(date: Date | undefined) =>
-              onChange({ startDate: date ?? formData.startDate })
-            }
-            placeholder={t("selectStartDate")}
-          />
-        </div>
+        <DatePicker
+          label={
+            <>
+              Start Date <span className="text-destructive">*</span>
+            </>
+          }
+          id="startDate"
+          date={formData.startDate}
+          onSelect={(date: Date | undefined) =>
+            onChange({ startDate: date ?? formData.startDate })
+          }
+          placeholder={t("selectStartDate")}
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="endDate">End Date</Label>
-          <DatePicker
-            id="endDate"
-            date={formData.endDate}
-            onSelect={(date: Date | undefined) => onChange({ endDate: date })}
-            placeholder={t("selectEndDate")}
-          />
-        </div>
+        <DatePicker
+          label="End Date"
+          id="endDate"
+          date={formData.endDate}
+          onSelect={(date: Date | undefined) => onChange({ endDate: date })}
+          placeholder={t("selectEndDate")}
+        />
 
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="insuranceValue">Insurance Value</Label>

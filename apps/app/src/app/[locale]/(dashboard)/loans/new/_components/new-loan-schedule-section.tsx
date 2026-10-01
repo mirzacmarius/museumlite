@@ -31,33 +31,31 @@ export function NewLoanScheduleSection({
 
       <div className="grid gap-6">
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="startDate">
-              Start Date <span className="text-destructive">*</span>
-            </Label>
-            <DatePicker
-              id="startDate"
-              date={formData.startDate}
-              onSelect={(date: Date | undefined) =>
-                onFormDataChange((prev) => ({
-                  ...prev,
-                  startDate: date ?? prev.startDate,
-                }))
-              }
-              placeholder={t("placeholders.selectDate")}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="endDate">End Date</Label>
-            <DatePicker
-              id="endDate"
-              date={formData.endDate}
-              onSelect={(date: Date | undefined) =>
-                onFormDataChange((prev) => ({ ...prev, endDate: date }))
-              }
-              placeholder={t("placeholders.selectDate")}
-            />
-          </div>
+          <DatePicker
+            label={
+              <>
+                Start Date <span className="text-destructive">*</span>
+              </>
+            }
+            id="startDate"
+            date={formData.startDate}
+            onSelect={(date: Date | undefined) =>
+              onFormDataChange((prev) => ({
+                ...prev,
+                startDate: date ?? prev.startDate,
+              }))
+            }
+            placeholder={t("placeholders.selectDate")}
+          />
+          <DatePicker
+            label="End Date"
+            id="endDate"
+            date={formData.endDate}
+            onSelect={(date: Date | undefined) =>
+              onFormDataChange((prev) => ({ ...prev, endDate: date }))
+            }
+            placeholder={t("placeholders.selectDate")}
+          />
         </div>
 
         <div className="space-y-2">
