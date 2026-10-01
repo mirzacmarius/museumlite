@@ -173,17 +173,14 @@ export const changePassword = action({
             hasVerifiedCurrentPassword = true;
           }
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : null;
           if (
-            error instanceof Error &&
-            (error.message.includes("InvalidSecret") ||
-              error.message.includes("InvalidAccountId"))
+            errorMessage === "InvalidSecret" ||
+            errorMessage === "InvalidAccountId"
           ) {
             continue;
           }
-          if (
-            error instanceof Error &&
-            error.message.includes("TooManyFailedAttempts")
-          ) {
+          if (errorMessage === "TooManyFailedAttempts") {
             isRateLimited = true;
             continue;
           }

@@ -1,5 +1,5 @@
 import { getAuthSessionId, getAuthUserId } from "@convex-dev/auth/server";
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -18,6 +18,7 @@ const passwordAccountValidator = v.object({
   providerAccountId: v.string(),
   secret: v.string(),
 });
+const passwordProviderSet = new Set(PASSWORD_PROVIDERS);
 
 export const getPasswordAccounts = internalQuery({
   args: {},
@@ -30,18 +31,19 @@ export const getPasswordAccounts = internalQuery({
       .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
       .take(33);
     if (accounts.length > 32) throw new Error("Too many linked accounts");
-    return accounts
-      .filter(
-        (account) =>
-          PASSWORD_PROVIDERS.includes(account.provider) &&
-          Boolean(account.secret),
-      )
-      .map((account) => ({
+    const passwordAccounts: Infer<typeof passwordAccountValidator>[] = [];
+    for (const account of accounts) {
+      if (!passwordProviderSet.has(account.provider) || !account.secret) {
+        continue;
+      }
+      passwordAccounts.push({
         accountId: account._id,
         provider: account.provider,
         providerAccountId: account.providerAccountId,
-        secret: account.secret ?? "",
-      }));
+        secret: account.secret,
+      });
+    }
+    return passwordAccounts;
   },
 });
 
