@@ -6,7 +6,7 @@ import QRCode from "qrcode";
 import type * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-export type LabelSize = "2x2" | "1x3";
+export type LabelSize = "2x2" | "1x3" | "1x1";
 
 export interface LabelData {
   accessionNumber: string;
@@ -30,6 +30,7 @@ interface QRLabelGeneratorProps {
  * Supports standard label sizes:
  * - 2x2 inches: Square format with large QR code
  * - 1x3 inches: Vertical format with smaller QR code
+ * - 1x1 inches: Compact square format
  *
  * @example
  * ```tsx
@@ -46,7 +47,7 @@ interface QRLabelGeneratorProps {
  */
 export function QRLabelGenerator({
   data,
-  size = "2x2",
+  size = "1x1",
   showObjectName = true,
   className,
   ref,
@@ -59,7 +60,7 @@ export function QRLabelGenerator({
       try {
         // Generate QR code as data URL
         const dataUrl = await QRCode.toDataURL(data.qrCodeUrl, {
-          width: size === "2x2" ? 180 : 120,
+          width: size === "2x2" ? 180 : size === "1x3" ? 120 : 150,
           margin: 1,
           errorCorrectionLevel: "M",
           color: {
@@ -80,8 +81,8 @@ export function QRLabelGenerator({
     const title = titleRef.current;
     if (!title || !showObjectName) return;
 
-    const baseFontSize = size === "2x2" ? 8 : 6;
-    const minimumFontSize = size === "2x2" ? 5.5 : 4.5;
+    const baseFontSize = size === "2x2" ? 8 : size === "1x3" ? 6 : 5.5;
+    const minimumFontSize = size === "2x2" ? 5.5 : size === "1x3" ? 4.5 : 4;
 
     const fitTitle = () => {
       let fittedFontSize = baseFontSize;
@@ -102,8 +103,7 @@ export function QRLabelGenerator({
     return () => observer.disconnect();
   }, [data.title, showObjectName, size, data.organizationName]);
 
-  // Label dimensions in pixels (at 96 DPI)
-  // 2x2 inch = 192x192px, 1x3 inch = 96x288px
+  // Label dimensions are specified in physical inches for print output.
   const dimensions = {
     "2x2": {
       width: "2in",
@@ -116,6 +116,12 @@ export function QRLabelGenerator({
       height: "3in",
       padding: "0.1in",
       qrSize: "0.75in",
+    },
+    "1x1": {
+      width: "1in",
+      height: "1in",
+      padding: "0.04in",
+      qrSize: "0.48in",
     },
   };
 
@@ -138,10 +144,11 @@ export function QRLabelGenerator({
       {/* QR Code */}
       {qrCodeDataUrl && (
         <div
-          className="flex-shrink-0 mb-[0.04in]"
+          className="shrink-0"
           style={{
             width: labelStyle.qrSize,
             height: labelStyle.qrSize,
+            marginBottom: size === "1x1" ? "0.015in" : "0.04in",
           }}
         >
           <Image
@@ -151,9 +158,7 @@ export function QRLabelGenerator({
             width={180}
             height={180}
             unoptimized
-            style={{
-              imageRendering: "pixelated",
-            }}
+            style={{ imageRendering: "pixelated" }}
           />
         </div>
       )}
@@ -161,12 +166,14 @@ export function QRLabelGenerator({
       {/* Accession Number */}
       <div
         className={cn(
-          "w-full shrink-0 text-center font-mono font-bold text-black leading-tight mb-[0.04in]",
-          size === "2x2" ? "text-[10pt]" : "text-[7pt]",
+          "w-full shrink-0 text-center font-mono font-bold text-black leading-tight",
+          size === "2x2"
+            ? "mb-[0.04in] text-[10pt]"
+            : size === "1x3"
+              ? "mb-[0.04in] text-[7pt]"
+              : "mb-[0.015in] text-[4.5pt]",
         )}
-        style={{
-          wordBreak: "break-all",
-        }}
+        style={{ wordBreak: "break-all" }}
       >
         {data.accessionNumber}
       </div>
@@ -177,7 +184,7 @@ export function QRLabelGenerator({
           ref={titleRef}
           className="w-full min-h-0 flex-1 overflow-hidden text-center text-black leading-tight"
           style={{
-            fontSize: `${size === "2x2" ? 8 : 6}pt`,
+            fontSize: `${size === "2x2" ? 8 : size === "1x3" ? 6 : 5}pt`,
             wordBreak: "break-word",
             hyphens: "auto",
           }}
@@ -190,11 +197,23 @@ export function QRLabelGenerator({
       {data.organizationName && (
         <div
           className={cn(
-            "w-full shrink-0 text-center text-zinc-600 leading-tight mt-[0.04in]",
-            size === "2x2" ? "text-[6pt]" : "text-[5pt]",
+            "w-full shrink-0 text-center text-zinc-600 leading-tight",
+            size === "1x1" ? "mt-[0.015in]" : "mt-[0.04in]",
+            size === "2x2"
+              ? "text-[6pt]"
+              : size === "1x3"
+                ? "text-[5pt]"
+                : "text-[3.5pt]",
           )}
           style={{
             wordBreak: "break-word",
+            ...(size === "1x1"
+              ? {
+                  lineHeight: 1,
+                  maxHeight: "0.12in",
+                  overflow: "hidden",
+                }
+              : {}),
           }}
         >
           {data.organizationName}
@@ -221,7 +240,7 @@ interface QRLabelSheetProps {
 
 export function QRLabelSheet({
   labels,
-  size = "2x2",
+  size = "1x1",
   className,
   ref,
 }: QRLabelSheetProps) {

@@ -2249,6 +2249,7 @@ export default {
   },
   objects: {
     qrLabel: {
+      size1x1: "Lite kvadrat",
       showObjectName: "Vis objektnavn",
     },
     objectLabel: {

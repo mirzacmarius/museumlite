@@ -4,6 +4,7 @@ import type { api } from "@v1/backend/convex/_generated/api";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
 import { ArrowRightLeft } from "lucide-react";
@@ -43,6 +44,7 @@ interface CollectionEditFormHeroProps {
   collectionSummary: string;
   getStatusBadgeClass: (status: CollectionDoc["status"]) => string;
   onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
   onTabSelect: (tabId: CollectionEditTabId) => void;
   fileInputRef: RefObject<HTMLInputElement | null>;
   cameraInputRef: RefObject<HTMLInputElement | null>;
@@ -61,6 +63,7 @@ export function CollectionEditFormHero({
   collectionSummary,
   getStatusBadgeClass,
   onTitleChange,
+  onDescriptionChange,
   onTabSelect,
   fileInputRef,
   cameraInputRef,
@@ -134,6 +137,18 @@ export function CollectionEditFormHero({
               placeholder={placeholders("title")}
               className="h-14 border-border/60 bg-background/90 text-xl font-semibold sm:text-2xl"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hero-description">Description</Label>
+            <Textarea
+              autoResize
+              id="hero-description"
+              value={formData.description || ""}
+              onChange={(event) => onDescriptionChange(event.target.value)}
+              rows={5}
+              placeholder={placeholders("description")}
             />
           </div>
 

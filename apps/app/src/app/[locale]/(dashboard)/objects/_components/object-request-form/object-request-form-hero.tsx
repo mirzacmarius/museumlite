@@ -2,6 +2,7 @@
 
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { Textarea } from "@v1/ui/textarea";
 
 import type * as React from "react";
 import type { RefObject } from "react";
@@ -26,6 +27,7 @@ interface ObjectRequestFormHeroProps {
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholders: (key: string) => string;
   onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
   locationSummary: string;
   collectionSummary: string;
   isLocationTrackingEnabled: boolean;
@@ -45,6 +47,7 @@ export function ObjectRequestFormHero({
   handleFileSelect,
   placeholders,
   onTitleChange,
+  onDescriptionChange,
   locationSummary,
   collectionSummary,
   isLocationTrackingEnabled,
@@ -93,6 +96,18 @@ export function ObjectRequestFormHero({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="hero-description">Description</Label>
+            <Textarea
+              autoResize
+              id="hero-description"
+              value={formData.description || ""}
+              onChange={(event) => onDescriptionChange(event.target.value)}
+              rows={5}
+              placeholder={placeholders("description")}
+            />
+          </div>
+
           {mode === "draft-edit" ? (
             <ObjectFormSummaryCards
               creator={formData.creator}
@@ -104,13 +119,6 @@ export function ObjectRequestFormHero({
               onTabSelect={onTabSelect}
             />
           ) : null}
-
-          <p className="text-sm text-muted-foreground">
-            Build the record using the same tab structure as object detail and
-            edit. Draft saves keep this object in the accession draft workflow
-            until you explicitly submit it for approval. Images and documents
-            are saved with the draft and submitted for approval with the object.
-          </p>
         </div>
       </div>
     </div>

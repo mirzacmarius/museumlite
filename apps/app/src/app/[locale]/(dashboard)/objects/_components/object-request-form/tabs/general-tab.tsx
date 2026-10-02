@@ -2,7 +2,6 @@
 
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Textarea } from "@v1/ui/textarea";
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { CollectionTypeSelector } from "@/components/collection-type-selector";
 import { LocationSelector } from "@/components/location-selector";
@@ -159,23 +158,6 @@ export function ObjectRequestGeneralTab({
               placeholder={placeholders("collection")}
             />
           </div>
-        </div>
-      </EditSection>
-
-      <EditSection
-        title="Description"
-        description="The primary description shown across the object record."
-      >
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            autoResize
-            id="description"
-            value={formData.description || ""}
-            onChange={(event) => updateField("description", event.target.value)}
-            rows={5}
-            placeholder={placeholders("description")}
-          />
         </div>
       </EditSection>
     </div>

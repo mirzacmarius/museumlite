@@ -38,7 +38,7 @@ export function BulkPrintLabelsDialog({
   const tQrLabel = useScopedI18n("objects.qrLabel");
   const tCommon = useScopedI18n("common");
   const locale = useCurrentLocale();
-  const [labelSize, setLabelSize] = useState<LabelSize>("2x2");
+  const [labelSize, setLabelSize] = useState<LabelSize>("1x1");
   const printRef = useRef<HTMLDivElement>(null);
   const { currentOrganizationId } = useOrganization();
 
@@ -100,8 +100,17 @@ export function BulkPrintLabelsDialog({
             <RadioGroup
               value={labelSize}
               onValueChange={(value) => setLabelSize(value as LabelSize)}
-              className="flex gap-4"
+              className="flex flex-wrap gap-x-4 gap-y-2"
             >
+              <div className="flex items-center gap-x-2">
+                <RadioGroupItem value="1x1" id="bulk-size-1x1" />
+                <Label
+                  htmlFor="bulk-size-1x1"
+                  className="text-sm text-black cursor-pointer"
+                >
+                  {tQrLabel("size1x1")} (1" × 1")
+                </Label>
+              </div>
               <div className="flex items-center gap-x-2">
                 <RadioGroupItem value="2x2" id="bulk-size-2x2" />
                 <Label
