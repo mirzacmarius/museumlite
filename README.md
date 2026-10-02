@@ -54,7 +54,7 @@ reuse and best practices that will grow with your business.
 │    └── ui                      # Shared UI components (Shadcn)
 ├── tooling                      # are the shared configuration that are used by the apps and packages
 │    └── typescript              # Shared TypeScript configuration
-├── .cursorrules                 # Cursor rules specific to this project
+├── AGENTS.md                    # Shared project instructions for coding agents
 ├── biome.json                   # Biome configuration
 ├── turbo.json                   # Turbo configuration
 ├── LICENSE

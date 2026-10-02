@@ -16,31 +16,6 @@ Issues and PRDs for this repo live in Linear under the MuseumLite workspace, MUS
 - Use Linear priority values when priority is known: urgent, high, medium, low, or none.
 - Move issues through the MUS workflow statuses rather than inventing new statuses.
 
-## Agent handoff (delegated work)
-
-When an agent finishes implementation for a Linear-delegated task:
-
-1. **Comment** on the issue with a **Review checklist** (markdown `- [ ]` items grouped by scenario), plus PR link, branch, what changed, and commands run. Follow `.cursor/rules/linear-delegation-handoff.mdc`.
-2. **Set status** to `In Review`.
-3. **Do not** set status to `Done` — a human closes the issue after review.
-
-### Review checklist expectations
-
-Checklists must tell reviewers **where to go in the app** and **what to expect** (labels, routes, permissions), not only what code changed.
-
-| Section | Purpose |
-| -------- | -------- |
-| Primary journey | Happy-path steps for the feature under the issue |
-| Edge / empty states | Zero-data, errors, idempotency |
-| Permissions | Roles or keys that block or allow actions |
-| Regression | Nearby flows that must still work |
-| Automated checks | `bun run lint`, targeted tests |
-| i18n (optional) | Locale keys if copy was added |
-
-**Example:** `MUS-485` — “Review checklist” comment on collection groups (navigation, copy, multi-group behavior, permissions).
-
-Agents should use the Linear MCP after `mcp_get_tools` discovery. If MCP is unavailable, paste the full comment (including checklist) in the agent summary for manual posting.
-
 ## Workflow Statuses
 
 The MUS team currently uses these statuses:
@@ -52,3 +27,127 @@ The MUS team currently uses these statuses:
 - `Done`
 - `Duplicate`
 - `Canceled`
+
+## Agent handoff (delegated work)
+
+Apply this rule when you are finishing work that was **delegated from Linear** (MUS issue in the prompt, branch name, PR description, or explicit Linear link/ID).
+
+### When this applies
+
+- You have opened or updated a PR for the Linear task, or you are about to stop after implementing the requested work.
+- The human or Linear agent expects a **handoff for review**, not closure.
+
+Do **not** wait for the user to ask — treat this as a required final step before you end the turn.
+
+### Required actions (in order)
+
+1. **Confirm the Linear issue**
+   Resolve the MUS issue identifier (e.g. `MUS-501`) from context. If missing, ask once; do not guess issue IDs.
+
+2. **Post a comment on the Linear issue** (Linear MCP)
+   Use `mcp_get_tools` for the Linear server, then `mcp_call_tool` with `save_comment` (or the comment tool the server exposes).
+   The comment **must** include a **Review checklist** section (see below).
+   If Linear MCP is not authenticated (`needsAuth`), say so in your summary and paste the full comment body so a human can post it.
+
+3. **Set workflow status to `In Review`**
+   Update the issue status to exactly **`In Review`** (MUS team workflow). Use Linear `save_issue` with the correct status for the MUS team.
+
+4. **Never mark `Done`**
+   Do **not** set status to `Done`, `Canceled`, or `Duplicate` unless the user explicitly instructs you to after human review.
+
+### Review checklist (required)
+
+Every handoff comment must include a scannable **Review checklist** so a reviewer can exercise the app without re-reading the PR diff.
+
+**Canonical example:** `MUS-485` (Collection groups) — handoff comment titled “Review checklist” on the MUS team board — comment titled “Review checklist” with grouped `- [ ]` items, navigation paths, expected copy, permissions, and regression steps.
+
+#### Writing rules
+
+- Use markdown checkboxes: `- [ ]` (reviewers tick them in Linear).
+- Group steps under `###` headings by **scenario** (happy path, empty state, permissions, regression, i18n).
+- Be **specific about where to click**: sidebar labels, routes (`/objects`, query params), dialogs, filter chips, button labels.
+- State **expected UI copy** in quotes when copy changed (e.g. **“Add objects to the collection”**).
+- Call out **negative cases** (must *not* happen, must *not* navigate to X).
+- Include **permission** checks with exact permission keys when backend gates exist.
+- Add a **Regression** section for adjacent flows that must still work.
+- End with **commands** the agent ran (`bun run lint`, targeted `bun test`, etc.).
+- Mark **i18n** or **optional** sections when locales were not fully translated.
+- Do not paste huge code blocks — this is a manual QA script, not implementation notes.
+
+#### Comment structure
+
+Post markdown on the issue. Omit sections that do not apply; never skip the Review checklist.
+
+```markdown
+## Ready for review
+
+**PR:** <link to pull request>
+**Branch:** `<branch-name>`
+
+### What changed
+- <1–3 bullets: user-visible or API behavior>
+
+## Review checklist (PR <# or link> — `<branch-name>`)
+
+### <Primary user journey / feature name>
+- [ ] <Navigate: e.g. Dashboard → Object Catalog → sidebar “emblem” group>
+- [ ] <Observe: expected label, empty state, or data>
+- [ ] <Action: open dialog, save, refresh — expected result>
+
+### <Secondary flows / edge cases>
+- [ ] <…>
+
+### Permissions
+- [ ] User **without** `<permission.key>` cannot <action> (control hidden or disabled).
+- [ ] User **with** `<permission.key>` can <action>.
+
+### Regression
+- [ ] <Unchanged flow A still works>
+- [ ] <Unchanged flow B still works>
+
+### Automated checks
+- [ ] `bun run lint` (or specific package tests) passes — <note if only subset run>
+
+### i18n (optional)
+- [ ] New strings under `<locale keys>` read correctly; other locales fall back acceptably if untranslated.
+
+### Out of scope / follow-ups
+- <optional deferred items>
+
+### Agent notes
+- <CI status, Convex deploy/codegen caveats, or blockers if any>
+```
+
+#### Minimal example (adapt to the issue)
+
+```markdown
+## Review checklist (PR #24 — `cursor/collection-groups-add-objects-e9c7`)
+
+### Empty collection group
+- [ ] Open Object Catalog with a collection group selected from the sidebar (e.g. emblem) that has **no** objects.
+- [ ] Empty state shows **“No objects in this collection yet”**.
+- [ ] Primary CTA is **“Add objects to the collection”** — does **not** go to `/objects/new`.
+
+### Add objects dialog
+- [ ] CTA opens a dialog with searchable list and checkboxes; save adds selected objects to the group.
+- [ ] Uncheck and save removes from **this group only**; object remains in catalog and other groups.
+
+### Permissions
+- [ ] User **without** `collections.update` cannot add/remove group membership.
+
+### Regression
+- [ ] Full catalog (no group filter): **“Add Your First Object”** still routes to `/objects/new`.
+- [ ] `bun run lint` passes.
+```
+
+### PR and git alignment
+
+- Ensure the PR description references the Linear issue (`MUS-XXX`).
+- Mirror the same Review checklist in the PR description when the PR template has a “Testing” or “QA” section.
+- Do not close the Linear issue in the same turn you open the PR unless the user asked for closure.
+
+### References
+
+- Canonical checklist: `MUS-485` (review comment on the issue)
+- MUS statuses and conventions: `docs/agents/issue-tracker.md`
+- Triage mapping: `docs/agents/triage-labels.md`
