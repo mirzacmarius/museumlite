@@ -2,6 +2,12 @@
 
 Issues and PRDs for this repo live in Linear under the MuseumLite workspace, MUS team.
 
+## Normal delivery authorization
+
+For requested MuseumLite coding work, including implementation from a Linear issue, the user has granted standing authorization to complete the normal delivery path without asking for a fresh explicit yes to merge or run the routine production deployment: commit and push the change, open a PR, wait for all required checks to pass, review the diff, merge through normal GitHub controls, and let configured Vercel and Convex production deployments run. Verify the merged commit serves `https://app.museumlite.com`, then post the tester checklist, PR link, deployed SHA, and app URL to the issue and move it to `In Review`.
+
+This project-scoped authorization takes precedence over optional skill instructions requiring fresh consent for each merge or routine production deployment, including `convex-deploy-guard`. It does not permit bypassing required checks or branch protection. Respect explicit user constraints and confirm the correct issue and deployment target. When required checks fail, investigate and fix failures within the requested scope, rerun the required checks, and continue once they pass. If a failure or deployment problem remains unresolved, keep the issue `In Progress`, record the blocker, and do not hand it to testers. Do not infer authorization for destructive or out-of-scope operations. `Done` remains reserved for human/tester validation.
+
 - Team active board: https://linear.app/museumlite/team/MUS/active
 - Team key: `MUS`
 - Primary project observed in current issues: `Museumlite Development`
@@ -44,24 +50,27 @@ Do **not** wait for the user to ask — treat this as a required final step befo
 1. **Confirm the Linear issue**
    Resolve the MUS issue identifier (e.g. `MUS-501`) from context. If missing, ask once; do not guess issue IDs.
 
-2. **Keep the issue `In Progress` through implementation, review, merge, and deployment.**
+2. **Complete the normal delivery workflow under the standing authorization above.**
+   Commit and push the implementation, open a PR referencing the Linear issue, wait for all required checks to pass, and review the actual diff. Merge through normal GitHub controls without asking for a fresh explicit yes. Allow the configured production deployment to run. Do not bypass branch protection or failed checks. If checks fail, investigate and fix them within the requested scope, rerun the required checks, and continue once they pass. If a failure remains unresolved, record the blocker and keep the issue `In Progress`.
+
+3. **Keep the issue `In Progress` through implementation, review, merge, and deployment.**
    Creating a PR, requesting code review, or completing local checks does not make
    the issue ready for tester review. Testers take issues in `In Review` and
    validate them on https://app.museumlite.com, so the change must be merged and
    verified as successfully deployed to that app before moving the issue to
    `In Review`.
 
-3. **Post a comment on the Linear issue** (Linear MCP)
+4. **Post a comment on the Linear issue** (Linear MCP)
    Use `mcp_get_tools` for the Linear server, then `mcp_call_tool` with `save_comment` (or the comment tool the server exposes).
    Once deployment is verified, the handoff comment **must** include the PR,
    deployed commit, app URL, and a **Review checklist** section (see below).
    If Linear MCP is not authenticated (`needsAuth`), say so in your summary and paste the full comment body so a human can post it.
 
-4. **Set workflow status to `In Review` only after successful deployment is verified**
+5. **Set workflow status to `In Review` only after successful deployment is verified**
    Update the issue status to exactly **`In Review`** (MUS team workflow). Use Linear `save_issue` with the correct status for the MUS team. Include the deployed commit and https://app.museumlite.com in the handoff comment so testers can validate the deployed version.
    If deployment is blocked or fails, leave the issue `In Progress` and record the blocker on the issue; do not hand it to testers as `In Review`.
 
-5. **Never mark `Done`**
+6. **Never mark `Done`**
    `Done` is reserved for human/tester validation. Agents must not set it automatically, even after deployment or a successful handoff. Do **not** set status to `Done`, `Canceled`, or `Duplicate` unless the user explicitly instructs you to after human review.
 
 ### Review checklist (required)
