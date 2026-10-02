@@ -6,12 +6,12 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
-import { ArrowRightLeft, Calendar, Info, MapPin } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 import Link from "next/link";
 
 import type * as React from "react";
 import type { RefObject } from "react";
-
+import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
 import {
   ObjectImageGallery,
   type ObjectImageGalleryItem,
@@ -137,64 +137,15 @@ export function CollectionEditFormHero({
             />
           </div>
 
-          <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
-            <button
-              type="button"
-              className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-              onClick={() => onTabSelect("general")}
-            >
-              <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                <Info className="size-3.5" />
-                Creator
-              </div>
-              <div className="truncate text-sm text-foreground">
-                {formData.creator || "Not set"}
-              </div>
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-              onClick={() => onTabSelect("general")}
-            >
-              <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                <Calendar className="size-3.5" />
-                Date created
-              </div>
-              <div className="truncate text-sm text-foreground">
-                {formData.dateCreated || common("unknown")}
-              </div>
-            </button>
-            {isLocationTrackingEnabled ? (
-              <>
-                <button
-                  type="button"
-                  className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                  onClick={() => onTabSelect("placement")}
-                >
-                  <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    <MapPin className="size-3.5" />
-                    Location
-                  </div>
-                  <div className="truncate text-sm text-foreground">
-                    {locationSummary}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl border border-border/50 bg-background/70 p-3 text-left transition-colors hover:border-primary/30 hover:text-foreground"
-                  onClick={() => onTabSelect("placement")}
-                >
-                  <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    <Info className="size-3.5" />
-                    Collection
-                  </div>
-                  <div className="truncate text-sm text-foreground">
-                    {collectionSummary}
-                  </div>
-                </button>
-              </>
-            ) : null}
-          </div>
+          <ObjectFormSummaryCards
+            creator={formData.creator}
+            dateCreated={formData.dateCreated}
+            locationSummary={locationSummary}
+            collectionSummary={collectionSummary}
+            isLocationTrackingEnabled={isLocationTrackingEnabled}
+            unknownLabel={common("unknown")}
+            onTabSelect={onTabSelect}
+          />
 
           <p className="text-sm text-muted-foreground">
             Edit the record using the same structure as the object detail page.

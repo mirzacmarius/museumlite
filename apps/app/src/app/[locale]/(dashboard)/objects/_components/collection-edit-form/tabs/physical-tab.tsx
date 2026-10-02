@@ -1,27 +1,20 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import type { FunctionReturnType } from "convex/server";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
-type CollectionDoc = NonNullable<
-  FunctionReturnType<typeof api.collections.get>
->;
-
 export interface CollectionEditPhysicalTabProps extends CollectionFormTabProps {
-  collection: CollectionDoc;
-  typedCollectionId: Id<"collections">;
-  hasConditionChanged: boolean;
-  requiresConditionChangeNote: boolean;
-  conditionChangeNote: string;
-  onConditionChangeNoteChange: (value: string) => void;
+  typedCollectionId?: Id<"collections">;
+  hasConditionChanged?: boolean;
+  requiresConditionChangeNote?: boolean;
+  conditionChangeNote?: string;
+  onConditionChangeNoteChange?: (value: string) => void;
 }
 
 export function CollectionEditPhysicalTab({
@@ -75,7 +68,7 @@ export function CollectionEditPhysicalTab({
                     id="conditionChangeNote"
                     value={conditionChangeNote}
                     onChange={(event) =>
-                      onConditionChangeNoteChange(event.target.value)
+                      onConditionChangeNoteChange?.(event.target.value)
                     }
                     rows={3}
                     placeholder="Explain what changed and why."

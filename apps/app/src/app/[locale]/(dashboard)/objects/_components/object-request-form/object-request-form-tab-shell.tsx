@@ -2,6 +2,10 @@
 
 import { Button } from "@v1/ui/button";
 import type { RefObject } from "react";
+import { CollectionEditAccessionTab } from "../collection-edit-form/tabs/accession-tab";
+import { CollectionEditDigitalTab } from "../collection-edit-form/tabs/digital-tab";
+import { CollectionEditGeneralTab } from "../collection-edit-form/tabs/general-tab";
+import { CollectionEditPhysicalTab } from "../collection-edit-form/tabs/physical-tab";
 import type {
   CollectionEditTabId,
   CollectionFormData,
@@ -24,6 +28,7 @@ interface ObjectRequestTab {
 }
 
 interface ObjectRequestFormTabShellProps {
+  mode: "create" | "draft-edit";
   error: string | null;
   tabs: ObjectRequestTab[];
   activeTab: CollectionEditTabId;
@@ -46,6 +51,7 @@ interface ObjectRequestFormTabShellProps {
 }
 
 export function ObjectRequestFormTabShell({
+  mode,
   error,
   tabs,
   activeTab,
@@ -99,22 +105,37 @@ export function ObjectRequestFormTabShell({
       <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8">
           {activeTab === "general" ? (
-            <ObjectRequestGeneralTab
-              {...tabProps}
-              enabledModules={enabledModules}
-            />
+            mode === "draft-edit" ? (
+              <CollectionEditGeneralTab {...tabProps} />
+            ) : (
+              <ObjectRequestGeneralTab
+                {...tabProps}
+                enabledModules={enabledModules}
+              />
+            )
           ) : null}
           {activeTab === "accession" ? (
-            <ObjectRequestAccessionTab {...tabProps} />
+            mode === "draft-edit" ? (
+              <CollectionEditAccessionTab {...tabProps} />
+            ) : (
+              <ObjectRequestAccessionTab {...tabProps} />
+            )
           ) : null}
           {activeTab === "provenance" ? (
-            <ObjectRequestProvenanceTab {...tabProps} />
+            <ObjectRequestProvenanceTab
+              {...tabProps}
+              catalogPresentation={mode === "draft-edit"}
+            />
           ) : null}
           {activeTab === "placement" ? (
             <ObjectRequestPlacementTab {...tabProps} />
           ) : null}
           {activeTab === "physical" ? (
-            <ObjectRequestPhysicalTab {...tabProps} />
+            mode === "draft-edit" ? (
+              <CollectionEditPhysicalTab {...tabProps} />
+            ) : (
+              <ObjectRequestPhysicalTab {...tabProps} />
+            )
           ) : null}
           {activeTab === "media" ? (
             <ObjectRequestMediaTab
@@ -131,7 +152,11 @@ export function ObjectRequestFormTabShell({
             />
           ) : null}
           {activeTab === "digital" ? (
-            <ObjectRequestDigitalTab {...tabProps} />
+            mode === "draft-edit" ? (
+              <CollectionEditDigitalTab {...tabProps} />
+            ) : (
+              <ObjectRequestDigitalTab {...tabProps} />
+            )
           ) : null}
         </div>
       </div>

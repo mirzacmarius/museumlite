@@ -48,6 +48,8 @@ export function ObjectRequestFormLayout({
     currentOrganizationId,
     isLocationTrackingEnabled,
     enabledModules,
+    locationSummary,
+    collectionSummary,
     updateField,
     isDraftCurrent,
     hasSavedFieldDraft,
@@ -58,6 +60,7 @@ export function ObjectRequestFormLayout({
     handleDiscardAndNavigate,
     handleSaveAndNavigate,
     pageBadge,
+    mode,
   } = form;
 
   const galleryImages = [
@@ -109,9 +112,16 @@ export function ObjectRequestFormLayout({
             handleFileSelect={handleFileSelect}
             placeholders={placeholders}
             onTitleChange={(value) => updateField("title", value)}
+            locationSummary={locationSummary}
+            collectionSummary={collectionSummary}
+            isLocationTrackingEnabled={isLocationTrackingEnabled}
+            onTabSelect={setActiveTab}
+            unknownLabel={common("unknown")}
+            mode={mode}
           />
 
           <ObjectRequestFormTabShell
+            mode={mode}
             error={error}
             tabs={tabs}
             activeTab={activeTab}
