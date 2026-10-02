@@ -1,8 +1,8 @@
 "use client";
 
-import { FormStickyFooter } from "@/components/form-sticky-footer";
 import { Button } from "@v1/ui/button";
 import { Archive, Save } from "lucide-react";
+import { FormStickyFooter } from "@/components/form-sticky-footer";
 
 export type ObjectRequestFormFooterPhase =
   | { kind: "error"; message: string }
@@ -90,8 +90,8 @@ function ObjectRequestFormFooterStatus({
         case "local-media":
           return (
             <span className="text-muted-foreground">
-              Draft saves field data only. Images and documents stay local until
-              you submit the object request.
+              Save Draft uploads images and documents to this accession request.
+              They are submitted for approval with the object.
             </span>
           );
         case "saved":

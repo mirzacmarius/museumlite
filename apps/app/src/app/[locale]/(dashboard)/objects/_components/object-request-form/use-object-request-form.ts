@@ -1,6 +1,8 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import {
   useCallback,
   useEffect,
@@ -82,6 +84,21 @@ export function useObjectRequestForm({
     initialized: false,
   });
 
+  const currentLocationPath = useQuery(
+    api.locations.getLocationPath,
+    mode === "draft-edit" &&
+      isLocationTrackingEnabled &&
+      formData.currentLocationId
+      ? { locationId: formData.currentLocationId as Id<"locations"> }
+      : "skip",
+  );
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    mode === "draft-edit" && currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
   const { tabs, activeTab, setActiveTab } = useFormTabState(
     isLocationTrackingEnabled,
   );
@@ -109,6 +126,15 @@ export function useObjectRequestForm({
   const organizationPrompt = isDraftEditMode
     ? "Please select an organization to edit drafts."
     : "Please select an organization to create objects.";
+  const locationSummary =
+    currentLocationPath?.map((location) => location.name).join(" / ") ||
+    "No location assigned";
+  const collectionSummary =
+    collectionGroups
+      ?.flatMap((group) =>
+        formData.collectionGroupIds?.includes(group._id) ? [group.name] : [],
+      )
+      .join(", ") || "Not assigned to a collection";
 
   useBeforeUnload(hasUnsavedChanges);
 
@@ -201,6 +227,7 @@ export function useObjectRequestForm({
     heroImage: localMedia.heroImage,
     pageTitle,
     pageBadge,
+    mode,
     resolvedBackHref,
     handleNavigate: navigation.handleNavigate,
     handleSubmit: submitState.handleSubmit,
@@ -218,6 +245,8 @@ export function useObjectRequestForm({
     handleDeleteDocument: localMedia.handleDeleteDocument,
     isLocationTrackingEnabled,
     enabledModules,
+    locationSummary,
+    collectionSummary,
     updateField,
     isDraftCurrent,
     hasSavedFieldDraft,

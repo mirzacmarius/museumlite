@@ -16,7 +16,7 @@ import type { CollectionFormTabProps } from "../../collection-form-shared/types"
 
 export interface CollectionEditAccessionTabProps
   extends CollectionFormTabProps {
-  typedCollectionId: Id<"collections">;
+  typedCollectionId?: Id<"collections">;
 }
 
 export function CollectionEditAccessionTab({

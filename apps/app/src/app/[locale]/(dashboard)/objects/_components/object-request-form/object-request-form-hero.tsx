@@ -5,12 +5,15 @@ import { Label } from "@v1/ui/label";
 
 import type * as React from "react";
 import type { RefObject } from "react";
-
+import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
 import {
   ObjectImageGallery,
   type ObjectImageGalleryItem,
 } from "../collection-form-shared/object-image-gallery";
-import type { CollectionFormData } from "../collection-form-shared/types";
+import type {
+  CollectionEditTabId,
+  CollectionFormData,
+} from "../collection-form-shared/types";
 
 interface ObjectRequestFormHeroProps {
   formData: CollectionFormData;
@@ -23,6 +26,12 @@ interface ObjectRequestFormHeroProps {
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholders: (key: string) => string;
   onTitleChange: (value: string) => void;
+  locationSummary: string;
+  collectionSummary: string;
+  isLocationTrackingEnabled: boolean;
+  onTabSelect: (tabId: CollectionEditTabId) => void;
+  unknownLabel: string;
+  mode: "create" | "draft-edit";
 }
 
 export function ObjectRequestFormHero({
@@ -36,6 +45,12 @@ export function ObjectRequestFormHero({
   handleFileSelect,
   placeholders,
   onTitleChange,
+  locationSummary,
+  collectionSummary,
+  isLocationTrackingEnabled,
+  onTabSelect,
+  unknownLabel,
+  mode,
 }: ObjectRequestFormHeroProps) {
   return (
     <div className="border-b border-border/60 bg-secondary/10 px-6 py-8 sm:px-8">
@@ -78,11 +93,23 @@ export function ObjectRequestFormHero({
             />
           </div>
 
+          {mode === "draft-edit" ? (
+            <ObjectFormSummaryCards
+              creator={formData.creator}
+              dateCreated={formData.dateCreated}
+              locationSummary={locationSummary}
+              collectionSummary={collectionSummary}
+              isLocationTrackingEnabled={isLocationTrackingEnabled}
+              unknownLabel={unknownLabel}
+              onTabSelect={onTabSelect}
+            />
+          ) : null}
+
           <p className="text-sm text-muted-foreground">
             Build the record using the same tab structure as object detail and
             edit. Draft saves keep this object in the accession draft workflow
             until you explicitly submit it for approval. Images and documents
-            stay local until you submit the object request for approval.
+            are saved with the draft and submitted for approval with the object.
           </p>
         </div>
       </div>
