@@ -8,7 +8,7 @@ This project runs Next.js 16.2, and its APIs, conventions, and file structure di
 
 <!-- END:nextjs-agent-rules -->
 
-# `AGENTS.md - Coding Agent Guidelines
+# Coding Agent Guidelines
 
 Museum/Library collection management SaaS. Turborepo monorepo: Convex backend, Next.js 16 App Router, Bun, Biome.
 
@@ -58,7 +58,19 @@ packages/ui/               # Shared shadcn/ui components
 packages/email/            # React Email templates
 ```
 
+## Agent instructions and skills
+
+This file is the shared source for project coding rules. Backend navigation notes live in `packages/backend/convex/AGENTS.md`; Linear workflow lives in `docs/agents/issue-tracker.md`.
+
+Convex skills are available through the developer's global skill installation or Convex plugin. Do not duplicate them in `.agents/skills` or `.claude/skills`. Project work must remain possible using this file and `convex/_generated/ai/guidelines.md` when optional skills are unavailable.
+
 ## Code Style
+
+- Create abstractions only when needed; prefer a simple inline expression when sufficient.
+- Prefer descriptive names over comments that restate the code.
+- Colocate code that changes together and avoid duplication.
+- Use `bunx knip` to identify unused code during large changes.
+- Do not use emojis in project code or documentation.
 
 ### TypeScript
 
@@ -89,6 +101,9 @@ import { internal } from "./_generated/api";
 - Compose smaller components; avoid massive JSX blocks
 - URL state via `nuqs` for search params
 - Wrap client components in `Suspense` with fallback
+- Use dynamic loading for non-critical components and keep serialized RSC props small.
+- Use `next/font`, `next/script`, and `next/image` where applicable; follow the installed Next.js documentation for loading options.
+- Build responsive layouts with a mobile-first approach.
 
 ### Styling
 
@@ -119,9 +134,10 @@ export const myFunction = query({
 - **Always** include `args` and `returns` validators
 - Return `null` with `returns: v.null()` when no return value
 - Use `.withIndex()` not `.filter()` for queries (performance)
-- Actions: add `"use node";` at top; no `ctx.db` access (use `ctx.runQuery`)
+- Actions: use `"use node";` when Node.js APIs are required; no `ctx.db` access (use `ctx.runQuery`/`ctx.runMutation`)
 - Use `v.int64()` not `v.bigint()` (deprecated)
 - Query `_storage` system table, not `ctx.storage.getMetadata` (deprecated)
+- Use `crons.interval({ hours: 1 }, ...)` for hourly scheduled work.
 
 ### Function Types
 
@@ -130,20 +146,6 @@ export const myFunction = query({
 | --------------------------------------------------- | ---------- | ------------------------ |
 | `query`/`mutation`/`action`                         | Public API | `api.file.function`      |
 | `internalQuery`/`internalMutation`/`internalAction` | Private    | `internal.file.function` |
-
-
-## Anti-Patterns
-
-
-| Don't                         | Do Instead                       |
-| ----------------------------- | -------------------------------- |
-| `.filter()` in queries        | `.withIndex()` with schema index |
-| `ctx.db` in actions           | `ctx.runQuery`/`ctx.runMutation` |
-| `v.bigint()`                  | `v.int64()`                      |
-| `as any`, `@ts-ignore`        | Proper typing                    |
-| `useEffect` for data fetching | Fetch in RSC                     |
-| `crons.hourly()`              | `crons.interval({ hours: 1 })`   |
-| Missing return validator      | `returns: v.null()` minimum      |
 
 
 ## Testing
@@ -203,7 +205,7 @@ status: v.union(v.literal("pending"), v.literal("active"))
 
 Next.js 16 standard location: `apps/app/src/proxy.ts` (the framework renamed `middleware.ts` to `proxy.ts`; do not create `middleware.ts`).
 
-## Cursor Cloud specific instructions
+## Development environment
 
 ### Services overview
 
@@ -238,7 +240,7 @@ Lint, typecheck, and tests all work without Convex authentication:
 
 ## Linear handoff
 
-When finishing work delegated from a MUS Linear issue: post a **Review checklist** on the issue (grouped `- [ ]` QA steps with navigation paths and expected UI — canonical example: `MUS-485`), plus PR link and branch; set status to **In Review**; do **not** mark **Done**. See `.cursor/rules/linear-delegation-handoff.mdc` and `docs/agents/issue-tracker.md`.
+For work delegated from a MUS Linear issue, follow the handoff procedure in `docs/agents/issue-tracker.md`.
 
 <!-- convex-ai-start -->
 
@@ -249,7 +251,6 @@ When working on Convex code, **always read
 how to correctly use Convex APIs and patterns. The file contains rules that
 override what you may have learned about Convex from training data.
 
-Convex agent skills for common tasks can be installed by running
-`npx convex ai-files install`.
+Optional Convex skills come from global installations or plugins; do not install duplicate project copies.
 
 <!-- convex-ai-end -->
