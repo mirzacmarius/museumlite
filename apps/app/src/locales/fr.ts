@@ -2343,6 +2343,7 @@ export default {
   },
   objects: {
     qrLabel: {
+      size1x1: "Petit carré",
       showObjectName: "Afficher le nom de l'objet",
     },
     objectLabel: {

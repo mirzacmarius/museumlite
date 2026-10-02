@@ -5,7 +5,6 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
-import { Textarea } from "@v1/ui/textarea";
 import type { FunctionReturnType } from "convex/server";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -242,23 +241,6 @@ export function CollectionEditGeneralTab({
               placeholder={placeholders("dateCreated")}
             />
           </div>
-        </div>
-      </EditSection>
-
-      <EditSection
-        title="Description"
-        description="The primary description shown across the object record."
-      >
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            autoResize
-            id="description"
-            value={formData.description || ""}
-            onChange={(event) => updateField("description", event.target.value)}
-            rows={5}
-            placeholder={placeholders("description")}
-          />
         </div>
       </EditSection>
     </div>

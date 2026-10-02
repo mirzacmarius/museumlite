@@ -773,6 +773,7 @@ export default {
   },
   objects: {
     qrLabel: {
+      size1x1: "Pătrat mic",
       showObjectName: "Afișează numele obiectului",
     },
     objectLabel: {

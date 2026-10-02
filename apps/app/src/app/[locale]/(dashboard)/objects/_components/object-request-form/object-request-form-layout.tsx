@@ -112,6 +112,7 @@ export function ObjectRequestFormLayout({
             handleFileSelect={handleFileSelect}
             placeholders={placeholders}
             onTitleChange={(value) => updateField("title", value)}
+            onDescriptionChange={(value) => updateField("description", value)}
             locationSummary={locationSummary}
             collectionSummary={collectionSummary}
             isLocationTrackingEnabled={isLocationTrackingEnabled}
