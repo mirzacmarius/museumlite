@@ -257,6 +257,33 @@ export default {
         "Veuillez sélectionner une organisation pour voir les paramètres développeur",
       title: "Paramètres Développeur",
       description: "Gérer les clés API, webhooks et utilitaires",
+
+      failedToCreateWebhook: "Échec de la création du webhook",
+      failedToUpdateWebhook: "Échec de la mise à jour du webhook",
+      failedToDeleteWebhook: "Échec de la suppression du webhook",
+      testSuccess: "Succès ({statusCode})",
+      testFailed: "Le test a échoué",
+      utilities: "Utilitaires de développement",
+      deleteAllLoans: "Supprimer tous les prêts",
+      deleteLoansDialog: "Supprimer tous les prêts ?",
+      cancel: "Annuler",
+      testError: "Le test a échoué",
+      createKeyFailed: "Échec de la création de la clé API",
+      failedToRevokeKey: "Échec de la révocation de la clé API",
+      failedToDeleteKey: "Échec de la suppression de la clé API",
+      utilitiesDesc: "Outils de développement et de test",
+      deleteLoansDesc:
+        "Supprimez tous les dossiers de prêt de cette organisation. Cette action est irréversible.",
+      operationCompleted: "Opération terminée",
+      deletedLoans: "{count} dossier{plural} de prêt supprimé{plural}",
+      deletedLoanItems: "{count} élément{plural} de prêt supprimé{plural}",
+      updatedCollections: "{count} collection{plural} mise{plural} à jour",
+      willDelete: "Les éléments suivants seront définitivement supprimés :",
+      allLoans: "Tous les dossiers de prêt",
+      allLoanItems: "Tous les dossiers d'éléments de prêt",
+      restoreActive: "Les collections seront marquées comme disponibles",
+      cannotUndo: "Cette action est irréversible.",
+      confirmDelete: "Tout supprimer",
     },
     tabs: {
       apiKeys: "Clés API",
@@ -332,12 +359,51 @@ export default {
       deleteWebhook: "Supprimer le webhook?",
       deleteWebhookDesc:
         "Cela supprimera définitivement ce point de terminaison webhook.",
+
+      testSuccess: "Succès ({statusCode})",
+      testFailed: "Le test a échoué",
+      enable: "Activer",
+      disable: "Désactiver",
+      deleteButton: "Supprimer",
     },
 
     placeholders: {
       searchUsers: "Rechercher des utilisateurs...",
       selectRole: "Sélectionner un rôle",
       stepName: "ex. Approbation du Conservateur",
+    },
+
+    errors: {
+      failedToCreateWebhook: "Échec de la création du webhook",
+      failedToUpdateWebhook: "Échec de la mise à jour du webhook",
+      failedToDeleteWebhook: "Échec de la suppression du webhook",
+      failedToCreateKey: "Échec de la création de la clé API",
+      failedToRevokeKey: "Échec de la révocation de la clé API",
+      failedToDeleteKey: "Échec de la suppression de la clé API",
+    },
+    data: {
+      title: "Import/Export de données",
+      objects: "Objets",
+      accessions: "Acquisitions",
+      locations: "Emplacements",
+      accounts: "Comptes",
+      loans: "Prêts",
+      downloadTemplate: "Télécharger le Modèle",
+      importFailed: "Échec de l'importation",
+      export: "Exporter",
+      description: "Importez et exportez les données de vos collections",
+      selectType: "Sélectionner un type...",
+      importing: "Importation en cours...",
+      importComplete: "Importation terminée",
+      exporting: "Exportation en cours...",
+      exportComplete: "Exportation terminée",
+      exportFailed: "Échec de l'exportation",
+      import: "Importer",
+      uploadFile: "Téléverser un fichier",
+      selectFormat: "Sélectionner un format",
+      csv: "CSV",
+      json: "JSON",
+      exportToCsv: "Exporter au format CSV",
     },
   },
   account: {
@@ -502,6 +568,16 @@ export default {
       tastingNotes: "Notes de Dégustation",
       nv: "NV",
       bottleSize: "750ml",
+
+      grapeVariety: "Cépage",
+      alcoholContent: "Teneur en alcool",
+      drinkingWindow: "Période de dégustation optimale",
+      pairing: "Accords mets et vins",
+      storageConditions: "Conditions de conservation",
+      labelCondition: "État de l'étiquette",
+      provenance: "Provenance",
+      acquisitionSource: "Source d'acquisition",
+      acquisitionDate: "Date d'acquisition",
     },
     automotive: {
       name: "Automobile",
@@ -570,6 +646,39 @@ export default {
       name: "Bibliothèque",
       description:
         "Gestion de bibliothèque avec usagers, circulation, réservations et amendes.",
+
+      callNumber: "Cote",
+      publisher: "Éditeur",
+      publicationYear: "Année de Publication",
+      edition: "Édition",
+      language: "Langue",
+      subjects: "Sujets",
+      deweyDecimal: "Classification décimale Dewey",
+      holds: "Réservations",
+      fines: "Amendes",
+      maxRenewals: "Renouvellements Maximum",
+      loanPeriod: "Période de Prêt",
+      days: "jours",
+      overdue: "En Retard",
+      available: "Disponible",
+      checkedOut: "Emprunté",
+      onHold: "En Attente",
+      inTransit: "En Transit",
+      lost: "Perdu",
+      damaged: "Endommagé",
+      withdrawn: "Retiré",
+      moduleName: "Module bibliothèque",
+      moduleDescription:
+        "Activez le module bibliothèque pour suivre les ISBN, les cotes et la circulation des ouvrages.",
+      isbn: "ISBN",
+      pages: "Pages",
+      lccn: "LCCN",
+      oclc: "OCLC",
+      circulation: "Prêts et retours",
+      checkouts: "Emprunts",
+      dueDate: "Date d'échéance",
+      renewals: "Renouvellements",
+      bindery: "Reliure",
     },
     common: {
       loading: "Chargement des détails {module}...",
@@ -667,6 +776,73 @@ export default {
       geologicalInformation: "Informations Géologiques",
       geologicalPeriod: "Période Géologique",
       formation: "Formation",
+
+      country: "Pays",
+      storageLocation: "Emplacement de stockage",
+      cabinet: "Armoire",
+      none: "Aucune",
+      specificEpithet: "Épithète spécifique",
+      infraspecificEpithet: "Épithète infraspécifique",
+      scientificName: "Nom scientifique",
+      commonName: "Nom commun",
+      collectionData: "Données de collecte",
+      collectorNumber: "Numéro de collecteur",
+      fieldNumber: "Numéro de terrain",
+      substrate: "Substrat",
+      associatedSpecies: "Espèces associées",
+      geolocation: "Géolocalisation",
+      stateProvince: "État / province",
+      county: "Comté",
+      locality: "Localité",
+      elevation: "Altitude",
+      coordinateUncertainty: "Incertitude des coordonnées",
+      geodeticDatum: "Système géodésique",
+      preservationDetails: "Détails de conservation",
+      preparationType: "Type de préparation",
+      drawer: "Tiroir",
+      tray: "Plateau",
+      identificationHistory: "Historique d'identification",
+      identifiedBy: "Identifié par",
+      dateIdentified: "Date d'identification",
+      identificationRemarks: "Remarques sur l'identification",
+      typeStatus: "Statut de type",
+      holotype: "Holotype",
+      paratype: "Paratype",
+      syntype: "Syntype",
+      lectotype: "Lectotype",
+      neotype: "Néotype",
+    },
+
+    wineDetails: {
+      moduleName: "Module Vin",
+      vintage: "Millésime",
+      producer: "Producteur",
+      cellarLocation: "Emplacement en Cave",
+      quantity: "Quantité",
+      bin: "Casier",
+      rack: "Étagère",
+      row: "Rangée",
+      peakDrinkingWindow: "Fenêtre de Dégustation Optimale",
+      drinkNow: "Boire Maintenant",
+      pastPeak: "Au-delà du Pic",
+      bottleCondition: "État de la Bouteille",
+      fillLevel: "Niveau de Remplissage",
+      closure: "Fermeture",
+      label: "Étiquette",
+      valuation: "Évaluation",
+      purchasePrice: "Prix d'Achat",
+      currentValue: "Valeur Actuelle",
+      wineDetails: "Détails du Vin",
+      varietal: "Cépage",
+      alcohol: "Alcool",
+      region: "Région",
+      tastingNotes: "Notes de Dégustation",
+      moduleDescription:
+        "Activez le module vin pour suivre le millésime, le cépage et l'emplacement en cave.",
+      capsule: "Capsule",
+      appellation: "Appellation",
+      nv: "NV",
+      bottleSize: "750 ml",
     },
   },
   workflows: {
@@ -936,15 +1112,19 @@ export default {
         dialog: {
           title: "Supprimer tous les prêts ?",
           description: "Cela supprimera définitivement :",
-          willDelete: [
-            "Tous les prêts de votre organisation",
-            "Tous les articles de prêt",
-            'Restaurer tous les statuts des collections à "actif"',
-          ],
+          willDelete: "Les éléments suivants seront définitivement supprimés :",
           warning:
             "Cette action ne peut pas être annulée. Êtes-vous absolument sûr ?",
           cancel: "Annuler",
           confirm: "Oui, supprimer tous les prêts",
+
+          allLoans: "Tous les prêts de votre organisation",
+          allLoanItems: "Tous les éléments prêtés",
+          restoreActive:
+            "Rétablir le statut « actif » de toutes les collections",
+          cannotUndo:
+            "Cette action est irréversible. Voulez-vous vraiment continuer ?",
+          confirmDelete: "Oui, supprimer tous les prêts",
         },
       },
     },
@@ -1063,6 +1243,12 @@ export default {
       loans: "Prêts",
       exhibitions: "Expositions",
       conservation: "Conservation",
+
+      accession: "Entrée",
+      deaccession: "Déclassement",
+      deaccessions: "Déclassements",
+      loan: "Prêt",
+      exhibition: "Exposition",
     },
     stepNumber: "Étape {step}",
   },
@@ -1369,6 +1555,8 @@ export default {
         notEnabled: "L'intégration de la bibliothèque n'est pas activée.",
         createFailed: "Échec de la création de l'article",
         coverPreview: "Aperçu de la couverture",
+
+        saving: "Enregistrement…",
       },
       edit: {
         pageTitle: "Modifier l'Article du Catalogue",
@@ -1382,6 +1570,10 @@ export default {
         notEnabled: "L'intégration de la bibliothèque n'est pas activée.",
         updateFailed: "Échec de la mise à jour de l'article",
         coverPreview: "Aperçu de la couverture",
+
+        loading: "Chargement de l’élément du catalogue…",
+        notFound: "Élément du catalogue introuvable",
+        saving: "Enregistrement…",
       },
       detail: {
         itemNotFound: "Article non trouvé",
@@ -1990,6 +2182,12 @@ export default {
       partialReturnDesc:
         "Ceci est un retour partiel. Le prêt restera {status} et seuls les articles sélectionnés seront marqués comme retournés. Les {remaining} {items} restants resteront en prêt.",
       areYouSureYouWantToProceed: "Êtes-vous sûr de vouloir continuer ?",
+
+      totalValue: "Valeur totale :",
+    },
+
+    charts: {
+      statusDistribution: "Répartition par statut",
     },
   },
   transit: {
@@ -2253,6 +2451,8 @@ export default {
     placeholders: {
       notesPlaceholder: "Raison du déplacement de cet emplacement...",
     },
+
+    parentLocation: "Emplacement parent",
   },
   common: {
     loading: "Chargement...",
@@ -2340,15 +2540,48 @@ export default {
       imageOrderUpdated: "Ordre des images mis à jour",
       imageOrderUpdateFailed: "Échec de la mise à jour de l'ordre des images",
     },
+
+    saveChanges: "Enregistrer les Modifications",
+    updating: "Mise à jour...",
+    close: "Fermer",
   },
   objects: {
     qrLabel: {
       size1x1: "Petit carré",
       showObjectName: "Afficher le nom de l'objet",
+
+      print: "Imprimer",
+      title: "Imprimer une étiquette QR",
+      labelSize: "Taille de l'étiquette",
+      size2x2: "Carré",
+      size1x3: "Rectangle",
+      printInstructions: "Instructions d'impression",
+      instructionPaperSize: "Utilisez du papier au format Letter ou A4",
+      instructionOrientation: "Choisissez l'orientation portrait",
+      instructionMargins: "Réglez les marges sur Aucune ou Minimales",
+      instructionScale: "Réglez l'échelle sur 100 % (sans mise à l'échelle)",
     },
     objectLabel: {
       showQrCode: "Afficher le code QR",
       qrCodeAlt: "Code QR menant à cet objet",
+
+      objectName: "Nom de l'Objet",
+      accessionNumber: "Numéro d'Accession",
+      print: "Imprimer",
+      title: "Imprimer une étiquette d'objet",
+      description: "Description",
+      accessionNumberPrefix: "n°",
+      labelSize: "Taille de l'étiquette",
+      sizeSmall: 'Petit (3" × 2")',
+      sizeMedium: 'Moyen (4" × 2,5")',
+      sizeLarge: 'Grand (5" × 3")',
+      showBorder: "Afficher la bordure",
+      accessionFontSize: "Taille de police du numéro d'entrée",
+      printInstructions: "Instructions d'impression",
+      instructionPaperSize: "Utilisez du papier au format Letter ou A4",
+      instructionOrientation: "Choisissez l'orientation portrait",
+      instructionMargins: "Réglez les marges sur Aucune ou Minimales",
+      instructionScale: "Réglez l'échelle sur 100 % (sans mise à l'échelle)",
     },
     title: "Objets de Collection",
     description: "Parcourir et gérer vos objets",
@@ -2391,6 +2624,11 @@ export default {
     emptyState: {
       noObjectsFound: "Aucun objet trouvé",
       addFirstObject: "Ajoutez Votre Premier Objet",
+
+      noObjectsInCollection: "Cette collection ne contient encore aucun objet",
+      addObjectsToCollection: "Ajouter des objets à la collection",
+      addObjectsToCollectionDescription:
+        "Sélectionnez des objets déjà catalogués à inclure dans cette collection. Un objet peut appartenir à plusieurs collections.",
     },
     table: {
       selectAllItems: "Sélectionner tous les éléments",
@@ -2461,6 +2699,16 @@ export default {
         processing: "Traitement...",
         deaccessionItems: "Désaccessionner les éléments",
         failed: "Échec de la désaccession des éléments",
+
+        failedOnLoan: "{count} échec(s) (peut-être en prêt)",
+      },
+
+      printLabels: {
+        title: "Imprimer des étiquettes QR",
+        description:
+          "Générer des étiquettes QR pour la sélection de {count} objet{s}.",
+        loadingLabels: "Chargement des étiquettes...",
+        noLabels: "Aucune étiquette à afficher",
       },
     },
     detail: {
@@ -2494,6 +2742,9 @@ export default {
       copiedToClipboard: "Copié dans le presse-papiers",
       alternativeTitle: "Titre Alternatif",
       onDisplay: "En exposition",
+
+      printLabel: "Imprimer une étiquette QR",
+      printObjectLabel: "Imprimer une étiquette d'objet",
     },
     pagination: {
       loadMore: "Charger Plus",
@@ -2686,6 +2937,8 @@ export default {
       title: "Documents",
       externalLink: "Lien Externe",
       noAssets: "Aucun document lié",
+
+      externalLinksTitle: "Liens externes",
     },
     printPreview: {
       title: "Aperçu Avant Impression",
@@ -2725,6 +2978,50 @@ export default {
       none: "Aucune",
       printedOn: "Imprimé le",
       print: "Imprimer",
+    },
+
+    mediaGallery: {
+      embedsTitle: "Modèles 3D",
+      openExternal: "Ouvrir",
+      loading: "Chargement des médias…",
+      visualMediaTitle: "Médias visuels",
+      documentsTitle: "Documents",
+      noMedia: "Aucune image ni aucun modèle 3D pour cet objet pour le moment.",
+      noDocuments: "Aucun document n'a encore été téléversé pour cet objet.",
+      sketchfabDefaultLabel: "Modèle 3D Sketchfab",
+      download: "Télécharger",
+      previewFailedTitle: "Aperçu indisponible",
+      previewFailedDescription:
+        "Impossible d'afficher un aperçu de ce fichier dans le navigateur. Ouvrez-le ou téléchargez-le.",
+      missingEmbedUrlTitle: "Intégration indisponible",
+      missingEmbedUrlDescription:
+        "Ce lien Sketchfab n'a pas pu être converti en visionneuse intégrée.",
+      unsupportedPreviewTitle: "Aperçu non pris en charge",
+      unsupportedPreviewDescription:
+        "Ce type de fichier ne peut pas être prévisualisé ici. Ouvrez ou téléchargez le fichier.",
+      documentOpenTitle: "Document",
+      documentOpenDescription: "Ouvrir ou télécharger ce fichier.",
+      missingFileTitle: "Fichier indisponible",
+      missingFileDescription: "L'URL du fichier est manquante ou a expiré.",
+      fileType: {
+        image: "Image",
+        video: "Vidéo",
+        pdf: "PDF",
+        document: "Doc",
+        model3d: "3D",
+        embed3d: "3D",
+      },
+    },
+    collectionGroup: {
+      addObjectsTitle: "Ajouter des objets à la collection",
+      addObjectsDescription:
+        "Choisissez les objets à inclure dans la collection « {name} ». Les objets cochés seront inclus.",
+      searchAndSelectObjects: "Rechercher et sélectionner des objets…",
+      multiCollectionHint:
+        "Un objet peut appartenir à plusieurs collections. Décochez-le pour le retirer uniquement de cette collection.",
+      saveMembership: "Enregistrer la sélection",
+      addObjectsButton: "Ajouter des objets",
+      viewingCollection: "Collection : {name}",
     },
   },
   collections: {
@@ -3153,6 +3450,8 @@ export default {
         phone: "Téléphone",
         city: "Ville",
         contact: "Contact",
+
+        number: "#",
       },
       errors: {
         missingHeader:
@@ -3162,6 +3461,15 @@ export default {
         invalidAccountType: "Type de compte invalide",
         importFailed: "Échec de l'import",
       },
+
+      showingRows: "Affichage de 20 sur {count} lignes",
+      cancel: "Annuler",
+      rowsReady: "{count} lignes prêtes à importer depuis {filename}",
+      backToAccounts: "Retour aux comptes",
+      accountTypesValues: "lender, borrower, both, institution, patron",
+      forInstitutionsValues: "businessName, contactPerson, contactEmail",
+      forIndividualsValues: "firstName, lastName, email, phone",
+      optionalValues: "accountNumber, address, city, zipCode, country, notes",
     },
   },
   conservation: {
@@ -3526,6 +3834,8 @@ export default {
           entityType: "Type d'Entité",
           user: "Utilisateur",
           timestamp: "Horodatage",
+
+          status: "Statut",
         },
         location: {
           title: "Rapport d'Utilisation des Emplacements",
@@ -3786,6 +4096,27 @@ export default {
     importObjects: "Importer des objets",
     createCollectionGroup: "Créer un groupe de collections",
     skipForNow: "Passer pour l'instant",
+
+    collectionSetup: {
+      skip: "Passer pour l'instant",
+      title: "Définissez votre collection",
+      description:
+        "Décrivez ce que vous collectionnez et nous vous proposerons des groupes de collections et des types d'objets que vous pourrez modifier avant l'enregistrement.",
+      promptLabel: "Que collectionne votre organisation ?",
+      promptPlaceholder:
+        "Ex. : musée d'histoire régionale avec des peintures, des textiles et des photographies d'archives…",
+      generate: "Générer des suggestions",
+      generateFailed:
+        "Impossible de générer des suggestions. Veuillez réessayer.",
+      applyFailed:
+        "Impossible d'enregistrer les groupes de collections. Veuillez réessayer.",
+      objectTypesLabel: "Types d'objets suggérés",
+      groupsLabel: "Groupes de collections suggérés",
+      groupNamePlaceholder: "Nom du groupe de collections",
+      groupDescriptionPlaceholder: "Brève description",
+      removeGroup: "Supprimer le groupe",
+      continue: "Enregistrer et continuer",
+    },
   },
   loginPage: {
     title: "Connexion",
@@ -4198,6 +4529,54 @@ export default {
       selectReason: "ex. Ne correspond plus à la mission de la collection",
       selectDisposition: "ex. Vendu à un collectionneur privé",
       addNotes: "Notes supplémentaires sur cette désaccession...",
+    },
+  },
+
+  scan: {
+    scanner: {
+      tryAgain: "Réessayer",
+      readyToScan: "Prêt à scanner",
+      startInstructions:
+        "Appuyez sur Démarrer pour activer votre caméra et scanner des codes-barres ou des codes QR",
+      startButton: "Démarrer le scanner",
+      stopButton: "Arrêter le scanner",
+      initializingCamera: "Initialisation de la caméra...",
+      cameraAccessRequired: "Accès à la caméra requis",
+      permissionDenied:
+        "Veuillez autoriser l'accès à la caméra dans les paramètres de votre navigateur, puis réessayez",
+      scannerError: "Erreur du scanner",
+      codeScanned: "Code scanné avec succès !",
+      flashOn: "Allumer le flash",
+      flashOff: "Éteindre le flash",
+      flashNotSupported: "Le flash n'est pas pris en charge sur cet appareil",
+      cameraPermissionError:
+        "Accès à la caméra refusé. Veuillez l'autoriser dans les paramètres de votre navigateur.",
+      supportedFormats: "Formats pris en charge :",
+      qrCode: "Code QR",
+      code128: "Code 128",
+      code39: "Code 39",
+      positionCode: "Placez le code dans le champ de la caméra pour le scanner",
+    },
+    title: "Scanner des objets",
+    description:
+      "Scannez des codes-barres ou des codes QR pour accéder rapidement aux fiches des objets",
+    history: {
+      title: "Scans récents",
+      notFound: "Introuvable",
+    },
+    info: {
+      howToScanTitle: "Comment scanner",
+      howToScanDescription:
+        "Démarrez le scanner et placez le code-barres ou le code QR dans le champ de la caméra. Le système le détectera automatiquement et ouvrira la fiche de l'objet.",
+      supportedFormatsTitle: "Formats pris en charge",
+      supportedFormatsDescription:
+        "Les codes QR et les codes-barres Code 128 et Code 39 sont pris en charge. Assurez-vous que l'éclairage est suffisant pour obtenir de meilleurs résultats.",
+    },
+    messages: {
+      selectOrganization: "Veuillez d'abord sélectionner une organisation",
+      scanned: "Scanné : {code}",
+      objectNotFound: "Objet introuvable : {code}",
+      scannerError: "Erreur du scanner : {error}",
     },
   },
 } as const;

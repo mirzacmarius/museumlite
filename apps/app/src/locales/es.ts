@@ -260,6 +260,33 @@ export default {
         "Por favor selecciona una organización para ver la configuración de desarrollador",
       title: "Configuración de Desarrollador",
       description: "Administrar claves API, webhooks y utilidades",
+
+      failedToCreateWebhook: "Error al crear el webhook",
+      failedToUpdateWebhook: "Error al actualizar el webhook",
+      failedToDeleteWebhook: "Error al eliminar el webhook",
+      testSuccess: "Éxito ({statusCode})",
+      utilities: "Utilidades de desarrollador",
+      deleteAllLoans: "Eliminar todos los préstamos",
+      deleteLoansDialog: "¿Eliminar todos los préstamos?",
+      cancel: "Cancelar",
+      createKeyFailed: "No se pudo crear la clave de API",
+      failedToRevokeKey: "No se pudo revocar la clave de API",
+      failedToDeleteKey: "No se pudo eliminar la clave de API",
+      testFailed: "La prueba ha fallado",
+      utilitiesDesc: "Herramientas de desarrollo y pruebas",
+      deleteLoansDesc:
+        "Eliminará todos los registros de préstamos de esta organización. Esta acción no se puede deshacer.",
+      operationCompleted: "Operación completada",
+      deletedLoans: "Préstamos eliminados: {count}",
+      deletedLoanItems: "Elementos de préstamo eliminados: {count}",
+      updatedCollections: "Colecciones actualizadas: {count}",
+      willDelete: "Se eliminarán permanentemente:",
+      allLoans: "Todos los registros de préstamos",
+      allLoanItems: "Todos los registros de elementos prestados",
+      restoreActive: "Las colecciones se marcarán como disponibles",
+      cannotUndo: "Esta acción no se puede deshacer.",
+      confirmDelete: "Eliminar todo",
+      testError: "La prueba ha fallado",
     },
     tabs: {
       apiKeys: "Claves API",
@@ -333,12 +360,51 @@ export default {
       deleteWebhook: "¿Eliminar webhook?",
       deleteWebhookDesc:
         "Esto eliminará permanentemente este punto final de webhook.",
+
+      testSuccess: "Éxito ({statusCode})",
+      enable: "Habilitar",
+      disable: "Deshabilitar",
+      deleteButton: "Eliminar",
+      testFailed: "La prueba ha fallado",
     },
 
     placeholders: {
       searchUsers: "Buscar usuarios...",
       selectRole: "Seleccionar un rol",
       stepName: "ej. Aprobación del Curador",
+    },
+
+    errors: {
+      failedToCreateWebhook: "Error al crear el webhook",
+      failedToUpdateWebhook: "Error al actualizar el webhook",
+      failedToDeleteWebhook: "Error al eliminar el webhook",
+      failedToCreateKey: "No se pudo crear la clave de API",
+      failedToRevokeKey: "No se pudo revocar la clave de API",
+      failedToDeleteKey: "No se pudo eliminar la clave de API",
+    },
+    data: {
+      title: "Importar/Exportar datos",
+      objects: "Objetos",
+      accessions: "Adquisiciones",
+      locations: "Ubicaciones",
+      accounts: "Cuentas",
+      loans: "Préstamos",
+      downloadTemplate: "Descargar Plantilla",
+      importFailed: "Error en la importación",
+      export: "Exportar",
+      description: "Importa y exporta los datos de tus colecciones",
+      selectType: "Seleccionar tipo...",
+      importing: "Importando...",
+      importComplete: "Importación completada",
+      exporting: "Exportando...",
+      exportComplete: "Exportación completada",
+      exportFailed: "Error al exportar",
+      import: "Importar",
+      uploadFile: "Subir archivo",
+      selectFormat: "Seleccionar formato",
+      csv: "CSV",
+      json: "JSON",
+      exportToCsv: "Exportar a CSV",
     },
   },
   account: {
@@ -500,6 +566,16 @@ export default {
       tastingNotes: "Notas de Cata",
       nv: "SV",
       bottleSize: "750ml",
+
+      provenance: "Procedencia",
+      grapeVariety: "Variedad de uva",
+      alcoholContent: "Graduación alcohólica",
+      drinkingWindow: "Periodo óptimo de consumo",
+      pairing: "Maridaje",
+      storageConditions: "Condiciones de conservación",
+      labelCondition: "Estado de la etiqueta",
+      acquisitionSource: "Procedencia de adquisición",
+      acquisitionDate: "Fecha de adquisición",
     },
     automotive: {
       name: "Automotriz",
@@ -569,6 +645,39 @@ export default {
       name: "Biblioteca",
       description:
         "Gestión de biblioteca con usuarios, circulación, reservas y multas.",
+
+      callNumber: "Número de Clasificación",
+      publisher: "Editorial",
+      publicationYear: "Año de Publicación",
+      edition: "Edición",
+      pages: "Páginas",
+      language: "Idioma",
+      subjects: "Temas",
+      circulation: "Circulación",
+      holds: "Reservas",
+      fines: "Multas",
+      maxRenewals: "Renovaciones Máximas",
+      loanPeriod: "Período de Préstamo",
+      days: "días",
+      overdue: "Vencidos",
+      available: "Disponible",
+      checkedOut: "Prestado",
+      onHold: "En Espera",
+      inTransit: "En Tránsito",
+      lost: "Perdido",
+      damaged: "Dañado",
+      withdrawn: "Retirado",
+      moduleName: "Módulo de biblioteca",
+      moduleDescription:
+        "Activa el módulo de biblioteca para registrar ISBN, signaturas y circulación.",
+      isbn: "ISBN",
+      deweyDecimal: "Clasificación Decimal Dewey",
+      lccn: "LCCN",
+      oclc: "OCLC",
+      checkouts: "Préstamos",
+      dueDate: "Fecha de vencimiento",
+      renewals: "Renovaciones",
+      bindery: "Encuadernación",
     },
     common: {
       loading: "Cargando detalles de {module}...",
@@ -666,6 +775,73 @@ export default {
       geologicalInformation: "Información Geológica",
       geologicalPeriod: "Período Geológico",
       formation: "Formación",
+
+      country: "País",
+      storageLocation: "Ubicación de almacenamiento",
+      cabinet: "Gabinete",
+      none: "Ninguna",
+      specificEpithet: "Epíteto específico",
+      infraspecificEpithet: "Epíteto infraespecífico",
+      scientificName: "Nombre científico",
+      commonName: "Nombre común",
+      collectionData: "Datos de recolección",
+      collectorNumber: "Número de colector",
+      fieldNumber: "Número de campo",
+      substrate: "Sustrato",
+      associatedSpecies: "Especies asociadas",
+      geolocation: "Geolocalización",
+      stateProvince: "Estado/provincia",
+      county: "Condado",
+      locality: "Localidad",
+      elevation: "Altitud",
+      coordinateUncertainty: "Incertidumbre de las coordenadas",
+      geodeticDatum: "Datum geodésico",
+      preservationDetails: "Detalles de conservación",
+      preparationType: "Tipo de preparación",
+      drawer: "Cajón",
+      tray: "Bandeja",
+      identificationHistory: "Historial de identificación",
+      identifiedBy: "Identificado por",
+      dateIdentified: "Fecha de identificación",
+      identificationRemarks: "Observaciones de identificación",
+      typeStatus: "Estatus tipológico",
+      holotype: "Holotipo",
+      paratype: "Paratipo",
+      syntype: "Sintipo",
+      lectotype: "Lectotipo",
+      neotype: "Neotipo",
+    },
+
+    wineDetails: {
+      moduleName: "Módulo de Vino",
+      vintage: "Añada",
+      producer: "Productor",
+      cellarLocation: "Ubicación en Bodega",
+      quantity: "Cantidad",
+      bin: "Casillero",
+      rack: "Estante",
+      row: "Fila",
+      peakDrinkingWindow: "Ventana de Consumo Óptimo",
+      drinkNow: "Beber Ahora",
+      pastPeak: "Más Allá del Pico",
+      bottleCondition: "Condición de la Botella",
+      fillLevel: "Nivel de Llenado",
+      closure: "Cierre",
+      label: "Etiqueta",
+      capsule: "Cápsula",
+      valuation: "Valuación",
+      purchasePrice: "Precio de Compra",
+      currentValue: "Valor Actual",
+      wineDetails: "Detalles del Vino",
+      appellation: "Denominación",
+      region: "Región",
+      tastingNotes: "Notas de Cata",
+      nv: "SV",
+      moduleDescription:
+        "Activa el módulo de vinos para registrar la añada, la variedad y la ubicación en la bodega.",
+      varietal: "Variedad",
+      alcohol: "Alcohol",
+      bottleSize: "750 ml",
     },
   },
   workflows: {
@@ -934,15 +1110,19 @@ export default {
         dialog: {
           title: "¿Eliminar todos los préstamos?",
           description: "Esto eliminará permanentemente:",
-          willDelete: [
-            "Todos los préstamos en tu organización",
-            "Todos los artículos de préstamo",
-            'Restaurar todos los estados de las colecciones a "activo"',
-          ],
+          willDelete: "Se eliminarán permanentemente:",
           warning:
             "Esta acción no se puede deshacer. ¿Estás absolutamente seguro?",
           cancel: "Cancelar",
           confirm: "Sí, eliminar todos los préstamos",
+
+          allLoans: "Todos los préstamos de tu organización",
+          allLoanItems: "Todos los elementos prestados",
+          restoreActive:
+            "Restablecer el estado de todas las colecciones a «active»",
+          cannotUndo:
+            "Esta acción no se puede deshacer. ¿Seguro que quieres continuar?",
+          confirmDelete: "Sí, eliminar todos los préstamos",
         },
       },
     },
@@ -954,6 +1134,8 @@ export default {
       failedToUpdateWebhook: "Error al actualizar el webhook",
       failedToDeleteWebhook: "Error al eliminar el webhook",
     },
+
+    testError: "La prueba ha fallado",
   },
   activity: {
     title: "Actividad",
@@ -1014,6 +1196,12 @@ export default {
       loans: "Préstamos",
       exhibitions: "Exposiciones",
       conservation: "Conservación",
+
+      accession: "Adquisición",
+      deaccession: "Desaccesión",
+      deaccessions: "Bajas",
+      loan: "Préstamo",
+      exhibition: "Exposición",
     },
     stepNumber: "Paso {step}",
   },
@@ -1319,6 +1507,8 @@ export default {
         notEnabled: "La integración de la biblioteca no está habilitada.",
         createFailed: "Error al crear el artículo",
         coverPreview: "Vista previa de portada",
+
+        saving: "Guardando…",
       },
       edit: {
         pageTitle: "Editar Artículo del Catálogo",
@@ -1332,6 +1522,10 @@ export default {
         notEnabled: "La integración de la biblioteca no está habilitada.",
         updateFailed: "Error al actualizar el artículo",
         coverPreview: "Vista previa de portada",
+
+        loading: "Cargando el elemento del catálogo…",
+        notFound: "Elemento del catálogo no encontrado",
+        saving: "Guardando…",
       },
       detail: {
         itemNotFound: "Artículo no encontrado",
@@ -1867,6 +2061,8 @@ export default {
       partialReturnDesc:
         "Esta es una devolución parcial. El préstamo permanecerá {status} y solo los artículos seleccionados serán marcados como devueltos. Los {remaining} {items} restantes permanecerán en préstamo.",
       areYouSureYouWantToProceed: "¿Estás seguro de que deseas continuar?",
+
+      totalValue: "Valor total:",
     },
     emptyState: {
       noLoansFound: "No se encontraron préstamos",
@@ -1907,6 +2103,44 @@ export default {
       title: "Selecciona una Organización",
       description:
         "Por favor selecciona una organización del menú desplegable arriba para ver los préstamos.",
+    },
+
+    filters: {
+      outgoing: "Saliente",
+      incoming: "Entrante",
+      pending: "Pendiente",
+      allLoans: "Todos los préstamos",
+    },
+    status: {
+      active: "Activo",
+      returned: "Devuelto",
+      cancelled: "Cancelado",
+      draft: "Borrador",
+      pendingReview: "Pendiente de revisión",
+      dispatched: "Enviado",
+    },
+    kpis: {
+      activeLoans: "Préstamos Activos",
+      inTransit: "En Tránsito",
+      overdueLoans: "Préstamos Vencidos",
+      pendingApprovals: "Aprobaciones Pendientes",
+      unavailable: "No disponible",
+      objectsInTransit: "Objetos en tránsito",
+      totalInsuredValue: "Valor total asegurado",
+      expiringAgreements: "Acuerdos próximos a vencer",
+      actionRequired: "Acción requerida",
+    },
+    table: {
+      type: "Tipo",
+      duration: "Duración",
+      status: "Estado",
+      itemsPlural: "elementos",
+      loanIdTitle: "ID y título del préstamo",
+      partnerInstitution: "Institución asociada",
+      items: "elemento",
+    },
+    charts: {
+      statusDistribution: "Distribución por estado",
     },
   },
   transit: {
@@ -2167,6 +2401,8 @@ export default {
     placeholders: {
       notesPlaceholder: "Razón para mover esta ubicación...",
     },
+
+    parentLocation: "Ubicación superior",
   },
   common: {
     loading: "Cargando...",
@@ -2258,15 +2494,48 @@ export default {
       imageOrderUpdated: "Orden de imágenes actualizado",
       imageOrderUpdateFailed: "Error al actualizar orden de imágenes",
     },
+
+    saveChanges: "Guardar Cambios",
+    updating: "Actualizando...",
+    close: "Cerrar",
   },
   objects: {
     qrLabel: {
       size1x1: "Cuadrado pequeño",
       showObjectName: "Mostrar nombre del objeto",
+
+      print: "Imprimir",
+      title: "Imprimir etiqueta QR",
+      labelSize: "Tamaño de etiqueta",
+      size2x2: "Cuadrado",
+      size1x3: "Rectángulo",
+      printInstructions: "Instrucciones de impresión",
+      instructionPaperSize: "Usa papel tamaño carta o A4",
+      instructionOrientation: "Selecciona la orientación vertical",
+      instructionMargins: "Establece los márgenes en ninguno o mínimos",
+      instructionScale: "Establece la escala en 100 % (sin ajustar)",
     },
     objectLabel: {
       showQrCode: "Mostrar código QR",
       qrCodeAlt: "Código QR que enlaza con este objeto",
+
+      objectName: "Nombre del Objeto",
+      description: "Descripción",
+      accessionNumber: "Número de Accesión",
+      print: "Imprimir",
+      title: "Imprimir etiqueta del objeto",
+      accessionNumberPrefix: "n.º",
+      labelSize: "Tamaño de etiqueta",
+      sizeSmall: 'Pequeña (3" × 2")',
+      sizeMedium: 'Mediana (4" × 2,5")',
+      sizeLarge: 'Grande (5" × 3")',
+      showBorder: "Mostrar borde",
+      accessionFontSize: "Tamaño de fuente del número de ingreso",
+      printInstructions: "Instrucciones de impresión",
+      instructionPaperSize: "Usa papel tamaño carta o A4",
+      instructionOrientation: "Selecciona la orientación vertical",
+      instructionMargins: "Establece los márgenes en ninguno o mínimos",
+      instructionScale: "Establece la escala en 100 % (sin ajustar)",
     },
     title: "Objetos de la Colección",
     description: "Explora y administra tus objetos",
@@ -2308,6 +2577,11 @@ export default {
     emptyState: {
       noObjectsFound: "No se encontraron objetos",
       addFirstObject: "Agrega Tu Primer Objeto",
+
+      noObjectsInCollection: "Esta colección todavía no tiene objetos",
+      addObjectsToCollection: "Añadir objetos a la colección",
+      addObjectsToCollectionDescription:
+        "Selecciona objetos catalogados para incluirlos en esta colección. Los objetos pueden pertenecer a varias colecciones.",
     },
     table: {
       selectAllItems: "Seleccionar todos los elementos",
@@ -2401,6 +2675,16 @@ export default {
         },
         noteLabel: "Notas (opcional)",
         notePlaceholder: "Agregar contexto adicional...",
+
+        failedOnLoan: "{count} fallaron (pueden estar en préstamo)",
+      },
+
+      printLabels: {
+        title: "Imprimir etiquetas QR",
+        description:
+          "Generar etiquetas QR para la selección de {count} elemento{s}.",
+        loadingLabels: "Cargando etiquetas...",
+        noLabels: "No hay etiquetas que mostrar",
       },
     },
     detail: {
@@ -2491,6 +2775,11 @@ export default {
         "Números de catálogo anteriores, identificadores heredados o referencias de sistemas externos utilizados para identificar este objeto antes o junto con el número de accesión actual.",
       copiedToClipboard: "Copiado al portapapeles",
       alternativeTitle: "Título Alternativo",
+
+      printLabel: "Imprimir etiqueta QR",
+      printObjectLabel: "Imprimir etiqueta del objeto",
+      deleteConfirm:
+        "¿Seguro que quieres eliminar «{title}»? El objeto se marcará como dado de baja.",
     },
     pagination: {
       loadMore: "Cargar Más",
@@ -2630,6 +2919,23 @@ export default {
         noDataToExport: "No hay datos para exportar",
         exportedItems: "Exportados {count} elemento{s}",
       },
+
+      basicInformation: "Información Básica",
+      objectInformation: "Información del Objeto",
+      currentLocation: "Ubicación Actual",
+      physicalCharacteristics: "Características físicas",
+      locationInformation: "Información de ubicación",
+      objectRelationships: "Relaciones del objeto",
+      links: "Enlaces",
+      imageUpload: "Subir imagen",
+      documentUpload: "Subir documento",
+      required: "obligatorio",
+      collectionType: "Tipo de colección",
+      alternateAccessionNumbers: "Números de ingreso alternativos",
+      alternateAccessionNumbersHint:
+        "Números de ingreso históricos asignados anteriormente a este objeto",
+      parentObjectHint:
+        "Vincula este objeto con un objeto principal (por ejemplo, un cofre que lo contiene)",
     },
     printView: {
       basicInformation: "Información Básica",
@@ -2665,6 +2971,8 @@ export default {
       title: "Documentos",
       externalLink: "Enlace Externo",
       noAssets: "No hay documentos vinculados",
+
+      externalLinksTitle: "Enlaces externos",
     },
     printPreview: {
       title: "Vista Previa de Impresión",
@@ -2704,6 +3012,67 @@ export default {
       none: "Ninguna",
       printedOn: "Impreso el",
       print: "Imprimir",
+    },
+
+    tabs: {
+      provenance: "Procedencia",
+      physical: "Descripción Física",
+      conservation: "Conservación",
+      exhibitions: "Exposiciones",
+      loans: "Préstamos",
+      wine: "Vinos y Licores",
+      naturalHistory: "Historia Natural",
+      general: "General",
+      media: "Multimedia",
+      digital: "Visibilidad",
+      logs: "Registros",
+      fineArt: "Datos de bellas artes",
+      automotive: "Datos del vehículo",
+      archive: "Datos del archivo",
+    },
+    mediaGallery: {
+      documentsTitle: "Documentos",
+      embedsTitle: "Modelos 3D",
+      openExternal: "Abrir",
+      fileType: {
+        image: "Imagen",
+        video: "Vídeo",
+        pdf: "PDF",
+        document: "Doc",
+        model3d: "3D",
+        embed3d: "3D",
+      },
+      loading: "Cargando contenido multimedia…",
+      visualMediaTitle: "Contenido visual",
+      noMedia: "Este objeto todavía no tiene imágenes ni modelos 3D.",
+      noDocuments: "Todavía no se han subido documentos para este objeto.",
+      sketchfabDefaultLabel: "Modelo 3D de Sketchfab",
+      download: "Descargar",
+      previewFailedTitle: "Vista previa no disponible",
+      previewFailedDescription:
+        "No se pudo mostrar una vista previa de este archivo en el navegador. Ábrelo o descárgalo.",
+      missingEmbedUrlTitle: "Inserción no disponible",
+      missingEmbedUrlDescription:
+        "No se pudo convertir este enlace de Sketchfab en un visor integrado.",
+      unsupportedPreviewTitle: "Vista previa no compatible",
+      unsupportedPreviewDescription:
+        "No se puede obtener una vista previa de este tipo de archivo. Ábrelo o descárgalo.",
+      documentOpenTitle: "Documento",
+      documentOpenDescription: "Abre o descarga este archivo.",
+      missingFileTitle: "Archivo no disponible",
+      missingFileDescription:
+        "La URL del archivo no está disponible o ha caducado.",
+    },
+    collectionGroup: {
+      addObjectsTitle: "Añadir objetos a la colección",
+      addObjectsDescription:
+        "Elige qué objetos pertenecen a la colección «{name}». Se incluirán los que estén marcados.",
+      searchAndSelectObjects: "Buscar y seleccionar objetos…",
+      multiCollectionHint:
+        "Los objetos pueden pertenecer a varias colecciones. Desmarca un objeto para quitarlo solo de esta colección.",
+      saveMembership: "Guardar selección",
+      addObjectsButton: "Añadir objetos",
+      viewingCollection: "Colección: {name}",
     },
   },
   collections: {
@@ -3135,6 +3504,8 @@ export default {
         phone: "Teléfono",
         city: "Ciudad",
         contact: "Contacto",
+
+        number: "#",
       },
       errors: {
         missingHeader:
@@ -3144,6 +3515,15 @@ export default {
         invalidAccountType: "Tipo de cuenta inválido",
         importFailed: "Importación fallida",
       },
+
+      showingRows: "Mostrando 20 de {count} filas",
+      cancel: "Cancelar",
+      rowsReady: "{count} filas listas para importar desde {filename}",
+      backToAccounts: "Volver a cuentas",
+      accountTypesValues: "lender, borrower, both, institution, patron",
+      forInstitutionsValues: "businessName, contactPerson, contactEmail",
+      forIndividualsValues: "firstName, lastName, email, phone",
+      optionalValues: "accountNumber, address, city, zipCode, country, notes",
     },
   },
   conservation: {
@@ -3507,6 +3887,8 @@ export default {
           entityType: "Tipo de Entidad",
           user: "Usuario",
           timestamp: "Marca de Tiempo",
+
+          status: "Estado",
         },
         location: {
           title: "Informe de Utilización de Ubicaciones",
@@ -3767,6 +4149,26 @@ export default {
     importObjects: "Importar objetos",
     createCollectionGroup: "Crear grupo de colecciones",
     skipForNow: "Omitir por ahora",
+
+    collectionSetup: {
+      skip: "Omitir por ahora",
+      title: "Define tu colección",
+      description:
+        "Describe qué colecciona tu organización y sugeriremos grupos y tipos de objetos que podrás ajustar antes de guardar.",
+      promptLabel: "¿Qué colecciona tu organización?",
+      promptPlaceholder:
+        "Por ejemplo: museo de historia regional con pinturas, textiles y fotografías de archivo…",
+      generate: "Generar sugerencias",
+      generateFailed: "No se pudieron generar sugerencias. Inténtalo de nuevo.",
+      applyFailed:
+        "No se pudieron guardar los grupos de colecciones. Inténtalo de nuevo.",
+      objectTypesLabel: "Tipos de objetos sugeridos",
+      groupsLabel: "Grupos de colecciones sugeridos",
+      groupNamePlaceholder: "Nombre del grupo de colecciones",
+      groupDescriptionPlaceholder: "Descripción breve",
+      removeGroup: "Eliminar grupo",
+      continue: "Guardar y continuar",
+    },
   },
   loginPage: {
     title: "Iniciar Sesión",
@@ -4031,6 +4433,8 @@ export default {
     stats: {
       pending: "Pendiente",
       approved: "Aprobado",
+
+      deaccessions: "Bajas",
     },
     actions: {
       exportReport: "Exportar Informe",
@@ -4175,6 +4579,55 @@ export default {
       selectReason: "ej., Ya no se ajusta a la misión de la colección",
       selectDisposition: "ej., Vendido a coleccionista privado",
       addNotes: "Notas adicionales sobre esta desaccesión...",
+    },
+  },
+
+  scan: {
+    scanner: {
+      tryAgain: "Reintentar",
+      readyToScan: "Listo para escanear",
+      startInstructions:
+        "Pulsa Iniciar para activar la cámara y escanear códigos de barras o QR",
+      startButton: "Iniciar escáner",
+      stopButton: "Detener escáner",
+      initializingCamera: "Iniciando cámara...",
+      cameraAccessRequired: "Se requiere acceso a la cámara",
+      permissionDenied:
+        "Permite el acceso a la cámara en la configuración del navegador e inténtalo de nuevo",
+      scannerError: "Error del escáner",
+      codeScanned: "¡Código escaneado correctamente!",
+      flashOn: "Encender flash",
+      flashOff: "Apagar flash",
+      flashNotSupported: "Este dispositivo no admite flash",
+      cameraPermissionError:
+        "Se denegó el acceso a la cámara. Permítelo en la configuración del navegador.",
+      supportedFormats: "Formatos compatibles:",
+      qrCode: "Código QR",
+      code128: "Code 128",
+      code39: "Code 39",
+      positionCode:
+        "Coloca el código dentro del visor de la cámara para escanearlo",
+    },
+    title: "Escanear objetos",
+    description:
+      "Escanea códigos de barras o QR para acceder rápidamente a las fichas de los objetos",
+    history: {
+      title: "Escaneos recientes",
+      notFound: "No encontrado",
+    },
+    info: {
+      howToScanTitle: "Cómo escanear",
+      howToScanDescription:
+        "Inicia el escáner y coloca el código de barras o QR en el visor. El sistema lo detectará automáticamente y abrirá el objeto.",
+      supportedFormatsTitle: "Formatos compatibles",
+      supportedFormatsDescription:
+        "Se admiten códigos QR y códigos de barras Code 128 y Code 39. Asegúrate de que haya suficiente luz para obtener mejores resultados.",
+    },
+    messages: {
+      selectOrganization: "Selecciona primero una organización",
+      scanned: "Escaneado: {code}",
+      objectNotFound: "Objeto no encontrado: {code}",
+      scannerError: "Error del escáner: {error}",
     },
   },
 } as const;
