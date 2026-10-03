@@ -243,12 +243,41 @@ export default {
         cancelError: "Kunne ikke avbryte sletting. Prøv igjen.",
         transferError: "Kunne ikke overføre eierskap. Prøv igjen.",
       },
+
+      addOrganization: "Legg til organisasjon",
     },
     developer: {
       selectOrganization:
         "Vennligst velg en organisasjon for å se utviklerinnstillinger",
       title: "Utviklerinnstillinger",
       description: "Administrer API-nøkler, webhooks og verktøy",
+
+      failedToCreateWebhook: "Kunne ikke opprette webhook",
+      failedToUpdateWebhook: "Kunne ikke oppdatere webhook",
+      failedToDeleteWebhook: "Kunne ikke slette webhook",
+      testSuccess: "Suksess ({statusCode})",
+      utilities: "Utviklerverktøy",
+      deleteAllLoans: "Slett alle lån",
+      deleteLoansDialog: "Slett alle lån?",
+      cancel: "Avbryt",
+      createKeyFailed: "Kunne ikke opprette API-nøkkel",
+      failedToRevokeKey: "Kunne ikke tilbakekalle API-nøkkel",
+      failedToDeleteKey: "Kunne ikke slette API-nøkkel",
+      testFailed: "Testen mislyktes",
+      utilitiesDesc: "Verktøy for utvikling og testing",
+      deleteLoansDesc:
+        "Fjern alle utlånsposter fra denne organisasjonen. Dette kan ikke angres.",
+      operationCompleted: "Operasjonen er fullført",
+      deletedLoans: "Slettet {count} utlån",
+      deletedLoanItems: "Slettet {count} utlånsobjekter",
+      updatedCollections: "Oppdaterte samlinger: {count}",
+      willDelete: "Dette slettes permanent:",
+      allLoans: "Alle utlånsposter",
+      allLoanItems: "Alle utlånsobjektposter",
+      restoreActive: "Samlingene markeres som tilgjengelige",
+      cannotUndo: "Denne handlingen kan ikke angres.",
+      confirmDelete: "Slett alle",
+      testError: "Testen mislyktes",
     },
     tabs: {
       apiKeys: "API-nøkler",
@@ -323,12 +352,51 @@ export default {
       deleteWebhook: "Slett webhook?",
       deleteWebhookDesc:
         "Dette vil permanent slette dette webhook-endepunktet.",
+
+      testSuccess: "Suksess ({statusCode})",
+      enable: "Aktiver",
+      disable: "Deaktiver",
+      deleteButton: "Slett",
+      testFailed: "Testen mislyktes",
     },
 
     placeholders: {
       searchUsers: "Søk etter brukere...",
       selectRole: "Velg en rolle",
       stepName: "f.eks. Kurator-godkjenning",
+    },
+
+    errors: {
+      failedToCreateWebhook: "Kunne ikke opprette webhook",
+      failedToUpdateWebhook: "Kunne ikke oppdatere webhook",
+      failedToDeleteWebhook: "Kunne ikke slette webhook",
+      failedToCreateKey: "Kunne ikke opprette API-nøkkel",
+      failedToRevokeKey: "Kunne ikke tilbakekalle API-nøkkel",
+      failedToDeleteKey: "Kunne ikke slette API-nøkkel",
+    },
+    data: {
+      title: "Dataimport/-eksport",
+      objects: "Objekter",
+      accessions: "Aksessjoner",
+      locations: "Plasseringer",
+      accounts: "Kontoer",
+      loans: "Lån",
+      downloadTemplate: "Last ned Mal",
+      importFailed: "Import mislyktes",
+      export: "Eksporter",
+      description: "Importer og eksporter samlingsdataene dine",
+      selectType: "Velg type...",
+      importing: "Importerer...",
+      importComplete: "Importeringen er fullført",
+      exporting: "Eksporterer...",
+      exportComplete: "Eksporteringen er fullført",
+      exportFailed: "Eksporteringen mislyktes",
+      import: "Importer",
+      uploadFile: "Last opp fil",
+      selectFormat: "Velg format",
+      csv: "CSV",
+      json: "JSON",
+      exportToCsv: "Eksporter til CSV",
     },
   },
   account: {
@@ -486,6 +554,16 @@ export default {
       tastingNotes: "Smaksnotater",
       nv: "NV",
       bottleSize: "750ml",
+
+      provenance: "Proveniens",
+      grapeVariety: "Druesort",
+      alcoholContent: "Alkoholinnhold",
+      drinkingWindow: "Drikkevindu",
+      pairing: "Matkombinasjon",
+      storageConditions: "Lagringsforhold",
+      labelCondition: "Etikettens tilstand",
+      acquisitionSource: "Anskaffelseskilde",
+      acquisitionDate: "Anskaffelsesdato",
     },
     automotive: {
       name: "Biler",
@@ -552,6 +630,39 @@ export default {
       name: "Bibliotek",
       description:
         "Biblioteksforvaltning med lånere, sirkulasjon, reservasjoner og gebyrer.",
+
+      callNumber: "Hyllesignatur",
+      publisher: "Forlegger",
+      publicationYear: "Utgivelsesår",
+      edition: "Utgave",
+      pages: "Sider",
+      language: "Språk",
+      subjects: "Emner",
+      deweyDecimal: "Dewey Desimal",
+      circulation: "Sirkulasjon",
+      holds: "Reservasjoner",
+      fines: "Bøter",
+      maxRenewals: "Maks Fornyelser",
+      loanPeriod: "Låneperiode",
+      days: "dager",
+      overdue: "Forfalt",
+      available: "Tilgjengelig",
+      checkedOut: "Utlånt",
+      onHold: "På Vent",
+      inTransit: "Under Transport",
+      lost: "Tapt",
+      damaged: "Skadet",
+      withdrawn: "Trukket Tilbake",
+      moduleName: "Bibliotekmodul",
+      moduleDescription:
+        "Aktiver bibliotekmodulen for å holde oversikt over ISBN, hyllesignaturer og utlån.",
+      isbn: "ISBN",
+      lccn: "LCCN",
+      oclc: "OCLC",
+      checkouts: "Utlån",
+      dueDate: "Forfallsdato",
+      renewals: "Fornyelser",
+      bindery: "Bokbinderi",
     },
     common: {
       loading: "Laster {module}-detaljer...",
@@ -649,6 +760,73 @@ export default {
       geologicalInformation: "Geologisk Informasjon",
       geologicalPeriod: "Geologisk Periode",
       formation: "Formasjon",
+
+      country: "Land",
+      storageLocation: "Lagringssted",
+      cabinet: "Skap",
+      none: "Ingen",
+      specificEpithet: "Artsnavn",
+      infraspecificEpithet: "Underartsnavn",
+      scientificName: "Vitenskapelig navn",
+      commonName: "Vanlig navn",
+      collectionData: "Innsamlingsdata",
+      collectorNumber: "Samlernummer",
+      fieldNumber: "Feltnummer",
+      substrate: "Substrat",
+      associatedSpecies: "Tilknyttede arter",
+      geolocation: "Geolokalisering",
+      stateProvince: "Delstat/fylke",
+      county: "Fylke",
+      locality: "Lokalitet",
+      elevation: "Høyde over havet",
+      coordinateUncertainty: "Koordinatusikkerhet",
+      geodeticDatum: "Geodetisk datum",
+      preservationDetails: "Konserveringsdetaljer",
+      preparationType: "Klargjøringstype",
+      drawer: "Skuff",
+      tray: "Brett",
+      identificationHistory: "Identifikasjonshistorikk",
+      identifiedBy: "Identifisert av",
+      dateIdentified: "Identifikasjonsdato",
+      identificationRemarks: "Merknader om identifikasjon",
+      typeStatus: "Typestatus",
+      holotype: "Holotype",
+      paratype: "Paratype",
+      syntype: "Syntype",
+      lectotype: "Lectotype",
+      neotype: "Neotype",
+    },
+
+    wineDetails: {
+      moduleName: "Vinmodul",
+      vintage: "Årgang",
+      producer: "Produsent",
+      cellarLocation: "Kjellerlokasjon",
+      quantity: "Mengde",
+      bin: "Boks",
+      rack: "Hylle",
+      row: "Rad",
+      peakDrinkingWindow: "Optimal Drikkeperiode",
+      drinkNow: "Drikk Nå",
+      pastPeak: "Forbi Toppen",
+      bottleCondition: "Flasketilstand",
+      fillLevel: "Fyllingsnivå",
+      closure: "Lukking",
+      label: "Etikett",
+      capsule: "Kapsel",
+      valuation: "Verdsettelse",
+      purchasePrice: "Kjøpspris",
+      currentValue: "Nåværende Verdi",
+      wineDetails: "Vindetaljer",
+      appellation: "Betegnelse",
+      varietal: "Druesort",
+      alcohol: "Alkohol",
+      tastingNotes: "Smaksnotater",
+      moduleDescription:
+        "Aktiver vinmodulen for å holde oversikt over årgang, druesort og plassering i vinkjelleren.",
+      region: "Region",
+      nv: "NV",
+      bottleSize: "750 ml",
     },
   },
   workflows: {
@@ -906,14 +1084,17 @@ export default {
         dialog: {
           title: "Slett alle lån?",
           description: "Dette vil permanent slette:",
-          willDelete: [
-            "Alle lån i organisasjonen din",
-            "Alle låneelementer",
-            'Gjenopprett alle samlingsstatus til "aktiv"',
-          ],
+          willDelete: "Dette slettes permanent:",
           warning: "Denne handlingen kan ikke angres. Er du helt sikker?",
           cancel: "Avbryt",
           confirm: "Ja, slett alle lån",
+
+          allLoans: "Alle utlån i organisasjonen din",
+          allLoanItems: "Alle utlånte objekter",
+          restoreActive:
+            "Sett statusen for alle samlinger tilbake til «active»",
+          cannotUndo: "Denne handlingen kan ikke angres. Er du helt sikker?",
+          confirmDelete: "Ja, slett alle utlån",
         },
       },
     },
@@ -925,6 +1106,8 @@ export default {
       failedToUpdateWebhook: "Kunne ikke oppdatere webhook",
       failedToDeleteWebhook: "Kunne ikke slette webhook",
     },
+
+    testError: "Testen mislyktes",
   },
   activity: {
     title: "Aktivitet",
@@ -985,6 +1168,12 @@ export default {
       loans: "Lån",
       exhibitions: "Utstillinger",
       conservation: "Konservering",
+
+      accession: "Aksesjon",
+      deaccession: "Deaksesjon",
+      deaccessions: "Avhendinger",
+      loan: "Lån",
+      exhibition: "Utstilling",
     },
     stepNumber: "Steg {step}",
   },
@@ -1288,6 +1477,8 @@ export default {
         notEnabled: "Bibliotekintegrasjonen er ikke aktivert.",
         createFailed: "Kunne ikke opprette gjenstand",
         coverPreview: "Forhåndsvisning av omslag",
+
+        saving: "Lagrer…",
       },
       edit: {
         pageTitle: "Rediger Katalogartikkel",
@@ -1301,6 +1492,10 @@ export default {
         notEnabled: "Bibliotekintegrasjonen er ikke aktivert.",
         updateFailed: "Kunne ikke oppdatere gjenstand",
         coverPreview: "Forhåndsvisning av omslag",
+
+        loading: "Laster katalogelement…",
+        notFound: "Fant ikke katalogelementet",
+        saving: "Lagrer…",
       },
       detail: {
         itemNotFound: "Gjenstand ikke funnet",
@@ -1902,6 +2097,12 @@ export default {
       partialReturnDesc:
         "Dette er en delvis retur. Lånet vil forbli {status} og bare de valgte elementene vil bli merket som returnert. De gjenværende {remaining} {items} vil forbli på lån.",
       areYouSureYouWantToProceed: "Er du sikker på at du vil fortsette?",
+
+      totalValue: "Samlet verdi:",
+    },
+
+    charts: {
+      statusDistribution: "Statusfordeling",
     },
   },
   transit: {
@@ -2160,6 +2361,8 @@ export default {
     placeholders: {
       notesPlaceholder: "Årsak til å flytte denne plasseringen...",
     },
+
+    parentLocation: "Overordnet plassering",
   },
   common: {
     loading: "Laster...",
@@ -2246,15 +2449,48 @@ export default {
       imageOrderUpdated: "Bilderekkefølge oppdatert",
       imageOrderUpdateFailed: "Kunne ikke oppdatere bilderekkefølge",
     },
+
+    saveChanges: "Lagre Endringer",
+    updating: "Oppdaterer...",
+    close: "Lukk",
   },
   objects: {
     qrLabel: {
       size1x1: "Lite kvadrat",
       showObjectName: "Vis objektnavn",
+
+      print: "Skriv ut",
+      title: "Skriv ut QR-etikett",
+      labelSize: "Etikettstørrelse",
+      size2x2: "Kvadrat",
+      size1x3: "Rektangel",
+      printInstructions: "Utskriftsinstruksjoner",
+      instructionPaperSize: "Bruk papirformat Letter/A4",
+      instructionOrientation: "Velg stående papirretning",
+      instructionMargins: "Sett margene til Ingen eller Minimum",
+      instructionScale: "Sett skaleringen til 100 % (ingen skalering)",
     },
     objectLabel: {
       showQrCode: "Vis QR-kode",
       qrCodeAlt: "QR-kode som lenker til dette objektet",
+
+      objectName: "Objektnavn",
+      description: "Beskrivelse",
+      accessionNumber: "Aksesjonsnummer",
+      print: "Skriv ut",
+      title: "Skriv ut objektetikett",
+      accessionNumberPrefix: "nr.",
+      labelSize: "Etikettstørrelse",
+      sizeSmall: 'Liten (3" × 2")',
+      sizeMedium: 'Middels (4" × 2,5")',
+      sizeLarge: 'Stor (5" × 3")',
+      showBorder: "Vis kantlinje",
+      accessionFontSize: "Skriftstørrelse for aksesjonsnummer",
+      printInstructions: "Utskriftsinstruksjoner",
+      instructionPaperSize: "Bruk papirformat Letter/A4",
+      instructionOrientation: "Velg stående papirretning",
+      instructionMargins: "Sett margene til Ingen eller Minimum",
+      instructionScale: "Sett skaleringen til 100 % (ingen skalering)",
     },
     title: "Samlingsobjekter",
     description: "Bla gjennom og administrer objektene dine",
@@ -2296,6 +2532,11 @@ export default {
     emptyState: {
       noObjectsFound: "Ingen objekter funnet",
       addFirstObject: "Legg til Ditt Første Objekt",
+
+      noObjectsInCollection: "Denne samlingen har ingen objekter ennå",
+      addObjectsToCollection: "Legg til objekter i samlingen",
+      addObjectsToCollectionDescription:
+        "Velg katalogiserte objekter som skal tas med i samlingen. Objekter kan tilhøre flere samlinger.",
     },
     table: {
       selectAllItems: "Velg alle elementer",
@@ -2388,6 +2629,15 @@ export default {
         },
         noteLabel: "Merknader (valgfritt)",
         notePlaceholder: "Legg til ytterligere kontekst...",
+
+        failedOnLoan: "{count} feilet (kan være på utlån)",
+      },
+
+      printLabels: {
+        title: "Skriv ut QR-etiketter",
+        description: "Lag QR-etiketter for valgte objekter: {count}.",
+        loadingLabels: "Laster etiketter...",
+        noLabels: "Ingen etiketter å vise",
       },
     },
     detail: {
@@ -2477,6 +2727,11 @@ export default {
         "Tidligere katalognumre, arvede ID-er eller eksterne systemreferanser som brukes til å identifisere dette objektet før eller sammen med gjeldende aksesjonsnummer.",
       copiedToClipboard: "Kopiert til utklippstavlen",
       alternativeTitle: "Alternativ Tittel",
+
+      printLabel: "Skriv ut QR-etikett",
+      printObjectLabel: "Skriv ut objektetikett",
+      deleteConfirm:
+        "Er du sikker på at du vil slette «{title}»? Objektet blir markert som avhendet.",
     },
     pagination: {
       loadMore: "Last inn Mer",
@@ -2614,6 +2869,23 @@ export default {
         noDataToExport: "Ingen data å eksportere",
         exportedItems: "Eksportert {count} element",
       },
+
+      basicInformation: "Grunnleggende Informasjon",
+      objectInformation: "Objektinformasjon",
+      currentLocation: "Nåværende Plassering",
+      physicalCharacteristics: "Fysiske kjennetegn",
+      locationInformation: "Plasseringsinformasjon",
+      objectRelationships: "Objektrelasjoner",
+      links: "Lenker",
+      imageUpload: "Last opp bilde",
+      documentUpload: "Last opp dokument",
+      required: "obligatorisk",
+      collectionType: "Samlingstype",
+      alternateAccessionNumbers: "Alternative aksesjonsnumre",
+      alternateAccessionNumbersHint:
+        "Historiske aksesjonsnumre som tidligere er tildelt dette objektet",
+      parentObjectHint:
+        "Koble dette objektet til et overordnet objekt (f.eks. en skattekiste som inneholder objektet)",
     },
     printView: {
       basicInformation: "Grunnleggende Informasjon",
@@ -2649,6 +2921,8 @@ export default {
       title: "Dokumenter",
       externalLink: "Ekstern Lenke",
       noAssets: "Ingen dokumenter koblet",
+
+      externalLinksTitle: "Eksterne lenker",
     },
     printPreview: {
       title: "Forhåndsvisning",
@@ -2688,6 +2962,67 @@ export default {
       none: "Ingen",
       printedOn: "Skrevet ut",
       print: "Skriv Ut",
+    },
+
+    tabs: {
+      provenance: "Proveniens",
+      physical: "Fysisk Beskrivelse",
+      conservation: "Konservering",
+      exhibitions: "Utstillinger",
+      loans: "Lån",
+      wine: "Vin og Brennevin",
+      naturalHistory: "Naturhistorie",
+      general: "Generelt",
+      media: "Medier",
+      digital: "Synlighet",
+      logs: "Logger",
+      fineArt: "Kunstopplysninger",
+      automotive: "Kjøretøyopplysninger",
+      archive: "Arkivopplysninger",
+    },
+    mediaGallery: {
+      documentsTitle: "Dokumenter",
+      embedsTitle: "3D-modeller",
+      openExternal: "Åpne",
+      fileType: {
+        image: "Bilde",
+        video: "Video",
+        pdf: "PDF",
+        document: "Dok",
+        model3d: "3D",
+        embed3d: "3D",
+      },
+      loading: "Laster medier…",
+      visualMediaTitle: "Visuelle medier",
+      noMedia:
+        "Det finnes ingen bilder eller 3D-modeller av dette objektet ennå.",
+      noDocuments: "Ingen dokumenter er lastet opp for dette objektet ennå.",
+      sketchfabDefaultLabel: "Sketchfab 3D-modell",
+      download: "Last ned",
+      previewFailedTitle: "Forhåndsvisning er ikke tilgjengelig",
+      previewFailedDescription:
+        "Filen kunne ikke forhåndsvises i nettleseren. Åpne eller last den ned.",
+      missingEmbedUrlTitle: "Innebygging er ikke tilgjengelig",
+      missingEmbedUrlDescription:
+        "Denne Sketchfab-lenken kunne ikke vises i en innebygd visning.",
+      unsupportedPreviewTitle: "Forhåndsvisning støttes ikke",
+      unsupportedPreviewDescription:
+        "Denne filtypen kan ikke forhåndsvises her. Åpne eller last ned filen.",
+      documentOpenTitle: "Dokument",
+      documentOpenDescription: "Åpne eller last ned denne filen.",
+      missingFileTitle: "Filen er ikke tilgjengelig",
+      missingFileDescription: "Filens URL mangler eller har utløpt.",
+    },
+    collectionGroup: {
+      addObjectsTitle: "Legg til objekter i samlingen",
+      addObjectsDescription:
+        "Velg hvilke objekter som skal tilhøre samlingen «{name}». Avmerkede objekter tas med.",
+      searchAndSelectObjects: "Søk etter og velg objekter…",
+      multiCollectionHint:
+        "Objekter kan tilhøre flere samlinger samtidig. Fjern avmerkingen for å ta objektet ut av bare denne samlingen.",
+      saveMembership: "Lagre utvalget",
+      addObjectsButton: "Legg til objekter",
+      viewingCollection: "Samling: {name}",
     },
   },
   collections: {
@@ -3112,6 +3447,8 @@ export default {
         phone: "Telefon",
         city: "By",
         contact: "Kontakt",
+
+        number: "#",
       },
       errors: {
         missingHeader: "CSV må ha en overskriftsrad og minst en datarad",
@@ -3120,6 +3457,15 @@ export default {
         invalidAccountType: "Ugyldig kontotype",
         importFailed: "Import mislyktes",
       },
+
+      showingRows: "Viser 20 av {count} rader",
+      cancel: "Avbryt",
+      rowsReady: "{count} rader klare til import fra {filename}",
+      backToAccounts: "Tilbake til kontoer",
+      accountTypesValues: "lender, borrower, both, institution, patron",
+      forInstitutionsValues: "businessName, contactPerson, contactEmail",
+      forIndividualsValues: "firstName, lastName, email, phone",
+      optionalValues: "accountNumber, address, city, zipCode, country, notes",
     },
   },
   conservation: {
@@ -3479,6 +3825,8 @@ export default {
           entityType: "Enhetstype",
           user: "Bruker",
           timestamp: "Tidsstempel",
+
+          status: "Status",
         },
         location: {
           title: "Plassutnyttelsesrapport",
@@ -3736,6 +4084,25 @@ export default {
     importObjects: "Importer objekter",
     createCollectionGroup: "Opprett samlingsgruppe",
     skipForNow: "Hopp over nå",
+
+    collectionSetup: {
+      skip: "Hopp over nå",
+      title: "Form samlingen din",
+      description:
+        "Beskriv hva dere samler på, så foreslår vi samlingsgrupper og objekttyper som du kan justere før du lagrer.",
+      promptLabel: "Hva samler organisasjonen din på?",
+      promptPlaceholder:
+        "f.eks. regionalhistorisk museum med malerier, tekstiler og arkivfotografier…",
+      generate: "Lag forslag",
+      generateFailed: "Kunne ikke lage forslag. Prøv igjen.",
+      applyFailed: "Kunne ikke lagre samlingsgruppene. Prøv igjen.",
+      objectTypesLabel: "Foreslåtte objekttyper",
+      groupsLabel: "Foreslåtte samlingsgrupper",
+      groupNamePlaceholder: "Navn på samlingsgruppe",
+      groupDescriptionPlaceholder: "Kort beskrivelse",
+      removeGroup: "Fjern gruppe",
+      continue: "Lagre og fortsett",
+    },
   },
   loginPage: {
     title: "Logg Inn",
@@ -3825,6 +4192,8 @@ export default {
     stats: {
       pending: "Ventende",
       approved: "Godkjent",
+
+      deaccessions: "Avhendinger",
     },
     actions: {
       emptyTrash: "Tøm papirkurv",
@@ -3966,6 +4335,8 @@ export default {
       autoAccession: "(auto)",
       showingRows: "Viser 20 av {count} rader",
     },
+
+    addObject: "Legg til objekt",
   },
 
   deaccessions: {
@@ -4134,6 +4505,54 @@ export default {
       selectReason: "f.eks., Passer ikke lenger samlingens oppdrag",
       selectDisposition: "f.eks., Solgt til privat samler",
       addNotes: "Tilleggsnotater om denne deaksesjonen...",
+    },
+  },
+
+  scan: {
+    scanner: {
+      tryAgain: "Prøv igjen",
+      readyToScan: "Klar til å skanne",
+      startInstructions:
+        "Trykk på Start for å aktivere kameraet og skanne strekkoder eller QR-koder",
+      startButton: "Start skanneren",
+      stopButton: "Stopp skanneren",
+      initializingCamera: "Starter kameraet...",
+      cameraAccessRequired: "Kameratilgang kreves",
+      permissionDenied:
+        "Tillat kameratilgang i nettleserinnstillingene, og prøv igjen",
+      scannerError: "Skannerfeil",
+      codeScanned: "Koden ble skannet!",
+      flashOn: "Slå på blits",
+      flashOff: "Slå av blits",
+      flashNotSupported: "Blits støttes ikke på denne enheten",
+      cameraPermissionError:
+        "Kameratilgang ble avslått. Tillat kameratilgang i nettleserinnstillingene.",
+      supportedFormats: "Støttede formater:",
+      qrCode: "QR-kode",
+      code128: "Code 128",
+      code39: "Code 39",
+      positionCode: "Plasser koden i kameravisningen for å skanne den",
+    },
+    title: "Skann objekter",
+    description:
+      "Skann strekkoder eller QR-koder for raskt å åpne objektoppføringer",
+    history: {
+      title: "Nylige skanninger",
+      notFound: "Ikke funnet",
+    },
+    info: {
+      howToScanTitle: "Slik skanner du",
+      howToScanDescription:
+        "Start skanneren og plasser strekkoden eller QR-koden i kameravisningen. Systemet finner koden automatisk og åpner objektet.",
+      supportedFormatsTitle: "Støttede formater",
+      supportedFormatsDescription:
+        "QR-koder samt Code 128- og Code 39-strekkoder støttes. Sørg for godt nok lys for best resultat.",
+    },
+    messages: {
+      selectOrganization: "Velg en organisasjon først",
+      scanned: "Skannet: {code}",
+      objectNotFound: "Fant ikke objektet: {code}",
+      scannerError: "Skannerfeil: {error}",
     },
   },
 } as const;

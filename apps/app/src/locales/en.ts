@@ -1779,6 +1779,8 @@ export default {
     placeholders: {
       notesPlaceholder: "Reason for moving this location...",
     },
+
+    parentLocation: "Parent location",
   },
   common: {
     loading: "Loading...",
@@ -1867,6 +1869,8 @@ export default {
       imageOrderUpdated: "Image order updated",
       imageOrderUpdateFailed: "Failed to update image order",
     },
+
+    close: "Close",
   },
   objects: {
     title: "Object Catalog",
@@ -3268,6 +3272,8 @@ export default {
         notEnabled: "Library integration is not enabled.",
         createFailed: "Failed to create item",
         coverPreview: "Cover preview",
+
+        saving: "Saving…",
       },
       edit: {
         pageTitle: "Edit Catalog Item",
@@ -3281,6 +3287,10 @@ export default {
         notEnabled: "Library integration is not enabled.",
         updateFailed: "Failed to update item",
         coverPreview: "Cover preview",
+
+        loading: "Loading catalog item…",
+        notFound: "Catalog item not found",
+        saving: "Saving…",
       },
       detail: {
         itemNotFound: "Item not found",
