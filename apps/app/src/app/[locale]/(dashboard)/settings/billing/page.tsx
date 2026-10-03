@@ -60,6 +60,7 @@ function PlanCard({
   isLoading?: boolean;
   onAction?: () => void;
 }) {
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div
       className={`flex w-full flex-col gap-4 rounded-md border p-4 ${
@@ -97,7 +98,7 @@ function PlanCard({
             onClick={onAction}
             disabled={isDisabled || isLoading}
           >
-            {isLoading ? "Working..." : actionLabel}
+            {isLoading ? tDashboard("workingDots") : actionLabel}
           </Button>
         </div>
       ) : null}
@@ -106,20 +107,19 @@ function PlanCard({
 }
 
 function BillingOverview() {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col gap-2">
-      <h2 className="text-xl font-medium text-foreground">Billing overview</h2>
+      <h2 className="text-xl font-medium text-foreground">{t("billingOverview")}</h2>
       <p className="text-sm text-muted-foreground">
-        Review your current plan, compare available tiers, and manage billing
-        for your organization. For test purchases, you can use the card numbers
-        listed in this{" "}
+        {t("billingDescription")}{" "}
         <a
           href="https://docs.polar.sh/integrate/sandbox"
           target="_blank"
           rel="noreferrer"
           className="font-medium text-foreground underline"
         >
-          Polar sandbox resource
+          {t("polarSandboxResource")}
         </a>
         .
       </p>
@@ -321,6 +321,7 @@ function ManageSubscriptionSection({
   };
   onManageSubscription: () => void;
 }) {
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card">
       <div className="flex flex-col gap-2 p-6">
@@ -348,7 +349,7 @@ function ManageSubscriptionSection({
             onClick={onManageSubscription}
             disabled={isManagingPortal || isPending}
           >
-            {isManagingPortal ? "Working…" : labels.manage}
+            {isManagingPortal ? tDashboard("working") : labels.manage}
           </Button>
         ) : null}
       </div>

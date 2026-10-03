@@ -2,24 +2,27 @@
 
 import { Button } from "@v1/ui/button";
 import { Plus, X } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../edit-section";
 import type { CollectionFormTabProps, OwnershipEntry } from "../types";
 import { OwnershipEntryFormFields } from "./ownership-entry-form-fields";
-
 export function OwnershipHistoryRequestSection({
   formData,
   updateField,
   placeholders,
 }: Pick<CollectionFormTabProps, "formData" | "updateField" | "placeholders">) {
+  const tRoot = useI18n();
   return (
     <EditSection
-      title="Ownership history"
-      description="Document the chain of ownership entry by entry."
+      title={tRoot("untranslatedRecords.objects.form.ownershipHistory")}
+      description={tRoot(
+        "untranslatedRecords.objects.form.ownershipHistoryDescription",
+      )}
     >
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            Add dated entries with notes and verification details.
+            {tRoot("untranslatedRecords.objects.form.ownershipHistoryHint")}
           </p>
           <Button
             type="button"
@@ -41,14 +44,14 @@ export function OwnershipHistoryRequestSection({
             }}
           >
             <Plus className="mr-2 size-4" />
-            Add Entry
+            {tRoot("untranslatedRecords.objects.form.addEntry")}
           </Button>
         </div>
 
         {(formData.ownershipHistory || []).length === 0 ? (
           <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/60">
             <p className="text-sm text-muted-foreground">
-              No ownership history recorded.
+              {tRoot("untranslatedRecords.objects.form.noOwnershipHistory")}
             </p>
           </div>
         ) : (
@@ -61,10 +64,13 @@ export function OwnershipHistoryRequestSection({
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <h3 className="text-sm font-medium">
-                      Ownership entry {index + 1}
+                      {tRoot("untranslatedRecords.objects.ownership.entry")}{" "}
+                      {index + 1}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Capture ownership dates, notes, and verification.
+                      {tRoot(
+                        "untranslatedRecords.objects.form.captureOwnershipDates",
+                      )}
                     </p>
                   </div>
                   <Button

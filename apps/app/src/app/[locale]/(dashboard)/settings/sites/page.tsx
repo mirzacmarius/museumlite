@@ -22,7 +22,7 @@ import { Building2, Edit, MapPin, Plus, Trash2 } from "lucide-react";
 import { type Dispatch, type FormEvent, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface SiteFormData {
   name: string;
@@ -114,12 +114,15 @@ function SitesPageHeader({
   isSubmitting: boolean;
   onCreateSite: (event: FormEvent) => void;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-medium text-foreground">Site Management</h2>
+        <h2 className="text-xl font-medium text-foreground">
+          {t("siteManagement")}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Manage physical locations and branches for your organization
+          {t("physicalLocationsDescription")}
         </p>
       </div>
       <PermissionGate permission="sites.create">
@@ -132,7 +135,7 @@ function SitesPageHeader({
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 size-4" />
-              Create Site
+              {t("createSite")}
             </Button>
           </DialogTrigger>
           <SiteFormDialogContent
@@ -169,6 +172,8 @@ function SiteFormDialogContent({
   onSubmit: (event: FormEvent) => void;
   onUpdateForm: (patch: Partial<SiteFormData>) => void;
 }) {
+  const tRoot = useI18n();
+  const t = useScopedI18n("untranslatedDashboard.settings");
   const isCreate = mode === "create";
 
   return (
@@ -176,12 +181,10 @@ function SiteFormDialogContent({
       <form onSubmit={onSubmit}>
         <DialogHeader>
           <DialogTitle>
-            {isCreate ? "Create New Site" : "Edit Site"}
+            {isCreate ? t("createNewSite") : t("editSite")}
           </DialogTitle>
           <DialogDescription>
-            {isCreate
-              ? "Add a new physical location or branch to your organization."
-              : "Update site details and settings."}
+            {isCreate ? t("createSiteDescription") : t("updateSiteDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -193,10 +196,12 @@ function SiteFormDialogContent({
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor={isCreate ? "name" : "edit-name"}>Site Name *</Label>
+            <Label htmlFor={isCreate ? "name" : "edit-name"}>
+              {t("siteNameRequired")}
+            </Label>
             <Input
               id={isCreate ? "name" : "edit-name"}
-              placeholder="e.g., Main Museum, Storage Facility"
+              placeholder={t("siteNamePlaceholder")}
               value={formData.name}
               onChange={(event) => onUpdateForm({ name: event.target.value })}
               required
@@ -205,11 +210,11 @@ function SiteFormDialogContent({
 
           <div className="space-y-2">
             <Label htmlFor={isCreate ? "description" : "edit-description"}>
-              Description
+              {tRoot("untranslatedRecords.objects.attributes.description")}
             </Label>
             <Textarea
               id={isCreate ? "description" : "edit-description"}
-              placeholder="Describe this site..."
+              placeholder={t("descriptionPlaceholder")}
               value={formData.description}
               onChange={(event) =>
                 onUpdateForm({ description: event.target.value })
@@ -220,11 +225,11 @@ function SiteFormDialogContent({
 
           <div className="space-y-2">
             <Label htmlFor={isCreate ? "address" : "edit-address"}>
-              Address
+              {t("address")}
             </Label>
             <Textarea
               id={isCreate ? "address" : "edit-address"}
-              placeholder="123 Main St, City, State, ZIP"
+              placeholder={t("addressPlaceholder")}
               value={formData.address}
               onChange={(event) =>
                 onUpdateForm({ address: event.target.value })
@@ -239,10 +244,10 @@ function SiteFormDialogContent({
                 htmlFor={isCreate ? "isPrimary" : "edit-isPrimary"}
                 className="font-medium"
               >
-                Primary Site
+                {t("primarySite")}
               </Label>
               <p className="text-sm text-muted-foreground">
-                Set this as the main location for your organization
+                {t("setPrimarySite")}
               </p>
             </div>
             <Switch
@@ -262,16 +267,16 @@ function SiteFormDialogContent({
             onClick={onCancel}
             disabled={isSubmitting}
           >
-            Cancel
+            {t("cancel")}
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting
               ? isCreate
-                ? "Creating…"
-                : "Updating…"
+                ? t("creating")
+                : t("updating")
               : isCreate
-                ? "Create Site"
-                : "Update Site"}
+                ? t("createSite")
+                : t("updateSite")}
           </Button>
         </DialogFooter>
       </form>
@@ -288,6 +293,8 @@ function SiteCard({
   onEdit: (site: EditingSite) => void;
   site: EditingSite;
 }) {
+  const tRoot = useI18n();
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between">
@@ -300,12 +307,12 @@ function SiteCard({
               <h3 className="truncate font-medium">{site.name}</h3>
               {site.isPrimary ? (
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  Primary
+                  {t("primary")}
                 </span>
               ) : null}
               {!site.isActive ? (
                 <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                  Archived
+                  {t("archived")}
                 </span>
               ) : null}
             </div>
@@ -333,7 +340,7 @@ function SiteCard({
             className="flex-1"
           >
             <Edit className="mr-2 size-3.5" />
-            Edit
+            {tRoot("untranslatedRecords.objects.actions.edit")}
           </Button>
           {!site.isPrimary && site.isActive ? (
             <PermissionGate permission="sites.delete">
@@ -354,7 +361,7 @@ function SiteCard({
 }
 
 export default function SitesSettingsPage() {
-  const _t = useScopedI18n("settings");
+  const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
   const [state, dispatch] = useReducer(
     sitesPageReducer,
@@ -383,9 +390,7 @@ export default function SitesSettingsPage() {
   if (!currentOrganizationId) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">
-          Please select an organization to manage sites.
-        </p>
+        <p className="text-muted-foreground">{t("selectOrganizationSites")}</p>
       </div>
     );
   }
@@ -395,7 +400,7 @@ export default function SitesSettingsPage() {
     dispatch({ type: "setError", error: null });
 
     if (!formData.name.trim()) {
-      dispatch({ type: "setError", error: "Site name is required" });
+      dispatch({ type: "setError", error: t("siteNameRequired") });
       return;
     }
 
@@ -414,7 +419,7 @@ export default function SitesSettingsPage() {
       console.error("Error creating site:", err);
       dispatch({
         type: "setError",
-        error: err instanceof Error ? err.message : "Failed to create site",
+        error: t("failedCreateSite"),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", isSubmitting: false });
@@ -452,7 +457,7 @@ export default function SitesSettingsPage() {
     dispatch({ type: "setError", error: null });
 
     if (!formData.name.trim()) {
-      dispatch({ type: "setError", error: "Site name is required" });
+      dispatch({ type: "setError", error: t("siteNameRequired") });
       return;
     }
 
@@ -472,7 +477,7 @@ export default function SitesSettingsPage() {
       console.error("Error updating site:", err);
       dispatch({
         type: "setError",
-        error: err instanceof Error ? err.message : "Failed to update site",
+        error: t("failedUpdateSite"),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", isSubmitting: false });
@@ -480,7 +485,7 @@ export default function SitesSettingsPage() {
   };
 
   const handleArchiveSite = async (siteId: Id<"sites">) => {
-    if (!confirm("Are you sure you want to archive this site?")) {
+    if (!confirm(t("archiveSiteConfirm"))) {
       return;
     }
 
@@ -488,7 +493,7 @@ export default function SitesSettingsPage() {
       await archiveSite({ siteId });
     } catch (err) {
       console.error("Error archiving site:", err);
-      alert(err instanceof Error ? err.message : "Failed to archive site");
+      alert(t("failedArchiveSite"));
     }
   };
 
@@ -506,17 +511,17 @@ export default function SitesSettingsPage() {
 
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-medium">Sites</h2>
+            <h2 className="text-lg font-medium">{t("sites")}</h2>
             <p className="text-sm text-muted-foreground">
-              Physical locations and branches for your organization
+              {t("physicalLocationsDescription")}
             </p>
           </div>
 
           {!sites || sites.length === 0 ? (
             <EmptyState
               icon={Building2}
-              title="No sites yet"
-              description="Create your first site to manage physical locations"
+              title={t("noSites")}
+              description={t("createFirstSite")}
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

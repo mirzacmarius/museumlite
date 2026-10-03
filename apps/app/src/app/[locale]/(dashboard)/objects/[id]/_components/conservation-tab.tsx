@@ -8,6 +8,8 @@ import { useQuery } from "convex/react";
 import { Stethoscope } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 
+import { useI18n } from "@/locales/client";
+
 interface ConservationTabProps {
   collectionId: string;
   locale: string;
@@ -19,6 +21,7 @@ export function ConservationTab({
   locale,
   hasAccess,
 }: ConservationTabProps) {
+  const tRoot = useI18n();
   const treatments = useQuery(
     api.conservationTreatments?.list,
     hasAccess && collectionId
@@ -44,12 +47,14 @@ export function ConservationTab({
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
           <Stethoscope className="size-4 text-rose-500" />
-          Treatment History
+          {tRoot("untranslatedRecords.objects.conservation.treatmentHistory")}
         </h3>
       </div>
 
       {treatments === undefined ? (
-        <p className="text-muted-foreground">Loading treatments…</p>
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.loading.treatments")}
+        </p>
       ) : treatments && treatments.length > 0 ? (
         <div className="space-y-4">
           {treatments.map((treatment) => (
@@ -92,7 +97,9 @@ export function ConservationTab({
                       {treatment.performedByName.charAt(0)}
                     </div>
                     <span>
-                      Performed by{" "}
+                      {tRoot(
+                        "untranslatedRecords.objects.conservation.performedBy",
+                      )}{" "}
                       <span className="text-muted-foreground">
                         {treatment.performedByName}
                       </span>
@@ -106,7 +113,7 @@ export function ConservationTab({
       ) : (
         <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
-            No conservation treatments recorded
+            {tRoot("untranslatedRecords.objects.conservation.noTreatments")}
           </p>
         </div>
       )}

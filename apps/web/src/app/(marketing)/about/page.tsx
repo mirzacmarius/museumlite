@@ -3,49 +3,50 @@ import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
 import { PageHeader, SectionLabel } from "@/components/site/section-label";
 import { createPageMetadata } from "@/lib/metadata";
+import { getWebI18n } from "@/locales/server";
 
-export const metadata = createPageMetadata({
-  title: "About",
-  description:
-    "MuseumLite is an early-stage museum collection management product built with registrars, curators, and conservators in mind.",
-  path: "/about",
-});
+export async function generateMetadata() {
+  const { locale, t } = await getWebI18n();
+  return createPageMetadata({
+    title: t("marketing.about.title"),
+    description: t("marketing.about.description"),
+    path: "/about",
+    locale,
+  });
+}
 
-const principles = [
-  {
-    title: "Stewardship over scale",
-    body: "We optimise for careful cataloguing and long-term record quality — not vanity metrics or growth-at-all-costs features.",
-  },
-  {
-    title: "Direct relationships",
-    body: "Early partners work directly with the people building the product. Feedback shapes the roadmap, not a distant product committee.",
-  },
-  {
-    title: "Honest scope",
-    body: "We ship modules when they are ready for real museum workflows. No fabricated customer logos or inflated usage statistics.",
-  },
-] as const;
-
-const milestones = [
-  ["2024", "MuseumLite founded to replace spreadsheet-heavy collection workflows."],
-  ["2025", "First partner museums onboarded for pilot programmes."],
-  ["Today", "Actively building collections, exhibitions, and conservation modules with partner feedback."],
-] as const;
-
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { t } = await getWebI18n();
+  const principles = (
+    [
+      ["marketing.about.principle1Title", "marketing.about.principle1Body"],
+      ["marketing.about.principle2Title", "marketing.about.principle2Body"],
+      ["marketing.about.principle3Title", "marketing.about.principle3Body"],
+    ] as const
+  ).map(([titleKey, bodyKey]) => ({
+    title: t(titleKey),
+    body: t(bodyKey),
+  }));
+  const milestones = [
+    ["2024", t("marketing.about.milestone2024")],
+    ["2025", t("marketing.about.milestone2025")],
+    [t("marketing.about.whereHeading"), t("marketing.about.milestoneToday")],
+  ] as const;
   return (
     <>
       <Nav />
       <main id="main-content" className="bg-background text-foreground">
         <PageHeader
-          eyebrow="About"
+          eyebrow={t("marketing.about.title")}
           title={
             <>
-              Software for people who keep{" "}
-              <span className="text-gold">cultural memory.</span>
+              {t("marketing.about.titleLine1")}{" "}
+              <span className="text-gold">
+                {t("marketing.about.titleLine2")}
+              </span>
             </>
           }
-          lede="A small team building museum collection management software — deliberate releases, museum-first design, and no enterprise theatre."
+          lede={t("marketing.about.lede")}
         />
 
         <section className="py-16 md:py-24 border-b border-border">
@@ -54,7 +55,7 @@ export default function AboutPage() {
               <div className="relative aspect-[4/3] overflow-hidden border border-border shadow-gallery">
                 <Image
                   src="/marketing/hero-gallery.jpg"
-                  alt="Museum gallery space"
+                  alt={t("marketing.about.imageAlt")}
                   fill
                   loading="lazy"
                   quality={70}
@@ -64,27 +65,25 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="md:col-span-6 space-y-5 text-soft-foreground leading-relaxed md:pt-4">
-              <SectionLabel index="Mission" title="Why we exist" />
+              <SectionLabel
+                index={t("marketing.about.mission")}
+                title={t("marketing.about.kicker")}
+              />
               <h2 className="font-display text-3xl text-ivory">
-                Built with museums, not around them
+                {t("marketing.about.heading")}
               </h2>
-              <p>
-                Most collection software was designed decades ago — or treats a
-                museum like a warehouse. MuseumLite is our attempt to give
-                registrars and curators a modern workspace without losing the
-                care those records deserve.
-              </p>
-              <p>
-                We are early stage. That means direct access, honest timelines,
-                and a product that improves because real teams use it every week.
-              </p>
+              <p>{t("marketing.about.body")}</p>
+              <p>{t("marketing.about.stage")}</p>
             </div>
           </div>
         </section>
 
         <section className="py-16 md:py-24 border-b border-border bg-muted/30">
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <SectionLabel index="Values" title="How we work" />
+            <SectionLabel
+              index={t("marketing.about.values")}
+              title={t("marketing.about.workHeading")}
+            />
             <div className="mt-10 grid md:grid-cols-3 gap-6">
               {principles.map((p) => (
                 <article
@@ -103,9 +102,12 @@ export default function AboutPage() {
 
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-3xl px-6 lg:px-10">
-            <SectionLabel index="Timeline" title="Where we are" />
+            <SectionLabel
+              index={t("marketing.about.timeline")}
+              title={t("marketing.about.whereHeading")}
+            />
             <h2 className="mt-6 font-display text-3xl text-ivory mb-10">
-              A short history
+              {t("marketing.about.historyHeading")}
             </h2>
             <ol className="space-y-0 border border-border overflow-hidden divide-y divide-border">
               {milestones.map(([y, t]) => (
@@ -116,7 +118,9 @@ export default function AboutPage() {
                   <span className="sm:col-span-3 font-display text-2xl text-gold">
                     {y}
                   </span>
-                  <span className="sm:col-span-9 text-soft-foreground">{t}</span>
+                  <span className="sm:col-span-9 text-soft-foreground">
+                    {t}
+                  </span>
                 </li>
               ))}
             </ol>

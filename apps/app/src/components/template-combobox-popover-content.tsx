@@ -12,6 +12,7 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Check, Pencil, Sparkles, Trash2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { TemplateOption } from "./template-combobox-types";
 
 interface TemplateComboboxPopoverContentProps {
@@ -39,10 +40,13 @@ export function TemplateComboboxPopoverContent({
   onEditTemplate,
   onDeleteTemplate,
 }: TemplateComboboxPopoverContentProps) {
+  const translate = useI18n();
   return (
     <>
       <CommandInput
-        placeholder="Search templates or type custom format (must include counter like {####})..."
+        placeholder={translate(
+          "untranslatedComponents.labels.searchTemplatesOrTypeCustomFormatMustIncludeCounterLike",
+        )}
         value={inputValue}
         onValueChange={onInputChange}
       />
@@ -51,7 +55,9 @@ export function TemplateComboboxPopoverContent({
           {inputValue ? (
             <div className="p-4 text-sm">
               <p className="text-muted-foreground mb-3">
-                No matching templates found.
+                {translate(
+                  "untranslatedComponents.labels.noMatchingTemplatesFound",
+                )}
               </p>
               <Button
                 size="sm"
@@ -59,19 +65,25 @@ export function TemplateComboboxPopoverContent({
                 className="w-full justify-start"
                 onClick={() => onUseCustomFormat(inputValue)}
               >
-                Use custom format:{" "}
+                {translate("untranslatedComponents.labels.useCustomFormat")}{" "}
                 <code className="ml-2 font-mono text-xs">{inputValue}</code>
               </Button>
             </div>
           ) : (
             <span className="p-4 text-sm">
-              Type to search or enter custom format
+              {translate(
+                "untranslatedComponents.labels.typeToSearchOrEnterCustomFormat",
+              )}
             </span>
           )}
         </CommandEmpty>
 
         {filteredSystemPresets.length > 0 && (
-          <CommandGroup heading="System Templates (Pre-validated)">
+          <CommandGroup
+            heading={translate(
+              "untranslatedComponents.labels.systemTemplatesPreValidated",
+            )}
+          >
             {filteredSystemPresets.map((preset) => (
               <CommandItem
                 key={preset.value}
@@ -94,7 +106,9 @@ export function TemplateComboboxPopoverContent({
                         </span>
                         <Sparkles
                           className="size-3 text-blue-500 shrink-0"
-                          aria-label="System template - guaranteed valid"
+                          aria-label={translate(
+                            "untranslatedComponents.labels.systemTemplateGuaranteedValid",
+                          )}
                         />
                       </div>
                       {preset.description && (
@@ -120,7 +134,11 @@ export function TemplateComboboxPopoverContent({
           filteredCustomTemplates.length > 0 && <CommandSeparator />}
 
         {filteredCustomTemplates.length > 0 && (
-          <CommandGroup heading="My Custom Templates">
+          <CommandGroup
+            heading={translate(
+              "untranslatedComponents.labels.myCustomTemplates",
+            )}
+          >
             {filteredCustomTemplates.map((template) => (
               <CommandItem
                 key={template.value}

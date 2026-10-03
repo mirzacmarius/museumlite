@@ -9,6 +9,7 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Check, Trash2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface TypeOption {
   value: string;
@@ -39,21 +40,22 @@ export function TypeComboboxListContent({
   onSelect,
   onDeleteType,
 }: TypeComboboxListContentProps) {
+  const translate = useI18n();
   return (
     <CommandList id={listId} className="max-h-[300px]">
       <CommandEmpty>
         {inputValue ? (
           <div className="p-4 text-sm text-center">
             <p className="text-muted-foreground mb-2">
-              No matching types found.
+              {translate("untranslatedComponents.labels.noMatchingTypesFound")}
             </p>
             {organizationId && (
               <p className="text-xs text-muted-foreground">
-                Press{" "}
+                {translate("untranslatedComponents.labels.press")}{" "}
                 <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">
                   Enter
                 </kbd>{" "}
-                to add{" "}
+                {translate("untranslatedComponents.labels.toAdd")}{" "}
                 <span className="font-medium text-foreground">
                   "{formatTypeName(inputValue)}"
                 </span>
@@ -62,13 +64,15 @@ export function TypeComboboxListContent({
           </div>
         ) : (
           <div className="p-4 text-sm text-muted-foreground text-center">
-            Type to search types
+            {translate("untranslatedComponents.labels.typeToSearchTypes")}
           </div>
         )}
       </CommandEmpty>
 
       {filteredTypes.length > 0 && (
-        <CommandGroup heading="Organization Types">
+        <CommandGroup
+          heading={translate("untranslatedComponents.labels.organizationTypes")}
+        >
           {filteredTypes.map((type) => (
             <CommandItem
               key={type.value}

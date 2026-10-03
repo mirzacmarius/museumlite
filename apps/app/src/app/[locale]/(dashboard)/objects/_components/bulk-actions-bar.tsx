@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
 
+import { useI18n } from "@/locales/client";
+
 interface BulkActionsBarProps {
   selectedCount: number;
   onClearSelection: () => void;
@@ -30,6 +32,7 @@ export function BulkActionsBar({
   onPrintLabels,
   onDeaccession,
 }: BulkActionsBarProps) {
+  const tRoot = useI18n();
   if (selectedCount === 0) return null;
 
   return (
@@ -37,7 +40,9 @@ export function BulkActionsBar({
       <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
         <div className="flex items-center gap-2 border-r border-border pr-3">
           <span className="text-sm font-medium">
-            {selectedCount} item{selectedCount !== 1 ? "s" : ""} selected
+            {selectedCount} {tRoot("loans.table.items")}
+            {selectedCount !== 1 ? "s" : ""}{" "}
+            {tRoot("loans.bulkActions.selected")}
           </span>
           <Button
             variant="ghost"
@@ -53,28 +58,28 @@ export function BulkActionsBar({
           <PermissionGate permission="collections.update">
             <Button variant="outline" size="sm" onClick={onAddToGroup}>
               <FolderPlus className="mr-2 size-4" />
-              Add to Group
+              {tRoot("objects.bulkActions.addToGroup")}
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="locations.update">
             <Button variant="outline" size="sm" onClick={onMoveLocation}>
               <MapPin className="mr-2 size-4" />
-              Move Location
+              {tRoot("objects.bulkActions.moveLocation")}
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="collections.read">
             <Button variant="outline" size="sm" onClick={onExport}>
               <Download className="mr-2 size-4" />
-              Export
+              {tRoot("objects.bulkActions.export")}
             </Button>
           </PermissionGate>
 
           <PermissionGate permission="collections.read">
             <Button variant="outline" size="sm" onClick={onPrintLabels}>
               <Printer className="mr-2 size-4" />
-              Print Labels
+              {tRoot("untranslatedRecords.objects.detail.printLabels")}
             </Button>
           </PermissionGate>
 
@@ -86,7 +91,7 @@ export function BulkActionsBar({
               onClick={onDeaccession}
             >
               <Archive className="mr-2 size-4" />
-              Deaccession
+              {tRoot("objects.bulkActions.deaccession")}
             </Button>
           </PermissionGate>
         </div>

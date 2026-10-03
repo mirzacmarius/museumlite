@@ -17,6 +17,7 @@ import {
 } from "@v1/ui/select";
 import { ArrowRight, Save, X } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 export interface FieldMapping {
   sourceField: string;
@@ -47,6 +48,7 @@ export function ImportFieldMapper({
   onMappingsChange,
   onSave,
 }: ImportFieldMapperProps) {
+  const translate = useI18n();
   const [mappings, setMappings] = useState<FieldMapping[]>(() => {
     if (initialMappings.length > 0) {
       return initialMappings;
@@ -117,9 +119,13 @@ export function ImportFieldMapper({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Field Mapping</CardTitle>
+            <CardTitle>
+              {translate("untranslatedComponents.labels.fieldMapping")}
+            </CardTitle>
             <CardDescription>
-              Map your source fields to the target database fields
+              {translate(
+                "untranslatedComponents.labels.mapYourSourceFieldsToTheTargetDatabaseFields",
+              )}
             </CardDescription>
           </div>
           {onSave && (
@@ -129,7 +135,7 @@ export function ImportFieldMapper({
               className="bg-primary hover:bg-primary/90"
             >
               <Save className="mr-2 size-4" />
-              Save Mappings
+              {translate("untranslatedComponents.labels.saveMappings")}
             </Button>
           )}
         </div>
@@ -138,7 +144,9 @@ export function ImportFieldMapper({
         {unmappedRequired.length > 0 && (
           <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4">
             <p className="text-sm font-medium text-destructive">
-              Required fields not mapped:
+              {translate(
+                "untranslatedComponents.labels.requiredFieldsNotMapped",
+              )}
             </p>
             <ul className="mt-2 list-inside list-disc text-sm text-destructive">
               {unmappedRequired.map((field) => (
@@ -160,7 +168,9 @@ export function ImportFieldMapper({
               >
                 <div className="flex-1">
                   <p className="text-sm font-medium">{sourceField}</p>
-                  <p className="text-xs text-muted-foreground">Source field</p>
+                  <p className="text-xs text-muted-foreground">
+                    {translate("untranslatedComponents.labels.sourceField")}
+                  </p>
                 </div>
 
                 <ArrowRight className="size-4 text-muted-foreground" />
@@ -176,12 +186,18 @@ export function ImportFieldMapper({
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select target field..." />
+                      <SelectValue
+                        placeholder={translate(
+                          "untranslatedComponents.labels.selectTargetField",
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">
                         <span className="text-muted-foreground">
-                          Do not import
+                          {translate(
+                            "untranslatedComponents.labels.doNotImport",
+                          )}
                         </span>
                       </SelectItem>
                       {targetFields.map((field) => {
@@ -206,7 +222,9 @@ export function ImportFieldMapper({
                               </span>
                               {isUsed && (
                                 <span className="text-xs text-muted-foreground">
-                                  (already mapped)
+                                  {translate(
+                                    "untranslatedComponents.labels.alreadyMapped",
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -233,7 +251,9 @@ export function ImportFieldMapper({
 
         {sourceFields.length === 0 && (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            No source fields available. Upload a file to see field mappings.
+            {translate(
+              "untranslatedComponents.labels.noSourceFieldsAvailableUploadAFileToSeeFieldMappings",
+            )}
           </div>
         )}
       </CardContent>

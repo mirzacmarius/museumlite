@@ -5,12 +5,15 @@ import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { useI18n } from "@/locales/client";
+
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
 export default function CollectionsError({ error, reset }: ErrorProps) {
+  const tRoot = useI18n();
   useEffect(() => {
     console.error("Collections error:", error);
   }, [error]);
@@ -24,17 +27,18 @@ export default function CollectionsError({ error, reset }: ErrorProps) {
 
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Failed to load collections
+            {tRoot("untranslatedRecords.common.failedToLoadCollections")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            We couldn't load your collections. Please try again or return to the
-            dashboard.
+            {tRoot(
+              "untranslatedRecords.common.failedToLoadCollectionsDescription",
+            )}
           </p>
         </div>
 
         {error.digest && (
           <p className="text-xs text-muted-foreground/60 font-mono">
-            Error ID: {error.digest}
+            {tRoot("untranslatedRecords.common.errorId")} {error.digest}
           </p>
         )}
 
@@ -42,12 +46,12 @@ export default function CollectionsError({ error, reset }: ErrorProps) {
           <Button variant="outline" asChild>
             <Link href="/">
               <ArrowLeft className="mr-2 size-4" />
-              Dashboard
+              {tRoot("untranslatedRecords.common.dashboard")}
             </Link>
           </Button>
           <Button onClick={reset}>
             <RefreshCw className="mr-2 size-4" />
-            Try again
+            {tRoot("untranslatedRecords.common.tryAgain")}
           </Button>
         </div>
       </div>

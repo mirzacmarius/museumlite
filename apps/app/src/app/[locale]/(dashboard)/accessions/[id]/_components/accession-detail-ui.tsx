@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { useI18n } from "@/locales/client";
 
 type WorkflowStepInfo = {
   stepNumber: number;
@@ -10,20 +11,50 @@ type WorkflowStepInfo = {
   requiredApprovals?: number;
 };
 
-export function formatWorkflowStepDetails(step: WorkflowStepInfo) {
+export function formatAccessionMethodLabel(
+  method: string,
+  tRoot: ReturnType<typeof useI18n>,
+): string {
+  const knownMethods: Record<string, Parameters<typeof tRoot>[0]> = {
+    purchase: "accessions.form.methods.purchase",
+    gift: "accessions.form.methods.gift",
+    loan: "accessions.form.methods.loan",
+    transfer: "accessions.form.methods.transfer",
+    donation: "accessions.form.methods.donation",
+    bequest: "accessions.form.methods.bequest",
+    other: "accessions.form.methods.other",
+  };
+  const key = knownMethods[method];
+  return key ? tRoot(key) : method;
+}
+
+export function formatWorkflowStepDetails(
+  step: WorkflowStepInfo,
+  tRoot: ReturnType<typeof useI18n>,
+) {
   const details: string[] = [];
 
   if (step.roleName) {
-    details.push(`Approval by ${step.roleName}`);
+    details.push(
+      tRoot("untranslatedRecords.accessions.workflow.approvalBy", {
+        role: step.roleName,
+      }),
+    );
   }
 
   if (step.approvalMode === "multi" && step.requiredApprovals) {
-    details.push(`${step.requiredApprovals} approvals required`);
+    details.push(
+      tRoot("untranslatedRecords.accessions.workflow.approvalsRequired", {
+        count: step.requiredApprovals,
+      }),
+    );
   } else if (step.approvalMode === "unanimous") {
-    details.push("All approvers must approve");
+    details.push(tRoot("untranslatedRecords.accessions.workflow.unanimous"));
   }
 
-  return details.length > 0 ? details.join(" • ") : "Approval step";
+  return details.length > 0
+    ? details.join(" • ")
+    : tRoot("untranslatedRecords.accessions.workflow.approvalStep");
 }
 
 export function SectionCard({

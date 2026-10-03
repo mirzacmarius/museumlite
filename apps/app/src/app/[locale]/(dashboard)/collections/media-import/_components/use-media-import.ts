@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect } from "react";
+import { useI18n } from "@/locales/client";
 import type { MappingType, MediaImportState } from "./media-import-types";
 
 interface UseMediaImportOptions {
@@ -21,6 +22,7 @@ export function useMediaImport({
   mediaInputRef,
   csvInputRef,
 }: UseMediaImportOptions) {
+  const tRoot = useI18n();
   const createJob = useMutation(api.mediaImports.createMediaImportJob);
   const generateUrl = useMutation(api.mediaImports.generateBulkUploadUrl);
   const recordFile = useMutation(api.mediaImports.recordUploadedFile);
@@ -83,7 +85,9 @@ export function useMediaImport({
 
       if (state.mappingType === "csv") {
         if (!state.csvFile) {
-          alert("Please upload a mapping CSV file.");
+          alert(
+            tRoot("untranslatedRecords.collections.media.uploadMappingCsv"),
+          );
           return;
         }
         const text = await state.csvFile.text();
@@ -93,7 +97,11 @@ export function useMediaImport({
         });
 
         if (errors.length > 0) {
-          alert(`CSV Errors:\n${errors.join("\n")}`);
+          alert(
+            tRoot("untranslatedRecords.collections.media.csvErrors", {
+              errors: errors.join("\n"),
+            }),
+          );
           return;
         }
         mappingData = mappings;
@@ -150,7 +158,7 @@ export function useMediaImport({
               ...prev,
               uploadErrors: [
                 ...prev.uploadErrors,
-                `${file.name}: ${err instanceof Error ? err.message : "Unknown error"}`,
+                `${file.name}: ${err instanceof Error ? err.message : tRoot("untranslatedRecords.accessions.detail.unknown")}`,
               ],
             }));
           }
@@ -160,7 +168,7 @@ export function useMediaImport({
       setState((prev) => ({ ...prev, step: "complete" }));
     } catch (err) {
       console.error("Import failed:", err);
-      alert("Failed to start import job");
+      alert(tRoot("untranslatedRecords.collections.media.failedStartImport"));
     }
   }, [
     currentOrganizationId,
@@ -172,6 +180,7 @@ export function useMediaImport({
     generateUrl,
     recordFile,
     setState,
+    tRoot,
   ]);
 
   const reset = useCallback(() => {

@@ -1,4 +1,9 @@
 import { Email } from "@convex-dev/auth/providers/Email";
+import {
+  buildAuthCodeEmail,
+  getEmailLocaleFromAuthUrl,
+  getEmailTranslations,
+} from "../email/translations";
 import { env } from "../env";
 import { generateVerificationCode } from "../utils/verificationCode";
 
@@ -9,7 +14,15 @@ export const ResendOTPPasswordReset = Email({
   async generateVerificationToken() {
     return generateVerificationCode();
   },
-  async sendVerificationRequest({ identifier: email, provider, token }) {
+  async sendVerificationRequest({ identifier: email, provider, token, url }) {
+    const locale = getEmailLocaleFromAuthUrl(url);
+    const messages = getEmailTranslations(locale).auth;
+    const emailCopy = buildAuthCodeEmail({
+      locale,
+      subject: messages.passwordSubject,
+      body: messages.passwordBody,
+      token,
+    });
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -19,8 +32,9 @@ export const ResendOTPPasswordReset = Email({
       body: JSON.stringify({
         from: provider.from,
         to: [email],
-        subject: "Reset your Museumlite password",
-        html: `<p>Your password reset code is <strong>${token}</strong>.</p>`,
+        subject: emailCopy.subject,
+        html: emailCopy.html,
+        text: emailCopy.text,
       }),
     });
 

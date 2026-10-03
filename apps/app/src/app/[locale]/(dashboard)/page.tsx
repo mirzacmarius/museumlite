@@ -26,7 +26,7 @@ import { usePermission } from "@/components/permission-gate";
 import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { formatDate } from "@/lib/format-date";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   CollectionGroupsGridSkeleton,
   DashboardPageSkeleton,
@@ -148,6 +148,7 @@ function CollectionGroupsOverviewSection({
   canCreate: boolean;
 }) {
   const t = useScopedI18n("collections");
+  const tRoot = useI18n();
   const kpi = useScopedI18n("kpi");
   const groups = useQuery(api.collectionGroups.list, { organizationId });
 
@@ -223,7 +224,9 @@ function CollectionGroupsOverviewSection({
                 "border-dashed text-xs font-medium text-muted-foreground hover:text-foreground",
               )}
             >
-              View all {groups.length} groups
+              {tRoot("untranslatedDashboard.dashboardBilling.viewAllGroups", {
+                count: groups.length,
+              })}
             </Link>
           ) : null}
         </div>
@@ -239,18 +242,26 @@ function formatMetricValue(
   return count === undefined ? "—" : formatNumber(count, locale);
 }
 
-function getPlanDisplayName(tier: SubscriptionTier): string {
-  return `${tier.charAt(0).toUpperCase()}${tier.slice(1)} plan`;
+type BillingTranslate = ReturnType<
+  typeof useScopedI18n<"untranslatedDashboard.dashboardBilling">
+>;
+
+function getPlanDisplayName(
+  t: BillingTranslate,
+  tier: SubscriptionTier,
+): string {
+  return t(`plans.${tier}`);
 }
 
 function getBillingStatusLabel(
+  t: BillingTranslate,
   organizationSubscription: OrganizationSubscription | undefined,
   locale: string,
 ): string {
-  if (organizationSubscription === undefined) return "Loading billing status";
-  if (!organizationSubscription) return "No active paid subscription";
+  if (organizationSubscription === undefined) return t("loadingStatus");
+  if (!organizationSubscription) return t("noActiveSubscription");
   if (!organizationSubscription.isEntitled)
-    return "Subscription needs attention";
+    return t("subscriptionNeedsAttention");
 
   if (organizationSubscription.currentPeriodEnd) {
     const date = formatDate(
@@ -258,29 +269,35 @@ function getBillingStatusLabel(
       locale,
     );
     return organizationSubscription.cancelAtPeriodEnd
-      ? `Expires on ${date}`
-      : `Renews on ${date}`;
+      ? t("expiresOn", { date })
+      : t("renewsOn", { date });
   }
 
-  return "Active subscription";
+  return t("activeSubscription");
 }
 
 function getBillingIntervalLabel(
+  t: BillingTranslate,
   recurringInterval: BillingInterval | undefined,
 ): string {
-  if (!recurringInterval) return "Included";
-  return `${recurringInterval}ly`;
+  if (!recurringInterval) return t("included");
+  return t(`billingIntervals.${recurringInterval}`);
 }
 
-function getBillingStatusBadgeLabel(status: BillingStatus | undefined): string {
-  if (!status) return "Free";
-  if (status === "past_due") return "Past due";
-  return status.replace("_", " ");
+function getBillingStatusBadgeLabel(
+  t: BillingTranslate,
+  status: BillingStatus | undefined,
+): string {
+  if (!status) return t("statuses.free");
+  return t(`statuses.${status}`);
 }
 
-function getBillingActionLabel(subscriptionTier: SubscriptionTier): string {
-  if (subscriptionTier === "free") return "Review plans";
-  return "Manage billing";
+function getBillingActionLabel(
+  t: BillingTranslate,
+  subscriptionTier: SubscriptionTier,
+): string {
+  if (subscriptionTier === "free") return t("reviewPlans");
+  return t("manageBilling");
 }
 
 function BillingOverviewSection({
@@ -290,21 +307,28 @@ function BillingOverviewSection({
   organizationSubscription,
   subscriptionTier,
 }: BillingOverviewSectionProps) {
+  const t = useScopedI18n("untranslatedDashboard.dashboardBilling");
   const currentPlan =
     organizationSubscription?.productName ??
-    getPlanDisplayName(subscriptionTier);
-  const billingStatus = getBillingStatusLabel(organizationSubscription, locale);
+    getPlanDisplayName(t, subscriptionTier);
+  const billingStatus = getBillingStatusLabel(
+    t,
+    organizationSubscription,
+    locale,
+  );
   const billingInterval = getBillingIntervalLabel(
+    t,
     organizationSubscription?.recurringInterval,
   );
   const statusLabel = getBillingStatusBadgeLabel(
+    t,
     organizationSubscription?.status,
   );
-  const actionLabel = getBillingActionLabel(subscriptionTier);
+  const actionLabel = getBillingActionLabel(t, subscriptionTier);
 
   return (
     <section
-      aria-label="Billing overview"
+      aria-label={t("overview")}
       className="grid gap-6 rounded-lg border border-border bg-card p-5 @min-[56rem]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] @min-[56rem]:items-center"
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -322,7 +346,8 @@ function BillingOverviewSection({
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{billingStatus}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Billing cycle: <span className="capitalize">{billingInterval}</span>
+            {t("billingCycle")}:{" "}
+            <span className="capitalize">{billingInterval}</span>
           </p>
           {canManageBilling ? (
             <Button asChild size="sm" variant="outline" className="mt-3">
@@ -330,7 +355,7 @@ function BillingOverviewSection({
             </Button>
           ) : (
             <p className="mt-3 text-xs text-muted-foreground">
-              Billing changes are managed by organization administrators.
+              {t("adminManagedBilling")}
             </p>
           )}
         </div>
@@ -354,6 +379,7 @@ export default function DashboardPage() {
   } = useOrganization();
   const locale = useCurrentLocale();
   const t = useScopedI18n("dashboard");
+  const tRoot = useI18n();
   const kpi = useScopedI18n("kpi");
 
   const hasAnalyticsPermission = usePermission(
@@ -458,28 +484,32 @@ export default function DashboardPage() {
   const operationalMetrics: MetricLinkCardProps[] = [
     {
       href: "/accessions/transfers",
-      title: "Pending transfer approvals",
+      title: tRoot(
+        "untranslatedDashboard.dashboardBilling.pendingTransferApprovals",
+      ),
       value: formatMetricValue(analyticsData?.transfers.pending, locale),
       icon: ArrowLeftRight,
       accentColor: "blue",
     },
     {
       href: "/accessions",
-      title: "Pending accessions",
+      title: tRoot("untranslatedDashboard.dashboardBilling.pendingAccessions"),
       value: formatMetricValue(analyticsData?.accessions.pending, locale),
       icon: FileClock,
       accentColor: "amber",
     },
     {
       href: "/deaccessions",
-      title: "Pending deaccessions",
+      title: tRoot(
+        "untranslatedDashboard.dashboardBilling.pendingDeaccessions",
+      ),
       value: formatMetricValue(analyticsData?.deaccessions.pending, locale),
       icon: Package,
       accentColor: "indigo",
     },
     {
       href: "/loans",
-      title: "Pending loans",
+      title: tRoot("untranslatedDashboard.dashboardBilling.pendingLoans"),
       value: formatMetricValue(analyticsData?.loans.pending, locale),
       icon: ArrowLeftRight,
       accentColor: "blue",
@@ -512,14 +542,16 @@ export default function DashboardPage() {
             <Button asChild size="sm">
               <Link href="/objects/new">
                 <PackagePlus className="size-4" aria-hidden="true" />
-                Add Object
+                {t("addNewObject")}
               </Link>
             </Button>
             {canCreateCollectionGroup === true ? (
               <Button asChild size="sm" variant="outline">
                 <Link href="/collections/new">
                   <Plus className="size-4" aria-hidden="true" />
-                  New Collection
+                  {tRoot(
+                    "untranslatedDashboard.dashboardBilling.newCollectionButton",
+                  )}
                 </Link>
               </Button>
             ) : null}
@@ -527,7 +559,9 @@ export default function DashboardPage() {
         </header>
 
         <section
-          aria-label="Live metrics"
+          aria-label={tRoot(
+            "untranslatedDashboard.dashboardBilling.liveMetrics",
+          )}
           className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-card p-5 @min-[20rem]:grid-cols-2 @min-[44rem]:grid-cols-4"
         >
           {liveMetrics.map((metric) => (
@@ -552,7 +586,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">
-                Analytics
+                {tRoot("analytics.title")}
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("analyticsDescription")}

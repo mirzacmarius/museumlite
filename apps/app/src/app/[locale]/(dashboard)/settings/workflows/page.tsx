@@ -26,7 +26,7 @@ import { ArrowDown, ArrowUp, Edit, Plus, Trash2 } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 type WorkflowType =
   | "accession"
@@ -697,6 +697,7 @@ function WorkflowStepsSummary({
   stepCount,
   t,
 }: WorkflowStepsSummaryProps) {
+  const tRoot = useI18n();
   return (
     <div>
       <h4 className="mb-3 text-sm font-medium text-foreground/80">
@@ -725,7 +726,9 @@ function WorkflowStepsSummary({
                     {step.name}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Role: {role?.name || t("unknownRole")}
+                    {tRoot("untranslatedDashboard.settings.roleValue", {
+                      role: role?.name || t("unknownRole"),
+                    })}
                   </div>
                 </div>
               </div>

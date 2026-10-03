@@ -14,7 +14,7 @@ import {
 import { Button } from "@v1/ui/button";
 import { Trash2 } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface EditCollectionDeleteZoneProps {
   groupName: string;
@@ -29,6 +29,7 @@ export function EditCollectionDeleteZone({
 }: EditCollectionDeleteZoneProps) {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
+  const tRoot = useI18n();
 
   return (
     <div className="mt-12 border-t border-border pt-8">
@@ -55,8 +56,9 @@ export function EditCollectionDeleteZone({
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t("delete.dialogTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete "{groupName}"? Objects in
-                    this collection will be unlinked but not deleted.
+                    {tRoot("collections.delete.dialogDescription", {
+                      name: groupName,
+                    })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

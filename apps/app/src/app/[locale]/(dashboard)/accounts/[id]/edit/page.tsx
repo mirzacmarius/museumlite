@@ -24,6 +24,7 @@ import {
 export default function EditAccountPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
+  const untranslated = useScopedI18n("untranslatedDashboard.accounts");
   const params = useParams<{ id: Id<"accounts"> }>();
   const accountId = params.id;
   const { push, back } = useRouter();
@@ -147,9 +148,7 @@ export default function EditAccountPage() {
       push(`/accounts/${accountId}`);
     } catch (err) {
       console.error("Error updating account:", err);
-      setError(
-        err instanceof Error ? err.message : t("form.errors.updateFailed"),
-      );
+      setError(t("form.errors.updateFailed"));
       setIsSubmitting(false);
     }
   };
@@ -183,6 +182,7 @@ export default function EditAccountPage() {
             <AccountFormFields
               formData={formData}
               t={t}
+              untranslated={untranslated}
               onChange={updateFormData}
             />
             <div className="flex justify-end gap-4 pt-4">

@@ -22,7 +22,7 @@ import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skel
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ClaimForm } from "./claim-form";
 import { InsuranceClaimsTab } from "./insurance-claims-tab";
 import { InsurancePoliciesTab } from "./insurance-policies-tab";
@@ -86,6 +86,7 @@ function insurancePageReducer(
 }
 
 export function InsurancePageClient() {
+  const t = useScopedI18n("untranslatedDashboard.insurance");
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
@@ -150,15 +151,15 @@ export function InsurancePageClient() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Selected</h3>
+            <h3 className="text-lg font-semibold">{t("noOrganizationSelected")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select or create an organization to view insurance records.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 size-4" />
-              Create Organization
+              {t("createOrganization")}
             </Link>
           </Button>
         </div>
@@ -168,7 +169,7 @@ export function InsurancePageClient() {
 
   return (
     <FeatureGuard
-      featureName="Insurance"
+      featureName={t("title")}
       isLocked={!hasFeature("conservation")}
       tierNeeded="pro"
     >
@@ -176,9 +177,9 @@ export function InsurancePageClient() {
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
-              <h2 className="page-title">Insurance</h2>
+              <h2 className="page-title">{t("title")}</h2>
               <p className="page-description">
-                Manage insurance policies, coverages, and claims
+                {t("description")}
               </p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
@@ -192,14 +193,14 @@ export function InsurancePageClient() {
                   <DialogTrigger asChild>
                     <Button variant="outline">
                       <Plus className="mr-2 size-4" />
-                      Add Policy
+                      {t("addPolicy")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[540px]">
                     <DialogHeader>
-                      <DialogTitle>New Insurance Policy</DialogTitle>
+                      <DialogTitle>{t("newPolicyTitle")}</DialogTitle>
                       <DialogDescription className="sr-only">
-                        Add an insurance policy for this organization.
+                        {t("newPolicyDescription")}
                       </DialogDescription>
                     </DialogHeader>
                     <PolicyForm
@@ -209,7 +210,7 @@ export function InsurancePageClient() {
                       onSubmit={async (payload) => {
                         try {
                           await createPolicy(payload);
-                          toast.success("Policy created");
+                          toast.success(t("policyCreated"));
                           dispatch({
                             type: "setPolicyDialogOpen",
                             value: false,
@@ -218,7 +219,7 @@ export function InsurancePageClient() {
                           toast.error(
                             err instanceof Error
                               ? err.message
-                              : "Failed to create policy",
+                              : t("policyCreateFailed"),
                           );
                         }
                       }}
@@ -236,14 +237,14 @@ export function InsurancePageClient() {
                   <DialogTrigger asChild>
                     <Button>
                       <Shield className="mr-2 size-4" />
-                      New Claim
+                      {t("newClaim")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[540px]">
                     <DialogHeader>
-                      <DialogTitle>New Insurance Claim</DialogTitle>
+                      <DialogTitle>{t("newClaimTitle")}</DialogTitle>
                       <DialogDescription className="sr-only">
-                        Record a new insurance claim for this organization.
+                        {t("newClaimDescription")}
                       </DialogDescription>
                     </DialogHeader>
                     <ClaimForm
@@ -254,7 +255,7 @@ export function InsurancePageClient() {
                       onSubmit={async (payload) => {
                         try {
                           await createClaim(payload);
-                          toast.success("Claim created");
+                          toast.success(t("claimCreated"));
                           dispatch({
                             type: "setClaimDialogOpen",
                             value: false,
@@ -263,7 +264,7 @@ export function InsurancePageClient() {
                           toast.error(
                             err instanceof Error
                               ? err.message
-                              : "Failed to create claim",
+                              : t("claimCreateFailed"),
                           );
                         }
                       }}
@@ -285,8 +286,8 @@ export function InsurancePageClient() {
               }
             >
               <TabsList className="mb-6 rounded-lg bg-muted p-1">
-                <TabsTrigger value="policies">Policies</TabsTrigger>
-                <TabsTrigger value="claims">Claims</TabsTrigger>
+                <TabsTrigger value="policies">{t("policies")}</TabsTrigger>
+                <TabsTrigger value="claims">{t("claims")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="policies">

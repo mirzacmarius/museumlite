@@ -14,6 +14,12 @@ import type {
   UniqueCodeFlow,
 } from "@/auth/types";
 import { AuthUniqueCodeForm } from "@/auth/unique-code";
+import { useCurrentLocale, useI18n } from "@/locales/client";
+
+type Translate = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
 
 interface AuthFormRootProps {
   currentAuthMode: AuthMode;
@@ -33,38 +39,56 @@ function getPasswordStepHelpText({
   email,
   mode,
   passwordAccountExists,
+  translate,
 }: {
   email: string;
   mode: AuthMode;
   passwordAccountExists: boolean | null;
+  translate: Translate;
 }) {
   if (mode === "signUp") {
     if (passwordAccountExists === false) {
-      return `No account exists for ${email} yet. Create a password to set up your account, then continue.`;
+      return translate(
+        "untranslatedComponents.auth.passwordAccountMissingSetup",
+        { email },
+      );
     }
 
-    return `Create a password for ${email} to finish setting up your account.`;
+    return translate("untranslatedComponents.auth.createPasswordForAccount", {
+      email,
+    });
   }
 
   if (passwordAccountExists) {
-    return `We found an existing account for ${email}. Enter your password to continue.`;
+    return translate("untranslatedComponents.auth.existingAccountPassword", {
+      email,
+    });
   }
 
-  return `Enter your password for ${email} to continue.`;
+  return translate("untranslatedComponents.auth.enterPasswordForEmail", {
+    email,
+  });
 }
 
 function AuthPasswordStepNotice({
   email,
   mode,
   passwordAccountExists,
+  translate,
 }: {
   email: string;
   mode: AuthMode;
   passwordAccountExists: boolean | null;
+  translate: Translate;
 }) {
   return (
     <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-      {getPasswordStepHelpText({ email, mode, passwordAccountExists })}
+      {getPasswordStepHelpText({
+        email,
+        mode,
+        passwordAccountExists,
+        translate,
+      })}
     </div>
   );
 }
@@ -82,6 +106,8 @@ export function AuthFormRoot({
   codeFlow,
   onSignedIn,
 }: AuthFormRootProps) {
+  const translate = useI18n();
+  const locale = useCurrentLocale();
   const { signIn } = useAuthActions();
   const convex = useConvex();
   const [passwordAccountExists, setPasswordAccountExists] = useState<
@@ -122,9 +148,11 @@ export function AuthFormRoot({
     } catch {
       setPasswordAccountExists(null);
       setErrorInfo({
-        message: "We couldn't verify this email right now. Please try again.",
+        message: translate(
+          "untranslatedComponents.auth.emailVerificationFailed",
+        ),
       });
-      toast.error("Could not verify account status. Please try again.");
+      toast.error(translate("untranslatedComponents.auth.accountStatusFailed"));
     }
   };
 
@@ -138,13 +166,18 @@ export function AuthFormRoot({
 
   const requestOtpCode = async () => {
     try {
-      const result = await signIn("resend-otp", { email });
+      const result = await signIn("resend-otp", {
+        email,
+        redirectTo: `/${locale}`,
+      });
       if (result.signingIn) {
         onSignedIn();
       }
       return true;
     } catch {
-      toast.error("Could not send a unique code.");
+      toast.error(
+        translate("untranslatedComponents.auth.uniqueCodeSendFailed"),
+      );
       return false;
     }
   };
@@ -154,13 +187,16 @@ export function AuthFormRoot({
       const result = await signIn("password-with-reset", {
         email,
         flow: "email-verification",
+        redirectTo: `/${locale}`,
       });
       if (result.signingIn) {
         onSignedIn();
       }
       return true;
     } catch {
-      toast.error("Could not send a verification code.");
+      toast.error(
+        translate("untranslatedComponents.auth.verificationCodeSendFailed"),
+      );
       return false;
     }
   };
@@ -171,10 +207,13 @@ export function AuthFormRoot({
       setStep("password");
       setMode("signUp");
       setErrorInfo({
-        message:
-          "No password login exists for this email yet. Create one first, then you can reset it.",
+        message: translate(
+          "untranslatedComponents.auth.passwordLoginRequiredForReset",
+        ),
       });
-      toast.error("No password login exists for this email yet.");
+      toast.error(
+        translate("untranslatedComponents.auth.passwordLoginRequired"),
+      );
       return false;
     }
 
@@ -182,6 +221,7 @@ export function AuthFormRoot({
       const result = await signIn("password-with-reset", {
         email,
         flow: "reset",
+        redirectTo: `/${locale}`,
       });
       if (result.signingIn) {
         onSignedIn();
@@ -195,13 +235,18 @@ export function AuthFormRoot({
         setMode("signUp");
         setPasswordAccountExists(false);
         setErrorInfo({
-          message:
-            "No password login exists for this email yet. Create one first, then you can reset it.",
+          message: translate(
+            "untranslatedComponents.auth.passwordLoginRequiredForReset",
+          ),
         });
-        toast.error("No password login exists for this email yet.");
+        toast.error(
+          translate("untranslatedComponents.auth.passwordLoginRequired"),
+        );
         return false;
       }
-      toast.error("Could not send a password reset code.");
+      toast.error(
+        translate("untranslatedComponents.auth.passwordResetCodeSendFailed"),
+      );
       return false;
     }
   };
@@ -260,6 +305,7 @@ export function AuthFormRoot({
           email={email}
           mode={mode}
           passwordAccountExists={passwordAccountExists}
+          translate={translate}
         />
         <AuthPasswordForm
           canSignInWithPassword={passwordAccountExists !== false}

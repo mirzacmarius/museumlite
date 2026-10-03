@@ -15,7 +15,10 @@ interface MediaFileLike {
 
 export function isPdfFile(file: MediaFileLike): boolean {
   if (file.mimeType === "application/pdf") return true;
-  if (file.fileType === "document" && file.fileName.toLowerCase().endsWith(".pdf")) {
+  if (
+    file.fileType === "document" &&
+    file.fileName.toLowerCase().endsWith(".pdf")
+  ) {
     return true;
   }
   return file.fileName.toLowerCase().endsWith(".pdf");
@@ -55,7 +58,9 @@ export function getSketchfabModelId(url: string): string | null {
     const modelsMatch = parsed.pathname.match(/\/models\/([a-f0-9]{32})/i);
     if (modelsMatch?.[1]) return modelsMatch[1];
 
-    const shortMatch = parsed.pathname.match(/\/3d-models\/[^/]+-([a-f0-9]{32})/i);
+    const shortMatch = parsed.pathname.match(
+      /\/3d-models\/[^/]+-([a-f0-9]{32})/i,
+    );
     if (shortMatch?.[1]) return shortMatch[1];
 
     return null;

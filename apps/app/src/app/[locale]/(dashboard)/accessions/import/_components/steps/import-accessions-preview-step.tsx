@@ -11,6 +11,8 @@ import {
 } from "@v1/ui/table";
 import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
+import { formatAccessionMethodLabel } from "../../../[id]/_components/accession-detail-ui";
 import type { ImportState } from "../import-accessions-types";
 
 interface ImportAccessionsPreviewStepProps {
@@ -26,6 +28,7 @@ export function ImportAccessionsPreviewStep({
   onBackToValidation,
   onStartImport,
 }: ImportAccessionsPreviewStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -41,7 +44,7 @@ export function ImportAccessionsPreviewStep({
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBackToValidation}>
             <ArrowLeft className="mr-2 size-4" />
-            Back to Validation
+            {tRoot("untranslatedRecords.collections.import.backToValidation")}
           </Button>
           <PermissionGate permission="collections.create">
             <Button
@@ -61,8 +64,8 @@ export function ImportAccessionsPreviewStep({
           <div className="flex items-center gap-2 text-amber-600">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.validationErrors.length} rows were skipped due to
-              validation errors
+              {state.validationErrors.length}{" "}
+              {tRoot("untranslatedRecords.collections.import.rowsSkipped")}
             </span>
           </div>
         </div>
@@ -81,7 +84,12 @@ export function ImportAccessionsPreviewStep({
               <li key={error}>• {error}</li>
             ))}
             {state.errors.length > 5 ? (
-              <li>• ... and {state.errors.length - 5} more</li>
+              <li>
+                •{" "}
+                {tRoot("untranslatedRecords.collections.import.andMoreErrors", {
+                  count: state.errors.length - 5,
+                })}
+              </li>
             ) : null}
           </ul>
         </div>
@@ -115,7 +123,9 @@ export function ImportAccessionsPreviewStep({
                 </TableCell>
                 <TableCell>{row.dateReceived}</TableCell>
                 <TableCell>{row.source}</TableCell>
-                <TableCell>{row.method}</TableCell>
+                <TableCell>
+                  {formatAccessionMethodLabel(row.method, tRoot)}
+                </TableCell>
                 <TableCell>{row.cost || "-"}</TableCell>
                 <TableCell className="max-w-[200px] truncate">
                   {row.notes || "-"}

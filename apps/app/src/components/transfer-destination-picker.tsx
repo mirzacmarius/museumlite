@@ -18,6 +18,7 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import { Check, ChevronsUpDown, CircleCheck, CircleX } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface TransferDestination {
   _id: Id<"organizations">;
@@ -35,6 +36,27 @@ interface TransferDestinationPickerProps {
 
 const ORG_ACCOUNT_PATTERN = /^ORG-\d{5}$/i;
 
+function translateAccountLookupMessage(
+  message: string,
+  translate: ReturnType<typeof useI18n>,
+) {
+  const messages: Record<string, string> = {
+    "Object not found.": "objectNotFound",
+    "Enter a valid organization account number (ORG-00000).":
+      "invalidOrganizationAccountNumber",
+    "No organization found with this account number.":
+      "organizationAccountNotFound",
+    "You cannot transfer an object to its current organization.":
+      "sameOrganizationTransfer",
+    "This organization is not accepting incoming transfer requests.":
+      "organizationNotAcceptingTransfers",
+  };
+  const key = messages[message];
+  return key
+    ? translate(`untranslatedComponents.transferLookup.${key}`)
+    : message;
+}
+
 function formatDestinationLabel(destination: TransferDestination) {
   if (destination.accountNumber) {
     return `${destination.name} (${destination.accountNumber})`;
@@ -48,6 +70,7 @@ export function TransferDestinationPicker({
   onValueChange,
   disabled = false,
 }: TransferDestinationPickerProps) {
+  const translate = useI18n();
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [accountNumberInput, setAccountNumberInput] = React.useState("");
@@ -121,11 +144,18 @@ export function TransferDestinationPicker({
     if (!ORG_ACCOUNT_PATTERN.test(normalizedAccountNumber)) {
       return {
         tone: "invalid" as const,
-        message: "Enter a valid organization account number (ORG-00000).",
+        message: translate(
+          "untranslatedComponents.transferLookup.invalidOrganizationAccountNumber",
+        ),
       };
     }
     if (accountLookup === undefined) {
-      return { tone: "pending" as const, message: "Checking account number…" };
+      return {
+        tone: "pending" as const,
+        message: translate(
+          "untranslatedComponents.transferLookup.checkingAccountNumber",
+        ),
+      };
     }
     if (accountLookup.status === "valid") {
       return {
@@ -133,13 +163,20 @@ export function TransferDestinationPicker({
         message: `${accountLookup.organization.name} (${accountLookup.organization.accountNumber ?? normalizedAccountNumber})`,
       };
     }
-    return { tone: "invalid" as const, message: accountLookup.message };
+    return {
+      tone: "invalid" as const,
+      message: translateAccountLookupMessage(accountLookup.message, translate),
+    };
   })();
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="destination-search">Search by organization or account number</Label>
+        <Label htmlFor="destination-search">
+          {translate(
+            "untranslatedComponents.labels.searchByOrganizationOrAccountNumber",
+          )}
+        </Label>
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -155,26 +192,40 @@ export function TransferDestinationPicker({
                 <span className="truncate">{selectedLabel}</span>
               ) : (
                 <span className="text-muted-foreground">
-                  Search destination organization
+                  {translate(
+                    "untranslatedComponents.labels.searchDestinationOrganization",
+                  )}
                 </span>
               )}
               <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] p-0"
+            align="start"
+          >
             <Command shouldFilter={false}>
               <CommandInput
-                placeholder="Type organization name or ORG-00000…"
+                placeholder={translate(
+                  "untranslatedComponents.labels.typeOrganizationNameOrORG00000",
+                )}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
               />
               <CommandList id={listId}>
                 <CommandEmpty>
                   {trimmedSearch.length < 2
-                    ? "Type at least 2 characters to search public destinations."
-                    : membershipTargets === undefined || searchResults === undefined
-                      ? "Searching…"
-                      : "No matching organizations found."}
+                    ? translate(
+                        "untranslatedComponents.transferLookup.typeAtLeastTwoCharacters",
+                      )
+                    : membershipTargets === undefined ||
+                        searchResults === undefined
+                      ? translate(
+                          "untranslatedComponents.transferLookup.searching",
+                        )
+                      : translate(
+                          "untranslatedComponents.transferLookup.noMatchingOrganizations",
+                        )}
                 </CommandEmpty>
                 <CommandGroup>
                   {displayDestinations.map((destination) => (
@@ -186,7 +237,9 @@ export function TransferDestinationPicker({
                       <Check
                         className={cn(
                           "mr-2 size-4",
-                          value === destination._id ? "opacity-100" : "opacity-0",
+                          value === destination._id
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                       <div className="flex flex-col">
@@ -195,7 +248,7 @@ export function TransferDestinationPicker({
                           <span className="text-xs text-muted-foreground">
                             {destination.accountNumber}
                             {destination.source === "public"
-                              ? " · accepts transfers"
+                              ? ` · ${translate("untranslatedComponents.transferLookup.acceptsTransfers")}`
                               : null}
                           </span>
                         ) : null}
@@ -211,15 +264,18 @@ export function TransferDestinationPicker({
         membershipTargets.length === 0 &&
         trimmedSearch.length < 2 ? (
           <p className="text-sm text-muted-foreground">
-            No organizations in your account match internal transfer rules. Search
-            by name or enter an organization account number below.
+            {translate(
+              "untranslatedComponents.labels.noOrganizationsInYourAccountMatchInternalTransferRulesSearchByNameOrEnterAnOrganizationAccountNumberBelow",
+            )}
           </p>
         ) : null}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="destination-account-number">
-          Or enter destination account number
+          {translate(
+            "untranslatedComponents.labels.orEnterDestinationAccountNumber",
+          )}
         </Label>
         <Input
           id="destination-account-number"
@@ -246,7 +302,8 @@ export function TransferDestinationPicker({
           <div
             className={cn(
               "flex items-start gap-2 text-sm",
-              accountFeedback.tone === "valid" && "text-green-600 dark:text-green-400",
+              accountFeedback.tone === "valid" &&
+                "text-green-600 dark:text-green-400",
               accountFeedback.tone === "invalid" && "text-destructive",
               accountFeedback.tone === "pending" && "text-muted-foreground",
             )}
@@ -261,8 +318,9 @@ export function TransferDestinationPicker({
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Organizations that allow incoming transfers appear in search results when
-            enabled in their Preferences.
+            {translate(
+              "untranslatedComponents.labels.organizationsThatAllowIncomingTransfersAppearInSearchResultsWhenEnabledInTheirPreferences",
+            )}
           </p>
         )}
       </div>

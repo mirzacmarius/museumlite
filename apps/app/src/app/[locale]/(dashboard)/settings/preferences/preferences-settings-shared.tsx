@@ -27,18 +27,25 @@ import { Textarea } from "@v1/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { useI18n } from "@/locales/client";
+
 type Translate = (key: string) => string;
 
 export type CounterScope = "global" | "year" | "month" | "day";
 
-export const PAGE_HEADER = (
-  <div className="flex flex-col gap-2">
-    <h2 className="text-xl font-medium text-foreground">Preferences</h2>
-    <p className="text-sm text-muted-foreground">
-      Configure catalog vocabulary, numbering, workflows, and location tracking.
-    </p>
-  </div>
-);
+export function PreferencesPageHeader() {
+  const tRoot = useI18n();
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-xl font-medium text-foreground">
+        {tRoot("untranslatedDashboard.settings.preferences")}
+      </h2>
+      <p className="text-sm text-muted-foreground">
+        {tRoot("untranslatedDashboard.settings.preferencesDescription")}
+      </p>
+    </div>
+  );
+}
 
 export function SettingsSection({
   children,
@@ -93,6 +100,7 @@ export function LocationTypesEditor({
   locationTypes: string[];
   onChange: (locationTypes: string[]) => void;
 }) {
+  const tRoot = useI18n();
   const [newLocationType, setNewLocationType] = useState("");
 
   const addLocationType = () => {
@@ -110,7 +118,7 @@ export function LocationTypesEditor({
 
   return (
     <div className="space-y-3">
-      <Label>Location Types</Label>
+      <Label>{tRoot("untranslatedDashboard.settings.locationTypes")}</Label>
       <div className="flex gap-2">
         <Input
           value={newLocationType}
@@ -121,11 +129,13 @@ export function LocationTypesEditor({
               addLocationType();
             }
           }}
-          placeholder="Gallery, Vault, Shelf"
+          placeholder={tRoot(
+            "untranslatedDashboard.settings.locationTypesPlaceholder",
+          )}
         />
         <Button type="button" variant="outline" onClick={addLocationType}>
           <Plus className="mr-2 size-4" />
-          Add
+          {tRoot("untranslatedRecords.objects.actions.add")}
         </Button>
       </div>
       {locationTypes.length > 0 ? (
@@ -142,7 +152,9 @@ export function LocationTypesEditor({
                   onChange(locationTypes.filter((item) => item !== type))
                 }
                 className="text-muted-foreground hover:text-destructive"
-                aria-label={`Delete ${type}`}
+                aria-label={tRoot("untranslatedDashboard.settings.deleteType", {
+                  type,
+                })}
               >
                 <Trash2 className="size-3.5" />
               </button>
@@ -151,7 +163,7 @@ export function LocationTypesEditor({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          No custom location types.
+          {tRoot("untranslatedDashboard.settings.noCustomLocationTypes")}
         </p>
       )}
     </div>
@@ -165,7 +177,7 @@ export function PreferencesPageShell({
 }) {
   return (
     <div className="flex w-full flex-col gap-6">
-      {PAGE_HEADER}
+      <PreferencesPageHeader />
       {children}
     </div>
   );

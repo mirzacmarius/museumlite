@@ -406,10 +406,7 @@ export default function LibraryCatalogPage() {
 
   const isLibraryEnabled = hasModule("library");
 
-  const {
-    results: catalogItems,
-    status: catalogStatus,
-  } = usePaginatedQuery(
+  const { results: catalogItems, status: catalogStatus } = usePaginatedQuery(
     api.library.items.list,
     currentOrganizationId && isLibraryEnabled
       ? {

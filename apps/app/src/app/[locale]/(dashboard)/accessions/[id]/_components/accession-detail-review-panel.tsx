@@ -3,11 +3,11 @@
 import { Button } from "@v1/ui/button";
 import { CheckCircle } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 import type { WorkflowStepInfo } from "./accession-detail-types";
 import { formatWorkflowStepDetails, SectionCard } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
 import { ApprovalWorkflow } from "./approval-workflow";
-
 export function AccessionDetailReviewPanel({
   accession,
   accessionId,
@@ -20,6 +20,7 @@ export function AccessionDetailReviewPanel({
   reviewRailDescription,
   handleVerifySource,
 }: AccessionDetailViewProps) {
+  const tRoot = useI18n();
   if (accession.status !== "pending" || isDraft) {
     return null;
   }
@@ -44,14 +45,20 @@ export function AccessionDetailReviewPanel({
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-foreground">
                     {isSourceVerified
-                      ? "Source verified"
-                      : "Source verification required"}
+                      ? tRoot("untranslatedRecords.accessions.source.verified")
+                      : tRoot(
+                          "untranslatedRecords.accessions.source.verificationRequired",
+                        )}
                   </p>
                   <p className="text-sm leading-6 text-muted-foreground">
                     {isSourceVerified
                       ? accession.sourceVerificationNotes ||
-                        "This blocker has already been cleared."
-                      : "Verify the donor or source before approving this accession."}
+                        tRoot(
+                          "untranslatedRecords.accessions.source.blockerCleared",
+                        )
+                      : tRoot(
+                          "untranslatedRecords.accessions.source.verifyBeforeApproval",
+                        )}
                   </p>
                 </div>
                 <PermissionGate permission="collections.update">
@@ -65,10 +72,14 @@ export function AccessionDetailReviewPanel({
                   >
                     <CheckCircle className="mr-2 size-4" />
                     {isSourceVerified
-                      ? "Verified"
+                      ? tRoot(
+                          "untranslatedRecords.accessions.source.verifiedShort",
+                        )
                       : isVerifyingSource
-                        ? "Verifying..."
-                        : "Verify"}
+                        ? tRoot(
+                            "untranslatedRecords.accessions.source.verifying",
+                          )
+                        : tRoot("untranslatedRecords.accessions.source.verify")}
                   </Button>
                 </PermissionGate>
               </div>
@@ -78,7 +89,7 @@ export function AccessionDetailReviewPanel({
           {configuredWorkflowSteps.length > 0 ? (
             <div className="rounded-xl border border-border/60 bg-background/40 p-4">
               <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                Workflow
+                {tRoot("untranslatedRecords.accessions.detail.workflow")}
               </p>
               <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
                 {configuredWorkflowSteps.map((step: WorkflowStepInfo) => {
@@ -97,7 +108,7 @@ export function AccessionDetailReviewPanel({
                           {step.name}
                         </p>
                         <p className="text-xs leading-5 text-muted-foreground">
-                          {formatWorkflowStepDetails(step)}
+                          {formatWorkflowStepDetails(step, tRoot)}
                         </p>
                       </div>
                       <span
@@ -110,10 +121,17 @@ export function AccessionDetailReviewPanel({
                         }`}
                       >
                         {isCurrent
-                          ? "Current"
+                          ? tRoot(
+                              "untranslatedRecords.accessions.workflow.current",
+                            )
                           : isCompleted
-                            ? "Done"
-                            : `Step ${step.stepNumber}`}
+                            ? tRoot(
+                                "untranslatedRecords.accessions.workflow.done",
+                              )
+                            : tRoot(
+                                "untranslatedRecords.accessions.workflow.step",
+                                { step: step.stepNumber },
+                              )}
                       </span>
                     </div>
                   );
@@ -125,7 +143,7 @@ export function AccessionDetailReviewPanel({
 
         <div className="rounded-xl border border-border/60 bg-background/40 p-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Decision
+            {tRoot("untranslatedRecords.accessions.detail.decision")}
           </p>
           <div className="mt-3">
             <ApprovalWorkflow

@@ -14,11 +14,23 @@ import {
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { ComponentProps, ReactNode } from "react";
+import { useScopedI18n } from "@/locales/client";
 import { LocationHeader } from "../location-header";
 import { LocationTypeIcon } from "../location-type-icon";
 import { LocationUnitCard } from "../location-unit-card";
 import { LocationDiagram } from "./location-diagram";
 import { LocationGrid } from "./location-grid";
+
+const knownLocationTypes = new Set([
+  "building",
+  "room",
+  "gallery",
+  "storage",
+  "cabinet",
+  "shelf",
+  "vault",
+  "other",
+]);
 
 type LocationDetail = NonNullable<FunctionReturnType<typeof api.locations.get>>;
 type ObjectsAtLocation = FunctionReturnType<
@@ -51,6 +63,12 @@ function LocationBranch({
   childrenById: Map<Id<"locations">, ThreadLocation[]>;
   viewStyle: "thread" | "outline";
 }): ReactNode {
+  const t = useScopedI18n("untranslatedDashboard.locations");
+  const tLocations = useScopedI18n("locations");
+  const formatLocationType = (type: string) =>
+    knownLocationTypes.has(type)
+      ? tLocations(`form.locationTypes.${type}`)
+      : type;
   if (ancestors.has(location._id)) return null;
   const path = new Set(ancestors).add(location._id);
   const assigned = objects.get(location._id) ?? [];
@@ -98,7 +116,7 @@ function LocationBranch({
       )}
       {assigned.length === 0 && nested.length === 0 && (
         <p className="pb-3 text-xs text-muted-foreground">
-          No objects in this location
+          {t("noObjectsInLocation")}
         </p>
       )}
     </>
@@ -114,10 +132,13 @@ function LocationBranch({
         />
         <span className="min-w-0 truncate font-medium">{location.name}</span>
         <span className="text-[10px] capitalize text-muted-foreground">
-          {location.type.replaceAll("_", " ")}
+          {formatLocationType(location.type)}
         </span>
         <span className="ms-auto shrink-0 pe-2 text-[10px] tabular-nums text-muted-foreground">
-          {assigned.length} direct · {nested.length} locations
+          {t("directAndNestedCounts", {
+            direct: assigned.length,
+            locations: nested.length,
+          })}
         </span>
       </summary>
       <div className="ms-1.5 border-s border-border/60 ps-3 pt-3 dark:border-white/10 sm:ps-4">
@@ -136,6 +157,7 @@ export function LocationLayoutContent({
   locations,
   onSelectLocation,
 }: LocationLayoutContentProps) {
+  const t = useScopedI18n("untranslatedDashboard.locations");
   const [viewStyle, setViewStyle] = useQueryState(
     "view",
     parseAsStringLiteral([
@@ -174,19 +196,19 @@ export function LocationLayoutContent({
       />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <span className="text-xs font-medium">
-          {hasSublocations ? "Locations & objects" : "Objects"}
+          {hasSublocations ? t("locationsAndObjects") : t("objects")}
         </span>
         {hasSublocations && (
           <fieldset
-            aria-label="Listing style"
+            aria-label={t("listingStyle")}
             className="inline-flex rounded-md border border-border p-0.5"
           >
             {(
               [
-                { value: "grid", label: "Grid", icon: LayoutGrid },
-                { value: "thread", label: "Thread", icon: MessagesSquare },
-                { value: "diagram", label: "Diagram", icon: GitBranch },
-                { value: "outline", label: "Outline", icon: ListTree },
+                { value: "grid", label: "grid", icon: LayoutGrid },
+                { value: "thread", label: "thread", icon: MessagesSquare },
+                { value: "diagram", label: "diagram", icon: GitBranch },
+                { value: "outline", label: "outline", icon: ListTree },
               ] as const
             ).map(({ value, label, icon: Icon }) => (
               <button
@@ -202,14 +224,14 @@ export function LocationLayoutContent({
                 )}
               >
                 <Icon className="size-3.5" />
-                {label}
+                {t(label)}
               </button>
             ))}
           </fieldset>
         )}
       </div>
       {objectsAtLocation === undefined ? (
-        <p className="text-xs text-muted-foreground">Loading objects…</p>
+        <p className="text-xs text-muted-foreground">{t("loadingObjects")}</p>
       ) : !hasSublocations || viewStyle === "grid" ? (
         <LocationGrid
           objects={objectsAtLocation}
@@ -219,7 +241,7 @@ export function LocationLayoutContent({
       ) : viewStyle === "diagram" ? (
         <section
           key={selectedLocation._id}
-          aria-label="Location hierarchy diagram"
+          aria-label={t("locationHierarchyDiagram")}
           className="min-w-0 overflow-hidden rounded-xl border border-border/60"
         >
           <LocationDiagram

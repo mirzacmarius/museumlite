@@ -88,17 +88,11 @@ export function AddObjectsToCollectionDialog({
       }
 
       const changedCount = toAdd.length + toRemove.length;
-      toast.success(
-        toastT("itemsAddedToGroup", { count: changedCount }),
-      );
+      toast.success(toastT("itemsAddedToGroup", { count: changedCount }));
       onSuccess();
       handleOpenChange(false);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : toastT("itemsAddToGroupFailed"),
-      );
+    } catch {
+      toast.error(toastT("itemsAddToGroupFailed"));
     } finally {
       setIsSubmitting(false);
     }

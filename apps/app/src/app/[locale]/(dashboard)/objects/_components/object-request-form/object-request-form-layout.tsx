@@ -1,6 +1,7 @@
 "use client";
 
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
+import { useI18n } from "@/locales/client";
 import {
   ObjectRequestFormFooter,
   resolveObjectRequestFormFooterDraft,
@@ -18,6 +19,7 @@ interface ObjectRequestFormLayoutProps {
 export function ObjectRequestFormLayout({
   form,
 }: ObjectRequestFormLayoutProps) {
+  const tRoot = useI18n();
   const {
     t,
     common,
@@ -89,6 +91,17 @@ export function ObjectRequestFormLayout({
       <ObjectRequestFormHeader
         t={t}
         common={common}
+        labels={{
+          savingDraft: tRoot("untranslatedRecords.objects.form.savingDraftNow"),
+          saveDraft: tRoot("untranslatedRecords.objects.form.saveDraft"),
+          submitting: tRoot("untranslatedRecords.objects.form.submitting"),
+          submittingWithUploads: tRoot(
+            "untranslatedRecords.objects.form.submittingWithUploads",
+          ),
+          submitForApproval: tRoot(
+            "untranslatedRecords.objects.form.submitForApproval",
+          ),
+        }}
         pageTitle={pageTitle}
         resolvedBackHref={resolvedBackHref}
         isSubmitting={isSubmitting}

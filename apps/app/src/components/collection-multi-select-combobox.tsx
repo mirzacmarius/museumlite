@@ -17,6 +17,7 @@ import { useQuery } from "convex/react";
 import { Box, Check, ChevronsUpDown, Search } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface CollectionMultiSelectComboboxProps {
   organizationId: Id<"organizations">;
@@ -99,9 +100,10 @@ export function CollectionMultiSelectCombobox({
   organizationId,
   selectedIds,
   onSelectionChange,
-  placeholder = "Search and select collections...",
+  placeholder,
   disabled = false,
 }: CollectionMultiSelectComboboxProps) {
+  const translate = useI18n();
   const [state, dispatch] = React.useReducer(
     collectionMultiSelectReducer,
     initialCollectionMultiSelectState,
@@ -235,8 +237,17 @@ export function CollectionMultiSelectCombobox({
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <span className="text-muted-foreground truncate">
               {selectedIds.length > 0
-                ? `${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""} selected`
-                : placeholder}
+                ? selectedIds.length === 1
+                  ? translate("untranslatedComponents.labels.itemSelected", {
+                      count: selectedIds.length,
+                    })
+                  : translate("untranslatedComponents.labels.itemsSelected", {
+                      count: selectedIds.length,
+                    })
+                : (placeholder ??
+                  translate(
+                    "untranslatedComponents.labels.searchAndSelectCollections",
+                  ))}
             </span>
           </div>
           <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -245,7 +256,9 @@ export function CollectionMultiSelectCombobox({
       <PopoverContent className="w-[500px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search by accession number or title..."
+            placeholder={translate(
+              "untranslatedComponents.labels.searchByAccessionNumberOrTitle",
+            )}
             value={state.searchQuery}
             onValueChange={(value) =>
               dispatch({ type: "setSearchQuery", value })
@@ -260,8 +273,10 @@ export function CollectionMultiSelectCombobox({
             <CommandEmpty>
               <div className="p-4 text-sm text-center text-muted-foreground">
                 {collectionsResult === undefined || !collectionsResult.isDone
-                  ? "Loading…"
-                  : "No collections found."}
+                  ? translate("untranslatedComponents.labels.loading")
+                  : translate(
+                      "untranslatedComponents.labels.noCollectionsFound",
+                    )}
               </div>
             </CommandEmpty>
 
@@ -284,7 +299,7 @@ export function CollectionMultiSelectCombobox({
 
             {collectionsResult && !collectionsResult.isDone && (
               <div className="p-2 text-center text-xs text-muted-foreground">
-                Scroll for more…
+                {translate("untranslatedComponents.labels.scrollForMore")}
               </div>
             )}
           </CommandList>

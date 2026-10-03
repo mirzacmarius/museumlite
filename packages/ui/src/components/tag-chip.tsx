@@ -1,4 +1,7 @@
+"use client";
+
 import type * as React from "react";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 
 interface TagChipProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -26,6 +29,7 @@ interface TagListProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 function TagList({ className, tags, maxVisible, ...props }: TagListProps) {
+  const { messages } = useUiLocale();
   const visibleTags = maxVisible ? tags.slice(0, maxVisible) : tags;
   const hiddenCount = maxVisible ? Math.max(0, tags.length - maxVisible) : 0;
 
@@ -42,7 +46,9 @@ function TagList({ className, tags, maxVisible, ...props }: TagListProps) {
         <TagChip key={tag}>{tag}</TagChip>
       ))}
       {hiddenCount > 0 && (
-        <span className="text-[10px] text-zinc-500">+{hiddenCount} more</span>
+        <span className="text-[10px] text-zinc-500">
+          +{hiddenCount} {messages.tagList.more}
+        </span>
       )}
     </div>
   );

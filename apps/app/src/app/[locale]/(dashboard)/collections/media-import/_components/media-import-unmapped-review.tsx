@@ -22,7 +22,7 @@ import {
 import { useState } from "react";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface MediaImportUnmappedReviewProps {
   jobId: Id<"importJobs">;
@@ -33,6 +33,7 @@ export function MediaImportUnmappedReview({
   jobId,
   onComplete,
 }: MediaImportUnmappedReviewProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("collections");
   const unmappedFiles = useQuery(api.mediaImports.getUnmappedFiles, { jobId });
   const mapFile = useMutation(api.mediaImports.mapFileToCollection);
@@ -77,18 +78,21 @@ export function MediaImportUnmappedReview({
       setHandledFiles((prev) => new Set(prev).add(storageId));
     } catch (err) {
       console.error("Failed to map file", err);
-      alert("Failed to map file");
+      alert(tRoot("untranslatedRecords.collections.media.failedMapFile"));
     }
   };
 
   const handleDelete = async (storageId: Id<"_storage">) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
+    if (
+      !confirm(tRoot("untranslatedRecords.collections.media.confirmDeleteFile"))
+    )
+      return;
     try {
       await deleteFile({ jobId, storageId });
       setHandledFiles((prev) => new Set(prev).add(storageId));
     } catch (err) {
       console.error("Failed to delete file", err);
-      alert("Failed to delete file");
+      alert(tRoot("untranslatedRecords.collections.media.failedDeleteFile"));
     }
   };
 
@@ -100,11 +104,12 @@ export function MediaImportUnmappedReview({
             {t("mediaImport.reviewTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {remainingFiles.length} files need attention
+            {remainingFiles.length}{" "}
+            {tRoot("untranslatedRecords.collections.media.filesNeedAttention")}
           </p>
         </div>
         <Button variant="outline" onClick={onComplete}>
-          Finish Review
+          {tRoot("collections.mediaImport.finishReview")}
         </Button>
       </div>
 
@@ -112,10 +117,18 @@ export function MediaImportUnmappedReview({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>File Name</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead className="w-[400px]">Map to Object</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead>
+                {tRoot("collections.mediaImport.tableHeaders.fileName")}
+              </TableHead>
+              <TableHead>
+                {tRoot("collections.mediaImport.tableHeaders.size")}
+              </TableHead>
+              <TableHead className="w-[400px]">
+                {tRoot("collections.mediaImport.tableHeaders.mapToObject")}
+              </TableHead>
+              <TableHead className="w-[100px]">
+                {tRoot("collections.mediaImport.tableHeaders.actions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -14,6 +14,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
+import { useI18n } from "@/locales/client";
 import type { ObjectDetailData } from "../types";
 
 interface PendingMoveRequest {
@@ -49,6 +51,7 @@ export function ObjectDetailHero({
   onDisplayLabel,
   unknownLabel,
 }: ObjectDetailHeroProps) {
+  const tRoot = useI18n();
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const primaryImageIndex = heroLightboxImages.findIndex(
     (image) => image.id === heroImage?._id,
@@ -105,7 +108,13 @@ export function ObjectDetailHero({
                 <button
                   key={image.id}
                   type="button"
-                  aria-label={`Show image ${index + 1}: ${image.title || collection.title}`}
+                  aria-label={tRoot(
+                    "untranslatedRecords.objects.media.showImage",
+                    {
+                      index: index + 1,
+                      title: image.title || collection.title,
+                    },
+                  )}
                   aria-current={activeImageIndex === index ? "true" : undefined}
                   className={`relative size-14 shrink-0 overflow-hidden rounded-md border transition-colors ${
                     activeImageIndex === index
@@ -142,22 +151,31 @@ export function ObjectDetailHero({
                   <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
                     <ArrowRightLeft className="size-4" />
                     {pendingMoveRequest.status === "awaiting_acceptance"
-                      ? "Awaiting transfer acceptance"
-                      : "Pending transfer approval"}
+                      ? tRoot(
+                          "untranslatedRecords.objects.transfer.awaitingAcceptance",
+                        )
+                      : tRoot(
+                          "untranslatedRecords.objects.transfer.pendingApproval",
+                        )}
                   </div>
                   <p className="text-sm text-blue-200/80">
-                    This object is{" "}
+                    {tRoot("untranslatedRecords.objects.move.thisObject")}{" "}
                     {pendingMoveRequest.status === "awaiting_acceptance"
-                      ? "awaiting acceptance"
-                      : "awaiting approval"}{" "}
-                    to move to {pendingMoveRequest.targetOrganizationName}.
+                      ? tRoot(
+                          "untranslatedRecords.objects.transfer.awaitingAcceptanceShort",
+                        )
+                      : tRoot(
+                          "untranslatedRecords.objects.transfer.awaitingApprovalShort",
+                        )}{" "}
+                    {tRoot("untranslatedRecords.objects.move.toMove")}{" "}
+                    {pendingMoveRequest.targetOrganizationName}.
                   </p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <Link
                     href={`/objects/move-requests/${pendingMoveRequest._id}`}
                   >
-                    Open transfer request
+                    {tRoot("untranslatedRecords.objects.move.openTransfer")}
                   </Link>
                 </Button>
               </div>
@@ -173,7 +191,7 @@ export function ObjectDetailHero({
                   : "bg-muted text-muted-foreground",
               )}
             >
-              {collection.status}
+              {getCollectionStatusLabel(collection.status, tRoot)}
             </div>
 
             {isOnDisplay ? (

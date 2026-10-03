@@ -5,6 +5,7 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import type * as React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 export type LabelSize = "2x2" | "1x3" | "1x1";
 
@@ -52,6 +53,7 @@ export function QRLabelGenerator({
   className,
   ref,
 }: QRLabelGeneratorProps) {
+  const translate = useI18n();
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const titleRef = useRef<HTMLDivElement>(null);
 
@@ -153,7 +155,9 @@ export function QRLabelGenerator({
         >
           <Image
             src={qrCodeDataUrl}
-            alt={`QR code for ${data.accessionNumber}`}
+            alt={translate("untranslatedComponents.labels.qrCodeForAccession", {
+              accession: data.accessionNumber,
+            })}
             className="size-full object-contain"
             width={180}
             height={180}

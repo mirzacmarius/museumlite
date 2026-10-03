@@ -23,7 +23,7 @@ import { useMutation, useQuery } from "convex/react";
 import { FolderPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface BulkAddToGroupDialogProps {
   open: boolean;
@@ -40,6 +40,7 @@ export function BulkAddToGroupDialog({
   organizationId,
   onSuccess,
 }: BulkAddToGroupDialogProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("common.toast");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const common = useScopedI18n("common");
@@ -68,10 +69,8 @@ export function BulkAddToGroupDialog({
       onSuccess();
       onOpenChange(false);
       setSelectedGroupId("");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("itemsAddToGroupFailed"),
-      );
+    } catch {
+      toast.error(t("itemsAddToGroupFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -90,17 +89,20 @@ export function BulkAddToGroupDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FolderPlus className="size-5" />
-            Add to Collection Group
+            {tRoot("objects.bulkDialogs.addToGroup.title")}
           </DialogTitle>
           <DialogDescription>
-            Add {selectedIds.length} selected object
-            {selectedIds.length !== 1 ? "s" : ""} to a collection group.
+            {tRoot("untranslatedRecords.objects.groups.addObjects", {
+              count: selectedIds.length,
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="group">Collection Group</Label>
+            <Label htmlFor="group">
+              {tRoot("objects.bulkDialogs.addToGroup.label")}
+            </Label>
             <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
               <SelectTrigger id="group">
                 <SelectValue placeholder={placeholders("collectionGroup")} />
@@ -112,7 +114,7 @@ export function BulkAddToGroupDialog({
                   </SelectItem>
                 ) : collectionGroups.length === 0 ? (
                   <SelectItem value="none" disabled>
-                    No collection groups available
+                    {tRoot("untranslatedRecords.objects.groups.noneAvailable")}
                   </SelectItem>
                 ) : (
                   collectionGroups.map((group) => (
@@ -120,7 +122,12 @@ export function BulkAddToGroupDialog({
                       {group.name}
                       {group.itemsCount !== undefined && (
                         <span className="ml-2 text-muted-foreground">
-                          ({group.itemsCount} items)
+                          {tRoot(
+                            "untranslatedRecords.objects.groups.itemsCount",
+                            {
+                              count: group.itemsCount,
+                            },
+                          )}
                         </span>
                       )}
                     </SelectItem>
@@ -133,7 +140,7 @@ export function BulkAddToGroupDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancel
+            {tRoot("objects.form.actions.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}

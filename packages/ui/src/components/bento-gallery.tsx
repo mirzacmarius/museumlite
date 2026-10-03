@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { formatUiMessage, useUiLocale } from "../locale";
 import { cn } from "../utils";
 
 // Defines the structure for each image item in the gallery
@@ -53,6 +54,7 @@ const ImageModal = ({
   item: ImageItem;
   onClose: () => void;
 }) => {
+  const { messages } = useUiLocale();
   return (
     <m.div
       initial={{ opacity: 0 }}
@@ -83,7 +85,7 @@ const ImageModal = ({
         type="button"
         onClick={onClose}
         className="absolute right-4 top-4 text-white/80 transition-colors hover:text-white"
-        aria-label="Close image view"
+        aria-label={messages.gallery.closeImageView}
       >
         <X size={24} />
       </button>
@@ -95,6 +97,7 @@ const ImageModal = ({
 export const InteractiveImageBentoGallery: React.FC<
   InteractiveImageBentoGalleryProps
 > = ({ imageItems, title, description, compact = false }) => {
+  const { messages } = useUiLocale();
   const [selectedItem, setSelectedItem] = useState<ImageItem | null>(null);
   const [dragConstraint, setDragConstraint] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,7 +149,9 @@ export const InteractiveImageBentoGallery: React.FC<
               onClick={() => setSelectedItem(item)}
               onKeyDown={(e) => e.key === "Enter" && setSelectedItem(item)}
               tabIndex={0}
-              aria-label={`View ${item.title}`}
+              aria-label={formatUiMessage(messages.gallery.viewImage, {
+                title: item.title,
+              })}
             >
               <Image
                 src={item.url}
@@ -167,7 +172,9 @@ export const InteractiveImageBentoGallery: React.FC<
 
         {imageItems.length > 9 && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            +{imageItems.length - 9} more images
+            {formatUiMessage(messages.gallery.moreImages, {
+              count: imageItems.length - 9,
+            })}
           </p>
         )}
 
@@ -238,7 +245,9 @@ export const InteractiveImageBentoGallery: React.FC<
                 onClick={() => setSelectedItem(item)}
                 onKeyDown={(e) => e.key === "Enter" && setSelectedItem(item)}
                 tabIndex={0}
-                aria-label={`View ${item.title}`}
+                aria-label={formatUiMessage(messages.gallery.viewImage, {
+                  title: item.title,
+                })}
               >
                 <Image
                   src={item.url}

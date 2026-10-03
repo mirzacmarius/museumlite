@@ -6,6 +6,7 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { Boxes, MapPin } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 import type { CollectionData, LocationPathItem } from "./types";
 
 interface PlacementRelationshipsTabProps {
@@ -19,6 +20,7 @@ export function PlacementRelationshipsTab({
   collectionId,
   locationPath,
 }: PlacementRelationshipsTabProps) {
+  const tRoot = useI18n();
   const parentObject = useQuery(api.collections.getParentObject, {
     collectionId,
   });
@@ -43,13 +45,13 @@ export function PlacementRelationshipsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <MapPin className="size-4 text-emerald-500" />
-          Placement
+          {tRoot("untranslatedRecords.objects.detail.placement")}
         </h3>
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Current Location
+                {tRoot("objects.form.currentLocation")}
               </span>
               <div className="flex items-center justify-between gap-3">
                 {currentLocation ? (
@@ -72,7 +74,7 @@ export function PlacementRelationshipsTab({
 
             <div>
               <span className="mb-1 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                On Display
+                {tRoot("objects.detail.onDisplay")}
               </span>
               <span
                 className={
@@ -81,7 +83,9 @@ export function PlacementRelationshipsTab({
                     : "text-sm text-muted-foreground"
                 }
               >
-                {isOnDisplay ? "Yes" : "No"}
+                {isOnDisplay
+                  ? tRoot("untranslatedRecords.objects.status.yes")
+                  : tRoot("untranslatedRecords.objects.status.no")}
               </span>
             </div>
           </div>
@@ -91,15 +95,17 @@ export function PlacementRelationshipsTab({
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <Boxes className="size-4 text-sky-500" />
-          Relationships
+          {tRoot("untranslatedRecords.objects.attributes.relationships")}
         </h3>
         <div className="space-y-4 rounded-xl border border-border/60 bg-secondary/20 p-6">
           <div>
             <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Parent Object
+              {tRoot("objects.form.parentObject")}
             </span>
             {parentObject === undefined ? (
-              <span className="text-sm text-muted-foreground">Loading…</span>
+              <span className="text-sm text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.loading.default")}
+              </span>
             ) : parentObject ? (
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/objects/${parentObject._id}`}>
@@ -108,17 +114,19 @@ export function PlacementRelationshipsTab({
               </Button>
             ) : (
               <span className="text-sm text-muted-foreground">
-                No parent object assigned.
+                {tRoot("untranslatedRecords.objects.detail.noParent")}
               </span>
             )}
           </div>
 
           <div>
             <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Child Objects
+              {tRoot("untranslatedRecords.objects.detail.childObjects")}
             </span>
             {childObjects === undefined ? (
-              <span className="text-sm text-muted-foreground">Loading…</span>
+              <span className="text-sm text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.loading.default")}
+              </span>
             ) : childObjects.children.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {childObjects.children.map((child) => (
@@ -131,7 +139,7 @@ export function PlacementRelationshipsTab({
               </div>
             ) : (
               <span className="text-sm text-muted-foreground">
-                No child objects assigned.
+                {tRoot("untranslatedRecords.objects.detail.noChildren")}
               </span>
             )}
           </div>

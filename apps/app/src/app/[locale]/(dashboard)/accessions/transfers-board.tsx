@@ -6,6 +6,7 @@ import { Input } from "@v1/ui/input";
 import { useQuery } from "convex/react";
 import { Search } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
+import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsWorkbenchNav } from "./accessions-workbench-nav";
 import { TransferKanbanColumn } from "./transfer-kanban-column";
@@ -15,6 +16,7 @@ type TransfersBoardProps = {
 };
 
 export function TransfersBoard({ organizationId }: TransfersBoardProps) {
+  const tRoot = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const transferRequests = useQuery(api.objectMoves.listForOrganization, {
@@ -80,11 +82,26 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     <div className="flex size-full flex-col bg-background p-6">
       <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
         <div className="flex gap-4">
-          <TransferStat label="Pending" value={stats.pending} />
-          <TransferStat label="Incoming" value={stats.incoming} />
-          <TransferStat label="Executed" value={stats.executed} />
-          <TransferStat label="Rejected" value={stats.rejected} />
-          <TransferStat label="Cancelled" value={stats.cancelled} />
+          <TransferStat
+            label={tRoot("accessions.stats.pending")}
+            value={stats.pending}
+          />
+          <TransferStat
+            label={tRoot("loans.filters.incoming")}
+            value={stats.incoming}
+          />
+          <TransferStat
+            label={tRoot("untranslatedRecords.accessions.transfer.executed")}
+            value={stats.executed}
+          />
+          <TransferStat
+            label={tRoot("accessions.status.rejected")}
+            value={stats.rejected}
+          />
+          <TransferStat
+            label={tRoot("loans.status.cancelled")}
+            value={stats.cancelled}
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -93,7 +110,9 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search transfers"
+              placeholder={tRoot(
+                "untranslatedRecords.accessions.transfer.search",
+              )}
               className="w-64 rounded-md border-input bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground transition-all placeholder:text-muted-foreground focus:border-ring focus:bg-background"
             />
           </div>
@@ -111,35 +130,45 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
           <TransferKanbanColumn
             status="pending_source_approval"
             direction="outgoing"
-            title="Pending transfer approval"
+            title={tRoot(
+              "untranslatedRecords.accessions.transfer.pendingApproval",
+            )}
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="awaiting_acceptance"
             direction="incoming"
-            title="Incoming transfer requests"
+            title={tRoot(
+              "untranslatedRecords.accessions.transfer.incomingRequests",
+            )}
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="executed"
             direction="outgoing"
-            title="Executed transfers"
+            title={tRoot(
+              "untranslatedRecords.accessions.transfer.executedTransfers",
+            )}
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="rejected"
             direction="outgoing"
-            title="Rejected transfers"
+            title={tRoot(
+              "untranslatedRecords.accessions.transfer.rejectedTransfers",
+            )}
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />
           <TransferKanbanColumn
             status="cancelled"
             direction="outgoing"
-            title="Cancelled transfers"
+            title={tRoot(
+              "untranslatedRecords.accessions.transfer.cancelledTransfers",
+            )}
             searchQuery={deferredSearchQuery}
             transferRequests={transferRequests}
           />

@@ -2,8 +2,10 @@
 
 import { cn } from "@v1/ui/utils";
 import Image from "next/image";
+import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
 import { formatStringListField } from "@/lib/string-list-field";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { formatConditionLabel } from "./condition-display";
 import type { CollectionData, HeroImageData } from "./types";
 
 interface PrintPreviewCoreSectionsProps {
@@ -15,6 +17,7 @@ export function PrintPreviewCoreSections({
   collection,
   heroImage,
 }: PrintPreviewCoreSectionsProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("objects.printPreview");
   const materials = formatStringListField(collection.materials);
 
@@ -46,7 +49,8 @@ export function PrintPreviewCoreSections({
           {collection.alternateAccessionNumbers &&
             collection.alternateAccessionNumbers.length > 0 && (
               <p className="text-[10px] text-zinc-500">
-                Alt: {collection.alternateAccessionNumbers.join(", ")}
+                {tRoot("untranslatedRecords.objects.detail.altText")}{" "}
+                {collection.alternateAccessionNumbers.join(", ")}
               </p>
             )}
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -65,7 +69,7 @@ export function PrintPreviewCoreSections({
                     : "bg-red-100 text-red-700",
               )}
             >
-              {collection.status}
+              {getCollectionStatusLabel(collection.status, tRoot)}
             </span>
           </div>
         </div>
@@ -199,7 +203,9 @@ export function PrintPreviewCoreSections({
               <p className="text-xs font-medium text-zinc-500">
                 {t("condition")}
               </p>
-              <p className="text-black">{collection.condition}</p>
+              <p className="text-black">
+                {formatConditionLabel(collection.condition, tRoot)}
+              </p>
             </div>
           )}
           {collection.inscriptions && (

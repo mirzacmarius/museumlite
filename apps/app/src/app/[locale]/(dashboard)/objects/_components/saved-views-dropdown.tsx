@@ -33,7 +33,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientRelativeTime } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface ObjectFilters {
   search: string;
@@ -54,18 +54,35 @@ interface SavedViewsDropdownProps {
   onApplyView: (filters: ObjectFilters) => void;
 }
 
+interface EditingSavedView {
+  id: Id<"savedViews">;
+  name: string;
+}
+
+interface SavedViewDialogsProps {
+  saveDialogOpen: boolean;
+  viewName: string;
+  isDefault: boolean;
+  editingView: EditingSavedView | null;
+  onSaveDialogOpenChange: (open: boolean) => void;
+  onViewNameChange: (name: string) => void;
+  onDefaultChange: (isDefault: boolean) => void;
+  onEditingViewNameChange: (name: string) => void;
+  onCloseEditingView: () => void;
+  onSave: () => void;
+  onUpdate: () => void;
+}
+
 export function SavedViewsDropdown({
   organizationId,
   currentFilters,
   onApplyView,
 }: SavedViewsDropdownProps) {
+  const tRoot = useI18n();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [viewName, setViewName] = useState("");
   const [isDefault, setIsDefault] = useState(false);
-  const [editingView, setEditingView] = useState<{
-    id: Id<"savedViews">;
-    name: string;
-  } | null>(null);
+  const [editingView, setEditingView] = useState<EditingSavedView | null>(null);
   const hasLoadedDefault = useRef(false);
   const onApplyViewRef = useRef(onApplyView);
   onApplyViewRef.current = onApplyView;
@@ -122,12 +139,12 @@ export function SavedViewsDropdown({
         filters: JSON.stringify(currentFilters),
         isDefault,
       });
-      toast.success("View saved");
+      toast.success(tRoot("untranslatedRecords.objects.savedViews.saved"));
       setSaveDialogOpen(false);
       setViewName("");
       setIsDefault(false);
     } catch {
-      toast.error("Failed to save view");
+      toast.error(tRoot("untranslatedRecords.objects.savedViews.failedSave"));
     }
   };
 
@@ -155,16 +172,18 @@ export function SavedViewsDropdown({
       });
       await markUsed({ viewId: view._id });
     } catch {
-      toast.error("Invalid view filters");
+      toast.error(
+        tRoot("untranslatedRecords.objects.savedViews.invalidFilters"),
+      );
     }
   };
 
   const handleDelete = async (viewId: Id<"savedViews">) => {
     try {
       await removeView({ viewId });
-      toast.success("View deleted");
+      toast.success(tRoot("untranslatedRecords.objects.savedViews.deleted"));
     } catch {
-      toast.error("Failed to delete view");
+      toast.error(tRoot("untranslatedRecords.objects.savedViews.failedDelete"));
     }
   };
 
@@ -175,10 +194,10 @@ export function SavedViewsDropdown({
         viewId: editingView.id,
         name: editingView.name.trim(),
       });
-      toast.success("View updated");
+      toast.success(tRoot("untranslatedRecords.objects.savedViews.updated"));
       setEditingView(null);
     } catch {
-      toast.error("Failed to update view");
+      toast.error(tRoot("untranslatedRecords.objects.savedViews.failedUpdate"));
     }
   };
 
@@ -188,14 +207,14 @@ export function SavedViewsDropdown({
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
             <Bookmark className="mr-2 size-4" />
-            Saved Views
+            {tRoot("untranslatedRecords.objects.forms.savedViews")}
             <ChevronDown className="ml-2 size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           {savedViews?.length === 0 && (
             <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-              No saved views yet
+              {tRoot("untranslatedRecords.objects.forms.noSavedViews")}
             </div>
           )}
           {savedViews?.map((view) => (
@@ -218,7 +237,7 @@ export function SavedViewsDropdown({
                   </span>
                   {view.lastUsedAt && (
                     <span className="text-xs text-muted-foreground">
-                      Used{" "}
+                      {tRoot("untranslatedRecords.objects.forms.used")}{" "}
                       <span className="lowercase">
                         <ClientRelativeTime
                           timestamp={view.lastUsedAt}
@@ -245,7 +264,13 @@ export function SavedViewsDropdown({
                   className="p-1 text-muted-foreground hover:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm("Delete this saved view?")) {
+                    if (
+                      confirm(
+                        tRoot(
+                          "untranslatedRecords.objects.savedViews.confirmDelete",
+                        ),
+                      )
+                    ) {
                       handleDelete(view._id);
                     }
                   }}
@@ -258,30 +283,72 @@ export function SavedViewsDropdown({
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setSaveDialogOpen(true)}>
             <Plus className="mr-2 size-4" />
-            Save Current View
+            {tRoot("untranslatedRecords.objects.forms.saveCurrentView")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+      <SavedViewDialogs
+        saveDialogOpen={saveDialogOpen}
+        viewName={viewName}
+        isDefault={isDefault}
+        editingView={editingView}
+        onSaveDialogOpenChange={setSaveDialogOpen}
+        onViewNameChange={setViewName}
+        onDefaultChange={setIsDefault}
+        onEditingViewNameChange={(name) =>
+          setEditingView(editingView ? { ...editingView, name } : null)
+        }
+        onCloseEditingView={() => setEditingView(null)}
+        onSave={handleSave}
+        onUpdate={handleUpdate}
+      />
+    </>
+  );
+}
+
+function SavedViewDialogs({
+  saveDialogOpen,
+  viewName,
+  isDefault,
+  editingView,
+  onSaveDialogOpenChange,
+  onViewNameChange,
+  onDefaultChange,
+  onEditingViewNameChange,
+  onCloseEditingView,
+  onSave,
+  onUpdate,
+}: SavedViewDialogsProps) {
+  const tRoot = useI18n();
+
+  return (
+    <>
+      <Dialog open={saveDialogOpen} onOpenChange={onSaveDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Current View</DialogTitle>
+            <DialogTitle>
+              {tRoot("untranslatedRecords.objects.forms.saveCurrentView")}
+            </DialogTitle>
             <DialogDescription className="sr-only">
-              Name and save the current object filters as a reusable view.
+              {tRoot("untranslatedRecords.objects.forms.nameSaveCurrentView")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="viewName">View Name</Label>
+              <Label htmlFor="viewName">
+                {tRoot("untranslatedRecords.objects.forms.viewName")}
+              </Label>
               <Input
                 id="viewName"
                 value={viewName}
-                onChange={(e) => setViewName(e.target.value)}
-                placeholder="e.g., Active paintings"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && viewName.trim()) {
-                    handleSave();
+                onChange={(event) => onViewNameChange(event.target.value)}
+                placeholder={tRoot(
+                  "untranslatedRecords.objects.forms.savedViewNameExample",
+                )}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && viewName.trim()) {
+                    onSave();
                   }
                 }}
               />
@@ -290,59 +357,62 @@ export function SavedViewsDropdown({
               <Checkbox
                 id="isDefault"
                 checked={isDefault}
-                onCheckedChange={(checked) => setIsDefault(checked === true)}
+                onCheckedChange={(checked) => onDefaultChange(checked === true)}
               />
               <Label htmlFor="isDefault" className="cursor-pointer">
-                Set as default view
+                {tRoot("untranslatedRecords.objects.forms.setAsDefaultView")}
               </Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
-              Cancel
+            <Button
+              variant="outline"
+              onClick={() => onSaveDialogOpenChange(false)}
+            >
+              {tRoot("objects.form.actions.cancel")}
             </Button>
-            <Button onClick={handleSave} disabled={!viewName.trim()}>
-              Save View
+            <Button onClick={onSave} disabled={!viewName.trim()}>
+              {tRoot("untranslatedRecords.objects.forms.saveView")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!editingView} onOpenChange={() => setEditingView(null)}>
+      <Dialog open={!!editingView} onOpenChange={onCloseEditingView}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit View</DialogTitle>
+            <DialogTitle>
+              {tRoot("untranslatedRecords.objects.forms.editView")}
+            </DialogTitle>
             <DialogDescription className="sr-only">
-              Rename the selected saved object view.
+              {tRoot("untranslatedRecords.objects.forms.renameSavedView")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="editViewName">View Name</Label>
+              <Label htmlFor="editViewName">
+                {tRoot("untranslatedRecords.objects.forms.viewName")}
+              </Label>
               <Input
                 id="editViewName"
                 value={editingView?.name || ""}
-                onChange={(e) =>
-                  setEditingView(
-                    editingView
-                      ? { ...editingView, name: e.target.value }
-                      : null,
-                  )
+                onChange={(event) =>
+                  onEditingViewNameChange(event.target.value)
                 }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && editingView?.name.trim()) {
-                    handleUpdate();
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && editingView?.name.trim()) {
+                    onUpdate();
                   }
                 }}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingView(null)}>
-              Cancel
+            <Button variant="outline" onClick={onCloseEditingView}>
+              {tRoot("objects.form.actions.cancel")}
             </Button>
-            <Button onClick={handleUpdate} disabled={!editingView?.name.trim()}>
-              Save
+            <Button onClick={onUpdate} disabled={!editingView?.name.trim()}>
+              {tRoot("objects.form.actions.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

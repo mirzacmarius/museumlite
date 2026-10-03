@@ -5,7 +5,19 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import type { FunctionReturnType } from "convex/server";
 import { MapPin } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import { LocationUnitCard } from "../location-unit-card";
+
+const knownLocationTypes = new Set([
+  "building",
+  "room",
+  "gallery",
+  "storage",
+  "cabinet",
+  "shelf",
+  "vault",
+  "other",
+]);
 
 interface LocationGridProps {
   objects: FunctionReturnType<typeof api.locations.getObjectsAtLocation>;
@@ -18,6 +30,13 @@ export function LocationGrid({
   locations,
   showLocationIndicator,
 }: LocationGridProps) {
+  const t = useScopedI18n("untranslatedDashboard.locations");
+  const tView = useScopedI18n("untranslatedDashboard.locationViews");
+  const tLocations = useScopedI18n("locations");
+  const formatLocationType = (type: string) =>
+    knownLocationTypes.has(type)
+      ? tLocations(`form.locationTypes.${type}`)
+      : type;
   const locationsById = new Map(
     locations.map((location) => [location._id, location]),
   );
@@ -25,7 +44,7 @@ export function LocationGrid({
   if (objects.length === 0) {
     return (
       <p className="py-8 text-center text-xs text-muted-foreground">
-        No objects in this location or its child locations
+        {t("noObjectsInLocationAndChildren")}
       </p>
     );
   }
@@ -50,7 +69,7 @@ export function LocationGrid({
         return (
           <LocationUnitCard
             key={object._id}
-            name={location?.name ?? "Unknown location"}
+            name={location?.name ?? t("unknownLocation")}
             isActive={location?.isActive}
             objects={[object]}
             locationIndicator={
@@ -61,8 +80,8 @@ export function LocationGrid({
                       type="button"
                       aria-label={
                         location
-                          ? `Location: ${path.join(" / ")}`
-                          : "Location unavailable"
+                          ? t("locationPath", { path: path.join(" / ") })
+                          : t("locationUnavailable")
                       }
                       className="ms-auto inline-flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-indigo-400"
                     >
@@ -83,17 +102,21 @@ export function LocationGrid({
                         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-[10px]">
                           <dt className="text-muted-foreground">ID</dt>
                           <dd className="font-mono">{location.locationCode}</dd>
-                          <dt className="text-muted-foreground">Type</dt>
+                          <dt className="text-muted-foreground">{tView("locationType")}</dt>
                           <dd className="capitalize">
-                            {location.type.replaceAll("_", " ")}
+                            {formatLocationType(location.type)}
                           </dd>
-                          <dt className="text-muted-foreground">Status</dt>
-                          <dd>{location.isActive ? "Active" : "Inactive"}</dd>
+                          <dt className="text-muted-foreground">{tView("locationStatus")}</dt>
+                          <dd>
+                            {location.isActive
+                              ? tLocations("active")
+                              : tLocations("inactive")}
+                          </dd>
                         </dl>
                       </div>
                     ) : (
                       <span className="text-xs">
-                        Location details unavailable
+                        {t("locationDetailsUnavailable")}
                       </span>
                     )}
                   </TooltipContent>

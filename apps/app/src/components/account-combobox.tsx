@@ -10,7 +10,7 @@ import { Building2, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { parseDateInputValue } from "@/lib/account-holder";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { AccountComboboxCreateDialog } from "./account-combobox-create-dialog";
 import { AccountComboboxListContent } from "./account-combobox-list-content";
 import {
@@ -78,9 +78,10 @@ export function AccountCombobox({
   value,
   onValueChange,
   onAccountSelect,
-  placeholder = "Select or create account...",
+  placeholder,
   disabled = false,
 }: AccountComboboxProps) {
+  const translate = useI18n();
   const tToast = useScopedI18n("common.toast");
   const [state, dispatch] = React.useReducer(
     accountComboboxReducer,
@@ -224,7 +225,12 @@ export function AccountCombobox({
                 </span>
               </div>
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-muted-foreground">
+                {placeholder ??
+                  translate(
+                    "untranslatedComponents.labels.selectOrCreateAccount",
+                  )}
+              </span>
             )}
             <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
           </Button>
@@ -255,7 +261,7 @@ export function AccountCombobox({
           onClick={handleClear}
           className="mt-1 text-xs text-muted-foreground"
         >
-          Clear selection
+          {translate("untranslatedComponents.labels.clearSelection")}
         </Button>
       )}
 

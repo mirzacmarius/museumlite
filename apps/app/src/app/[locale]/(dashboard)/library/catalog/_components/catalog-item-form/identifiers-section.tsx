@@ -3,7 +3,7 @@
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import type { IsbnLookupData } from "@/components/library/isbn-lookup";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { CatalogItemFormData } from "./types";
 
 interface CatalogItemIdentifiersSectionProps {
@@ -21,6 +21,7 @@ export function CatalogItemIdentifiersSection({
   formData,
   setFormData,
 }: CatalogItemIdentifiersSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");
   const _tLib = useScopedI18n("library");
@@ -91,7 +92,10 @@ export function CatalogItemIdentifiersSection({
                   callNumber: e.target.value,
                 }))
               }
-              placeholder="e.g., 823.912"
+              placeholder={tRoot(
+                "untranslatedRecords.objects.examples.callNumber",
+                { value: "823.912" },
+              )}
             />
           </div>
           <div className="space-y-2">

@@ -3,7 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { Box, Search } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { Loan } from "./types";
 
 interface ObjectsTabProps {
@@ -11,6 +11,7 @@ interface ObjectsTabProps {
 }
 
 export function ObjectsTab({ loan }: ObjectsTabProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans.placeholders");
   const tActions = useScopedI18n("loans.actions");
 
@@ -32,7 +33,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
         <PermissionGate permission="loans.update">
           <div className="flex gap-2">
             <Button variant="default" size="sm" className="h-8 text-xs">
-              Add Object
+              {tRoot("loans.actions.addObject")}
             </Button>
           </div>
         </PermissionGate>
@@ -56,13 +57,13 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
                   {item.title}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Artist Unknown • Oil on canvas
+                  {tRoot("loans.actions.artistUnknown")}
                 </p>
 
                 <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                      Condition Out
+                      {tRoot("loans.actions.conditionOut")}
                     </p>
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                       <span className="size-1.5 rounded-full bg-emerald-500" />{" "}
@@ -71,17 +72,17 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
                   </div>
                   <div>
                     <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                      Status
+                      {tRoot("loans.table.status")}
                     </p>
                     {item.conditionIn ? (
                       <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
                         <span className="size-1.5 rounded-full bg-blue-500" />{" "}
-                        Returned
+                        {tRoot("loans.status.returned")}
                       </p>
                     ) : (
                       <p className="text-xs text-amber-600 dark:text-amber-500 font-medium flex items-center gap-1">
                         <span className="size-1.5 rounded-full bg-amber-500" />{" "}
-                        On Loan
+                        {tRoot("loans.actions.onLoan")}
                       </p>
                     )}
                   </div>
@@ -89,7 +90,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
                 {item.conditionIn && (
                   <div className="mt-2 pt-2 border-t border-border">
                     <p className="text-[10px] uppercase text-muted-foreground font-medium">
-                      Condition In
+                      {tRoot("loans.actions.conditionIn")}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {item.conditionIn}
@@ -101,7 +102,7 @@ export function ObjectsTab({ loan }: ObjectsTabProps) {
           ))
         ) : (
           <div className="col-span-full py-12 text-center text-muted-foreground text-sm">
-            No objects in this loan.
+            {tRoot("loans.actions.noObjectsInLoan")}
           </div>
         )}
       </div>

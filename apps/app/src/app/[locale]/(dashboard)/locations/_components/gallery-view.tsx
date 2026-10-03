@@ -2,6 +2,7 @@
 
 import { cn } from "@v1/ui/utils";
 import Image from "next/image";
+import { useScopedI18n } from "@/locales/client";
 import { LocationObjectThumbnail } from "./location-object-thumbnail";
 import { LocationUnitCard } from "./location-unit-card";
 
@@ -58,6 +59,7 @@ export function GalleryView({
   shelfLocations = EMPTY_DISPLAY_UNIT_LOCATIONS,
   backgroundImageUrl,
 }: GalleryViewProps) {
+  const t = useScopedI18n("untranslatedDashboard.locationViews");
   const normalizedVitrineCount = Math.max(0, vitrineCount);
   const normalizedWallCount = Math.max(0, wallCount);
   const normalizedWallItemsPerWall = Math.max(1, wallItemsPerWall);
@@ -172,11 +174,10 @@ export function GalleryView({
       {!hasConfiguredUnits ? (
         <div className="rounded-xl border border-dashed border-border bg-card px-4 py-10 text-center">
           <div className="text-sm font-medium text-foreground">
-            No display units configured
+            {t("noDisplayUnits")}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Add vitrines, walls, cabinets, or shelves in the location settings
-            to visualize object placement here.
+            {t("configureDisplayUnits")}
           </p>
         </div>
       ) : null}
@@ -185,12 +186,12 @@ export function GalleryView({
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-xs font-medium text-foreground">
-              Freestanding Vitrines
+              {t("freestandingVitrines")}
             </h3>
             <div className="text-xs text-muted-foreground">
-              In use:{" "}
+              {t("inUse")}{" "}
               <span className="text-foreground">
-                {occupiedVitrines.length}/{vitrines.length} Vitrines
+                {occupiedVitrines.length}/{vitrines.length} {t("vitrines")}
               </span>
             </div>
           </div>
@@ -207,7 +208,7 @@ export function GalleryView({
           {hasWalls ? (
             <div>
               <h3 className="mb-4 text-xs font-medium text-foreground">
-                Wall Mounted Display
+                {t("wallMountedDisplay")}
               </h3>
               <div className="relative overflow-hidden rounded-md border border-border/60 bg-muted/20 p-4 dark:border-white/10 dark:bg-zinc-900/40">
                 {backgroundImageUrl ? (
@@ -230,11 +231,10 @@ export function GalleryView({
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    {wallSlots.length} walls configured ·{" "}
-                    {normalizedWallItemsPerWall} item
-                    {normalizedWallItemsPerWall === 1 ? "" : "s"} per wall
+                    {wallSlots.length} {t("wallsConfigured")} ·{" "}
+                    {normalizedWallItemsPerWall} {t("item")} {t("perWall")}
                   </span>
-                  <span>{occupiedWalls.length} in use</span>
+                  <span>{occupiedWalls.length} {t("inUse")}</span>
                 </div>
               </div>
             </div>
@@ -244,11 +244,11 @@ export function GalleryView({
             <div className={cn(!hasWalls && "2xl:col-span-2")}>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-xs font-medium text-foreground">
-                  Cabinets
+                  {t("cabinets")}
                 </h3>
                 <span className="flex items-center gap-1.5 text-[10px] tabular-nums text-muted-foreground">
                   <span className="size-1.5 rounded-full bg-emerald-500" />
-                  {occupiedCabinets.length}/{cabinets.length} in use
+                  {occupiedCabinets.length}/{cabinets.length} {t("inUse")}
                 </span>
               </div>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4">
@@ -264,10 +264,10 @@ export function GalleryView({
       {hasShelves ? (
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-xs font-medium text-foreground">Shelves</h3>
+            <h3 className="text-xs font-medium text-foreground">{t("shelves")}</h3>
             <div className="text-xs text-muted-foreground">
               <span className="text-foreground">
-                {occupiedShelves.length}/{shelves.length} shelves in use
+                {occupiedShelves.length}/{shelves.length} {t("shelvesInUse")}
               </span>
             </div>
           </div>
@@ -309,6 +309,7 @@ interface VitrineCardProps {
 }
 
 function VitrineCard({ vitrine }: VitrineCardProps) {
+  const t = useScopedI18n("untranslatedDashboard.locationViews");
   const hasObjects = vitrine.objects.length > 0;
   const isInactive = vitrine.isActive === false;
   const statusColor = isInactive
@@ -332,7 +333,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
           <div className={`size-1.5 shrink-0 rounded-full ${statusColor}`} />
         </div>
         <div className="p-4 pt-12 h-full flex items-center justify-center">
-          <span className="text-[9px] text-muted-foreground">Empty Slot</span>
+          <span className="text-[9px] text-muted-foreground">{t("emptySlot")}</span>
         </div>
       </div>
     );
@@ -359,7 +360,7 @@ function VitrineCard({ vitrine }: VitrineCardProps) {
           >
             <LocationObjectThumbnail
               object={obj}
-              metadataLabel="Placement"
+              metadataLabel={t("placement")}
               metadataValue={vitrine.name ?? `${vitrine.id} · ${vitrine.type}`}
               className="size-16 rounded-xl border-border shadow-sm"
               imageClassName="aspect-square"
@@ -384,6 +385,7 @@ interface WallSlotProps {
 }
 
 function WallSlot({ slot }: WallSlotProps) {
+  const t = useScopedI18n("untranslatedDashboard.locationViews");
   const title = slot.name ?? `Wall ${slot.id}`;
   const subtitle = slot.name
     ? `${slot.id} · ${slot.type ?? "Wall"}`
@@ -398,7 +400,7 @@ function WallSlot({ slot }: WallSlotProps) {
         <span className="mt-1 max-w-full truncate text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
           {subtitle}
         </span>
-        <span className="text-[9px] text-muted-foreground">Empty</span>
+        <span className="text-[9px] text-muted-foreground">{t("emptyShort")}</span>
       </div>
     );
   }
@@ -416,7 +418,7 @@ function WallSlot({ slot }: WallSlotProps) {
         </div>
         {slot.isActive === false ? (
           <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-            Inactive
+            {t("inactive")}
           </span>
         ) : null}
       </div>
@@ -434,7 +436,7 @@ function WallSlot({ slot }: WallSlotProps) {
           <LocationObjectThumbnail
             key={object._id}
             object={object}
-            metadataLabel="Placement"
+            metadataLabel={t("placement")}
             metadataValue={title}
             className="h-full rounded-xl border-border"
             imageClassName="aspect-auto h-full"

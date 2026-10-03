@@ -7,20 +7,27 @@ import { SiteFooter } from "@/components/site/footer";
 import { MarketingJsonLd } from "@/components/site/json-ld";
 import { Nav } from "@/components/site/nav";
 import { createPageMetadata } from "@/lib/metadata";
-import { siteConfig } from "@/lib/site";
+import { getWebI18n } from "@/locales/server";
 
-export const metadata = createPageMetadata({
-  title: `${siteConfig.name} — ${siteConfig.tagline}`,
-  description: siteConfig.description,
-  path: "/",
-});
+export async function generateMetadata() {
+  const { locale, t } = await getWebI18n();
+  return createPageMetadata({
+    title: `MuseumLite — ${t("site.tagline")}`,
+    description: t("site.description"),
+    path: "/",
+    locale,
+  });
+}
 
 export default function HomePage() {
   return (
     <>
       <MarketingJsonLd />
       <Nav floating />
-      <main id="main-content" className="marketing-home bg-background text-foreground">
+      <main
+        id="main-content"
+        className="marketing-home bg-background text-foreground"
+      >
         <HomeHero />
         <HomePhilosophy />
         <HomeWorkspace />

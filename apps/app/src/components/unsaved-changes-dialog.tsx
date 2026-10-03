@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
+import { useI18n } from "@/locales/client";
 
 interface UnsavedChangesDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export function UnsavedChangesDialog({
   onSave,
   isSaving = false,
 }: UnsavedChangesDialogProps) {
+  const translate = useI18n();
   const handleSave = async () => {
     if (onSave) {
       const shouldClose = await onSave();
@@ -40,19 +42,24 @@ export function UnsavedChangesDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
+          <AlertDialogTitle>
+            {translate("untranslatedComponents.labels.unsavedChanges")}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            You have unsaved changes that will be lost if you leave this page.
-            Would you like to save your changes first?
+            {translate(
+              "untranslatedComponents.labels.youHaveUnsavedChangesThatWillBeLostIfYouLeaveThisPageWouldYouLikeToSaveYourChangesFirst",
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onDiscard}>
-            Discard changes
+            {translate("untranslatedComponents.labels.discardChanges")}
           </AlertDialogCancel>
           {onSave && (
             <AlertDialogAction onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "Saving…" : "Save changes"}
+              {isSaving
+                ? translate("untranslatedComponents.labels.saving")
+                : translate("untranslatedComponents.labels.saveChanges")}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

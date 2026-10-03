@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { Archive, Trash2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface DeaccessionArchiveDeleteFormProps {
   variant: "archived" | "deleted";
@@ -20,13 +21,14 @@ export function DeaccessionArchiveDeleteForm({
   onBack,
   onReasonChange,
 }: DeaccessionArchiveDeleteFormProps) {
+  const translate = useI18n();
   const isArchive = variant === "archived";
 
   return (
     <div className="space-y-4 py-4">
       {!isDirectRemovalFlow && (
         <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
-          ← Back to options
+          {translate("untranslatedComponents.labels.backToOptions")}
         </Button>
       )}
 
@@ -51,7 +53,13 @@ export function DeaccessionArchiveDeleteForm({
                   : "font-medium text-red-900 dark:text-red-100"
               }
             >
-              {isArchive ? "Archiving Object" : "Deleting Object"}
+              {isArchive
+                ? translate(
+                    "untranslatedComponents.deaccession.archivingObject",
+                  )
+                : translate(
+                    "untranslatedComponents.deaccession.deletingObject",
+                  )}
             </p>
             <p
               className={
@@ -61,8 +69,12 @@ export function DeaccessionArchiveDeleteForm({
               }
             >
               {isArchive
-                ? "This object will be sent to Deaccessions for approval before it is archived. Once approved, all data, history, and media will be preserved and the object can be restored later."
-                : "This object will be sent to Deaccessions for approval before it is marked as deleted and hidden from the Objects catalog. Use this if the object was added incorrectly or is a duplicate."}
+                ? translate(
+                    "untranslatedComponents.deaccession.archiveDescription",
+                  )
+                : translate(
+                    "untranslatedComponents.deaccession.deleteDescription",
+                  )}
             </p>
           </div>
         </div>
@@ -70,7 +82,11 @@ export function DeaccessionArchiveDeleteForm({
 
       <div className="space-y-2">
         <Label htmlFor={`${variant}-reason`}>
-          {isArchive ? "Reason for Archiving" : "Reason for Deleting"}{" "}
+          {isArchive
+            ? translate("untranslatedComponents.deaccession.reasonForArchiving")
+            : translate(
+                "untranslatedComponents.deaccession.reasonForDeleting",
+              )}{" "}
           <span className="text-red-500">*</span>
         </Label>
         <Textarea
@@ -79,8 +95,12 @@ export function DeaccessionArchiveDeleteForm({
           onChange={(event) => onReasonChange(event.target.value)}
           placeholder={
             isArchive
-              ? "Enter reason for archiving this object..."
-              : "Enter reason for deleting this object (for example, duplicate entry or added in error)..."
+              ? translate(
+                  "untranslatedComponents.deaccession.enterArchiveReason",
+                )
+              : translate(
+                  "untranslatedComponents.deaccession.enterDeleteReason",
+                )
           }
           rows={4}
           required

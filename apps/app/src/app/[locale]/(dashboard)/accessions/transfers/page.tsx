@@ -2,10 +2,11 @@
 
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 import { AccessionsPageSkeleton } from "../accessions-page-skeleton";
 import { TransfersBoard } from "../transfers-board";
-
 export default function AccessionTransfersPage() {
+  const tRoot = useI18n();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
 
@@ -23,7 +24,7 @@ export default function AccessionTransfersPage() {
     return (
       <div className="flex size-full items-center justify-center px-6">
         <p className="text-muted-foreground">
-          Create or join an organization to view transfers.
+          {tRoot("untranslatedRecords.accessions.selectOrganizationTransfers")}
         </p>
       </div>
     );
@@ -33,7 +34,7 @@ export default function AccessionTransfersPage() {
     return (
       <div className="flex size-full items-center justify-center px-6">
         <p className="text-muted-foreground">
-          Select an organization to continue.
+          {tRoot("collections.selectOrganizationContinue")}
         </p>
       </div>
     );
@@ -43,7 +44,7 @@ export default function AccessionTransfersPage() {
     return (
       <div className="flex size-full items-center justify-center px-6">
         <p className="text-muted-foreground">
-          You do not have permission to review transfer approvals.
+          {tRoot("untranslatedRecords.accessions.transferPermission")}
         </p>
       </div>
     );

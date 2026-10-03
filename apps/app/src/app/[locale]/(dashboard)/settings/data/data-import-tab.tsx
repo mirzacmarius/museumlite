@@ -31,6 +31,7 @@ interface DataImportTabProps {
 
 export function DataImportTab({ organizationId }: DataImportTabProps) {
   const t = useScopedI18n("settings.data");
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const [importType, setImportType] = useState<ImportType>("objects");
 
   const template = useQuery(api.imports.getImportTemplateByType, {
@@ -50,11 +51,10 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="size-5" />
-            CSV Import
+            {tDashboard("csvImport")}
           </CardTitle>
           <CardDescription>
-            Upload a CSV file to import data. Download the template first to
-            ensure your file has the correct format.
+            {tDashboard("csvImportDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -87,7 +87,7 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
                 {template.description}
               </p>
               <p className="mt-2 text-sm">
-                <span className="font-medium">Required fields:</span>{" "}
+                <span className="font-medium">{tDashboard("requiredFields")}</span>{" "}
                 {template.requiredFields.join(", ")}
               </p>
             </div>
@@ -109,12 +109,12 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
               {importing ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
-                  Importing…
+                  {tDashboard("importing")}
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 size-4" />
-                  Upload CSV
+                  {tDashboard("uploadCsv")}
                 </>
               )}
             </Button>

@@ -12,9 +12,11 @@ import {
 import { Building2, Check, ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 
 export function OrganizationSwitcher() {
+  const translate = useI18n();
   const {
     organizations,
     currentOrganizationId,
@@ -38,7 +40,9 @@ export function OrganizationSwitcher() {
     return (
       <Button variant="ghost" className="gap-2 px-2" disabled>
         <Building2 className="size-4" />
-        <span className="text-sm font-medium">Loading…</span>
+        <span className="text-sm font-medium">
+          {translate("untranslatedComponents.labels.loading")}
+        </span>
       </Button>
     );
   }
@@ -48,7 +52,9 @@ export function OrganizationSwitcher() {
       <Button variant="ghost" className="gap-2 px-2" asChild>
         <Link href="/settings/organization/new">
           <Plus className="size-4" />
-          <span className="text-sm font-medium">Create Organization</span>
+          <span className="text-sm font-medium">
+            {translate("untranslatedComponents.labels.createOrganization")}
+          </span>
         </Link>
       </Button>
     );
@@ -64,13 +70,16 @@ export function OrganizationSwitcher() {
         <Button variant="ghost" className="gap-2 px-2">
           <Building2 className="size-4" />
           <span className="text-sm font-medium">
-            {currentOrg?.name || "Select Organization"}
+            {currentOrg?.name ||
+              translate("untranslatedComponents.labels.selectOrganization")}
           </span>
           <ChevronDown className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-56">
-        <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          {translate("untranslatedComponents.labels.organizations")}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {organizations.map((org) => (
           <DropdownMenuItem

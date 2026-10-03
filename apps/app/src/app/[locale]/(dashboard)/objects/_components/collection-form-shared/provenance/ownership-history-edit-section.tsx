@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { CheckCircle, Edit, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "../../../[id]/_components/format-ownership-date-range";
 import { EditSection } from "../edit-section";
 import type { CollectionFormTabProps, OwnershipEntry } from "../types";
@@ -33,15 +34,18 @@ export function OwnershipHistoryEditSection({
   setEditingOwnershipEntryId,
   createOwnershipEntry,
 }: OwnershipHistoryEditSectionProps) {
+  const tRoot = useI18n();
   return (
     <EditSection
-      title="Ownership history"
-      description="Document the chain of ownership entry by entry."
+      title={tRoot("untranslatedRecords.objects.form.ownershipHistory")}
+      description={tRoot(
+        "untranslatedRecords.objects.form.ownershipHistoryDescription",
+      )}
     >
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            Add dated entries with notes and verification details.
+            {tRoot("untranslatedRecords.objects.form.ownershipHistoryHint")}
           </p>
           <Button
             type="button"
@@ -64,14 +68,14 @@ export function OwnershipHistoryEditSection({
             }}
           >
             <Plus className="mr-2 size-4" />
-            Add Entry
+            {tRoot("untranslatedRecords.objects.form.addEntry")}
           </Button>
         </div>
 
         {(formData.ownershipHistory || []).length === 0 ? (
           <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/60">
             <p className="text-sm text-muted-foreground">
-              No ownership history recorded.
+              {tRoot("untranslatedRecords.objects.form.noOwnershipHistory")}
             </p>
           </div>
         ) : (
@@ -90,12 +94,20 @@ export function OwnershipHistoryEditSection({
                       <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="truncate text-sm font-medium">
-                            {entry.owner || `Ownership entry ${index + 1}`}
+                            {entry.owner ||
+                              tRoot(
+                                "untranslatedRecords.objects.ownership.entryNumber",
+                                {
+                                  number: index + 1,
+                                },
+                              )}
                           </h3>
                           {entry.verified ? (
                             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-500">
                               <CheckCircle className="size-3" />
-                              Verified
+                              {tRoot(
+                                "untranslatedRecords.objects.detail.verified",
+                              )}
                             </span>
                           ) : null}
                         </div>
@@ -109,7 +121,10 @@ export function OwnershipHistoryEditSection({
                         ) : null}
                         {entry.verificationSource ? (
                           <p className="text-xs text-muted-foreground">
-                            Source: {entry.verificationSource}
+                            {tRoot(
+                              "untranslatedRecords.objects.attributes.source",
+                            )}{" "}
+                            {entry.verificationSource}
                           </p>
                         ) : null}
                       </div>
@@ -130,7 +145,7 @@ export function OwnershipHistoryEditSection({
                             onClick={() => setEditingOwnershipEntryId(entryId)}
                           >
                             <Edit className="mr-2 size-4" />
-                            Edit
+                            {tRoot("untranslatedRecords.objects.actions.edit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
@@ -143,7 +158,9 @@ export function OwnershipHistoryEditSection({
                             }}
                           >
                             <Trash2 className="mr-2 size-4" />
-                            Delete
+                            {tRoot(
+                              "untranslatedRecords.deaccessions.actions.delete",
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -160,10 +177,15 @@ export function OwnershipHistoryEditSection({
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <h3 className="text-sm font-medium">
-                        Edit ownership entry {index + 1}
+                        {tRoot(
+                          "untranslatedRecords.objects.ownership.editEntry",
+                        )}{" "}
+                        {index + 1}
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Capture ownership dates, notes, and verification.
+                        {tRoot(
+                          "untranslatedRecords.objects.form.captureOwnershipDates",
+                        )}
                       </p>
                     </div>
                     <Button
@@ -172,7 +194,7 @@ export function OwnershipHistoryEditSection({
                       size="sm"
                       onClick={() => setEditingOwnershipEntryId(null)}
                     >
-                      Finish editing
+                      {tRoot("untranslatedRecords.objects.form.finishEditing")}
                     </Button>
                   </div>
 

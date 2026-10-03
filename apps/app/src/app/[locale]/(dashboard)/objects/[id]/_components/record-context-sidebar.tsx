@@ -21,7 +21,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
+import { formatConditionLabel } from "./condition-display";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface RecordContextSidebarProps {
@@ -54,6 +55,7 @@ export function RecordContextSidebar({
   verified,
   verifiedByName,
 }: RecordContextSidebarProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
 
   // Query for related objects (same collection group or parent/child)
@@ -110,9 +112,11 @@ export function RecordContextSidebar({
       className="hidden w-96 shrink-0 border-l border-border/60 bg-background 2xl:flex"
     >
       <SidebarHeader className="border-b border-border/60 p-4">
-        <h3 className="text-xs font-medium text-foreground">Record Context</h3>
+        <h3 className="text-xs font-medium text-foreground">
+          {tRoot("untranslatedRecords.objects.detail.recordContext")}
+        </h3>
         <p className="text-[10px] text-muted-foreground">
-          History and related items
+          {tRoot("untranslatedRecords.objects.detail.historyRelatedItems")}
         </p>
       </SidebarHeader>
 
@@ -121,7 +125,7 @@ export function RecordContextSidebar({
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10" />
           <Image
             src={heroImageUrl}
-            alt="Object"
+            alt={tRoot("untranslatedRecords.objects.attributes.object")}
             fill
             sizes="320px"
             className="object-cover"
@@ -134,15 +138,16 @@ export function RecordContextSidebar({
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">
-                Condition
+                {tRoot("objects.form.condition")}
               </p>
               <p className="text-xs font-medium text-foreground">
-                {condition || "Not assessed"}
+                {formatConditionLabel(condition, tRoot) ||
+                  tRoot("untranslatedRecords.objects.status.notAssessed")}
               </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">
-                Valuation
+                {tRoot("untranslatedRecords.objects.detail.valuation")}
               </p>
               <p className="text-xs font-medium text-foreground">
                 {valuation ? formatCurrency(valuation, locale, "USD") : "—"}
@@ -154,7 +159,7 @@ export function RecordContextSidebar({
         {(provenance || (ownershipHistory && ownershipHistory.length > 0)) && (
           <SidebarGroup className="p-0">
             <SidebarGroupLabel className="mb-3 h-auto p-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Provenance
+              {tRoot("objects.tabs.provenance")}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               {ownershipHistory && ownershipHistory.length > 0 ? (
@@ -202,26 +207,7 @@ export function RecordContextSidebar({
           <SidebarSeparator className="my-4" />
         )}
 
-        {/* Tags Section */}
-        {tags && tags.length > 0 && (
-          <SidebarGroup className="p-0">
-            <SidebarGroupLabel className="mb-3 h-auto p-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Tags
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="cursor-pointer rounded border border-border bg-secondary px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {tags && tags.length > 0 && <RecordTagsSection tags={tags} />}
 
         {tags && tags.length > 0 && <SidebarSeparator className="my-4" />}
 
@@ -229,7 +215,9 @@ export function RecordContextSidebar({
         {relatedObjects.length > 0 && (
           <SidebarGroup className="p-0">
             <SidebarGroupLabel className="mb-3 h-auto p-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Related Objects ({relatedObjects.length})
+              {tRoot("untranslatedRecords.objects.detail.relatedObjectsCount", {
+                count: relatedObjects.length,
+              })}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <div className="flex flex-wrap gap-2">
@@ -269,7 +257,7 @@ export function RecordContextSidebar({
         {/* Recent Activity Section */}
         <SidebarGroup className="p-0">
           <SidebarGroupLabel className="mb-3 h-auto p-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Recent Activity
+            {tRoot("analytics.compliance.recentActivity")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="relative space-y-6 border-l border-border/60 pl-3">
@@ -299,7 +287,7 @@ export function RecordContextSidebar({
                 ))
               ) : (
                 <p className="text-[11px] text-muted-foreground">
-                  No recent activity
+                  {tRoot("analytics.compliance.noRecentActivity")}
                 </p>
               )}
             </div>
@@ -313,10 +301,12 @@ export function RecordContextSidebar({
             <ShieldCheck className="size-4 text-primary" />
             <div className="flex-1">
               <p className="text-[10px] font-medium text-primary">
-                Record Verified
+                {tRoot("untranslatedRecords.objects.detail.recordVerified")}
               </p>
               <p className="text-[9px] text-primary/60">
-                Approved by {verifiedByName || "Curator"}
+                {tRoot("exhibitions.detail.approvedBy")}{" "}
+                {verifiedByName ||
+                  tRoot("untranslatedRecords.objects.roles.curator")}
               </p>
             </div>
           </div>
@@ -330,12 +320,12 @@ export function RecordContextSidebar({
           >
             <Link href={`/objects/${collectionId}/edit`}>
               <Pencil className="mr-1.5 size-3" />
-              Edit
+              {tRoot("untranslatedRecords.objects.actions.edit")}
             </Link>
           </Button>
           <Button variant="outline" size="sm" className="flex-1 text-xs">
             <Share2 className="mr-1.5 size-3" />
-            Share
+            {tRoot("objects.detail.share")}
           </Button>
         </div>
       </SidebarFooter>
@@ -359,4 +349,28 @@ function formatRelativeTime(timestamp: number, locale: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function RecordTagsSection({ tags }: { tags: string[] }) {
+  const tRoot = useI18n();
+
+  return (
+    <SidebarGroup className="p-0">
+      <SidebarGroupLabel className="mb-3 h-auto p-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        {tRoot("objects.printView.tags")}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="cursor-pointer rounded border border-border bg-secondary px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 }

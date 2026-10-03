@@ -2,6 +2,7 @@ import { cn } from "@v1/ui/utils";
 import { Box, ExternalLink, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 
 interface LocationObjectThumbnailProps {
   object: {
@@ -20,15 +21,23 @@ interface LocationObjectThumbnailProps {
   textPlacement?: "below" | "overlay";
 }
 
-function formatStatus(status?: string) {
+function formatStatus(
+  status: string | undefined,
+  translate: ReturnType<typeof useI18n>,
+) {
   if (!status) {
-    return "Unknown";
+    return translate("common.unknown");
   }
-
-  return status
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  const statusKeys: Record<string, string> = {
+    active: "active",
+    loaned: "loaned",
+    deaccessioned: "deaccessioned",
+    archived: "archived",
+    deleted: "deleted",
+    on_display: "onDisplay",
+  };
+  const key = statusKeys[status];
+  return key ? translate(`objects.filters.${key}`) : status.replaceAll("_", " ");
 }
 
 export function LocationObjectThumbnail({
@@ -39,6 +48,7 @@ export function LocationObjectThumbnail({
   showFooter = false,
   textPlacement = "below",
 }: LocationObjectThumbnailProps) {
+  const t = useI18n();
   const isOverlay = textPlacement === "overlay";
 
   return (
@@ -77,7 +87,7 @@ export function LocationObjectThumbnail({
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3">
               <div className="min-w-0">
                 <div className="truncate font-mono text-[10px] uppercase tracking-[0.18em] text-white/80">
-                  {object.accessionNumber ?? "No accession"}
+                  {object.accessionNumber ?? t("untranslatedDashboard.locations.noAccession")}
                 </div>
                 <div
                   className={cn(
@@ -100,7 +110,7 @@ export function LocationObjectThumbnail({
         <div className="flex items-start justify-between gap-3 px-3 py-2.5">
           <div className="min-w-0">
             <div className="truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              {object.accessionNumber ?? "No accession"}
+              {object.accessionNumber ?? t("untranslatedDashboard.locations.noAccession")}
             </div>
             <div
               className={cn(
@@ -119,10 +129,10 @@ export function LocationObjectThumbnail({
 
       {showFooter ? (
         <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-          <span className="truncate">{formatStatus(object.status)}</span>
+          <span className="truncate">{formatStatus(object.status, t)}</span>
           <span className="inline-flex items-center gap-1 text-muted-foreground">
             <Box className="size-3" />
-            Open record
+            {t("untranslatedDashboard.locationViews.openRecord")}
           </span>
         </div>
       ) : null}

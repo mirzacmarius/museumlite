@@ -3,25 +3,30 @@
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Switch } from "@v1/ui/switch";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
-
 export function ObjectRequestDigitalTab({
   formData,
   updateField,
 }: CollectionFormTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Digital asset visibility"
-        description="Control how this object appears and behaves in public experiences."
+        title={tRoot("untranslatedRecords.objects.form.digitalVisibility")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.publicVisibilityDescription",
+        )}
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="isPubliclyVisible">Public Visibility</Label>
+              <Label htmlFor="isPubliclyVisible">
+                {tRoot("objects.printPreview.publicVisibility")}
+              </Label>
               <p className="text-xs text-muted-foreground">
-                Allow this object to appear in public catalogs.
+                {tRoot("untranslatedRecords.objects.form.allowPublicCatalog")}
               </p>
             </div>
             <Switch
@@ -36,10 +41,12 @@ export function ObjectRequestDigitalTab({
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
             <div className="space-y-0.5">
               <Label htmlFor="isHighResDownloadable">
-                High-Resolution Downloads
+                {tRoot(
+                  "untranslatedRecords.objects.form.highResolutionDownloads",
+                )}
               </Label>
               <p className="text-xs text-muted-foreground">
-                Allow public users to download high-resolution images.
+                {tRoot("untranslatedRecords.objects.form.allowPublicDownload")}
               </p>
             </div>
             <Switch
@@ -53,9 +60,11 @@ export function ObjectRequestDigitalTab({
 
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="isSearchable">Searchable</Label>
+              <Label htmlFor="isSearchable">
+                {tRoot("objects.form.searchable")}
+              </Label>
               <p className="text-xs text-muted-foreground">
-                Include this object in public search results.
+                {tRoot("untranslatedRecords.objects.form.publicSearchResults")}
               </p>
             </div>
             <Switch
@@ -69,9 +78,11 @@ export function ObjectRequestDigitalTab({
 
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="isValuationVisible">Valuation Visibility</Label>
+              <Label htmlFor="isValuationVisible">
+                {tRoot("untranslatedRecords.objects.form.valuationVisibility")}
+              </Label>
               <p className="text-xs text-muted-foreground">
-                Show valuation information on the public page.
+                {tRoot("untranslatedRecords.objects.form.showValuation")}
               </p>
             </div>
             <Switch
@@ -86,20 +97,24 @@ export function ObjectRequestDigitalTab({
       </EditSection>
 
       <EditSection
-        title="Public URL"
-        description="Optional custom slug for public-facing access."
+        title={tRoot("untranslatedRecords.objects.form.publicUrl")}
+        description={tRoot(
+          "untranslatedRecords.objects.attributes.optionalPublicSlug",
+        )}
       >
         <div className="space-y-2">
-          <Label htmlFor="publicSlug">Public URL Slug</Label>
+          <Label htmlFor="publicSlug">
+            {tRoot("objects.form.publicUrlSlug")}
+          </Label>
           <Input
             id="publicSlug"
             value={formData.publicSlug ?? ""}
             onChange={(event) => updateField("publicSlug", event.target.value)}
-            placeholder="custom-url-slug"
+            placeholder={tRoot("objects.form.placeholders.urlSlug")}
             className="font-mono text-sm"
           />
           <p className="text-xs text-muted-foreground">
-            Leave blank to use the default public path.
+            {tRoot("untranslatedRecords.objects.form.leaveBlankPublicPath")}
           </p>
         </div>
       </EditSection>

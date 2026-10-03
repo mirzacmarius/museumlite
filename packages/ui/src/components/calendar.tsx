@@ -1,5 +1,6 @@
 "use client";
 
+import { format } from "date-fns";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -12,6 +13,7 @@ import {
   getDefaultClassNames,
   type Locale,
 } from "react-day-picker";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button, buttonVariants } from "./button";
 
@@ -26,11 +28,14 @@ function Calendar({
   captionLayout = "label",
   buttonVariant = "ghost",
   locale,
+  labels,
   formatters,
   components,
   ...props
 }: CalendarProps) {
   const defaultClassNames = getDefaultClassNames();
+  const { dateFnsLocale, messages } = useUiLocale();
+  const effectiveLocale = locale ?? dateFnsLocale;
 
   return (
     <DayPicker
@@ -42,10 +47,30 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
-      locale={locale}
+      locale={effectiveLocale}
+      labels={{
+        ...labels,
+        labelNext: labels?.labelNext ?? (() => messages.calendar.nextMonth),
+        labelPrevious:
+          labels?.labelPrevious ?? (() => messages.calendar.previousMonth),
+        labelMonthDropdown:
+          labels?.labelMonthDropdown ?? (() => messages.calendar.month),
+        labelYearDropdown:
+          labels?.labelYearDropdown ?? (() => messages.calendar.year),
+        labelDayButton:
+          labels?.labelDayButton ??
+          ((day, modifiers) => {
+            const date = format(day, "PPP", { locale: dateFnsLocale });
+            const context = [
+              modifiers.today ? messages.calendar.today : undefined,
+              modifiers.selected ? messages.calendar.selected : undefined,
+            ].filter(Boolean);
+            return context.length ? `${date}, ${context.join(", ")}` : date;
+          }),
+      }}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString(locale?.code, { month: "short" }),
+          date.toLocaleString(effectiveLocale.code, { month: "short" }),
         ...formatters,
       }}
       classNames={{

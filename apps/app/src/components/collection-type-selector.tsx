@@ -15,6 +15,7 @@ import {
 } from "@v1/ui/select";
 import { Archive, Car, Coins, Gem, Leaf, Package, Wine } from "lucide-react";
 import type { ReactNode } from "react";
+import { useI18n } from "@/locales/client";
 
 export type { CollectionType };
 
@@ -66,6 +67,7 @@ export function CollectionTypeSelector({
   enabledModules = EMPTY_ENABLED_MODULES,
   disabled,
 }: CollectionTypeSelectorProps) {
+  const translate = useI18n();
   const collectionTypes = getCollectionTypes(enabledModules);
   const selectedType: CollectionType =
     value && collectionTypes.some((type) => type.value === value)
@@ -74,7 +76,9 @@ export function CollectionTypeSelector({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="collectionType">Collection Type</Label>
+      <Label htmlFor="collectionType">
+        {translate("untranslatedComponents.labels.collectionType")}
+      </Label>
       <Select
         value={selectedType}
         onValueChange={(val) => {
@@ -110,7 +114,9 @@ export function CollectionTypeSelector({
         </SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground">
-        Determines which specialized fields are available for this item
+        {translate(
+          "untranslatedComponents.labels.determinesWhichSpecializedFieldsAreAvailableForThisItem",
+        )}
       </p>
     </div>
   );

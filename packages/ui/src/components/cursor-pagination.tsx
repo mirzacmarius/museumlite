@@ -1,7 +1,7 @@
 "use client";
 
 import type * as React from "react";
-
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 
@@ -29,14 +29,9 @@ type NextPrevProps = {
 export type CursorPaginationProps = LoadMoreProps | NextPrevProps;
 
 export function CursorPagination(props: CursorPaginationProps) {
+  const { messages } = useUiLocale();
   if (props.variant === "loadMore") {
-    const {
-      countLabel,
-      isDone,
-      onLoadMore,
-      loadMoreLabel = "Load more",
-      className,
-    } = props;
+    const { countLabel, isDone, onLoadMore, loadMoreLabel, className } = props;
     return (
       <div
         className={cn(
@@ -54,7 +49,7 @@ export function CursorPagination(props: CursorPaginationProps) {
               onClick={onLoadMore}
               className="h-7 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground"
             >
-              {loadMoreLabel}
+              {loadMoreLabel ?? messages.pagination.loadMore}
             </Button>
           )}
         </div>
@@ -67,8 +62,8 @@ export function CursorPagination(props: CursorPaginationProps) {
     canNext,
     onPrev,
     onNext,
-    prevLabel = "Previous",
-    nextLabel = "Next",
+    prevLabel,
+    nextLabel,
     className,
   } = props;
 
@@ -89,7 +84,7 @@ export function CursorPagination(props: CursorPaginationProps) {
           disabled={!canPrev}
           className="h-7 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
         >
-          {prevLabel}
+          {prevLabel ?? messages.pagination.previous}
         </Button>
         <Button
           type="button"
@@ -99,7 +94,7 @@ export function CursorPagination(props: CursorPaginationProps) {
           disabled={!canNext}
           className="h-7 border-input bg-background/60 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
         >
-          {nextLabel}
+          {nextLabel ?? messages.pagination.next}
         </Button>
       </div>
     </div>

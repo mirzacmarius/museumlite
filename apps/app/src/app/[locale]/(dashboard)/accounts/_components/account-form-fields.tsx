@@ -46,22 +46,46 @@ type ChangeField = <Key extends keyof AccountFormValues>(
 interface AccountFormFieldsProps {
   formData: AccountFormValues;
   t: ReturnType<typeof useScopedI18n<"accounts">>;
+  untranslated: ReturnType<
+    typeof useScopedI18n<"untranslatedDashboard.accounts">
+  >;
   onChange: ChangeField;
 }
 
 export function AccountFormFields({
   formData,
   t,
+  untranslated,
   onChange,
 }: AccountFormFieldsProps) {
   return (
     <>
-      <AccountHolderSection formData={formData} t={t} onChange={onChange} />
-      <AddressSection formData={formData} t={t} onChange={onChange} />
+      <AccountHolderSection
+        formData={formData}
+        t={t}
+        untranslated={untranslated}
+        onChange={onChange}
+      />
+      <AddressSection
+        formData={formData}
+        t={t}
+        untranslated={untranslated}
+        onChange={onChange}
+      />
       {formData.holderType === "organization" && (
-        <ContactPersonSection formData={formData} t={t} onChange={onChange} />
+        <ContactPersonSection
+          formData={formData}
+          t={t}
+          untranslated={untranslated}
+          onChange={onChange}
+        />
       )}
-      <NotesSection notes={formData.notes} t={t} onChange={onChange} />
+      <NotesSection
+        notes={formData.notes}
+        t={t}
+        untranslated={untranslated}
+        onChange={onChange}
+      />
       <AccountTypeSection
         accountType={formData.accountType}
         t={t}
@@ -73,17 +97,22 @@ export function AccountFormFields({
 
 type FormSectionProps = AccountFormFieldsProps;
 
-function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
+function AccountHolderSection({
+  formData,
+  t,
+  untranslated,
+  onChange,
+}: FormSectionProps) {
   const isOrganization = formData.holderType === "organization";
 
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground">
-        Account Holder
+        {untranslated("accountHolder")}
       </h3>
       <div className="space-y-4">
         <div className="space-y-3">
-          <Label>Holder Type</Label>
+          <Label>{untranslated("holderType")}</Label>
           <RadioGroup
             className="grid gap-3 md:grid-cols-2"
             value={formData.holderType}
@@ -95,23 +124,23 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
           >
             <HolderTypeOption
               checked={formData.holderType === "privatePerson"}
-              description="Individuals acting in their own name."
+              description={untranslated("privatePersonDescription")}
               id="holder-type-privatePerson"
-              label="Private Person"
+              label={untranslated("privatePerson")}
               value="privatePerson"
             />
             <HolderTypeOption
               checked={isOrganization}
-              description="Companies, museums, galleries, and institutions."
+              description={untranslated("organizationHolderDescription")}
               id="holder-type-organization"
-              label="Business / Organization"
+              label={untranslated("organizationHolder")}
               value="organization"
             />
           </RadioGroup>
         </div>
         <div className="space-y-2">
           <Label htmlFor="businessName">
-            {isOrganization ? t("form.businessName") : "Full Name"}{" "}
+            {isOrganization ? t("form.businessName") : untranslated("fullName")}{" "}
             <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -121,7 +150,7 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
             placeholder={
               isOrganization
                 ? t("form.placeholders.businessName")
-                : "e.g., Jane Doe"
+                : untranslated("fullNamePlaceholder")
             }
             required
           />
@@ -129,14 +158,14 @@ function AccountHolderSection({ formData, t, onChange }: FormSectionProps) {
         {isOrganization ? (
           <TextInput
             id="taxId"
-            label="Organization Number"
-            placeholder="e.g., 987 654 321"
+            label={untranslated("organizationNumber")}
+            placeholder={untranslated("organizationNumberPlaceholder")}
             value={formData.taxId}
             onChange={(value) => onChange("taxId", value)}
           />
         ) : (
           <DatePickerInput
-            label="Date of Birth"
+            label={untranslated("dateOfBirth")}
             id="dateOfBirth"
             value={formData.dateOfBirth}
             onChange={(value) => onChange("dateOfBirth", value)}
@@ -279,15 +308,17 @@ function ContactPersonSection({ formData, t, onChange }: FormSectionProps) {
 function NotesSection({
   notes,
   t,
+  untranslated,
   onChange,
 }: {
   notes: string;
   t: AccountFormFieldsProps["t"];
+  untranslated: AccountFormFieldsProps["untranslated"];
   onChange: ChangeField;
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor="notes">Additional Information / Notes</Label>
+      <Label htmlFor="notes">{untranslated("additionalNotes")}</Label>
       <Textarea
         id="notes"
         value={notes}

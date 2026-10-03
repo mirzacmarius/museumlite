@@ -2,6 +2,7 @@
 
 import { CHART_COLOR_ARRAY, ChartContainer } from "@v1/ui/charts";
 import dynamic from "next/dynamic";
+import { useI18n } from "@/locales/client";
 
 interface LoanStatusChartProps {
   data: {
@@ -51,30 +52,25 @@ const LazyPieChart = dynamic(
     }),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex h-[200px] items-center justify-center">
-        <div className="animate-pulse text-sm text-muted-foreground">
-          Loading chart…
-        </div>
-      </div>
-    ),
+    loading: () => <div className="h-[200px] animate-pulse rounded-md bg-muted/30" />,
   },
 );
 
 export function LoanStatusChart({ data }: LoanStatusChartProps) {
+  const t = useI18n();
   const chartData = [
     {
-      name: "Pending",
+      name: t("untranslatedDashboard.analytics.statusPending"),
       value: data.pending,
       color: CHART_COLOR_ARRAY[0] ?? "rgb(129, 140, 248)",
     },
     {
-      name: "Active",
+      name: t("untranslatedDashboard.analytics.statusActive"),
       value: data.active,
       color: CHART_COLOR_ARRAY[1] ?? "rgb(52, 211, 153)",
     },
     {
-      name: "Returned",
+      name: t("untranslatedDashboard.analytics.statusReturned"),
       value: data.returned,
       color: CHART_COLOR_ARRAY[2] ?? "rgb(251, 191, 36)",
     },
@@ -85,7 +81,7 @@ export function LoanStatusChart({ data }: LoanStatusChartProps) {
   if (chartData.length === 0 || total === 0) {
     return (
       <div className="flex h-[200px] items-center justify-center text-muted-foreground text-sm">
-        No loan data available
+        {t("untranslatedDashboard.analytics.noLoanData")}
       </div>
     );
   }

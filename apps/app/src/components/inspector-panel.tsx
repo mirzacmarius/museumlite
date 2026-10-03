@@ -12,6 +12,7 @@ import {
 import { cn } from "@v1/ui/utils";
 import { ChevronRight, X } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface InspectorPanelContextValue {
   isOpen: boolean;
@@ -89,6 +90,7 @@ export function InspectorPanel({
   width = "md",
   onClose,
 }: InspectorPanelProps) {
+  const translate = useI18n();
   const { isOpen, setIsOpen, setSelectedId } = useInspectorPanel();
 
   const handleClose = () => {
@@ -128,7 +130,9 @@ export function InspectorPanel({
               onClick={handleClose}
             >
               <X className="size-4" />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">
+                {translate("untranslatedComponents.labels.close")}
+              </span>
             </Button>
           </div>
         </SheetHeader>

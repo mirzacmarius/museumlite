@@ -11,6 +11,7 @@ import {
 } from "@v1/ui/table";
 import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 import type { ImportState } from "../import-objects-types";
 
 interface ImportObjectsPreviewStepProps {
@@ -26,6 +27,7 @@ export function ImportObjectsPreviewStep({
   onBackToValidation,
   onStartImport,
 }: ImportObjectsPreviewStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -34,13 +36,15 @@ export function ImportObjectsPreviewStep({
             {t("csvImport.previewTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {state.rows.length} rows ready to import from {state.file?.name}
+            {state.rows.length}{" "}
+            {tRoot("untranslatedRecords.collections.import.rowsReady")}{" "}
+            {state.file?.name}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBackToValidation}>
             <ArrowLeft className="mr-2 size-4" />
-            Back to Validation
+            {tRoot("untranslatedRecords.collections.import.backToValidation")}
           </Button>
           <PermissionGate permission="collections.create">
             <Button
@@ -49,7 +53,8 @@ export function ImportObjectsPreviewStep({
               className="bg-primary hover:bg-primary/90"
             >
               <Upload className="mr-2 size-4" />
-              Import {state.rows.length} Objects
+              {tRoot("untranslatedRecords.objects.actions.import")}{" "}
+              {state.rows.length} {tRoot("loans.actions.objects")}
             </Button>
           </PermissionGate>
         </div>
@@ -60,8 +65,8 @@ export function ImportObjectsPreviewStep({
           <div className="flex items-center gap-2 text-amber-600">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.validationErrors.length} rows were skipped due to
-              validation errors
+              {state.validationErrors.length}{" "}
+              {tRoot("untranslatedRecords.collections.import.rowsSkipped")}
             </span>
           </div>
         </div>
@@ -72,7 +77,8 @@ export function ImportObjectsPreviewStep({
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.errors.length} validation errors
+              {state.errors.length}{" "}
+              {tRoot("untranslatedRecords.collections.import.validationErrors")}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-destructive">
@@ -80,7 +86,11 @@ export function ImportObjectsPreviewStep({
               <li key={error}>{error}</li>
             ))}
             {state.errors.length > 5 ? (
-              <li>... and {state.errors.length - 5} more</li>
+              <li>
+                {tRoot("untranslatedRecords.collections.import.more")}{" "}
+                {state.errors.length - 5}{" "}
+                {tRoot("untranslatedRecords.objects.loading.more")}
+              </li>
             ) : null}
           </ul>
         </div>
@@ -91,12 +101,24 @@ export function ImportObjectsPreviewStep({
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Accession #</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Creator</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Period</TableHead>
-              <TableHead>Location</TableHead>
+              <TableHead>
+                {tRoot("collections.csvImport.tableHeaders.accession")}
+              </TableHead>
+              <TableHead>
+                {tRoot("collections.csvImport.tableHeaders.title")}
+              </TableHead>
+              <TableHead>
+                {tRoot("collections.csvImport.tableHeaders.creator")}
+              </TableHead>
+              <TableHead>
+                {tRoot("collections.csvImport.tableHeaders.type")}
+              </TableHead>
+              <TableHead>
+                {tRoot("collections.csvImport.tableHeaders.period")}
+              </TableHead>
+              <TableHead>
+                {tRoot("collections.csvImport.tableHeaders.location")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -107,7 +129,12 @@ export function ImportObjectsPreviewStep({
                 <TableCell className="text-muted-foreground">
                   {rowIndex + 1}
                 </TableCell>
-                <TableCell>{row.accessionNumber || "(auto)"}</TableCell>
+                <TableCell>
+                  {row.accessionNumber ||
+                    tRoot(
+                      "untranslatedRecords.collections.media.autoAccession",
+                    )}
+                </TableCell>
                 <TableCell className="max-w-[200px] truncate">
                   {row.title}
                 </TableCell>
@@ -121,7 +148,9 @@ export function ImportObjectsPreviewStep({
         </Table>
         {state.rows.length > 20 ? (
           <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-            Showing 20 of {state.rows.length} rows
+            {tRoot("untranslatedRecords.collections.import.showingRowsCount", {
+              count: state.rows.length,
+            })}
           </div>
         ) : null}
       </div>

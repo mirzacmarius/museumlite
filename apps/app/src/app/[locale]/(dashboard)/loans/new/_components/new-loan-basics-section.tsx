@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { AccountCombobox } from "@/components/account-combobox";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
 interface NewLoanBasicsSectionProps {
@@ -26,6 +26,7 @@ export function NewLoanBasicsSection({
   formData,
   onFormDataChange,
 }: NewLoanBasicsSectionProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const t = useScopedI18n("loans");
 
@@ -35,13 +36,13 @@ export function NewLoanBasicsSection({
         <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
           1
         </span>
-        Basic Information
+        {tRoot("loans.actions.basicInformation")}
       </h2>
 
       <div className="grid gap-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="type">Loan Type</Label>
+            <Label htmlFor="type">{tRoot("loans.actions.loanTypeLabel")}</Label>
             <Select
               value={formData.type}
               onValueChange={(value: "incoming" | "outgoing") =>

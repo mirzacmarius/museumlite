@@ -16,7 +16,7 @@ import { Textarea } from "@v1/ui/textarea";
 import { Edit } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface MediaEditDialogProps {
   media: {
@@ -40,6 +40,7 @@ export function MediaEditDialog({
   open,
   onOpenChange,
 }: MediaEditDialogProps) {
+  const tRoot = useI18n();
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
   const [formData, setFormData] = useState({
@@ -86,14 +87,18 @@ export function MediaEditDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit Media Metadata</DialogTitle>
+            <DialogTitle>
+              {tRoot("untranslatedRecords.objects.form.editMediaMetadata")}
+            </DialogTitle>
             <DialogDescription>
-              Update the metadata for this media file.
+              {tRoot("untranslatedRecords.objects.form.updateMediaMetadata")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="caption">Caption</Label>
+              <Label htmlFor="caption">
+                {tRoot("untranslatedRecords.objects.detail.caption")}
+              </Label>
               <Textarea
                 id="caption"
                 value={formData.caption}
@@ -105,7 +110,9 @@ export function MediaEditDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="photographer">Photographer</Label>
+              <Label htmlFor="photographer">
+                {tRoot("untranslatedRecords.objects.attributes.photographer")}
+              </Label>
               <Input
                 id="photographer"
                 value={formData.photographer}
@@ -119,7 +126,9 @@ export function MediaEditDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="copyright">Copyright</Label>
+              <Label htmlFor="copyright">
+                {tRoot("untranslatedRecords.objects.attributes.copyright")}
+              </Label>
               <Input
                 id="copyright"
                 value={formData.copyright}

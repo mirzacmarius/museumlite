@@ -15,6 +15,7 @@ import { MaterialsCombobox } from "@/components/materials-combobox";
 import { PermissionGate } from "@/components/permission-gate";
 import { TemplateCombobox } from "@/components/template-combobox";
 import { TypeCombobox } from "@/components/type-combobox";
+import { useScopedI18n } from "@/locales/client";
 import {
   type CounterScope,
   LocationTypesEditor,
@@ -80,27 +81,29 @@ export function PreferencesSettingsForm({
   isSubmitting,
   onSavePreferences,
 }: PreferencesSettingsFormProps) {
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
+
   return (
     <PermissionGate permission="organization.manage_settings">
       <SettingsSection
-        title="Physical Descriptions"
-        description="Reusable vocabulary for cataloging object materials and types."
+        title={tDashboard("physicalDescriptions")}
+        description={tDashboard("physicalDescriptionsDescription")}
       >
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-2">
-            <Label>Materials</Label>
+            <Label>{tDashboard("materials")}</Label>
             <MaterialsCombobox
               organizationId={currentOrganizationId}
               value={[]}
-              placeholder="Search or add materials..."
+              placeholder={tDashboard("searchOrAddMaterials")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Object Types</Label>
+            <Label>{tDashboard("objectTypes")}</Label>
             <TypeCombobox
               organizationId={currentOrganizationId}
               value={[]}
-              placeholder="Search or add object types..."
+              placeholder={tDashboard("searchOrAddObjectTypes")}
             />
           </div>
         </div>
@@ -192,23 +195,22 @@ export function PreferencesSettingsForm({
       </SettingsSection>
 
       <SettingsSection
-        title="Object transfers"
-        description="Control whether other organizations can find and request transfers to your organization."
+        title={tDashboard("objectTransfers")}
+        description={tDashboard("objectTransfersDescription")}
       >
         {organizationAccountNumber ? (
           <p className="mb-4 text-sm text-muted-foreground">
-            Your transfer ID is{" "}
+            {tDashboard("yourTransferIdIs")}{" "}
             <span className="font-mono text-foreground">
               {organizationAccountNumber}
             </span>
-            . Share this with partners when they transfer objects to your
-            collection.
+            {tDashboard("shareTransferIdWithPartners")}
           </p>
         ) : null}
         <PreferenceSwitch
           id="allowIncomingTransferRequests"
-          label="Allow incoming transfer requests"
-          description="When enabled, your organization appears in destination search and accepts object transfer requests from other organizations. When disabled, your organization is hidden and transfers are rejected."
+          label={tDashboard("allowIncomingTransferRequests")}
+          description={tDashboard("allowIncomingTransferRequestsDescription")}
           checked={formData.allowIncomingTransferRequests}
           onCheckedChange={(checked) =>
             setFormData((prev) => ({
@@ -219,12 +221,12 @@ export function PreferencesSettingsForm({
         />
       </SettingsSection>
 
-      <SettingsSection title="Automations and workflows">
+      <SettingsSection title={tDashboard("automationsAndWorkflows")}>
         <div className="space-y-4">
           <PreferenceSwitch
             id="accessionWorkflowEnabled"
-            label="Accessions approval workflow"
-            description="When enabled, new object requests are routed for curator and admin approval. When disabled, submitted objects are approved and published immediately."
+            label={tDashboard("accessionsApprovalWorkflow")}
+            description={tDashboard("accessionsApprovalWorkflowDescription")}
             checked={formData.accessionWorkflowEnabled}
             onCheckedChange={(checked) =>
               setFormData((prev) => ({
@@ -235,8 +237,8 @@ export function PreferencesSettingsForm({
           />
           <PreferenceSwitch
             id="deaccessionWorkflowEnabled"
-            label="Deaccessions approval workflow"
-            description="When enabled, deaccession requests require approval before objects are removed. When disabled, deaccession requests are applied immediately."
+            label={tDashboard("deaccessionsApprovalWorkflow")}
+            description={tDashboard("deaccessionsApprovalWorkflowDescription")}
             checked={formData.deaccessionWorkflowEnabled}
             onCheckedChange={(checked) =>
               setFormData((prev) => ({
@@ -248,12 +250,12 @@ export function PreferencesSettingsForm({
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Locations">
+      <SettingsSection title={tDashboard("locations")}>
         <div className="space-y-6">
           <PreferenceSwitch
             id="locationTrackingEnabled"
-            label="Locations and tracking"
-            description="When disabled, location navigation and object placement surfaces are hidden."
+            label={tDashboard("locationsAndTracking")}
+            description={tDashboard("locationsAndTrackingDescription")}
             checked={formData.locationTrackingEnabled}
             onCheckedChange={(checked) =>
               setFormData((prev) => ({

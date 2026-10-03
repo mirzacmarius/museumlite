@@ -5,15 +5,20 @@ import { Hammer, Ruler, Search, Shapes } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { getConditionIcon } from "@/components/condition-combobox";
 import { formatStringListField } from "@/lib/string-list-field";
+import { useI18n } from "@/locales/client";
+import { formatConditionLabel } from "./condition-display";
 import type { CollectionData } from "./types";
 
 interface PhysicalTabProps {
   collection: CollectionData;
 }
 
-function formatObjectType(value?: string) {
+function formatObjectType(
+  value: string | undefined,
+  notSpecifiedLabel: string,
+) {
   if (!value) {
-    return "Not specified";
+    return notSpecifiedLabel;
   }
 
   try {
@@ -28,14 +33,13 @@ function formatObjectType(value?: string) {
 }
 
 export function PhysicalTab({ collection }: PhysicalTabProps) {
+  const tRoot = useI18n();
   const conditionHistory = (collection.conditionHistory ?? []).toSorted(
     (a, b) => b.changedAt - a.changedAt,
   );
   const latestConditionEntry = conditionHistory[0];
-  const materials = formatStringListField(
-    collection.materials,
-    "Not specified",
-  );
+  const notSpecified = tRoot("untranslatedRecords.objects.status.notSpecified");
+  const materials = formatStringListField(collection.materials, notSpecified);
   const dimensions =
     collection.dimensions ||
     [
@@ -63,21 +67,21 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
           <div className="space-y-5">
             <div>
               <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Object Type
+                {tRoot("objects.filters.objectType")}
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Shapes className="size-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
-                  {formatObjectType(collection.objectType)}
+                  {formatObjectType(collection.objectType, notSpecified)}
                 </span>
               </div>
             </div>
 
             <div>
               <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Materials
+                {tRoot("objects.form.materials")}
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
@@ -91,21 +95,22 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
 
             <div>
               <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Technique
+                {tRoot("objects.printView.technique")}
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
                   <Hammer className="size-3.5 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
-                  {collection.technique || "Not specified"}
+                  {collection.technique ||
+                    tRoot("untranslatedRecords.objects.status.notSpecified")}
                 </span>
               </div>
             </div>
 
             <div>
               <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Dimensions
+                {tRoot("objects.form.dimensions")}
               </span>
               <div className="flex items-center gap-3">
                 <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
@@ -120,7 +125,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  Diameter
+                  {tRoot("objects.printView.diameter")}
                 </span>
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
@@ -135,7 +140,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
               </div>
               <div>
                 <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  Weight
+                  {tRoot("objects.printView.weight")}
                 </span>
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 items-center justify-center rounded-full border border-border/60 bg-secondary">
@@ -162,7 +167,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
         {/* Condition */}
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <span className="mb-2 block text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Overall Condition
+            {tRoot("untranslatedRecords.objects.detail.overallCondition")}
           </span>
           <div className="space-y-3">
             {conditionHistory.length > 0 ? (
@@ -202,11 +207,13 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                               index === 0 ? "text-primary" : "text-foreground",
                             )}
                           >
-                            {entry.condition}
+                            {formatConditionLabel(entry.condition, tRoot)}
                           </h4>
                           {index === 0 ? (
                             <span className="text-[9px] font-medium uppercase tracking-wider text-primary">
-                              Current
+                              {tRoot(
+                                "untranslatedRecords.objects.status.current",
+                              )}
                             </span>
                           ) : null}
                         </div>
@@ -219,7 +226,14 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                               timeStyle: "medium",
                             }}
                           />{" "}
-                          • By {entry.changedByName || "Unknown"}
+                          •{" "}
+                          {tRoot("untranslatedRecords.objects.logs.byUser", {
+                            name:
+                              entry.changedByName ||
+                              tRoot(
+                                "untranslatedRecords.objects.comments.unknown",
+                              ),
+                          })}
                         </p>
                         {entry.note ? (
                           <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
@@ -237,13 +251,14 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
                   <div className="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 </div>
                 <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                  {collection.condition || "Not assessed"}
+                  {formatConditionLabel(collection.condition, tRoot) ||
+                    tRoot("untranslatedRecords.objects.status.notAssessed")}
                 </span>
               </div>
             )}
             {!latestConditionEntry ? (
               <p className="text-xs text-muted-foreground">
-                No condition history recorded yet.
+                {tRoot("untranslatedRecords.objects.detail.noConditionHistory")}
               </p>
             ) : null}
           </div>
@@ -254,7 +269,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
           <Search className="size-4 text-sky-500" />
-          Inscriptions & Marks
+          {tRoot("untranslatedRecords.objects.detail.inscriptionsMarks")}
         </h3>
         <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-4">
           {collection.inscriptions ? (
@@ -263,7 +278,7 @@ export function PhysicalTab({ collection }: PhysicalTabProps) {
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No inscriptions documented.
+              {tRoot("untranslatedRecords.objects.detail.noInscriptions")}
             </p>
           )}
 

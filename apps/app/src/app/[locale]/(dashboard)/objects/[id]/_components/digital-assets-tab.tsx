@@ -3,8 +3,8 @@
 import { ExternalLink, Globe, Link as LinkIcon } from "lucide-react";
 import { useScopedI18n } from "@/locales/client";
 import {
-  getExternalLinksExcludingSketchfab,
   type CollectionLink,
+  getExternalLinksExcludingSketchfab,
 } from "./media-gallery-utils";
 import type { CollectionData } from "./types";
 

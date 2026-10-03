@@ -6,6 +6,7 @@ import type { FunctionReturnType } from "convex/server";
 import { Edit, Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
@@ -42,11 +43,14 @@ export function CollectionEditMediaTab({
   handleDeleteMedia,
   setEditingImageId,
 }: CollectionEditMediaTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Images"
-        description="Upload images, assign a primary image, and manage thumbnails for the object record."
+        title={tRoot("untranslatedRecords.objects.printView.images")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.uploadImagesDescription",
+        )}
       >
         {images.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -68,7 +72,7 @@ export function CollectionEditMediaTab({
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
                   {file.isPrimary ? (
                     <div className="rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
-                      Primary
+                      {tRoot("objects.form.media.primary")}
                     </div>
                   ) : (
                     <div />
@@ -123,15 +127,17 @@ export function CollectionEditMediaTab({
           <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-border/60">
             <Upload className="mb-2 size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No images uploaded yet.
+              {tRoot("untranslatedRecords.objects.form.noImagesUploaded")}
             </p>
           </div>
         )}
       </EditSection>
 
       <EditSection
-        title="Documents"
-        description="Upload supporting PDFs, scans, and related object files."
+        title={tRoot("objects.digitalAssetsTab.title")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.uploadFilesDescription",
+        )}
       >
         <input
           ref={documentInputRef}
@@ -149,7 +155,7 @@ export function CollectionEditMediaTab({
             onClick={() => documentInputRef.current?.click()}
           >
             <Upload className="mr-2 size-4" />
-            Upload Documents
+            {tRoot("objects.form.actions.uploadDocuments")}
           </Button>
         </div>
 
@@ -165,7 +171,7 @@ export function CollectionEditMediaTab({
                     {document.fileName}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Saved to this object
+                    {tRoot("untranslatedRecords.objects.form.savedToObject")}
                   </p>
                 </div>
                 <Button
@@ -183,7 +189,7 @@ export function CollectionEditMediaTab({
         ) : (
           <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/60">
             <p className="text-sm text-muted-foreground">
-              No documents uploaded yet.
+              {tRoot("loans.actions.noDocumentsUploaded")}
             </p>
           </div>
         )}

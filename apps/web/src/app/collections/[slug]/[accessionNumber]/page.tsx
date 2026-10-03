@@ -2,6 +2,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getWebI18n } from "@/locales/server";
 import { PublicObjectPageClient } from "./public-object-page-client";
 
 interface PageProps {
@@ -11,7 +12,10 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { slug, accessionNumber } = await params;
+  const [{ slug, accessionNumber }, { t }] = await Promise.all([
+    params,
+    getWebI18n(),
+  ]);
   const decodedAccessionNumber = decodeURIComponent(accessionNumber);
 
   try {
@@ -22,13 +26,13 @@ export async function generateMetadata({
 
     if (!object) {
       return {
-        title: "Object Not Found | MuseumLite",
+        title: t("public.objectMissingMetadata"),
       };
     }
 
     const description = object.description
       ? object.description.slice(0, 160)
-      : `${object.title}${object.creator ? ` by ${object.creator}` : ""}${object.dateCreated ? `, ${object.dateCreated}` : ""}`;
+      : `${object.title}${object.creator ? ` — ${object.creator}` : ""}${object.dateCreated ? `, ${object.dateCreated}` : ""}`;
 
     const primaryImage = object.images.find(
       (img: {
@@ -64,17 +68,19 @@ export async function generateMetadata({
     };
   } catch {
     return {
-      title: "Object | MuseumLite",
+      title: `${t("public.objectMetadataTitle")} | MuseumLite`,
+      description: t("public.objectMetadata"),
     };
   }
 }
 
-export default function PublicObjectPage() {
+export default async function PublicObjectPage() {
+  const { t } = await getWebI18n();
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-          <p className="text-white/60">Loading object…</p>
+          <p className="text-white/60">{t("common.loadingObject")}</p>
         </div>
       }
     >

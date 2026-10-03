@@ -93,17 +93,21 @@ function LocationSummaryGrid({
 }: {
   summary: LocationUtilizationData["summary"];
 }) {
+  const t = useI18n();
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
       <SummaryTile
         icon={<Building2 className="size-3.5 text-muted-foreground" />}
-        label="Total"
+        label={t("untranslatedDashboard.analytics.total")}
         value={summary.totalLocations}
       />
-      <SummaryTile label="Tracked" value={summary.locationsWithCapacity} />
+      <SummaryTile
+        label={t("untranslatedDashboard.analytics.tracked")}
+        value={summary.locationsWithCapacity}
+      />
       <SummaryTile
         icon={<Package className="size-3.5 text-muted-foreground" />}
-        label="Occupied"
+        label={t("untranslatedDashboard.analytics.occupied")}
         value={`${summary.totalOccupied}/${summary.totalCapacity}`}
       />
       <OverallUtilizationTile percentage={summary.utilizationPercentage} />
@@ -134,6 +138,7 @@ function SummaryTile({
 }
 
 function OverallUtilizationTile({ percentage }: { percentage: number }) {
+  const t = useI18n();
   return (
     <div
       className={cn(
@@ -158,7 +163,7 @@ function OverallUtilizationTile({ percentage }: { percentage: number }) {
         {percentage}%
       </div>
       <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-        Overall
+        {t("untranslatedDashboard.analytics.overall")}
       </div>
     </div>
   );
@@ -175,7 +180,7 @@ function LocationUtilizationTabs({ data }: { data: LocationUtilizationData }) {
         </TabsTrigger>
         <TabsTrigger value="high" className="text-xs h-7 gap-1">
           <ArrowUp className="size-3" />
-          High
+          {t("untranslatedDashboard.analytics.high")}
           {data.atCapacity.length > 0 && (
             <Badge
               variant="secondary"
@@ -187,11 +192,11 @@ function LocationUtilizationTabs({ data }: { data: LocationUtilizationData }) {
         </TabsTrigger>
         <TabsTrigger value="low" className="text-xs h-7 gap-1">
           <ArrowDown className="size-3" />
-          Low
+          {t("untranslatedDashboard.analytics.low")}
         </TabsTrigger>
         <TabsTrigger value="alerts" className="text-xs h-7 gap-1">
           <AlertTriangle className="size-3" />
-          At Cap
+          {t("untranslatedDashboard.analytics.atCapacity")}
         </TabsTrigger>
       </TabsList>
 
@@ -200,13 +205,13 @@ function LocationUtilizationTabs({ data }: { data: LocationUtilizationData }) {
       </TabsContent>
       <TabsContent value="high" className="flex-1 mt-3">
         <UtilizedLocationsTable
-          emptyLabel="No high utilization locations"
+          emptyLabel={t("untranslatedDashboard.analytics.noHighUtilization")}
           locations={data.topUtilized}
         />
       </TabsContent>
       <TabsContent value="low" className="flex-1 mt-3">
         <UtilizedLocationsTable
-          emptyLabel="No underutilized locations"
+          emptyLabel={t("untranslatedDashboard.analytics.noUnderutilized")}
           locations={data.underutilized}
         />
       </TabsContent>
@@ -222,13 +227,24 @@ function LocationTypeOverview({
 }: {
   items: LocationUtilizationData["byType"];
 }) {
+  const t = useI18n();
+  const locationTypeLabels: Record<string, string> = {
+    building: t("locations.form.locationTypes.building"),
+    room: t("locations.form.locationTypes.room"),
+    gallery: t("locations.form.locationTypes.gallery"),
+    storage: t("locations.form.locationTypes.storage"),
+    cabinet: t("locations.form.locationTypes.cabinet"),
+    shelf: t("locations.form.locationTypes.shelf"),
+    vault: t("locations.form.locationTypes.vault"),
+    other: t("locations.form.locationTypes.other"),
+  };
   return (
     <div className="space-y-3">
       {items.slice(0, 8).map((item) => (
         <div key={item.type} className="space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground capitalize">
-              {item.type}
+              {locationTypeLabels[item.type] ?? item.type}
             </span>
             <span className="font-mono text-muted-foreground">
               {item.totalOccupied}/{item.totalCapacity}{" "}
@@ -268,10 +284,13 @@ function UtilizedLocationsTable({
   emptyLabel: string;
   locations: UtilizedLocation[];
 }) {
+  const t = useI18n();
   return (
     <div className="rounded-md border border-border bg-background/50 overflow-hidden">
       <Table>
-        <LocationTableHeader usageLabel="Usage" />
+        <LocationTableHeader
+          usageLabel={t("untranslatedDashboard.analytics.usage")}
+        />
         <TableBody>
           {locations.length === 0 ? (
             <EmptyLocationRow label={emptyLabel} />
@@ -295,6 +314,7 @@ function LocationTableHeader({
   usageLabel: string;
   alert?: boolean;
 }) {
+  const t = useI18n();
   return (
     <TableHeader>
       <TableRow
@@ -311,7 +331,7 @@ function LocationTableHeader({
             alert && "text-red-400",
           )}
         >
-          Location
+          {t("untranslatedDashboard.analytics.location")}
         </TableHead>
         <TableHead
           className={cn(
@@ -380,12 +400,13 @@ function UtilizedLocationRow({ location }: { location: UtilizedLocation }) {
 }
 
 function CapacityAlerts({ locations }: { locations: CapacityLocation[] }) {
+  const t = useI18n();
   if (locations.length === 0) {
     return (
       <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">
         <div className="text-center">
           <AlertTriangle className="size-6 mx-auto mb-2 text-emerald-500/50" />
-          No locations at capacity
+          {t("untranslatedDashboard.analytics.noLocationsAtCapacity")}
         </div>
       </div>
     );
@@ -394,7 +415,10 @@ function CapacityAlerts({ locations }: { locations: CapacityLocation[] }) {
   return (
     <div className="rounded-md border border-red-500/20 bg-red-500/5 overflow-hidden">
       <Table>
-        <LocationTableHeader alert usageLabel="Status" />
+        <LocationTableHeader
+          alert
+          usageLabel={t("untranslatedDashboard.analytics.status")}
+        />
         <TableBody>
           {locations.slice(0, 8).map((location) => (
             <CapacityLocationRow key={location.id} location={location} />
@@ -406,6 +430,7 @@ function CapacityAlerts({ locations }: { locations: CapacityLocation[] }) {
 }
 
 function CapacityLocationRow({ location }: { location: CapacityLocation }) {
+  const t = useI18n();
   return (
     <TableRow className="hover:bg-red-500/10 border-red-500/10">
       <LocationNameCell location={location} />
@@ -415,7 +440,7 @@ function CapacityLocationRow({ location }: { location: CapacityLocation }) {
           className="text-[10px] h-5 px-1.5 border-0 ring-1 ring-inset font-mono text-red-500 bg-red-500/10 ring-red-500/20"
         >
           {location.occupied >= location.capacity
-            ? "FULL"
+            ? t("untranslatedDashboard.analytics.full")
             : `${location.occupied}/${location.capacity}`}
         </Badge>
       </TableCell>

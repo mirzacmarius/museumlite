@@ -9,6 +9,7 @@ import type { FunctionReturnType } from "convex/server";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { TypeCombobox } from "@/components/type-combobox";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
@@ -37,6 +38,7 @@ export function CollectionEditGeneralTab({
   onAddAlternateAccessionNumber,
   onRemoveAlternateAccessionNumber,
 }: CollectionEditGeneralTabProps) {
+  const tRoot = useI18n();
   const [localAlternateAccessionDraft, setLocalAlternateAccessionDraft] =
     useState("");
   const alternateAccessionDraft =
@@ -74,12 +76,16 @@ export function CollectionEditGeneralTab({
   return (
     <div className="space-y-8">
       <EditSection
-        title="Record identity"
-        description="Core catalog information that identifies and classifies this object."
+        title={tRoot("untranslatedRecords.objects.form.recordIdentity")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.recordIdentityDescription",
+        )}
       >
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="accessionNumber">Accession Number</Label>
+            <Label htmlFor="accessionNumber">
+              {tRoot("objects.form.accessionNumber")}
+            </Label>
             <Input
               id="accessionNumber"
               value={
@@ -93,14 +99,16 @@ export function CollectionEditGeneralTab({
             />
             {collection ? (
               <p className="text-xs text-muted-foreground">
-                Accession number cannot be changed.
+                {tRoot(
+                  "untranslatedRecords.objects.form.acquisitionNumberImmutable",
+                )}
               </p>
             ) : null}
           </div>
 
           <div className="space-y-3 xl:col-span-2">
             <Label htmlFor="alternateAccessionNumbers">
-              Alternate Accession Numbers
+              {tRoot("objects.form.alternateAccessionNumbers")}
             </Label>
             <div className="space-y-2">
               {(formData.alternateAccessionNumbers || []).length > 0 ? (
@@ -127,7 +135,9 @@ export function CollectionEditGeneralTab({
                           variant="outline"
                           size="icon"
                           onClick={() => removeAlternateAccessionNumber(index)}
-                          title="Remove alternate accession number"
+                          title={tRoot(
+                            "untranslatedRecords.objects.form.removeAlternateAccession",
+                          )}
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -137,7 +147,7 @@ export function CollectionEditGeneralTab({
                 )
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No alternate accession numbers added.
+                  {tRoot("untranslatedRecords.objects.form.noAlternateNumbers")}
                 </p>
               )}
             </div>
@@ -165,17 +175,20 @@ export function CollectionEditGeneralTab({
                 onClick={addAlternateAccessionNumber}
               >
                 <Plus className="mr-2 size-4" />
-                Add
+                {tRoot("untranslatedRecords.objects.actions.add")}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Existing alternate accession numbers can be removed, but not
-              edited in place.
+              {tRoot(
+                "untranslatedRecords.objects.form.alternateNumberRemoveHint",
+              )}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objectName">Object Name</Label>
+            <Label htmlFor="objectName">
+              {tRoot("objects.form.objectName")}
+            </Label>
             <Input
               id="objectName"
               value={formData.objectName || ""}
@@ -187,7 +200,9 @@ export function CollectionEditGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objectType">Object Type</Label>
+            <Label htmlFor="objectType">
+              {tRoot("objects.filters.objectType")}
+            </Label>
             <TypeCombobox
               organizationId={currentOrganizationId}
               collectionId={typedCollectionId}
@@ -201,7 +216,7 @@ export function CollectionEditGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="creator">Creator</Label>
+            <Label htmlFor="creator">{tRoot("objects.form.creator")}</Label>
             <Input
               id="creator"
               value={formData.creator || ""}
@@ -211,7 +226,7 @@ export function CollectionEditGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="culture">Culture</Label>
+            <Label htmlFor="culture">{tRoot("objects.form.culture")}</Label>
             <Input
               id="culture"
               value={formData.culture || ""}
@@ -221,7 +236,7 @@ export function CollectionEditGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="period">Period</Label>
+            <Label htmlFor="period">{tRoot("objects.form.period")}</Label>
             <Input
               id="period"
               value={formData.period || ""}
@@ -231,7 +246,9 @@ export function CollectionEditGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dateCreated">Date Created</Label>
+            <Label htmlFor="dateCreated">
+              {tRoot("objects.form.dateCreated")}
+            </Label>
             <Input
               id="dateCreated"
               value={formData.dateCreated || ""}

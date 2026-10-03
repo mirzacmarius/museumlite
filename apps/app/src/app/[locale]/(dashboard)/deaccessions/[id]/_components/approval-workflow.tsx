@@ -21,39 +21,17 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { getDeaccessionActionLabel } from "./deaccession-detail-types";
 
 interface ApprovalWorkflowProps {
   deaccessionId: string;
 }
 
-function getDeaccessionActionLabel(deaccession: {
-  targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
-  method: "sale" | "donation" | "destruction" | "transfer";
-}) {
-  if (deaccession.targetCollectionStatus === "archived") {
-    return "Archive";
-  }
-
-  if (deaccession.targetCollectionStatus === "deleted") {
-    return "Delete";
-  }
-
-  switch (deaccession.method) {
-    case "sale":
-      return "Sale";
-    case "donation":
-      return "Donation";
-    case "transfer":
-      return "Transfer";
-    case "destruction":
-      return "Disposal";
-  }
-}
-
 export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
   const { currentOrganizationId: _currentOrganizationId } = useOrganization();
   const t = useScopedI18n("deaccessions");
+  const tRoot = useI18n();
   const tCommon = useScopedI18n("common");
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,7 +51,7 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
     return null;
   }
 
-  const actionLabel = getDeaccessionActionLabel(deaccession);
+  const actionLabel = getDeaccessionActionLabel(deaccession, tRoot);
 
   const handleApprove = async () => {
     setIsSubmitting(true);
@@ -138,7 +116,12 @@ export function ApprovalWorkflow({ deaccessionId }: ApprovalWorkflowProps) {
               className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="mr-2 size-4" />
-              {`Approve ${actionLabel}`}
+              {tRoot(
+                "untranslatedRecords.deaccessions.approval.approveAction",
+                {
+                  action: actionLabel,
+                },
+              )}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>

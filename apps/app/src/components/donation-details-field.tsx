@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 import { DonorCombobox } from "@/components/donor-combobox";
 import { PartialDateField } from "@/components/partial-date-field";
+import { useI18n } from "@/locales/client";
 
 interface DonationDetailsFieldProps {
   organizationId?: string;
@@ -33,6 +34,7 @@ export function DonationDetailsField({
   onDonatedDateChange,
   onDonationInfoChange,
 }: DonationDetailsFieldProps) {
+  const translate = useI18n();
   const hasDonationDetails =
     donatedBy.length > 0 ||
     Boolean(donatedDate?.trim()) ||
@@ -54,16 +56,19 @@ export function DonationDetailsField({
 
   return (
     <div className="space-y-2">
-      <Label>Donated by</Label>
+      <Label>{translate("untranslatedComponents.labels.donatedBy")}</Label>
 
       {isExpanded ? (
         <div className="space-y-4 rounded-lg border border-border bg-card/60 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="text-sm font-medium">Donation details</p>
+              <p className="text-sm font-medium">
+                {translate("untranslatedComponents.labels.donationDetails")}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Search existing donors, add a new donor, or select unknown
-                donors.
+                {translate(
+                  "untranslatedComponents.labels.searchExistingDonorsAddANewDonorOrSelectUnknownDonors",
+                )}
               </p>
             </div>
             <Button
@@ -74,12 +79,14 @@ export function DonationDetailsField({
               className="shrink-0 text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="mr-2 size-4" />
-              Remove
+              {translate("untranslatedComponents.labels.remove")}
             </Button>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="donated_by">Name</Label>
+            <Label htmlFor="donated_by">
+              {translate("untranslatedComponents.labels.name")}
+            </Label>
             <DonorCombobox
               organizationId={organizationId}
               collectionId={collectionId}
@@ -93,13 +100,17 @@ export function DonationDetailsField({
           <div className="grid gap-4 md:grid-cols-2">
             <PartialDateField
               id="donated_date"
-              label="Date"
+              label={translate("untranslatedComponents.labels.date")}
               value={donatedDate}
               onChange={onDonatedDateChange}
             />
 
             <div className="space-y-2">
-              <Label htmlFor="donation_info">Info about the Donation</Label>
+              <Label htmlFor="donation_info">
+                {translate(
+                  "untranslatedComponents.labels.infoAboutTheDonation",
+                )}
+              </Label>
               <Textarea
                 autoResize
                 id="donation_info"
@@ -114,8 +125,9 @@ export function DonationDetailsField({
       ) : (
         <>
           <div className="text-sm text-muted-foreground">
-            No donation details yet. Click "Add Donated by" to add the donor,
-            donation date, and notes.
+            {translate(
+              "untranslatedComponents.labels.noDonationDetailsYetClickAddDonatedByToAddTheDonorDonationDateAndNotes",
+            )}
           </div>
           <Button
             type="button"
@@ -125,7 +137,7 @@ export function DonationDetailsField({
             className="w-full"
           >
             <Plus className="mr-2 size-4" />
-            Add Donated by
+            {translate("untranslatedComponents.labels.addDonatedBy")}
           </Button>
         </>
       )}

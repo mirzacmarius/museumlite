@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { formatUiMessage, useUiLocale } from "../locale";
 import { cn } from "../utils";
 
 function isUnoptimizedSrc(src: string) {
@@ -72,6 +73,7 @@ function ImageLightboxPanel({
   onClose: () => void;
   onDownload?: (image: LightboxImage) => void;
 }) {
+  const { messages } = useUiLocale();
   const [currentIndex, setCurrentIndex] = useState(() => initialIndex);
 
   const currentImage = images[currentIndex];
@@ -167,7 +169,9 @@ function ImageLightboxPanel({
                 setIsZoomed(!isZoomed);
               }}
               className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-              aria-label={isZoomed ? "Zoom out" : "Zoom in"}
+              aria-label={
+                isZoomed ? messages.lightbox.zoomOut : messages.lightbox.zoomIn
+              }
             >
               {isZoomed ? <ZoomOut size={20} /> : <ZoomIn size={20} />}
             </button>
@@ -178,7 +182,7 @@ function ImageLightboxPanel({
                 handleDownload();
               }}
               className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Download image"
+              aria-label={messages.lightbox.download}
             >
               <Download size={20} />
             </button>
@@ -189,7 +193,7 @@ function ImageLightboxPanel({
                 onClose();
               }}
               className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Close"
+              aria-label={messages.lightbox.close}
             >
               <X size={20} />
             </button>
@@ -215,7 +219,7 @@ function ImageLightboxPanel({
         >
           <Image
             src={currentImage.url}
-            alt={currentImage.title || "Image"}
+            alt={currentImage.title || messages.lightbox.image}
             fill
             sizes="90vw"
             unoptimized={isUnoptimizedSrc(currentImage.url)}
@@ -236,7 +240,7 @@ function ImageLightboxPanel({
                 goToPrevious();
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-card/40 border border-border/60 backdrop-blur-xl p-3 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Previous image"
+              aria-label={messages.lightbox.previousImage}
             >
               <ChevronLeft size={24} />
             </button>
@@ -247,7 +251,7 @@ function ImageLightboxPanel({
                 goToNext();
               }}
               className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-card/40 border border-border/60 backdrop-blur-xl p-3 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="Next image"
+              aria-label={messages.lightbox.nextImage}
             >
               <ChevronRight size={24} />
             </button>
@@ -281,7 +285,12 @@ function ImageLightboxPanel({
               >
                 <Image
                   src={img.thumbnailUrl || img.url}
-                  alt={img.title || `Thumbnail ${idx + 1}`}
+                  alt={
+                    img.title ||
+                    formatUiMessage(messages.lightbox.thumbnail, {
+                      index: idx + 1,
+                    })
+                  }
                   fill
                   sizes="48px"
                   unoptimized={isUnoptimizedSrc(img.thumbnailUrl || img.url)}

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Progress } from "@v1/ui/progress";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
+import { useI18n, useScopedI18n } from "@/locales/client";
 interface ImportJob {
   _id: string;
   type: string;
@@ -19,6 +20,8 @@ interface DataImportJobsCardProps {
 }
 
 export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
+  const tRoot = useI18n();
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   if (importJobs.length === 0) {
     return null;
   }
@@ -26,7 +29,7 @@ export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Import Jobs</CardTitle>
+        <CardTitle>{tDashboard("recentImportJobs")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -44,9 +47,9 @@ export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
                   <Loader2 className="size-5 animate-spin text-blue-500" />
                 )}
                 <div>
-                  <p className="font-medium capitalize">{job.type} Import</p>
+                  <p className="font-medium capitalize">{job.type} {tRoot("untranslatedRecords.objects.actions.import")}</p>
                   <p className="text-sm text-muted-foreground">
-                    {job.processedItems} / {job.totalItems} items
+                    {job.processedItems} / {job.totalItems} {tDashboard("items")}
                   </p>
                 </div>
               </div>
@@ -61,7 +64,11 @@ export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
                         : "secondary"
                   }
                 >
-                  {job.status}
+                  {job.status === "completed"
+                    ? tDashboard("statusCompleted")
+                    : job.status === "failed"
+                      ? tDashboard("statusFailed")
+                      : tDashboard("statusProcessing")}
                 </Badge>
               </div>
             </div>

@@ -13,7 +13,7 @@ import {
   type ExportFormat,
 } from "@/components/export-button-with-format";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionKanban } from "./accession-kanban";
 import { AccessionsPageSkeleton } from "./accessions-page-skeleton";
 import { AccessionsStats } from "./accessions-stats";
@@ -30,6 +30,7 @@ type AccessionListItem = FunctionReturnType<
 export function AccessionsPageClient({
   organizationId,
 }: AccessionsPageClientProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("accessions");
   const [searchQuery, setSearchQuery] = useState("");
   const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
@@ -155,7 +156,7 @@ export function AccessionsPageClient({
               className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <FileUp className="size-3.5" />
-              Import
+              {tRoot("untranslatedRecords.objects.actions.import")}
             </Link>
           </PermissionGate>
           <PermissionGate

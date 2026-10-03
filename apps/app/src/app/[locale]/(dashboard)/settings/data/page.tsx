@@ -7,14 +7,16 @@ import { useOrganization } from "@/components/organization-provider";
 import { DataExportTab } from "./data-export-tab";
 import { DataImportTab } from "./data-import-tab";
 
+import { useScopedI18n } from "@/locales/client";
 export default function DataPage() {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
 
   if (!currentOrganizationId) {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to manage data.
+          {t("selectOrganizationData")}
         </p>
       </div>
     );
@@ -26,11 +28,10 @@ export default function DataPage() {
     <div className="flex size-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-foreground">
-          Data Import/Export
+          {t("dataImportExport")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Import data from CSV files or export your data for backup and
-          analysis.
+          {t("dataImportDescription")}
         </p>
       </div>
 
@@ -38,11 +39,11 @@ export default function DataPage() {
         <TabsList>
           <TabsTrigger value="import" className="gap-2">
             <Upload className="size-4" />
-            Import
+            {t("import")}
           </TabsTrigger>
           <TabsTrigger value="export" className="gap-2">
             <Download className="size-4" />
-            Export
+            {t("export")}
           </TabsTrigger>
         </TabsList>
 

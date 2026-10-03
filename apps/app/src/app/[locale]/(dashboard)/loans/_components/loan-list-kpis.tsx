@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, ArrowRightLeft, Boxes, ShieldCheck } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface LoanListKpisProps {
   activeLoansCount: number;
@@ -12,6 +12,7 @@ export function LoanListKpis({
   activeLoansCount,
   totalItemsInTransit,
 }: LoanListKpisProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans");
 
   return (
@@ -22,7 +23,8 @@ export function LoanListKpis({
             <ArrowRightLeft className="size-4" />
           </div>
           <span className="rounded border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
-            +{activeLoansCount} active
+            +{activeLoansCount}{" "}
+            {tRoot("untranslatedRecords.objects.status.active")}
           </span>
         </div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

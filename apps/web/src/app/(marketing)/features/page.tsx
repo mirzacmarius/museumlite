@@ -1,88 +1,119 @@
 import Image from "next/image";
+import { ExhibitionsShowcase } from "@/components/marketing/exhibitions-showcase";
+import {
+  type FeatureModule,
+  FeatureModuleCard,
+  FeatureModuleGrid,
+} from "@/components/marketing/feature-module-card";
+import { PrimaryButton } from "@/components/site/buttons";
 import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
 import { PageHeader, SectionLabel } from "@/components/site/section-label";
-import { PrimaryButton } from "@/components/site/buttons";
-import { ExhibitionsShowcase } from "@/components/marketing/exhibitions-showcase";
-import {
-  FeatureModuleCard,
-  FeatureModuleGrid,
-  type FeatureModule,
-} from "@/components/marketing/feature-module-card";
 import { createPageMetadata } from "@/lib/metadata";
+import type { WebMessageKey } from "@/locales/messages";
+import { getWebI18n } from "@/locales/server";
 
-export const metadata = createPageMetadata({
-  title: "Features",
-  description:
-    "MuseumLite modules for collections, exhibitions, conservation, library, and public portals — integrated around one object record.",
-  path: "/features",
-});
+export async function generateMetadata() {
+  const { locale, t } = await getWebI18n();
+  return createPageMetadata({
+    title: t("marketing.features.title"),
+    description: t("marketing.features.description"),
+    path: "/features",
+    locale,
+  });
+}
 
-const collectionModules: FeatureModule[] = [
-  {
-    title: "Object Catalog",
-    desc: "Museum-grade records with provenance chains, condition history, rich media, and linked agents and places.",
-    items: [
-      "Versioned revisions",
-      "Bulk accession import",
-      "Dublin Core import/export",
-      "Linked agents & places",
-    ],
-  },
-  {
-    title: "Accessions & Deaccessions",
-    desc: "Workflow-driven intake with committee approvals, legal documentation and audit trail.",
-    items: [
-      "Configurable approval steps",
-      "Generated paperwork",
-      "Board-ready reports",
-    ],
-  },
-  {
-    title: "Location & Tracking",
-    desc: "Know where every object lives, from vault shelf to vitrine, with barcode support.",
-    items: ["Move history", "Storage hierarchy", "Audit reconciliation"],
-  },
-  {
-    title: "Loans & Transit",
-    desc: "Outgoing and incoming loans with courier briefs, crate manifests and condition checks at every hop.",
-    items: ["Transit log", "Facility reports", "Insurance riders"],
-  },
-];
-
-const conservationModules: FeatureModule[] = [
-  {
-    title: "Conservation",
-    desc: "Treatments, environmental readings and condition alerts — tied to the object record your team already trusts.",
-    items: ["Treatment dossiers", "Environmental readings", "Condition alerts"],
-  },
-  {
-    title: "Library & Research",
-    desc: "Catalogue holdings, patrons, circulation, and acquisitions for the institutional library.",
-    items: ["ISBN lookup", "Barcode circulation", "Holds & fines"],
-  },
-  {
-    title: "Public Portal",
-    desc: "Publish a public catalogue with embargo controls and editorial pages when you are ready.",
-    items: ["Branded portal pages", "SEO-ready pages", "High-res imagery"],
-  },
-];
-
-export default function FeaturesPage() {
+export default async function FeaturesPage() {
+  const { t } = await getWebI18n();
+  const module = (
+    title: string,
+    desc: string,
+    itemKeys: readonly WebMessageKey[],
+  ): FeatureModule => ({
+    title,
+    desc,
+    items: itemKeys.map((key) => t(key)),
+  });
+  const collectionModules: FeatureModule[] = [
+    module(
+      t("marketing.features.objectCatalog"),
+      t("marketing.features.recordBody"),
+      [
+        "marketing.features.catalogItem1",
+        "marketing.features.catalogItem2",
+        "marketing.features.catalogItem3",
+        "marketing.features.catalogItem4",
+      ],
+    ),
+    module(
+      t("marketing.features.accessions"),
+      t("marketing.features.collectionBody"),
+      [
+        "marketing.features.accessionItem1",
+        "marketing.features.accessionItem2",
+        "marketing.features.accessionItem3",
+      ],
+    ),
+    module(
+      t("marketing.features.locations"),
+      t("marketing.features.collectionBody"),
+      [
+        "marketing.features.locationItem1",
+        "marketing.features.locationItem2",
+        "marketing.features.locationItem3",
+      ],
+    ),
+    module(
+      t("marketing.features.loans"),
+      t("marketing.exhibitions.sectionBody"),
+      [
+        "marketing.features.loanItem1",
+        "marketing.features.loanItem2",
+        "marketing.features.loanItem3",
+      ],
+    ),
+  ];
+  const conservationModules: FeatureModule[] = [
+    module(
+      t("marketing.features.conservation"),
+      t("marketing.features.careBody"),
+      [
+        "marketing.features.conservationItem1",
+        "marketing.features.conservationItem2",
+        "marketing.features.conservationItem3",
+      ],
+    ),
+    module(t("marketing.features.library"), t("marketing.features.careBody"), [
+      "marketing.features.libraryItem1",
+      "marketing.features.libraryItem2",
+      "marketing.features.libraryItem3",
+    ]),
+    module(
+      t("marketing.features.publicPortal"),
+      t("marketing.features.careBody"),
+      [
+        "marketing.features.portalItem1",
+        "marketing.features.portalItem2",
+        "marketing.features.portalItem3",
+      ],
+    ),
+  ];
   return (
     <>
       <Nav />
       <main id="main-content" className="bg-background text-foreground">
         <PageHeader
-          eyebrow="Platform"
+          eyebrow={t("marketing.features.title")}
           title={
             <>
-              One platform.
+              {t("marketing.features.onePlatform")}
               <br />
-              <span className="text-gold">Every department.</span>
+              <span className="text-gold">
+                {t("marketing.features.everyDepartment")}
+              </span>
             </>
           }
-          lede="Replace the patchwork of spreadsheets and ageing databases with integrated modules around a single canonical object record."
+          lede={t("marketing.features.lede")}
         />
 
         <section
@@ -90,13 +121,15 @@ export default function FeaturesPage() {
           className="scroll-mt-24 py-16 md:py-28 border-b border-border"
         >
           <div className="mx-auto max-w-7xl px-6 lg:px-10 mb-12 md:mb-16">
-            <SectionLabel index="I." title="Collections" />
+            <SectionLabel
+              index="I."
+              title={t("marketing.features.collections")}
+            />
             <h2 className="mt-6 font-display text-4xl md:text-5xl text-ivory text-balance max-w-2xl">
-              Catalogue & <em className="not-italic text-gold">accession</em>
+              {t("marketing.features.catalogueAccession")}
             </h2>
             <p className="mt-4 max-w-xl text-soft-foreground leading-relaxed">
-              Everything that happens before and after an object enters your
-              walls — recorded with museum register depth and modern search.
+              {t("marketing.features.collectionBody")}
             </p>
           </div>
           <FeatureModuleGrid modules={collectionModules} />
@@ -109,13 +142,18 @@ export default function FeaturesPage() {
           className="scroll-mt-24 py-16 md:py-28 border-b border-border"
         >
           <div className="mx-auto max-w-7xl px-6 lg:px-10 mb-12 md:mb-16">
-            <SectionLabel index="III." title="Conservation" />
+            <SectionLabel
+              index="III."
+              title={t("marketing.features.conservation")}
+            />
             <h2 className="mt-6 font-display text-4xl md:text-5xl text-ivory text-balance max-w-2xl">
-              Care, library & <em className="not-italic text-gold">public face</em>
+              {t("marketing.features.care")}{" "}
+              <em className="not-italic text-gold">
+                {t("marketing.features.publicFace")}
+              </em>
             </h2>
             <p className="mt-4 max-w-xl text-soft-foreground leading-relaxed">
-              Stewardship, research holdings, and the catalogue you choose to
-              share — without maintaining a second database.
+              {t("marketing.features.careBody")}
             </p>
           </div>
           <div className="feature-module-grid cols-3 mx-auto max-w-7xl px-6 lg:px-10">
@@ -131,7 +169,7 @@ export default function FeaturesPage() {
               <div className="relative aspect-[4/5] max-w-md overflow-hidden border border-border shadow-gallery">
                 <Image
                   src="/marketing/artifact-mask.jpg"
-                  alt="Collection object in conservation review"
+                  alt={t("marketing.features.conservationImageAlt")}
                   fill
                   loading="lazy"
                   quality={70}
@@ -141,17 +179,18 @@ export default function FeaturesPage() {
               </div>
             </div>
             <div className="md:col-span-6">
-              <SectionLabel index="✦" title="One canonical record" />
+              <SectionLabel
+                index="✦"
+                title={t("marketing.features.canonicalRecord")}
+              />
               <h2 className="mt-6 font-display text-3xl md:text-4xl text-ivory text-balance">
-                Every object, its own story
+                {t("marketing.features.objectStory")}
               </h2>
               <p className="mt-6 text-soft-foreground leading-relaxed">
-                Linked provenance, condition history, exhibition cycles, loan
-                agreements, imagery, and environmental readings — on one page
-                your whole team can trust.
+                {t("marketing.features.recordBodyLong")}
               </p>
               <PrimaryButton href="/contact" className="mt-8">
-                See it on your collection →
+                {t("marketing.features.seeCollection")}
               </PrimaryButton>
             </div>
           </div>

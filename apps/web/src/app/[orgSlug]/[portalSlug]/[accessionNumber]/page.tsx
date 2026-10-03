@@ -2,6 +2,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getWebI18n } from "@/locales/server";
 import { PublicPortalObjectPageClient } from "./public-object-page-client";
 
 interface PageProps {
@@ -15,7 +16,10 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { orgSlug, portalSlug, accessionNumber } = await params;
+  const [{ orgSlug, portalSlug, accessionNumber }, { t }] = await Promise.all([
+    params,
+    getWebI18n(),
+  ]);
   const decodedAccessionNumber = decodeURIComponent(accessionNumber);
 
   try {
@@ -27,15 +31,14 @@ export async function generateMetadata({
 
     if (!object) {
       return {
-        title: "Object Not Found | MuseumLite",
-        description: "This object may not be publicly available.",
+        title: t("public.objectMissingMetadata"),
+        description: t("public.objectPageMetadata"),
       };
     }
 
     return {
       title: `${object.title} | MuseumLite`,
-      description:
-        object.description ?? `View ${object.title} in the collection.`,
+      description: object.description ?? t("public.objectMetadata"),
       openGraph: {
         title: object.title,
         description: object.description ?? undefined,
@@ -45,17 +48,18 @@ export async function generateMetadata({
   } catch {
     return {
       title: `${decodedAccessionNumber} | MuseumLite`,
-      description: "View object in the public collection portal.",
+      description: t("public.objectMetadata"),
     };
   }
 }
 
-export default function PublicPortalObjectPage(_props: PageProps) {
+export default async function PublicPortalObjectPage(_props: PageProps) {
+  const { t } = await getWebI18n();
   return (
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
-          <p className="text-white/60">Loading object…</p>
+          <p className="text-white/60">{t("common.loadingObject")}</p>
         </div>
       }
     >

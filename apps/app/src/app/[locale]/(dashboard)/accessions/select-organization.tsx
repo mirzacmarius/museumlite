@@ -2,6 +2,8 @@
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 
+import { useI18n } from "@/locales/client";
+
 type SelectOrganizationProps = {
   organizations: Array<{
     _id: Id<"organizations">;
@@ -17,6 +19,7 @@ export function SelectOrganization({
   selectedId,
   onSelect,
 }: SelectOrganizationProps) {
+  const tRoot = useI18n();
   return (
     <div className="relative">
       <select
@@ -25,7 +28,7 @@ export function SelectOrganization({
         className="appearance-none bg-muted/50 border border-border/60 rounded-md px-3 py-2 pr-8 text-sm text-foreground focus:border-border/60 focus:outline-none cursor-pointer"
       >
         <option value="" disabled>
-          Select organization…
+          {tRoot("untranslatedRecords.accessions.selectOrganization")}
         </option>
         {organizations.map((org) => (
           <option key={org._id} value={org._id}>

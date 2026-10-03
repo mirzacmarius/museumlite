@@ -37,7 +37,7 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type TaskStatus = "todo" | "in_progress" | "completed" | "blocked";
 type TaskType =
@@ -50,12 +50,39 @@ type TaskType =
   | "av"
   | "other";
 type TaskPriority = "low" | "medium" | "high" | "urgent";
+type TaskLabelKey =
+  | "typeLighting"
+  | "typeSignage"
+  | "typeMounts"
+  | "typeConservation"
+  | "typeLabeling"
+  | "typeSecurity"
+  | "typeAv"
+  | "other";
+
+const taskTypeLabelKeys: Record<TaskType, TaskLabelKey> = {
+  lighting: "typeLighting",
+  signage: "typeSignage",
+  mounts: "typeMounts",
+  conservation: "typeConservation",
+  labeling: "typeLabeling",
+  security: "typeSecurity",
+  av: "typeAv",
+  other: "other",
+};
+
+const priorityLabelKeys: Record<TaskPriority, string> = {
+  low: "priorityLow",
+  medium: "priorityMedium",
+  high: "priorityHigh",
+  urgent: "priorityUrgent",
+};
 
 const statusColumns: Array<{ status: TaskStatus; label: string }> = [
-  { status: "todo", label: "To Do" },
-  { status: "in_progress", label: "In Progress" },
-  { status: "blocked", label: "Blocked" },
-  { status: "completed", label: "Completed" },
+  { status: "todo", label: "todo" },
+  { status: "in_progress", label: "inProgress" },
+  { status: "blocked", label: "blocked" },
+  { status: "completed", label: "completed" },
 ];
 
 const priorityColor: Record<TaskPriority, string> = {
@@ -66,6 +93,7 @@ const priorityColor: Record<TaskPriority, string> = {
 };
 
 export function InstallationsPageClient() {
+  const t = useScopedI18n("untranslatedDashboard.installations");
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
@@ -132,15 +160,15 @@ export function InstallationsPageClient() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Selected</h3>
+            <h3 className="text-lg font-semibold">{t("noOrganizationSelected")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select or create an organization to view installations.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 size-4" />
-              Create Organization
+              {t("createOrganization")}
             </Link>
           </Button>
         </div>
@@ -150,7 +178,7 @@ export function InstallationsPageClient() {
 
   return (
     <FeatureGuard
-      featureName="Installations"
+      featureName={t("title")}
       isLocked={!hasFeature("installations")}
       tierNeeded="pro"
     >
@@ -158,9 +186,9 @@ export function InstallationsPageClient() {
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
-              <h2 className="page-title">Installations</h2>
+              <h2 className="page-title">{t("title")}</h2>
               <p className="page-description">
-                Track installation tasks by exhibition
+                {t("description")}
               </p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
@@ -172,14 +200,14 @@ export function InstallationsPageClient() {
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 size-4" />
-                      New Task
+                      {t("newTask")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[520px]">
                     <DialogHeader>
-                      <DialogTitle>New Installation Task</DialogTitle>
+                      <DialogTitle>{t("newTaskTitle")}</DialogTitle>
                       <DialogDescription className="sr-only">
-                        Create an installation task for the selected exhibition.
+                        {t("newTaskDescription")}
                       </DialogDescription>
                     </DialogHeader>
                     <TaskForm
@@ -190,13 +218,13 @@ export function InstallationsPageClient() {
                       onSubmit={async (payload) => {
                         try {
                           await createTask(payload);
-                          toast.success("Task created");
+                          toast.success(t("taskCreated"));
                           setCreateDialogOpen(false);
                         } catch (err) {
                           toast.error(
                             err instanceof Error
                               ? err.message
-                              : "Failed to create task",
+                              : t("taskCreateFailed"),
                           );
                         }
                       }}
@@ -210,7 +238,7 @@ export function InstallationsPageClient() {
           <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="min-w-[240px]">
-                <Label>Exhibition</Label>
+                <Label>{t("exhibition")}</Label>
                 <Select
                   value={selectedExhibitionId}
                   onValueChange={(value) =>
@@ -218,7 +246,7 @@ export function InstallationsPageClient() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select exhibition" />
+                    <SelectValue placeholder={t("selectExhibition")} />
                   </SelectTrigger>
                   <SelectContent>
                     {exhibitions?.map((exhibition) => (
@@ -229,7 +257,7 @@ export function InstallationsPageClient() {
                     {!exhibitions ||
                       (exhibitions.length === 0 && (
                         <SelectItem value="none" disabled>
-                          No exhibitions available
+                          {t("noExhibitionsAvailable")}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -237,8 +265,8 @@ export function InstallationsPageClient() {
               </div>
               <div className="text-xs text-muted-foreground">
                 {selectedExhibitionId
-                  ? "Tasks update in real time for the selected exhibition."
-                  : "Select an exhibition to view installation tasks."}
+                  ? t("tasksUpdateInRealTime")
+                  : t("selectExhibitionToViewTasks")}
               </div>
             </div>
 
@@ -248,8 +276,8 @@ export function InstallationsPageClient() {
 
             {selectedExhibitionId && tasks && tasks.length === 0 && (
               <EmptyState
-                title="No installation tasks yet"
-                description="Create the first task to start tracking installation work."
+                title={t("noTasksYet")}
+                description={t("createFirstTaskDescription")}
                 icon={Hammer}
               />
             )}
@@ -260,7 +288,7 @@ export function InstallationsPageClient() {
                   <div key={column.status} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">
-                        {column.label}
+                        {t(column.label)}
                       </h3>
                       <Badge variant="outline" className="text-[10px]">
                         {groupedTasks[column.status]?.length ?? 0}
@@ -278,24 +306,24 @@ export function InstallationsPageClient() {
                                 {task.title}
                               </p>
                               <p className="text-xs text-muted-foreground capitalize">
-                                {task.taskType.replace("_", " ")}
+                                {t(taskTypeLabelKeys[task.taskType])}
                               </p>
                             </div>
                             <Badge
                               variant="outline"
                               className={priorityColor[task.priority]}
                             >
-                              {task.priority}
+                              {t(priorityLabelKeys[task.priority])}
                             </Badge>
                           </div>
 
                           <div className="mt-3 flex flex-col gap-2 text-xs text-muted-foreground">
                             {task.assigneeName && (
-                              <span>Assignee: {task.assigneeName}</span>
+                                <span>{t("assigneeValue", { name: task.assigneeName })}</span>
                             )}
                             {task.dueDate && (
                               <span>
-                                Due{" "}
+                                {t("dueDateValue")} {" "}
                                 <ClientDate
                                   timestamp={task.dueDate}
                                   locale={locale}
@@ -312,7 +340,7 @@ export function InstallationsPageClient() {
                                 try {
                                   if (value === "blocked") {
                                     const reason = window.prompt(
-                                      "Reason for blocking this task?",
+                                      t("blockingReasonPrompt"),
                                     );
                                     if (!reason) return;
                                     await blockTask({
@@ -325,12 +353,12 @@ export function InstallationsPageClient() {
                                       status: value as TaskStatus,
                                     });
                                   }
-                                  toast.success("Task updated");
+                                  toast.success(t("taskUpdated"));
                                 } catch (err) {
                                   toast.error(
                                     err instanceof Error
                                       ? err.message
-                                      : "Failed to update task",
+                                      : t("taskUpdateFailed"),
                                   );
                                 }
                               }}
@@ -339,13 +367,13 @@ export function InstallationsPageClient() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="todo">To Do</SelectItem>
+                                <SelectItem value="todo">{t("todo")}</SelectItem>
                                 <SelectItem value="in_progress">
-                                  In Progress
+                                  {t("inProgress")}
                                 </SelectItem>
-                                <SelectItem value="blocked">Blocked</SelectItem>
+                                <SelectItem value="blocked">{t("blocked")}</SelectItem>
                                 <SelectItem value="completed">
-                                  Completed
+                                  {t("completed")}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
@@ -381,6 +409,7 @@ function TaskForm({
     dueDate?: number;
   }) => Promise<void>;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.installations");
   const [form, setForm] = useState({
     title: "",
     taskType: "lighting" as TaskType,
@@ -393,13 +422,13 @@ function TaskForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.title.trim()) {
-      toast.error("Task title is required.");
+      toast.error(t("taskTitleRequired"));
       return;
     }
 
     const dueDate = form.dueDate ? Date.parse(form.dueDate) : undefined;
     if (form.dueDate && Number.isNaN(dueDate)) {
-      toast.error("Please provide a valid due date.");
+      toast.error(t("validDueDateRequired"));
       return;
     }
 
@@ -429,21 +458,21 @@ function TaskForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
-        <Label htmlFor="title">Task Title *</Label>
+        <Label htmlFor="title">{t("taskTitleRequiredLabel")}</Label>
         <Input
           id="title"
           value={form.title}
           onChange={(event) =>
             setForm((prev) => ({ ...prev, title: event.target.value }))
           }
-          placeholder="Install lighting fixtures"
+          placeholder={t("taskTitlePlaceholder")}
           required
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Task Type *</Label>
+          <Label>{t("taskTypeRequiredLabel")}</Label>
           <Select
             value={form.taskType}
             onValueChange={(value) =>
@@ -454,19 +483,19 @@ function TaskForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="lighting">Lighting</SelectItem>
-              <SelectItem value="signage">Signage</SelectItem>
-              <SelectItem value="mounts">Mounts</SelectItem>
-              <SelectItem value="conservation">Conservation</SelectItem>
-              <SelectItem value="labeling">Labeling</SelectItem>
-              <SelectItem value="security">Security</SelectItem>
-              <SelectItem value="av">AV</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="lighting">{t("typeLighting")}</SelectItem>
+              <SelectItem value="signage">{t("typeSignage")}</SelectItem>
+              <SelectItem value="mounts">{t("typeMounts")}</SelectItem>
+              <SelectItem value="conservation">{t("typeConservation")}</SelectItem>
+              <SelectItem value="labeling">{t("typeLabeling")}</SelectItem>
+              <SelectItem value="security">{t("typeSecurity")}</SelectItem>
+              <SelectItem value="av">{t("typeAv")}</SelectItem>
+              <SelectItem value="other">{t("other")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Priority *</Label>
+          <Label>{t("priorityRequiredLabel")}</Label>
           <Select
             value={form.priority}
             onValueChange={(value) =>
@@ -477,10 +506,10 @@ function TaskForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
+              <SelectItem value="low">{t("priorityLow")}</SelectItem>
+              <SelectItem value="medium">{t("priorityMedium")}</SelectItem>
+              <SelectItem value="high">{t("priorityHigh")}</SelectItem>
+              <SelectItem value="urgent">{t("priorityUrgent")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -488,18 +517,18 @@ function TaskForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="assigneeName">Assignee</Label>
+          <Label htmlFor="assigneeName">{t("assignee")}</Label>
           <Input
             id="assigneeName"
             value={form.assigneeName}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, assigneeName: event.target.value }))
             }
-            placeholder="Team member name"
+            placeholder={t("teamMemberPlaceholder")}
           />
         </div>
         <DatePickerInput
-          label="Due Date"
+          label={t("dueDate")}
           id="dueDate"
           value={form.dueDate}
           onChange={(value) => setForm((prev) => ({ ...prev, dueDate: value }))}
@@ -508,7 +537,7 @@ function TaskForm({
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting || !exhibitionId}>
-          {isSubmitting ? "Creating..." : "Create Task"}
+          {isSubmitting ? t("creating") : t("createTask")}
         </Button>
       </div>
     </form>

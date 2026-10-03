@@ -4,7 +4,7 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Banknote, Calendar } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
 interface EditLoanScheduleSectionProps {
@@ -16,20 +16,22 @@ export function EditLoanScheduleSection({
   formData,
   onChange,
 }: EditLoanScheduleSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans.placeholders");
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
         <Calendar className="size-4" />
-        Schedule & Value
+        {tRoot("loans.actions.scheduleValue")}
       </h2>
 
       <div className="grid gap-6 md:grid-cols-2">
         <DatePicker
           label={
             <>
-              Start Date <span className="text-destructive">*</span>
+              {tRoot("loans.actions.startDate")}{" "}
+              <span className="text-destructive">*</span>
             </>
           }
           id="startDate"
@@ -41,7 +43,7 @@ export function EditLoanScheduleSection({
         />
 
         <DatePicker
-          label="End Date"
+          label={tRoot("loans.actions.endDate")}
           id="endDate"
           date={formData.endDate}
           onSelect={(date: Date | undefined) => onChange({ endDate: date })}
@@ -49,7 +51,9 @@ export function EditLoanScheduleSection({
         />
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="insuranceValue">Insurance Value</Label>
+          <Label htmlFor="insuranceValue">
+            {tRoot("loans.actions.insuranceValue")}
+          </Label>
           <div className="relative">
             <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input

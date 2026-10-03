@@ -9,6 +9,7 @@ import { useEffect, useMemo, useReducer } from "react";
 import { toast } from "sonner";
 import { CodeInput } from "@/auth/CodeInput";
 import type { UniqueCodeFlow } from "@/auth/types";
+import { useI18n } from "@/locales/client";
 
 interface AuthUniqueCodeFormProps {
   email: string;
@@ -72,6 +73,7 @@ export function AuthUniqueCodeForm({
   onSignedIn,
   onRequestCode,
 }: AuthUniqueCodeFormProps) {
+  const translate = useI18n();
   const { signIn } = useAuthActions();
   const [state, dispatch] = useReducer(
     uniqueCodeFormReducer,
@@ -123,7 +125,9 @@ export function AuthUniqueCodeForm({
           return;
         }
 
-        toast.error("Invalid code or password reset payload.");
+        toast.error(
+          translate("untranslatedComponents.auth.invalidCodeOrResetPayload"),
+        );
         return;
       }
 
@@ -139,7 +143,9 @@ export function AuthUniqueCodeForm({
           return;
         }
 
-        toast.error("Invalid verification code.");
+        toast.error(
+          translate("untranslatedComponents.auth.invalidVerificationCode"),
+        );
         return;
       }
 
@@ -150,9 +156,11 @@ export function AuthUniqueCodeForm({
         return;
       }
 
-      toast.error("Invalid code.");
+      toast.error(translate("untranslatedComponents.auth.invalidCode"));
     } catch {
-      toast.error("Could not verify code.");
+      toast.error(
+        translate("untranslatedComponents.auth.codeVerificationFailed"),
+      );
     } finally {
       dispatch({ type: "setIsSubmitting", value: false });
     }
@@ -177,7 +185,7 @@ export function AuthUniqueCodeForm({
           className="text-xs font-medium text-white/70"
           htmlFor="unique-code-email"
         >
-          Email
+          {translate("untranslatedComponents.labels.email")}
         </label>
         <div className="relative flex items-center rounded-md border border-white/10 bg-background">
           <Input
@@ -188,7 +196,7 @@ export function AuthUniqueCodeForm({
             value={email}
           />
           <button
-            aria-label="Clear email"
+            aria-label={translate("untranslatedComponents.labels.clearEmail")}
             className="absolute right-3"
             onClick={onEmailClear}
             type="button"
@@ -203,7 +211,7 @@ export function AuthUniqueCodeForm({
           className="text-xs font-medium text-white/70"
           htmlFor="unique-code"
         >
-          Unique code
+          {translate("untranslatedComponents.labels.uniqueCode")}
         </label>
         <CodeInput
           id="unique-code"
@@ -213,7 +221,9 @@ export function AuthUniqueCodeForm({
         <div className="flex items-center justify-between px-0.5 pt-1">
           <p className="flex items-center gap-1 text-xs font-medium text-emerald-300">
             <CircleCheck className="size-3" />
-            Paste the code from your email.
+            {translate(
+              "untranslatedComponents.labels.pasteTheCodeFromYourEmail",
+            )}
           </p>
           <button
             className={`text-xs font-medium ${
@@ -226,10 +236,12 @@ export function AuthUniqueCodeForm({
             type="button"
           >
             {state.resendTimer > 0
-              ? `Resend in ${state.resendTimer}s`
+              ? translate("untranslatedComponents.auth.resendInSeconds", {
+                  seconds: state.resendTimer,
+                })
               : state.isRequestingNewCode
-                ? "Sending..."
-                : "Resend"}
+                ? translate("untranslatedComponents.auth.sending")
+                : translate("untranslatedComponents.auth.resend")}
           </button>
         </div>
       </div>
@@ -240,7 +252,7 @@ export function AuthUniqueCodeForm({
             className="text-xs font-medium text-white/70"
             htmlFor="reset-password"
           >
-            New password
+            {translate("untranslatedComponents.labels.newPassword")}
           </label>
           <Input
             autoComplete="new-password"
@@ -250,7 +262,9 @@ export function AuthUniqueCodeForm({
             onChange={(event) =>
               dispatch({ type: "setNewPassword", value: event.target.value })
             }
-            placeholder="Set a new password"
+            placeholder={translate(
+              "untranslatedComponents.labels.setANewPassword",
+            )}
             type="password"
             value={state.newPassword}
           />
@@ -259,10 +273,10 @@ export function AuthUniqueCodeForm({
 
       <Button className="h-10 w-full" disabled={isButtonDisabled} type="submit">
         {state.isSubmitting
-          ? "Continuing..."
+          ? translate("untranslatedComponents.auth.continuing")
           : flow === "reset"
-            ? "Reset password"
-            : "Continue"}
+            ? translate("untranslatedComponents.auth.resetPassword")
+            : translate("untranslatedComponents.auth.continue")}
       </Button>
     </form>
   );

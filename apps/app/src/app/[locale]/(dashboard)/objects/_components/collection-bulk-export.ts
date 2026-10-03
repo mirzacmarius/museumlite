@@ -1,32 +1,14 @@
 import { toast } from "sonner";
 import type { BulkExportItem } from "./collection-catalog-types";
 
-export function exportCollectionsToCsv(bulkExport: BulkExportItem[]) {
+export function exportCollectionsToCsv(
+  bulkExport: BulkExportItem[],
+  headers: string[],
+  exportedMessage: string,
+) {
   if (bulkExport.length === 0) {
     return;
   }
-
-  const headers = [
-    "Accession Number",
-    "Title",
-    "Alternative Title",
-    "Creator",
-    "Object Type",
-    "Object Name",
-    "Culture",
-    "Period",
-    "Date Created",
-    "Materials",
-    "Technique",
-    "Dimensions",
-    "Description",
-    "Condition",
-    "Provenance",
-    "Status",
-    "Location",
-    "Collection Group",
-    "Cataloged Date",
-  ];
 
   const rows = bulkExport.map((item): string[] => {
     const catalogedDate =
@@ -70,7 +52,5 @@ export function exportCollectionsToCsv(bulkExport: BulkExportItem[]) {
   link.click();
   URL.revokeObjectURL(url);
 
-  toast.success(
-    `Exported ${bulkExport.length} item${bulkExport.length !== 1 ? "s" : ""}`,
-  );
+  toast.success(exportedMessage);
 }

@@ -3,7 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { AlertCircle, ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { LoanAgreement } from "../loan-agreement/loan-agreement";
 import type { Loan } from "../types";
 
@@ -18,6 +18,7 @@ export function LoanDetailHeader({
   organizationName,
   onOpenPrint,
 }: LoanDetailHeaderProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const common = useScopedI18n("common");
 
@@ -30,7 +31,7 @@ export function LoanDetailHeader({
           </Link>
         </Button>
         <span className="text-muted-foreground flex items-center gap-2">
-          Loans
+          {tRoot("loans.title")}
         </span>
         <span className="text-muted-foreground/50">/</span>
         <span className="text-muted-foreground">

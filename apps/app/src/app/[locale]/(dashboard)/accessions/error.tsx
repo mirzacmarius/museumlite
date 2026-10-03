@@ -5,12 +5,15 @@ import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { useI18n } from "@/locales/client";
+
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
 export default function AccessionsError({ error, reset }: ErrorProps) {
+  const tRoot = useI18n();
   useEffect(() => {
     console.error("Accessions error:", error);
   }, [error]);
@@ -24,17 +27,18 @@ export default function AccessionsError({ error, reset }: ErrorProps) {
 
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Failed to load accessions
+            {tRoot("untranslatedRecords.common.failedToLoadAccessions")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            We couldn't load your accessions workflow. Please try again or
-            return to the dashboard.
+            {tRoot(
+              "untranslatedRecords.common.failedToLoadAccessionsDescription",
+            )}
           </p>
         </div>
 
         {error.digest && (
           <p className="text-xs text-muted-foreground/60 font-mono">
-            Error ID: {error.digest}
+            {tRoot("untranslatedRecords.common.errorId")} {error.digest}
           </p>
         )}
 
@@ -42,12 +46,12 @@ export default function AccessionsError({ error, reset }: ErrorProps) {
           <Button variant="outline" asChild>
             <Link href="/">
               <ArrowLeft className="mr-2 size-4" />
-              Dashboard
+              {tRoot("untranslatedRecords.common.dashboard")}
             </Link>
           </Button>
           <Button onClick={reset}>
             <RefreshCw className="mr-2 size-4" />
-            Try again
+            {tRoot("untranslatedRecords.common.tryAgain")}
           </Button>
         </div>
       </div>

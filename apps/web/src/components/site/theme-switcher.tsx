@@ -1,21 +1,39 @@
 "use client";
 
+import { cn } from "@v1/ui/utils";
+import { useWebI18n } from "@/locales/provider";
 import { useMarketingTheme } from "./marketing-theme";
 
 export function ThemeSwitcher({ className = "" }: { className?: string }) {
   const { theme, toggleTheme } = useMarketingTheme();
+  const { t } = useWebI18n();
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className={`inline-flex size-9 items-center justify-center rounded-full text-muted-foreground hover:text-gold hover:bg-muted/60 transition-colors ${className}`}
-      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-      title={theme === "dark" ? "Light mode" : "Dark mode"}
+      className={cn(
+        "inline-flex size-9 items-center justify-center rounded-full text-muted-foreground hover:text-gold hover:bg-muted/60 transition-colors",
+        className,
+      )}
+      aria-label={
+        theme === "dark"
+          ? t("common.theme.switchToLight")
+          : t("common.theme.switchToDark")
+      }
+      title={
+        theme === "dark" ? t("common.theme.light") : t("common.theme.dark")
+      }
     >
       {theme === "dark" ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5" />
+          <circle
+            cx="12"
+            cy="12"
+            r="4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
           <path
             d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
             stroke="currentColor"

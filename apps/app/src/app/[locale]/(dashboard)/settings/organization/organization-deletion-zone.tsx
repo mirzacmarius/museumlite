@@ -128,10 +128,8 @@ export function OrganizationDeletionZone({
     setIsSubmitting(true);
     try {
       await requestDeletion({ organizationId });
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("requestError"),
-      );
+    } catch {
+      setError(t("requestError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -142,10 +140,8 @@ export function OrganizationDeletionZone({
     setIsSubmitting(true);
     try {
       await cancelDeletion({ organizationId });
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("cancelError"),
-      );
+    } catch {
+      setError(t("cancelError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -163,10 +159,8 @@ export function OrganizationDeletionZone({
         newOwnerUserId: selectedOwnerId as Id<"users">,
       });
       setSelectedOwnerId("");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("transferError"),
-      );
+    } catch {
+      setError(t("transferError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -230,19 +224,27 @@ export function OrganizationDeletionZone({
             </p>
             <div className="space-y-2">
               <Label>{t("transferCandidateLabel")}</Label>
-              <Select value={selectedOwnerId} onValueChange={setSelectedOwnerId}>
+              <Select
+                value={selectedOwnerId}
+                onValueChange={setSelectedOwnerId}
+              >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={t("transferCandidatePlaceholder")}
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {(transferCandidates ?? []).map((candidate: TransferCandidate) => (
-                    <SelectItem key={candidate.userId} value={candidate.userId}>
-                      {candidate.name ?? candidate.email ?? candidate.userId}
-                      {candidate.roleName ? ` (${candidate.roleName})` : ""}
-                    </SelectItem>
-                  ))}
+                  {(transferCandidates ?? []).map(
+                    (candidate: TransferCandidate) => (
+                      <SelectItem
+                        key={candidate.userId}
+                        value={candidate.userId}
+                      >
+                        {candidate.name ?? candidate.email ?? candidate.userId}
+                        {candidate.roleName ? ` (${candidate.roleName})` : ""}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -274,7 +276,9 @@ export function OrganizationDeletionZone({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t("confirmDialog.title")}</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {t("confirmDialog.title")}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     {t("confirmDialog.description")}
                   </AlertDialogDescription>

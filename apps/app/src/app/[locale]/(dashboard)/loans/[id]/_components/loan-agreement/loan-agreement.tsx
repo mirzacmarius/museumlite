@@ -12,16 +12,16 @@ import {
 } from "@v1/ui/dialog";
 import { FileText, Mail, Printer } from "lucide-react";
 import { useState } from "react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { LoanAgreementDocument } from "./loan-agreement-document";
 import type { LoanAgreementProps } from "./types";
 import { useLoanAgreementActions } from "./use-loan-agreement-actions";
-
 export function LoanAgreement({
   loan,
   items,
   organizationName,
 }: LoanAgreementProps) {
+  const tRoot = useI18n();
   const [dialogOpen, setDialogOpen] = useState(false);
   const tActions = useScopedI18n("loans.actions");
   const { printRef, locale, formatLoanDate, handlePrint, handleEmail } =
@@ -54,15 +54,15 @@ export function LoanAgreement({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setDialogOpen(false)}>
-            Close
+            {tRoot("deaccessions.actions.close")}
           </Button>
           <Button variant="outline" onClick={handleEmail}>
             <Mail className="mr-2 size-4" />
-            Send via Email
+            {tRoot("untranslatedRecords.loans.agreement.sendEmail")}
           </Button>
           <Button onClick={handlePrint}>
             <Printer className="mr-2 size-4" />
-            Print Agreement
+            {tRoot("untranslatedRecords.loans.agreement.printAgreement")}
           </Button>
         </DialogFooter>
       </DialogContent>

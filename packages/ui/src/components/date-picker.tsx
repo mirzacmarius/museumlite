@@ -2,6 +2,7 @@
 
 import { format, parseISO } from "date-fns";
 import * as React from "react";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 import { Calendar } from "./calendar";
@@ -25,12 +26,13 @@ export function DatePicker({
   label,
   date,
   onSelect,
-  placeholder = "Select date",
+  placeholder,
   disabled,
   className,
   displayFormat,
   defaultMonth,
 }: DatePickerProps) {
+  const { locale, dateFnsLocale, messages } = useUiLocale();
   const [open, setOpen] = React.useState(false);
   const generatedId = React.useId();
   const inputId = id ?? generatedId;
@@ -49,9 +51,9 @@ export function DatePicker({
           >
             {date
               ? displayFormat
-                ? format(date, displayFormat)
-                : date.toLocaleDateString()
-              : placeholder}
+                ? format(date, displayFormat, { locale: dateFnsLocale })
+                : date.toLocaleDateString(locale)
+              : (placeholder ?? messages.datePicker.placeholder)}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto overflow-hidden p-0" align="start">

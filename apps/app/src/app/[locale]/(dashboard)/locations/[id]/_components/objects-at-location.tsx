@@ -4,12 +4,15 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 
 interface ObjectsAtLocationProps {
   locationId: string;
 }
 
 export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
+  const t = useScopedI18n("untranslatedDashboard.locationViews");
+  const tObject = useScopedI18n("objects.filters");
   const objects = useQuery(
     api.locations.getObjectsAtLocation,
     locationId ? { locationId: locationId as Id<"locations"> } : "skip",
@@ -18,7 +21,7 @@ export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
   if (objects === undefined) {
     return (
       <div className="flex h-32 items-center justify-center">
-        <p className="text-sm text-muted-foreground">Loading objects…</p>
+        <p className="text-sm text-muted-foreground">{t("loadingObjects")}</p>
       </div>
     );
   }
@@ -26,9 +29,7 @@ export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
   if (objects.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border">
-        <p className="text-sm text-muted-foreground">
-          No objects at this location
-        </p>
+        <p className="text-sm text-muted-foreground">{t("noObjectsHere")}</p>
       </div>
     );
   }
@@ -49,7 +50,15 @@ export function ObjectsAtLocation({ locationId }: ObjectsAtLocationProps) {
               </p>
             </div>
             <span className="rounded-full bg-secondary px-2 py-1 text-xs capitalize text-muted-foreground">
-              {obj.status}
+              {obj.status
+                ? obj.status === "active" ||
+                  obj.status === "loaned" ||
+                  obj.status === "deaccessioned" ||
+                  obj.status === "archived" ||
+                  obj.status === "deleted"
+                  ? tObject(obj.status)
+                  : "—"
+                : "—"}
             </span>
           </div>
         </Link>

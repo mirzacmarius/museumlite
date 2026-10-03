@@ -1,29 +1,43 @@
-export function getDeaccessionActionLabel(deaccession: {
-  targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
-  method: "sale" | "donation" | "destruction" | "transfer";
-}) {
+export function getDeaccessionActionLabel(
+  deaccession: {
+    targetCollectionStatus: "deaccessioned" | "archived" | "deleted";
+    method: "sale" | "donation" | "destruction" | "transfer";
+  },
+  t: (key: string) => string,
+) {
   if (deaccession.targetCollectionStatus === "archived") {
-    return "Archive";
+    return t("untranslatedRecords.deaccessions.actions.archive");
   }
 
   if (deaccession.targetCollectionStatus === "deleted") {
-    return "Delete";
+    return t("untranslatedRecords.deaccessions.actions.delete");
   }
 
   switch (deaccession.method) {
     case "sale":
-      return "Sale";
+      return t("untranslatedRecords.deaccessions.actions.sale");
     case "donation":
-      return "Donation";
+      return t("untranslatedRecords.deaccessions.actions.donation");
     case "transfer":
-      return "Transfer";
+      return t("untranslatedRecords.deaccessions.actions.transfer");
     case "destruction":
-      return "Disposal";
+      return t("untranslatedRecords.deaccessions.actions.disposal");
   }
 }
 
-export function formatStatusLabel(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+export function formatStatusLabel(value: string, t: (key: string) => string) {
+  switch (value) {
+    case "active":
+      return t("objects.filters.active");
+    case "loaned":
+      return t("objects.filters.loaned");
+    case "deaccessioned":
+      return t("objects.filters.deaccessioned");
+    case "archived":
+      return t("objects.filters.archived");
+    case "deleted":
+      return t("objects.filters.deleted");
+    default:
+      return value;
+  }
 }

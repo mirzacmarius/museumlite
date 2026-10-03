@@ -28,7 +28,7 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { MediaEditorDialog } from "@/components/media-editor-dialog";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { MediaEditDialog } from "./media-edit-dialog";
 import { MediaGalleryFileTypeBadge } from "./media-gallery-file-type-badge";
 import { getMediaDisplayKind } from "./media-gallery-utils";
@@ -172,6 +172,7 @@ function MediaGalleryImageCard({
   isDragging: boolean;
   isDragOver: boolean;
 }) {
+  const tRoot = useI18n();
   const tMedia = useScopedI18n("objects.form.media");
   const tGallery = useScopedI18n("objects.mediaGallery");
   const {
@@ -212,7 +213,9 @@ function MediaGalleryImageCard({
               type="button"
               className="size-full cursor-pointer"
               onClick={() => openImageLightbox(lightboxIdx)}
-              aria-label={`View ${file.caption || file.fileName}`}
+              aria-label={tRoot("untranslatedRecords.objects.media.viewImage", {
+                label: file.caption || file.fileName,
+              })}
             >
               <Image
                 src={file.thumbnailUrl || file.url}
@@ -258,7 +261,12 @@ function MediaGalleryImageCard({
                 onDragStart={(event) => handleDragStart(event, mediaId)}
                 onDragEnd={handleDragEnd}
                 className="flex size-7 items-center justify-center rounded bg-zinc-950/50 cursor-grab active:cursor-grabbing"
-                aria-label={`Reorder ${file.fileName}`}
+                aria-label={tRoot(
+                  "untranslatedRecords.objects.media.reorderImage",
+                  {
+                    filename: file.fileName,
+                  },
+                )}
               >
                 <GripVertical className="size-3.5 text-white" />
               </button>

@@ -3,7 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { Info, Save } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
 import { EditLoanCoreInfoSection } from "./edit-loan-core-info-section";
 import { EditLoanDetailsSection } from "./edit-loan-details-section";
@@ -17,6 +17,7 @@ interface EditLoanFormProps {
 }
 
 export function EditLoanForm({ loanId, loan, onCancel }: EditLoanFormProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const { formData, setFormData, isSubmitting, error, handleSubmit } =
     useEditLoanForm({ loanId, loan });
@@ -51,7 +52,7 @@ export function EditLoanForm({ loanId, loan, onCancel }: EditLoanFormProps) {
           onClick={onCancel}
           className="w-24"
         >
-          Cancel
+          {tRoot("loans.actions.cancel")}
         </Button>
         <PermissionGate permission="loans.update">
           <Button

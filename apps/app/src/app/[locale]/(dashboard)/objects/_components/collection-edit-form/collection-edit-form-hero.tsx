@@ -12,6 +12,8 @@ import Link from "next/link";
 
 import type * as React from "react";
 import type { RefObject } from "react";
+import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
+import { useI18n } from "@/locales/client";
 import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
 import {
   ObjectImageGallery,
@@ -69,6 +71,7 @@ export function CollectionEditFormHero({
   cameraInputRef,
   handleFileSelect,
 }: CollectionEditFormHeroProps) {
+  const tRoot = useI18n();
   return (
     <div className="border-b border-border/60 bg-secondary/10 px-6 py-8 sm:px-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
@@ -87,22 +90,31 @@ export function CollectionEditFormHero({
                   <div className="flex items-center gap-2 text-sm font-medium text-blue-100">
                     <ArrowRightLeft className="size-4" />
                     {pendingMoveRequest.status === "awaiting_acceptance"
-                      ? "Awaiting transfer acceptance"
-                      : "Pending transfer approval"}
+                      ? tRoot(
+                          "untranslatedRecords.objects.transfer.awaitingAcceptance",
+                        )
+                      : tRoot(
+                          "untranslatedRecords.objects.transfer.pendingApproval",
+                        )}
                   </div>
                   <p className="text-sm text-blue-200/80">
-                    This object is{" "}
+                    {tRoot("untranslatedRecords.objects.move.thisObject")}{" "}
                     {pendingMoveRequest.status === "awaiting_acceptance"
-                      ? "awaiting acceptance"
-                      : "awaiting approval"}{" "}
-                    to move to {pendingMoveRequest.targetOrganizationName}.
+                      ? tRoot(
+                          "untranslatedRecords.objects.transfer.awaitingAcceptanceShort",
+                        )
+                      : tRoot(
+                          "untranslatedRecords.objects.transfer.awaitingApprovalShort",
+                        )}{" "}
+                    {tRoot("untranslatedRecords.objects.move.toMove")}{" "}
+                    {pendingMoveRequest.targetOrganizationName}.
                   </p>
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <Link
                     href={`/objects/move-requests/${pendingMoveRequest._id}`}
                   >
-                    Open transfer request
+                    {tRoot("untranslatedRecords.objects.move.openTransfer")}
                   </Link>
                 </Button>
               </div>
@@ -116,7 +128,7 @@ export function CollectionEditFormHero({
                 getStatusBadgeClass(collection.status),
               )}
             >
-              {collection.status}
+              {getCollectionStatusLabel(collection.status, tRoot)}
             </div>
             <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
               {collection.accessionNumber}
@@ -128,7 +140,7 @@ export function CollectionEditFormHero({
               htmlFor="hero-title"
               className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground"
             >
-              Object title
+              {tRoot("untranslatedRecords.objects.form.objectTitle")}
             </Label>
             <Input
               id="hero-title"
@@ -141,7 +153,9 @@ export function CollectionEditFormHero({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="hero-description">Description</Label>
+            <Label htmlFor="hero-description">
+              {tRoot("objects.form.description")}
+            </Label>
             <Textarea
               autoResize
               id="hero-description"
@@ -163,9 +177,7 @@ export function CollectionEditFormHero({
           />
 
           <p className="text-sm text-muted-foreground">
-            Edit the record using the same structure as the object detail page.
-            Field changes save together. Media uploads and primary image changes
-            apply immediately.
+            {tRoot("untranslatedRecords.objects.form.editRecordDescription")}
           </p>
         </div>
       </div>
