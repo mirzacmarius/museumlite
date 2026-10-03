@@ -6,6 +6,7 @@ import { Textarea } from "@v1/ui/textarea";
 
 import type * as React from "react";
 import type { RefObject } from "react";
+import { useI18n } from "@/locales/client";
 import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
 import {
   ObjectImageGallery,
@@ -55,6 +56,7 @@ export function ObjectRequestFormHero({
   unknownLabel,
   mode,
 }: ObjectRequestFormHeroProps) {
+  const tRoot = useI18n();
   return (
     <div className="border-b border-border/60 bg-secondary/10 px-6 py-8 sm:px-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
@@ -72,10 +74,10 @@ export function ObjectRequestFormHero({
             </div>
             <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
               {isDraftCurrent
-                ? "Draft saved"
+                ? tRoot("untranslatedRecords.objects.draft.saved")
                 : hasSavedFieldDraft
-                  ? "Draft outdated"
-                  : "Not created yet"}
+                  ? tRoot("untranslatedRecords.objects.draft.outdated")
+                  : tRoot("untranslatedRecords.objects.draft.notCreated")}
             </div>
           </div>
 
@@ -84,7 +86,7 @@ export function ObjectRequestFormHero({
               htmlFor="hero-title"
               className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground"
             >
-              Object title
+              {tRoot("untranslatedRecords.objects.form.objectTitle")}
             </Label>
             <Input
               id="hero-title"
@@ -97,7 +99,9 @@ export function ObjectRequestFormHero({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="hero-description">Description</Label>
+            <Label htmlFor="hero-description">
+              {tRoot("objects.form.description")}
+            </Label>
             <Textarea
               autoResize
               id="hero-description"

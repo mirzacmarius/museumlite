@@ -73,7 +73,8 @@
     "./upload-input": "./src/components/upload-input.tsx",
     "./utils": "./src/utils/index.ts",
     "./wizard": "./src/components/wizard.tsx",
-    "./field": "./src/components/field.tsx"
+    "./field": "./src/components/field.tsx",
+    "./locale": "./src/locale.tsx"
   },
   "files": [
     "tailwind.config.ts",
@@ -84,7 +85,8 @@
     "clean": "rm -rf .turbo node_modules",
     "format": "biome format --write .",
     "lint": "biome check . --error-on-warnings",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@diceui/tags-input": "^0.7.2",

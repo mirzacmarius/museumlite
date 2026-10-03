@@ -72,7 +72,7 @@ export function ExportCSVButton({
       ) : (
         <Download strokeWidth={1.75} />
       )}
-      {children || "Export CSV"}
+      {children || t("untranslatedComponents.labels.exportCSV")}
     </Button>
   );
 }

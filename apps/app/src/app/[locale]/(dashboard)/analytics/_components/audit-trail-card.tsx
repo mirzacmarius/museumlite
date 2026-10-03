@@ -13,6 +13,7 @@ import {
 import { cn } from "@v1/ui/utils";
 import { Activity, FileText, History, User } from "lucide-react";
 import { formatDate } from "@/lib/format-date";
+import { getRelativeTimeFormatter } from "@/lib/relative-time-formatters";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface AuditTrailCardProps {
@@ -40,6 +41,7 @@ interface AuditTrailCardProps {
 
 function formatRelativeTime(
   timestamp: number,
+  formatter: Intl.RelativeTimeFormat,
   locale: string,
   justNowText: string,
 ): string {
@@ -50,10 +52,9 @@ function formatRelativeTime(
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));
 
   if (minutes < 1) return justNowText;
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "1d ago";
-  if (days < 30) return `${days}d ago`;
+  if (minutes < 60) return formatter.format(-minutes, "minute");
+  if (hours < 24) return formatter.format(-hours, "hour");
+  if (days < 30) return formatter.format(-days, "day");
   return formatDate(new Date(timestamp), locale, {
     month: "short",
     day: "numeric",
@@ -83,8 +84,10 @@ function formatEntityType(type: string): string {
 }
 
 export function AuditTrailCard({ data }: AuditTrailCardProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const t = useI18n();
+  const relativeTimeFormatter = getRelativeTimeFormatter(locale);
   const maxTypeCount = Math.max(...data.eventsByType.map((e) => e.count), 1);
 
   return (
@@ -100,7 +103,8 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
               {data.totalEvents}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              {t("analytics.auditTrail.totalEvents")} (30d)
+              {t("analytics.auditTrail.totalEvents")}{" "}
+              {t("untranslatedDashboard.analytics.last30DaysShort")}
             </div>
           </div>
           <div className="flex-1 bg-muted/50 border border-border rounded-md p-3 text-center">
@@ -124,13 +128,13 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-border bg-muted/30">
                   <TableHead className="h-7 text-[10px] uppercase font-semibold">
-                    Action
+                    {t("untranslatedDashboard.analytics.action")}
                   </TableHead>
                   <TableHead className="h-7 text-[10px] uppercase font-semibold">
-                    User
+                    {tRoot("untranslatedRecords.objects.detail.user")}
                   </TableHead>
                   <TableHead className="h-7 text-[10px] uppercase font-semibold text-right">
-                    Time
+                    {t("untranslatedDashboard.analytics.time")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -141,7 +145,9 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
                       colSpan={3}
                       className="h-24 text-center text-xs text-muted-foreground"
                     >
-                      No recent activity
+                      {tRoot(
+                        "untranslatedRecords.objects.detail.noRecentActivity",
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -175,6 +181,7 @@ export function AuditTrailCard({ data }: AuditTrailCardProps) {
                       <TableCell className="text-xs text-right text-muted-foreground">
                         {formatRelativeTime(
                           event.timestamp,
+                          relativeTimeFormatter,
                           locale,
                           t("analytics.auditTrail.justNow"),
                         )}

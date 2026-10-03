@@ -2,22 +2,25 @@
 
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../edit-section";
 import type { CollectionFormTabProps } from "../types";
-
 export function ProvenanceHistoryFields({
   formData,
   updateField,
   placeholders,
 }: Pick<CollectionFormTabProps, "formData" | "updateField" | "placeholders">) {
+  const tRoot = useI18n();
   return (
     <EditSection
-      title="Provenance and history"
-      description="Historical context and movement details that give the object its narrative."
+      title={tRoot("untranslatedRecords.objects.form.provenanceHistory")}
+      description={tRoot(
+        "untranslatedRecords.objects.form.historicalContextDescription",
+      )}
     >
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="provenance">Provenance</Label>
+          <Label htmlFor="provenance">{tRoot("objects.form.provenance")}</Label>
           <Textarea
             autoResize
             id="provenance"
@@ -29,7 +32,9 @@ export function ProvenanceHistoryFields({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="exhibitionHistory">Exhibition History</Label>
+          <Label htmlFor="exhibitionHistory">
+            {tRoot("objects.form.exhibitionHistory")}
+          </Label>
           <Textarea
             autoResize
             id="exhibitionHistory"

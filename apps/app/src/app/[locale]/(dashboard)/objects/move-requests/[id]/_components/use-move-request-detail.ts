@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 
 export type MoveRequestDetail = NonNullable<
   FunctionReturnType<typeof api.objectMoves.get>
@@ -22,6 +23,7 @@ export type MoveRequestSubmitAction =
   | null;
 
 export function useMoveRequestDetail() {
+  const tRoot = useI18n();
   const params = useParams();
   const { currentOrganizationId } = useOrganization();
   const { hasPermission } = usePermissions();
@@ -100,13 +102,9 @@ export function useMoveRequestDetail() {
         reviewNotes: reviewNotes.trim() || undefined,
       });
       setReviewNotes("");
-      toast.success("Transfer approved and sent for acceptance.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to approve move request.",
-      );
+      toast.success(tRoot("untranslatedRecords.objects.transfer.moveApproved"));
+    } catch {
+      toast.error(tRoot("untranslatedRecords.objects.transfer.failedApprove"));
     } finally {
       setIsSubmitting(null);
     }
@@ -120,13 +118,9 @@ export function useMoveRequestDetail() {
         reviewNotes: reviewNotes.trim() || undefined,
       });
       setReviewNotes("");
-      toast.success("Transfer accepted and completed.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to accept transfer request.",
-      );
+      toast.success(tRoot("untranslatedRecords.objects.transfer.moveAccepted"));
+    } catch {
+      toast.error(tRoot("untranslatedRecords.objects.transfer.failedAccept"));
     } finally {
       setIsSubmitting(null);
     }
@@ -134,7 +128,9 @@ export function useMoveRequestDetail() {
 
   const handleReject = async (moveRequest: MoveRequestDetail) => {
     if (!reviewNotes.trim()) {
-      toast.error("Review notes are required to reject a move request.");
+      toast.error(
+        tRoot("untranslatedRecords.objects.transfer.rejectNotesRequired"),
+      );
       return;
     }
 
@@ -145,13 +141,9 @@ export function useMoveRequestDetail() {
         reviewNotes: reviewNotes.trim(),
       });
       setReviewNotes("");
-      toast.success("Move request rejected.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to reject move request.",
-      );
+      toast.success(tRoot("untranslatedRecords.objects.transfer.moveRejected"));
+    } catch {
+      toast.error(tRoot("untranslatedRecords.objects.transfer.failedReject"));
     } finally {
       setIsSubmitting(null);
     }
@@ -161,13 +153,11 @@ export function useMoveRequestDetail() {
     setIsSubmitting("cancel");
     try {
       await cancel({ requestId: moveRequest._id });
-      toast.success("Move request cancelled.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to cancel move request.",
+      toast.success(
+        tRoot("untranslatedRecords.objects.transfer.moveCancelled"),
       );
+    } catch {
+      toast.error(tRoot("untranslatedRecords.objects.transfer.failedCancel"));
     } finally {
       setIsSubmitting(null);
     }

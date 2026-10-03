@@ -5,6 +5,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { CheckCircle } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type {
   CollectionFormData,
   OwnershipEntry,
@@ -32,6 +33,7 @@ export function OwnershipEntryFormFields({
   notesPlaceholder,
   verificationPlaceholder,
 }: OwnershipEntryFormFieldsProps) {
+  const tRoot = useI18n();
   function updateEntry(partial: Partial<OwnershipEntry>) {
     const updated = [...(formData.ownershipHistory || [])];
     updated[index] = { ...entry, ...partial };
@@ -43,7 +45,8 @@ export function OwnershipEntryFormFields({
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-1">
           <Label htmlFor={`owner-${index}`}>
-            Owner <span className="text-red-500">*</span>
+            {tRoot("objects.form.owner")}{" "}
+            <span className="text-red-500">*</span>
           </Label>
           <Input
             id={`owner-${index}`}
@@ -53,27 +56,31 @@ export function OwnershipEntryFormFields({
           />
         </div>
         <div>
-          <Label htmlFor={`startYear-${index}`}>From</Label>
+          <Label htmlFor={`startYear-${index}`}>
+            {tRoot("untranslatedRecords.objects.actions.from")}
+          </Label>
           <Input
             id={`startYear-${index}`}
             value={entry.startYear || ""}
             onChange={(event) => updateEntry({ startYear: event.target.value })}
-            placeholder="e.g., 1920"
+            placeholder={tRoot("objects.form.placeholders.yearStart")}
           />
         </div>
         <div>
-          <Label htmlFor={`endYear-${index}`}>To</Label>
+          <Label htmlFor={`endYear-${index}`}>{tRoot("objects.form.to")}</Label>
           <Input
             id={`endYear-${index}`}
             value={entry.endYear || ""}
             onChange={(event) => updateEntry({ endYear: event.target.value })}
-            placeholder="e.g., 1985 or Present"
+            placeholder={tRoot("objects.form.placeholders.yearEnd")}
           />
         </div>
       </div>
 
       <div>
-        <Label htmlFor={`description-${index}`}>Notes</Label>
+        <Label htmlFor={`description-${index}`}>
+          {tRoot("accessions.form.notes")}
+        </Label>
         <Textarea
           id={`description-${index}`}
           value={entry.description || ""}
@@ -97,7 +104,7 @@ export function OwnershipEntryFormFields({
             className="flex items-center gap-1 text-sm font-normal"
           >
             <CheckCircle className="size-3 text-green-500" />
-            Verified
+            {tRoot("untranslatedRecords.objects.detail.verified")}
           </Label>
         </div>
 

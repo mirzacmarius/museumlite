@@ -2,10 +2,11 @@
 
 import { Button } from "@v1/ui/button";
 import { AlertCircle, LayoutGrid, Shield } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 export function FacilityTab() {
   const t = useScopedI18n("loans.actions");
+  const tRoot = useI18n();
 
   return (
     <div className="space-y-6">
@@ -49,7 +50,14 @@ export function FacilityTab() {
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-mono">
                 <span>15°C</span>
-                <span>Target: 21°C</span>
+                <span>
+                  {tRoot(
+                    "untranslatedRecords.loans.examples.targetTemperature",
+                    {
+                      temperature: 21,
+                    },
+                  )}
+                </span>
                 <span>25°C</span>
               </div>
             </div>

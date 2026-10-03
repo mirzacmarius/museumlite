@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 interface BarcodeScannerProps {
   onScanSuccess: (decodedText: string, format: string) => void;
@@ -41,6 +42,7 @@ export function BarcodeScanner({
   qrbox = 250,
   aspectRatio = 1.0,
 }: BarcodeScannerProps) {
+  const translate = useI18n();
   const [status, setStatus] = useState<ScannerStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [flashEnabled, setFlashEnabled] = useState(false);
@@ -129,12 +131,16 @@ export function BarcodeScanner({
       setStatus("scanning");
     } catch (error) {
       const errorMsg =
-        error instanceof Error ? error.message : "Failed to start scanner";
+        error instanceof Error
+          ? error.message
+          : translate("untranslatedComponents.labels.failedToStartScanner");
 
       if (errorMsg.includes("Permission") || errorMsg.includes("NotAllowed")) {
         setStatus("permission-denied");
         setErrorMessage(
-          "Camera permission denied. Please enable camera access in your browser settings.",
+          translate(
+            "untranslatedComponents.labels.cameraPermissionDeniedEnableBrowserAccess",
+          ),
         );
       } else {
         setStatus("error");
@@ -200,14 +206,16 @@ export function BarcodeScanner({
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <Camera className="mb-4 size-12 text-muted-foreground" />
             <p className="mb-2 text-sm font-medium text-foreground">
-              Ready to scan
+              {translate("untranslatedComponents.labels.readyToScan")}
             </p>
             <p className="mb-4 text-xs text-muted-foreground">
-              Click start to activate your camera and scan barcodes or QR codes
+              {translate(
+                "untranslatedComponents.labels.clickStartToActivateYourCameraAndScanBarcodesOrQRCodes",
+              )}
             </p>
             <Button onClick={handleStart} disabled={disabled}>
               <Camera className="size-4" />
-              Start Scanner
+              {translate("untranslatedComponents.labels.startScanner")}
             </Button>
           </div>
         )}
@@ -216,7 +224,7 @@ export function BarcodeScanner({
           <div className="flex flex-col items-center justify-center p-8">
             <Loader2 className="mb-4 size-12 animate-spin text-primary" />
             <p className="text-sm font-medium text-foreground">
-              Initializing camera…
+              {translate("untranslatedComponents.labels.initializingCamera")}
             </p>
           </div>
         )}
@@ -225,11 +233,12 @@ export function BarcodeScanner({
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <CameraOff className="mb-4 size-12 text-yellow-500" />
             <p className="mb-2 text-sm font-medium text-foreground">
-              Camera Access Required
+              {translate("untranslatedComponents.labels.cameraAccessRequired")}
             </p>
             <p className="mb-4 text-xs text-muted-foreground">
-              Please enable camera permissions in your browser settings and try
-              again
+              {translate(
+                "untranslatedComponents.labels.pleaseEnableCameraPermissionsInYourBrowserSettingsAndTryAgain",
+              )}
             </p>
           </div>
         )}
@@ -238,12 +247,12 @@ export function BarcodeScanner({
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <AlertCircle className="mb-4 size-12 text-destructive" />
             <p className="mb-2 text-sm font-medium text-foreground">
-              Scanner Error
+              {translate("untranslatedComponents.labels.scannerError")}
             </p>
             <p className="mb-4 text-xs text-muted-foreground">{errorMessage}</p>
             <Button onClick={handleStart} variant="outline">
               <Camera className="size-4" />
-              Try Again
+              {translate("untranslatedComponents.labels.tryAgain")}
             </Button>
           </div>
         )}
@@ -253,7 +262,9 @@ export function BarcodeScanner({
             <div className="flex flex-col items-center rounded-lg bg-background/90 p-6 shadow-lg">
               <CheckCircle2 className="mb-2 size-12 text-green-500" />
               <p className="text-sm font-medium text-foreground">
-                Code scanned successfully!
+                {translate(
+                  "untranslatedComponents.labels.codeScannedSuccessfully",
+                )}
               </p>
             </div>
           </div>
@@ -274,7 +285,11 @@ export function BarcodeScanner({
             variant="outline"
             size="icon"
             disabled={!canToggleFlash}
-            title={flashEnabled ? "Turn off flash" : "Turn on flash"}
+            title={
+              flashEnabled
+                ? translate("untranslatedComponents.labels.turnOffFlash")
+                : translate("untranslatedComponents.labels.turnOnFlash")
+            }
           >
             {flashEnabled ? (
               <FlashlightOff className="size-4" />
@@ -289,28 +304,30 @@ export function BarcodeScanner({
             disabled={status === "initializing"}
           >
             <CameraOff className="size-4" />
-            Stop Scanner
+            {translate("untranslatedComponents.labels.stopScanner")}
           </Button>
         </div>
       )}
 
       <div className="space-y-1 rounded-md border border-border bg-muted/30 p-3">
         <p className="text-xs font-medium text-foreground">
-          Supported formats:
+          {translate("untranslatedComponents.labels.supportedFormats")}
         </p>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-md bg-background px-2 py-1 text-xs text-muted-foreground">
-            QR Code
+            {translate("untranslatedComponents.labels.qRCode")}
           </span>
           <span className="rounded-md bg-background px-2 py-1 text-xs text-muted-foreground">
-            Code 128
+            {translate("untranslatedComponents.labels.code128")}
           </span>
           <span className="rounded-md bg-background px-2 py-1 text-xs text-muted-foreground">
-            Code 39
+            {translate("untranslatedComponents.labels.code39")}
           </span>
         </div>
         <p className="pt-2 text-xs text-muted-foreground">
-          Position the code within the camera view to scan
+          {translate(
+            "untranslatedComponents.labels.positionTheCodeWithinTheCameraViewToScan",
+          )}
         </p>
       </div>
     </div>

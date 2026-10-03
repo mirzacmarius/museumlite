@@ -3,7 +3,7 @@
 import { Slot } from "@radix-ui/react-slot";
 import { Check, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import * as React from "react";
-
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 import {
@@ -27,7 +27,7 @@ export interface FiltersDropdownProps {
 
 export function FiltersDropdown({
   children,
-  title = "Filters",
+  title,
   hasActiveFilters = false,
   activeFilterCount,
   className,
@@ -36,6 +36,7 @@ export function FiltersDropdown({
   align = "start",
   side = "bottom",
 }: FiltersDropdownProps) {
+  const { messages } = useUiLocale();
   return (
     <Popover>
       <div className={cn("inline-flex", className)}>
@@ -50,7 +51,7 @@ export function FiltersDropdown({
             )}
           >
             <span className="flex items-center gap-2">
-              <span>{title}</span>
+              <span>{title ?? messages.filters.title}</span>
               {hasActiveFilters &&
                 activeFilterCount !== undefined &&
                 activeFilterCount > 0 && (
@@ -88,10 +89,11 @@ export interface FiltersSearchInputProps {
 export function FiltersSearchInput({
   value,
   onValueChange,
-  placeholder = "Search",
+  placeholder,
   className,
   autoFocus = true,
 }: FiltersSearchInputProps) {
+  const { messages } = useUiLocale();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -107,7 +109,7 @@ export function FiltersSearchInput({
           ref={inputRef}
           type="text"
           className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-          placeholder={placeholder}
+          placeholder={placeholder ?? messages.filters.search}
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
         />
@@ -116,7 +118,7 @@ export function FiltersSearchInput({
             type="button"
             className="grid place-items-center rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             onClick={() => onValueChange("")}
-            aria-label="Clear search"
+            aria-label={messages.filters.clearSearch}
           >
             <X className="size-3.5" />
           </button>

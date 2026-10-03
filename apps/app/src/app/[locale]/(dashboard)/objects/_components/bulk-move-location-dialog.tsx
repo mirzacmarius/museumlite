@@ -22,7 +22,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface BulkMoveLocationDialogProps {
   open: boolean;
@@ -39,6 +39,7 @@ export function BulkMoveLocationDialog({
   organizationId,
   onSuccess,
 }: BulkMoveLocationDialogProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("common.toast");
   const tDialog = useScopedI18n("objects.bulkDialogs.moveLocation");
   const tCommon = useScopedI18n("common");
@@ -70,7 +71,9 @@ export function BulkMoveLocationDialog({
       }
       if (result.failed > 0) {
         toast.error(
-          `Failed to move ${result.failed} item${result.failed !== 1 ? "s" : ""}`,
+          tRoot("untranslatedRecords.objects.bulk.failedMove", {
+            count: result.failed,
+          }),
         );
       }
 

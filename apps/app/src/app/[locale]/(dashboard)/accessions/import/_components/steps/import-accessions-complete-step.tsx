@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 import type { ImportState } from "../import-accessions-types";
 
 interface ImportJobResult {
@@ -22,6 +23,7 @@ export function ImportAccessionsCompleteStep({
   t,
   onReset,
 }: ImportAccessionsCompleteStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto max-w-md text-center">
       <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
@@ -45,7 +47,12 @@ export function ImportAccessionsCompleteStep({
               <li key={error}>• {error}</li>
             ))}
             {state.errors.length > 5 ? (
-              <li>• ... and {state.errors.length - 5} more</li>
+              <li>
+                •{" "}
+                {tRoot("untranslatedRecords.collections.import.andMoreErrors", {
+                  count: state.errors.length - 5,
+                })}
+              </li>
             ) : null}
           </ul>
         </div>

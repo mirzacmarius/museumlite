@@ -8,6 +8,7 @@ import type { FormEvent } from "react";
 import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
 import type { AuthMode } from "@/auth/types";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface AuthPasswordFormProps {
   canSignInWithPassword: boolean;
@@ -73,6 +74,8 @@ export function AuthPasswordForm({
   onPasswordVerificationRequired,
   onSignedIn,
 }: AuthPasswordFormProps) {
+  const translate = useI18n();
+  const locale = useCurrentLocale();
   const { signIn } = useAuthActions();
   const [state, dispatch] = useReducer(
     passwordFormReducer,
@@ -117,7 +120,7 @@ export function AuthPasswordForm({
     if (mode === "signIn" && !canSignInWithPassword) {
       onModeChange("signUp");
       toast.error(
-        "No password login exists for this email yet. Create one first.",
+        translate("untranslatedComponents.auth.passwordLoginRequiredFirst"),
       );
       return;
     }
@@ -129,6 +132,7 @@ export function AuthPasswordForm({
         email,
         flow: mode,
         password: state.password,
+        redirectTo: `/${locale}`,
       });
 
       if (result.signingIn) {
@@ -137,19 +141,21 @@ export function AuthPasswordForm({
       }
 
       onPasswordVerificationRequired();
-      toast.success("Enter the verification code sent to your email.");
+      toast.success(
+        translate("untranslatedComponents.auth.verificationCodeSent"),
+      );
     } catch (error) {
       const message = getErrorMessage(error);
       if (message.includes("InvalidAccountId") && !isSignUp) {
         onModeChange("signUp");
         toast.error(
-          "No password login exists for this email yet. Create one first.",
+          translate("untranslatedComponents.auth.passwordLoginRequiredFirst"),
         );
       } else {
         toast.error(
           isSignUp
-            ? "Could not create account with this email."
-            : "Could not sign in with that password.",
+            ? translate("untranslatedComponents.auth.accountCreationFailed")
+            : translate("untranslatedComponents.auth.passwordSignInFailed"),
         );
       }
     } finally {
@@ -164,7 +170,7 @@ export function AuthPasswordForm({
           className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-email-disabled"
         >
-          Email
+          {translate("untranslatedComponents.labels.email")}
         </label>
         <div className="relative flex items-center rounded-md border border-white/10 bg-background">
           <Input
@@ -175,7 +181,7 @@ export function AuthPasswordForm({
             value={email}
           />
           <button
-            aria-label="Clear email"
+            aria-label={translate("untranslatedComponents.labels.clearEmail")}
             className="absolute right-3"
             onClick={onEmailClear}
             type="button"
@@ -190,7 +196,9 @@ export function AuthPasswordForm({
           className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-password"
         >
-          {isSignUp ? "Set password" : "Password"}
+          {isSignUp
+            ? translate("untranslatedComponents.auth.setPassword")
+            : translate("untranslatedComponents.auth.password")}
         </label>
         <div className="relative flex items-center rounded-md">
           <Input
@@ -200,12 +208,18 @@ export function AuthPasswordForm({
             onChange={(event) =>
               dispatch({ type: "setPassword", value: event.target.value })
             }
-            placeholder="Enter your password"
+            placeholder={translate(
+              "untranslatedComponents.labels.enterYourPassword",
+            )}
             type={state.showPassword ? "text" : "password"}
             value={state.password}
           />
           <button
-            aria-label={state.showPassword ? "Hide password" : "Show password"}
+            aria-label={
+              state.showPassword
+                ? translate("untranslatedComponents.auth.hidePassword")
+                : translate("untranslatedComponents.auth.showPassword")
+            }
             className="absolute right-3"
             onClick={() => dispatch({ type: "toggleShowPassword" })}
             type="button"
@@ -225,7 +239,7 @@ export function AuthPasswordForm({
             }}
             type="button"
           >
-            Forgot password?
+            {translate("untranslatedComponents.labels.forgotPassword")}
           </button>
         ) : null}
       </div>
@@ -236,7 +250,7 @@ export function AuthPasswordForm({
             className="text-xs font-medium text-muted-foreground"
             htmlFor="auth-confirm-password"
           >
-            Confirm password
+            {translate("untranslatedComponents.labels.confirmPassword")}
           </label>
           <div className="relative flex items-center rounded-md">
             <Input
@@ -249,13 +263,17 @@ export function AuthPasswordForm({
                   value: event.target.value,
                 })
               }
-              placeholder="Retype your password"
+              placeholder={translate(
+                "untranslatedComponents.labels.retypeYourPassword",
+              )}
               type={state.showRetypePassword ? "text" : "password"}
               value={state.confirmPassword}
             />
             <button
               aria-label={
-                state.showRetypePassword ? "Hide password" : "Show password"
+                state.showRetypePassword
+                  ? translate("untranslatedComponents.auth.hidePassword")
+                  : translate("untranslatedComponents.auth.showPassword")
               }
               className="absolute right-3"
               onClick={() => dispatch({ type: "toggleShowRetypePassword" })}
@@ -271,7 +289,7 @@ export function AuthPasswordForm({
           {state.confirmPassword.length > 0 &&
           state.confirmPassword !== state.password ? (
             <p className="px-0.5 text-xs text-red-400">
-              Passwords do not match.
+              {translate("untranslatedComponents.labels.passwordsDoNotMatch")}
             </p>
           ) : null}
         </div>
@@ -284,10 +302,10 @@ export function AuthPasswordForm({
           type="submit"
         >
           {state.isSubmitting
-            ? "Continuing..."
+            ? translate("untranslatedComponents.auth.continuing")
             : mode === "signIn"
-              ? "Continue"
-              : "Create account"}
+              ? translate("untranslatedComponents.auth.continue")
+              : translate("untranslatedComponents.auth.createAccount")}
         </Button>
         {mode === "signIn" ? (
           <Button
@@ -298,7 +316,7 @@ export function AuthPasswordForm({
             type="button"
             variant="secondary"
           >
-            Sign in with unique code
+            {translate("untranslatedComponents.labels.signInWithUniqueCode")}
           </Button>
         ) : null}
       </div>

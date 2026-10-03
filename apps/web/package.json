@@ -9,6 +9,7 @@
     "lint": "biome lint --error-on-warnings",
     "format": "biome format --write .",
     "start": "next start",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

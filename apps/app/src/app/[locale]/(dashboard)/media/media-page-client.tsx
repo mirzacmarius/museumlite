@@ -65,6 +65,7 @@ export function MediaPageClient({
   preloadedUsage,
   preloadedMedia,
 }: MediaPageClientProps) {
+  const tRoot = useI18n();
   const t = useI18n();
   const { filters, setFilters, resetFilters } = useMediaFilters();
 
@@ -150,10 +151,10 @@ export function MediaPageClient({
     useState<Id<"mediaFiles"> | null>(null);
 
   const tabs: Array<{ id: MediaFileType; label: string }> = [
-    { id: "all", label: "All Assets" },
-    { id: "image", label: "Images" },
-    { id: "document", label: "Documents" },
-    { id: "3d", label: "3D Models" },
+    { id: "all", label: tRoot("untranslatedDashboard.media.allAssets") },
+    { id: "image", label: tRoot("mediaPage.types.image") },
+    { id: "document", label: tRoot("mediaPage.types.document") },
+    { id: "3d", label: tRoot("mediaPage.types.model3d") },
   ];
 
   return (
@@ -161,18 +162,18 @@ export function MediaPageClient({
       <div className="space-y-4 border-b border-zinc-800/60 bg-zinc-900/20 px-6 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold tracking-tight text-zinc-200">
-            Digital Assets
+            {tRoot("untranslatedDashboard.media.digitalAssets")}
           </h2>
           <div className="flex items-center gap-3">
             {stats && usage && (
               <div className="flex items-center gap-2 text-xs text-zinc-500">
                 <span className="size-2 rounded-full bg-emerald-500" />
-                <span>{formatFileSize(stats.totalSize)} Used</span>
+                <span>{formatFileSize(stats.totalSize)} {tRoot("untranslatedRecords.objects.forms.used")}</span>
                 <span className="text-zinc-700">/</span>
                 {usage.storage.limit === null ? (
-                  <span>Unlimited</span>
+                  <span>{tRoot("untranslatedDashboard.media.unlimited")}</span>
                 ) : (
-                  <span>{formatFileSize(usage.storage.limit)} Total</span>
+                  <span>{formatFileSize(usage.storage.limit)} {tRoot("untranslatedDashboard.media.total")}</span>
                 )}
               </div>
             )}
@@ -200,7 +201,7 @@ export function MediaPageClient({
             <Search className="absolute left-2.5 top-2 size-3.5 text-zinc-500" />
             <input
               type="text"
-              placeholder="Search files..."
+              placeholder={tRoot("untranslatedDashboard.media.mediaSearch")}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-48 rounded-full border border-zinc-800 bg-zinc-900 py-1 pl-8 pr-4 text-xs text-zinc-300 transition-all focus:border-zinc-700 focus:outline-none"
@@ -223,7 +224,7 @@ export function MediaPageClient({
           <EmptyState
             icon={ImageIcon}
             title={t("mediaPage.empty")}
-            description="Media uploaded from object records will appear here."
+            description={tRoot("untranslatedDashboard.media.uploadedFromObjects")}
             size="md"
           />
         )}

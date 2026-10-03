@@ -7,9 +7,15 @@ import {
 import { cn } from "@v1/ui/utils";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useScopedI18n } from "@/locales/client";
 
 export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
   const { theme: currentTheme, setTheme, themes } = useTheme();
+  const t = useScopedI18n("untranslatedDashboard.themeSwitcher");
+  const themeLabel = (theme: string) =>
+    theme === "light" || theme === "dark" || theme === "system"
+      ? t(theme)
+      : theme;
   return (
     <Select
       value={currentTheme}
@@ -31,7 +37,7 @@ export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
           )}
           {currentTheme && (
             <span className="text-xs font-medium">
-              {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)}
+              {themeLabel(currentTheme)}
             </span>
           )}
         </div>
@@ -43,7 +49,7 @@ export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
             value={theme}
             className={`text-sm font-medium text-primary/60 ${theme === currentTheme && "text-primary"}`}
           >
-            {theme && theme.charAt(0).toUpperCase() + theme.slice(1)}
+            {theme && themeLabel(theme)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -53,12 +59,15 @@ export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
 
 export function ThemeSwitcherHome() {
   const { setTheme, themes } = useTheme();
+  const t = useScopedI18n("untranslatedDashboard.themeSwitcher");
   return (
     <div className="flex gap-3">
       {themes.map((theme) => (
         <button
           key={theme}
           name="theme"
+          aria-label={theme ? t(theme) : undefined}
+          title={theme ? t(theme) : undefined}
           onClick={() => setTheme(theme)}
           type="button"
         >

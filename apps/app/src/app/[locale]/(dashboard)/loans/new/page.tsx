@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/locales/client";
 import { NewLoanBasicsSection } from "./_components/new-loan-basics-section";
 import { NewLoanFormActions } from "./_components/new-loan-form-actions";
 import { NewLoanItemsSection } from "./_components/new-loan-items-section";
@@ -8,8 +9,8 @@ import { NewLoanPageHeader } from "./_components/new-loan-page-header";
 import { NewLoanScheduleSection } from "./_components/new-loan-schedule-section";
 import { NewLoanSummarySidebar } from "./_components/new-loan-summary-sidebar";
 import { useNewLoanForm } from "./_components/use-new-loan-form";
-
 export default function NewLoanPage() {
+  const tRoot = useI18n();
   const { back } = useRouter();
   const {
     currentOrganizationId,
@@ -33,7 +34,7 @@ export default function NewLoanPage() {
     return (
       <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">
-          Please select an organization to create loans.
+          {tRoot("loans.actions.pleaseSelectOrganization")}
         </p>
       </div>
     );
@@ -47,10 +48,10 @@ export default function NewLoanPage() {
         <div className="mx-auto max-w-5xl px-6 py-8 pb-20">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              Create New Loan
+              {tRoot("loans.actions.createNewLoan")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Register a new incoming or outgoing loan record.
+              {tRoot("loans.actions.registerNewLoan")}
             </p>
           </div>
 

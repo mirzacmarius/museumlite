@@ -1,6 +1,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
+import { getWebI18n } from "@/locales/server";
 import { PublicPortalPageClient } from "./public-portal-page-client";
 
 interface PageProps {
@@ -10,7 +11,10 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { orgSlug, portalSlug } = await params;
+  const [{ orgSlug, portalSlug }, { t }] = await Promise.all([
+    params,
+    getWebI18n(),
+  ]);
 
   try {
     const organization = await fetchQuery(api.organizations.getBySlug, {
@@ -21,18 +25,18 @@ export async function generateMetadata({
     const name = organization?.name ?? orgSlug;
 
     return {
-      title: `${name} Portal | MuseumLite`,
-      description: `Browse the public collection portal for ${name}.`,
+      title: `${t("public.portalTitle", { name })} | MuseumLite`,
+      description: t("public.portalMetadata"),
       openGraph: {
-        title: `${name} — ${portalSlug}`,
-        description: `Public collection portal for ${name}`,
+        title: t("public.portalTitle", { name }),
+        description: t("public.portalMetadata"),
         type: "website",
       },
     };
   } catch {
     return {
-      title: `${orgSlug} Portal | MuseumLite`,
-      description: "Browse the public collection portal.",
+      title: `${t("public.portalTitle", { name: orgSlug })} | MuseumLite`,
+      description: t("public.portalMetadata"),
     };
   }
 }

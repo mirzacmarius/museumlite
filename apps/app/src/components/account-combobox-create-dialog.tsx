@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@v1/ui/dialog";
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "@/locales/client";
 import { AccountComboboxAddressSection } from "./account-combobox-address-section";
 import { AccountComboboxContactSection } from "./account-combobox-contact-section";
 import { AccountComboboxHolderSection } from "./account-combobox-holder-section";
@@ -36,13 +37,18 @@ export function AccountComboboxCreateDialog({
   isSubmitting,
   onCreate,
 }: AccountComboboxCreateDialogProps) {
+  const translate = useI18n();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Account</DialogTitle>
+          <DialogTitle>
+            {translate("untranslatedComponents.labels.createNewAccount")}
+          </DialogTitle>
           <DialogDescription>
-            Add a new lender/borrower account to your organization.
+            {translate(
+              "untranslatedComponents.labels.addANewLenderBorrowerAccountToYourOrganization",
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -74,14 +80,16 @@ export function AccountComboboxCreateDialog({
               setFormData(initialAccountFormState);
             }}
           >
-            Cancel
+            {translate("untranslatedComponents.labels.cancel")}
           </Button>
           <Button
             type="button"
             onClick={onCreate}
             disabled={isSubmitting || !formData.businessName.trim()}
           >
-            {isSubmitting ? "Creating..." : "Create Account"}
+            {isSubmitting
+              ? translate("untranslatedComponents.labels.creating")
+              : translate("untranslatedComponents.labels.createAccount")}
           </Button>
         </DialogFooter>
       </DialogContent>

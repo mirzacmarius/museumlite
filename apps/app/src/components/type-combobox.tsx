@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronsUpDown, Plus } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 import { TypeComboboxDeleteDialog } from "./type-combobox-delete-dialog";
 import { TypeComboboxListContent } from "./type-combobox-list-content";
 import {
@@ -32,10 +33,11 @@ export function TypeCombobox({
   collectionId,
   value = EMPTY_TYPE_VALUES,
   onValueChange,
-  placeholder = "Select or add types...",
+  placeholder,
   disabled = false,
   canDeleteTypes = true,
 }: TypeComboboxProps) {
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
@@ -189,7 +191,10 @@ export function TypeCombobox({
               type="text"
               className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
               placeholder={
-                selectedValues.length === 0 ? placeholder : "Search or add..."
+                selectedValues.length === 0
+                  ? (placeholder ??
+                    translate("untranslatedComponents.labels.selectOrAddTypes"))
+                  : translate("untranslatedComponents.labels.searchOrAdd")
               }
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -212,7 +217,10 @@ export function TypeCombobox({
                 variant="secondary"
                 size="sm"
                 className="h-7 shrink-0 gap-1.5 border border-border px-2 text-xs font-medium shadow-sm"
-                aria-label={`Add ${formatTypeName(inputValue)}`}
+                aria-label={translate(
+                  "untranslatedComponents.labels.addNamedItem",
+                  { name: formatTypeName(inputValue) },
+                )}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -224,7 +232,7 @@ export function TypeCombobox({
                 }}
               >
                 <Plus className="size-3.5" />
-                Add
+                {translate("untranslatedComponents.labels.add")}
               </Button>
             ) : null}
             <ChevronsUpDown className="size-4 shrink-0 opacity-50" />

@@ -46,12 +46,8 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
             : availableEvents || [],
       });
       setCreatedSecret(result.secret);
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : t("errors.failedToCreateWebhook"),
-      );
+    } catch {
+      alert(t("errors.failedToCreateWebhook"));
     } finally {
       setIsCreating(false);
     }
@@ -63,24 +59,16 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
   ) => {
     try {
       await updateWebhook({ webhookId, isActive: !isActive });
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : t("errors.failedToUpdateWebhook"),
-      );
+    } catch {
+      alert(t("errors.failedToUpdateWebhook"));
     }
   };
 
   const handleDelete = async (webhookId: Id<"webhooks">) => {
     try {
       await deleteWebhook({ webhookId });
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : t("errors.failedToDeleteWebhook"),
-      );
+    } catch {
+      alert(t("errors.failedToDeleteWebhook"));
     }
   };
 
@@ -96,12 +84,11 @@ export function useWebhooksTab(organizationId: Id<"organizations">) {
           ? t("webhooks.testSuccess", { statusCode: result.statusCode })
           : result.error || t("webhooks.testFailed"),
       });
-    } catch (error) {
+    } catch {
       setTestResult({
         id: webhookId,
         success: false,
-        message:
-          error instanceof Error ? error.message : t("webhooks.testFailed"),
+        message: t("webhooks.testFailed"),
       });
     } finally {
       setTestingId(null);

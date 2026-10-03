@@ -22,6 +22,15 @@ export function formatDate(
   return date.toLocaleDateString(intlLocale, options);
 }
 
+export function formatTime(
+  date: Date,
+  locale: string,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  const intlLocale = locale === "no" ? "nb-NO" : locale;
+  return date.toLocaleTimeString(intlLocale, options);
+}
+
 export function formatDateFns(
   date: Date,
   formatStr: string,

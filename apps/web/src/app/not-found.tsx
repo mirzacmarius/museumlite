@@ -1,11 +1,13 @@
 import Link from "next/link";
 import "@/marketing-styles.css";
 import { MarketingFonts } from "@/components/site/marketing-fonts";
-import { MarketingThemeScript } from "@/components/site/marketing-theme";
 import { MarketingSiteRoot } from "@/components/site/marketing-site-root";
 import { MarketingSiteShell } from "@/components/site/marketing-site-shell";
+import { MarketingThemeScript } from "@/components/site/marketing-theme";
+import { getWebI18n } from "@/locales/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const { t } = await getWebI18n();
   return (
     <MarketingFonts>
       <MarketingThemeScript />
@@ -19,15 +21,17 @@ export default function NotFound() {
               <p className="text-[10px] uppercase tracking-[0.4em] text-gold mb-4">
                 404
               </p>
-              <h1 className="font-display text-6xl text-ivory">Page not found</h1>
+              <h1 className="font-display text-6xl text-ivory">
+                {t("common.pageNotFound")}
+              </h1>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                The page you are looking for does not exist or has been moved.
+                {t("common.pageNotFoundDescription")}
               </p>
               <Link
                 href="/"
                 className="btn-marketing mt-8 inline-flex border border-gold bg-gold px-6 py-3 text-xs uppercase tracking-[0.3em] text-ink hover:bg-transparent hover:text-gold transition-colors"
               >
-                Back to home
+                {t("common.backHome")}
               </Link>
             </div>
           </main>

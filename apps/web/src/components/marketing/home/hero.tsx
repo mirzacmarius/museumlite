@@ -1,35 +1,36 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getWebI18n } from "@/locales/server";
 
-const capabilities = [
-  {
-    title: "Collections",
-    detail: "Accessions & catalog",
-    href: "/features#collections",
-  },
-  {
-    title: "Exhibitions",
-    detail: "Loans & installations",
-    href: "/features#exhibitions",
-  },
-  {
-    title: "Conservation",
-    detail: "Treatments & environment",
-    href: "/features#conservation",
-  },
-  {
-    title: "Public portal",
-    detail: "Publish when ready",
-    href: "/features",
-  },
-] as const;
-
-export function HomeHero() {
+export async function HomeHero() {
+  const { t } = await getWebI18n();
+  const capabilities = [
+    {
+      title: t("marketing.home.capabilityCollections"),
+      detail: t("marketing.home.capabilityAccession"),
+      href: "/features#collections",
+    },
+    {
+      title: t("marketing.home.capabilityExhibitions"),
+      detail: t("marketing.home.capabilityLoans"),
+      href: "/features#exhibitions",
+    },
+    {
+      title: t("marketing.home.capabilityConservation"),
+      detail: t("marketing.home.capabilityTreatments"),
+      href: "/features#conservation",
+    },
+    {
+      title: t("marketing.home.capabilityPortal"),
+      detail: t("marketing.home.capabilityPublish"),
+      href: "/features",
+    },
+  ];
   return (
     <section className="hero-overlay relative flex min-h-dvh flex-col overflow-hidden bg-background grain">
       <Image
         src="/marketing/hero-gallery.jpg"
-        alt="Grand museum gallery illuminated at dusk"
+        alt={t("marketing.home.heroAlt")}
         fill
         priority
         quality={65}
@@ -42,29 +43,30 @@ export function HomeHero() {
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 lg:px-10 pt-44 pb-8 md:pb-10">
         <div className="animate-hero-enter flex items-center gap-4 text-[10px] uppercase tracking-[0.4em] text-gold mb-10">
           <span className="hero-rule-animate h-px w-10 bg-gold/60" />
-          Museum collection management
+          {t("marketing.home.heroEyebrow")}
         </div>
 
         <h1 className="animate-hero-enter animate-hero-delay-1 font-display text-[12vw] sm:text-[10vw] md:text-[8rem] leading-[0.88] text-balance text-ivory max-w-5xl">
-          The quiet
+          {t("marketing.home.heroTitleStart")}
           <br />
-          <em className="not-italic text-gold">order</em> behind
+          <em className="not-italic text-gold">
+            {t("marketing.home.heroTitleMiddle")}
+          </em>{" "}
+          {t("marketing.home.heroTitleBehind")}
           <br />
-          great museums.
+          {t("marketing.home.heroTitleEnd")}
         </h1>
 
         <div className="mt-auto grid gap-8 pt-10 md:grid-cols-12 md:pt-12 items-end">
           <p className="animate-hero-enter animate-hero-delay-2 md:col-span-5 text-lg leading-relaxed text-soft-foreground max-w-md">
-            MuseumLite unifies collections, exhibitions, conservation, and
-            library workflows in one workspace — structured records instead of
-            scattered spreadsheets, built for registrars and curators.
+            {t("marketing.home.heroBody")}
           </p>
           <div className="animate-hero-enter animate-hero-delay-3 md:col-span-4 md:col-start-9 flex flex-col gap-4">
             <Link
               href="/contact"
               className="btn-marketing group inline-flex h-14 w-full items-center justify-between border border-gold bg-gold/95 px-6 text-ink text-xs uppercase tracking-[0.3em] hover:bg-transparent hover:text-gold transition-colors"
             >
-              Request a tour
+              {t("marketing.home.requestTour")}
               <span className="ml-4">→</span>
             </Link>
             <Link
@@ -85,7 +87,7 @@ export function HomeHero() {
                   <path d="M0 0v12l10-6L0 0z" />
                 </svg>
               </span>
-              Tour the platform
+              {t("marketing.home.tourPlatform")}
             </Link>
           </div>
         </div>
@@ -94,7 +96,7 @@ export function HomeHero() {
       <div className="hero-cap-bar hero-cap-bar-enter relative z-10 shrink-0 border-t border-border/60">
         <div className="mx-auto max-w-7xl px-6 lg:px-10 py-8 md:py-10">
           <p className="text-center text-[10px] uppercase tracking-[0.45em] text-gold/80 mb-6 md:mb-8">
-            One workspace · Four disciplines
+            {t("marketing.home.disciplines")}
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border/50">
             {capabilities.map((c) => (

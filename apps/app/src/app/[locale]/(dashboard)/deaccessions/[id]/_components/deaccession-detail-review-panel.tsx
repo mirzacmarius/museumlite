@@ -13,9 +13,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
-
 export function DeaccessionDetailReviewPanel({
   deaccession,
   collection,
@@ -42,6 +41,7 @@ export function DeaccessionDetailReviewPanel({
   | "handleApprove"
   | "handleReject"
 >) {
+  const tRoot = useI18n();
   const t = useScopedI18n("deaccessions");
 
   return (
@@ -88,7 +88,9 @@ export function DeaccessionDetailReviewPanel({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
-                  Linked Object
+                  {tRoot(
+                    "untranslatedRecords.deaccessions.detail.linkedObject",
+                  )}
                 </p>
                 <h2 className="mt-1 text-base font-semibold">
                   {t("detail.collectionObject")}
@@ -131,7 +133,7 @@ export function DeaccessionDetailReviewPanel({
           <PermissionGate permission="collections.approve_deaccession">
             <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
-                Approval
+                {tRoot("untranslatedRecords.deaccessions.detail.approval")}
               </p>
               <h2 className="mt-1 text-base font-semibold">
                 {t("detail.approvalAction")}
@@ -160,7 +162,12 @@ export function DeaccessionDetailReviewPanel({
                     ) : (
                       <CheckCircle className="mr-2 size-4" />
                     )}
-                    {`Approve ${actionLabel}`}
+                    {tRoot(
+                      "untranslatedRecords.deaccessions.approval.approveAction",
+                      {
+                        action: actionLabel,
+                      },
+                    )}
                   </Button>
                   <Button
                     variant="destructive"

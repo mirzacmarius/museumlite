@@ -1,6 +1,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
+import { getWebI18n } from "@/locales/server";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -8,7 +9,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const [{ slug }, { t }] = await Promise.all([params, getWebI18n()]);
 
   try {
     const organization = await fetchQuery(api.organizations.getBySlug, {
@@ -18,19 +19,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const name = organization?.name || slug;
 
     return {
-      title: `${name} Collection | MuseumLite`,
-      description: `Explore the public collection from ${name}. Browse artworks, artifacts, and cultural objects.`,
+      title: `${name} ${t("public.collection")} | MuseumLite`,
+      description: t("public.collectionMetadata"),
       openGraph: {
-        title: `${name} Collection`,
-        description: `Explore the public collection from ${name}`,
+        title: `${name} ${t("public.collection")}`,
+        description: t("public.collectionMetadata"),
         type: "website",
       },
     };
   } catch {
     return {
-      title: `${slug} Collection | MuseumLite`,
-      description:
-        "Explore the public collection. Browse artworks, artifacts, and cultural objects.",
+      title: `${slug} ${t("public.collection")} | MuseumLite`,
+      description: t("public.collectionMetadata"),
     };
   }
 }

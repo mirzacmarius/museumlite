@@ -3,13 +3,13 @@
 import { Button } from "@v1/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { MoveRequestActionsPanel } from "./move-request-actions-panel";
 import { MoveRequestDetailCard } from "./move-request-detail-card";
 import { MoveRequestObjectLink } from "./move-request-object-link";
 import { useMoveRequestDetail } from "./use-move-request-detail";
-
 export function MoveRequestDetailPageClient() {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const {
     currentOrganizationId,
@@ -30,7 +30,7 @@ export function MoveRequestDetailPageClient() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Select an organization to continue.
+          {tRoot("collections.selectOrganizationContinue")}
         </p>
       </div>
     );
@@ -39,7 +39,9 @@ export function MoveRequestDetailPageClient() {
   if (request === undefined || currentUser === undefined) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">Loading move request…</p>
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.move.loading")}
+        </p>
       </div>
     );
   }
@@ -47,7 +49,9 @@ export function MoveRequestDetailPageClient() {
   if (request === null) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">Move request not found.</p>
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.move.notFound")}
+        </p>
       </div>
     );
   }
@@ -59,7 +63,7 @@ export function MoveRequestDetailPageClient() {
           <Button variant="ghost" size="sm" asChild className="w-fit">
             <Link href="/objects">
               <ArrowLeft className="mr-2 size-4" />
-              Back to objects
+              {tRoot("untranslatedRecords.objects.move.backToObjects")}
             </Link>
           </Button>
 

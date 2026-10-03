@@ -6,6 +6,7 @@ import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useI18n } from "@/locales/client";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -44,6 +45,7 @@ export function PlanUsageStats({
   showUpgradeLink?: boolean;
   layout?: "card" | "inline";
 }) {
+  const translate = useI18n();
   const stats = useQuery(
     api.organizations.getUsageStats,
     organizationId ? { organizationId } : "skip",
@@ -109,7 +111,7 @@ export function PlanUsageStats({
               href="/settings/billing"
               className="text-xs font-medium uppercase tracking-wide text-zinc-500 transition-colors hover:text-primary"
             >
-              Upgrade
+              {translate("untranslatedComponents.labels.upgrade")}
             </Link>
           ) : null}
         </div>
@@ -118,10 +120,12 @@ export function PlanUsageStats({
       <div className={rowsClassName}>
         <UsageRow
           layout={layout}
-          label="Storage"
+          label={translate("untranslatedComponents.labels.storage")}
           value={
             stats.storage.limit === null ? (
-              <span className="text-xs font-mono text-zinc-400">Unlimited</span>
+              <span className="text-xs font-mono text-zinc-400">
+                {translate("untranslatedComponents.labels.unlimited")}
+              </span>
             ) : (
               <span className="text-xs font-mono text-zinc-400">
                 {formatBytes(stats.storage.used)}{" "}
@@ -140,10 +144,12 @@ export function PlanUsageStats({
         />
         <UsageRow
           layout={layout}
-          label="Object Records"
+          label={translate("untranslatedComponents.labels.objectRecords")}
           value={
             stats.objects.limit === null ? (
-              <span className="text-xs font-mono text-zinc-400">Unlimited</span>
+              <span className="text-xs font-mono text-zinc-400">
+                {translate("untranslatedComponents.labels.unlimited")}
+              </span>
             ) : (
               <span className="text-xs font-mono text-zinc-400">
                 {formatNumber(stats.objects.used)}{" "}
@@ -162,10 +168,12 @@ export function PlanUsageStats({
         />
         <UsageRow
           layout={layout}
-          label="Monthly Exports"
+          label={translate("untranslatedComponents.labels.monthlyExports")}
           value={
             stats.exports.limit === null ? (
-              <span className="text-xs font-mono text-zinc-400">Unlimited</span>
+              <span className="text-xs font-mono text-zinc-400">
+                {translate("untranslatedComponents.labels.unlimited")}
+              </span>
             ) : (
               <span className="text-xs font-mono text-zinc-400">
                 {formatNumber(stats.exports.used)}{" "}

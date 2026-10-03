@@ -5,6 +5,7 @@ import { cn } from "@v1/ui/utils";
 import { FileImage, FileSpreadsheet, Trash2, Upload, X } from "lucide-react";
 import type { RefObject } from "react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 import type { MediaImportState } from "../media-import-types";
 
 interface MediaImportUploadStepProps {
@@ -36,6 +37,7 @@ export function MediaImportUploadStep({
   onClearCsvFile,
   onClearMediaFiles,
 }: MediaImportUploadStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="text-center">
@@ -43,18 +45,22 @@ export function MediaImportUploadStep({
           {t("mediaImport.uploadTitle")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Selected method:{" "}
+          {tRoot("untranslatedRecords.collections.media.selectedMethod")}{" "}
           {state.mappingType === "csv"
-            ? "CSV Mapping"
+            ? tRoot("untranslatedRecords.collections.media.csvMapping")
             : state.mappingType === "filename"
-              ? "Filename Extraction"
-              : "Manual Mapping"}
+              ? tRoot(
+                  "untranslatedRecords.collections.media.filenameExtraction",
+                )
+              : tRoot("untranslatedRecords.collections.media.manualMapping")}
         </p>
       </div>
 
       {state.mappingType === "csv" && (
         <div className="space-y-4">
-          <h3 className="font-medium">1. Upload Mapping CSV</h3>
+          <h3 className="font-medium">
+            {tRoot("collections.mediaImport.uploadMappingCSV")}
+          </h3>
           <button
             type="button"
             onClick={() => csvInputRef.current?.click()}
@@ -82,7 +88,9 @@ export function MediaImportUploadStep({
             ) : (
               <>
                 <Upload className="mb-2 size-6 text-muted-foreground" />
-                <p className="text-sm font-medium">Drop CSV file here</p>
+                <p className="text-sm font-medium">
+                  {tRoot("collections.mediaImport.dropCSV")}
+                </p>
               </>
             )}
             <input
@@ -99,8 +107,8 @@ export function MediaImportUploadStep({
       <div className="space-y-4">
         <h3 className="font-medium">
           {state.mappingType === "csv"
-            ? "2. Upload Media Files"
-            : "Upload Media Files"}
+            ? tRoot("untranslatedRecords.collections.media.uploadStepTitle")
+            : tRoot("untranslatedRecords.collections.media.uploadMediaFiles")}
         </h3>
         <button
           type="button"
@@ -108,9 +116,11 @@ export function MediaImportUploadStep({
           className="flex w-full min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 transition-all hover:border-primary/50 hover:bg-muted/30"
         >
           <Upload className="mb-4 size-10 text-muted-foreground" />
-          <p className="font-medium">Drop media files here</p>
+          <p className="font-medium">
+            {tRoot("collections.mediaImport.dropMedia")}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Images and PDFs supported
+            {tRoot("collections.mediaImport.mediaSupported")}
           </p>
           <input
             ref={mediaInputRef}
@@ -126,7 +136,8 @@ export function MediaImportUploadStep({
           <div className="rounded-lg border border-border">
             <div className="flex items-center justify-between border-b border-border p-4 bg-muted/30">
               <span className="font-medium">
-                {state.mediaFiles.length} files selected
+                {state.mediaFiles.length}{" "}
+                {tRoot("untranslatedRecords.collections.media.filesSelected")}
               </span>
               <Button
                 variant="ghost"
@@ -134,7 +145,7 @@ export function MediaImportUploadStep({
                 onClick={onClearMediaFiles}
                 className="text-destructive hover:text-destructive"
               >
-                Clear All
+                {tRoot("collections.mediaImport.clearAll")}
               </Button>
             </div>
             <div className="max-h-[300px] overflow-y-auto p-2">

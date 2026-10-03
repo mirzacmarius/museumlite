@@ -8,9 +8,9 @@ import { LocationSelector } from "@/components/location-selector";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import type { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
-
 export interface ObjectRequestGeneralTabProps extends CollectionFormTabProps {
   enabledModules: ReturnType<typeof useFeatureAccess>["enabledModules"];
 }
@@ -23,11 +23,14 @@ export function ObjectRequestGeneralTab({
   isLocationTrackingEnabled,
   enabledModules,
 }: ObjectRequestGeneralTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Record identity"
-        description="Core catalog information that identifies and classifies this object."
+        title={tRoot("untranslatedRecords.objects.form.recordIdentity")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.recordIdentityDescription",
+        )}
       >
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
@@ -39,7 +42,9 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="accessionNumber">Accession Number</Label>
+            <Label htmlFor="accessionNumber">
+              {tRoot("objects.form.accessionNumber")}
+            </Label>
             <Input
               id="accessionNumber"
               value={formData.accessionNumber || ""}
@@ -52,7 +57,7 @@ export function ObjectRequestGeneralTab({
 
           <div className="space-y-2 xl:col-span-1">
             <RepeatableTextField
-              label="Alternate Accession Numbers"
+              label={tRoot("objects.form.alternateAccessionNumbers")}
               value={formData.alternateAccessionNumbers || []}
               onChange={(values) =>
                 updateField("alternateAccessionNumbers", values)
@@ -63,7 +68,9 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objectName">Object Name</Label>
+            <Label htmlFor="objectName">
+              {tRoot("objects.form.objectName")}
+            </Label>
             <Input
               id="objectName"
               value={formData.objectName || ""}
@@ -75,7 +82,9 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objectType">Object Type</Label>
+            <Label htmlFor="objectType">
+              {tRoot("objects.filters.objectType")}
+            </Label>
             <TypeCombobox
               organizationId={currentOrganizationId}
               canDeleteTypes={false}
@@ -88,7 +97,7 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="creator">Creator</Label>
+            <Label htmlFor="creator">{tRoot("objects.form.creator")}</Label>
             <Input
               id="creator"
               value={formData.creator || ""}
@@ -98,7 +107,7 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="culture">Culture</Label>
+            <Label htmlFor="culture">{tRoot("objects.form.culture")}</Label>
             <Input
               id="culture"
               value={formData.culture || ""}
@@ -108,7 +117,7 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="period">Period</Label>
+            <Label htmlFor="period">{tRoot("objects.form.period")}</Label>
             <Input
               id="period"
               value={formData.period || ""}
@@ -118,7 +127,9 @@ export function ObjectRequestGeneralTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dateCreated">Date Created</Label>
+            <Label htmlFor="dateCreated">
+              {tRoot("objects.form.dateCreated")}
+            </Label>
             <Input
               id="dateCreated"
               value={formData.dateCreated || ""}
@@ -131,7 +142,9 @@ export function ObjectRequestGeneralTab({
 
           {isLocationTrackingEnabled ? (
             <div className="space-y-2">
-              <Label htmlFor="generalCurrentLocationId">Location</Label>
+              <Label htmlFor="generalCurrentLocationId">
+                {tRoot("objects.filters.location")}
+              </Label>
               <LocationSelector
                 organizationId={currentOrganizationId}
                 value={formData.currentLocationId}
@@ -147,7 +160,9 @@ export function ObjectRequestGeneralTab({
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="generalCollectionGroupId">Collection</Label>
+            <Label htmlFor="generalCollectionGroupId">
+              {tRoot("objects.form.collectionGroup")}
+            </Label>
             <CollectionGroupCombobox
               organizationId={currentOrganizationId}
               value={formData.collectionGroupIds}

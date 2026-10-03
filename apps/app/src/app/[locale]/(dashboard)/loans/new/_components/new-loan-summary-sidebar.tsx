@@ -4,7 +4,7 @@ import type { Doc } from "@v1/backend/convex/_generated/dataModel";
 import { Avatar, AvatarFallback } from "@v1/ui/avatar";
 import { cn } from "@v1/ui/utils";
 import { formatDate } from "@/lib/format-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
 interface NewLoanSummarySidebarProps {
@@ -20,6 +20,7 @@ export function NewLoanSummarySidebar({
   selectedCollectionIds,
   selectedCollectionsList,
 }: NewLoanSummarySidebarProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const tActions = useScopedI18n("loans.actions");
   const t = useScopedI18n("loans");
@@ -29,12 +30,14 @@ export function NewLoanSummarySidebar({
       <div className="sticky top-24">
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">
-            Summary
+            {tRoot("loans.actions.summary")}
           </h3>
 
           <div className="space-y-4">
             <div className="flex justify-between items-start border-b border-border/50 pb-4">
-              <span className="text-sm text-muted-foreground">Type</span>
+              <span className="text-sm text-muted-foreground">
+                {tRoot("loans.actions.loanType")}
+              </span>
               <span
                 className={cn(
                   "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset",
@@ -67,7 +70,7 @@ export function NewLoanSummarySidebar({
 
             <div className="pb-4 border-b border-border/50">
               <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                Dates
+                {tRoot("loans.actions.dates")}
               </span>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-foreground">
@@ -84,7 +87,9 @@ export function NewLoanSummarySidebar({
 
             <div>
               <span className="text-xs text-muted-foreground uppercase tracking-wide block mb-2">
-                Objects ({selectedCollectionIds.length})
+                {tRoot("loans.actions.objectsTab", {
+                  count: selectedCollectionIds.length,
+                })}
               </span>
               {selectedCollectionsList.length > 0 ? (
                 <div className="flex overflow-hidden">
@@ -106,7 +111,7 @@ export function NewLoanSummarySidebar({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground italic">
-                  No objects selected
+                  {tRoot("loans.actions.noObjectsSelected")}
                 </p>
               )}
             </div>

@@ -526,13 +526,14 @@ export const sendNotification = internalMutation({
         loanId: v.optional(v.string()),
         itemName: v.optional(v.string()),
         borrowerName: v.optional(v.string()),
-        startDate: v.optional(v.string()),
-        endDate: v.optional(v.string()),
+        startDate: v.optional(v.union(v.number(), v.string())),
+        endDate: v.optional(v.union(v.number(), v.string())),
+        itemCount: v.optional(v.number()),
         loanUrl: v.optional(v.string()),
         // For task assignments
         taskTitle: v.optional(v.string()),
         assignedBy: v.optional(v.string()),
-        dueDate: v.optional(v.string()),
+        dueDate: v.optional(v.union(v.number(), v.string())),
         taskUrl: v.optional(v.string()),
       }),
     ),
@@ -1056,13 +1057,14 @@ export const sendEmailNotification = internalMutation({
         loanId: v.optional(v.string()),
         itemName: v.optional(v.string()),
         borrowerName: v.optional(v.string()),
-        startDate: v.optional(v.string()),
-        endDate: v.optional(v.string()),
+        startDate: v.optional(v.union(v.number(), v.string())),
+        endDate: v.optional(v.union(v.number(), v.string())),
+        itemCount: v.optional(v.number()),
         loanUrl: v.optional(v.string()),
         // For task assignments
         taskTitle: v.optional(v.string()),
         assignedBy: v.optional(v.string()),
-        dueDate: v.optional(v.string()),
+        dueDate: v.optional(v.union(v.number(), v.string())),
         taskUrl: v.optional(v.string()),
       }),
     ),
@@ -1098,10 +1100,9 @@ export const sendEmailNotification = internalMutation({
       case NOTIFICATION_TYPES.LOAN_APPROVED:
         if (
           emailData.loanId &&
-          emailData.itemName &&
+          emailData.itemName !== undefined &&
           emailData.borrowerName &&
-          emailData.startDate &&
-          emailData.endDate
+          emailData.startDate !== undefined
         ) {
           await ctx.scheduler.runAfter(
             0,
@@ -1113,6 +1114,7 @@ export const sendEmailNotification = internalMutation({
               borrowerName: emailData.borrowerName,
               startDate: emailData.startDate,
               endDate: emailData.endDate,
+              itemCount: emailData.itemCount,
               loanUrl: emailData.loanUrl,
             },
           );
@@ -1123,10 +1125,9 @@ export const sendEmailNotification = internalMutation({
       case NOTIFICATION_TYPES.LOAN_REJECTED:
         if (
           emailData.loanId &&
-          emailData.itemName &&
+          emailData.itemName !== undefined &&
           emailData.borrowerName &&
-          emailData.startDate &&
-          emailData.endDate
+          emailData.startDate !== undefined
         ) {
           await ctx.scheduler.runAfter(
             0,
@@ -1138,6 +1139,7 @@ export const sendEmailNotification = internalMutation({
               borrowerName: emailData.borrowerName,
               startDate: emailData.startDate,
               endDate: emailData.endDate,
+              itemCount: emailData.itemCount,
               loanUrl: emailData.loanUrl,
             },
           );
@@ -1148,10 +1150,9 @@ export const sendEmailNotification = internalMutation({
       case NOTIFICATION_TYPES.LOAN_PENDING_APPROVAL:
         if (
           emailData.loanId &&
-          emailData.itemName &&
+          emailData.itemName !== undefined &&
           emailData.borrowerName &&
-          emailData.startDate &&
-          emailData.endDate
+          emailData.startDate !== undefined
         ) {
           await ctx.scheduler.runAfter(
             0,
@@ -1163,6 +1164,7 @@ export const sendEmailNotification = internalMutation({
               borrowerName: emailData.borrowerName,
               startDate: emailData.startDate,
               endDate: emailData.endDate,
+              itemCount: emailData.itemCount,
               loanUrl: emailData.loanUrl,
             },
           );

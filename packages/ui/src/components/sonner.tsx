@@ -2,11 +2,17 @@
 
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast as sonnerToast } from "sonner";
+import { useUiLocale } from "../locale";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({
+  containerAriaLabel,
+  toastOptions,
+  ...props
+}: ToasterProps) => {
   const { theme = "system" } = useTheme();
+  const { messages } = useUiLocale();
 
   return (
     <Sonner
@@ -16,8 +22,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       expand={false}
       richColors
       closeButton
-      duration={4000}
+      containerAriaLabel={containerAriaLabel ?? messages.sonner.notifications}
       toastOptions={{
+        closeButtonAriaLabel: messages.sonner.close,
+        ...toastOptions,
         classNames: {
           toast:
             "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
@@ -28,8 +36,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
           closeButton:
             "group-[.toast]:bg-background group-[.toast]:border-border",
+          ...toastOptions?.classNames,
         },
       }}
+      duration={4000}
       {...props}
     />
   );

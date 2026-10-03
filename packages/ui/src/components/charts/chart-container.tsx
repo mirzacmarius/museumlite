@@ -1,6 +1,7 @@
 "use client";
 
 import { lazy, type ReactElement, Suspense } from "react";
+import { useUiLocale } from "../../locale";
 import { cn } from "../../utils";
 
 // Lazy load ResponsiveContainer from recharts to reduce initial bundle size
@@ -19,13 +20,14 @@ export function ChartContainer({
   className,
   height = 300,
 }: ChartContainerProps) {
+  const { messages } = useUiLocale();
   return (
     <div className={cn("w-full", className)} style={{ height }}>
       <Suspense
         fallback={
           <div className="size-full flex items-center justify-center">
             <div className="animate-pulse text-sm text-muted-foreground">
-              Loading chart…
+              {messages.chart.loading}
             </div>
           </div>
         }

@@ -26,6 +26,9 @@ export function UtilitiesTab({
   organizationId: Id<"organizations">;
 }) {
   const t = useScopedI18n("settings.developer");
+  const untranslated = useScopedI18n(
+    "untranslatedDashboard.settings.developer",
+  );
   const common = useScopedI18n("common");
   const [isDeletingLoans, setIsDeletingLoans] = useState(false);
   const [deleteResult, setDeleteResult] = useState<{
@@ -42,8 +45,8 @@ export function UtilitiesTab({
     try {
       const result = await deleteAllLoans({ organizationId });
       setDeleteResult(result);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to delete loans");
+    } catch {
+      alert(untranslated("failedToDeleteLoans"));
     } finally {
       setIsDeletingLoans(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar, Info, MapPin } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { CollectionEditTabId } from "./types";
 
 interface ObjectFormSummaryCardsProps {
@@ -22,6 +23,7 @@ export function ObjectFormSummaryCards({
   unknownLabel = "Unknown",
   onTabSelect,
 }: ObjectFormSummaryCardsProps) {
+  const tRoot = useI18n();
   return (
     <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
       <button
@@ -31,10 +33,10 @@ export function ObjectFormSummaryCards({
       >
         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           <Info className="size-3.5" />
-          Creator
+          {tRoot("objects.form.creator")}
         </div>
         <div className="truncate text-sm text-foreground">
-          {creator || "Not set"}
+          {creator || tRoot("untranslatedRecords.objects.status.notSet")}
         </div>
       </button>
       <button
@@ -44,7 +46,7 @@ export function ObjectFormSummaryCards({
       >
         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           <Calendar className="size-3.5" />
-          Date created
+          {tRoot("untranslatedRecords.objects.detail.dateCreatedLabel")}
         </div>
         <div className="truncate text-sm text-foreground">
           {dateCreated || unknownLabel}
@@ -59,7 +61,7 @@ export function ObjectFormSummaryCards({
           >
             <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               <MapPin className="size-3.5" />
-              Location
+              {tRoot("objects.filters.location")}
             </div>
             <div className="truncate text-sm text-foreground">
               {locationSummary}
@@ -72,7 +74,7 @@ export function ObjectFormSummaryCards({
           >
             <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               <Info className="size-3.5" />
-              Collection
+              {tRoot("objects.form.collectionGroup")}
             </div>
             <div className="truncate text-sm text-foreground">
               {collectionSummary}

@@ -1,6 +1,11 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { AccessionMode, RemovalType } from "./deaccession-dialog-types";
 
+type Translate = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
+
 interface SubmitDeaccessionParams {
   removalType: RemovalType;
   reason: string;
@@ -14,6 +19,7 @@ interface SubmitDeaccessionParams {
   accessionMode: AccessionMode;
   manualAccessionNumber: string;
   moveEligibility?: { isEligible: boolean } | null;
+  translate: Translate;
   createDeaccession: (args: {
     organizationId: Id<"organizations">;
     collectionId: Id<"collections">;
@@ -47,6 +53,7 @@ export async function submitDeaccession({
   accessionMode,
   manualAccessionNumber,
   moveEligibility,
+  translate,
   createDeaccession,
   createMoveRequest,
 }: SubmitDeaccessionParams): Promise<
@@ -54,21 +61,33 @@ export async function submitDeaccession({
   | { kind: "move"; id: Id<"organizationMoveRequests"> }
 > {
   if (!reason.trim()) {
-    throw new Error("Reason is required");
+    throw new Error(
+      translate("untranslatedComponents.deaccession.reasonRequired"),
+    );
   }
 
   if (removalType === "move") {
     if (!targetOrganizationId) {
-      throw new Error("Destination organization is required");
+      throw new Error(
+        translate(
+          "untranslatedComponents.deaccession.destinationOrganizationRequired",
+        ),
+      );
     }
 
     if (accessionMode === "manual" && !manualAccessionNumber.trim()) {
-      throw new Error("A manual accession number is required");
+      throw new Error(
+        translate(
+          "untranslatedComponents.deaccession.manualAccessionNumberRequired",
+        ),
+      );
     }
 
     if (moveEligibility && !moveEligibility.isEligible) {
       throw new Error(
-        "This object cannot be moved until the blocking issues are resolved",
+        translate(
+          "untranslatedComponents.deaccession.moveBlockersMustBeResolved",
+        ),
       );
     }
 
@@ -123,29 +142,48 @@ export async function submitDeaccession({
 export function getDeaccessionDialogCopy(
   removalType: RemovalType | null,
   collectionTitle: string,
+  translate: Translate,
 ) {
   const dialogTitle = (() => {
-    if (removalType === "sold") return "Record sale";
-    if (removalType === "move") return "Move to another organization";
-    if (removalType === "archived") return "Archive";
-    if (removalType === "deleted") return "Delete";
-    return "Remove or transfer";
+    if (removalType === "sold")
+      return translate("untranslatedComponents.deaccession.recordSale");
+    if (removalType === "move")
+      return translate(
+        "untranslatedComponents.deaccession.moveToAnotherOrganization",
+      );
+    if (removalType === "archived")
+      return translate("untranslatedComponents.deaccession.archive");
+    if (removalType === "deleted")
+      return translate("untranslatedComponents.deaccession.delete");
+    return translate("untranslatedComponents.deaccession.removeOrTransfer");
   })();
 
   const dialogDescription = (() => {
     if (removalType === "sold") {
-      return `Record sale details for ${collectionTitle}.`;
+      return translate(
+        "untranslatedComponents.deaccession.recordSaleDetailsFor",
+        { title: collectionTitle },
+      );
     }
     if (removalType === "move") {
-      return `Request a move for ${collectionTitle}.`;
+      return translate("untranslatedComponents.deaccession.requestMoveFor", {
+        title: collectionTitle,
+      });
     }
     if (removalType === "archived") {
-      return `Submit an archive request for ${collectionTitle}.`;
+      return translate("untranslatedComponents.deaccession.submitArchiveFor", {
+        title: collectionTitle,
+      });
     }
     if (removalType === "deleted") {
-      return `Submit a delete request for ${collectionTitle}.`;
+      return translate("untranslatedComponents.deaccession.submitDeleteFor", {
+        title: collectionTitle,
+      });
     }
-    return `Choose how to remove or transfer ${collectionTitle}.`;
+    return translate(
+      "untranslatedComponents.deaccession.chooseHowToRemoveTransfer",
+      { title: collectionTitle },
+    );
   })();
 
   return { dialogTitle, dialogDescription };

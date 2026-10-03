@@ -171,7 +171,7 @@ export function AssignmentsPageClient({
                     item={item}
                     subtitle={
                       <>
-                        Modified{" "}
+                        {t("untranslatedDashboard.assignments.modifiedPrefix")}{" "}
                         <ClientRelativeTime
                           timestamp={item.lastModifiedAt}
                           locale={locale}
@@ -220,7 +220,7 @@ export function AssignmentsPageClient({
                     }}
                     subtitle={
                       <>
-                        Cataloged{" "}
+                        {t("untranslatedDashboard.assignments.catalogedPrefix")}{" "}
                         <ClientRelativeTime
                           timestamp={item.catalogedAt}
                           locale={locale}

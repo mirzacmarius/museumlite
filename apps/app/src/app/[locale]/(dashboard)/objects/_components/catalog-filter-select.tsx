@@ -73,10 +73,7 @@ export function CatalogFilterSelect<Value extends string>({
                     <CommandItem
                       key={option.value}
                       value={option.value || "__any__"}
-                      keywords={[
-                        option.label,
-                        ...(option.keywords ?? []),
-                      ]}
+                      keywords={[option.label, ...(option.keywords ?? [])]}
                       onSelect={() => {
                         onChange(option.value);
                         setOpen(false);

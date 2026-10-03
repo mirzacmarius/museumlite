@@ -5,6 +5,7 @@ import { Input } from "@v1/ui/input";
 import { CircleAlert, XCircle } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useRef, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 interface AuthEmailFormProps {
   defaultEmail: string;
@@ -14,6 +15,7 @@ interface AuthEmailFormProps {
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
+  const translate = useI18n();
   const [email, setEmail] = useState(() => defaultEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFocused, setIsFocused] = useState(true);
@@ -47,11 +49,12 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
           className="text-xs font-medium text-muted-foreground"
           htmlFor="auth-email"
         >
-          Email
+          {translate("untranslatedComponents.labels.email")}
         </label>
         <p className="text-xs text-muted-foreground">
-          Enter your email once. If you do not have an account yet, we will help
-          you create one.
+          {translate(
+            "untranslatedComponents.labels.enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne",
+          )}
         </p>
         <div className="relative">
           <Input
@@ -68,7 +71,7 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
           />
           {email.length > 0 ? (
             <button
-              aria-label="Clear email"
+              aria-label={translate("untranslatedComponents.labels.clearEmail")}
               className="absolute right-3"
               onClick={() => {
                 setEmail("");
@@ -84,13 +87,15 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
         {hasEmailError && !isFocused ? (
           <p className="flex items-center gap-1 px-0.5 text-xs text-red-400">
             <CircleAlert className="size-3" />
-            Enter a valid email address.
+            {translate("untranslatedComponents.labels.enterAValidEmailAddress")}
           </p>
         ) : null}
       </div>
 
       <Button className="h-10 w-full" disabled={isButtonDisabled} type="submit">
-        {isSubmitting ? "Checking..." : "Continue"}
+        {isSubmitting
+          ? translate("untranslatedComponents.auth.checking")
+          : translate("untranslatedComponents.auth.continue")}
       </Button>
     </form>
   );

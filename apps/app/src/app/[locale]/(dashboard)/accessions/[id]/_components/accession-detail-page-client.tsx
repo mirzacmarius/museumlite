@@ -7,15 +7,14 @@ import { Archive, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { AccessionDetailHeroBanner } from "./accession-detail-hero-banner";
 import { AccessionDetailMainContent } from "./accession-detail-main-content";
 import type { WorkflowStepInfo } from "./accession-detail-types";
 import { formatWorkflowStepDetails } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
-
 export function AccessionDetailPageClient() {
+  const tRoot = useI18n();
   const params = useParams();
   const { refresh } = useRouter();
   const accessionId = params.id as string;
@@ -41,7 +40,7 @@ export function AccessionDetailPageClient() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to view accessions.
+          {tRoot("accessions.selectOrganizationDescription")}
         </p>
       </div>
     );
@@ -58,7 +57,9 @@ export function AccessionDetailPageClient() {
   if (accession === null) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">Accession not found</p>
+        <p className="text-muted-foreground">
+          {tRoot("accessions.accessionNotFound")}
+        </p>
       </div>
     );
   }
@@ -88,21 +89,22 @@ export function AccessionDetailPageClient() {
     accession.source ||
     accession.accessionNumber;
   const accessionSubtitle = accession.draftObjectData
-    ? accession.draftObjectData.creator || "Draft object awaiting review."
+    ? accession.draftObjectData.creator ||
+      tRoot("untranslatedRecords.accessions.detail.draftObjectAwaitingReview")
     : accession.notes ||
-      "Review accession details, workflow state, and approval activity.";
+      tRoot("untranslatedRecords.accessions.detail.reviewSummary");
   const workflowSummary = currentWorkflowStep
-    ? formatWorkflowStepDetails(currentWorkflowStep)
-    : "No active workflow step.";
+    ? formatWorkflowStepDetails(currentWorkflowStep, tRoot)
+    : tRoot("untranslatedRecords.accessions.detail.noActiveWorkflowStep");
   const _reviewStateLabel = isDraft
-    ? "Draft must be submitted before review can begin."
+    ? tRoot("untranslatedRecords.accessions.status.draftMustSubmit")
     : accession.status === "pending"
-      ? "Pending review"
+      ? tRoot("untranslatedRecords.accessions.status.pendingReview")
       : accession.status === "approved"
-        ? "Accession approved"
+        ? tRoot("untranslatedRecords.accessions.status.approved")
         : accession.status === "rejected"
-          ? "Accession rejected"
-          : "Workflow state unavailable";
+          ? tRoot("untranslatedRecords.accessions.status.rejected")
+          : tRoot("untranslatedRecords.accessions.status.unavailable");
   const reviewStateTone: "success" | "warning" | "default" =
     displayStatus === "approved"
       ? "success"
@@ -111,27 +113,29 @@ export function AccessionDetailPageClient() {
         : "default";
   const _sourceVerificationState = requiresSourceVerification
     ? isSourceVerified
-      ? "Verified"
-      : "Required before approval"
-    : "Not required";
+      ? tRoot("untranslatedRecords.accessions.source.verifiedShort")
+      : tRoot("untranslatedRecords.accessions.status.sourceRequired")
+    : tRoot("untranslatedRecords.accessions.status.notRequired");
   const heroReviewStateLabel = isDraft
-    ? "Draft"
+    ? tRoot("untranslatedRecords.objects.status.draft")
     : accession.status === "pending"
-      ? "Pending"
+      ? tRoot("loans.filters.pending")
       : accession.status === "approved"
         ? "Approved"
         : accession.status === "rejected"
           ? "Rejected"
-          : "Unknown";
+          : tRoot("untranslatedRecords.accessions.detail.unknown");
   const heroSourceVerificationState = requiresSourceVerification
     ? isSourceVerified
-      ? "Verified"
-      : "Required"
-    : "Not needed";
-  const reviewRailTitle = currentWorkflowStep?.name || "Review checkpoint";
+      ? tRoot("untranslatedRecords.accessions.source.verifiedShort")
+      : tRoot("untranslatedRecords.accessions.status.sourceRequired")
+    : tRoot("untranslatedRecords.accessions.status.notNeeded");
+  const reviewRailTitle =
+    currentWorkflowStep?.name ||
+    tRoot("untranslatedRecords.accessions.detail.reviewCheckpoint");
   const reviewRailDescription =
     requiresSourceVerification && !isSourceVerified
-      ? "Source verification is the only blocker before this record can move forward."
+      ? tRoot("untranslatedRecords.accessions.detail.sourceOnlyBlocker")
       : workflowSummary;
 
   const getStatusIcon = (status: string) => {
@@ -174,7 +178,9 @@ export function AccessionDetailPageClient() {
       refresh();
     } catch (err) {
       setDraftActionError(
-        err instanceof Error ? err.message : "Failed to submit draft",
+        err instanceof Error
+          ? err.message
+          : tRoot("untranslatedRecords.accessions.errors.submitDraft"),
       );
     } finally {
       setIsSubmittingDraft(false);
@@ -191,7 +197,9 @@ export function AccessionDetailPageClient() {
       refresh();
     } catch (err) {
       setDraftActionError(
-        err instanceof Error ? err.message : "Failed to verify source",
+        err instanceof Error
+          ? err.message
+          : tRoot("untranslatedRecords.accessions.errors.verifySource"),
       );
     } finally {
       setIsVerifyingSource(false);

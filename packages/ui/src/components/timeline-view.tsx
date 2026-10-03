@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
+import { useUiLocale } from "../locale";
 
 export interface TimelineEvent {
   id: string;
@@ -26,6 +27,7 @@ export function TimelineView({
   onEventClick,
   className,
 }: TimelineViewProps) {
+  const { locale, messages } = useUiLocale();
   const calculatePosition = (date: Date) => {
     const total = endDate.getTime() - startDate.getTime();
     const elapsed = date.getTime() - startDate.getTime();
@@ -74,7 +76,7 @@ export function TimelineView({
           style={{ left: `${currentPosition}%` }}
         >
           <div className="absolute -top-2 left-1/2 -translate-x-1/2 text-xs font-medium text-primary whitespace-nowrap">
-            Today
+            {messages.timeline.today}
           </div>
         </div>
       )}
@@ -99,7 +101,7 @@ export function TimelineView({
                   getEventColor(event),
                   "cursor-pointer hover:scale-105 hover:shadow-lg",
                 )}
-                title={`${event.title} - ${event.startDate.toLocaleDateString()}`}
+                title={`${event.title} - ${event.startDate.toLocaleDateString(locale)}`}
               >
                 {event.title}
               </button>
@@ -109,7 +111,7 @@ export function TimelineView({
                   "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-all duration-200",
                   getEventColor(event),
                 )}
-                title={`${event.title} - ${event.startDate.toLocaleDateString()}`}
+                title={`${event.title} - ${event.startDate.toLocaleDateString(locale)}`}
               >
                 {event.title}
               </div>

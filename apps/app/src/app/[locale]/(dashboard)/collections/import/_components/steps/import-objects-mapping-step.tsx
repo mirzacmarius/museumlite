@@ -20,6 +20,7 @@ import {
   type FieldMapping,
   ImportFieldMapper,
 } from "@/components/import-field-mapper";
+import { useI18n } from "@/locales/client";
 import {
   IMPORT_TEMPLATES,
   type ImportState,
@@ -43,13 +44,19 @@ export function ImportObjectsMappingStep({
   getInitialMappings,
   onSaveMappings,
 }: ImportObjectsMappingStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Map Fields</h2>
+          <h2 className="text-xl font-semibold">
+            {tRoot("untranslatedRecords.collections.import.mapFields")}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            {state.rawData.length} rows from {state.file?.name}
+            {tRoot("untranslatedRecords.collections.import.rowsFromFile", {
+              count: state.rawData.length,
+              filename: state.file?.name ?? "",
+            })}
           </p>
         </div>
         <Button variant="outline" onClick={onReset}>
@@ -60,10 +67,13 @@ export function ImportObjectsMappingStep({
 
       <Card>
         <CardHeader>
-          <CardTitle>Legacy System Template</CardTitle>
+          <CardTitle>
+            {tRoot("untranslatedRecords.collections.import.legacyTemplate")}
+          </CardTitle>
           <CardDescription>
-            Optionally select a template to automatically map fields from legacy
-            collection management systems
+            {tRoot(
+              "untranslatedRecords.collections.import.legacyTemplateDescription",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,12 +84,18 @@ export function ImportObjectsMappingStep({
                 onValueChange={onTemplateSelect}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a template or map fields manually..." />
+                  <SelectValue
+                    placeholder={tRoot(
+                      "untranslatedRecords.collections.import.templatePlaceholder",
+                    )}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">
                     <span className="text-muted-foreground">
-                      No template (manual mapping)
+                      {tRoot(
+                        "untranslatedRecords.collections.import.noTemplate",
+                      )}
                     </span>
                   </SelectItem>
                   {IMPORT_TEMPLATES.map((template) => (
@@ -87,7 +103,11 @@ export function ImportObjectsMappingStep({
                       <div className="flex flex-col">
                         <span className="font-medium">{template.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {template.description}
+                          {tRoot(
+                            template.id === "pastperfect"
+                              ? "untranslatedRecords.collections.import.templates.pastperfectDescription"
+                              : "untranslatedRecords.collections.import.templates.tmsDescription",
+                          )}
                         </span>
                       </div>
                     </SelectItem>
@@ -102,7 +122,7 @@ export function ImportObjectsMappingStep({
                 onClick={() => onTemplateSelect("")}
               >
                 <X className="mr-2 size-4" />
-                Clear Template
+                {tRoot("untranslatedRecords.collections.import.clearTemplate")}
               </Button>
             ) : null}
           </div>
@@ -112,7 +132,11 @@ export function ImportObjectsMappingStep({
       <ImportFieldMapper
         key={state.selectedTemplate || "manual"}
         sourceFields={state.sourceFields}
-        targetFields={TARGET_FIELDS}
+        targetFields={TARGET_FIELDS.map((field) => ({
+          ...field,
+          label: tRoot(field.label),
+          description: tRoot(field.description),
+        }))}
         initialMappings={getInitialMappings()}
         onSave={onSaveMappings}
       />

@@ -1,10 +1,10 @@
 "use client";
 
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { CollectionEditFormLayout } from "./collection-edit-form-layout";
 import { useCollectionEditForm } from "./use-collection-edit-form";
-
 export function CollectionEditPage() {
+  const tRoot = useI18n();
   const common = useScopedI18n("common");
   const form = useCollectionEditForm();
 
@@ -12,7 +12,7 @@ export function CollectionEditPage() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to edit objects.
+          {tRoot("untranslatedRecords.objects.edit.selectOrganization")}
         </p>
       </div>
     );
@@ -29,7 +29,9 @@ export function CollectionEditPage() {
   if (form.collection === null) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">Collection not found</p>
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.edit.collectionNotFound")}
+        </p>
       </div>
     );
   }

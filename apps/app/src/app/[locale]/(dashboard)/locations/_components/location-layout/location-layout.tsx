@@ -20,6 +20,7 @@ import { LocationSidebar } from "../location-sidebar";
 import { LocationActions } from "./location-actions";
 import { LocationLayoutContent } from "./location-layout-content";
 
+import { useI18n } from "@/locales/client";
 interface LocationLayoutProps {
   organizationId: Id<"organizations">;
 }
@@ -27,6 +28,7 @@ interface LocationLayoutProps {
 type LocationDialog = "add" | "edit" | "view" | "delete";
 
 export function LocationLayout({ organizationId }: LocationLayoutProps) {
+  const tRoot = useI18n();
   const { push } = useRouter();
   const [selectedLocationId, setSelectedLocationId] =
     useState<Id<"locations"> | null>(null);
@@ -162,15 +164,15 @@ export function LocationLayout({ organizationId }: LocationLayoutProps) {
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <MapPin className="size-12 text-muted-foreground" />
             <div className="text-center">
-              <p className="text-muted-foreground">No locations yet</p>
+              <p className="text-muted-foreground">{tRoot("untranslatedDashboard.locationViews.noLocationsYet")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Add your first location to start organizing objects
+                {tRoot("untranslatedDashboard.locationViews.firstLocation")}
               </p>
             </div>
             <PermissionGate permission="organization.manage_settings">
               <PermissionGate permission="locations.create">
                 <IconActionButton
-                  label="Add"
+                  label={tRoot("untranslatedRecords.objects.actions.add")}
                   onClick={() => updateDialog("add", true)}
                 >
                   <Plus className="size-4" aria-hidden="true" />

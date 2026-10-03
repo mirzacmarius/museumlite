@@ -37,9 +37,7 @@ export function useLoanListBulkActions({
         toast.warning(tToast("someLoansSkipped", { count: result.skipped }));
       }
       if (result.errors.length > 0) {
-        for (const error of result.errors.slice(0, 3)) {
-          toast.error(error);
-        }
+        toast.error(tToast("loansApproveFailed"));
       }
       onClearSelection();
     } catch {
@@ -58,9 +56,7 @@ export function useLoanListBulkActions({
         toast.warning(tToast("loansCancelSkipped", { count: result.skipped }));
       }
       if (result.errors.length > 0) {
-        for (const error of result.errors.slice(0, 3)) {
-          toast.error(error);
-        }
+        toast.error(tToast("loansCancelFailed"));
       }
       onClearSelection();
     } catch {

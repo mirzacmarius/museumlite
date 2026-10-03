@@ -4,27 +4,33 @@ import { Nav } from "@/components/site/nav";
 import { PageHeader } from "@/components/site/section-label";
 import { createPageMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
+import { getWebI18n } from "@/locales/server";
 
-export const metadata = createPageMetadata({
-  title: "Contact",
-  description:
-    "Request a private 30-minute MuseumLite walkthrough — tell us about your collection and workflows.",
-  path: "/contact",
-});
+export async function generateMetadata() {
+  const { locale, t } = await getWebI18n();
+  return createPageMetadata({
+    title: t("marketing.contact.title"),
+    description: t("marketing.contact.description"),
+    path: "/contact",
+    locale,
+  });
+}
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { t } = await getWebI18n();
   return (
     <>
       <Nav />
       <main id="main-content" className="bg-background text-foreground">
         <PageHeader
-          eyebrow="Contact"
+          eyebrow={t("marketing.contact.title")}
           title={
             <>
-              Request a <span className="text-gold">tour</span>
+              {t("marketing.contact.requestTour")}{" "}
+              <span className="text-gold">{t("marketing.contact.tour")}</span>
             </>
           }
-          lede="Tell us about your collection and team. We will arrange a focused walkthrough — accession, exhibitions, or conservation, depending on what you need most."
+          lede={t("marketing.contact.lede")}
         />
 
         <section className="py-16 md:py-24">
@@ -36,7 +42,7 @@ export default function ContactPage() {
             <aside className="md:col-span-4 md:col-start-9 space-y-10">
               <div>
                 <div className="text-[10px] font-medium uppercase tracking-[0.25em] text-gold mb-3">
-                  Email
+                  {t("marketing.contact.email")}
                 </div>
                 <a
                   href={`mailto:${siteConfig.contactEmail}`}
@@ -47,9 +53,7 @@ export default function ContactPage() {
               </div>
               <div className="pt-8 border-t border-border">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  We typically respond within two business days. Early partner
-                  slots are limited while we refine the product with museum
-                  teams.
+                  {t("marketing.contact.responseTime")}
                 </p>
               </div>
             </aside>

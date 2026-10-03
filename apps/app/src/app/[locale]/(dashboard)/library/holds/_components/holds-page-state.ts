@@ -73,7 +73,11 @@ export function holdsPageReducer(
         selectedItemId: null,
       };
     case "setPatronCardNumber":
-      return { ...state, patronCardNumber: action.value, selectedPatronId: null };
+      return {
+        ...state,
+        patronCardNumber: action.value,
+        selectedPatronId: null,
+      };
     case "setItemSearch":
       return { ...state, itemSearch: action.value, selectedItemId: null };
     case "selectPatron":

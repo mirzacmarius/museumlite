@@ -14,7 +14,7 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type {
   CollectionFormData,
   DraftMediaItem,
@@ -50,6 +50,7 @@ export function useObjectRequestForm({
   prefilledCollectionGroupId,
   backHref,
 }: UseObjectRequestFormOptions) {
+  const tRoot = useI18n();
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
@@ -121,20 +122,25 @@ export function useObjectRequestForm({
     (isDraftEditMode && accessionId
       ? `/accessions/${accessionId}`
       : "/objects");
-  const pageTitle = isDraftEditMode ? "Edit Object" : "New Object";
-  const pageBadge = isDraftEditMode ? "Draft object" : "New object";
+  const pageTitle = isDraftEditMode
+    ? tRoot("untranslatedRecords.objects.request.editTitle")
+    : tRoot("untranslatedRecords.objects.request.newTitle");
+  const pageBadge = isDraftEditMode
+    ? tRoot("untranslatedRecords.objects.request.draftBadge")
+    : tRoot("untranslatedRecords.objects.request.newBadge");
   const organizationPrompt = isDraftEditMode
-    ? "Please select an organization to edit drafts."
-    : "Please select an organization to create objects.";
+    ? tRoot("untranslatedRecords.objects.request.selectOrgEdit")
+    : tRoot("untranslatedRecords.objects.request.selectOrgCreate");
   const locationSummary =
     currentLocationPath?.map((location) => location.name).join(" / ") ||
-    "No location assigned";
+    tRoot("untranslatedRecords.objects.location.noneAssigned");
   const collectionSummary =
     collectionGroups
       ?.flatMap((group) =>
         formData.collectionGroupIds?.includes(group._id) ? [group.name] : [],
       )
-      .join(", ") || "Not assigned to a collection";
+      .join(", ") ||
+    tRoot("untranslatedRecords.objects.collection.noneAssigned");
 
   useBeforeUnload(hasUnsavedChanges);
 

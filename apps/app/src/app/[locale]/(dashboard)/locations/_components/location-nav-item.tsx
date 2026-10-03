@@ -3,6 +3,7 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { ChevronRight } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
+import { useI18n } from "@/locales/client";
 
 export interface SidebarLocation {
   _id: Id<"locations">;
@@ -157,6 +158,7 @@ export function LocationNavTreeItem({
   toggleLabel,
   depth = 0,
 }: LocationNavTreeItemProps) {
+  const t = useI18n();
   const hasChildren = childLocations.length > 0;
   const isExpanded = hasChildren && expandedLocationIds.has(location._id);
 
@@ -181,7 +183,7 @@ export function LocationNavTreeItem({
         <LocationNavItem.Link />
       </LocationNavItem.Root>
       {isExpanded && (
-        <ul className="mt-0.5" aria-label={`${location.name} children`}>
+        <ul className="mt-0.5" aria-label={t("untranslatedDashboard.locationViews.childrenLabel", { name: location.name })}>
           {childLocations.map((childLocation) => (
             <LocationNavTreeItem
               key={childLocation._id}

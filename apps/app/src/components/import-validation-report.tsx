@@ -1,4 +1,8 @@
+"use client";
+
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { getImportValidationCopy } from "@/lib/import-validation-copy";
+import { useI18n } from "@/locales/client";
 
 export interface ValidationError {
   severity: "error" | "warning" | "info";
@@ -15,6 +19,7 @@ export function ImportValidationReport({
   errors,
   maxDisplay = 10,
 }: ImportValidationReportProps) {
+  const translate = useI18n();
   if (errors.length === 0) {
     return null;
   }
@@ -32,8 +37,11 @@ export function ImportValidationReport({
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {errorsByType.error.length} validation{" "}
-              {errorsByType.error.length === 1 ? "error" : "errors"}
+              {errorsByType.error.length}{" "}
+              {translate("untranslatedComponents.labels.validation")}{" "}
+              {errorsByType.error.length === 1
+                ? translate("untranslatedComponents.validation.error")
+                : translate("untranslatedComponents.validation.errors")}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-destructive">
@@ -44,15 +52,18 @@ export function ImportValidationReport({
               >
                 {error.rowNumber && (
                   <span className="font-mono text-xs opacity-70">
-                    Row {error.rowNumber}:
+                    {translate("untranslatedComponents.labels.row")}{" "}
+                    {error.rowNumber}:
                   </span>
                 )}
-                <span>{error.message}</span>
+                <span>{getImportValidationCopy(error.message, translate)}</span>
               </li>
             ))}
             {errorsByType.error.length > maxDisplay && (
               <li className="text-destructive/70">
-                ... and {errorsByType.error.length - maxDisplay} more
+                {translate("untranslatedComponents.labels.and")}{" "}
+                {errorsByType.error.length - maxDisplay}{" "}
+                {translate("untranslatedComponents.labels.more")}
               </li>
             )}
           </ul>
@@ -65,7 +76,9 @@ export function ImportValidationReport({
             <AlertTriangle className="size-4" />
             <span className="font-medium">
               {errorsByType.warning.length}{" "}
-              {errorsByType.warning.length === 1 ? "warning" : "warnings"}
+              {errorsByType.warning.length === 1
+                ? translate("untranslatedComponents.validation.warning")
+                : translate("untranslatedComponents.validation.warnings")}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-amber-600">
@@ -76,15 +89,18 @@ export function ImportValidationReport({
               >
                 {error.rowNumber && (
                   <span className="font-mono text-xs opacity-70">
-                    Row {error.rowNumber}:
+                    {translate("untranslatedComponents.labels.row")}{" "}
+                    {error.rowNumber}:
                   </span>
                 )}
-                <span>{error.message}</span>
+                <span>{getImportValidationCopy(error.message, translate)}</span>
               </li>
             ))}
             {errorsByType.warning.length > maxDisplay && (
               <li className="text-amber-600/70">
-                ... and {errorsByType.warning.length - maxDisplay} more
+                {translate("untranslatedComponents.labels.and")}{" "}
+                {errorsByType.warning.length - maxDisplay}{" "}
+                {translate("untranslatedComponents.labels.more")}
               </li>
             )}
           </ul>
@@ -98,8 +114,12 @@ export function ImportValidationReport({
             <span className="font-medium">
               {errorsByType.info.length}{" "}
               {errorsByType.info.length === 1
-                ? "informational message"
-                : "informational messages"}
+                ? translate(
+                    "untranslatedComponents.validation.informationalMessage",
+                  )
+                : translate(
+                    "untranslatedComponents.validation.informationalMessages",
+                  )}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-blue-600">
@@ -110,15 +130,18 @@ export function ImportValidationReport({
               >
                 {error.rowNumber && (
                   <span className="font-mono text-xs opacity-70">
-                    Row {error.rowNumber}:
+                    {translate("untranslatedComponents.labels.row")}{" "}
+                    {error.rowNumber}:
                   </span>
                 )}
-                <span>{error.message}</span>
+                <span>{getImportValidationCopy(error.message, translate)}</span>
               </li>
             ))}
             {errorsByType.info.length > maxDisplay && (
               <li className="text-blue-600/70">
-                ... and {errorsByType.info.length - maxDisplay} more
+                {translate("untranslatedComponents.labels.and")}{" "}
+                {errorsByType.info.length - maxDisplay}{" "}
+                {translate("untranslatedComponents.labels.more")}
               </li>
             )}
           </ul>

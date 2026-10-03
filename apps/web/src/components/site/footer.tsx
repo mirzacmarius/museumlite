@@ -1,22 +1,30 @@
 import Link from "next/link";
+import { getWebI18n } from "@/locales/server";
 import { Mark } from "./mark";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const { t } = await getWebI18n();
   const cols = [
     {
-      h: "Platform",
+      h: t("marketing.footer.platform"),
       links: [
-        { href: "/features", label: "Features" },
-        { href: "/pricing", label: "Pricing" },
-        { href: "/features#collections", label: "Collections" },
-        { href: "/features#conservation", label: "Conservation" },
+        { href: "/features", label: t("common.nav.features") },
+        { href: "/pricing", label: t("common.nav.pricing") },
+        {
+          href: "/features#collections",
+          label: t("marketing.footer.collections"),
+        },
+        {
+          href: "/features#conservation",
+          label: t("marketing.footer.conservation"),
+        },
       ],
     },
     {
-      h: "Company",
+      h: t("marketing.footer.company"),
       links: [
-        { href: "/about", label: "About" },
-        { href: "/contact", label: "Contact" },
+        { href: "/about", label: t("common.nav.about") },
+        { href: "/contact", label: t("common.nav.contact") },
       ],
     },
   ] as const;
@@ -25,10 +33,9 @@ export function SiteFooter() {
     <footer className="border-t border-border py-16">
       <div className="mx-auto max-w-7xl px-6 lg:px-10 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
-          <Mark />
+          <Mark homeLabel={t("common.backHome")} />
           <p className="mt-4 text-sm text-muted-foreground max-w-sm leading-relaxed">
-            Museum collection management — catalogue objects, plan exhibitions,
-            track conservation, and publish a public portal from one workspace.
+            {t("marketing.footer.description")}
           </p>
         </div>
         {cols.map((col) => (
@@ -50,9 +57,9 @@ export function SiteFooter() {
       </div>
       <div className="mx-auto max-w-7xl px-6 lg:px-10 mt-14 pt-6 border-t border-border flex flex-col md:flex-row justify-between gap-4 text-xs text-muted-foreground uppercase tracking-[0.25em]">
         <span suppressHydrationWarning>
-          © {new Date().getFullYear()} MuseumLite. All rights reserved.
+          © {new Date().getFullYear()} {t("marketing.footer.rights")}
         </span>
-        <span>Made with care for the keepers of culture.</span>
+        <span>{t("marketing.footer.tagline")}</span>
       </div>
     </footer>
   );

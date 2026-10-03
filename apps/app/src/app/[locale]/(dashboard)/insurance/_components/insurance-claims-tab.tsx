@@ -13,6 +13,7 @@ import {
 } from "@v1/ui/select";
 import { Search, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { useScopedI18n } from "@/locales/client";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import {
   type ClaimStatus,
@@ -50,13 +51,14 @@ export function InsuranceClaimsTab({
   claimStatus,
   onClaimStatusChange,
 }: InsuranceClaimsTabProps) {
+  const t = useScopedI18n("untranslatedDashboard.insurance");
   return (
     <>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search claims..."
+            placeholder={t("searchClaimsPlaceholder")}
             value={searchClaims}
             onChange={(e) => onSearchClaimsChange(e.target.value)}
             className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
@@ -67,12 +69,12 @@ export function InsuranceClaimsTab({
           onValueChange={(value) => onClaimStatusChange(value as ClaimStatus)}
         >
           <SelectTrigger className="w-[180px] border-border/60 bg-card text-xs">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("status")} />
           </SelectTrigger>
           <SelectContent>
             {claimStatusOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            {t(`claimStatus.${option.value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -85,7 +87,7 @@ export function InsuranceClaimsTab({
         columns={[
           {
             key: "claimNumber",
-            label: "Claim",
+            label: t("claim"),
             className: "min-w-0 flex-[1.25]",
             render: (claim: InsuranceClaimRow) => (
               <span className="truncate font-semibold text-foreground">
@@ -95,7 +97,7 @@ export function InsuranceClaimsTab({
           },
           {
             key: "policyNumber",
-            label: "Policy",
+            label: t("policy"),
             className: "min-w-0 flex-[1.5]",
             render: (claim: InsuranceClaimRow) => (
               <div className="flex min-w-0 flex-col">
@@ -110,17 +112,22 @@ export function InsuranceClaimsTab({
           },
           {
             key: "incidentType",
-            label: "Incident",
+            label: t("incident"),
             className: "min-w-0 flex-[1.1]",
             render: (claim: InsuranceClaimRow) => (
               <span className="truncate capitalize">
-                {claim.incidentType.replace("_", " ")}
+                {t(
+                  `incident${claim.incidentType
+                    .split("_")
+                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                    .join("")}`,
+                )}
               </span>
             ),
           },
           {
             key: "incidentDate",
-            label: "Date",
+            label: t("date"),
             className: "w-32 flex-none",
             render: (claim: InsuranceClaimRow) => (
               <ClientDate timestamp={claim.incidentDate} locale={locale} />
@@ -128,7 +135,7 @@ export function InsuranceClaimsTab({
           },
           {
             key: "claimedAmount",
-            label: "Claimed",
+            label: t("claimed"),
             className: "w-36 flex-none",
             render: (claim) =>
               formatCurrency(
@@ -139,7 +146,7 @@ export function InsuranceClaimsTab({
           },
           {
             key: "status",
-            label: "Status",
+            label: t("status"),
             className: "w-36 flex-none",
             render: (claim: InsuranceClaimRow) => (
               <Badge
@@ -149,15 +156,15 @@ export function InsuranceClaimsTab({
                   "border-border text-muted-foreground"
                 }
               >
-                {claim.status.replace("_", " ")}
+                {t(`claimStatus.${claim.status}`)}
               </Badge>
             ),
           },
         ]}
         emptyState={
           <EmptyState
-            title="No claims yet"
-            description="Create a claim to track incidents and reimbursements."
+            title={t("noClaimsYet")}
+            description={t("noClaimsDescription")}
             icon={Shield}
           />
         }

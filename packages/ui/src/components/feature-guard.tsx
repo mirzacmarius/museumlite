@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { Lock } from "lucide-react";
 import Link from "next/link";
+import { formatUiMessage, useUiLocale } from "../locale";
 
 interface FeatureGuardProps {
   children: React.ReactNode;
@@ -17,10 +18,11 @@ export function FeatureGuard({
   children,
   isLocked,
   featureName,
-  description = "Upgrade your plan to access this feature.",
+  description,
   tierNeeded = "pro",
   showUpgrade = true,
 }: FeatureGuardProps) {
+  const { messages } = useUiLocale();
   if (isLocked) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] w-full border border-white/10 rounded-lg bg-zinc-950/20 p-8 text-center animate-in fade-in duration-500">
@@ -28,9 +30,11 @@ export function FeatureGuard({
           <Lock className="size-6 text-white/40" />
         </div>
         <h3 className="text-xl font-medium text-white mb-2">
-          {featureName} is locked
+          {formatUiMessage(messages.featureGuard.locked, { featureName })}
         </h3>
-        <p className="text-white/60 max-w-md mb-6">{description}</p>
+        <p className="text-white/60 max-w-md mb-6">
+          {description ?? messages.featureGuard.unavailable}
+        </p>
 
         {showUpgrade && (
           <Button
@@ -39,8 +43,9 @@ export function FeatureGuard({
             className="bg-white text-black hover:bg-white/90"
           >
             <Link href="/settings/billing">
-              Upgrade to{" "}
-              {tierNeeded.charAt(0).toUpperCase() + tierNeeded.slice(1)}
+              {formatUiMessage(messages.featureGuard.upgradeTo, {
+                tier: messages.featureGuard.tiers[tierNeeded],
+              })}
             </Link>
           </Button>
         )}

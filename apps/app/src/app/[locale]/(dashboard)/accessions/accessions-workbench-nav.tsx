@@ -3,6 +3,7 @@
 import { cn } from "@v1/ui/utils";
 import { ArrowRightLeft, LayoutGrid } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 
 type AccessionsWorkbenchView = "overview" | "transfers";
 
@@ -16,15 +17,17 @@ const navItems = [
   {
     view: "overview",
     href: "/accessions",
-    label: "Overview",
-    description: "Object intake, review, and final accessioning.",
+    labelKey: "untranslatedRecords.accessions.workbench.overview",
+    descriptionKey:
+      "untranslatedRecords.accessions.workbench.overviewDescription",
     icon: LayoutGrid,
   },
   {
     view: "transfers",
     href: "/accessions/transfers",
-    label: "Transfers",
-    description: "Incoming and outgoing custody transfers before accessioning.",
+    labelKey: "untranslatedRecords.accessions.workbench.transfers",
+    descriptionKey:
+      "untranslatedRecords.accessions.workbench.transfersDescription",
     icon: ArrowRightLeft,
   },
 ] as const;
@@ -34,6 +37,7 @@ export function AccessionsWorkbenchNav({
   pendingAccessions,
   pendingTransfers,
 }: AccessionsWorkbenchNavProps) {
+  const tRoot = useI18n();
   const metrics = {
     overview: pendingAccessions,
     transfers: pendingTransfers,
@@ -69,9 +73,9 @@ export function AccessionsWorkbenchNav({
                   <Icon className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-sm font-medium">{tRoot(item.labelKey)}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {item.description}
+                    {tRoot(item.descriptionKey)}
                   </p>
                 </div>
               </div>

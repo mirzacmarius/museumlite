@@ -32,9 +32,8 @@ export function ScheduledReportsCard({
   const [name, setName] = useState("");
   const [schedule, setSchedule] = useState<ScheduleOption>("weekly");
   const [isCreating, setIsCreating] = useState(false);
-  const [runningReportId, setRunningReportId] = useState<
-    Id<"scheduledReports"> | null
-  >(null);
+  const [runningReportId, setRunningReportId] =
+    useState<Id<"scheduledReports"> | null>(null);
 
   const reports = useQuery(api.reporting.listScheduledReports, {
     organizationId,
@@ -72,10 +71,8 @@ export function ScheduledReportsCard({
       });
       setName("");
       toast.success(t("created"));
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("createFailed"),
-      );
+    } catch {
+      toast.error(t("createFailed"));
     } finally {
       setIsCreating(false);
     }
@@ -85,10 +82,8 @@ export function ScheduledReportsCard({
     try {
       await deleteScheduledReport({ reportId });
       toast.success(t("deleted"));
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("deleteFailed"),
-      );
+    } catch {
+      toast.error(t("deleteFailed"));
     }
   }
 
@@ -97,8 +92,8 @@ export function ScheduledReportsCard({
     try {
       await runReportManually({ reportId });
       toast.success(t("runStarted"));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("runFailed"));
+    } catch {
+      toast.error(t("runFailed"));
     } finally {
       setRunningReportId(null);
     }

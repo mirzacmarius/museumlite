@@ -32,7 +32,7 @@ import {
 } from "@/components/dropzone-uploader";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 type AccessionMethod =
   | "purchase"
@@ -440,6 +440,7 @@ function NewAccessionActions({
 
 export default function NewAccessionPage() {
   const t = useScopedI18n("accessions");
+  const tRoot = useI18n();
   const { push, back } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
@@ -521,7 +522,13 @@ export default function NewAccessionPage() {
               patch: (prev) =>
                 prev.map((u) =>
                   u.id === upload.id
-                    ? { ...u, status: "error", error: "Upload failed" }
+                    ? {
+                        ...u,
+                        status: "error",
+                        error: tRoot(
+                          "untranslatedRecords.accessions.upload.failed",
+                        ),
+                      }
                     : u,
                 ),
             });
@@ -536,7 +543,7 @@ export default function NewAccessionPage() {
         });
       }, 2000);
     },
-    [generateUploadUrl],
+    [generateUploadUrl, t],
   );
 
   const handleRemoveDocument = useCallback((storageId: Id<"_storage">) => {

@@ -48,6 +48,7 @@ function isOrganizationSlugTakenError(error: unknown): boolean {
 }
 
 export function NewOrganizationForm() {
+  const translate = useI18n();
   const t = useI18n();
   const { push } = useRouter();
   const createOrganization = useMutation(api.organizations.create);
@@ -193,11 +194,13 @@ export function NewOrganizationForm() {
                 />
                 <span className="flex flex-col gap-1">
                   <span className="text-sm font-medium">
-                    Create under {currentOrganization.name}
+                    {translate("untranslatedComponents.labels.createUnder")}{" "}
+                    {currentOrganization.name}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    Sub-organizations can transfer objects within the same
-                    hierarchy.
+                    {translate(
+                      "untranslatedComponents.labels.subOrganizationsCanTransferObjectsWithinTheSameHierarchy",
+                    )}
                   </span>
                 </span>
               </label>

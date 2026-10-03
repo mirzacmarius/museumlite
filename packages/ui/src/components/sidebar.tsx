@@ -5,6 +5,7 @@ import { Button } from "@v1/ui/button";
 import { usePlatform } from "@v1/ui/hooks";
 import { useIsMobile } from "@v1/ui/hooks/use-mobile";
 import { Input } from "@v1/ui/input";
+import { useUiLocale } from "@v1/ui/locale";
 import { Separator } from "@v1/ui/separator";
 import {
   Sheet,
@@ -168,6 +169,7 @@ const Sidebar = ({
   collapsible?: "offcanvas" | "icon" | "none";
 } & React.RefAttributes<HTMLDivElement>) => {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { messages } = useUiLocale();
 
   if (collapsible === "none") {
     return (
@@ -199,8 +201,8 @@ const Sidebar = ({
           side={side}
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+            <SheetTitle>{messages.sidebar.title}</SheetTitle>
+            <SheetDescription>{messages.sidebar.description}</SheetDescription>
           </SheetHeader>
           <div className="flex size-full flex-col">{children}</div>
         </SheetContent>
@@ -263,6 +265,7 @@ const SidebarTrigger = ({
   React.RefAttributes<React.ElementRef<typeof Button>>) => {
   const { toggleSidebar } = useSidebar();
   const { isMac } = usePlatform();
+  const { messages } = useUiLocale();
 
   const shortcutText = isMac ? "⌘B" : "Ctrl+B";
 
@@ -282,11 +285,13 @@ const SidebarTrigger = ({
           {...props}
         >
           <PanelLeft />
-          <span className="sr-only">Toggle Sidebar</span>
+          <span className="sr-only">{messages.sidebar.toggle}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        <p>Toggle Sidebar ({shortcutText})</p>
+        <p>
+          {messages.sidebar.toggle} ({shortcutText})
+        </p>
       </TooltipContent>
     </Tooltip>
   );
@@ -300,6 +305,7 @@ const SidebarRail = ({
 }: React.ComponentProps<"button"> & React.RefAttributes<HTMLButtonElement>) => {
   const { toggleSidebar } = useSidebar();
   const { isMac } = usePlatform();
+  const { messages } = useUiLocale();
 
   const shortcutText = isMac ? "⌘B" : "Ctrl+B";
 
@@ -307,10 +313,10 @@ const SidebarRail = ({
     <button
       ref={ref}
       data-sidebar="rail"
-      aria-label="Toggle Sidebar"
+      aria-label={messages.sidebar.toggle}
       tabIndex={-1}
       onClick={toggleSidebar}
-      title={`Toggle Sidebar (${shortcutText})`}
+      title={`${messages.sidebar.toggle} (${shortcutText})`}
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",

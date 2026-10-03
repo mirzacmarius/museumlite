@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 
 export const get = query({
   args: {
@@ -101,5 +101,68 @@ export const remove = mutation({
     }
 
     return null;
+  },
+});
+
+const emailLocaleValidator = v.union(
+  v.literal("en"),
+  v.literal("fr"),
+  v.literal("es"),
+  v.literal("no"),
+  v.literal("ro"),
+);
+
+function parseEmailLocale(value: string | undefined) {
+  switch (value) {
+    case "fr":
+    case "es":
+    case "no":
+    case "ro":
+    case "en":
+      return value;
+    default:
+      return "en" as const;
+  }
+}
+
+export const getEmailLocaleByEmail = internalQuery({
+  args: { email: v.string() },
+  returns: emailLocaleValidator,
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.email))
+      .take(2);
+    if (users.length !== 1) return "en" as const;
+    const user = users[0];
+    if (!user) return "en" as const;
+
+    const preference = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user_organization_key", (q) =>
+        q
+          .eq("userId", user._id)
+          .eq("organizationId", undefined)
+          .eq("key", "language"),
+      )
+      .unique();
+    return parseEmailLocale(preference?.value);
+  },
+});
+
+export const getEmailLocaleByUserId = internalQuery({
+  args: { userId: v.id("users") },
+  returns: emailLocaleValidator,
+  handler: async (ctx, args) => {
+    const preference = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user_organization_key", (q) =>
+        q
+          .eq("userId", args.userId)
+          .eq("organizationId", undefined)
+          .eq("key", "language"),
+      )
+      .unique();
+    return parseEmailLocale(preference?.value);
   },
 });

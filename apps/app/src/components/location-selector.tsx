@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { useQuery } from "convex/react";
+import { useI18n } from "@/locales/client";
 
 interface LocationSelectorProps {
   organizationId: string;
@@ -23,9 +24,10 @@ export function LocationSelector({
   organizationId,
   value,
   onValueChange,
-  placeholder = "Select a location",
+  placeholder,
   allowNone = true,
 }: LocationSelectorProps) {
+  const translate = useI18n();
   const locations = useQuery(
     api.locations.listAllWithPaths,
     organizationId
@@ -43,7 +45,11 @@ export function LocationSelector({
     return (
       <Select value={value} onValueChange={onValueChange} disabled>
         <SelectTrigger>
-          <SelectValue placeholder="Loading locations..." />
+          <SelectValue
+            placeholder={translate(
+              "untranslatedComponents.labels.loadingLocations",
+            )}
+          />
         </SelectTrigger>
       </Select>
     );
@@ -81,7 +87,10 @@ export function LocationSelector({
   ) => {
     const currentLocation = path[path.length - 1];
     if (!currentLocation) {
-      return placeholder;
+      return (
+        placeholder ??
+        translate("untranslatedComponents.labels.selectALocation")
+      );
     }
 
     if (path.length <= 1) {
@@ -113,7 +122,8 @@ export function LocationSelector({
     ? formatLocationLabel(selectedLocation)
     : shouldShowCurrentInactiveLocation
       ? `${formatLocationPathLabel(currentLocationPath)} (current)`
-      : placeholder;
+      : (placeholder ??
+        translate("untranslatedComponents.labels.selectALocation"));
 
   return (
     <Select
@@ -121,17 +131,28 @@ export function LocationSelector({
       onValueChange={(val) => onValueChange(val === "__none__" ? "" : val)}
     >
       <SelectTrigger>
-        <SelectValue placeholder={placeholder}>{selectedLabel}</SelectValue>
+        <SelectValue
+          placeholder={
+            placeholder ??
+            translate("untranslatedComponents.labels.selectALocation")
+          }
+        >
+          {selectedLabel}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {allowNone && (
           <SelectItem value="__none__">
-            <span className="text-muted-foreground">None</span>
+            <span className="text-muted-foreground">
+              {translate("untranslatedComponents.labels.none")}
+            </span>
           </SelectItem>
         )}
         {shouldShowCurrentInactiveLocation ? (
           <SelectItem value={value}>
-            {`${formatLocationPathLabel(currentLocationPath)} (current)`}
+            {translate("untranslatedComponents.labels.currentLocationPath", {
+              path: formatLocationPathLabel(currentLocationPath),
+            })}
           </SelectItem>
         ) : null}
         {sortedLocations.map((location) => (

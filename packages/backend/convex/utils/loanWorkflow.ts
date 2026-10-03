@@ -21,6 +21,22 @@ import {
 } from "./workflowExecution";
 import { resolveWorkflowStepState } from "./workflowSteps";
 
+async function getLoanEmailItemData(
+  ctx: MutationCtx,
+  loanId: Id<"loans">,
+): Promise<{ itemName: string; itemCount: number }> {
+  const loanItems = await ctx.db
+    .query("loanItems")
+    .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+    .collect();
+  const firstItem = loanItems[0];
+  const collection = firstItem
+    ? await ctx.db.get(firstItem.collectionId)
+    : null;
+
+  return { itemName: collection?.title ?? "", itemCount: loanItems.length };
+}
+
 export async function approveLoanHandler(
   ctx: MutationCtx,
   args: { loanId: Id<"loans">; comment?: string },
@@ -128,33 +144,10 @@ export async function approveLoanHandler(
           changes: { status: "active", step: currentStep },
         }),
       ]);
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-        .collect();
-
-      // Get item names from collections
-      let itemName = "Loan items";
-      if (loanItems.length > 0) {
-        const firstItem = loanItems[0];
-        const collection = firstItem
-          ? await ctx.db.get(firstItem.collectionId)
-          : null;
-        if (collection?.title) {
-          itemName = collection.title;
-          if (loanItems.length > 1) {
-            itemName += ` and ${loanItems.length - 1} other item${loanItems.length > 2 ? "s" : ""}`;
-          }
-        }
-      }
-
-      // Format dates for email
-      const startDate = loan.startDate
-        ? new Date(loan.startDate).toLocaleDateString()
-        : "TBD";
-      const endDate = loan.endDate
-        ? new Date(loan.endDate).toLocaleDateString()
-        : "TBD";
+      const { itemName, itemCount } = await getLoanEmailItemData(
+        ctx,
+        args.loanId,
+      );
 
       // Build loan URL
       const siteUrl = process.env.SITE_URL;
@@ -174,8 +167,9 @@ export async function approveLoanHandler(
             loanId: args.loanId,
             itemName,
             borrowerName: loan.lenderBorrowerName,
-            startDate,
-            endDate,
+            startDate: loan.startDate,
+            endDate: loan.endDate,
+            itemCount,
             loanUrl,
           },
         });
@@ -230,36 +224,11 @@ export async function approveLoanHandler(
         changes: { status: "active" },
       }),
     ]);
-    const [recipients, loanItems] = await Promise.all([
+    const [recipients, loanItemData] = await Promise.all([
       getOrganizationNotificationRecipients(ctx, loan.organizationId, userId),
-      ctx.db
-        .query("loanItems")
-        .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-        .collect(),
+      getLoanEmailItemData(ctx, args.loanId),
     ] as const);
-
-    // Get item names from collections
-    let itemName = "Loan items";
-    if (loanItems.length > 0) {
-      const firstItem = loanItems[0];
-      const collection = firstItem
-        ? await ctx.db.get(firstItem.collectionId)
-        : null;
-      if (collection?.title) {
-        itemName = collection.title;
-        if (loanItems.length > 1) {
-          itemName += ` and ${loanItems.length - 1} other item${loanItems.length > 2 ? "s" : ""}`;
-        }
-      }
-    }
-
-    // Format dates for email
-    const startDate = loan.startDate
-      ? new Date(loan.startDate).toLocaleDateString()
-      : "TBD";
-    const endDate = loan.endDate
-      ? new Date(loan.endDate).toLocaleDateString()
-      : "TBD";
+    const { itemName, itemCount } = loanItemData;
 
     // Build loan URL (this will be used in the email deep link)
     const siteUrl = process.env.SITE_URL;
@@ -279,8 +248,9 @@ export async function approveLoanHandler(
             loanId: args.loanId,
             itemName,
             borrowerName: loan.lenderBorrowerName,
-            startDate,
-            endDate,
+            startDate: loan.startDate,
+            endDate: loan.endDate,
+            itemCount,
             loanUrl,
           },
         });
@@ -359,33 +329,7 @@ export async function rejectLoanHandler(
       changes: { status: "cancelled", comment: args.comment },
     }),
   ]);
-  const loanItems = await ctx.db
-    .query("loanItems")
-    .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
-    .collect();
-
-  // Get item names from collections
-  let itemName = "Loan items";
-  if (loanItems.length > 0) {
-    const firstItem = loanItems[0];
-    const collection = firstItem
-      ? await ctx.db.get(firstItem.collectionId)
-      : null;
-    if (collection?.title) {
-      itemName = collection.title;
-      if (loanItems.length > 1) {
-        itemName += ` and ${loanItems.length - 1} other item${loanItems.length > 2 ? "s" : ""}`;
-      }
-    }
-  }
-
-  // Format dates for email
-  const startDate = loan.startDate
-    ? new Date(loan.startDate).toLocaleDateString()
-    : "TBD";
-  const endDate = loan.endDate
-    ? new Date(loan.endDate).toLocaleDateString()
-    : "TBD";
+  const { itemName, itemCount } = await getLoanEmailItemData(ctx, args.loanId);
 
   // Build loan URL
   const siteUrl = process.env.SITE_URL;
@@ -405,8 +349,9 @@ export async function rejectLoanHandler(
         loanId: args.loanId,
         itemName,
         borrowerName: loan.lenderBorrowerName,
-        startDate,
-        endDate,
+        startDate: loan.startDate,
+        endDate: loan.endDate,
+        itemCount,
         loanUrl,
       },
     });

@@ -2,10 +2,12 @@
 
 import { Building2, MapPin } from "lucide-react";
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
 import { LocationLayout } from "./_components/location-layout/location-layout";
 import { LocationsPageSkeleton } from "./location-page-skeleton";
 
 export default function LocationsPage() {
+  const t = useScopedI18n("locations");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
 
   if (isLoading) {
@@ -19,10 +21,10 @@ export default function LocationsPage() {
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              No Organization
+              {t("noOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Create an organization to manage locations
+              {t("noOrganizationDescription")}
             </p>
           </div>
         </div>
@@ -37,10 +39,10 @@ export default function LocationsPage() {
           <MapPin className="size-12 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-foreground">
-              Select Organization
+              {t("selectOrganizationTitle")}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Choose an organization to view locations
+              {t("selectOrganizationDescription")}
             </p>
           </div>
         </div>

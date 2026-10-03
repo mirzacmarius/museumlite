@@ -19,6 +19,7 @@ import { useScopedI18n } from "@/locales/client";
 
 export default function NotificationSettingsPage() {
   const tCommon = useScopedI18n("common");
+  const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export default function NotificationSettingsPage() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to manage notification settings.
+          {t("selectOrganizationNotifications")}
         </p>
       </div>
     );
@@ -73,7 +74,7 @@ export default function NotificationSettingsPage() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Unable to load notification preferences.
+          {t("loadNotificationPreferencesFailed")}
         </p>
       </div>
     );
@@ -91,13 +92,10 @@ export default function NotificationSettingsPage() {
         emailEnabled: formData.emailEnabled,
         emailDigestFrequency: formData.emailDigestFrequency,
       });
-      setSuccessMessage("Email preferences saved successfully");
+      setSuccessMessage(t("notificationPreferencesSaved"));
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update notification preferences",
-      );
+      console.error("Failed to update notification preferences:", err);
+      setError(t("notificationPreferencesUpdateFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -107,10 +105,10 @@ export default function NotificationSettingsPage() {
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-2">
         <h2 className="text-xl font-medium text-foreground">
-          Email Notification Settings
+          {t("emailNotificationSettings")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Configure how you receive email notifications for important events.
+          {t("emailNotificationSettingsDescription")}
         </p>
       </div>
 
@@ -129,17 +127,17 @@ export default function NotificationSettingsPage() {
 
         {/* Email Notifications */}
         <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-medium">Email Notifications</h2>
+          <h2 className="mb-4 text-lg font-medium">{t("emailNotifications")}</h2>
           <div className="space-y-6">
             {/* Email Enabled Toggle */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="emailEnabled">
-                    Enable Email Notifications
+                    {t("enableEmailNotifications")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Receive notifications via email for important events
+                    {t("receiveEmailNotifications")}
                   </p>
                 </div>
                 <Switch
@@ -155,7 +153,7 @@ export default function NotificationSettingsPage() {
             {/* Email Digest Frequency */}
             <div className="space-y-2">
               <Label htmlFor="emailDigestFrequency">
-                Email Delivery Frequency
+                {t("emailDeliveryFrequency")}
               </Label>
               <Select
                 value={formData.emailDigestFrequency}
@@ -174,19 +172,19 @@ export default function NotificationSettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="instant">
-                    Instant - Send emails immediately
+                    {t("instantEmail")}
                   </SelectItem>
                   <SelectItem value="daily">
-                    Daily - Daily digest of notifications
+                    {t("dailyDigest")}
                   </SelectItem>
                   <SelectItem value="weekly">
-                    Weekly - Weekly digest of notifications
+                    {t("weeklyDigest")}
                   </SelectItem>
-                  <SelectItem value="never">Never - No emails</SelectItem>
+                  <SelectItem value="never">{t("neverEmail")}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Choose how often you want to receive email notifications
+                {t("emailFrequencyDescription")}
               </p>
             </div>
           </div>
@@ -194,25 +192,22 @@ export default function NotificationSettingsPage() {
 
         {/* Event Types Info */}
         <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-medium">Email Events</h2>
+          <h2 className="mb-4 text-lg font-medium">{t("emailEvents")}</h2>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              You will receive email notifications for the following events when
-              enabled:
+              {t("emailEventsDescription")}
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
                 <span>
-                  <strong className="text-primary">Loan Requests:</strong> When
-                  your loan request is submitted, approved, or denied
+                  <strong className="text-primary">{t("loanRequests")}</strong> {t("loanRequestsDescription")}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
                 <span>
-                  <strong className="text-primary">Task Assignments:</strong>{" "}
-                  When you are assigned a new task
+                  <strong className="text-primary">{t("taskAssignments")}</strong> {t("taskAssignmentsDescription")}
                 </span>
               </li>
             </ul>
@@ -222,7 +217,7 @@ export default function NotificationSettingsPage() {
         {/* Save Button */}
         <div className="flex justify-end gap-4">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Save Email Preferences"}
+            {isSubmitting ? t("saving") : t("saveEmailPreferences")}
           </Button>
         </div>
       </form>

@@ -42,7 +42,7 @@ export function LocationImageField({
           {locationImageUrl ? (
             <Image
               src={locationImageUrl}
-              alt={name || "Location photo"}
+              alt={name || t("locationPhotoLabel")}
               fill
               sizes="(max-width: 768px) 100vw, 400px"
               className="object-cover"

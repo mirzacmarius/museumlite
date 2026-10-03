@@ -8,6 +8,7 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Clock, Search, X } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 
 interface SearchAutocompleteProps {
@@ -21,10 +22,11 @@ interface SearchAutocompleteProps {
 export function SearchAutocomplete({
   value = "",
   onValueChange,
-  placeholder = "Search objects…",
+  placeholder,
   className,
   debounceMs = 300,
 }: SearchAutocompleteProps) {
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const { currentOrganizationId } = useOrganization();
   const debouncedValue = useDebouncedValue(value, debounceMs);
@@ -114,9 +116,14 @@ export function SearchAutocomplete({
             value={value}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
-            placeholder={placeholder}
+            placeholder={
+              placeholder ??
+              translate("untranslatedComponents.labels.searchObjects")
+            }
             className="pl-9 pr-9"
-            aria-label="Search with autocomplete"
+            aria-label={translate(
+              "untranslatedComponents.labels.searchWithAutocomplete",
+            )}
             aria-autocomplete="list"
             aria-expanded={showDropdown}
             aria-controls={showDropdown ? "search-suggestions" : undefined}
@@ -126,7 +133,9 @@ export function SearchAutocomplete({
               type="button"
               onClick={handleClear}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Clear search"
+              aria-label={translate(
+                "untranslatedComponents.labels.clearSearch",
+              )}
             >
               <X className="size-4" />
             </button>
@@ -144,7 +153,7 @@ export function SearchAutocomplete({
           {hasHistory && !hasQuery && (
             <>
               <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                Recent Searches
+                {translate("untranslatedComponents.labels.recentSearches")}
               </div>
               {searchHistory?.map((history) => (
                 <button
@@ -175,7 +184,7 @@ export function SearchAutocomplete({
               )}
               {hasQuery && (
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                  Suggestions
+                  {translate("untranslatedComponents.labels.suggestions")}
                 </div>
               )}
               {Array.from(new Set(suggestions ?? [])).map((suggestion) => (

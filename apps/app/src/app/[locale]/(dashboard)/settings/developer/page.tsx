@@ -12,6 +12,7 @@ import { WebhooksTab } from "./webhooks-tab";
 export default function DeveloperPage() {
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("settings.developer");
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
 
   if (!currentOrganizationId) {
     return (
@@ -34,15 +35,15 @@ export default function DeveloperPage() {
         <TabsList>
           <TabsTrigger value="api-keys" className="gap-2">
             <Key className="size-4" />
-            API Keys
+            {tDashboard("apiKeys")}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="gap-2">
             <Webhook className="size-4" />
-            Webhooks
+            {tDashboard("webhooks")}
           </TabsTrigger>
           <TabsTrigger value="utilities" className="gap-2">
             <AlertTriangle className="size-4" />
-            Utilities
+            {tDashboard("utilities")}
           </TabsTrigger>
         </TabsList>
 

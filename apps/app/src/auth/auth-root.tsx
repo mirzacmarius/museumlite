@@ -1,20 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useReducer } from "react";
 import { AuthHeader } from "@/auth/auth-header";
 import { FormContainer } from "@/auth/common/container";
 import { AuthFormRoot } from "@/auth/form-root";
 import { SignInWithOAuth } from "@/auth/SignInWithOAuth";
+import { buildAuthPath } from "@/auth/search-params";
 import type {
   AuthErrorInfo,
   AuthMode,
   AuthStep,
   UniqueCodeFlow,
 } from "@/auth/types";
-import { buildAuthPath } from "@/auth/search-params";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface AuthRootProps {
   initialMode: AuthMode;
@@ -84,6 +84,7 @@ function AuthModeSwitchLink({
   mode,
   redirectTo,
 }: AuthModeSwitchLinkProps) {
+  const translate = useI18n();
   const nextMode = mode === "signIn" ? "signUp" : "signIn";
   const href = buildAuthPath(nextMode === "signIn" ? "/login" : "/register", {
     email: email || undefined,
@@ -92,12 +93,16 @@ function AuthModeSwitchLink({
 
   return (
     <p className="pt-5 text-center text-sm text-muted-foreground">
-      {mode === "signIn" ? "No account yet?" : "Already have an account?"}{" "}
+      {mode === "signIn"
+        ? translate("untranslatedComponents.auth.noAccountYet")
+        : translate("untranslatedComponents.auth.alreadyHaveAccount")}{" "}
       <Link
         className="font-medium text-foreground underline underline-offset-4"
         href={href}
       >
-        {mode === "signIn" ? "Create one" : "Sign in"}
+        {mode === "signIn"
+          ? translate("untranslatedComponents.auth.createOne")
+          : translate("untranslatedComponents.auth.signIn")}
       </Link>
     </p>
   );

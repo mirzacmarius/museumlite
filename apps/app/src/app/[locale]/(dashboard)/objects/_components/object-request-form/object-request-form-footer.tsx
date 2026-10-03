@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Archive, Save } from "lucide-react";
 import { FormStickyFooter } from "@/components/form-sticky-footer";
 
+import { useI18n } from "@/locales/client";
 export type ObjectRequestFormFooterPhase =
   | { kind: "error"; message: string }
   | { kind: "submitting"; hasUploads: boolean }
@@ -68,44 +69,54 @@ function ObjectRequestFormFooterStatus({
   phase: ObjectRequestFormFooterPhase;
   draft: ObjectRequestFormFooterDraft;
 }) {
+  const tRoot = useI18n();
   switch (phase.kind) {
     case "error":
       return <span className="text-destructive">{phase.message}</span>;
     case "submitting":
       return (
         <span className="text-foreground">
-          {phase.hasUploads ? "Submitting and uploading" : "Submitting"}
+          {phase.hasUploads
+            ? tRoot("untranslatedRecords.objects.form.submittingWithUploads")
+            : tRoot("untranslatedRecords.objects.form.submitting")}
         </span>
       );
     case "saving-draft":
-      return <span className="text-foreground">Saving draft…</span>;
+      return (
+        <span className="text-foreground">
+          {tRoot("untranslatedRecords.objects.form.savingDraft")}
+        </span>
+      );
     case "idle":
       switch (draft.kind) {
         case "stale":
           return (
             <span className="text-foreground">
-              Draft exists, but your latest field changes are not saved yet.
+              {tRoot("untranslatedRecords.objects.form.draftExistsUnsaved")}
             </span>
           );
         case "local-media":
           return (
             <span className="text-muted-foreground">
-              Save Draft uploads images and documents to this accession request.
-              They are submitted for approval with the object.
+              {tRoot("untranslatedRecords.objects.form.saveDraftDescription")}
             </span>
           );
         case "saved":
-          return <span className="text-muted-foreground">Draft saved.</span>;
+          return (
+            <span className="text-muted-foreground">
+              {tRoot("untranslatedRecords.objects.form.draftSaved")}
+            </span>
+          );
         case "dirty":
           return (
             <span className="text-foreground">
-              You have unsaved field changes across tabs.
+              {tRoot("untranslatedRecords.objects.edit.unsavedAcrossTabs")}
             </span>
           );
         case "none":
           return (
             <span className="text-muted-foreground">
-              No draft changes pending.
+              {tRoot("untranslatedRecords.objects.form.noDraftChanges")}
             </span>
           );
       }
@@ -120,6 +131,7 @@ export function ObjectRequestFormFooter({
   onNavigate,
   onSaveDraft,
 }: ObjectRequestFormFooterProps) {
+  const tRoot = useI18n();
   const isBusy = phase.kind === "submitting" || phase.kind === "saving-draft";
   const isSavingDraft = phase.kind === "saving-draft";
   const isSubmitting = phase.kind === "submitting";
@@ -138,7 +150,9 @@ export function ObjectRequestFormFooter({
           disabled={isBusy}
         >
           <Archive className="mr-2 size-4" />
-          {isSavingDraft ? "Saving draft..." : "Save Draft"}
+          {isSavingDraft
+            ? tRoot("untranslatedRecords.objects.form.savingDraftNow")
+            : tRoot("untranslatedRecords.objects.form.saveDraft")}
         </Button>
         <Button
           type="button"
@@ -151,9 +165,9 @@ export function ObjectRequestFormFooter({
           <Save className="mr-2 size-4" />
           {isSubmitting
             ? hasUploads
-              ? "Submitting and uploading"
-              : "Submitting"
-            : "Submit for Approval"}
+              ? tRoot("untranslatedRecords.objects.form.submittingWithUploads")
+              : tRoot("untranslatedRecords.objects.form.submitting")
+            : tRoot("untranslatedRecords.objects.form.submitForApproval")}
         </Button>
       </FormStickyFooter.Actions>
     </FormStickyFooter>

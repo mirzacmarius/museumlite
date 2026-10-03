@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { MediaImportState } from "../media-import-types";
 
 interface MediaImportImportingStepProps {
@@ -12,6 +13,7 @@ export function MediaImportImportingStep({
   state,
   t,
 }: MediaImportImportingStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto max-w-md text-center pt-12">
       <Loader2 className="mx-auto mb-6 size-12 animate-spin text-primary" />
@@ -19,7 +21,10 @@ export function MediaImportImportingStep({
         {t("mediaImport.importing")}
       </h2>
       <p className="text-muted-foreground mb-6">
-        Uploading {state.currentFileIndex + 1} of {state.mediaFiles.length}
+        {tRoot("untranslatedRecords.collections.media.uploading")}{" "}
+        {state.currentFileIndex + 1}{" "}
+        {tRoot("untranslatedRecords.collections.import.of")}{" "}
+        {state.mediaFiles.length}
       </p>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
@@ -30,7 +35,7 @@ export function MediaImportImportingStep({
         />
       </div>
       <div className="mt-8 text-sm text-muted-foreground">
-        Do not close this window until the import is complete.
+        {tRoot("collections.mediaImport.doNotClose")}
       </div>
     </div>
   );

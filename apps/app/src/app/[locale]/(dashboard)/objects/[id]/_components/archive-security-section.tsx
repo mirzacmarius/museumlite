@@ -3,7 +3,7 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { FunctionReturnType } from "convex/server";
 import { Shield } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.archiveDetails.get>
@@ -16,20 +16,21 @@ interface ArchiveSecuritySectionProps {
 export function ArchiveSecuritySection({
   details,
 }: ArchiveSecuritySectionProps) {
+  const tRoot = useI18n();
   const common = useScopedI18n("modules.common");
 
   return (
     <div>
       <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
         <Shield className="size-4 text-purple-500" />
-        Security & Access
+        {tRoot("modules.archive.securityAccess")}
       </h3>
 
       <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Confidentiality Level
+              {tRoot("modules.archive.confidentialityLevel")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.confidentialityLevel || "—"}
@@ -37,7 +38,7 @@ export function ArchiveSecuritySection({
           </div>
           <div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Legal Hold
+              {tRoot("modules.archive.legalHold")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.legalHold ? common("yes") : common("no")}
@@ -47,7 +48,7 @@ export function ArchiveSecuritySection({
         {details.legalHoldReason ? (
           <div className="mt-4 pt-4 border-t border-border/40">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-              Legal Hold Reason
+              {tRoot("modules.archive.legalHoldReason")}
             </div>
             <p className="text-sm text-muted-foreground">
               {details.legalHoldReason}
@@ -57,7 +58,7 @@ export function ArchiveSecuritySection({
         {details.accessRestrictions && details.accessRestrictions.length > 0 ? (
           <div className="mt-4 pt-4 border-t border-border/40">
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-              Access Restrictions
+              {tRoot("modules.archive.accessRestrictions")}
             </div>
             <div className="flex flex-wrap gap-2">
               {details.accessRestrictions.map((restriction) => (

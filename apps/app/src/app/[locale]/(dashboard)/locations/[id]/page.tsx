@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { AddChildLocationDialog } from "../_components/add-child-location-dialog/add-child-location-dialog";
 import { DeleteLocationDialog } from "../_components/delete-location-dialog";
 import { EditLocationDialog } from "../_components/edit-location-dialog/edit-location-dialog";
@@ -31,6 +31,7 @@ export default function LocationDetailPage() {
 
 function LocationDetailContent() {
   const t = useScopedI18n("locations");
+  const tRoot = useI18n();
   const { id: locationId } = useParams<{ id: Id<"locations"> }>();
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
@@ -77,7 +78,7 @@ function LocationDetailContent() {
         onSelectLocation={(id) => push(`/locations/${id}`)}
       />
       <div className="custom-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-background px-4 pb-6 pt-5 dark:bg-zinc-950 md:px-6">
-        <nav aria-label="Location path" className="mb-5">
+        <nav aria-label={tRoot("untranslatedDashboard.locationViews.path")} className="mb-5">
           <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <li>
               <Link

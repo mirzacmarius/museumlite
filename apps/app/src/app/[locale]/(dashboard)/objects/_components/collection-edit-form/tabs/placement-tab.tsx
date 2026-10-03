@@ -8,6 +8,7 @@ import type { FunctionReturnType } from "convex/server";
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { LocationSelector } from "@/components/location-selector";
 import { ObjectCombobox } from "@/components/object-combobox";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
@@ -30,15 +31,20 @@ export function CollectionEditPlacementTab({
   typedCollectionId,
   resolvedCurrentLocationId,
 }: CollectionEditPlacementTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Placement and relationships"
-        description="Where the object lives in the system and how it relates to other records."
+        title={tRoot("untranslatedRecords.objects.form.placementRelationships")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.placementDescription",
+        )}
       >
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2 xl:col-span-2">
-            <Label htmlFor="placementCurrentLocationId">Current Location</Label>
+            <Label htmlFor="placementCurrentLocationId">
+              {tRoot("objects.form.currentLocation")}
+            </Label>
             <LocationSelector
               organizationId={currentOrganizationId}
               value={resolvedCurrentLocationId}
@@ -53,7 +59,9 @@ export function CollectionEditPlacementTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="placementCollectionGroupId">Collection</Label>
+            <Label htmlFor="placementCollectionGroupId">
+              {tRoot("objects.form.collectionGroup")}
+            </Label>
             <CollectionGroupCombobox
               organizationId={currentOrganizationId}
               value={formData.collectionGroupIds}
@@ -66,10 +74,11 @@ export function CollectionEditPlacementTab({
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
-            <Label htmlFor="placementParentObjectId">Parent Object</Label>
+            <Label htmlFor="placementParentObjectId">
+              {tRoot("objects.form.parentObject")}
+            </Label>
             <p className="text-xs text-muted-foreground">
-              Link this object to a parent record when it belongs to a larger
-              set or container.
+              {tRoot("untranslatedRecords.objects.form.linkParentHint")}
             </p>
             <ObjectCombobox
               organizationId={currentOrganizationId}
@@ -83,10 +92,11 @@ export function CollectionEditPlacementTab({
           <div className="md:col-span-2 xl:col-span-3">
             <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
               <div className="space-y-0.5">
-                <Label htmlFor="placementDisplayStatus">On display</Label>
+                <Label htmlFor="placementDisplayStatus">
+                  {tRoot("objects.filters.onDisplay")}
+                </Label>
                 <p className="text-xs text-muted-foreground">
-                  Mark this object as visible to visitors in its current
-                  location.
+                  {tRoot("untranslatedRecords.objects.form.markOnDisplayHint")}
                 </p>
               </div>
               <Switch

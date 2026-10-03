@@ -3,6 +3,8 @@
 import { FileSpreadsheet, Upload } from "lucide-react";
 import type { RefObject } from "react";
 
+import { useI18n } from "@/locales/client";
+
 interface ImportObjectsUploadStepProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -14,6 +16,7 @@ export function ImportObjectsUploadStep({
   fileInputRef,
   onFileSelect,
 }: ImportObjectsUploadStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-8 text-center">
@@ -48,25 +51,30 @@ export function ImportObjectsUploadStep({
         <h3 className="mb-2 font-medium">{t("csvImport.formatTitle")}</h3>
         <ul className="space-y-1 text-sm text-muted-foreground">
           <li>
-            <strong>Required:</strong> title
+            <strong>{tRoot("collections.csvImport.requiredLabel")}</strong>{" "}
+            {tRoot("collections.csvImport.requiredValue")}
           </li>
           <li>
-            <strong>Identification:</strong> accessionNumber, creator,
-            objectType, objectName
+            <strong>
+              {tRoot("collections.csvImport.identificationLabel")}
+            </strong>{" "}
+            {tRoot("collections.csvImport.identificationValue")}
           </li>
           <li>
-            <strong>Context:</strong> culture, period, dateCreated
+            <strong>{tRoot("collections.csvImport.contextLabel")}</strong>{" "}
+            {tRoot("collections.csvImport.contextValue")}
           </li>
           <li>
-            <strong>Physical:</strong> materials, technique, dimensions,
-            condition
+            <strong>{tRoot("collections.csvImport.physicalLabel")}</strong>{" "}
+            {tRoot("collections.csvImport.physicalValue")}
           </li>
           <li>
-            <strong>Organization:</strong> location (by name), collectionGroup
-            (by name)
+            <strong>{tRoot("collections.csvImport.organizationLabel")}</strong>{" "}
+            {tRoot("collections.csvImport.organizationValue")}
           </li>
           <li>
-            <strong>Documentation:</strong> description, provenance
+            <strong>{tRoot("collections.csvImport.documentationLabel")}</strong>{" "}
+            {tRoot("collections.csvImport.documentationValue")}
           </li>
         </ul>
       </div>

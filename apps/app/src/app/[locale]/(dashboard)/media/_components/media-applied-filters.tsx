@@ -2,7 +2,7 @@
 
 import { AppliedFilterChip, AppliedFiltersBar } from "@v1/ui/filters-dropdown";
 import type { MediaFileType } from "@/hooks/use-url-filters";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 export interface MediaAppliedFiltersValue {
   search: string;
@@ -16,14 +16,14 @@ interface MediaAppliedFiltersProps {
   className?: string;
 }
 
-function fileTypeLabel(fileType: MediaFileType) {
+function fileTypeLabel(fileType: MediaFileType, translate: ReturnType<typeof useI18n>) {
   switch (fileType) {
     case "image":
-      return "Images";
+      return translate("mediaPage.types.image");
     case "document":
-      return "Documents";
+      return translate("mediaPage.types.document");
     case "3d":
-      return "3D Models";
+      return translate("mediaPage.types.model3d");
     case "all":
       return "";
   }
@@ -36,6 +36,7 @@ export function MediaAppliedFilters({
   className,
 }: MediaAppliedFiltersProps) {
   const common = useScopedI18n("common");
+  const t = useI18n();
 
   const showBar = filters.search !== "" || filters.fileType !== "all";
   if (!showBar) return null;
@@ -44,8 +45,8 @@ export function MediaAppliedFilters({
     <AppliedFiltersBar className={className}>
       {filters.fileType !== "all" && (
         <AppliedFilterChip
-          label="Type"
-          value={fileTypeLabel(filters.fileType)}
+          label={t("untranslatedDashboard.media.typeFilter")}
+          value={fileTypeLabel(filters.fileType, t)}
           onRemove={() => onChange({ fileType: "all" })}
         />
       )}

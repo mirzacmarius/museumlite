@@ -14,7 +14,7 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { Save } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type {
   DeaccessionMethod,
   DeaccessionTargetStatus,
@@ -42,6 +42,7 @@ export function EditDeaccessionForm({
   onSubmit,
   onCancel,
 }: EditDeaccessionFormProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("deaccessions");
   const tCommon = useScopedI18n("common");
 
@@ -83,7 +84,9 @@ export function EditDeaccessionForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="targetCollectionStatus">Requested Action</Label>
+          <Label htmlFor="targetCollectionStatus">
+            {tRoot("untranslatedRecords.deaccessions.form.requestedAction")}
+          </Label>
           <Select
             value={formData.targetCollectionStatus}
             onValueChange={(value) => {
@@ -103,9 +106,15 @@ export function EditDeaccessionForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="deaccessioned">Deaccession</SelectItem>
-              <SelectItem value="archived">Archive</SelectItem>
-              <SelectItem value="deleted">Delete</SelectItem>
+              <SelectItem value="deaccessioned">
+                {tRoot("objects.bulkActions.deaccession")}
+              </SelectItem>
+              <SelectItem value="archived">
+                {tRoot("library.catalog.detail.archive")}
+              </SelectItem>
+              <SelectItem value="deleted">
+                {tRoot("collections.delete.button")}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -142,8 +151,7 @@ export function EditDeaccessionForm({
           </Select>
           {formData.targetCollectionStatus !== "deaccessioned" ? (
             <p className="text-xs text-muted-foreground">
-              Archive and delete requests use the deaccession approval workflow
-              and do not need a separate disposal method.
+              {tRoot("untranslatedRecords.deaccessions.form.archiveDeleteHint")}
             </p>
           ) : null}
         </div>

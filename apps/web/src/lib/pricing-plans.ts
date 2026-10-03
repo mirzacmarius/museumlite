@@ -1,7 +1,8 @@
 import {
-  TIER_LIMITS,
   type SubscriptionTier,
+  TIER_LIMITS,
 } from "@v1/backend/convex/utils/featurePolicy";
+import type { WebMessageKey } from "@/locales/messages";
 
 export type BillingInterval = "month" | "year";
 
@@ -16,14 +17,10 @@ export interface PricingPlan {
   featured?: boolean;
 }
 
-const PAID_PLAN_COPY = {
-  pro: {
-    description: "Advanced workflows and reporting for growing collections.",
-  },
-  enterprise: {
-    description: "Unlimited capacity and premium controls for larger teams.",
-  },
-} as const;
+type Translate = (
+  key: WebMessageKey,
+  values?: Record<string, string | number>,
+) => string;
 
 const PAID_PLAN_PRICES = {
   pro: { month: 2000, year: 20000 },
@@ -35,42 +32,80 @@ function formatStorage(bytes: number): string {
   return `${gigabytes} GB`;
 }
 
-function formatLimit(value: number | null, singular: string, plural: string) {
-  if (value === null) return `Unlimited ${plural}`;
-  return `Up to ${value} ${value === 1 ? singular : plural}`;
+function formatLimit(
+  value: number | null,
+  singular: string,
+  plural: string,
+  translate: Translate,
+) {
+  if (value === null)
+    return translate("marketing.pricing.unlimited", { feature: plural });
+  return translate("marketing.pricing.upTo", {
+    count: value,
+    feature: value === 1 ? singular : plural,
+  });
 }
 
-function formatStorageLimit(bytes: number | null): string {
-  if (bytes === null) return "Unlimited storage";
-  return `Up to ${formatStorage(bytes)} storage`;
+function formatStorageLimit(
+  bytes: number | null,
+  translate: Translate,
+): string {
+  if (bytes === null)
+    return translate("marketing.pricing.unlimited", {
+      feature: translate("marketing.pricing.storage"),
+    });
+  return translate("marketing.pricing.storageUpTo", {
+    size: formatStorage(bytes),
+  });
 }
 
-function getTierFeatures(tier: SubscriptionTier): string[] {
+function getTierFeatures(
+  tier: SubscriptionTier,
+  translate: Translate,
+): string[] {
   const limits = TIER_LIMITS[tier];
   const features = [
-    formatLimit(limits.objects, "object", "objects"),
-    formatStorageLimit(limits.mediaBytes),
-    formatLimit(limits.users, "team member", "team members"),
-    formatLimit(limits.exportsPerMonth, "export", "exports per month"),
+    formatLimit(
+      limits.objects,
+      translate("marketing.pricing.object"),
+      translate("marketing.pricing.objects"),
+      translate,
+    ),
+    formatStorageLimit(limits.mediaBytes, translate),
+    formatLimit(
+      limits.users,
+      translate("marketing.pricing.teamMember"),
+      translate("marketing.pricing.teamMembers"),
+      translate,
+    ),
+    formatLimit(
+      limits.exportsPerMonth,
+      translate("marketing.pricing.export"),
+      translate("marketing.pricing.exportsPerMonth"),
+      translate,
+    ),
   ];
 
   if (tier === "free") {
     features.push(
-      "Object catalog, accessions & locations",
-      "Media library",
-      "No credit card required",
+      translate("marketing.pricing.featureCatalog"),
+      translate("marketing.pricing.featureMedia"),
+      translate("marketing.pricing.featureNoCard"),
     );
     return features;
   }
 
   features.push(
-    "Loans, exhibitions & conservation",
-    "Reporting & public portal",
-    "Installations module",
+    translate("marketing.pricing.featureLoans"),
+    translate("marketing.pricing.featureReporting"),
+    translate("marketing.pricing.featureInstallations"),
   );
 
   if (tier === "enterprise") {
-    features.push("Compliance & audit controls", "Priority support");
+    features.push(
+      translate("marketing.pricing.featureCompliance"),
+      translate("marketing.pricing.featureSupport"),
+    );
   }
 
   return features;
@@ -79,36 +114,44 @@ function getTierFeatures(tier: SubscriptionTier): string[] {
 function getPaidPlan(
   tier: "pro" | "enterprise",
   interval: BillingInterval,
+  translate: Translate,
 ): PricingPlan {
   return {
     tier,
     name: tier === "pro" ? "Pro" : "Enterprise",
-    description: PAID_PLAN_COPY[tier].description,
+    description: translate(
+      tier === "pro"
+        ? "marketing.pricing.proDescription"
+        : "marketing.pricing.enterpriseDescription",
+    ),
     priceAmount: PAID_PLAN_PRICES[tier][interval],
     interval,
-    features: getTierFeatures(tier),
-    cta: "Get started",
+    features: getTierFeatures(tier, translate),
+    cta: translate("marketing.pricing.getStarted"),
     featured: tier === "pro",
   };
 }
 
-export function getPricingPlans(interval: BillingInterval): PricingPlan[] {
+export function getPricingPlans(
+  interval: BillingInterval,
+  translate: Translate,
+): PricingPlan[] {
   return [
     {
       tier: "free",
-      name: "Free",
-      description: "Core collection tools to get started — free forever.",
+      name: translate("marketing.pricing.free"),
+      description: translate("marketing.pricing.freeDescription"),
       priceAmount: 0,
       interval: null,
-      features: getTierFeatures("free"),
-      cta: "Start for free",
+      features: getTierFeatures("free", translate),
+      cta: translate("marketing.pricing.getStarted"),
     },
-    getPaidPlan("pro", interval),
-    getPaidPlan("enterprise", interval),
+    getPaidPlan("pro", interval, translate),
+    getPaidPlan("enterprise", interval, translate),
   ];
 }
 
-export function formatPlanPrice(amount: number, interval: BillingInterval | null) {
+export function formatPlanPrice(amount: number) {
   if (amount === 0) {
     return { price: "$0", sub: "" };
   }
@@ -118,8 +161,5 @@ export function formatPlanPrice(amount: number, interval: BillingInterval | null
     ? `$${dollars}`
     : `$${dollars.toFixed(2)}`;
 
-  return {
-    price: formatted,
-    sub: interval === "year" ? "/ year" : "/ month",
-  };
+  return { price: formatted };
 }

@@ -19,7 +19,8 @@ import { useCallback, useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
+import { formatTime } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ScanPageSkeleton } from "./scan-page-skeleton";
 
 interface ScanHistoryItem {
@@ -110,6 +111,8 @@ function getObjectPathFromScan(decodedText: string) {
 export default function ScanPage() {
   const _t = useScopedI18n("objects");
   const common = useScopedI18n("common");
+  const t = useScopedI18n("untranslatedDashboard.scan");
+  const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { push } = useRouter();
   const [{ scanHistory, pendingLookup }, dispatch] = useReducer(
@@ -151,22 +154,22 @@ export default function ScanPage() {
       return;
     }
 
-    toast.error(`Object not found: ${pendingLookup}`);
+    toast.error(t("objectNotFound", { value: pendingLookup }));
     dispatch({
       type: "lookup_not_found",
       accessionNumber: pendingLookup,
     });
-  }, [pendingLookup, scannedObject, push]);
+  }, [pendingLookup, scannedObject, push, t]);
 
   const handleScanSuccess = useCallback(
     (decodedText: string, format: string) => {
       if (!currentOrganizationId) {
-        toast.error("Please select an organization first");
+        toast.error(t("selectOrganizationFirst"));
         return;
       }
 
       const objectPath = getObjectPathFromScan(decodedText);
-      toast.success(`Scanned: ${decodedText}`);
+      toast.success(t("scanned", { value: decodedText }));
 
       const historyItem: ScanHistoryItem = {
         id: `${Date.now()}-${decodedText}`,
@@ -186,12 +189,15 @@ export default function ScanPage() {
         push(objectPath);
       }
     },
-    [currentOrganizationId, push],
+    [currentOrganizationId, push, t],
   );
 
-  const handleScanError = useCallback((error: string) => {
-    toast.error(`Scanner error: ${error}`);
-  }, []);
+  const handleScanError = useCallback(
+    (error: string) => {
+      toast.error(t("scannerError", { error }));
+    },
+    [t],
+  );
 
   if (isLoading) {
     return <ScanPageSkeleton />;
@@ -203,9 +209,9 @@ export default function ScanPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization</h3>
+            <h3 className="text-lg font-semibold">{t("noOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You need to create or join an organization to scan objects.
+              {t("createOrJoinOrganization")}
             </p>
           </div>
           <Button asChild>
@@ -225,9 +231,9 @@ export default function ScanPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Select Organization</h3>
+            <h3 className="text-lg font-semibold">{t("selectOrganization")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select an organization to start scanning.
+              {t("selectOrganizationToScan")}
             </p>
           </div>
         </div>
@@ -246,10 +252,10 @@ export default function ScanPage() {
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Scan Objects
+                {t("title")}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Scan barcodes or QR codes to quickly access object records
+                {t("description")}
               </p>
             </div>
           </div>
@@ -271,7 +277,7 @@ export default function ScanPage() {
             <div className="border-b border-border px-4 py-3 sm:px-6">
               <div className="flex items-center gap-2">
                 <Clock className="size-4 text-muted-foreground" />
-                <h2 className="text-sm font-medium">Recent Scans</h2>
+                <h2 className="text-sm font-medium">{t("recentScans")}</h2>
               </div>
             </div>
             <div className="divide-y divide-border">
@@ -296,13 +302,13 @@ export default function ScanPage() {
                     )}
                     {!item.found && (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Not found
+                        {t("notFound")}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {item.timestamp.toLocaleTimeString([], {
+                      {formatTime(item.timestamp, locale, {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
@@ -339,11 +345,9 @@ export default function ScanPage() {
                 <Camera className="size-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-medium">How to Scan</h3>
+                <h3 className="text-sm font-medium">{t("howToScan")}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Start the scanner and position the barcode or QR code within
-                  the camera view. The system will automatically detect and
-                  navigate to the object.
+                  {t("howToScanDescription")}
                 </p>
               </div>
             </div>
@@ -355,10 +359,9 @@ export default function ScanPage() {
                 <ScanLine className="size-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-medium">Supported Formats</h3>
+                <h3 className="text-sm font-medium">{t("supportedFormats")}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  QR codes, Code 128, and Code 39 barcodes are supported. Make
-                  sure there's adequate lighting for best results.
+                  {t("supportedFormatsDescription")}
                 </p>
               </div>
             </div>

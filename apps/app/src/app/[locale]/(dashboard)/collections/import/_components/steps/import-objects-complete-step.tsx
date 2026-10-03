@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 import type { ImportState } from "../import-objects-types";
 
 interface ImportJobResult {
@@ -22,13 +23,15 @@ export function ImportObjectsCompleteStep({
   t,
   onReset,
 }: ImportObjectsCompleteStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto max-w-md text-center">
       <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
       <h2 className="text-xl font-semibold">{t("csvImport.complete")}</h2>
       <p className="mt-2 text-muted-foreground">
-        Successfully imported {importJob?.processedItems || state.rows.length}{" "}
-        objects
+        {tRoot("untranslatedRecords.collections.import.successCount", {
+          count: importJob?.processedItems || state.rows.length,
+        })}
       </p>
 
       {state.errors.length > 0 ? (
@@ -36,7 +39,8 @@ export function ImportObjectsCompleteStep({
           <div className="flex items-center gap-2 text-amber-600">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.errors.length} rows had issues
+              {state.errors.length}{" "}
+              {tRoot("untranslatedRecords.collections.import.rowsHadIssues")}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-amber-600">
@@ -44,7 +48,11 @@ export function ImportObjectsCompleteStep({
               <li key={error}>{error}</li>
             ))}
             {state.errors.length > 5 ? (
-              <li>... and {state.errors.length - 5} more</li>
+              <li>
+                {tRoot("untranslatedRecords.collections.import.more")}{" "}
+                {state.errors.length - 5}{" "}
+                {tRoot("untranslatedRecords.objects.loading.more")}
+              </li>
             ) : null}
           </ul>
         </div>

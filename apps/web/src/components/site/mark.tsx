@@ -1,10 +1,16 @@
 import Link from "next/link";
 
-export function Mark({ className = "" }: { className?: string }) {
+export function Mark({
+  className = "",
+  homeLabel,
+}: {
+  className?: string;
+  homeLabel: string;
+}) {
   return (
     <Link
       href="/"
-      aria-label="MuseumLite home"
+      aria-label={homeLabel}
       className={`flex items-center gap-2.5 group ${className}`}
     >
       <svg

@@ -1,6 +1,8 @@
 "use client";
 
 import { ClientDateFns } from "@/components/client-date";
+import { useI18n } from "@/locales/client";
+import { formatDeaccessionMethodLabel } from "./deaccession-detail-types";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 type BoardReportExportData = NonNullable<
@@ -16,23 +18,24 @@ export function BoardReportObjectSummary({
   exportData,
   locale,
 }: BoardReportObjectSummaryProps) {
+  const tRoot = useI18n();
   return (
     <>
       {exportData.collection ? (
         <div className="print:break-inside-avoid">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
-            Object Information
+            {tRoot("deaccessions.report.objectInfo")}
           </h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:gap-x-4 print:gap-y-1 print:text-xs">
             <div>
               <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-                Title
+                {tRoot("deaccessions.report.title_field")}
               </p>
               <p className="text-black">{exportData.collection.title}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-                Accession Number
+                {tRoot("deaccessions.report.accessionNumber")}
               </p>
               <p className="text-black">
                 {exportData.collection.accessionNumber || "—"}
@@ -41,7 +44,7 @@ export function BoardReportObjectSummary({
             {exportData.collection.description ? (
               <div className="col-span-2">
                 <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-                  Description
+                  {tRoot("deaccessions.report.description")}
                 </p>
                 <p className="text-black">
                   {exportData.collection.description}
@@ -54,12 +57,12 @@ export function BoardReportObjectSummary({
 
       <div className="print:break-inside-avoid">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
-          Deaccession Details
+          {tRoot("deaccessions.report.deaccessionDetails")}
         </h2>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:gap-x-4 print:gap-y-1 print:text-xs">
           <div>
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Date Deaccessioned
+              {tRoot("deaccessions.report.dateDeaccessioned")}
             </p>
             <p className="text-black">
               <ClientDateFns
@@ -71,15 +74,18 @@ export function BoardReportObjectSummary({
           </div>
           <div>
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Method
+              {tRoot("deaccessions.report.method")}
             </p>
             <p className="capitalize text-black">
-              {exportData.deaccession.method}
+              {formatDeaccessionMethodLabel(
+                exportData.deaccession.method,
+                tRoot,
+              )}
             </p>
           </div>
           <div className="col-span-2">
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Reason
+              {tRoot("deaccessions.report.reason")}
             </p>
             <p className="whitespace-pre-wrap text-black">
               {exportData.deaccession.reason}
@@ -88,7 +94,7 @@ export function BoardReportObjectSummary({
           {exportData.deaccession.disposition ? (
             <div className="col-span-2">
               <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-                Disposition
+                {tRoot("deaccessions.report.disposition")}
               </p>
               <p className="whitespace-pre-wrap text-black">
                 {exportData.deaccession.disposition}
@@ -98,7 +104,7 @@ export function BoardReportObjectSummary({
           {exportData.deaccession.notes ? (
             <div className="col-span-2">
               <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-                Notes
+                {tRoot("deaccessions.report.notes")}
               </p>
               <p className="whitespace-pre-wrap text-black">
                 {exportData.deaccession.notes}

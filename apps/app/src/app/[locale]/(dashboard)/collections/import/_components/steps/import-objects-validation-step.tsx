@@ -2,6 +2,7 @@
 
 import { Button } from "@v1/ui/button";
 import { AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { ImportState } from "../import-objects-types";
 
 interface ImportObjectsValidationStepProps {
@@ -15,27 +16,38 @@ export function ImportObjectsValidationStep({
   onBackToMapping,
   onContinueAfterValidation,
 }: ImportObjectsValidationStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Validation Report</h2>
+          <h2 className="text-xl font-semibold">
+            {tRoot("untranslatedRecords.collections.import.validationReport")}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            {state.rows.length} valid rows, {state.validationErrors.length}{" "}
-            errors
+            {tRoot("untranslatedRecords.collections.import.validRowsCount", {
+              count: state.rows.length,
+              errors: state.validationErrors.length,
+            })}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBackToMapping}>
             <ArrowLeft className="mr-2 size-4" />
-            Back to Mapping
+            {tRoot("untranslatedRecords.collections.import.backToMapping")}
           </Button>
           {state.rows.length > 0 ? (
             <Button
               onClick={onContinueAfterValidation}
               className="bg-primary hover:bg-primary/90"
             >
-              Continue with {state.rows.length} Valid Rows
+              {tRoot(
+                "untranslatedRecords.collections.import.continueWithCount",
+                {
+                  count: state.rows.length,
+                },
+              )}{" "}
+              {tRoot("untranslatedRecords.collections.import.validRows")}
             </Button>
           ) : null}
         </div>
@@ -46,7 +58,8 @@ export function ImportObjectsValidationStep({
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.validationErrors.length} validation errors
+              {state.validationErrors.length}{" "}
+              {tRoot("untranslatedRecords.collections.import.validationErrors")}
             </span>
           </div>
           <ul className="mt-2 max-h-96 space-y-1 overflow-auto text-sm text-destructive">
@@ -62,7 +75,10 @@ export function ImportObjectsValidationStep({
           <div className="flex items-center gap-2 text-green-600">
             <CheckCircle2 className="size-4" />
             <span className="font-medium">
-              {state.rows.length} rows passed validation
+              {state.rows.length}{" "}
+              {tRoot(
+                "untranslatedRecords.collections.import.rowsPassedValidation",
+              )}
             </span>
           </div>
         </div>

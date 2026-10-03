@@ -50,8 +50,7 @@ import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
 import { formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
-
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 export default function CollectionGroupDetailPage() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
@@ -291,6 +290,7 @@ function CollectionObjectsList({
   isAddDialogOpen: boolean;
   onAddDialogOpenChange: (open: boolean) => void;
 }) {
+  const tRoot = useI18n();
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
@@ -482,7 +482,12 @@ function CollectionObjectsList({
               {selectedCollectionIds.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    Selected ({selectedCollectionIds.length}):
+                    {tRoot(
+                      "untranslatedRecords.collections.detail.selectedCount",
+                      {
+                        count: selectedCollectionIds.length,
+                      },
+                    )}
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {selectedCollectionIds.map((id) => {
@@ -579,6 +584,7 @@ function CollectionListItem({
   organizationId: Id<"organizations">;
   onRemove?: () => void;
 }) {
+  const tRoot = useI18n();
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
 
@@ -620,7 +626,7 @@ function CollectionListItem({
             {item.status === "deaccessioned" ? (
               <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
                 <Archive className="mr-1 size-3" />
-                Deaccessioned
+                {tRoot("collections.kpi.deaccessioned")}
               </span>
             ) : (
               <p className="text-xs text-muted-foreground capitalize">
@@ -648,9 +654,9 @@ function CollectionListItem({
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t("removeDialog.title")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to remove "{item.title}" from this
-                    collection? The object will not be deleted, only removed
-                    from this collection.
+                    {tRoot("untranslatedRecords.collections.remove.confirm", {
+                      name: item.title,
+                    })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

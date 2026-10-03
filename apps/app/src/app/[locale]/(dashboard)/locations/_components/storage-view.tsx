@@ -1,5 +1,7 @@
 "use client";
 
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { LocationObjectThumbnail } from "./location-object-thumbnail";
 import { LocationUnitCard } from "./location-unit-card";
 
@@ -29,6 +31,22 @@ export function StorageView({
   objects,
   includesDescendants = false,
 }: StorageViewProps) {
+  const t = useScopedI18n("untranslatedDashboard.locationViews");
+  const locale = useCurrentLocale();
+  const tObject = useScopedI18n("objects.filters");
+  const formatStatus = (status: string | undefined) => {
+    if (!status) return "—";
+    const statusKeys: Record<string, string> = {
+      active: "active",
+      loaned: "loaned",
+      deaccessioned: "deaccessioned",
+      archived: "archived",
+      deleted: "deleted",
+      on_display: "onDisplay",
+    };
+    const key = statusKeys[status];
+    return key ? tObject(key) : status.replaceAll("_", " ");
+  };
   const unitObjects = new Map(
     units.map((unit) => [
       unit._id,
@@ -42,30 +60,30 @@ export function StorageView({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-xs font-medium text-foreground">
-              Storage Units
+              {t("storageUnits")}
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Shelves, cabinets, boxes, and rooms with their assigned objects
+              {t("storageDescription")}
             </p>
           </div>
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              Occupied
+              {t("occupied")}
             </span>
             <span className="flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-muted-foreground/40" />
-              Empty
+              {t("empty")}
             </span>
             <span className="tabular-nums">
-              {units.length.toLocaleString()} units
+              {formatNumber(units.length, locale)} {t("units")}
             </span>
           </div>
         </div>
 
         {units.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-xs text-muted-foreground">
-            No storage units found
+            {t("noStorageUnits")}
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-4">
@@ -86,16 +104,16 @@ export function StorageView({
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-xs font-medium text-foreground">
-                Objects in Active Location
+                {t("objectsInActiveLocation")}
               </h3>
               {includesDescendants && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Includes objects in this location and its child units
+                  {t("childUnitsIncluded")}
                 </p>
               )}
             </div>
             <div className="text-xs text-muted-foreground">
-              {objects.length.toLocaleString()} objects
+              {formatNumber(objects.length, locale)} {t("objects")}
             </div>
           </div>
         </div>
@@ -103,9 +121,9 @@ export function StorageView({
         <table className="w-full min-w-[440px] text-start text-xs">
           <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground font-medium">
             <tr>
-              <th className="px-4 py-3">Accession Number</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3 text-right">Status</th>
+              <th className="px-4 py-3">{t("accessionNumber")}</th>
+              <th className="px-4 py-3">{t("title")}</th>
+              <th className="px-4 py-3 text-right">{t("status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -116,8 +134,8 @@ export function StorageView({
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   {includesDescendants
-                    ? "No objects in this location or its child units"
-                    : "No objects in this location"}
+                    ? t("noObjectsWithChildren")
+                    : t("noObjects")}
                 </td>
               </tr>
             ) : (
@@ -145,7 +163,7 @@ export function StorageView({
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right text-muted-foreground capitalize align-top">
-                    {object.status ?? "—"}
+                    {formatStatus(object.status)}
                   </td>
                 </tr>
               ))

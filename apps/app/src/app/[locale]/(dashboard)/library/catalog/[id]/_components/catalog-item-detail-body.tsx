@@ -1,11 +1,10 @@
 "use client";
 
 import { Badge } from "@v1/ui/badge";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { CatalogItemDetailCopiesSection } from "./catalog-item-detail-copies-section";
 import { CatalogItemDetailSidebar } from "./catalog-item-detail-sidebar";
 import type { CatalogItemDetailViewProps } from "./catalog-item-detail-view-props";
-
 export function CatalogItemDetailBody({
   item,
   copies,
@@ -20,6 +19,7 @@ export function CatalogItemDetailBody({
   | "handleDeleteCopy"
   | "setIsAddCopyOpen"
 >) {
+  const tRoot = useI18n();
   const tDetail = useScopedI18n("library.catalog.detail");
 
   return (
@@ -66,13 +66,17 @@ export function CatalogItemDetailBody({
             ) : null}
             {item.isbn ? (
               <div>
-                <p className="text-sm text-muted-foreground">ISBN-10</p>
+                <p className="text-sm text-muted-foreground">
+                  {tRoot("library.catalog.new.isbn10")}
+                </p>
                 <p className="font-medium font-mono">{item.isbn}</p>
               </div>
             ) : null}
             {item.isbn13 ? (
               <div>
-                <p className="text-sm text-muted-foreground">ISBN-13</p>
+                <p className="text-sm text-muted-foreground">
+                  {tRoot("library.catalog.new.isbn13")}
+                </p>
                 <p className="font-medium font-mono">{item.isbn13}</p>
               </div>
             ) : null}

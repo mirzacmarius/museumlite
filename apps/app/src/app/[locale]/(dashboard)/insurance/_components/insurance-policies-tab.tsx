@@ -13,6 +13,7 @@ import {
 } from "@v1/ui/select";
 import { Search, Shield } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { useScopedI18n } from "@/locales/client";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
 import {
   type PolicyStatus,
@@ -58,13 +59,14 @@ export function InsurancePoliciesTab({
   policyType,
   onPolicyTypeChange,
 }: InsurancePoliciesTabProps) {
+  const t = useScopedI18n("untranslatedDashboard.insurance");
   return (
     <>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search policies..."
+            placeholder={t("searchPoliciesPlaceholder")}
             value={searchPolicies}
             onChange={(e) => onSearchPoliciesChange(e.target.value)}
             className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
@@ -78,12 +80,12 @@ export function InsurancePoliciesTab({
             }
           >
             <SelectTrigger className="w-[160px] border-border/60 bg-card text-xs">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("status")} />
             </SelectTrigger>
             <SelectContent>
               {policyStatusOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`policyStatus.${option.value}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -93,12 +95,12 @@ export function InsurancePoliciesTab({
             onValueChange={(value) => onPolicyTypeChange(value as PolicyType)}
           >
             <SelectTrigger className="w-[160px] border-border/60 bg-card text-xs">
-              <SelectValue placeholder="Type" />
+              <SelectValue placeholder={t("type")} />
             </SelectTrigger>
             <SelectContent>
               {policyTypeOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`policyType.${option.value}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -112,7 +114,7 @@ export function InsurancePoliciesTab({
         columns={[
           {
             key: "policyNumber",
-            label: "Policy",
+            label: t("policy"),
             className: "min-w-0 flex-[1.35]",
             render: (policy: InsurancePolicyRow) => (
               <span className="truncate font-semibold text-foreground">
@@ -122,7 +124,7 @@ export function InsurancePoliciesTab({
           },
           {
             key: "carrier",
-            label: "Carrier",
+            label: t("carrier"),
             className: "min-w-0 flex-[1.5]",
             render: (policy: InsurancePolicyRow) => (
               <span className="truncate">{policy.carrier}</span>
@@ -130,15 +132,17 @@ export function InsurancePoliciesTab({
           },
           {
             key: "policyType",
-            label: "Type",
+            label: t("type"),
             className: "w-28 flex-none",
             render: (policy: InsurancePolicyRow) => (
-              <span className="capitalize">{policy.policyType}</span>
+              <span className="capitalize">
+                {t(`policyType.${policy.policyType}`)}
+              </span>
             ),
           },
           {
             key: "coverageAmount",
-            label: "Coverage",
+            label: t("coverage"),
             className: "w-36 flex-none",
             render: (policy) =>
               formatCurrency(
@@ -149,7 +153,7 @@ export function InsurancePoliciesTab({
           },
           {
             key: "effectiveDate",
-            label: "Effective",
+            label: t("effective"),
             className: "w-28 flex-none",
             render: (policy: InsurancePolicyRow) => (
               <ClientDate timestamp={policy.effectiveDate} locale={locale} />
@@ -157,7 +161,7 @@ export function InsurancePoliciesTab({
           },
           {
             key: "expirationDate",
-            label: "Expires",
+            label: t("expires"),
             className: "w-28 flex-none",
             render: (policy: InsurancePolicyRow) => (
               <ClientDate timestamp={policy.expirationDate} locale={locale} />
@@ -165,7 +169,7 @@ export function InsurancePoliciesTab({
           },
           {
             key: "status",
-            label: "Status",
+            label: t("status"),
             className: "w-32 flex-none",
             render: (policy: InsurancePolicyRow) => (
               <Badge
@@ -175,25 +179,25 @@ export function InsurancePoliciesTab({
                   "border-border text-muted-foreground"
                 }
               >
-                {policy.status.replace("_", " ")}
+                {t(`policyStatus.${policy.status}`)}
               </Badge>
             ),
           },
           {
             key: "coverageCount",
-            label: "Coverages",
+            label: t("coverages"),
             className: "w-24 flex-none justify-end text-right",
           },
           {
             key: "claimsCount",
-            label: "Claims",
+            label: t("claims"),
             className: "w-20 flex-none justify-end text-right",
           },
         ]}
         emptyState={
           <EmptyState
-            title="No policies yet"
-            description="Create your first policy to start tracking coverage."
+            title={t("noPoliciesYet")}
+            description={t("noPoliciesDescription")}
             icon={Shield}
           />
         }

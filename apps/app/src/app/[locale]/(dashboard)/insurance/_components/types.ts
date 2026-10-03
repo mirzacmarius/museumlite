@@ -25,39 +25,35 @@ export type ClaimStatus =
   | "closed"
   | "appealed";
 
-export const policyTypeOptions: Array<{ label: string; value: PolicyType }> = [
-  { label: "All types", value: "all" },
-  { label: "Blanket", value: "blanket" },
-  { label: "Scheduled", value: "scheduled" },
-  { label: "Exhibition", value: "exhibition" },
-  { label: "Transit", value: "transit" },
-  { label: "Loan", value: "loan" },
+export const policyTypeOptions: Array<{ value: PolicyType }> = [
+  { value: "all" },
+  { value: "blanket" },
+  { value: "scheduled" },
+  { value: "exhibition" },
+  { value: "transit" },
+  { value: "loan" },
 ];
 
-export const policyStatusOptions: Array<{
-  label: string;
-  value: PolicyStatus;
-}> = [
-  { label: "All statuses", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Pending", value: "pending" },
-  { label: "Expired", value: "expired" },
-  { label: "Cancelled", value: "cancelled" },
-  { label: "Suspended", value: "suspended" },
+export const policyStatusOptions: Array<{ value: PolicyStatus }> = [
+  { value: "all" },
+  { value: "active" },
+  { value: "pending" },
+  { value: "expired" },
+  { value: "cancelled" },
+  { value: "suspended" },
 ];
 
-export const claimStatusOptions: Array<{ label: string; value: ClaimStatus }> =
-  [
-    { label: "All statuses", value: "all" },
-    { label: "Draft", value: "draft" },
-    { label: "Submitted", value: "submitted" },
-    { label: "Under review", value: "under_review" },
-    { label: "Approved", value: "approved" },
-    { label: "Denied", value: "denied" },
-    { label: "Settled", value: "settled" },
-    { label: "Closed", value: "closed" },
-    { label: "Appealed", value: "appealed" },
-  ];
+export const claimStatusOptions: Array<{ value: ClaimStatus }> = [
+  { value: "all" },
+  { value: "draft" },
+  { value: "submitted" },
+  { value: "under_review" },
+  { value: "approved" },
+  { value: "denied" },
+  { value: "settled" },
+  { value: "closed" },
+  { value: "appealed" },
+];
 
 export const policyStatusColor: Record<string, string> = {
   active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",

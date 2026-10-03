@@ -1,7 +1,7 @@
 "use client";
 
-import { MediaGallery } from "./media-gallery";
 import { DigitalAssetsTab } from "./digital-assets-tab";
+import { MediaGallery } from "./media-gallery";
 import type { CollectionData } from "./types";
 
 interface MediaTabProps {

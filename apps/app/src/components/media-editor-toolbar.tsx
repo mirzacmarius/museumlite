@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, RotateCcw, RotateCw, Save, X } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { MediaEditorImage } from "./media-editor-types";
 
 interface MediaEditorToolbarProps {
@@ -24,12 +25,13 @@ export function MediaEditorToolbar({
   onSave,
   onClose,
 }: MediaEditorToolbarProps) {
+  const translate = useI18n();
   return (
     <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-card/40 border-b border-border/60 backdrop-blur-xl p-4">
       <div className="flex items-center gap-4">
         {image.title && (
           <span className="text-sm font-medium text-foreground">
-            Editing: {image.title}
+            {translate("untranslatedComponents.labels.editing")} {image.title}
           </span>
         )}
       </div>
@@ -41,7 +43,7 @@ export function MediaEditorToolbar({
             onRotateLeft();
           }}
           className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-          aria-label="Rotate left"
+          aria-label={translate("untranslatedComponents.labels.rotateLeft")}
         >
           <RotateCcw size={20} />
         </button>
@@ -52,7 +54,7 @@ export function MediaEditorToolbar({
             onRotateRight();
           }}
           className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-          aria-label="Rotate right"
+          aria-label={translate("untranslatedComponents.labels.rotateRight")}
         >
           <RotateCw size={20} />
         </button>
@@ -64,7 +66,7 @@ export function MediaEditorToolbar({
               onApplyCrop();
             }}
             className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-            aria-label="Apply crop"
+            aria-label={translate("untranslatedComponents.labels.applyCrop")}
           >
             <Check size={20} />
           </button>
@@ -77,7 +79,7 @@ export function MediaEditorToolbar({
           }}
           disabled={isSaving}
           className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-          aria-label="Save"
+          aria-label={translate("untranslatedComponents.labels.save")}
         >
           <Save size={20} />
         </button>
@@ -88,7 +90,7 @@ export function MediaEditorToolbar({
             onClose();
           }}
           className="rounded-lg p-2 text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
-          aria-label="Close"
+          aria-label={translate("untranslatedComponents.labels.close")}
         >
           <X size={20} />
         </button>

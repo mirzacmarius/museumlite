@@ -9,6 +9,7 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Check, Trash2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface MaterialOption {
   value: string;
@@ -37,21 +38,24 @@ export function MaterialsComboboxListContent({
   onSelect,
   onDeleteMaterial,
 }: MaterialsComboboxListContentProps) {
+  const translate = useI18n();
   return (
     <CommandList id={listId} className="max-h-[300px]">
       <CommandEmpty>
         {inputValue ? (
           <div className="p-4 text-sm text-center">
             <p className="text-muted-foreground mb-2">
-              No matching materials found.
+              {translate(
+                "untranslatedComponents.labels.noMatchingMaterialsFound",
+              )}
             </p>
             {organizationId && (
               <p className="text-xs text-muted-foreground">
-                Press{" "}
+                {translate("untranslatedComponents.labels.press")}{" "}
                 <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">
                   Enter
                 </kbd>{" "}
-                to add{" "}
+                {translate("untranslatedComponents.labels.toAdd")}{" "}
                 <span className="font-medium text-foreground">
                   "{formatMaterialName(inputValue)}"
                 </span>
@@ -60,13 +64,17 @@ export function MaterialsComboboxListContent({
           </div>
         ) : (
           <div className="p-4 text-sm text-muted-foreground text-center">
-            Type to search materials
+            {translate("untranslatedComponents.labels.typeToSearchMaterials")}
           </div>
         )}
       </CommandEmpty>
 
       {filteredMaterials.length > 0 && (
-        <CommandGroup heading="Organization Materials">
+        <CommandGroup
+          heading={translate(
+            "untranslatedComponents.labels.organizationMaterials",
+          )}
+        >
           {filteredMaterials.map((material) => (
             <CommandItem
               key={material.value}

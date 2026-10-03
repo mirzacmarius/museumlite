@@ -629,9 +629,7 @@ export const assignTask = mutation({
         emailData: {
           taskTitle: task.title,
           assignedBy: assignedByName,
-          dueDate: task.dueDate
-            ? new Date(task.dueDate).toLocaleDateString()
-            : undefined,
+          dueDate: task.dueDate,
           taskUrl,
         },
       });

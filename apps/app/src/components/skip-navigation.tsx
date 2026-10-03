@@ -1,30 +1,36 @@
 "use client";
 
 import { cn } from "@v1/ui/utils";
+import { useI18n } from "@/locales/client";
 
 interface SkipLink {
   href: string;
   label: string;
 }
 
-const defaultSkipLinks: SkipLink[] = [
-  { href: "#main-content", label: "Skip to main content" },
-  { href: "#search", label: "Skip to search" },
-];
-
 interface SkipNavigationProps {
   links?: SkipLink[];
 }
 
-export function SkipNavigation({
-  links = defaultSkipLinks,
-}: SkipNavigationProps) {
+export function SkipNavigation({ links }: SkipNavigationProps) {
+  const translate = useI18n();
+  const navigationLinks = links ?? [
+    {
+      href: "#main-content",
+      label: translate("untranslatedComponents.labels.skipToMainContent"),
+    },
+    {
+      href: "#search",
+      label: translate("untranslatedComponents.labels.skipToSearch"),
+    },
+  ];
+
   return (
     <nav
-      aria-label="Skip navigation"
+      aria-label={translate("untranslatedComponents.labels.skipNavigation")}
       className="fixed top-0 left-0 z-[200] flex gap-2 p-2"
     >
-      {links.map((link) => (
+      {navigationLinks.map((link) => (
         <a
           key={link.href}
           href={link.href}

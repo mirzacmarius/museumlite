@@ -161,6 +161,7 @@ import {
 export default function PreferencesSettingsPage() {
   const t = useScopedI18n("settings");
   const tCommon = useScopedI18n("common");
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
   const [state, dispatch] = useReducer(
     preferencesPageReducer,
@@ -207,7 +208,11 @@ export default function PreferencesSettingsPage() {
     void ensureTransferRegistryFields({
       organizationId: currentOrganizationId as Id<"organizations">,
     });
-  }, [currentOrganizationId, ensureTransferRegistryFields, organization?.accountNumber]);
+  }, [
+    currentOrganizationId,
+    ensureTransferRegistryFields,
+    organization?.accountNumber,
+  ]);
 
   const systemPresets = useMemo(
     () =>
@@ -284,13 +289,10 @@ export default function PreferencesSettingsPage() {
         });
       }
       dispatch({ type: "closeSaveTemplateModal" });
-    } catch (err) {
+    } catch {
       dispatch({
         type: "setError",
-        value:
-          err instanceof Error
-            ? err.message
-            : t("organization.templateDialog.saveError"),
+        value: t("organization.templateDialog.saveError"),
       });
     }
   };
@@ -310,13 +312,10 @@ export default function PreferencesSettingsPage() {
         });
       }
       dispatch({ type: "clearDeleteTemplateId" });
-    } catch (err) {
+    } catch {
       dispatch({
         type: "setError",
-        value:
-          err instanceof Error
-            ? err.message
-            : t("organization.templateDialog.deleteError"),
+        value: t("organization.templateDialog.deleteError"),
       });
     }
   };
@@ -360,11 +359,10 @@ export default function PreferencesSettingsPage() {
             state.formData.enableDetailedConditionReports,
         },
       });
-    } catch (err) {
+    } catch {
       dispatch({
         type: "setError",
-        value:
-          err instanceof Error ? err.message : "Failed to update preferences",
+        value: tDashboard("updatePreferencesFailed"),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", value: false });
@@ -374,7 +372,9 @@ export default function PreferencesSettingsPage() {
   if (!currentOrganizationId) {
     return (
       <PreferencesPageShell>
-        <PreferencesStatusPanel message="Please select an organization to manage preferences." />
+        <PreferencesStatusPanel
+          message={tDashboard("selectOrganizationPreferences")}
+        />
       </PreferencesPageShell>
     );
   }

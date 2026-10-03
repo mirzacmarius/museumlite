@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ZodSchema } from "zod";
+import { useI18n } from "@/locales/client";
 
 type ValidationStatus = "idle" | "validating" | "valid" | "invalid";
 
@@ -30,6 +31,7 @@ export function useFieldValidation<T>({
   validateOnChange = true,
   onValidationComplete,
 }: UseFieldValidationOptions<T>): UseFieldValidationReturn {
+  const translate = useI18n();
   const [status, setStatus] = useState<ValidationStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [pendingValue, setPendingValue] = useState<unknown>(null);
@@ -47,7 +49,9 @@ export function useFieldValidation<T>({
 
       const syncResult = schema.safeParse(value);
       if (!syncResult.success) {
-        const message = syncResult.error.errors[0]?.message || "Invalid value";
+        const message =
+          syncResult.error.errors[0]?.message ||
+          translate("untranslatedComponents.validation.invalidValue");
         setStatus("invalid");
         setError(message);
         onValidationComplete?.(false, message);
@@ -63,7 +67,7 @@ export function useFieldValidation<T>({
       onValidationComplete?.(true);
       return true;
     },
-    [schema, onValidationComplete],
+    [schema, onValidationComplete, translate],
   );
 
   const handleChange = useCallback(

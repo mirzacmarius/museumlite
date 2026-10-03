@@ -6,6 +6,8 @@ import type { FunctionReturnType } from "convex/server";
 import { AlertOctagon, Archive, ArrowLeft, Save } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
 
+import { useI18n } from "@/locales/client";
+
 type CollectionDoc = NonNullable<
   FunctionReturnType<typeof api.collections.get>
 >;
@@ -33,6 +35,7 @@ export function CollectionEditFormHeader({
   onNavigate,
   onDeaccessionOpen,
 }: CollectionEditFormHeaderProps) {
+  const tRoot = useI18n();
   return (
     <header className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/90 px-6 backdrop-blur-xl">
       <div className="flex items-center gap-2 text-xs">
@@ -47,7 +50,9 @@ export function CollectionEditFormHeader({
         </Button>
         <span className="text-muted-foreground">{t("detail.collections")}</span>
         <span className="text-muted-foreground/50">/</span>
-        <span className="font-medium text-foreground">Edit object</span>
+        <span className="font-medium text-foreground">
+          {tRoot("untranslatedRecords.objects.edit.editObject")}
+        </span>
       </div>
 
       <div className="flex items-center gap-3">
@@ -61,7 +66,7 @@ export function CollectionEditFormHeader({
               onClick={onDeaccessionOpen}
             >
               <Archive className="mr-2 size-4" />
-              Deaccession
+              {tRoot("objects.bulkActions.deaccession")}
             </Button>
           ) : null}
           {collection.status === "active" && hasActiveLoan ? (
@@ -70,7 +75,7 @@ export function CollectionEditFormHeader({
               title={common("cannotDeaccession")}
             >
               <AlertOctagon className="mr-2 size-4" />
-              Cannot remove while on loan
+              {tRoot("untranslatedRecords.objects.edit.cannotRemoveOnLoan")}
             </div>
           ) : null}
         </PermissionGate>

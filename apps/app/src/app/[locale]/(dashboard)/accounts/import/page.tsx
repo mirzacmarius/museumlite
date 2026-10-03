@@ -87,18 +87,25 @@ const VALID_ACCOUNT_TYPES = [
 
 const VALID_ACCOUNT_TYPE_SET = new Set<string>(VALID_ACCOUNT_TYPES);
 
-function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
+type AccountImportTranslator = ReturnType<
+  typeof useScopedI18n<"untranslatedDashboard.accountsImport">
+>;
+
+function parseCSV(
+  text: string,
+  t: AccountImportTranslator,
+): { rows: ParsedRow[]; errors: string[] } {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) {
     return {
       rows: [],
-      errors: ["CSV must have a header row and at least one data row"],
+      errors: [t("csvMissingHeaderAndRows")],
     };
   }
 
   const headerLine = lines[0];
   if (!headerLine) {
-    return { rows: [], errors: ["Missing header row"] };
+    return { rows: [], errors: [t("csvMissingHeader")] };
   }
 
   const headers = headerLine
@@ -112,7 +119,11 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
   if (missingRequired.length > 0) {
     return {
       rows: [],
-      errors: [`Missing required columns: ${missingRequired.join(", ")}`],
+      errors: [
+        t("csvMissingRequiredColumns", {
+          columns: missingRequired.join(", "),
+        }),
+      ],
     };
   }
 
@@ -146,7 +157,10 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
 
     if (!accountType || !VALID_ACCOUNT_TYPE_SET.has(accountType)) {
       errors.push(
-        `Row ${i + 1}: Invalid accountType "${getValue("accountType")}". Use: lender, borrower, both, institution, or patron`,
+        t("invalidAccountType", {
+          row: i + 1,
+          value: getValue("accountType") || t("emptyValue"),
+        }),
       );
       continue;
     }
@@ -170,6 +184,26 @@ function parseCSV(text: string): { rows: ParsedRow[]; errors: string[] } {
   }
 
   return { rows, errors };
+}
+
+function formatAccountImportError(
+  error: string,
+  t: AccountImportTranslator,
+): string {
+  const invalidTypeMatch = error.match(
+    /^Row (\d+): Invalid accountType "([^"]*)"\. Use: lender, borrower, both, institution, or patron$/,
+  );
+  if (invalidTypeMatch?.[1] && invalidTypeMatch[2] !== undefined) {
+    return t("invalidAccountType", {
+      row: Number(invalidTypeMatch[1]),
+      value: invalidTypeMatch[2] || t("emptyValue"),
+    });
+  }
+
+  const rowMatch = error.match(/^Row (\d+):/);
+  return rowMatch?.[1]
+    ? t("rowImportFailed", { row: Number(rowMatch[1]) })
+    : t("errors.importFailed");
 }
 
 function parseCSVLine(line: string): string[] {
@@ -311,6 +345,7 @@ function AccountImportErrors({
   title: string;
   tone?: "destructive" | "warning";
 }) {
+  const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
   if (errors.length === 0) {
     return null;
   }
@@ -330,7 +365,11 @@ function AccountImportErrors({
         {errors.slice(0, 5).map((error) => (
           <li key={error}>{error}</li>
         ))}
-        {errors.length > 5 ? <li>... and {errors.length - 5} more</li> : null}
+        {errors.length > 5 ? (
+          <li>
+            {errors.length - 5} {tImport("moreErrors")}
+          </li>
+        ) : null}
       </ul>
     </div>
   );
@@ -353,6 +392,8 @@ function AccountImportPreviewStep({
   onStartImport: () => void;
   state: ImportState;
 }) {
+  const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
+  const tAccounts = useScopedI18n("accounts");
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -388,12 +429,12 @@ function AccountImportPreviewStep({
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Name/Business</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead>Contact</TableHead>
+              <TableHead>{tImport("type")}</TableHead>
+              <TableHead>{tImport("nameBusiness")}</TableHead>
+              <TableHead>{tImport("email")}</TableHead>
+              <TableHead>{tImport("phone")}</TableHead>
+              <TableHead>{tImport("city")}</TableHead>
+              <TableHead>{tImport("contact")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -404,7 +445,15 @@ function AccountImportPreviewStep({
                 <TableCell className="text-muted-foreground">
                   {rowIndex + 1}
                 </TableCell>
-                <TableCell className="capitalize">{row.accountType}</TableCell>
+                <TableCell className="capitalize">
+                  {row.accountType === "lender" ||
+                  row.accountType === "borrower" ||
+                  row.accountType === "both" ||
+                  row.accountType === "institution" ||
+                  row.accountType === "patron"
+                    ? tAccounts(`types.${row.accountType}`)
+                    : row.accountType}
+                </TableCell>
                 <TableCell>
                   {row.businessName ||
                     [row.firstName, row.lastName].filter(Boolean).join(" ") ||
@@ -420,7 +469,7 @@ function AccountImportPreviewStep({
         </Table>
         {state.rows.length > 20 ? (
           <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-            Showing 20 of {state.rows.length} rows
+            {tImport("showingTwentyOf")} {state.rows.length} {tImport("rows")}
           </div>
         ) : null}
       </div>
@@ -442,13 +491,14 @@ function AccountImportProgressStep({
     | undefined;
   totalRows: number;
 }) {
+  const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
   return (
     <div className="mx-auto max-w-md text-center">
       <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
-      <h2 className="text-xl font-semibold">Importing Accounts…</h2>
+      <h2 className="text-xl font-semibold">{tImport("importing")}</h2>
       <p className="mt-2 text-muted-foreground">
-        {importJob?.processedItems || 0} of {importJob?.totalItems || totalRows}{" "}
-        processed
+        {importJob?.processedItems || 0} {tImport("of")}{" "}
+        {importJob?.totalItems || totalRows} {tImport("processed")}
       </p>
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
         <div
@@ -476,28 +526,30 @@ function AccountImportCompleteStep({
   onReset: () => void;
   totalRows: number;
 }) {
+  const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
   return (
     <div className="mx-auto max-w-md text-center">
       <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
-      <h2 className="text-xl font-semibold">Import Complete</h2>
+      <h2 className="text-xl font-semibold">{tImport("importComplete")}</h2>
       <p className="mt-2 text-muted-foreground">
-        Successfully imported {importJob?.processedItems || totalRows} accounts
+        {tImport("successfullyImported")}{" "}
+        {importJob?.processedItems || totalRows} {tImport("accounts")}
       </p>
 
       <div className="mt-6">
         <AccountImportErrors
           errors={errors}
-          title={`${errors.length} rows had issues`}
+          title={tImport("rowsHadIssues", { count: errors.length })}
           tone="warning"
         />
       </div>
 
       <div className="mt-6 flex justify-center gap-4">
         <Button variant="outline" onClick={onReset}>
-          Import More
+          {tImport("importMore")}
         </Button>
         <Button asChild className="bg-primary hover:bg-primary/90">
-          <Link href="/accounts">View Accounts</Link>
+          <Link href="/accounts">{tImport("viewAccounts")}</Link>
         </Button>
       </div>
     </div>
@@ -506,6 +558,7 @@ function AccountImportCompleteStep({
 
 export default function ImportAccountsPage() {
   const t = useScopedI18n("accounts.csvImport");
+  const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
   const tAccounts = useScopedI18n("accounts");
   const _tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
@@ -527,29 +580,32 @@ export default function ImportAccountsPage() {
     state.jobId ? { jobId: state.jobId } : "skip",
   );
 
-  const handleFileSelect = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileSelect = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const { rows, errors } = parseCSV(text);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        const { rows, errors } = parseCSV(text, tImport);
 
-      setState({
-        step: "preview",
-        file,
-        rows,
-        errors,
-        jobId: null,
-      });
-    };
-    reader.readAsText(file);
+        setState({
+          step: "preview",
+          file,
+          rows,
+          errors,
+          jobId: null,
+        });
+      };
+      reader.readAsText(file);
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }, []);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [tImport],
+  );
 
   const handleStartImport = useCallback(async () => {
     if (!currentOrganizationId || state.rows.length === 0) return;
@@ -579,23 +635,29 @@ export default function ImportAccountsPage() {
           }),
         ),
       );
-      const allErrors = results.flatMap((result) => result.errors);
+      const allErrors = results.flatMap((result) =>
+        result.errors.map((error) => formatAccountImportError(error, tImport)),
+      );
 
       setState((prev) => ({
         ...prev,
         step: "complete",
         errors: [...prev.errors, ...allErrors],
       }));
-    } catch (err) {
+    } catch {
       setState((prev) => ({
         ...prev,
-        errors: [
-          ...prev.errors,
-          err instanceof Error ? err.message : t("errors.importFailed"),
-        ],
+        errors: [...prev.errors, t("errors.importFailed")],
       }));
     }
-  }, [currentOrganizationId, state.rows, createImportJob, importBatch]);
+  }, [
+    currentOrganizationId,
+    state.rows,
+    createImportJob,
+    importBatch,
+    t,
+    tImport,
+  ]);
 
   const handleReset = useCallback(() => {
     setState({

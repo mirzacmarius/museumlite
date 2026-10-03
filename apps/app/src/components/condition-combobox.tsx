@@ -8,12 +8,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronsUpDown } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 import { ConditionComboboxDeleteDialog } from "./condition-combobox-delete-dialog";
 import { ConditionComboboxListContent } from "./condition-combobox-list-content";
 import {
   type ConditionComboboxProps,
   formatConditionName,
-  STANDARD_CONDITIONS,
+  getStandardConditions,
 } from "./condition-combobox-types";
 
 export type { ConditionOption } from "./condition-combobox-types";
@@ -23,9 +24,11 @@ export function ConditionCombobox({
   organizationId,
   value,
   onValueChange,
-  placeholder = "Select condition...",
+  placeholder,
   disabled = false,
 }: ConditionComboboxProps) {
+  const translate = useI18n();
+  const standardConditions = getStandardConditions(translate);
   const [open, setOpen] = React.useState(false);
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
@@ -60,7 +63,7 @@ export function ConditionCombobox({
     }));
   }, [customConditions]);
 
-  const allOptions = [...STANDARD_CONDITIONS, ...customConditionOptions];
+  const allOptions = [...standardConditions, ...customConditionOptions];
   const selectedOption = allOptions.find(
     (option) => option.value.toLowerCase() === value?.toLowerCase(),
   );
@@ -72,7 +75,7 @@ export function ConditionCombobox({
     setInputValue("");
   };
 
-  const filteredSystemConditions = STANDARD_CONDITIONS.filter(
+  const filteredSystemConditions = standardConditions.filter(
     (condition) =>
       condition.label.toLowerCase().includes(inputValue.toLowerCase()) ||
       condition.description.toLowerCase().includes(inputValue.toLowerCase()),
@@ -139,7 +142,10 @@ export function ConditionCombobox({
             disabled={disabled}
           >
             <span className="truncate text-left flex-1 text-sm">
-              {selectedOption?.label || value || placeholder}
+              {selectedOption?.label ||
+                value ||
+                placeholder ||
+                translate("untranslatedComponents.conditions.selectCondition")}
             </span>
             <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
           </Button>

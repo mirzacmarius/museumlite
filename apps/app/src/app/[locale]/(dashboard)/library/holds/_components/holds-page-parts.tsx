@@ -1,12 +1,7 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Badge } from "@v1/ui/badge";
 import { Button } from "@v1/ui/button";
-import {
-  Bookmark,
-  CheckCircle,
-  Clock,
-  type LucideIcon,
-} from "lucide-react";
+import { Bookmark, CheckCircle, Clock, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type Translate = (key: string) => string;
@@ -80,15 +75,21 @@ export function HoldsStatisticsGrid({
         <p className="mt-2 text-2xl font-medium">{statistics.available}</p>
       </div>
       <div className="rounded-lg border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">{tHolds("stats.fulfilled")}</p>
+        <p className="text-sm text-muted-foreground">
+          {tHolds("stats.fulfilled")}
+        </p>
         <p className="mt-2 text-2xl font-medium">{statistics.fulfilled}</p>
       </div>
       <div className="rounded-lg border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">{tHolds("stats.expired")}</p>
+        <p className="text-sm text-muted-foreground">
+          {tHolds("stats.expired")}
+        </p>
         <p className="mt-2 text-2xl font-medium">{statistics.expired}</p>
       </div>
       <div className="rounded-lg border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">{tHolds("stats.placedToday")}</p>
+        <p className="text-sm text-muted-foreground">
+          {tHolds("stats.placedToday")}
+        </p>
         <p className="mt-2 text-2xl font-medium">{statistics.placedToday}</p>
       </div>
     </div>

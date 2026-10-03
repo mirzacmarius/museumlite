@@ -11,6 +11,7 @@ import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import dynamic from "next/dynamic";
 import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 
 interface ChartDataItem {
   month: string;
@@ -23,7 +24,7 @@ const LazyLineChart = dynamic(
     import("recharts").then((mod) => {
       const { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } = mod;
       return {
-        default: ({ data }: { data: ChartDataItem[] }) => (
+        default: ({ data, objectsAddedLabel }: { data: ChartDataItem[]; objectsAddedLabel: string }) => (
           <LineChart
             data={data}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -49,7 +50,7 @@ const LazyLineChart = dynamic(
               strokeWidth={2}
               dot={{ fill: CHART_COLORS.indigo, strokeWidth: 0, r: 4 }}
               activeDot={{ r: 6, strokeWidth: 0 }}
-              name="Objects Added"
+              name={objectsAddedLabel}
             />
           </LineChart>
         ),
@@ -57,17 +58,12 @@ const LazyLineChart = dynamic(
     }),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex h-[300px] items-center justify-center">
-        <div className="animate-pulse text-sm text-muted-foreground">
-          Loading chart…
-        </div>
-      </div>
-    ),
+    loading: () => <div className="h-[300px] animate-pulse rounded-md bg-muted/30" />,
   },
 );
 
 export function CollectionGrowthChart() {
+  const t = useI18n();
   const { currentOrganizationId } = useOrganization();
 
   const data = useQuery(
@@ -84,14 +80,14 @@ export function CollectionGrowthChart() {
   if (data.length === 0) {
     return (
       <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-        No data available
+        {t("untranslatedDashboard.analytics.noData")}
       </div>
     );
   }
 
   return (
     <ChartContainer height={300}>
-      <LazyLineChart data={data} />
+      <LazyLineChart data={data} objectsAddedLabel={t("untranslatedDashboard.analytics.objectsAdded")} />
     </ChartContainer>
   );
 }

@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 import type { MediaImportState } from "../media-import-types";
 
 interface MediaImportJob {
@@ -26,12 +27,15 @@ export function MediaImportCompleteStep({
   onReset,
   onGoToReviewUnmapped,
 }: MediaImportCompleteStepProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto max-w-md text-center pt-8">
       <CheckCircle2 className="mx-auto mb-4 size-12 text-green-500" />
       <h2 className="text-xl font-semibold">{t("mediaImport.complete")}</h2>
       <p className="mt-2 text-muted-foreground">
-        Processed {importJob?.processedItems} files
+        {tRoot("untranslatedRecords.collections.media.processedCount", {
+          count: importJob?.processedItems ?? 0,
+        })}
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4">
@@ -55,7 +59,9 @@ export function MediaImportCompleteStep({
 
       {state.uploadErrors.length > 0 && (
         <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-left">
-          <div className="font-medium text-destructive mb-2">Upload Errors</div>
+          <div className="font-medium text-destructive mb-2">
+            {tRoot("collections.mediaImport.uploadErrors")}
+          </div>
           <ul className="text-sm text-destructive space-y-1 max-h-32 overflow-y-auto">
             {state.uploadErrors.map((e) => (
               <li key={e}>{e}</li>
@@ -70,7 +76,9 @@ export function MediaImportCompleteStep({
             className="w-full bg-amber-600 hover:bg-amber-500"
             onClick={onGoToReviewUnmapped}
           >
-            Review {importJob?.failedMappings} Unmapped Files
+            {tRoot("library.acquisitions.actions.review")}{" "}
+            {importJob?.failedMappings}{" "}
+            {tRoot("untranslatedRecords.collections.media.unmappedFiles")}
           </Button>
         )}
         <div className="flex gap-3 justify-center">

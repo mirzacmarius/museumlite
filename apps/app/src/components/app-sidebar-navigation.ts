@@ -46,6 +46,7 @@ export interface NavigationGroup {
 }
 
 interface BuildSidebarNavigationInput {
+  translate: (key: string) => string;
   hasFeature: (featureId: FeatureId) => boolean;
   isLibraryModuleEnabled: boolean;
   isInsuranceModuleEnabled: boolean;
@@ -58,30 +59,58 @@ interface SidebarNavigation {
   navigationGroups: NavigationGroup[];
 }
 
-const PATRON_MANAGEMENT_NAV_ITEM = {
-  title: "Patron Management",
-  url: "/accounts?type=patron",
-  icon: Users,
-} satisfies NavigationItem;
-
 export function buildSidebarNavigation({
+  translate,
   hasFeature,
   isLibraryModuleEnabled,
   isInsuranceModuleEnabled,
   isLocationTrackingEnabled,
   canAccessAdministration,
 }: BuildSidebarNavigationInput): SidebarNavigation {
+  const patronManagementNavItem: NavigationItem = {
+    title: translate("untranslatedComponents.navigation.patronManagement"),
+    url: "/accounts?type=patron",
+    icon: Users,
+  };
   const navCoreInventory: NavigationItem[] = [
-    { title: "Overview", url: "/", icon: LayoutGrid },
-    { title: "Object Catalog", url: "/objects", icon: Database },
-    ...(isLocationTrackingEnabled
-      ? [{ title: "Location & Tracking", url: "/locations", icon: MapPin }]
-      : []),
-    { title: "Scan", url: "/scan", icon: QrCode },
-    { title: "Accessions", url: "/accessions", icon: FileCheck },
-    { title: "Deaccessions", url: "/deaccessions", icon: FileX },
     {
-      title: "Conservation",
+      title: translate("untranslatedComponents.navigation.overview"),
+      url: "/",
+      icon: LayoutGrid,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.objectCatalog"),
+      url: "/objects",
+      icon: Database,
+    },
+    ...(isLocationTrackingEnabled
+      ? [
+          {
+            title: translate(
+              "untranslatedComponents.navigation.locationTracking",
+            ),
+            url: "/locations",
+            icon: MapPin,
+          },
+        ]
+      : []),
+    {
+      title: translate("untranslatedComponents.navigation.scan"),
+      url: "/scan",
+      icon: QrCode,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.accessions"),
+      url: "/accessions",
+      icon: FileCheck,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.deaccessions"),
+      url: "/deaccessions",
+      icon: FileX,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.conservation"),
       url: "/conservation",
       icon: Activity,
       locked: !hasFeature("conservation"),
@@ -89,7 +118,7 @@ export function buildSidebarNavigation({
     ...(isInsuranceModuleEnabled
       ? [
           {
-            title: "Insurance",
+            title: translate("untranslatedComponents.navigation.insurance"),
             url: "/insurance",
             icon: Shield,
             locked: !hasFeature("conservation"),
@@ -100,29 +129,29 @@ export function buildSidebarNavigation({
 
   const navExhibitionsLoans: NavigationItem[] = [
     {
-      title: "Loans & Transport",
+      title: translate("untranslatedComponents.navigation.loansTransport"),
       url: "/loans",
       icon: Truck,
       locked: !hasFeature("loans"),
     },
     {
-      ...PATRON_MANAGEMENT_NAV_ITEM,
+      ...patronManagementNavItem,
       locked: !hasFeature("loans"),
     },
     {
-      title: "Transit Log",
+      title: translate("untranslatedComponents.navigation.transitLog"),
       url: "/transit",
       icon: Container,
       locked: !hasFeature("loans"),
     },
     {
-      title: "Exhibitions",
+      title: translate("untranslatedComponents.navigation.exhibitions"),
       url: "/exhibitions",
       icon: GalleryVerticalEnd,
       locked: !hasFeature("exhibitions"),
     },
     {
-      title: "Installations",
+      title: translate("untranslatedComponents.navigation.installations"),
       url: "/installations",
       icon: Hammer,
       locked: !hasFeature("installations"),
@@ -130,37 +159,41 @@ export function buildSidebarNavigation({
   ];
 
   const navLibrary: NavigationItem[] = [
-    { title: "Library Dashboard", url: "/library", icon: Library },
     {
-      title: "Catalog & Search",
+      title: translate("untranslatedComponents.navigation.libraryDashboard"),
+      url: "/library",
+      icon: Library,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.catalogSearch"),
       url: "/library/catalog",
       icon: BookOpen,
       locked: !isLibraryModuleEnabled,
     },
     {
-      title: "Circulation Desk",
+      title: translate("untranslatedComponents.navigation.circulationDesk"),
       url: "/library/circulation",
       icon: IdCard,
       locked: !isLibraryModuleEnabled,
     },
     {
-      title: "Holds",
+      title: translate("untranslatedComponents.navigation.holds"),
       url: "/library/holds",
       icon: Bookmark,
       locked: !isLibraryModuleEnabled,
     },
     {
-      ...PATRON_MANAGEMENT_NAV_ITEM,
+      ...patronManagementNavItem,
       locked: !isLibraryModuleEnabled,
     },
     {
-      title: "Fines & Fees",
+      title: translate("untranslatedComponents.navigation.finesFees"),
       url: "/library/fines",
       icon: Ticket,
       locked: !isLibraryModuleEnabled,
     },
     {
-      title: "Acquisitions",
+      title: translate("untranslatedComponents.navigation.acquisitions"),
       url: "/library/acquisitions",
       icon: ShoppingCart,
       locked: !isLibraryModuleEnabled,
@@ -169,39 +202,51 @@ export function buildSidebarNavigation({
 
   const navAdministration: NavigationItem[] = [
     {
-      title: "Analytics & Reports",
+      title: translate("untranslatedComponents.navigation.analyticsReports"),
       url: "/analytics",
       icon: ChartColumn,
       locked: !hasFeature("reporting"),
     },
-    { title: "Accounts & CRM", url: "/accounts", icon: Contact },
     {
-      title: "Public Portal",
+      title: translate("untranslatedComponents.navigation.accountsCrm"),
+      url: "/accounts",
+      icon: Contact,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.publicPortal"),
       url: "/portal",
       icon: Globe,
       locked: !hasFeature("public_portal"),
     },
-    { title: "Digital Assets", url: "/media", icon: Image },
     {
-      title: "Preferences",
+      title: translate("untranslatedComponents.navigation.digitalAssets"),
+      url: "/media",
+      icon: Image,
+    },
+    {
+      title: translate("untranslatedComponents.navigation.preferences"),
       url: "/settings/preferences",
       icon: SlidersHorizontal,
     },
-    { title: "Settings", url: "/settings/organization", icon: Settings2 },
+    {
+      title: translate("untranslatedComponents.navigation.settings"),
+      url: "/settings/organization",
+      icon: Settings2,
+    },
   ];
 
   return {
     topLevelNavigation: navCoreInventory,
     navigationGroups: [
       {
-        title: "Exhibitions & Loans",
+        title: translate("untranslatedComponents.navigation.exhibitionsLoans"),
         icon: Truck,
         items: navExhibitionsLoans,
       },
       ...(isLibraryModuleEnabled
         ? [
             {
-              title: "Library",
+              title: translate("untranslatedComponents.navigation.library"),
               icon: Library,
               items: navLibrary,
             },
@@ -210,7 +255,9 @@ export function buildSidebarNavigation({
       ...(canAccessAdministration
         ? [
             {
-              title: "Administration",
+              title: translate(
+                "untranslatedComponents.navigation.administration",
+              ),
               icon: Settings2,
               items: navAdministration,
             },

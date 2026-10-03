@@ -1,5 +1,7 @@
-import type * as React from "react";
+"use client";
 
+import type * as React from "react";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 
 const Card = ({
@@ -39,15 +41,18 @@ const CardTitle = ({
   ref,
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement> &
-  React.RefAttributes<HTMLParagraphElement>) => (
-  <h3
-    ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
-    {...props}
-  >
-    {children ?? <span className="sr-only">Card title</span>}
-  </h3>
-);
+  React.RefAttributes<HTMLParagraphElement>) => {
+  const { messages } = useUiLocale();
+  return (
+    <h3
+      ref={ref}
+      className={cn("font-semibold leading-none tracking-tight", className)}
+      {...props}
+    >
+      {children ?? <span className="sr-only">{messages.card.title}</span>}
+    </h3>
+  );
+};
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = ({

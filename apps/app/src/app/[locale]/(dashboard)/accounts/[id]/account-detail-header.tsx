@@ -16,6 +16,7 @@ import { Button } from "@v1/ui/button";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface AccountDetailHeaderProps {
   accountId: Id<"accounts">;
@@ -32,13 +33,14 @@ export function AccountDetailHeader({
   isDeleting,
   onDelete,
 }: AccountDetailHeaderProps) {
+  const t = useScopedI18n("untranslatedDashboard.accounts");
   return (
     <div className="flex items-center justify-between rounded-lg border border-border bg-card p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/accounts">
             <ArrowLeft className="mr-2 size-4" />
-            Back
+            {t("back")}
           </Link>
         </Button>
         <div>
@@ -46,7 +48,7 @@ export function AccountDetailHeader({
             <h1 className="text-xl font-medium">{businessName}</h1>
           </div>
           <p className="font-mono text-sm text-muted-foreground">
-            Account: {accountNumber}
+            {t("accountNumber", { number: accountNumber })}
           </p>
         </div>
       </div>
@@ -55,7 +57,7 @@ export function AccountDetailHeader({
           <Button variant="outline" size="sm" asChild>
             <Link href={`/accounts/${accountId}/edit`}>
               <Edit className="mr-2 size-4" />
-              Edit
+              {t("edit")}
             </Link>
           </Button>
         </PermissionGate>
@@ -69,28 +71,26 @@ export function AccountDetailHeader({
                 disabled={isDeleting}
               >
                 <Trash2 className="mr-2 size-4" />
-                Delete
+                {t("delete")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Account</AlertDialogTitle>
+                <AlertDialogTitle>{t("deleteAccountTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete "{businessName}"? This action
-                  cannot be undone. If this account is used in any loans, it
-                  cannot be deleted.
+                  {t("deleteAccountDescription", { name: businessName })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isDeleting}>
-                  Cancel
+                  {t("cancel")}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={onDelete}
                   disabled={isDeleting}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {isDeleting ? "Deleting..." : "Delete Account"}
+                  {isDeleting ? t("deleting") : t("deleteAccount")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

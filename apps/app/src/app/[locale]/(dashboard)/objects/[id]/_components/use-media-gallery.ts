@@ -8,8 +8,8 @@ import { type DragEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useScopedI18n } from "@/locales/client";
 import {
-  getSketchfabEmbedsFromLinks,
   type CollectionLink,
+  getSketchfabEmbedsFromLinks,
 } from "./media-gallery-utils";
 
 interface UseMediaGalleryOptions {
