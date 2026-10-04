@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import { convexTest } from "convex-test";
 import polarSchema from "../../../node_modules/@convex-dev/polar/src/component/schema";
 import { describe, expect, test } from "vitest";

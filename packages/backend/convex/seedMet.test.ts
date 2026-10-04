@@ -1,4 +1,5 @@
 import { convexTest } from "convex-test";
+import type { TestConvex } from "convex-test";
 import { expect, test } from "vitest";
 
 import { modules } from "../tests/testSetup";
@@ -14,7 +15,7 @@ function buildLocationCode(locationCode: string) {
 }
 
 async function createOrganizationMembership(
-  t: ReturnType<typeof convexTest<typeof schema, typeof modules>>,
+  t: TestConvex<typeof schema>,
   userId: Id<"users">,
   name: string,
 ) {

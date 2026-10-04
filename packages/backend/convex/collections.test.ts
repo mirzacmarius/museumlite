@@ -511,7 +511,7 @@ test("collections.create rejects module collection types when module is disabled
 test("coins and stamps details require enabled module and surface in module details", async () => {
   const t = convexTest(schema, modules);
 
-  const { _organizationId, userId, collectionId } = await t.run(async (ctx) => {
+  const { userId, collectionId } = await t.run(async (ctx) => {
     const [
       userId,
       organizationId,
