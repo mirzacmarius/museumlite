@@ -56,6 +56,44 @@ function applyPatch(patchFile) {
   return true;
 }
 
+function ensureBackendTypescriptLink() {
+  const backendNodeModulesDir = path.join(
+    __dirname,
+    "..",
+    "packages",
+    "backend",
+    "node_modules",
+  );
+  const backendTypescriptDir = path.join(backendNodeModulesDir, "typescript");
+  const rootTypescriptDir = path.join(nodeModulesDir, "typescript");
+
+  if (!fs.existsSync(rootTypescriptDir)) return true;
+  if (fs.existsSync(backendTypescriptDir)) return true;
+
+  try {
+    if (fs.lstatSync(backendTypescriptDir).isSymbolicLink()) {
+      fs.unlinkSync(backendTypescriptDir);
+    } else {
+      return true;
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+
+  fs.mkdirSync(backendNodeModulesDir, { recursive: true });
+  const relativeTarget = path.relative(
+    backendNodeModulesDir,
+    rootTypescriptDir,
+  );
+  fs.symlinkSync(
+    relativeTarget,
+    backendTypescriptDir,
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  console.log("Linked backend TypeScript compiler");
+  return true;
+}
+
 // Find and apply all patches
 if (fs.existsSync(patchesDir)) {
   const patches = fs
@@ -75,6 +113,8 @@ if (fs.existsSync(patchesDir)) {
       success = false;
     }
   });
+
+  success = ensureBackendTypescriptLink() && success;
 
   process.exit(success ? 0 : 1);
 } else {
