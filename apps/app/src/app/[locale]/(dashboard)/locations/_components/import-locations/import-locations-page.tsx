@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Download } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
+import { ImportJobUnavailable } from "@/components/import-job-unavailable";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { parseCSV } from "../../import/import-csv";
@@ -33,6 +34,10 @@ export function ImportLocationsPage() {
     api.imports.getImportJob,
     state.jobId ? { jobId: state.jobId } : "skip",
   );
+  const isJobUnavailable =
+    state.jobId !== null &&
+    importJob === null &&
+    (state.step === "importing" || state.step === "complete");
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,7 +179,9 @@ export function ImportLocationsPage() {
               />
             )}
 
-            {state.step === "importing" && (
+            {isJobUnavailable && <ImportJobUnavailable onReset={handleReset} />}
+
+            {state.step === "importing" && !isJobUnavailable && (
               <ImportProgressStep
                 processedItems={importJob?.processedItems || 0}
                 totalItems={importJob?.totalItems || state.rows.length}
@@ -182,7 +189,7 @@ export function ImportLocationsPage() {
               />
             )}
 
-            {state.step === "complete" && (
+            {state.step === "complete" && !isJobUnavailable && (
               <ImportCompleteStep
                 importedCount={importJob?.processedItems || state.rows.length}
                 runtimeErrors={state.runtimeErrors}

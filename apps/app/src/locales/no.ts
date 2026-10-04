@@ -2162,6 +2162,10 @@ export default {
     },
   },
   common: {
+    importJobUnavailable: "Importjobb utilgjengelig",
+    importJobUnavailableDescription:
+      "Denne jobben er utilgjengelig, eller du har ikke lenger tilgang til den. Velg riktig organisasjon eller start en ny import.",
+    startNewImport: "Start en ny import",
     loading: "Laster...",
     saving: "Lagrer...",
     creating: "Oppretter...",

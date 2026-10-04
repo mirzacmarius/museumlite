@@ -2169,6 +2169,10 @@ export default {
     },
   },
   common: {
+    importJobUnavailable: "Importación no disponible",
+    importJobUnavailableDescription:
+      "Esta importación no está disponible o ya no tienes permiso para verla. Selecciona la organización correcta o inicia una nueva importación.",
+    startNewImport: "Iniciar una nueva importación",
     loading: "Cargando...",
     saving: "Guardando...",
     creating: "Creando...",
