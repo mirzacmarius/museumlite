@@ -32,6 +32,7 @@ import type * as collectionGroups from "../collectionGroups.js";
 import type * as collections from "../collections.js";
 import type * as conditionOptions from "../conditionOptions.js";
 import type * as conservationTreatments from "../conservationTreatments.js";
+import type * as environmentalDevices from "../environmentalDevices.js";
 import type * as contacts from "../contacts.js";
 import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
@@ -210,6 +211,7 @@ declare const fullApi: ApiFromModules<{
   collections: typeof collections;
   conditionOptions: typeof conditionOptions;
   conservationTreatments: typeof conservationTreatments;
+  environmentalDevices: typeof environmentalDevices;
   contacts: typeof contacts;
   crons: typeof crons;
   dashboard: typeof dashboard;
@@ -386,4 +388,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   polar: import("@convex-dev/polar/_generated/component.js").ComponentApi<"polar">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };

@@ -167,6 +167,152 @@ const listObjects = httpAction(async (ctx, request) => {
   });
 });
 
+const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
+  const json = (status: number, body: Record<string, unknown>) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    });
+  const authorization = request.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) {
+    return json(401, { error: "invalid_device_credential" });
+  }
+  const credential = authorization.slice("Bearer ".length).trim();
+  if (!credential || credential.length > 256) {
+    return json(401, { error: "invalid_device_credential" });
+  }
+  if (
+    !request.headers
+      .get("Content-Type")
+      ?.toLowerCase()
+      .includes("application/json")
+  ) {
+    return json(400, { error: "invalid_content_type" });
+  }
+  if (!request.body) return json(400, { error: "invalid_payload" });
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  while (true) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    totalBytes += chunk.value.byteLength;
+    if (totalBytes > 4096) {
+      await reader.cancel();
+      return json(413, { error: "payload_too_large" });
+    }
+    chunks.push(chunk.value);
+  }
+  const bodyBytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bodyBytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  const bodyText = new TextDecoder().decode(bodyBytes);
+
+  let body: unknown;
+  try {
+    body = JSON.parse(bodyText);
+  } catch {
+    return json(400, { error: "invalid_payload" });
+  }
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return json(400, { error: "invalid_payload" });
+  }
+  const payload = body as Record<string, unknown>;
+  const temperature = payload.temperature;
+  const humidity = payload.humidity;
+  if (
+    typeof payload.readingId !== "string" ||
+    !payload.readingId.trim() ||
+    payload.readingId !== payload.readingId.trim() ||
+    payload.readingId.length > 128 ||
+    typeof payload.probeId !== "string" ||
+    !payload.probeId.trim() ||
+    payload.probeId !== payload.probeId.trim() ||
+    payload.probeId.length > 100 ||
+    (typeof payload.timestamp !== "number" &&
+      typeof payload.timestamp !== "string") ||
+    (typeof payload.timestamp === "string" &&
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+        payload.timestamp,
+      )) ||
+    typeof temperature !== "object" ||
+    temperature === null ||
+    Array.isArray(temperature) ||
+    typeof humidity !== "object" ||
+    humidity === null ||
+    Array.isArray(humidity)
+  ) {
+    return json(400, { error: "invalid_payload" });
+  }
+  const timestamp =
+    typeof payload.timestamp === "number"
+      ? payload.timestamp
+      : Date.parse(payload.timestamp);
+  const temp = temperature as Record<string, unknown>;
+  const humid = humidity as Record<string, unknown>;
+  if (
+    !Number.isFinite(timestamp) ||
+    typeof temp.value !== "number" ||
+    !Number.isFinite(temp.value) ||
+    typeof humid.value !== "number" ||
+    !Number.isFinite(humid.value) ||
+    (temp.unit !== "C" &&
+      temp.unit !== "°C" &&
+      temp.unit !== "F" &&
+      temp.unit !== "°F") ||
+    (humid.unit !== "%" && humid.unit !== "percent")
+  ) {
+    return json(400, { error: "invalid_measurement" });
+  }
+  const normalizedTemperature =
+    temp.unit === "F" || temp.unit === "°F"
+      ? ((temp.value - 32) * 5) / 9
+      : temp.value;
+  const now = Date.now();
+  if (
+    normalizedTemperature < -100 ||
+    normalizedTemperature > 100 ||
+    humid.value < 0 ||
+    humid.value > 100 ||
+    timestamp > now + 300_000 ||
+    timestamp < now - 90 * 24 * 60 * 60 * 1000
+  ) {
+    return json(400, { error: "measurement_out_of_range" });
+  }
+  const result = await ctx.runMutation(internal.environmentalDevices.ingest, {
+    credential,
+    readingId: payload.readingId,
+    probeId: payload.probeId,
+    observedAt: timestamp,
+    temperature: normalizedTemperature,
+    humidity: humid.value,
+  });
+  if (!result.accepted) {
+    return json(result.rateLimited ? 429 : result.conflict ? 409 : 401, {
+      accepted: result.duplicate,
+      duplicate: result.duplicate,
+      error: result.rateLimited
+        ? "rate_limit_exceeded"
+        : result.conflict
+          ? "reading_id_conflict"
+          : "invalid_reading_or_device",
+    });
+  }
+  return json(result.duplicate ? 200 : 202, {
+    accepted: true,
+    duplicate: result.duplicate,
+  });
+});
+
+http.route({
+  path: "/v1/environmental-readings",
+  method: "POST",
+  handler: receiveEnvironmentalReading,
+});
+
 http.route({
   path: "/v1/objects",
   method: "GET",

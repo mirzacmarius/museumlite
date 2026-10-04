@@ -2355,12 +2355,7 @@ export const recordEnvironmentalReading = mutation({
     humidity: v.optional(v.number()),
     lightLevel: v.optional(v.number()),
     uvLevel: v.optional(v.number()),
-    source: v.union(
-      v.literal("manual"),
-      v.literal("sensor"),
-      v.literal("imported"),
-    ),
-    sensorId: v.optional(v.string()),
+    source: v.literal("manual"),
     notes: v.optional(v.string()),
   },
   returns: v.object({
@@ -2371,22 +2366,14 @@ export const recordEnvironmentalReading = mutation({
   }),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId && args.source !== "sensor") {
-      throw new Error("Not authenticated");
-    }
+    if (!userId) throw new Error("Not authenticated");
 
     const location = await ctx.db.get(args.locationId);
     if (!location) {
       throw new Error("Location not found");
     }
 
-    if (userId) {
-      await requirePermission(
-        ctx,
-        location.organizationId,
-        "collections.update",
-      );
-    }
+    await requirePermission(ctx, location.organizationId, "collections.update");
 
     // Check thresholds and generate violations
     const violations: string[] = [];
@@ -2465,6 +2452,7 @@ export const recordEnvironmentalReading = mutation({
       });
     }
 
+    const recordedAt = Date.now();
     const readingId = await ctx.db.insert("environmentalReadings", {
       organizationId: location.organizationId,
       locationId: args.locationId,
@@ -2472,13 +2460,30 @@ export const recordEnvironmentalReading = mutation({
       humidity: args.humidity,
       lightLevel: args.lightLevel,
       uvLevel: args.uvLevel,
-      recordedAt: Date.now(),
+      recordedAt,
+      observedAt: recordedAt,
+      receivedAt: recordedAt,
       recordedBy: userId ?? undefined,
-      source: args.source,
-      sensorId: args.sensorId,
+      source: "manual",
       notes: args.notes,
       alertTriggered,
       alertId,
+    });
+
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: location.organizationId,
+      userId,
+      action: "recorded_environmental_reading",
+      entityType: "environmentalReading",
+      entityId: readingId,
+      changes: {
+        locationId: args.locationId,
+        source: "manual",
+        temperature: args.temperature,
+        humidity: args.humidity,
+        lightLevel: args.lightLevel,
+        uvLevel: args.uvLevel,
+      },
     });
 
     return {
