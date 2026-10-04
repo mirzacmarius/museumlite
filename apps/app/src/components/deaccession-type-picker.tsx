@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowRightLeft, DollarSign, Trash2 } from "lucide-react";
+import { Archive, ArrowRightLeft, DollarSign } from "lucide-react";
 import type {
   DeaccessionWorkflowConfig,
   RemovalType,
@@ -71,31 +71,8 @@ export function DeaccessionTypePicker({
         <div className="flex-1">
           <h3 className="font-semibold">Archive Object</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Remove from the active collection but preserve all data, history,
-            and media. The object can be restored later.
-          </p>
-          <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-            Submitted to deaccession approval before the object is archived
-          </p>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelect("deleted")}
-        className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
-      >
-        <div className="rounded-full bg-red-500/10 p-2">
-          <Trash2 className="size-5 text-red-500" />
-        </div>
-        <div className="flex-1">
-          <h3 className="font-semibold">Delete Object</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Hide this object from the main catalog. Use this if it was added
-            incorrectly or is a duplicate.
-          </p>
-          <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-            Submitted to deaccession approval before the object is deleted
+            Withdraw from routine views while preserving the register, linked
+            evidence, and media. An authorized user can restore it later.
           </p>
         </div>
       </button>

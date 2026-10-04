@@ -1,4 +1,4 @@
-export type RemovalType = "sold" | "archived" | "deleted" | "move";
+export type RemovalType = "sold" | "archived" | "move";
 export type AccessionMode = "keep" | "auto" | "manual";
 
 export interface DeaccessionDialogProps {

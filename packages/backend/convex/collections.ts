@@ -15,29 +15,26 @@ import { customFieldValue } from "./schema";
 import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
-import { deleteCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import {
   getLocationPathStrings,
   isImageMedia,
 } from "./utils/collectionDisplayHelpers";
 import {
   archiveCollectionHandler,
-  countDeletedCollectionsHandler,
-  deleteCollectionHandler,
   restoreCollectionHandler,
-  softDeleteCollectionHandler,
 } from "./utils/collectionDisposition";
+import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import {
   filterCollectionListPage,
   getCollectionsWithOpenDeaccessions,
   toCollectionListPaginationResult,
 } from "./utils/collectionListHelpers";
-import {
-  clearCollectionOptionUsages,
-  syncCollectionOptionUsages,
-} from "./utils/collectionOptionUsages";
+import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
-import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
+import {
+  assertCollectionNotOnLoan,
+  collectionHasOccupyingLoan,
+} from "./utils/loanOccupancy";
 import {
   type CollectionType,
   getCollectionTypeModuleRequirement,
@@ -446,333 +443,6 @@ async function syncCollectionGroupMemberships(
         }
       }),
     ),
-  ] as const);
-}
-
-async function deleteStorageIds(
-  ctx: MutationCtx,
-  storageIds: Iterable<Id<"_storage"> | undefined>,
-) {
-  await Promise.all(
-    Array.from(storageIds).map(async (storageId) => {
-      if (storageId) {
-        await ctx.storage.delete(storageId);
-      }
-    }),
-  );
-}
-
-async function deleteCollectionMedia(
-  ctx: MutationCtx,
-  collectionId: Id<"collections">,
-) {
-  const mediaFiles = await ctx.db
-    .query("mediaFiles")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-
-  await Promise.all(
-    Array.from(mediaFiles).map(async (media) => {
-      const [mediaVersions, editHistory, downloads] = await Promise.all([
-        ctx.db
-          .query("mediaVersions")
-          .withIndex("by_original_media", (q) =>
-            q.eq("originalMediaId", media._id),
-          )
-          .collect(),
-        ctx.db
-          .query("mediaEditHistory")
-          .withIndex("by_media", (q) => q.eq("mediaId", media._id))
-          .collect(),
-        ctx.db
-          .query("mediaDownloads")
-          .withIndex("by_media", (q) => q.eq("mediaId", media._id))
-          .collect(),
-      ] as const);
-      await Promise.all([
-        deleteStorageIds(
-          ctx,
-          mediaVersions.map((version) => version.storageId),
-        ),
-        Promise.all(
-          Array.from(mediaVersions).map(async (version) => {
-            await ctx.db.delete(version._id);
-          }),
-        ),
-        Promise.all(
-          Array.from(editHistory).map(async (entry) => {
-            await ctx.db.delete(entry._id);
-          }),
-        ),
-        Promise.all(
-          Array.from(downloads).map(async (download) => {
-            await ctx.db.delete(download._id);
-          }),
-        ),
-        deleteStorageIds(ctx, [media.storageId, media.thumbnailStorageId]),
-        ctx.db.delete(media._id),
-      ] as const);
-    }),
-  );
-}
-
-async function deleteCollectionDependents(
-  ctx: MutationCtx,
-  collectionId: Id<"collections">,
-) {
-  await deleteCollectionMedia(ctx, collectionId);
-
-  await Promise.all([
-    clearCollectionOptionUsages(ctx, collectionId),
-    (async () => {
-      const collectionGroupItems = await ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(collectionGroupItems).map(async (item) => {
-          await ctx.db.delete(item._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const objectComments = await ctx.db
-        .query("objectComments")
-        .withIndex("by_object", (q) => q.eq("objectId", collectionId))
-        .collect();
-      await Promise.all([
-        Promise.all(
-          Array.from(objectComments).map(async (comment) => {
-            await ctx.db.delete(comment._id);
-          }),
-        ),
-        deleteCollectionDetailRecords(ctx, collectionId),
-      ]);
-    })(),
-    (async () => {
-      const accessions = await ctx.db
-        .query("accessions")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(accessions).map(async (accession) => {
-          await ctx.db.patch(accession._id, { collectionId: undefined });
-        }),
-      );
-    })(),
-    (async () => {
-      const deaccessions = await ctx.db
-        .query("deaccessions")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(deaccessions).map(async (deaccession) => {
-          await deleteStorageIds(ctx, [
-            deaccession.proceedsReceiptDocument,
-            ...(deaccession.regulatoryApprovalDocuments ?? []),
-          ]);
-          await ctx.db.delete(deaccession._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const appraisals = await ctx.db
-        .query("appraisals")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(appraisals).map(async (appraisal) => {
-          await Promise.all([
-            deleteStorageIds(ctx, appraisal.documents ?? []),
-            ctx.db.delete(appraisal._id),
-          ]);
-        }),
-      );
-    })(),
-    (async () => {
-      const locationHistory = await ctx.db
-        .query("locationHistory")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(locationHistory).map(async (history) => {
-          await ctx.db.delete(history._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const locationMoveRequests = await ctx.db
-        .query("locationMoveRequests")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(locationMoveRequests).map(async (request) => {
-          await ctx.db.delete(request._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const organizationMoveRequests = await ctx.db
-        .query("organizationMoveRequests")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(organizationMoveRequests).map(async (request) => {
-          await ctx.db.delete(request._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const loanItems = await ctx.db
-        .query("loanItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      const conditionReportsByLoanItem = await Promise.all(
-        Array.from(loanItems).map((loanItem) =>
-          ctx.db
-            .query("conditionReports")
-            .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItem._id))
-            .collect()
-            .then((conditionReports) => ({
-              loanItemId: loanItem._id,
-              conditionReports,
-            })),
-        ),
-      );
-      await Promise.all(
-        conditionReportsByLoanItem.flatMap(
-          ({ loanItemId, conditionReports }) => [
-            ...Array.from(conditionReports).flatMap((report) => [
-              deleteStorageIds(ctx, report.photos ?? []),
-              ctx.db.delete(report._id),
-            ]),
-            ctx.db.delete(loanItemId),
-          ],
-        ),
-      );
-    })(),
-    (async () => {
-      const conditionDisputes = await ctx.db
-        .query("conditionDisputes")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(conditionDisputes).map(async (dispute) => {
-          await deleteStorageIds(ctx, [
-            ...(dispute.conditionBeforePhotos ?? []),
-            ...(dispute.conditionAfterPhotos ?? []),
-            ...(dispute.investigationPhotos ?? []),
-          ]);
-          await ctx.db.delete(dispute._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const conservationTreatments = await ctx.db
-        .query("conservationTreatments")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(conservationTreatments).map(async (treatment) => {
-          await ctx.db.delete(treatment._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const assessmentSchedules = await ctx.db
-        .query("assessmentSchedules")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(assessmentSchedules).map(async (schedule) => {
-          await ctx.db.delete(schedule._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const exhibitions = await ctx.db
-        .query("exhibitions")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(exhibitions).map(async (exhibition) => {
-          const [exhibitionObjects, exhibitionDocuments] = await Promise.all([
-            ctx.db
-              .query("exhibitionObjects")
-              .withIndex("by_exhibition", (q) =>
-                q.eq("exhibitionId", exhibition._id),
-              )
-              .collect(),
-            ctx.db
-              .query("exhibitionDocuments")
-              .withIndex("by_exhibition", (q) =>
-                q.eq("exhibitionId", exhibition._id),
-              )
-              .collect(),
-          ] as const);
-          await Promise.all([
-            Promise.all(
-              Array.from(exhibitionObjects).map(async (exhibitionObject) => {
-                await ctx.db.delete(exhibitionObject._id);
-              }),
-            ),
-            Promise.all(
-              Array.from(exhibitionDocuments).map(async (document) => {
-                await Promise.all([
-                  deleteStorageIds(ctx, [document.storageId]),
-                  ctx.db.delete(document._id),
-                ]);
-              }),
-            ),
-            ctx.db.delete(exhibition._id),
-          ] as const);
-        }),
-      );
-    })(),
-    (async () => {
-      const exhibitionObjects = await ctx.db
-        .query("exhibitionObjects")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(exhibitionObjects).map(async (exhibitionObject) => {
-          await ctx.db.delete(exhibitionObject._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const transitItems = await ctx.db
-        .query("transitItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(transitItems).map(async (transitItem) => {
-          await ctx.db.delete(transitItem._id);
-        }),
-      );
-    })(),
-    (async () => {
-      const libraryItems = await ctx.db
-        .query("libraryItems")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(libraryItems).map(async (libraryItem) => {
-          await ctx.db.patch(libraryItem._id, { collectionId: undefined });
-        }),
-      );
-    })(),
-    (async () => {
-      const insuranceCoverages = await ctx.db
-        .query("insuranceCoverages")
-        .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-        .collect();
-      await Promise.all(
-        Array.from(insuranceCoverages).map(async (coverage) => {
-          await ctx.db.patch(coverage._id, { collectionId: undefined });
-        }),
-      );
-    })(),
   ] as const);
 }
 
@@ -1954,6 +1624,10 @@ export const search = query({
         return false;
       }
 
+      if (collection.status === "archived" && args.status !== "archived") {
+        return false;
+      }
+
       if (
         collection.status === "deaccessioned" &&
         args.status !== "deaccessioned"
@@ -2229,17 +1903,6 @@ export const update = mutation({
 });
 
 /**
- * Delete collection (soft delete - mark as deaccessioned)
- */
-export const deleteCollection = mutation({
-  args: {
-    collectionId: v.id("collections"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => deleteCollectionHandler(ctx, args),
-});
-
-/**
  * Archive collection - hides from normal views but preserves all data
  */
 export const archiveCollection = mutation({
@@ -2252,75 +1915,53 @@ export const archiveCollection = mutation({
 });
 
 /**
- * Soft delete collection - moves to trash, can be permanently deleted later
+ * Museum records are retained permanently. Use archiveCollection to withdraw
+ * a record from routine catalog views while keeping its register evidence.
  */
-export const softDeleteCollection = mutation({
+export const deleteCollection = mutation({
   args: {
     collectionId: v.id("collections"),
-    reason: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => softDeleteCollectionHandler(ctx, args),
-});
-
-export const countDeletedCollections = query({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.number(),
-  handler: async (ctx, args) => countDeletedCollectionsHandler(ctx, args),
-});
-
-export const emptyDeletedCollections = mutation({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  returns: v.object({
-    deletedCount: v.number(),
-  }),
   handler: async (ctx, args) => {
-    const [userId] = await Promise.all([
+    const [userId, collection] = await Promise.all([
       getAuthUserId(ctx),
-      requirePermission(ctx, args.organizationId, "collections.delete"),
+      ctx.db.get(args.collectionId),
     ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    const deletedCollections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "deleted"),
-      )
-      .collect();
-
-    const deleteResults = await Promise.all(
-      Array.from(deletedCollections).map(async (collection) => {
-        await deleteCollectionDependents(ctx, collection._id);
-        await ctx.db.delete(collection._id);
-        return 1;
-      }),
+    if (!userId) throw new Error("Not authenticated");
+    if (!collection) throw new Error("Collection not found");
+    await assertCollectionNotOnLoan(
+      ctx,
+      args.collectionId,
+      "Cannot deaccession an object that is currently on loan",
     );
-    const deletedCount = deleteResults.reduce<number>(
-      (total, deleted) => total + deleted,
-      0,
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.delete",
     );
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: args.organizationId,
-      userId,
-      action: "emptied_deleted_collections",
-      entityType: "collection",
-      entityId: args.organizationId,
-      changes: { deletedCount },
+    await markCollectionDeaccessioned(ctx, {
+      collectionId: args.collectionId,
+      changedBy: userId,
     });
-
-    return { deletedCount };
+    await ctx.runMutation(internal.audit.logAction, {
+      organizationId: collection.organizationId,
+      userId,
+      action: "deaccessioned_collection",
+      entityType: "collection",
+      entityId: args.collectionId,
+      changes: {
+        accessionNumber: collection.accessionNumber,
+        title: collection.title,
+        previousStatus: collection.status,
+      },
+    });
+    return null;
   },
 });
 
 /**
- * Restore collection from archived or deleted status
+ * Restore collection from archived or legacy deleted status.
  */
 export const restoreCollection = mutation({
   args: {
