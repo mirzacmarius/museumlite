@@ -663,6 +663,10 @@ export default {
     },
   },
   common: {
+    importJobUnavailable: "Import indisponibil",
+    importJobUnavailableDescription:
+      "Acest import nu este disponibil sau nu mai ai permisiunea să îl vezi. Selectează organizația corectă sau începe un import nou.",
+    startNewImport: "Începe un import nou",
     loading: "Se încarcă...",
     saving: "Se salvează...",
     creating: "Se creează...",

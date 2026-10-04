@@ -2345,7 +2345,15 @@ export const getChildObjects = query({
       .take(CHILD_OBJECT_CAP + 1);
     const truncated = page.length > CHILD_OBJECT_CAP;
 
-    const tasks = [];
+    const tasks: Array<
+      Promise<{
+        _id: Id<"collections">;
+        title: string;
+        accessionNumber: string;
+        status: Doc<"collections">["status"];
+        thumbnailUrl: string | null;
+      }>
+    > = [];
     for (const child of page.slice(0, CHILD_OBJECT_CAP)) {
       if (child.organizationId !== collection.organizationId) continue;
       tasks.push(
@@ -2440,7 +2448,14 @@ export const getSiblingObjects = query({
       )
       .take(5);
 
-    const tasks = [];
+    const tasks: Array<
+      Promise<{
+        _id: Id<"collections">;
+        title: string;
+        accessionNumber: string;
+        thumbnailUrl: string | null;
+      }>
+    > = [];
     for (const sibling of siblings) {
       if (
         sibling._id === args.collectionId ||

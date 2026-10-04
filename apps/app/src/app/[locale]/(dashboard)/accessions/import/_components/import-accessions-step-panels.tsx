@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import { useQuery } from "convex/react";
 import type { RefObject } from "react";
 import type { FieldMapping } from "@/components/import-field-mapper";
+import { ImportJobUnavailable } from "@/components/import-job-unavailable";
 import type { ImportState } from "./import-accessions-types";
 import { ImportAccessionsCompleteStep } from "./steps/import-accessions-complete-step";
 import { ImportAccessionsImportingStep } from "./steps/import-accessions-importing-step";
@@ -41,6 +42,14 @@ export function ImportAccessionsStepPanels({
     api.imports.getImportJob,
     state.jobId ? { jobId: state.jobId } : "skip",
   );
+
+  if (
+    state.jobId &&
+    (state.step === "importing" || state.step === "complete") &&
+    importJob === null
+  ) {
+    return <ImportJobUnavailable onReset={handleReset} />;
+  }
 
   if (state.step === "upload") {
     return (
