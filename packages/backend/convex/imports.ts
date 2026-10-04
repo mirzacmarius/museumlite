@@ -14,6 +14,7 @@ import { normalizeAccessionImportRow } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
+  hasPermission,
   requireLocationAdminPermission,
   requirePermission,
 } from "./utils/permissions";
@@ -131,6 +132,9 @@ export const getImportJob = query({
 
     const job = await ctx.db.get(args.jobId);
     if (!job) return null;
+    if (!(await hasPermission(ctx, job.organizationId, "collections.create"))) {
+      return null;
+    }
 
     return {
       _id: job._id,
@@ -170,6 +174,11 @@ export const listImportJobs = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
+    if (
+      !(await hasPermission(ctx, args.organizationId, "collections.create"))
+    ) {
+      return [];
+    }
 
     const jobs = await ctx.db
       .query("importJobs")
