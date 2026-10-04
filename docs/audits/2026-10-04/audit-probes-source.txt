@@ -1,0 +1,86 @@
+import { test, expect } from "/Users/marius/Developer/museumlite/node_modules/vitest/dist/index.js";
+import { createConvexTest, createOrgUserWithPermissions, authedForUser, createOrgUserCollectionWithPermissions } from "/Users/marius/Developer/museumlite/packages/backend/tests/testHarness";
+import { api, internal } from "/Users/marius/Developer/museumlite/packages/backend/convex/_generated/api";
+
+test("audit: import jobs reveal another tenant's diagnostics", async () => {
+ const t=createConvexTest();
+ const a=await createOrgUserWithPermissions(t,["collections.create"]);
+ const b=await createOrgUserWithPermissions(t,["collections.create"]);
+ const jobId=await t.run(ctx=>ctx.db.insert("importJobs",{organizationId:b.organizationId,type:"csv",status:"failed",progress:0,totalItems:1,processedItems:0,errors:["Private donor Alice: accession import failed"],createdBy:b.userId,createdAt:Date.now()}));
+ const stranger=authedForUser(t,a.userId);
+ const direct=await stranger.query(api.imports.getImportJob,{jobId});
+ const list=await stranger.query(api.imports.listImportJobs,{organizationId:b.organizationId});
+ expect(direct?.errors).toContain("Private donor Alice: accession import failed");
+ expect(list[0]?.errors).toContain("Private donor Alice: accession import failed");
+});
+
+test("audit: replaying an import duplicates accession and progress exceeds 100%",async()=>{
+ const t=createConvexTest();
+ const a=await createOrgUserWithPermissions(t,["collections.create"],{subscriptionTier:"pro"});
+ const u=authedForUser(t,a.userId);
+ const jobId=await u.mutation(api.imports.createImportJob,{organizationId:a.organizationId,type:"csv",totalItems:1});
+ const request={organizationId:a.organizationId,jobId,batchIndex:0,rows:[{accessionNumber:"AUDIT-001",dateReceived:"2024-01-15",source:"Donor",method:"gift"}]};
+ await u.mutation(api.imports.importAccessionsBatch,request);
+ await u.mutation(api.imports.importAccessionsBatch,request);
+ const rows=await t.run(ctx=>ctx.db.query("accessions").withIndex("by_organization",q=>q.eq("organizationId",a.organizationId)).collect());
+ const job=await u.query(api.imports.getImportJob,{jobId});
+ expect(rows).toHaveLength(2); expect(job?.progress).toBe(200);
+});
+
+test("audit: scheduled collection-health report succeeds with stub metadata only",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserWithPermissions(t,[],{subscriptionTier:"pro"});
+ const reportId=await t.run(ctx=>ctx.db.insert("scheduledReports",{organizationId:a.organizationId,name:"Health",reportType:"collection_health",schedule:"on_demand",emailRecipients:["curator@example.test"],includeAttachment:true,attachmentFormat:"pdf",isActive:true,createdBy:a.userId,createdAt:Date.now()}));
+ const runId=await t.run(ctx=>ctx.db.insert("reportRuns",{organizationId:a.organizationId,scheduledReportId:reportId,reportType:"collection_health",reportName:"Health",startedAt:Date.now(),status:"running",triggeredBy:"manual"}));
+ await t.mutation(internal.reporting.generateReport,{runId,reportId});
+ const run=await t.run(ctx=>ctx.db.get(runId));
+ expect(run?.status).toBe("success"); expect(run?.reportData?.generatorVersion).toBe("stub");
+ expect(Object.keys(run?.reportData??{}).sort()).toEqual(["generatedAt","generatorVersion","organizationId","reportType"]);
+});
+
+test("audit: bulk edit assigns a foreign-tenant location without movement history",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserCollectionWithPermissions(t,["collections.update"]); const b=await createOrgUserWithPermissions(t,[]);
+ const locationId=await t.run(ctx=>ctx.db.insert("locations",{organizationId:b.organizationId,name:"Private vault",type:"room",sortOrder:0,isActive:true}));
+ const jobId=await authedForUser(t,a.userId).mutation(api.batchOperations.createBulkEditJob,{organizationId:a.organizationId,collectionIds:[a.collectionId],updates:{currentLocationId:locationId}});
+ await t.finishInProgressScheduledFunctions();
+ await t.mutation(internal.batchOperations.processBatchJob,{jobId});
+ await t.finishInProgressScheduledFunctions();
+ const object=await t.run(ctx=>ctx.db.get(a.collectionId)); const history=await t.run(ctx=>ctx.db.query("locationHistory").withIndex("by_collection",q=>q.eq("collectionId",a.collectionId)).collect());
+ expect(object?.currentLocationId).toBe(locationId); expect(history).toHaveLength(0);
+});
+
+
+test("audit: batched media lookup returns private image from a second tenant",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserCollectionWithPermissions(t,["media.read"]); const b=await createOrgUserCollectionWithPermissions(t,[]);
+ await t.run(async ctx=>{const storageId=await ctx.storage.store(new Blob([new Uint8Array([1])],{type:"image/jpeg"})); await ctx.db.insert("mediaFiles",{organizationId:b.organizationId,collectionId:b.collectionId,storageId,fileName:"private.jpg",fileType:"image",fileSize:1,mimeType:"image/jpeg",isPrimary:true,uploadedBy:b.userId,uploadedAt:Date.now(),uploadStatus:"completed"});});
+ const urls=await authedForUser(t,a.userId).query(api.media.getBatchPrimaryImageUrls,{collectionIds:[a.collectionId,b.collectionId]});
+ expect(urls.find(item=>item.collectionId===b.collectionId)?.url).toBeTruthy();
+});
+
+test("audit: object search includes lexicographically later unrelated accession",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserWithPermissions(t,["collections.read"]);
+ const collectionId=await t.run(ctx=>ctx.db.insert("collections",{organizationId:a.organizationId,title:"Unrelated vase",accessionNumber:"ZZZ-999",status:"active",catalogedBy:a.userId,catalogedAt:Date.now()}));
+ const result=await authedForUser(t,a.userId).query(api.search.globalSearch,{organizationId:a.organizationId,query:"AUDIT-NONMATCH"});
+ expect(result.objects.map(item=>item._id)).toContain(collectionId);
+});
+
+
+test("audit: anonymous sensor source can write readings and raise alerts",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserWithPermissions(t,[]);
+ const locationId=await t.run(ctx=>ctx.db.insert("locations",{organizationId:a.organizationId,name:"Vault",type:"room",sortOrder:0,isActive:true,environmentalThresholds:{temperatureMax:25}}));
+ const result=await t.mutation(api.conservationTreatments.recordEnvironmentalReading,{locationId,source:"sensor",temperature:100,sensorId:"untrusted"});
+ expect(result.alertTriggered).toBe(true); const reading=await t.run(ctx=>ctx.db.get(result.readingId)); expect(reading?.recordedBy).toBeUndefined(); expect(reading?.organizationId).toBe(a.organizationId);
+});
+
+test("audit: anonymous public object exposes internal-only document original",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserCollectionWithPermissions(t,[]);
+ const slug=await t.run(async ctx=>{const org=await ctx.db.get(a.organizationId); await ctx.db.patch(a.organizationId,{settings:{portalSettings:{isEnabled:true,isHighResEnabled:false}}}); await ctx.db.patch(a.collectionId,{isPubliclyVisible:true,isHighResDownloadable:false}); const storageId=await ctx.storage.store(new Blob(["CONFIDENTIAL"],{type:"application/pdf"})); await ctx.db.insert("mediaFiles",{organizationId:a.organizationId,collectionId:a.collectionId,storageId,fileName:"private-agreement.pdf",fileType:"document",fileSize:12,mimeType:"application/pdf",mediaCategory:"document",rightsStatus:"restricted",licenseType:"internal_only",isPrimary:false,uploadedBy:a.userId,uploadedAt:Date.now(),uploadStatus:"completed"});return org?.slug;});
+ const object=await t.run(ctx=>ctx.db.get(a.collectionId));
+ const publicObject=await t.query(api.collections.getPublic,{organizationSlug:slug,accessionNumber:object?.accessionNumber});
+ expect(publicObject?.images).toHaveLength(1); expect(publicObject?.images[0]?.url).toBeTruthy(); expect(publicObject?.isHighResDownloadable).toBe(false);
+});
+
+test("audit: loan batch exposes active loan metadata from another tenant",async()=>{
+ const t=createConvexTest(); const a=await createOrgUserCollectionWithPermissions(t,["loans.read"],{subscriptionTier:"pro"}); const b=await createOrgUserCollectionWithPermissions(t,[],{subscriptionTier:"pro"});
+ await t.run(async ctx=>{const loanId=await ctx.db.insert("loans",{organizationId:b.organizationId,loanNumber:"PRIVATE-LOAN",lenderBorrowerName:"Private partner",type:"outgoing",status:"active",startDate:Date.now()}); await ctx.db.insert("loanItems",{loanId,collectionId:b.collectionId});});
+ const result=await authedForUser(t,a.userId).query(api.loans.checkCollectionsInActiveLoans,{collectionIds:[a.collectionId,b.collectionId]});expect(result.find(item=>item.collectionId===b.collectionId)?.loanNumber).toBe("PRIVATE-LOAN");
+});

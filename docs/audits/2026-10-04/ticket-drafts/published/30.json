@@ -1,0 +1,12 @@
+{
+  "number": 30,
+  "batch": 4,
+  "id": "MUS-640",
+  "url": "https://linear.app/museumlite/issue/MUS-640/maintain-and-reconcile-bounded-projections",
+  "title": "Maintain and reconcile bounded projections",
+  "blockedBy": [
+    "MUS-636",
+    "MUS-638"
+  ],
+  "implementationApproved": false
+}

@@ -1,0 +1,12 @@
+{
+  "number": 32,
+  "batch": 5,
+  "id": "MUS-642",
+  "url": "https://linear.app/museumlite/issue/MUS-642/reuse-parties-across-institutional-procedures",
+  "title": "Reuse parties across institutional procedures",
+  "blockedBy": [
+    "MUS-613",
+    "MUS-616"
+  ],
+  "implementationApproved": false
+}

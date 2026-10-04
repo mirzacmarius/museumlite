@@ -1,0 +1,9 @@
+{
+  "number": 1,
+  "batch": 1,
+  "id": "MUS-611",
+  "url": "https://linear.app/museumlite/issue/MUS-611/make-backend-compilation-a-required-gate",
+  "title": "Make backend compilation a required gate",
+  "blockedBy": [],
+  "implementationApproved": false
+}

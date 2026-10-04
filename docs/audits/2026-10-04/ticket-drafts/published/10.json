@@ -1,0 +1,12 @@
+{
+  "number": 10,
+  "batch": 2,
+  "id": "MUS-620",
+  "url": "https://linear.app/museumlite/issue/MUS-620/make-accession-import-retries-and-progress-safe",
+  "title": "Make accession import retries and progress safe",
+  "blockedBy": [
+    "MUS-612",
+    "MUS-619"
+  ],
+  "implementationApproved": false
+}

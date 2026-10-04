@@ -1,0 +1,13 @@
+{
+  "number": 42,
+  "batch": 6,
+  "id": "MUS-652",
+  "url": "https://linear.app/museumlite/issue/MUS-652/complete-responsive-field-movement-and-receipt-tasks",
+  "title": "Complete responsive field movement and receipt tasks",
+  "blockedBy": [
+    "MUS-629",
+    "MUS-632",
+    "MUS-651"
+  ],
+  "implementationApproved": false
+}

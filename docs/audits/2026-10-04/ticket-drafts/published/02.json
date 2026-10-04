@@ -1,0 +1,9 @@
+{
+  "number": 2,
+  "batch": 1,
+  "id": "MUS-612",
+  "url": "https://linear.app/museumlite/issue/MUS-612/close-cross-organization-batch-and-job-reads",
+  "title": "Close cross-organization batch and job reads",
+  "blockedBy": [],
+  "implementationApproved": false
+}

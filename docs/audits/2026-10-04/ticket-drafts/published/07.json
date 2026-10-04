@@ -1,0 +1,9 @@
+{
+  "number": 7,
+  "batch": 1,
+  "id": "MUS-617",
+  "url": "https://linear.app/museumlite/issue/MUS-617/register-devices-and-receive-authenticated-environmental-readings",
+  "title": "Register devices and receive authenticated environmental readings",
+  "blockedBy": [],
+  "implementationApproved": false
+}

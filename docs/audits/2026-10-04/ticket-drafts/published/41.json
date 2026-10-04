@@ -1,0 +1,12 @@
+{
+  "number": 41,
+  "batch": 6,
+  "id": "MUS-651",
+  "url": "https://linear.app/museumlite/issue/MUS-651/make-shared-operational-controls-keyboard-accessible",
+  "title": "Make shared operational controls keyboard-accessible",
+  "blockedBy": [
+    "MUS-649",
+    "MUS-650"
+  ],
+  "implementationApproved": false
+}
