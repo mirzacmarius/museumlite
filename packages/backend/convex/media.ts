@@ -8,6 +8,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
@@ -497,6 +498,9 @@ export const getPrimaryImageUrl = query({
     if (!primaryMedia) {
       return null;
     }
+    if (primaryMedia.organizationId !== collection.organizationId) {
+      throw new Error("Media organization does not match collection");
+    }
 
     // Return thumbnail URL if available, otherwise fallback to original
     if (primaryMedia.thumbnailStorageId) {
@@ -531,23 +535,11 @@ export const getBatchPrimaryImageUrls = query({
       return [];
     }
 
-    // Batch fetch collections for permission check
-    const collections = await batchGetByIds(
+    const collectionMap = await getAuthorizedCollectionBatch(
       ctx,
       args.collectionIds,
-      "collections",
+      "media.read",
     );
-    const collectionMap = createLookupMap(collections);
-
-    // Check permissions (assume all collections are from the same org)
-    const firstValidCollection = collections.find((c) => c !== null);
-    if (firstValidCollection) {
-      await requirePermission(
-        ctx,
-        firstValidCollection.organizationId,
-        "media.read",
-      );
-    }
 
     // Batch query for primary media for each collection
     const primaryMediaResults = await Promise.all(
@@ -558,6 +550,12 @@ export const getBatchPrimaryImageUrls = query({
         }
 
         const primaryMedia = await getPreferredImageMedia(ctx, collectionId);
+        if (
+          primaryMedia &&
+          primaryMedia.organizationId !== collection.organizationId
+        ) {
+          throw new Error("Media organization does not match collection");
+        }
 
         return { collectionId, media: primaryMedia };
       }),

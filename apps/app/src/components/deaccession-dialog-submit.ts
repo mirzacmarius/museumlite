@@ -6,6 +6,10 @@ interface SubmitDeaccessionParams {
   reason: string;
   organizationId: Id<"organizations">;
   collectionId: Id<"collections">;
+  archiveCollection: (args: {
+    collectionId: Id<"collections">;
+    reason: string;
+  }) => Promise<null>;
   date: Date;
   method: "sale" | "donation" | "transfer" | "destruction";
   disposition: string;
@@ -39,6 +43,7 @@ export async function submitDeaccession({
   reason,
   organizationId,
   collectionId,
+  archiveCollection,
   date,
   method,
   disposition,
@@ -51,6 +56,7 @@ export async function submitDeaccession({
   createMoveRequest,
 }: SubmitDeaccessionParams): Promise<
   | { kind: "deaccession"; id: Id<"deaccessions"> }
+  | { kind: "archive" }
   | { kind: "move"; id: Id<"organizationMoveRequests"> }
 > {
   if (!reason.trim()) {
@@ -104,20 +110,14 @@ export async function submitDeaccession({
   }
 
   if (removalType === "archived") {
-    const deaccessionId = await createDeaccession({
-      ...basePayload,
-      method: "destruction",
-      targetCollectionStatus: "archived",
+    await archiveCollection({
+      collectionId,
+      reason: reason.trim(),
     });
-    return { kind: "deaccession", id: deaccessionId };
+    return { kind: "archive" };
   }
 
-  const deaccessionId = await createDeaccession({
-    ...basePayload,
-    method: "destruction",
-    targetCollectionStatus: "deleted",
-  });
-  return { kind: "deaccession", id: deaccessionId };
+  throw new Error("Unsupported object removal action");
 }
 
 export function getDeaccessionDialogCopy(
@@ -128,7 +128,6 @@ export function getDeaccessionDialogCopy(
     if (removalType === "sold") return "Record sale";
     if (removalType === "move") return "Move to another organization";
     if (removalType === "archived") return "Archive";
-    if (removalType === "deleted") return "Delete";
     return "Remove or transfer";
   })();
 
@@ -140,10 +139,7 @@ export function getDeaccessionDialogCopy(
       return `Request a move for ${collectionTitle}.`;
     }
     if (removalType === "archived") {
-      return `Submit an archive request for ${collectionTitle}.`;
-    }
-    if (removalType === "deleted") {
-      return `Submit a delete request for ${collectionTitle}.`;
+      return `Withdraw ${collectionTitle} from routine views while retaining its register and linked evidence.`;
     }
     return `Choose how to remove or transfer ${collectionTitle}.`;
   })();

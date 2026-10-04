@@ -37,6 +37,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "convex-test": "^0.0.41",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.17"
   }
 }

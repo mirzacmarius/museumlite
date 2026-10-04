@@ -1781,6 +1781,10 @@ export default {
     },
   },
   common: {
+    importJobUnavailable: "Import job unavailable",
+    importJobUnavailableDescription:
+      "This job is unavailable or you no longer have permission to view it. Choose the correct organization or start a new import.",
+    startNewImport: "Start a new import",
     loading: "Loading...",
     saving: "Saving...",
     saveChanges: "Save Changes",

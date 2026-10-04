@@ -74,6 +74,8 @@ export async function filterCollectionListPage(
       if (args.status && collection.status !== args.status) return false;
       if (collection.status === "deleted" && args.status !== "deleted")
         return false;
+      if (collection.status === "archived" && args.status !== "archived")
+        return false;
       if (
         collection.status === "deaccessioned" &&
         args.status !== "deaccessioned" &&
@@ -86,7 +88,10 @@ export async function filterCollectionListPage(
           !locationIdSet.has(collection.currentLocationId))
       )
         return false;
-      if (args.objectType && !matchesObjectType(collection.objectType, args.objectType))
+      if (
+        args.objectType &&
+        !matchesObjectType(collection.objectType, args.objectType)
+      )
         return false;
       if (args.displayStatus && collection.displayStatus !== args.displayStatus)
         return false;

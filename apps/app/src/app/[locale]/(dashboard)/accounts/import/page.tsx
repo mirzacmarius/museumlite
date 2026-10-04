@@ -30,6 +30,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ImportJobUnavailable } from "@/components/import-job-unavailable";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -526,6 +527,10 @@ export default function ImportAccountsPage() {
     api.imports.getImportJob,
     state.jobId ? { jobId: state.jobId } : "skip",
   );
+  const isJobUnavailable =
+    state.jobId !== null &&
+    importJob === null &&
+    (state.step === "importing" || state.step === "complete");
 
   const handleFileSelect = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -689,14 +694,16 @@ export default function ImportAccountsPage() {
               />
             )}
 
-            {state.step === "importing" && (
+            {isJobUnavailable && <ImportJobUnavailable onReset={handleReset} />}
+
+            {state.step === "importing" && !isJobUnavailable && (
               <AccountImportProgressStep
                 importJob={importJob}
                 totalRows={state.rows.length}
               />
             )}
 
-            {state.step === "complete" && (
+            {state.step === "complete" && !isJobUnavailable && (
               <AccountImportCompleteStep
                 errors={state.errors}
                 importJob={importJob}

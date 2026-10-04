@@ -15,6 +15,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer } from "react";
+import { toast } from "sonner";
 import { DeaccessionArchiveDeleteForm } from "./deaccession-archive-delete-form";
 import {
   getDeaccessionDialogCopy,
@@ -127,6 +128,7 @@ export function DeaccessionDialog({
   const { push } = useRouter();
   const createDeaccession = useMutation(api.deaccessions.create);
   const createMoveRequest = useMutation(api.objectMoves.createRequest);
+  const archiveCollection = useMutation(api.collections.archiveCollection);
 
   useEffect(() => {
     if (open) {
@@ -171,6 +173,7 @@ export function DeaccessionDialog({
         reason: state.reason,
         organizationId,
         collectionId,
+        archiveCollection,
         date: state.date,
         method: state.method,
         disposition: state.disposition,
@@ -186,6 +189,10 @@ export function DeaccessionDialog({
       resetForm();
       onOpenChange(false);
 
+      if (result.kind === "archive") {
+        toast.success("Object withdrawn to the archive.");
+        return;
+      }
       if (result.kind === "move") {
         push(`/objects/move-requests/${result.id}`);
       } else {
@@ -280,17 +287,6 @@ export function DeaccessionDialog({
 
         {state.removalType === "archived" && (
           <DeaccessionArchiveDeleteForm
-            variant="archived"
-            isDirectRemovalFlow={isDirectRemovalFlow}
-            reason={state.reason}
-            onBack={() => dispatch({ type: "setRemovalType", value: null })}
-            onReasonChange={(value) => dispatch({ type: "setReason", value })}
-          />
-        )}
-
-        {state.removalType === "deleted" && (
-          <DeaccessionArchiveDeleteForm
-            variant="deleted"
             isDirectRemovalFlow={isDirectRemovalFlow}
             reason={state.reason}
             onBack={() => dispatch({ type: "setRemovalType", value: null })}
@@ -325,17 +321,14 @@ export function DeaccessionDialog({
                     (state.accessionMode === "manual" &&
                       !state.manualAccessionNumber.trim())))
               }
-              variant={
-                state.removalType === "deleted" ? "destructive" : "default"
-              }
+              variant="default"
             >
               {state.isSubmitting && (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               )}
               {state.removalType === "sold" && "Submit for Approval"}
               {state.removalType === "move" && "Submit Move Request"}
-              {state.removalType === "archived" && "Submit Archive Request"}
-              {state.removalType === "deleted" && "Submit Delete Request"}
+              {state.removalType === "archived" && "Withdraw to Archive"}
             </Button>
           </DialogFooter>
         )}

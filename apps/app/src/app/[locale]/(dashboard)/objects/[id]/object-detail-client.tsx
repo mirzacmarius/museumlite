@@ -248,6 +248,10 @@ function ObjectDetailView({
     ? { url: heroImage.url, thumbnailUrl: heroImage.thumbnailUrl }
     : null;
   const isOnDisplay = collection.displayStatus === "on_display";
+  const isWithdrawn =
+    collection.status === "archived" || collection.status === "deleted";
+  const withdrawalReason =
+    collection.archivedReason ?? collection.deletedReason;
 
   return (
     <>
@@ -281,6 +285,28 @@ function ObjectDetailView({
         />
 
         <div className="flex-1 overflow-y-auto">
+          {isWithdrawn ? (
+            <section
+              aria-label="Archive register"
+              className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-4"
+            >
+              <h2 className="text-sm font-semibold text-foreground">
+                Withdrawn from routine catalog
+              </h2>
+              {withdrawalReason ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Reason: {withdrawalReason}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                  Legacy withdrawal reason is unavailable. Existing register and
+                  linked evidence remain as stored; review source records before
+                  restoring.
+                </p>
+              )}
+            </section>
+          ) : null}
+
           <ObjectDetailHero
             collection={collection}
             heroImage={heroImage}

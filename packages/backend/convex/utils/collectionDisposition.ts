@@ -1,58 +1,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { MutationCtx } from "../_generated/server";
 import {
   applyCollectionDisposition,
   markCollectionActive,
-  markCollectionDeaccessioned,
 } from "./collectionLifecycle";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { requirePermission } from "./permissions";
-
-export async function deleteCollectionHandler(
-  ctx: MutationCtx,
-  args: { collectionId: Id<"collections"> },
-) {
-  const [userId, collection] = await Promise.all([
-    getAuthUserId(ctx),
-    ctx.db.get(args.collectionId),
-  ] as const);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-  if (!collection) {
-    throw new Error("Collection not found");
-  }
-
-  await assertCollectionNotOnLoan(
-    ctx,
-    args.collectionId,
-    "Cannot deaccession an object that is currently on loan",
-  );
-
-  await Promise.all([
-    requirePermission(ctx, collection.organizationId, "collections.delete"),
-    markCollectionDeaccessioned(ctx, {
-      collectionId: args.collectionId,
-      changedBy: userId,
-    }),
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "deaccessioned_collection",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-        previousStatus: collection.status,
-      },
-    }),
-  ] as const);
-
-  return null;
-}
 
 export async function archiveCollectionHandler(
   ctx: MutationCtx,
@@ -68,6 +23,25 @@ export async function archiveCollectionHandler(
   if (!collection) {
     throw new Error("Collection not found");
   }
+  await requirePermission(ctx, collection.organizationId, "collections.delete");
+  if (!args.reason.trim()) {
+    throw new Error("Reason is required");
+  }
+  if (
+    (collection.status === "archived" || collection.status === "deleted") &&
+    (collection.archivedReason ?? collection.deletedReason) ===
+      args.reason.trim()
+  ) {
+    return null;
+  }
+  if (collection.status === "archived" || collection.status === "deleted") {
+    throw new Error("Object is already withdrawn");
+  }
+  if (collection.status === "deaccessioned") {
+    throw new Error(
+      "Deaccessioned objects cannot be withdrawn as catalog records",
+    );
+  }
 
   await assertCollectionNotOnLoan(
     ctx,
@@ -75,14 +49,12 @@ export async function archiveCollectionHandler(
     "Cannot archive an object that is currently on loan",
   );
 
-  await requirePermission(ctx, collection.organizationId, "collections.delete");
-
   await Promise.all([
     applyCollectionDisposition(ctx, {
       collectionId: args.collectionId,
       changedBy: userId,
       targetStatus: "archived",
-      reason: args.reason,
+      reason: args.reason.trim(),
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: collection.organizationId,
@@ -91,7 +63,7 @@ export async function archiveCollectionHandler(
       entityType: "collection",
       entityId: args.collectionId,
       changes: {
-        reason: args.reason,
+        reason: args.reason.trim(),
         accessionNumber: collection.accessionNumber,
         title: collection.title,
       },
@@ -99,70 +71,6 @@ export async function archiveCollectionHandler(
   ] as const);
 
   return null;
-}
-
-export async function softDeleteCollectionHandler(
-  ctx: MutationCtx,
-  args: { collectionId: Id<"collections">; reason: string },
-) {
-  const [userId, collection] = await Promise.all([
-    getAuthUserId(ctx),
-    ctx.db.get(args.collectionId),
-  ] as const);
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-  if (!collection) {
-    throw new Error("Collection not found");
-  }
-
-  await assertCollectionNotOnLoan(
-    ctx,
-    args.collectionId,
-    "Cannot delete an object that is currently on loan",
-  );
-
-  await requirePermission(ctx, collection.organizationId, "collections.delete");
-
-  await Promise.all([
-    applyCollectionDisposition(ctx, {
-      collectionId: args.collectionId,
-      changedBy: userId,
-      targetStatus: "deleted",
-      reason: args.reason,
-    }),
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "deleted_collection",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        reason: args.reason,
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-      },
-    }),
-  ] as const);
-
-  return null;
-}
-
-export async function countDeletedCollectionsHandler(
-  ctx: QueryCtx,
-  args: { organizationId: Id<"organizations"> },
-) {
-  const [, deletedCollections] = await Promise.all([
-    requirePermission(ctx, args.organizationId, "collections.read"),
-    ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", args.organizationId).eq("status", "deleted"),
-      )
-      .collect(),
-  ] as const);
-
-  return deletedCollections.length;
 }
 
 export async function restoreCollectionHandler(
@@ -180,11 +88,57 @@ export async function restoreCollectionHandler(
     throw new Error("Collection not found");
   }
 
+  await requirePermission(ctx, collection.organizationId, "collections.update");
+
   if (collection.status !== "archived" && collection.status !== "deleted") {
     throw new Error("Can only restore archived or deleted objects");
   }
 
-  await requirePermission(ctx, collection.organizationId, "collections.update");
+  await assertCollectionNotOnLoan(
+    ctx,
+    args.collectionId,
+    "An object with an active loan cannot be restored",
+  );
+
+  const [activeIdentity, pendingDeaccession, conflictingApprovedDeaccession] =
+    await Promise.all([
+      ctx.db
+        .query("collections")
+        .withIndex("by_organization_and_accessionNumber", (q) =>
+          q
+            .eq("organizationId", collection.organizationId)
+            .eq("accessionNumber", collection.accessionNumber),
+        )
+        .filter((q) => q.eq(q.field("status"), "active"))
+        .first(),
+      ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_collection_and_status", (q) =>
+          q
+            .eq("organizationId", collection.organizationId)
+            .eq("collectionId", args.collectionId)
+            .eq("status", "pending"),
+        )
+        .first(),
+      ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_collection_and_status", (q) =>
+          q
+            .eq("organizationId", collection.organizationId)
+            .eq("collectionId", args.collectionId)
+            .eq("status", "approved"),
+        )
+        .filter((q) => q.neq(q.field("targetCollectionStatus"), "archived"))
+        .first(),
+    ] as const);
+  if (activeIdentity && activeIdentity._id !== collection._id) {
+    throw new Error("An active object already uses this accession number");
+  }
+  if (pendingDeaccession || conflictingApprovedDeaccession) {
+    throw new Error(
+      "A linked deaccession decision must be resolved before restore",
+    );
+  }
 
   await Promise.all([
     markCollectionActive(ctx, {
@@ -202,6 +156,9 @@ export async function restoreCollectionHandler(
         previousStatus: collection.status,
         accessionNumber: collection.accessionNumber,
         title: collection.title,
+        withdrawalReason: collection.archivedReason ?? collection.deletedReason,
+        withdrawnAt: collection.archivedAt ?? collection.deletedAt,
+        withdrawnBy: collection.archivedBy ?? collection.deletedBy,
       },
     }),
   ] as const);

@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
+import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
@@ -1363,18 +1364,11 @@ export const checkCollectionsInActiveLoans = query({
       return [];
     }
 
-    // Get the organization from the first collection
-    const firstCollectionId = args.collectionIds[0];
-    if (!firstCollectionId) {
-      return [];
-    }
-
-    const firstCollection = await ctx.db.get(firstCollectionId);
-    if (!firstCollection) {
-      return [];
-    }
-
-    await requirePermission(ctx, firstCollection.organizationId, "loans.read");
+    const collectionMap = await getAuthorizedCollectionBatch(
+      ctx,
+      args.collectionIds,
+      "loans.read",
+    );
 
     const results: Array<{
       collectionId: Id<"collections">;
@@ -1385,6 +1379,8 @@ export const checkCollectionsInActiveLoans = query({
 
     const perCollectionResults = await Promise.all(
       args.collectionIds.map(async (collectionId) => {
+        const collection = collectionMap.get(collectionId);
+        if (!collection) return null;
         const loanItems = await ctx.db
           .query("loanItems")
           .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
@@ -1398,6 +1394,9 @@ export const checkCollectionsInActiveLoans = query({
 
         for (let i = 0; i < loanItems.length; i++) {
           const loan = loans[i];
+          if (loan && loan.organizationId !== collection.organizationId) {
+            throw new Error("Loan organization does not match collection");
+          }
           if (
             loan &&
             (loan.status === "pending" ||
@@ -1487,6 +1486,7 @@ export const getLoansForCollection = query({
       loanIds.map(async (loanId) => {
         const loan = await ctx.db.get(loanId);
         if (!loan) return null;
+        if (loan.organizationId !== collection.organizationId) return null;
         return {
           _id: loan._id,
           loanNumber: loan.loanNumber,

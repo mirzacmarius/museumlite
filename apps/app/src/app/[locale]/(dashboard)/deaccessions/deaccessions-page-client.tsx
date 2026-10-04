@@ -9,12 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Download, Loader2, Plus, Printer, Search, Trash2 } from "lucide-react";
+import {
+  Archive,
+  Download,
+  Loader2,
+  Plus,
+  Printer,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
-import { toast } from "sonner";
 import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { formatCurrency } from "@/lib/format-number";
@@ -38,21 +44,13 @@ export function DeaccessionsPageClient({
   organizationId,
 }: DeaccessionsPageClientProps) {
   const t = useScopedI18n("deaccessions");
-  const objectsT = useScopedI18n("objects");
   const [searchQuery, setSearchQuery] = useState("");
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const deaccessions = useQuery(api.deaccessions.list, {
     organizationId,
     paginationOpts: { numItems: 100, cursor: null },
   });
-  const deletedObjectCount = useQuery(api.collections.countDeletedCollections, {
-    organizationId,
-  });
-  const emptyDeletedCollections = useMutation(
-    api.collections.emptyDeletedCollections,
-  );
 
   if (deaccessions === undefined) {
     return (
@@ -70,31 +68,6 @@ export function DeaccessionsPageClient({
   const deaccessioned = deaccessions.page.filter(
     (item: DeaccessionListItem) => item.status === "approved",
   ).length;
-
-  const handleEmptyTrash = async () => {
-    const count = deletedObjectCount ?? 0;
-    if (count === 0) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      objectsT("actions.emptyTrashConfirm", { count }),
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    setIsEmptyingTrash(true);
-    try {
-      const result = await emptyDeletedCollections({ organizationId });
-      toast.success(objectsT("actions.emptyTrashSuccess", result));
-    } catch (error) {
-      console.error("Failed to empty deleted objects:", error);
-      toast.error(objectsT("error.failedToEmptyTrash"));
-    } finally {
-      setIsEmptyingTrash(false);
-    }
-  };
 
   return (
     <>
@@ -130,34 +103,17 @@ export function DeaccessionsPageClient({
               </button>
             </PermissionGate>
 
-            <PermissionGate
-              loadingFallback={
-                <div className="h-8 w-28 animate-pulse rounded-md bg-muted/60" />
-              }
-              permission="collections.delete"
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 px-2.5 text-xs"
             >
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={handleEmptyTrash}
-                disabled={
-                  isEmptyingTrash ||
-                  deletedObjectCount === undefined ||
-                  deletedObjectCount === 0
-                }
-                className="h-8 px-2.5 text-xs"
-              >
-                {isEmptyingTrash ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="size-3.5" />
-                )}
-                {isEmptyingTrash
-                  ? objectsT("actions.emptyingTrash")
-                  : objectsT("actions.emptyTrash")}
-              </Button>
-            </PermissionGate>
+              <Link href="/objects?status=archived">
+                <Archive className="size-3.5" />
+                Object archive
+              </Link>
+            </Button>
 
             <PermissionGate
               loadingFallback={
