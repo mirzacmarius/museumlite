@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "dev": "convex dev --tail-logs",
+    "typecheck": "tsc --noEmit -p convex/tsconfig.json",
     "setup": "convex dev --once && convex env set VALIDATE_ENV=true",
     "seed": "convex dev --once && convex run init",
     "lint": "biome lint --error-on-warnings",
