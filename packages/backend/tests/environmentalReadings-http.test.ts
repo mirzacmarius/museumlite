@@ -96,7 +96,7 @@ function createTestContext() {
 describe("POST /v1/environmental-readings", () => {
   test("authenticates, normalizes units, deduplicates retries and keeps observation time", async () => {
     const t = createTestContext();
-    const { organizationId, locationId, token, admin } =
+    const { organizationId, locationId, token, deviceId, admin } =
       await createReceiver(t);
     const observedAt = Date.now() - 5_000;
     const body = JSON.stringify({
@@ -164,6 +164,9 @@ describe("POST /v1/environmental-readings", () => {
     expect(persisted[0]?.recordedAt).toBe(observedAt);
     expect(persisted[0]?.receivedAt).toBeGreaterThan(observedAt);
     expect(persisted[0]?.organizationId).toBe(organizationId);
+    expect(persisted[0]?.sensorDeviceId).toBe(deviceId);
+    expect(persisted[0]?.sensorProbeId).toBe("probe-1");
+    expect(persisted[0]?.externalReadingId).toBe("probe-1/reading-42");
     expect(devices[0]?.lastSeenAt).toBeGreaterThan(observedAt);
     expect(
       await t.run(async (ctx) =>
@@ -459,11 +462,17 @@ describe("POST /v1/environmental-readings", () => {
       entityType: "environmentalReading",
       limit: 10,
     });
+    const manualReading = await t.run(async (ctx) =>
+      ctx.db.get(recorded.readingId),
+    );
     expect(audit.activities).toContainEqual(
       expect.objectContaining({
         action: "recorded_environmental_reading",
         entityId: recorded.readingId,
       }),
     );
+    expect(manualReading?.source).toBe("manual");
+    expect(manualReading?.recordedBy).toBeDefined();
+    expect(manualReading?.sensorDeviceId).toBeUndefined();
   });
 });
