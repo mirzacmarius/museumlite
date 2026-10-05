@@ -26,6 +26,9 @@ import {
   TARGET_FIELDS,
 } from "../import-objects-types";
 
+// Radix Select reserves the empty string for "no selection".
+const NO_TEMPLATE = "__no_template__";
+
 interface ImportObjectsMappingStepProps {
   state: ImportState;
   common: (key: string) => string;
@@ -70,14 +73,16 @@ export function ImportObjectsMappingStep({
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <Select
-                value={state.selectedTemplate || ""}
-                onValueChange={onTemplateSelect}
+                value={state.selectedTemplate || NO_TEMPLATE}
+                onValueChange={(value) =>
+                  onTemplateSelect(value === NO_TEMPLATE ? "" : value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a template or map fields manually..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">
+                  <SelectItem value={NO_TEMPLATE}>
                     <span className="text-muted-foreground">
                       No template (manual mapping)
                     </span>
