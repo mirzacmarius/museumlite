@@ -8,7 +8,7 @@ A mutation or action that schedules work (`ctx.scheduler.runAfter`, `runAt`, or 
 
 ```ts
 vi.useFakeTimers();
-await t.mutation(api.media.generateThumbnail, { mediaId });
+await t.mutation(internal.media.generateThumbnail, { mediaId });
 await t.finishAllScheduledFunctions(() => vi.runAllTimers());
 const [media] = await t.query(api.media.list, { collectionId });
 expect(media.uploadStatus).toBe("completed");
