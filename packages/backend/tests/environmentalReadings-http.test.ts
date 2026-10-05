@@ -245,6 +245,50 @@ describe("POST /v1/environmental-readings", () => {
     expect(devices[0]?.lastErrorAt).toBeDefined();
   });
 
+  test("charges malformed requests and protects health writes with device quota", async () => {
+    const t = createTestContext();
+    const { organizationId, locationId, token, admin } =
+      await createReceiver(t);
+    const send = (body: unknown) =>
+      t.fetch("/v1/environmental-readings", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+    for (let index = 0; index < 120; index++) {
+      expect((await send({ malformed: index })).status).toBe(400);
+    }
+    const valid = await send({
+      readingId: "valid-after-malformed-burst",
+      probeId: "probe-1",
+      timestamp: Date.now(),
+      temperature: { value: 20, unit: "C" },
+      humidity: { value: 50, unit: "%" },
+    });
+
+    expect(valid.status).toBe(429);
+    expect(await valid.json()).toMatchObject({ error: "rate_limit_exceeded" });
+    expect(
+      await admin.query(api.conservationTreatments.getEnvironmentalReadings, {
+        locationId,
+      }),
+    ).toHaveLength(0);
+    expect(
+      await admin.query(api.conservationTreatments.listAlerts, {
+        organizationId,
+        status: "active",
+      }),
+    ).toHaveLength(0);
+    expect(
+      (await admin.query(api.environmentalDevices.list, { organizationId }))[0]
+        ?.lastError,
+    ).toBe("Reading rate limit exceeded");
+  });
+
   test("charges known devices for unknown-probe attempts", async () => {
     const t = createTestContext();
     const { token } = await createReceiver(t);
@@ -322,7 +366,7 @@ describe("POST /v1/environmental-readings", () => {
     });
     expect(devices[0]?.lastError).toBe("Invalid measurement");
 
-    await send("env_unknown-credential", { ...valid, readingId: "bad-auth" });
+    await send("env_unknown-credential", {});
     const afterBadCredential = await admin.query(
       api.environmentalDevices.list,
       { organizationId },

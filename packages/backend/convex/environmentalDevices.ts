@@ -311,9 +311,9 @@ export const listLocations = query({
 
 export const noteIngestionError = internalMutation({
   args: { credential: v.string(), error: ingestionErrorValidator },
-  returns: v.null(),
+  returns: v.boolean(),
   handler: async (ctx, args) => {
-    if (args.credential.length > 256) return null;
+    if (args.credential.length > 256) return false;
     const prefix = args.credential.slice(0, 12);
     const candidateHash = await hashCredential(args.credential);
     const devices = await ctx.db
@@ -327,15 +327,22 @@ export const noteIngestionError = internalMutation({
         device.status === "active" &&
         equalHash(device.credentialHash, candidateHash)
       ) {
-        await ctx.db.patch(device._id, {
-          lastSeenAt: Date.now(),
-          lastError: args.error,
-          lastErrorAt: Date.now(),
+        const status = await limiter.limit(ctx, "environmentalReadings", {
+          key: device._id,
         });
-        break;
+        if (!status.ok && device.lastError === "Reading rate limit exceeded") {
+          return true;
+        }
+        const now = Date.now();
+        await ctx.db.patch(device._id, {
+          lastSeenAt: now,
+          lastError: status.ok ? args.error : "Reading rate limit exceeded",
+          lastErrorAt: now,
+        });
+        return !status.ok;
       }
     }
-    return null;
+    return false;
   },
 });
 
@@ -413,11 +420,13 @@ export const ingest = internalMutation({
       key: device._id,
     });
     if (!status.ok) {
-      await ctx.db.patch(device._id, {
-        lastSeenAt: now,
-        lastError: "Reading rate limit exceeded",
-        lastErrorAt: now,
-      });
+      if (device.lastError !== "Reading rate limit exceeded") {
+        await ctx.db.patch(device._id, {
+          lastSeenAt: now,
+          lastError: "Reading rate limit exceeded",
+          lastErrorAt: now,
+        });
+      }
       return {
         accepted: false,
         duplicate: false,

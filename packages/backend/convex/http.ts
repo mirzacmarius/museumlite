@@ -249,18 +249,29 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
       credential,
       error,
     });
+  const invalid = async (
+    status: number,
+    errorCode: string,
+    healthError:
+      | "Invalid payload"
+      | "Invalid measurement"
+      | "Measurement out of range",
+  ) => {
+    const rateLimited = await noteError(healthError);
+    return rateLimited
+      ? json(429, { error: "rate_limit_exceeded" })
+      : json(status, { error: errorCode });
+  };
   if (
     !request.headers
       .get("Content-Type")
       ?.toLowerCase()
       .includes("application/json")
   ) {
-    await noteError("Invalid payload");
-    return json(400, { error: "invalid_content_type" });
+    return invalid(400, "invalid_content_type", "Invalid payload");
   }
   if (!request.body) {
-    await noteError("Invalid payload");
-    return json(400, { error: "invalid_payload" });
+    return invalid(400, "invalid_payload", "Invalid payload");
   }
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -271,8 +282,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     totalBytes += chunk.value.byteLength;
     if (totalBytes > 4096) {
       await reader.cancel();
-      await noteError("Invalid payload");
-      return json(413, { error: "payload_too_large" });
+      return invalid(413, "payload_too_large", "Invalid payload");
     }
     chunks.push(chunk.value);
   }
@@ -288,12 +298,10 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
   try {
     body = JSON.parse(bodyText);
   } catch {
-    await noteError("Invalid payload");
-    return json(400, { error: "invalid_payload" });
+    return invalid(400, "invalid_payload", "Invalid payload");
   }
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    await noteError("Invalid payload");
-    return json(400, { error: "invalid_payload" });
+    return invalid(400, "invalid_payload", "Invalid payload");
   }
   const payload = body as Record<string, unknown>;
   const temperature = payload.temperature;
@@ -318,8 +326,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     humidity === null ||
     Array.isArray(humidity)
   ) {
-    await noteError("Invalid payload");
-    return json(400, { error: "invalid_payload" });
+    return invalid(400, "invalid_payload", "Invalid payload");
   }
   const timestamp =
     typeof payload.timestamp === "number"
@@ -339,8 +346,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
       temp.unit !== "°F") ||
     (humid.unit !== "%" && humid.unit !== "percent")
   ) {
-    await noteError("Invalid measurement");
-    return json(400, { error: "invalid_measurement" });
+    return invalid(400, "invalid_measurement", "Invalid measurement");
   }
   const normalizedTemperature =
     temp.unit === "F" || temp.unit === "°F"
@@ -355,8 +361,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     timestamp > now + 300_000 ||
     timestamp < now - 90 * 24 * 60 * 60 * 1000
   ) {
-    await noteError("Measurement out of range");
-    return json(400, { error: "measurement_out_of_range" });
+    return invalid(400, "measurement_out_of_range", "Measurement out of range");
   }
   const result = await ctx.runMutation(internal.environmentalDevices.ingest, {
     credential,
