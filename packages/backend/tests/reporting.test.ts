@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
@@ -2275,7 +2275,13 @@ describe("report generation and cron processing", () => {
         .collect();
     });
 
-    await t.mutation(internal.reporting.processDueReports, {});
+    vi.useFakeTimers();
+    try {
+      await t.mutation(internal.reporting.processDueReports, {});
+      await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    } finally {
+      vi.useRealTimers();
+    }
 
     const [report, runsAfter] = await t.run(async (ctx) => {
       const updatedReport = await ctx.db.get(reportId);
