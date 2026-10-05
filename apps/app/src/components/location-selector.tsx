@@ -130,13 +130,18 @@ export function LocationSelector({
           </SelectItem>
         )}
         {shouldShowCurrentInactiveLocation ? (
-          <SelectItem value={value}>
+          <SelectItem value={value} disabled>
             {`${formatLocationPathLabel(currentLocationPath)} (current)`}
           </SelectItem>
         ) : null}
         {sortedLocations.map((location) => (
-          <SelectItem key={location._id} value={location._id}>
+          <SelectItem
+            key={location._id}
+            value={location._id}
+            disabled={location.status !== "active"}
+          >
             {formatLocationLabel(location)}
+            {location.status !== "active" ? ` (${location.status})` : ""}
           </SelectItem>
         ))}
       </SelectContent>

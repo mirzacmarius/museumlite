@@ -66,9 +66,6 @@ test("accountDocuments: create and list", async () => {
     });
   });
 
-  // Mock storage ID - _storage is a system table and can't be inserted in tests
-  const storageId = "0e9655dc186fb9e9;_storage" as Id<"_storage">;
-
   const writePermissionId = await t.run(async (ctx) => {
     return await ctx.db.insert("permissions", {
       name: "accounts.write",
@@ -96,6 +93,18 @@ test("accountDocuments: create and list", async () => {
     issuer: "https://example.test",
   });
 
+  const uploadUrl = new URL(
+    await authed.mutation(api.accountDocuments.generateUploadUrl, {
+      accountId,
+    }),
+  );
+  const response = await t.fetch(uploadUrl.pathname + uploadUrl.search, {
+    method: "POST",
+    headers: { "Content-Type": "application/pdf" },
+    body: new Blob([new Uint8Array(1024)], { type: "application/pdf" }),
+  });
+  expect(response.status).toBe(200);
+  const { storageId }: { storageId: Id<"_storage"> } = await response.json();
   const documentId = await authed.mutation(api.accountDocuments.create, {
     accountId,
     storageId,

@@ -4,6 +4,7 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireExhibitionAccess } from "./exhibitionAccess";
 import { requirePermission } from "./permissions";
+import { claimStorageOwnership } from "./uploadOwnership";
 
 export async function listExhibitionDocumentsHandler(
   ctx: QueryCtx,
@@ -79,6 +80,13 @@ export async function uploadExhibitionDocumentHandler(
     fileName: args.fileName,
     uploadedBy: userId,
     uploadedAt: Date.now(),
+  });
+  await claimStorageOwnership(ctx, {
+    storageId: args.storageId,
+    organizationId: exhibition.organizationId,
+    uploadedBy: userId,
+    ownerType: "exhibitionDocument",
+    ownerId: documentId,
   });
 
   return documentId;

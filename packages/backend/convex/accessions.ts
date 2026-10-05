@@ -18,6 +18,7 @@ import {
   generateConfiguredIdentifier,
   normalizeIdentifier,
 } from "./utils/identifiers";
+import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
@@ -31,6 +32,11 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+  validateOwnedUploadSize,
+} from "./utils/uploadOwnership";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -228,6 +234,11 @@ export const create = mutation({
       await requirePermission(ctx, args.organizationId, "collections.create");
     }
 
+    if (args.donorAccountId) {
+      const donor = await ctx.db.get(args.donorAccountId);
+      if (!donor || donor.organizationId !== args.organizationId)
+        throw new Error("Donor account not found in this organization");
+    }
     // Generate or use provided accession number
     let accessionNumber: string;
     if (args.accessionNumber) {
@@ -285,6 +296,14 @@ export const create = mutation({
       workflowHistory,
     });
 
+    for (const storageId of args.documents ?? [])
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "accessionDocument",
+        ownerId: accessionId,
+      });
     await Promise.all([
       syncAccessionSearchDocument(ctx, accessionId),
       ctx.runMutation(internal.audit.logAction, {
@@ -362,10 +381,15 @@ export const generateDraftUploadUrl = mutation({
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
 
+    validateOwnedUploadSize(args.fileSize);
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     return {
-      uploadUrl: await ctx.storage.generateUploadUrl(),
+      uploadUrl: await createAuthorizedUploadUrl(
+        ctx,
+        userId,
+        args.organizationId,
+      ),
     };
   },
 });
@@ -393,6 +417,7 @@ export const upsertObjectDraft = mutation({
       ? await getWorkflowConfig(ctx, args.organizationId, "accession")
       : null;
 
+    await validateObjectReferences(ctx, args.organizationId, args.objectData);
     const normalizedObjectData = {
       ...args.objectData,
       title: args.objectData.title.trim(),
@@ -475,6 +500,16 @@ export const upsertObjectDraft = mutation({
         existing._id,
       );
 
+      for (const media of args.draftMedia ?? [])
+        await claimStorageOwnership(ctx, {
+          storageId: media.storageId,
+          organizationId: args.organizationId,
+          uploadedBy: userId,
+          expectedFileSize: media.fileSize,
+          expectedMimeType: media.mimeType,
+          ownerType: "accessionDraft",
+          ownerId: existing._id,
+        });
       const submittedAt = Date.now();
       await Promise.all([
         ctx.db.patch(existing._id, {
@@ -607,6 +642,16 @@ export const upsertObjectDraft = mutation({
       },
       draftMedia: args.draftMedia,
     });
+    for (const media of args.draftMedia ?? [])
+      await claimStorageOwnership(ctx, {
+        storageId: media.storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        expectedFileSize: media.fileSize,
+        expectedMimeType: media.mimeType,
+        ownerType: "accessionDraft",
+        ownerId: accessionId,
+      });
     await Promise.all([
       syncAccessionSearchDocument(ctx, accessionId),
       ctx.runMutation(internal.audit.logAction, {
@@ -1118,9 +1163,25 @@ export const update = mutation({
     } = {};
 
     if (args.source !== undefined) updates.source = args.source;
-    if (args.donorAccountId !== undefined)
+    if (args.donorAccountId !== undefined) {
+      const donor = await ctx.db.get(args.donorAccountId);
+      if (!donor || donor.organizationId !== accession.organizationId)
+        throw new Error("Donor account not found in this organization");
       updates.donorAccountId = args.donorAccountId;
-    if (args.documents !== undefined) updates.documents = args.documents;
+    }
+    if (args.documents !== undefined) {
+      for (const storageId of args.documents) {
+        if (!accession.documents?.includes(storageId))
+          await claimStorageOwnership(ctx, {
+            storageId,
+            organizationId: accession.organizationId,
+            uploadedBy: userId,
+            ownerType: "accessionDocument",
+            ownerId: accession._id,
+          });
+      }
+      updates.documents = args.documents;
+    }
     if (args.method !== undefined) updates.method = args.method;
     if (args.cost !== undefined) updates.cost = args.cost;
     if (args.notes !== undefined) updates.notes = args.notes;
@@ -2178,6 +2239,13 @@ export const uploadChecklistDocument = mutation({
       accession.organizationId,
       "collections.update",
     );
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: accession.organizationId,
+      uploadedBy: userId,
+      ownerType: "accessionDocument",
+      ownerId: `${args.accessionId}:${args.documentType}`,
+    });
 
     const checklist = accession.documentChecklist ?? [];
     const updatedChecklist = checklist.map((item) => {

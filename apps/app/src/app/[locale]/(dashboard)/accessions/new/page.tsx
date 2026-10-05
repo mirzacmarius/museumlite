@@ -450,7 +450,7 @@ export default function NewAccessionPage() {
   const { push, back } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
-  const generateUploadUrl = useMutation(api.users.generateUploadUrl);
+  const generateUploadUrl = useMutation(api.accessions.generateDraftUploadUrl);
   const [state, dispatch] = useReducer(
     newAccessionPageReducer,
     initialNewAccessionPageState,
@@ -488,8 +488,11 @@ export default function NewAccessionPage() {
                 ),
             });
 
-            const uploadUrl = await generateUploadUrl({
+            const { uploadUrl } = await generateUploadUrl({
+              fileName: upload.file.name,
+              fileSize: upload.file.size,
               mimeType: upload.file.type || "application/octet-stream",
+              organizationId: currentOrganizationId as Id<"organizations">,
             });
 
             const response = await fetch(uploadUrl, {
@@ -543,7 +546,7 @@ export default function NewAccessionPage() {
         });
       }, 2000);
     },
-    [generateUploadUrl],
+    [generateUploadUrl, currentOrganizationId],
   );
 
   const handleRemoveDocument = useCallback((storageId: Id<"_storage">) => {

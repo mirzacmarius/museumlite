@@ -43,17 +43,28 @@ export async function claimStorageOwnership(
     uploadedBy: Id<"users">;
     ownerType: string;
     ownerId: string;
+    expectedFileSize?: number;
+    expectedMimeType?: string;
   },
 ): Promise<void> {
   const upload = await ctx.db
     .query("storageOwnership")
     .withIndex("by_storageId", (q) => q.eq("storageId", args.storageId))
     .unique();
-  if (!upload || !(await ctx.db.system.get("_storage", args.storageId))) {
+  const file = await ctx.db.system.get("_storage", args.storageId);
+  if (!upload || !file) {
     throw new Error(
       "File was not uploaded through an authorized upload session",
     );
   }
+  if (
+    (args.expectedFileSize !== undefined &&
+      file.size !== args.expectedFileSize) ||
+    (args.expectedMimeType !== undefined &&
+      file.contentType !== undefined &&
+      file.contentType !== args.expectedMimeType)
+  )
+    throw new Error("Uploaded file metadata does not match the attachment");
   if (upload.organizationId !== args.organizationId)
     throw new Error("File belongs to a different organization");
   if (upload.ownerType || upload.ownerId) {
@@ -97,4 +108,5 @@ export async function transferStorageOwnership(
     ownerType: args.ownerType,
     ownerId: args.ownerId,
   });
+  return { uploadedBy: upload.uploadedBy, uploadedAt: upload.uploadedAt };
 }
