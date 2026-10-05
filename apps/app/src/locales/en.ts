@@ -70,7 +70,7 @@ export default {
     deleteAccount: {
       title: "Delete Account",
       description:
-        "Permanently delete your MuseumLite user account and personal profile data.",
+        "Close your MuseumLite account and remove sign-in access and personal contact details. Your name remains linked to institutional history.",
       warning: "This action cannot be undone, proceed with caution.",
       deleteButton: "Delete Account",
       confirmButton: "Are you sure?",

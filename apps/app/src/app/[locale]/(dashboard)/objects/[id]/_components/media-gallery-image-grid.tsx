@@ -1,17 +1,6 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { ImageLightbox } from "@v1/ui/image-lightbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
@@ -22,7 +11,6 @@ import {
   Image as ImageIcon,
   Maximize2,
   Star,
-  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
@@ -177,7 +165,6 @@ function MediaGalleryImageCard({
   const {
     common,
     handleSetPrimary,
-    handleDelete,
     handleUpdateMedia,
     handleDragStart,
     handleDragEnd,
@@ -185,8 +172,6 @@ function MediaGalleryImageCard({
     editingMedia,
     setEditingMedia,
     setEditingImageId,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
   } = gallery;
   const mediaId = file._id as Id<"mediaFiles">;
   const displayKind = getMediaDisplayKind(file);
@@ -306,41 +291,6 @@ function MediaGalleryImageCard({
                     setEditingMedia(open ? file._id : null)
                   }
                 />
-                <AlertDialog
-                  open={deleteConfirmOpen === file._id}
-                  onOpenChange={(open) =>
-                    setDeleteConfirmOpen(open ? file._id : null)
-                  }
-                >
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      onClick={(event) => event.stopPropagation()}
-                      title={common("delete")}
-                      className="size-7 p-0"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {tMedia("deleteMedia")}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {tMedia("deleteMediaConfirm")}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{common("cancel")}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDelete(file._id)}>
-                        {common("delete")}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
               </PermissionGate>
             </div>
           )}

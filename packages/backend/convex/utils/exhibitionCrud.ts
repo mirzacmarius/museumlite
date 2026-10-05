@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import { requireExhibitionAccess } from "./exhibitionAccess";
 import { hasFeatureAccess } from "./featureGates";
 import {
@@ -201,19 +202,7 @@ export async function removeExhibitionHandler(
     requirePermission(ctx, exhibition.organizationId, "collections.delete"),
   ]);
 
-  await Promise.all([
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deleted",
-      entityType: "exhibition",
-      entityId: args.id,
-      changes: { title: exhibition.title },
-    }),
-    ctx.db.delete(args.id),
-  ]);
-
-  return null;
+  return rejectPermanentEvidenceDeletion();
 }
 
 export async function listExhibitionsForCollectionHandler(

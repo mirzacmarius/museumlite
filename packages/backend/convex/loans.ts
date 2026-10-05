@@ -3,34 +3,35 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
   markCollectionActive,
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
-import {
-  cancelLoanHandler,
-  dispatchLoanHandler,
-  returnLoanHandler,
-  returnLoanItemHandler,
-} from "./utils/loanLifecycle";
 import {
   deleteLoanDocumentHandler,
   listLoanDocumentsHandler,
   uploadLoanDocumentHandler,
 } from "./utils/loanDocuments";
-import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import {
   approveLoanExtensionHandler,
   listLoanExtensionRequestsHandler,
   rejectLoanExtensionHandler,
   requestLoanExtensionHandler,
 } from "./utils/loanExtensions";
+import {
+  cancelLoanHandler,
+  dispatchLoanHandler,
+  returnLoanHandler,
+  returnLoanItemHandler,
+} from "./utils/loanLifecycle";
+import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import {
   approveLoanHandler,
   bulkApproveLoansHandler,
@@ -39,12 +40,12 @@ import {
   rejectLoanHandler,
 } from "./utils/loanWorkflow";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
-import { emitWebhookEvent } from "./utils/webhookEvents";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
@@ -116,9 +117,7 @@ export const create = mutation({
           q.eq("organizationId", args.organizationId),
         )
         .collect();
-      const duplicate = existingLoans.some(
-        (l) => l.loanNumber === loanNumber,
-      );
+      const duplicate = existingLoans.some((l) => l.loanNumber === loanNumber);
       if (duplicate) {
         throw new Error("Loan number already in use");
       }
@@ -431,6 +430,19 @@ export const removeItems = mutation({
         const loanItem = await ctx.db.get(loanItemId);
         if (!loanItem || loanItem.loanId !== args.loanId) {
           throw new Error(`Loan item ${loanItemId} not found or invalid`);
+        }
+
+        const report = await ctx.db
+          .query("conditionReports")
+          .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItemId))
+          .first();
+        if (
+          report ||
+          loanItem.conditionReportId ||
+          loanItem.conditionOut !== undefined ||
+          loanItem.conditionIn !== undefined
+        ) {
+          rejectPermanentEvidenceDeletion();
         }
 
         // Update collection status back to active
@@ -1289,52 +1301,8 @@ export const deleteAllLoans = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
-    const [, loans] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.update"),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
-
-    let deletedLoanItems = 0;
-    let updatedCollections = 0;
-
-    // For each loan, delete loan items and update collection statuses
-    await Promise.all(
-      Array.from(loans).map(async (loan) => {
-        const loanItems = await ctx.db
-          .query("loanItems")
-          .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
-          .collect();
-
-        await Promise.all(
-          Array.from(loanItems).map(async (item) => {
-            await Promise.all([
-              markCollectionActive(ctx, {
-                collectionId: item.collectionId,
-                changedBy: userId,
-              }),
-              ctx.db.delete(item._id),
-            ]);
-            updatedCollections++;
-            deletedLoanItems++;
-          }),
-        );
-
-        // Delete the loan
-        await ctx.db.delete(loan._id);
-      }),
-    );
-
-    return {
-      deletedLoans: loans.length,
-      deletedLoanItems,
-      updatedCollections,
-    };
+    await requirePermission(ctx, args.organizationId, "loans.update");
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

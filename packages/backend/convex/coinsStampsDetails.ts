@@ -8,6 +8,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -185,16 +186,7 @@ export const remove = mutation({
     await Promise.all([
       requireCoinsStampsModule(ctx, details.organizationId),
       requirePermission(ctx, details.organizationId, "collections.delete"),
-      ctx.db.delete(args.coinsStampsDetailsId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: details.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "coinsStampsDetails",
-        entityId: args.coinsStampsDetailsId,
-      }),
-    ] as const);
-
-    return null;
+    ]);
+    return rejectPermanentEvidenceDeletion();
   },
 });

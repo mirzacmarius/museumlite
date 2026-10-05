@@ -33,7 +33,6 @@ export function useCollectionEditFormMedia({
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const createMedia = useMutation(api.media.create);
   const setPrimary = useMutation(api.media.setPrimary);
-  const deleteMedia = useMutation(api.media.deleteMedia);
 
   const [isMediaBaselineReady, setIsMediaBaselineReady] = useState(false);
   const initialMediaSignatureRef = useRef("");
@@ -300,22 +299,6 @@ export function useCollectionEditFormMedia({
     [setError, setPrimary, t],
   );
 
-  const handleDeleteMedia = useCallback(
-    async (mediaId: string) => {
-      setError(null);
-      try {
-        await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : t("form.errors.failedToDeleteMedia"),
-        );
-      }
-    },
-    [deleteMedia, setError, t],
-  );
-
   return {
     media,
     images,
@@ -328,6 +311,5 @@ export function useCollectionEditFormMedia({
     handleFileSelect,
     handleDocumentSelect,
     handleSetPrimary,
-    handleDeleteMedia,
   };
 }

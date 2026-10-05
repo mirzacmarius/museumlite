@@ -3,85 +3,12 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import {
   applyUsageCounterDelta,
   createEmptyUsageCounter,
   getStorageBytes,
 } from "./utils/organizationUsageCounters";
-
-// Tables to clear - hardcoded list (NOT using TableNames to avoid as any)
-// These are verified to exist in schema.ts
-const _TABLES_TO_CLEAR = [
-  "auditLog",
-  "notifications",
-  "loanReminders",
-  "loanExtensionRequests",
-  "conditionReports",
-  "loanItems",
-  "loanDocuments",
-  "loans",
-  "deaccessions",
-  "accessions",
-  "mediaFiles",
-  "locationHistory",
-  "locationMoveRequests",
-  "collectionGroupItems",
-  "fineArtDetails",
-  "wineDetails",
-  "vehicleDetails",
-  "naturalHistoryDetails",
-  "archiveDetails",
-  "collections",
-  "collectionGroups",
-  "locations",
-  "conditionOptions",
-  "materialOptions",
-  "typeOptions",
-  "donors",
-  "userOrganizations",
-  "rolePermissions",
-  "roles",
-  "organizations",
-  "conservationTreatments",
-  "conservationAlerts",
-  "conservationAlertRules",
-  "assessmentSchedules",
-  "environmentalReadings",
-  "conservationAttachments",
-  "exhibitions",
-  "exhibitionObjects",
-  "exhibitionDocuments",
-  "installationTasks",
-  "installationTaskTemplates",
-  "transitRecords",
-  "transitItems",
-  "transitStatusUpdates",
-  "transitCounters",
-  "librarySettings",
-  "membershipTypes",
-  "libraryItems",
-  "itemCopies",
-  "circulations",
-  "libraryHolds",
-  "libraryRecalls",
-  "libraryFines",
-  "libraryPayments",
-  "accounts",
-  "accountCounters",
-  "contacts",
-  "accountSegments",
-  "workflowTemplates",
-  "workflowConfigs",
-  "workflowSlaConfigs",
-  "workflowHistory",
-  "appraisals",
-  "insurancePolicies",
-  "insuranceCoverages",
-  "insuranceClaims",
-  "claimCounters",
-  "savedViews",
-  "userPreferences",
-] as const;
 
 export const clearTableBatch = internalMutation({
   args: {
@@ -89,16 +16,7 @@ export const clearTableBatch = internalMutation({
     batchSize: v.number(),
   },
   returns: v.number(),
-  handler: async (ctx, args) => {
-    // biome-ignore lint/suspicious/noExplicitAny: required for dynamic table iteration
-    const docs = await ctx.db.query(args.tableName as any).take(args.batchSize);
-    await Promise.all(
-      Array.from(docs).map(async (doc) => {
-        await ctx.db.delete(doc._id);
-      }),
-    );
-    return docs.length;
-  },
+  handler: async () => rejectPermanentEvidenceDeletion(),
 });
 
 export const clearStorageBatch = internalMutation({
@@ -106,15 +24,7 @@ export const clearStorageBatch = internalMutation({
     batchSize: v.number(),
   },
   returns: v.number(),
-  handler: async (ctx, args) => {
-    const files = await ctx.db.system.query("_storage").take(args.batchSize);
-    await Promise.all(
-      Array.from(files).map(async (file) => {
-        await ctx.storage.delete(file._id);
-      }),
-    );
-    return files.length;
-  },
+  handler: async () => rejectPermanentEvidenceDeletion(),
 });
 
 /**

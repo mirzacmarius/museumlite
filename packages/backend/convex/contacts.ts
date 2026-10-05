@@ -6,6 +6,7 @@ import {
   requireAuthenticatedUser,
   requireAuthorizedOrganization,
 } from "./utils/authorizationContext";
+import { assertMuseumEvidenceDeletionAllowed } from "./utils/evidenceRetention";
 
 const roleValidator = v.union(
   v.literal("primary"),
@@ -407,6 +408,9 @@ export const remove = mutation({
         moduleId: "accounts",
         permission: "accounts.delete",
       }),
+    ]);
+    await assertMuseumEvidenceDeletionAllowed(ctx, contact.organizationId);
+    await Promise.all([
       ctx.db.delete(args.contactId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: account.organizationId,

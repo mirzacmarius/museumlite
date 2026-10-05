@@ -8,6 +8,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -218,17 +219,8 @@ export const remove = mutation({
         requireWineModule(ctx, details.organizationId),
         requirePermission(ctx, details.organizationId, "collections.delete"),
       ] as const),
-      ctx.db.delete(args.wineDetailsId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: details.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "wineDetails",
-        entityId: args.wineDetailsId,
-      }),
-    ] as const);
-
-    return null;
+    ]);
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

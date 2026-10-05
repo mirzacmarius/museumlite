@@ -8,6 +8,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -209,17 +210,8 @@ export const remove = mutation({
     await Promise.all([
       requireFineArtModule(ctx, details.organizationId),
       requirePermission(ctx, details.organizationId, "collections.delete"),
-      ctx.db.delete(args.fineArtDetailsId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: details.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "fineArtDetails",
-        entityId: args.fineArtDetailsId,
-      }),
-    ] as const);
-
-    return null;
+    ]);
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

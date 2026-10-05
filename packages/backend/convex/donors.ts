@@ -8,6 +8,7 @@ import {
   optionUsageResultValidator,
   unusedOptionUsage,
 } from "./utils/collectionOptionUsages";
+import { assertMuseumEvidenceDeletionAllowed } from "./utils/evidenceRetention";
 import { requirePermission } from "./utils/permissions";
 
 /**
@@ -212,6 +213,9 @@ export const remove = mutation({
         donor.organizationId,
         "organization.manage_settings",
       ),
+    ]);
+    await assertMuseumEvidenceDeletionAllowed(ctx, donor.organizationId);
+    await Promise.all([
       ctx.db.delete(args.donorId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: donor.organizationId,

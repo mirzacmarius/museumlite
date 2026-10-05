@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import {
   getMediaFileType,
   insertCompletedMediaAsset,
@@ -500,17 +501,7 @@ export const deleteUnmappedFile = mutation({
       throw new Error("Cannot delete mapped file");
     }
 
-    await ctx.storage.delete(args.storageId);
-
-    const updatedFiles = mediaData.uploadedFiles.filter(
-      (f) => f.storageId !== args.storageId,
-    );
-
-    await ctx.db.patch(mediaData._id, {
-      uploadedFiles: updatedFiles,
-    });
-
-    return null;
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

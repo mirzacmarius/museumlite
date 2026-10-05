@@ -109,8 +109,10 @@ export async function restoreCollectionHandler(
             .eq("organizationId", collection.organizationId)
             .eq("accessionNumber", collection.accessionNumber),
         )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .first(),
+        .collect()
+        .then((records) =>
+          records.find((record) => record.status === "active"),
+        ),
       ctx.db
         .query("deaccessions")
         .withIndex("by_organization_and_collection_and_status", (q) =>
@@ -128,8 +130,12 @@ export async function restoreCollectionHandler(
             .eq("collectionId", args.collectionId)
             .eq("status", "approved"),
         )
-        .filter((q) => q.neq(q.field("targetCollectionStatus"), "archived"))
-        .first(),
+        .collect()
+        .then((decisions) =>
+          decisions.find(
+            (decision) => decision.targetCollectionStatus !== "archived",
+          ),
+        ),
     ] as const);
   if (activeIdentity && activeIdentity._id !== collection._id) {
     throw new Error("An active object already uses this accession number");

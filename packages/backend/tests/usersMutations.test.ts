@@ -185,7 +185,11 @@ describe("usersMutations", () => {
       organization: expect.objectContaining({ _id: organizationId }),
       refreshToken: null,
       session: null,
-      user: null,
+      user: expect.objectContaining({
+        _id: userId,
+        name: "Former staff member",
+        deactivatedAt: expect.any(Number),
+      }),
       userOrganization: null,
       verificationCode: null,
       pendingEmailChange: null,

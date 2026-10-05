@@ -14,6 +14,7 @@ import { accessionParser } from "./utils/accessionNumberParser";
 import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublication";
 import { batchLookup } from "./utils/batchLookup";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { enforceMediaQuota } from "./utils/featureGates";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
@@ -131,20 +132,6 @@ async function syncAccessionSearchDocument(
   const accession = await ctx.db.get(accessionId);
   if (accession) {
     await upsertAccessionSearchDocument(ctx, accession);
-  }
-}
-
-async function deleteAccessionSearchDocument(
-  ctx: MutationCtx,
-  accessionId: Id<"accessions">,
-) {
-  const existing = await ctx.db
-    .query("accessionSearchDocuments")
-    .withIndex("by_accession", (q) => q.eq("accessionId", accessionId))
-    .first();
-
-  if (existing) {
-    await ctx.db.delete(existing._id);
   }
 }
 
@@ -1832,51 +1819,7 @@ export const emptyRejected = mutation({
       throw new Error("Not authenticated");
     }
 
-    const rejectedAccessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "rejected"))
-      .collect();
-
-    let deletedCount = 0;
-
-    await Promise.all(
-      Array.from(rejectedAccessions).map(async (accession) => {
-        if (accession.collectionId) {
-          return;
-        }
-
-        const storageIds = new Set<Id<"_storage">>();
-
-        for (const storageId of accession.documents || []) {
-          storageIds.add(storageId);
-        }
-
-        for (const mediaItem of accession.draftMedia || []) {
-          storageIds.add(mediaItem.storageId);
-        }
-
-        for (const checklistItem of accession.documentChecklist || []) {
-          if (checklistItem.storageId) {
-            storageIds.add(checklistItem.storageId);
-          }
-        }
-        await Promise.all([
-          Promise.all(
-            Array.from(storageIds).map(async (storageId) => {
-              await ctx.storage.delete(storageId);
-            }),
-          ),
-          ctx.db.delete(accession._id),
-          deleteAccessionSearchDocument(ctx, accession._id),
-        ] as const);
-        deletedCount += 1;
-      }),
-    );
-
-    return { deletedCount };
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -2506,34 +2449,7 @@ export const removeChecklistDocument = mutation({
       "collections.update",
     );
 
-    const checklist = accession.documentChecklist ?? [];
-    const item = checklist.find((i) => i.documentType === args.documentType);
-
-    const updatedChecklist = checklist.map((i) => {
-      if (i.documentType === args.documentType) {
-        return {
-          ...i,
-          uploaded: false,
-          storageId: undefined,
-          uploadedAt: undefined,
-          uploadedBy: undefined,
-        };
-      }
-      return i;
-    });
-
-    // Remove from main documents array
-    const documents = accession.documents ?? [];
-    const filteredDocs = item?.storageId
-      ? documents.filter((d) => d !== item.storageId)
-      : documents;
-
-    await ctx.db.patch(args.accessionId, {
-      documentChecklist: updatedChecklist,
-      documents: filteredDocs,
-    });
-
-    return null;
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

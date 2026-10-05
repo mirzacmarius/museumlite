@@ -96,6 +96,9 @@ export default function AccountDetailPage() {
   });
   const timeline = timelineResult?.events;
 
+  const canDeleteEvidence = useQuery(api.accounts.canDeleteEvidence, {
+    accountId,
+  });
   const deleteAccount = useMutation(api.accounts.remove);
   if (!currentOrganizationId) {
     return (
@@ -166,45 +169,47 @@ export default function AccountDetailPage() {
                 </Link>
               </Button>
             </PermissionGate>
-            <PermissionGate permission="accounts.delete">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    {tCommon("delete")}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {t("detail.deleteAccount")}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("detail.deleteConfirm")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeleting}>
-                      {tCommon("cancel")}
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
+            {canDeleteEvidence === true && (
+              <PermissionGate permission="accounts.delete">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
                       disabled={isDeleting}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {isDeleting
-                        ? tCommon("loading")
-                        : t("detail.deleteAccount")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </PermissionGate>
+                      <Trash2 className="mr-2 size-4" />
+                      {tCommon("delete")}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {t("detail.deleteAccount")}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t("detail.deleteConfirm")}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeleting}>
+                        {tCommon("cancel")}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting
+                          ? tCommon("loading")
+                          : t("detail.deleteAccount")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </PermissionGate>
+            )}
           </div>
         </div>
 
@@ -485,6 +490,9 @@ function ContactsTab({
   const tToast = useScopedI18n("accounts.detail.toasts");
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const canDeleteEvidence = useQuery(api.accounts.canDeleteEvidence, {
+    accountId,
+  });
   const deleteContact = useMutation(api.contacts.remove);
 
   return (
@@ -555,43 +563,45 @@ function ContactsTab({
                   >
                     <Edit className="size-4" />
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {t("detail.deleteContact")}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t("detail.deleteContactConfirm", {
-                            name: `${contact.firstName} ${contact.lastName}`,
-                          })}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>
-                          {tCommon("cancel")}
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={async () => {
-                            try {
-                              await deleteContact({ contactId: contact._id });
-                              toast.success(tToast("contactDeleted"));
-                            } catch (_error) {
-                              toast.error(tToast("contactDeleteFailed"));
-                            }
-                          }}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {tCommon("delete")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {canDeleteEvidence === true && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t("detail.deleteContact")}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("detail.deleteContactConfirm", {
+                              name: `${contact.firstName} ${contact.lastName}`,
+                            })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {tCommon("cancel")}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              try {
+                                await deleteContact({ contactId: contact._id });
+                                toast.success(tToast("contactDeleted"));
+                              } catch (_error) {
+                                toast.error(tToast("contactDeleteFailed"));
+                              }
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {tCommon("delete")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </PermissionGate>
             </div>
@@ -876,6 +886,9 @@ function DocumentsTab({
 
   const generateUploadUrl = useAction(api.accountDocuments.generateUploadUrl);
   const createDocument = useMutation(api.accountDocuments.create);
+  const canDeleteEvidence = useQuery(api.accounts.canDeleteEvidence, {
+    accountId,
+  });
   const deleteDocument = useMutation(api.accountDocuments.remove);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -974,41 +987,43 @@ function DocumentsTab({
               <PermissionGate permission="accounts.write">
                 <div className="flex gap-2">
                   <DownloadDocumentButton documentId={doc._id} />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {t("deleteDocument")}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t("deleteDocumentConfirm", { name: doc.filename })}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>
-                          {tCommon("cancel")}
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={async () => {
-                            try {
-                              await deleteDocument({ documentId: doc._id });
-                              toast.success(tToast("documentDeleted"));
-                            } catch (_error) {
-                              toast.error(tToast("documentDeleteFailed"));
-                            }
-                          }}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {tCommon("delete")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {canDeleteEvidence === true && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t("deleteDocument")}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("deleteDocumentConfirm", { name: doc.filename })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {tCommon("cancel")}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              try {
+                                await deleteDocument({ documentId: doc._id });
+                                toast.success(tToast("documentDeleted"));
+                              } catch (_error) {
+                                toast.error(tToast("documentDeleteFailed"));
+                              }
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {tCommon("delete")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </PermissionGate>
             </div>

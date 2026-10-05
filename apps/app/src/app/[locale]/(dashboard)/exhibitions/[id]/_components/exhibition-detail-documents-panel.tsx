@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
-import { Download, FileText, Plus, Trash2, Upload } from "lucide-react";
+import { Download, FileText, Plus, Upload } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -36,7 +36,6 @@ export function ExhibitionDetailDocumentsPanel({
   selectedFile,
   setSelectedFile,
   handleFileUpload,
-  handleDeleteDocument,
 }: Pick<
   ExhibitionDetailViewProps,
   | "locale"
@@ -49,7 +48,6 @@ export function ExhibitionDetailDocumentsPanel({
   | "selectedFile"
   | "setSelectedFile"
   | "handleFileUpload"
-  | "handleDeleteDocument"
 >) {
   const t = useScopedI18n("exhibitions");
 
@@ -185,16 +183,6 @@ export function ExhibitionDetailDocumentsPanel({
                     </a>
                   </Button>
                 ) : null}
-                <PermissionGate permission="collections.delete">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-red-400 hover:bg-red-950/50 hover:text-red-300"
-                    onClick={() => handleDeleteDocument(doc._id)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </PermissionGate>
               </div>
             </div>
           ))}

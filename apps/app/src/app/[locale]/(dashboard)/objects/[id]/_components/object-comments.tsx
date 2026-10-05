@@ -9,7 +9,7 @@ import { Skeleton } from "@v1/ui/skeleton";
 import { Textarea } from "@v1/ui/textarea";
 import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
-import { AtSign, Loader2, MessageSquare, Send, Trash2 } from "lucide-react";
+import { AtSign, Loader2, MessageSquare, Send } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientRelativeTime } from "@/components/client-date";
@@ -80,7 +80,6 @@ export function ObjectComments({
   const [mentionState, setMentionState] = useState<MentionState | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentUser = useQuery(api.users.getUser);
   const comments = useQuery(api.objectComments.list, {
     objectId,
   }) as CommentItem[] | undefined;
@@ -90,7 +89,6 @@ export function ObjectComments({
   });
 
   const createComment = useMutation(api.objectComments.create);
-  const removeComment = useMutation(api.objectComments.remove);
 
   const mentionUsers = useMemo(() => {
     if (!organizationUsers) return [];
@@ -156,16 +154,6 @@ export function ObjectComments({
     }
   };
 
-  const handleDelete = async (commentId: Id<"objectComments">) => {
-    try {
-      await removeComment({ commentId });
-      toast.success("Comment deleted");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete comment");
-    }
-  };
-
   const isLoading = comments === undefined;
 
   return (
@@ -224,16 +212,6 @@ export function ObjectComments({
                         />
                       </span>
                     </div>
-                    {currentUser?._id === comment.userId && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleDelete(comment._id)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    )}
                   </div>
                   <p className="text-sm text-foreground/90 whitespace-pre-wrap">
                     {comment.content}

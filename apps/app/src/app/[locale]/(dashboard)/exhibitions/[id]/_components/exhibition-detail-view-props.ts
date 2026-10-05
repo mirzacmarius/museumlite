@@ -1,4 +1,3 @@
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type {
   ExhibitionDetail,
   ExhibitionDocumentRecord,
@@ -17,8 +16,6 @@ export interface ExhibitionDetailViewProps {
   duration: ExhibitionDurationInfo;
   workflowHistory: ExhibitionWorkflowHistoryEntry[] | undefined;
   documents: ExhibitionDocumentRecord[] | undefined;
-  isDeleting: boolean;
-  handleDelete: () => Promise<void>;
   isUploadDialogOpen: boolean;
   setIsUploadDialogOpen: (open: boolean) => void;
   isUploading: boolean;
@@ -27,7 +24,4 @@ export interface ExhibitionDetailViewProps {
   selectedFile: File | null;
   setSelectedFile: (file: File | null) => void;
   handleFileUpload: () => Promise<void>;
-  handleDeleteDocument: (
-    documentId: Id<"exhibitionDocuments">,
-  ) => Promise<void>;
 }

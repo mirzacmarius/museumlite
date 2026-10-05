@@ -12,13 +12,7 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { useMutation, useQuery } from "convex/react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  FileImage,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, FileImage, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
@@ -36,7 +30,7 @@ export function MediaImportUnmappedReview({
   const t = useScopedI18n("collections");
   const unmappedFiles = useQuery(api.mediaImports.getUnmappedFiles, { jobId });
   const mapFile = useMutation(api.mediaImports.mapFileToCollection);
-  const deleteFile = useMutation(api.mediaImports.deleteUnmappedFile);
+
   const { currentOrganizationId } = useOrganization();
 
   const [handledFiles, setHandledFiles] = useState<Set<string>>(new Set());
@@ -81,17 +75,6 @@ export function MediaImportUnmappedReview({
     }
   };
 
-  const handleDelete = async (storageId: Id<"_storage">) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
-    try {
-      await deleteFile({ jobId, storageId });
-      setHandledFiles((prev) => new Set(prev).add(storageId));
-    } catch (err) {
-      console.error("Failed to delete file", err);
-      alert("Failed to delete file");
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -115,7 +98,6 @@ export function MediaImportUnmappedReview({
               <TableHead>File Name</TableHead>
               <TableHead>Size</TableHead>
               <TableHead className="w-[400px]">Map to Object</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,16 +126,6 @@ export function MediaImportUnmappedReview({
                       val && handleMap(file.storageId, val)
                     }
                   />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDelete(file.storageId)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
                 </TableCell>
               </TableRow>
             ))}

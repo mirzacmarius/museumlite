@@ -1,16 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@v1/ui/dialog";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -19,12 +10,7 @@ import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 export function ExhibitionDetailHeader({
   exhibitionId,
   exhibition,
-  isDeleting,
-  handleDelete,
-}: Pick<
-  ExhibitionDetailViewProps,
-  "exhibitionId" | "exhibition" | "isDeleting" | "handleDelete"
->) {
+}: Pick<ExhibitionDetailViewProps, "exhibitionId" | "exhibition">) {
   const t = useScopedI18n("exhibitions");
 
   return (
@@ -55,48 +41,6 @@ export function ExhibitionDetailHeader({
               {t("actions.edit")}
             </Link>
           </Button>
-        </PermissionGate>
-
-        <PermissionGate permission="collections.delete">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-red-900/30 text-red-400 hover:border-red-900/50 hover:bg-red-950/50 hover:text-red-300"
-              >
-                <Trash2 className="mr-2 size-3.5" />
-                {t("actions.delete")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="border-border bg-background sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle className="text-foreground">
-                  {t("actions.delete")}
-                </DialogTitle>
-                <DialogDescription className="text-muted-foreground">
-                  {t("actions.deleteConfirm")}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  className="border-border text-foreground/80 hover:bg-muted"
-                  disabled={isDeleting}
-                >
-                  {t("actions.cancel")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-red-900 text-red-100 hover:bg-red-800"
-                >
-                  {isDeleting ? t("actions.deleting") : t("actions.delete")}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </PermissionGate>
       </div>
     </header>

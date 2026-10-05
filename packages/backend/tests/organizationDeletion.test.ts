@@ -35,7 +35,7 @@ async function createOwnerOrganization(t: ReturnType<typeof convexTest>) {
     return await ctx.db.insert("organizations", {
       name: "Deletion Test Org",
       slug: `deletion-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
+      type: "library",
       subscriptionTier: "pro",
       ownerUserId,
       isActive: true,
@@ -99,9 +99,12 @@ describe("organizationDeletion", () => {
     const { organizationId, ownerUserId } = await createOwnerOrganization(t);
     const authed = authedForUser(t, ownerUserId);
 
-    const summary = await authed.mutation(api.organizationDeletion.requestDeletion, {
-      organizationId,
-    });
+    const summary = await authed.mutation(
+      api.organizationDeletion.requestDeletion,
+      {
+        organizationId,
+      },
+    );
 
     expect(summary.status).toBe("grace_period");
 
@@ -111,7 +114,9 @@ describe("organizationDeletion", () => {
     const auditEntry = await t.run(async (ctx) =>
       ctx.db
         .query("auditLog")
-        .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", organizationId),
+        )
         .order("desc")
         .first(),
     );
@@ -134,9 +139,12 @@ describe("organizationDeletion", () => {
     const organization = await t.run(async (ctx) => ctx.db.get(organizationId));
     expect(organization?.isActive).toBe(true);
 
-    const status = await authed.query(api.organizationDeletion.getDeletionStatus, {
-      organizationId,
-    });
+    const status = await authed.query(
+      api.organizationDeletion.getDeletionStatus,
+      {
+        organizationId,
+      },
+    );
     expect(status).toBeNull();
   });
 
@@ -145,9 +153,12 @@ describe("organizationDeletion", () => {
     const { organizationId, ownerUserId } = await createOwnerOrganization(t);
     const authed = authedForUser(t, ownerUserId);
 
-    const summary = await authed.mutation(api.organizationDeletion.requestDeletion, {
-      organizationId,
-    });
+    const summary = await authed.mutation(
+      api.organizationDeletion.requestDeletion,
+      {
+        organizationId,
+      },
+    );
 
     await t.mutation(api.organizationDeletion.cancelDeletion, {
       token: summary.cancelToken,
@@ -204,9 +215,12 @@ describe("organizationDeletion", () => {
     const { organizationId, ownerUserId } = await createOwnerOrganization(t);
     const authed = authedForUser(t, ownerUserId);
 
-    const summary = await authed.mutation(api.organizationDeletion.requestDeletion, {
-      organizationId,
-    });
+    const summary = await authed.mutation(
+      api.organizationDeletion.requestDeletion,
+      {
+        organizationId,
+      },
+    );
 
     const now = Date.now();
     await t.run(async (ctx) => {
@@ -234,7 +248,8 @@ describe("organizationDeletion", () => {
       await ctx.db.patch(deletion._id, {
         status: "pending_purge",
         scheduledPurgeAt: now - 1,
-        scheduledDeletionDate: now + ORGANIZATION_DELETION_FINAL_NOTICE_DISPLAY_MS,
+        scheduledDeletionDate:
+          now + ORGANIZATION_DELETION_FINAL_NOTICE_DISPLAY_MS,
       });
     });
 
@@ -254,9 +269,12 @@ describe("organizationDeletion", () => {
     const authed = authedForUser(t, ownerUserId);
 
     const before = Date.now();
-    const summary = await authed.mutation(api.organizationDeletion.requestDeletion, {
-      organizationId,
-    });
+    const summary = await authed.mutation(
+      api.organizationDeletion.requestDeletion,
+      {
+        organizationId,
+      },
+    );
     const after = Date.now();
 
     expect(summary.graceEndsAt).toBeGreaterThanOrEqual(
@@ -281,9 +299,12 @@ describe("organizationDeletion", () => {
     const { organizationId, ownerUserId } = await createOwnerOrganization(t);
     const authed = authedForUser(t, ownerUserId);
 
-    const summary = await authed.mutation(api.organizationDeletion.requestDeletion, {
-      organizationId,
-    });
+    const summary = await authed.mutation(
+      api.organizationDeletion.requestDeletion,
+      {
+        organizationId,
+      },
+    );
 
     const phaseStart = Date.now();
     await t.run(async (ctx) => {
@@ -298,7 +319,10 @@ describe("organizationDeletion", () => {
       });
     });
 
-    await t.mutation(internal.organizationDeletion.processOrganizationDeletionsInternal, {});
+    await t.mutation(
+      internal.organizationDeletion.processOrganizationDeletionsInternal,
+      {},
+    );
 
     const deletion = await t.run(async (ctx) => ctx.db.get(summary.deletionId));
     expect(deletion?.status).toBe("pending_purge");
@@ -309,4 +333,67 @@ describe("organizationDeletion", () => {
       phaseStart + ORGANIZATION_DELETION_PURGE_AFTER_FINAL_NOTICE_MS,
     );
   });
+});
+
+test("museum deletion is refused and legacy purge requests remain recoverable", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, ownerUserId } = await createOwnerOrganization(t);
+  await t.run(async (ctx) => ctx.db.patch(organizationId, { type: "museum" }));
+  const owner = authedForUser(t, ownerUserId);
+  await expect(
+    owner.mutation(api.organizationDeletion.requestDeletion, {
+      organizationId,
+    }),
+  ).rejects.toThrow("Permanent evidence");
+  expect(
+    await owner.query(api.organizationCleanup.getRetentionPolicy, {
+      organizationId,
+    }),
+  ).toEqual({ canDeleteOrganization: false });
+  await t.run(async (ctx) => {
+    await ctx.db.patch(organizationId, { isActive: false });
+    await ctx.db.insert("organizationDeletions", {
+      organizationId,
+      status: "pending_purge",
+      requestedAt: 1,
+      requestedByUserId: ownerUserId,
+      cancelToken: "retained-legacy-token",
+      graceEndsAt: 1,
+      finalNoticeAt: 1,
+      scheduledPurgeAt: 1,
+      preservedSubscriptionTier: "pro",
+    });
+  });
+  expect(
+    await t.mutation(
+      internal.organizationDeletion.processOrganizationDeletionsInternal,
+      {},
+    ),
+  ).toEqual({ advanced: 0, purged: 0 });
+  expect(
+    await t.mutation(
+      internal.organizationDeletion.processOrganizationDeletionsInternal,
+      {},
+    ),
+  ).toEqual({ advanced: 0, purged: 0 });
+  expect(
+    (
+      await owner.query(api.organizationDeletion.getDeletionStatus, {
+        organizationId,
+      })
+    )?.status,
+  ).toBe("pending_purge");
+  await owner.mutation(api.organizationDeletion.cancelDeletion, {
+    organizationId,
+  });
+  expect(
+    await owner.query(api.organizationDeletion.getDeletionStatus, {
+      organizationId,
+    }),
+  ).toBeNull();
+  expect(
+    (await owner.query(api.organizations.listUserOrganizations, {})).find(
+      (organization) => organization._id === organizationId,
+    )?.name,
+  ).toBe("Deletion Test Org");
 });

@@ -75,7 +75,6 @@ export function CollectionEditFormLayout({
     handleFileSelect,
     handleDocumentSelect,
     handleSetPrimary,
-    handleDeleteMedia,
     handleSubmit,
     handleNavigate,
     handleDiscardAndNavigate,
@@ -165,7 +164,6 @@ export function CollectionEditFormLayout({
             documentInputRef={documentInputRef}
             handleDocumentSelect={handleDocumentSelect}
             handleSetPrimary={handleSetPrimary}
-            handleDeleteMedia={handleDeleteMedia}
             setEditingImageId={setEditingImageId}
           />
         </form>

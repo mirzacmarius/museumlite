@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api, internal } from "../convex/_generated/api";
+import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
@@ -117,7 +117,7 @@ describe("organizationCleanup", () => {
     expect(report[0].recentActivityCount).toBe(1);
   });
 
-  test("dryRun reports purge impact and real purge removes org data", async () => {
+  test("dry-run is rerunnable and museum purge preserves its footprint", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createAdminOrganization(
       t,
@@ -130,7 +130,7 @@ describe("organizationCleanup", () => {
       );
     });
 
-    const workflowConfigId = await t.run(async (ctx) => {
+    await t.run(async (ctx) => {
       const collectionId = await ctx.db.insert("collections", {
         organizationId,
         accessionNumber: "PURGE-001",
@@ -208,27 +208,25 @@ describe("organizationCleanup", () => {
       dryRun[0].tableCounts.some((entry) => entry.table === "collections"),
     ).toBe(true);
 
-    const orgStillExists = await t.run(async (ctx) =>
-      ctx.db.get(organizationId),
+    await expect(
+      authed.mutation(api.organizationCleanup.purgeOrganizations, {
+        organizationIds: [organizationId],
+        dryRun: false,
+      }),
+    ).rejects.toThrow("Permanent evidence");
+    const repeated = await authed.mutation(
+      api.organizationCleanup.purgeOrganizations,
+      {
+        organizationIds: [organizationId],
+        dryRun: true,
+      },
     );
-    expect(orgStillExists).not.toBeNull();
-
-    await authed.mutation(api.organizationCleanup.purgeOrganizations, {
-      organizationIds: [organizationId],
-      dryRun: false,
-    });
-
-    const [organization, workflowConfig, storageDoc, orgsWithSla] =
-      await Promise.all([
-        t.run(async (ctx) => ctx.db.get(organizationId)),
-        t.run(async (ctx) => ctx.db.get(workflowConfigId)),
-        t.run(async (ctx) => ctx.db.system.get(storageId)),
-        t.query(internal.workflowSla.getOrganizationsWithSlaConfigs, {}),
-      ]);
-
-    expect(organization).toBeNull();
-    expect(workflowConfig).toBeNull();
-    expect(storageDoc).toBeNull();
-    expect(orgsWithSla).not.toContain(organizationId);
+    expect(repeated).toEqual(dryRun);
+    const footprints = await authed.query(
+      api.organizationCleanup.getOrganizationFootprints,
+      { organizationIds: [organizationId] },
+    );
+    expect(footprints[0]?.objectCount).toBe(1);
+    expect(footprints[0]?.storageBytes).toBe(4);
   });
 });

@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { createOrganizationQuery } from "./utils/convexAuth";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { computeCoverageAlerts } from "./utils/insuranceCoverageAlerts";
 import { computeInsuranceStats } from "./utils/insuranceStats";
 import { generateNextClaimNumber } from "./utils/numberGenerator";
@@ -271,52 +272,12 @@ export const deletePolicy = mutation({
       throw new Error("Policy not found");
     }
 
-    const [, activeCoverages] = await Promise.all([
-      requirePermission(
-        ctx,
-        policy.organizationId,
-        "organization.manage_settings",
-      ),
-      ctx.db
-        .query("insuranceCoverages")
-        .withIndex("by_policy_and_status", (q) =>
-          q.eq("policyId", args.policyId).eq("status", "active"),
-        )
-        .first(),
-    ] as const);
-
-    if (activeCoverages) {
-      throw new Error("Cannot delete policy with active coverages");
-    }
-
-    const activeClaims = await ctx.db
-      .query("insuranceClaims")
-      .withIndex("by_policy", (q) => q.eq("policyId", args.policyId))
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "submitted"),
-          q.eq(q.field("status"), "under_review"),
-        ),
-      )
-      .first();
-
-    if (activeClaims) {
-      throw new Error("Cannot delete policy with active claims");
-    }
-
-    await Promise.all([
-      ctx.db.delete(args.policyId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: policy.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "insurancePolicy",
-        entityId: args.policyId,
-        changes: { policyNumber: policy.policyNumber },
-      }),
-    ]);
-
-    return null;
+    await requirePermission(
+      ctx,
+      policy.organizationId,
+      "organization.manage_settings",
+    );
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -1825,10 +1786,7 @@ export const createAutoClaimForTransitDamage = internalMutation({
       throw new Error("User is not a member of this organization");
     }
 
-    const claimNumber = await generateNextClaimNumber(
-      ctx,
-      args.organizationId,
-    );
+    const claimNumber = await generateNextClaimNumber(ctx, args.organizationId);
     const now = Date.now();
 
     const [claimId, coordinatorUserIds] = await Promise.all([

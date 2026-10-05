@@ -193,7 +193,7 @@ export default {
     deleteAccount: {
       title: "Șterge Contul",
       description:
-        "Șterge permanent contul tău Convex SaaS, toate proiectele tale, link-urile și statisticile lor.",
+        "Închide contul MuseumLite și elimină accesul și datele personale de contact. Numele tău rămâne asociat istoricului instituțional.",
       warning: "Această acțiune nu poate fi anulată, procedează cu atenție.",
       deleteButton: "Șterge Contul",
       confirmButton: "Ești Sigur?",
