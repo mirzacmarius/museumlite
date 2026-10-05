@@ -16,8 +16,8 @@ export function SignInWithOAuth({
 }: SignInWithOAuthProps) {
   return (
     <div className="space-y-4">
-      <SignInWithGoogle compact={compact} redirectTo={redirectTo} />
       {showDivider ? <SignInMethodDivider /> : null}
+      <SignInWithGoogle compact={compact} redirectTo={redirectTo} />
     </div>
   );
 }

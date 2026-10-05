@@ -6839,7 +6839,7 @@ export default {
         "Vous avez des modifications non enregistrées qui seront perdues si vous quittez cette page. Voulez-vous d’abord les enregistrer ?",
       discardChanges: "Ignorer les modifications",
       enterCode: "Saisir le code",
-      orContinueWithEmail: "Ou continuer avec votre adresse e-mail",
+      orContinueWithGoogle: "Ou continuer avec Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
         "Saisissez votre adresse e-mail. Si vous n’avez pas encore de compte, nous vous aiderons à en créer un.",
       clearEmail: "Effacer l’adresse e-mail",

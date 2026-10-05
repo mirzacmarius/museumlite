@@ -11,7 +11,7 @@ export function SignInMethodDivider() {
       </div>
       <div className="relative flex justify-center text-[11px] font-medium uppercase tracking-[0.06em]">
         <span className="bg-background px-2 text-muted-foreground">
-          {translate("untranslatedComponents.labels.orContinueWithEmail")}
+          {translate("untranslatedComponents.labels.orContinueWithGoogle")}
         </span>
       </div>
     </div>
