@@ -6,6 +6,7 @@ import { metadataRecord } from "./schema";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import { hasModuleEnabled, requireModuleEnabled } from "./utils/featureGates";
 import { hasPermission, requirePermission } from "./utils/permissions";
+import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
 
 const relatedEntityTypeValidator = v.union(
   v.literal("loan"),
@@ -256,6 +257,14 @@ export const create = mutation({
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),
     ]);
+    if (
+      (await getRelatedEntityOrganization(
+        ctx,
+        args.relatedEntityType,
+        args.relatedEntityId,
+      )) !== account.organizationId
+    )
+      throw new Error("Related record not found in this organization");
     return await ctx.db
       .insert("accountRelationships", {
         organizationId: account.organizationId,

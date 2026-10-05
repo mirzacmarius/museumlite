@@ -3,9 +3,12 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { Download, Upload } from "lucide-react";
+import { Suspense } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { DataBatchJobs } from "./data-batch-jobs";
 import { DataExportTab } from "./data-export-tab";
 import { DataImportTab } from "./data-import-tab";
+import { DataIntegrityReview } from "./data-integrity-review";
 
 export default function DataPage() {
   const { currentOrganizationId } = useOrganization();
@@ -34,6 +37,10 @@ export default function DataPage() {
         </p>
       </div>
 
+      <Suspense fallback={<p role="status">Loading record review…</p>}>
+        <DataBatchJobs key={organizationId} organizationId={organizationId} />
+        <DataIntegrityReview organizationId={organizationId} />
+      </Suspense>
       <Tabs defaultValue="import" className="w-full">
         <TabsList>
           <TabsTrigger value="import" className="gap-2">

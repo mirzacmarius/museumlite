@@ -45,7 +45,10 @@ export async function listExhibitionsByOrganizationHandler(
         loanVenue: exhibition.loanVenue,
         notes: exhibition.notes,
         collectionId: exhibition.collectionId,
-        collectionTitle: collection?.title,
+        collectionTitle:
+          collection?.organizationId === exhibition.organizationId
+            ? collection.title
+            : undefined,
       };
     }),
   );
@@ -91,7 +94,10 @@ export async function getExhibitionHandler(
     notes: exhibition.notes,
     collectionId: exhibition.collectionId,
     organizationId: exhibition.organizationId,
-    collectionTitle: collection?.title,
+    collectionTitle:
+      collection?.organizationId === exhibition.organizationId
+        ? collection.title
+        : undefined,
     status: exhibition.status,
     workflowStep: exhibition.workflowStep,
     totalWorkflowSteps: workflowConfig

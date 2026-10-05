@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -11,9 +12,9 @@ import {
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { requireExhibitionAccess } from "./utils/exhibitionAccess";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
-  completeChunkedMediaAsset,
   getDefaultMediaCategory,
   getMediaFileType,
   insertCompletedMediaAsset,
@@ -25,8 +26,17 @@ import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
-import { requirePermission } from "./utils/permissions";
+import {
+  requireModuleAndPermission,
+  requirePermission,
+} from "./utils/permissions";
 import { revokePublicRendition } from "./utils/publicMedia";
+import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+  validateOwnedUploadSize,
+} from "./utils/uploadOwnership";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
 function isImageMedia(media: {
@@ -91,26 +101,15 @@ export const generateUploadUrl = mutation({
       throw new Error("Collection does not belong to this organization");
     }
 
+    validateOwnedUploadSize(args.fileSize);
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
-    const isLargeFile = args.fileSize > MAX_SMALL_MEDIA_FILE_SIZE;
-
-    if (isLargeFile) {
-      // For large files, generate upload URL
-      // Note: Client should handle chunked uploads externally if needed
-      // For now, Convex storage handles large files directly
-      const uploadUrl = await ctx.storage.generateUploadUrl();
-      const chunkId = `chunk_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-
-      return {
-        uploadUrl,
-        isChunked: true,
-        chunkId,
-      };
-    }
-
     // Small files - direct upload
-    const uploadUrl = await ctx.storage.generateUploadUrl();
+    const uploadUrl = await createAuthorizedUploadUrl(
+      ctx,
+      userId,
+      args.organizationId,
+    );
     return {
       uploadUrl,
       isChunked: false,
@@ -156,6 +155,7 @@ export const create = mutation({
       throw new Error("Collection does not belong to this organization");
     }
 
+    validateOwnedUploadSize(args.fileSize);
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     const fileCategory = getMediaFileType(args.mimeType);
@@ -164,22 +164,10 @@ export const create = mutation({
       args.mediaCategory,
     );
 
-    if (args.chunkId) {
-      const mediaId = await completeChunkedMediaAsset(ctx, {
-        organizationId: args.organizationId,
-        chunkId: args.chunkId,
-        storageId: args.storageId,
-        fileSize: args.fileSize,
-        mimeType: args.mimeType,
-      });
-
-      if (mediaId) {
-        await emitWebhookEvent(ctx, args.organizationId, "media.uploaded", {
-          mediaId,
-        });
-        return mediaId;
-      }
-    }
+    if (args.chunkId)
+      throw new Error(
+        "Chunked uploads are unavailable; upload a file up to 20 MB",
+      );
 
     const { mediaId } = await insertCompletedMediaAsset(ctx, {
       collectionId: args.collectionId,
@@ -194,6 +182,15 @@ export const create = mutation({
       photographer: args.photographer,
       copyright: args.copyright,
       uploadedBy: userId,
+    });
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: args.organizationId,
+      uploadedBy: userId,
+      ownerType: "media",
+      ownerId: mediaId,
+      expectedFileSize: args.fileSize,
+      expectedMimeType: args.mimeType,
     });
 
     await emitWebhookEvent(ctx, args.organizationId, "media.uploaded", {
@@ -1880,6 +1877,555 @@ export const getRightsSummary = query({
       expiringLicenses,
       requiresAcknowledgment,
       unknownRights,
+    };
+  },
+});
+
+export const reviewIntegrity = query({
+  args: {
+    organizationId: v.id("organizations"),
+    kind: v.union(
+      v.literal("relationships"),
+      v.literal("collections"),
+      v.literal("media"),
+      v.literal("accessions"),
+      v.literal("locations"),
+      v.literal("exhibitions"),
+      v.literal("loans"),
+      v.literal("accounts"),
+      v.literal("library"),
+    ),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: v.object({
+    issues: v.array(
+      v.object({
+        recordId: v.string(),
+        recordLabel: v.string(),
+        referencedId: v.string(),
+        issue: v.string(),
+      }),
+    ),
+    checkedCount: v.number(),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      args.kind === "media"
+        ? "media.read"
+        : args.kind === "locations"
+          ? "locations.read"
+          : args.kind === "loans"
+            ? "loans.read"
+            : args.kind === "accounts" || args.kind === "relationships"
+              ? "accounts.read"
+              : "collections.read",
+    );
+    if (args.kind === "accounts" || args.kind === "relationships")
+      await requireModuleAndPermission(
+        ctx,
+        args.organizationId,
+        "accounts",
+        "accounts.read",
+      );
+    if (args.kind === "library")
+      await requireModuleAndPermission(
+        ctx,
+        args.organizationId,
+        "library",
+        "collections.read",
+      );
+    if (args.kind === "exhibitions")
+      await requireExhibitionAccess(ctx, args.organizationId);
+    const paginationOpts = {
+      ...args.paginationOpts,
+      numItems: Math.min(
+        args.kind === "loans" ? 1 : 25,
+        Math.max(1, args.paginationOpts.numItems),
+      ),
+    };
+    const issues: Array<{
+      recordId: string;
+      recordLabel: string;
+      referencedId: string;
+      issue: string;
+    }> = [];
+    const add = (
+      recordId: string,
+      recordLabel: string,
+      referencedId: string,
+      issue: string,
+    ) => {
+      issues.push({ recordId, recordLabel, referencedId, issue });
+    };
+    let remainingReferences = 200;
+    const limitedRecords = new Set<string>();
+    const canReviewReference = (recordId: string, label: string) => {
+      if (remainingReferences > 0) {
+        remainingReferences--;
+        return true;
+      }
+      if (!limitedRecords.has(recordId)) {
+        limitedRecords.add(recordId);
+        add(
+          recordId,
+          label,
+          recordId,
+          "Reference review limit reached; this record requires a separate review",
+        );
+      }
+      return false;
+    };
+    const checkBlob = async (
+      recordId: string,
+      label: string,
+      storageId: Id<"_storage">,
+      expectedOwner?: { type: string; id: string },
+    ) => {
+      if (!canReviewReference(recordId, label)) return;
+      const [file, binding] = await Promise.all([
+        ctx.db.system.get("_storage", storageId),
+        ctx.db
+          .query("storageOwnership")
+          .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+          .unique(),
+      ]);
+      if (!file)
+        add(
+          recordId,
+          label,
+          storageId,
+          "File is missing; retain the attachment record for review",
+        );
+      else if (!binding)
+        add(
+          recordId,
+          label,
+          storageId,
+          "File ownership is unverified; retain the file for review",
+        );
+      else if (
+        binding.organizationId !== args.organizationId ||
+        (expectedOwner &&
+          (binding.ownerType !== expectedOwner.type ||
+            binding.ownerId !== expectedOwner.id))
+      )
+        add(
+          recordId,
+          label,
+          storageId,
+          "File ownership conflicts with this attachment",
+        );
+    };
+    const checkLocation = async (
+      recordId: string,
+      label: string,
+      id?: Id<"locations">,
+    ) => {
+      if (!id || !canReviewReference(recordId, label)) return;
+      const location = await ctx.db.get(id);
+      if (!location || location.organizationId !== args.organizationId)
+        add(
+          recordId,
+          label,
+          id,
+          "Location is missing or belongs to another organization",
+        );
+      else if (
+        !location.isActive ||
+        (location.status && location.status !== "active")
+      )
+        add(recordId, label, id, "Location is unavailable for moves");
+    };
+    if (args.kind === "collections") {
+      const result = await ctx.db
+        .query("collections")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        if (record.parentObjectId) {
+          const parent = await ctx.db.get(record.parentObjectId);
+          if (
+            !parent ||
+            parent.organizationId !== args.organizationId ||
+            parent._id === record._id
+          )
+            add(
+              record._id,
+              record.title,
+              record.parentObjectId,
+              "Parent object is missing or belongs to another organization",
+            );
+        }
+        await checkLocation(record._id, record.title, record.currentLocationId);
+        if (record.collectionGroupId) {
+          const group = await ctx.db.get(record.collectionGroupId);
+          if (!group || group.organizationId !== args.organizationId)
+            add(
+              record._id,
+              record.title,
+              record.collectionGroupId,
+              "Collection group is missing or belongs to another organization",
+            );
+        }
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    if (args.kind === "media") {
+      const result = await ctx.db
+        .query("mediaFiles")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        const collection = await ctx.db.get(record.collectionId);
+        if (!collection || collection.organizationId !== args.organizationId)
+          add(
+            record._id,
+            record.fileName,
+            record.collectionId,
+            "Object is missing or belongs to another organization",
+          );
+        await checkBlob(record._id, record.fileName, record.storageId, {
+          type: "media",
+          id: record._id,
+        });
+        const versions = await ctx.db
+          .query("mediaVersions")
+          .withIndex("by_original_media", (q) =>
+            q.eq("originalMediaId", record._id),
+          )
+          .take(101);
+        if (versions.length > 100)
+          add(
+            record._id,
+            record.fileName,
+            record._id,
+            "More than 100 versions require a separate review",
+          );
+        for (const version of versions.slice(0, 100))
+          await checkBlob(
+            record._id,
+            `${record.fileName} version ${version.versionNumber}`,
+            version.storageId,
+            { type: "mediaVersion", id: version._id },
+          );
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    if (args.kind === "accessions") {
+      const result = await ctx.db
+        .query("accessions")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        await checkLocation(
+          record._id,
+          record.accessionNumber,
+          record.draftObjectData?.currentLocationId,
+        );
+        const storageIds = new Set([
+          ...(record.documents ?? []),
+          ...(record.draftMedia ?? []).map((media) => media.storageId),
+          ...(record.documentChecklist ?? []).flatMap((item) =>
+            item.storageId ? [item.storageId] : [],
+          ),
+        ]);
+        for (const storageId of storageIds)
+          await checkBlob(record._id, record.accessionNumber, storageId);
+        if (record.donorAccountId) {
+          const account = await ctx.db.get(record.donorAccountId);
+          if (!account || account.organizationId !== args.organizationId)
+            add(
+              record._id,
+              record.accessionNumber,
+              record.donorAccountId,
+              "Donor account is missing or belongs to another organization",
+            );
+        }
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    if (args.kind === "locations") {
+      const result = await ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        await checkLocation(record._id, record.name, record.parentLocationId);
+        const imageId = record.customFields?.locationImageId;
+        if (imageId) {
+          const storageId =
+            typeof imageId === "string"
+              ? ctx.db.system.normalizeId("_storage", imageId)
+              : null;
+          if (storageId)
+            await checkBlob(record._id, record.name, storageId, {
+              type: "locationImage",
+              id: record._id,
+            });
+          else
+            add(
+              record._id,
+              record.name,
+              String(imageId),
+              "Location image ID is invalid",
+            );
+        }
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+
+    if (args.kind === "relationships") {
+      const result = await ctx.db
+        .query("accountRelationships")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        const account = await ctx.db.get(record.accountId);
+        if (!account || account.organizationId !== args.organizationId)
+          add(
+            record._id,
+            "Account relationship",
+            record.accountId,
+            "Account is missing or belongs to another organization",
+          );
+        if (
+          (await getRelatedEntityOrganization(
+            ctx,
+            record.relatedEntityType,
+            record.relatedEntityId,
+          )) !== args.organizationId
+        )
+          add(
+            record._id,
+            "Account relationship",
+            record.relatedEntityId,
+            "Related record is missing or belongs to another organization",
+          );
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    if (args.kind === "accounts") {
+      const result = await ctx.db
+        .query("accountDocuments")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        const account = await ctx.db.get(record.accountId);
+        if (!account || account.organizationId !== args.organizationId)
+          add(
+            record._id,
+            record.filename,
+            record.accountId,
+            "Account is missing or belongs to another organization",
+          );
+        await checkBlob(record._id, record.filename, record.storageId, {
+          type: "accountDocument",
+          id: record._id,
+        });
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    if (args.kind === "library") {
+      const result = await ctx.db
+        .query("libraryItems")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page)
+        if (record.coverImageId)
+          await checkBlob(record._id, record.title, record.coverImageId, {
+            type: "libraryCover",
+            id: record._id,
+          });
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    if (args.kind === "loans") {
+      const result = await ctx.db
+        .query("loans")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .paginate(paginationOpts);
+      for (const record of result.page) {
+        const documents = await ctx.db
+          .query("loanDocuments")
+          .withIndex("by_loan", (q) => q.eq("loanId", record._id))
+          .take(101);
+        if (documents.length > 100)
+          add(
+            record._id,
+            record.loanNumber,
+            record._id,
+            "More than 100 documents require a separate review",
+          );
+        for (const document of documents.slice(0, 100))
+          await checkBlob(record._id, document.fileName, document.storageId, {
+            type: "loanDocument",
+            id: document._id,
+          });
+        const items = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", record._id))
+          .take(101);
+        if (items.length > 100)
+          add(
+            record._id,
+            record.loanNumber,
+            record._id,
+            "More than 100 loan items require a separate review",
+          );
+        for (const item of items.slice(0, 100)) {
+          const collection = await ctx.db.get(item.collectionId);
+          if (!collection || collection.organizationId !== args.organizationId)
+            add(
+              record._id,
+              record.loanNumber,
+              item.collectionId,
+              "Loan object is missing or belongs to another organization",
+            );
+          const reports = await ctx.db
+            .query("conditionReports")
+            .withIndex("by_loanItem", (q) => q.eq("loanItemId", item._id))
+            .take(101);
+          if (reports.length > 100)
+            add(
+              record._id,
+              record.loanNumber,
+              item._id,
+              "More than 100 condition reports require a separate review",
+            );
+          for (const report of reports.slice(0, 100))
+            for (const storageId of report.photos ?? [])
+              await checkBlob(record._id, record.loanNumber, storageId, {
+                type: "conditionReport",
+                id: report._id,
+              });
+        }
+      }
+      return {
+        issues,
+        checkedCount: result.page.length,
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+    const result = await ctx.db
+      .query("exhibitions")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .paginate(paginationOpts);
+    for (const record of result.page) {
+      await checkLocation(record._id, record.title, record.locationId);
+      const objects = await ctx.db
+        .query("exhibitionObjects")
+        .withIndex("by_exhibition", (q) => q.eq("exhibitionId", record._id))
+        .take(101);
+      if (objects.length > 100)
+        add(
+          record._id,
+          record.title,
+          record._id,
+          "More than 100 exhibition objects require a separate review",
+        );
+      for (const object of objects.slice(0, 100)) {
+        const collection = await ctx.db.get(object.collectionId);
+        if (
+          !collection ||
+          collection.organizationId !== args.organizationId ||
+          object.organizationId !== args.organizationId
+        )
+          add(
+            record._id,
+            record.title,
+            object.collectionId,
+            "Exhibition object is missing or belongs to another organization",
+          );
+        await checkLocation(
+          record._id,
+          record.title,
+          object.originalLocationId,
+        );
+        await checkLocation(
+          record._id,
+          record.title,
+          object.exhibitionLocationId,
+        );
+      }
+      const documents = await ctx.db
+        .query("exhibitionDocuments")
+        .withIndex("by_exhibition", (q) => q.eq("exhibitionId", record._id))
+        .take(101);
+      if (documents.length > 100)
+        add(
+          record._id,
+          record.title,
+          record._id,
+          "More than 100 exhibition documents require a separate review",
+        );
+      for (const document of documents.slice(0, 100))
+        await checkBlob(record._id, document.fileName, document.storageId, {
+          type: "exhibitionDocument",
+          id: document._id,
+        });
+    }
+    return {
+      issues,
+      checkedCount: result.page.length,
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
     };
   },
 });

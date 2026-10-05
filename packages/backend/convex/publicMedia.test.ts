@@ -531,9 +531,22 @@ test("approval publishes only its rendition and invalidates on rights, version, 
     }),
   ).toBe(true);
   expect((await publicDetail())?.images).toHaveLength(1);
-  const nextStorageId = await t.run((ctx) =>
-    ctx.storage.store(new Blob(["new version"], { type: "image/jpeg" })),
+  const nextFile = new Blob(["new version"], { type: "image/jpeg" });
+  const nextUpload = await reviewer.mutation(api.media.generateUploadUrl, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    fileName: "new-version.jpg",
+    fileSize: nextFile.size,
+    mimeType: nextFile.type,
+  });
+  const nextUploadUrl = new URL(nextUpload.uploadUrl);
+  const nextResponse = await t.fetch(
+    nextUploadUrl.pathname + nextUploadUrl.search,
+    { method: "POST", body: nextFile },
   );
+  expect(nextResponse.status).toBe(200);
+  const { storageId: nextStorageId }: { storageId: Id<"_storage"> } =
+    await nextResponse.json();
   await reviewer.mutation(api.mediaVersions.createVersion, {
     mediaId,
     storageId: nextStorageId,

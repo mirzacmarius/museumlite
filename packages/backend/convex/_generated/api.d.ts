@@ -42,6 +42,7 @@ import type * as email_index from "../email/index.js";
 import type * as email_senders from "../email/senders.js";
 import type * as email_styles from "../email/styles.js";
 import type * as env from "../env.js";
+import type * as environmentalDevices from "../environmentalDevices.js";
 import type * as exhibitions from "../exhibitions.js";
 import type * as fineArtDetails from "../fineArtDetails.js";
 import type * as http from "../http.js";
@@ -112,6 +113,7 @@ import type * as utils_accessionObjectDraftPublication from "../utils/accessionO
 import type * as utils_accountAdministration from "../utils/accountAdministration.js";
 import type * as utils_accountProfile from "../utils/accountProfile.js";
 import type * as utils_authorizationContext from "../utils/authorizationContext.js";
+import type * as utils_authorizedCollectionBatch from "../utils/authorizedCollectionBatch.js";
 import type * as utils_batchLookup from "../utils/batchLookup.js";
 import type * as utils_collectionDetailLifecycle from "../utils/collectionDetailLifecycle.js";
 import type * as utils_collectionDisplayHelpers from "../utils/collectionDisplayHelpers.js";
@@ -146,6 +148,7 @@ import type * as utils_loanMovement from "../utils/loanMovement.js";
 import type * as utils_loanOccupancy from "../utils/loanOccupancy.js";
 import type * as utils_loanStatusTransitions from "../utils/loanStatusTransitions.js";
 import type * as utils_loanWorkflow from "../utils/loanWorkflow.js";
+import type * as utils_locationIntegrity from "../utils/locationIntegrity.js";
 import type * as utils_mediaAssets from "../utils/mediaAssets.js";
 import type * as utils_moduleCatalog from "../utils/moduleCatalog.js";
 import type * as utils_moduleValidators from "../utils/moduleValidators.js";
@@ -161,12 +164,15 @@ import type * as utils_organizationUsageCounters from "../utils/organizationUsag
 import type * as utils_permissions from "../utils/permissions.js";
 import type * as utils_polarBilling from "../utils/polarBilling.js";
 import type * as utils_polarComponentSync from "../utils/polarComponentSync.js";
+import type * as utils_publicMedia from "../utils/publicMedia.js";
 import type * as utils_publicPortal from "../utils/publicPortal.js";
+import type * as utils_relatedEntityIntegrity from "../utils/relatedEntityIntegrity.js";
 import type * as utils_reportingCatalogAnalytics from "../utils/reportingCatalogAnalytics.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
 import type * as utils_superAdmins from "../utils/superAdmins.js";
 import type * as utils_systemRoles from "../utils/systemRoles.js";
+import type * as utils_uploadOwnership from "../utils/uploadOwnership.js";
 import type * as utils_validators from "../utils/validators.js";
 import type * as utils_verificationCode from "../utils/verificationCode.js";
 import type * as utils_webhookEvents from "../utils/webhookEvents.js";
@@ -222,6 +228,7 @@ declare const fullApi: ApiFromModules<{
   "email/senders": typeof email_senders;
   "email/styles": typeof email_styles;
   env: typeof env;
+  environmentalDevices: typeof environmentalDevices;
   exhibitions: typeof exhibitions;
   fineArtDetails: typeof fineArtDetails;
   http: typeof http;
@@ -292,6 +299,7 @@ declare const fullApi: ApiFromModules<{
   "utils/accountAdministration": typeof utils_accountAdministration;
   "utils/accountProfile": typeof utils_accountProfile;
   "utils/authorizationContext": typeof utils_authorizationContext;
+  "utils/authorizedCollectionBatch": typeof utils_authorizedCollectionBatch;
   "utils/batchLookup": typeof utils_batchLookup;
   "utils/collectionDetailLifecycle": typeof utils_collectionDetailLifecycle;
   "utils/collectionDisplayHelpers": typeof utils_collectionDisplayHelpers;
@@ -326,6 +334,7 @@ declare const fullApi: ApiFromModules<{
   "utils/loanOccupancy": typeof utils_loanOccupancy;
   "utils/loanStatusTransitions": typeof utils_loanStatusTransitions;
   "utils/loanWorkflow": typeof utils_loanWorkflow;
+  "utils/locationIntegrity": typeof utils_locationIntegrity;
   "utils/mediaAssets": typeof utils_mediaAssets;
   "utils/moduleCatalog": typeof utils_moduleCatalog;
   "utils/moduleValidators": typeof utils_moduleValidators;
@@ -341,12 +350,15 @@ declare const fullApi: ApiFromModules<{
   "utils/permissions": typeof utils_permissions;
   "utils/polarBilling": typeof utils_polarBilling;
   "utils/polarComponentSync": typeof utils_polarComponentSync;
+  "utils/publicMedia": typeof utils_publicMedia;
   "utils/publicPortal": typeof utils_publicPortal;
+  "utils/relatedEntityIntegrity": typeof utils_relatedEntityIntegrity;
   "utils/reportingCatalogAnalytics": typeof utils_reportingCatalogAnalytics;
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;
   "utils/superAdmins": typeof utils_superAdmins;
   "utils/systemRoles": typeof utils_systemRoles;
+  "utils/uploadOwnership": typeof utils_uploadOwnership;
   "utils/validators": typeof utils_validators;
   "utils/verificationCode": typeof utils_verificationCode;
   "utils/webhookEvents": typeof utils_webhookEvents;
@@ -390,4 +402,5 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   polar: import("@convex-dev/polar/_generated/component.js").ComponentApi<"polar">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
 };

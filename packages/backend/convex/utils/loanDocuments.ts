@@ -4,6 +4,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import { requireLoansAccess } from "./loanAccess";
 import { requirePermission } from "./permissions";
+import { claimStorageOwnership } from "./uploadOwnership";
 
 export async function uploadLoanDocumentHandler(
   ctx: MutationCtx,
@@ -35,6 +36,13 @@ export async function uploadLoanDocumentHandler(
     fileName: args.fileName,
     uploadedBy: userId,
     uploadedAt: Date.now(),
+  });
+  await claimStorageOwnership(ctx, {
+    storageId: args.storageId,
+    organizationId: loan.organizationId,
+    uploadedBy: userId,
+    ownerType: "loanDocument",
+    ownerId: documentId,
   });
 
   return documentId;

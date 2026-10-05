@@ -35,7 +35,7 @@ import {
 } from "@v1/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
 import { Textarea } from "@v1/ui/textarea";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Building2,
@@ -884,7 +884,7 @@ function DocumentsTab({
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const generateUploadUrl = useAction(api.accountDocuments.generateUploadUrl);
+  const generateUploadUrl = useMutation(api.accountDocuments.generateUploadUrl);
   const createDocument = useMutation(api.accountDocuments.create);
   const canDeleteEvidence = useQuery(api.accounts.canDeleteEvidence, {
     accountId,
@@ -903,7 +903,7 @@ function DocumentsTab({
 
     dispatch({ type: "setIsUploading", value: true });
     try {
-      const uploadUrl = await generateUploadUrl({});
+      const uploadUrl = await generateUploadUrl({ accountId });
       const uploadResult = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": state.selectedFile.type },

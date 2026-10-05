@@ -9,6 +9,10 @@ import {
 } from "./exhibitionContext";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import {
+  moveCollectionToLocation,
+  requireCollectionInOrganization,
+} from "./locationIntegrity";
+import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
   requirePermission,
@@ -302,7 +306,9 @@ export async function activateExhibitionHandler(
     requireExhibitionUpdatePermission(ctx, exhibition.organizationId),
     ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .filter((q) => q.eq(q.field("status"), "pending"))
       .collect(),
   ] as const);
@@ -320,7 +326,16 @@ export async function activateExhibitionHandler(
 
   await Promise.all([
     Promise.all(
-      Array.from(exhibitionObjects).map((obj) => {
+      Array.from(exhibitionObjects).map(async (obj) => {
+        if (obj.organizationId !== exhibition.organizationId)
+          throw new Error(
+            "Exhibition object belongs to a different organization",
+          );
+        const collection = await requireCollectionInOrganization(
+          ctx,
+          obj.collectionId,
+          exhibition.organizationId,
+        );
         const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
         return Promise.all([
           ctx.db.patch(obj._id, {
@@ -329,9 +344,13 @@ export async function activateExhibitionHandler(
             installedBy: userId,
           }),
           newLocationId
-            ? ctx.db.patch(obj.collectionId, {
-                currentLocationId: newLocationId,
-              })
+            ? moveCollectionToLocation(
+                ctx,
+                collection,
+                newLocationId,
+                userId,
+                "Exhibition activation",
+              )
             : Promise.resolve(),
         ]);
       }),
@@ -399,7 +418,9 @@ export async function closeExhibitionHandler(
     requireExhibitionUpdatePermission(ctx, exhibition.organizationId),
     ctx.db
       .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId))
+      .withIndex("by_exhibition", (q) =>
+        q.eq("exhibitionId", args.exhibitionId),
+      )
       .collect(),
   ] as const);
 
@@ -410,6 +431,15 @@ export async function closeExhibitionHandler(
   if (args.returnObjectsToOriginalLocations !== false) {
     await Promise.all(
       Array.from(notReturnedObjects).map(async (obj) => {
+        if (obj.organizationId !== exhibition.organizationId)
+          throw new Error(
+            "Exhibition object belongs to a different organization",
+          );
+        const collection = await requireCollectionInOrganization(
+          ctx,
+          obj.collectionId,
+          exhibition.organizationId,
+        );
         if (obj.status === "installed") {
           await ctx.db.patch(obj._id, {
             status: "deinstalled",
@@ -419,9 +449,13 @@ export async function closeExhibitionHandler(
         }
 
         if (obj.originalLocationId) {
-          await ctx.db.patch(obj.collectionId, {
-            currentLocationId: obj.originalLocationId,
-          });
+          await moveCollectionToLocation(
+            ctx,
+            collection,
+            obj.originalLocationId,
+            userId,
+            "Exhibition closure return",
+          );
         }
 
         await ctx.db.patch(obj._id, {

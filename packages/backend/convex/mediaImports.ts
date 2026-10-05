@@ -10,6 +10,12 @@ import {
   MAX_SMALL_MEDIA_FILE_SIZE,
 } from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+  transferStorageOwnership,
+  validateOwnedUploadSize,
+} from "./utils/uploadOwnership";
 
 const mappingTypeValidator = v.union(
   v.literal("csv"),
@@ -187,7 +193,12 @@ export const generateBulkUploadUrl = mutation({
       throw new Error("Import job not found");
     }
 
-    const uploadUrl = await ctx.storage.generateUploadUrl();
+    validateOwnedUploadSize(args.fileSize);
+    const uploadUrl = await createAuthorizedUploadUrl(
+      ctx,
+      userId,
+      args.organizationId,
+    );
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     return { uploadUrl, fileId };
@@ -273,7 +284,25 @@ export const recordUploadedFile = mutation({
           fileType === "image" && args.fileSize < MAX_SMALL_MEDIA_FILE_SIZE,
       });
       mediaFileId = mediaAsset.mediaId;
+      await claimStorageOwnership(ctx, {
+        storageId: args.storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "media",
+        ownerId: mediaFileId,
+        expectedFileSize: args.fileSize,
+        expectedMimeType: args.mimeType,
+      });
     } else {
+      await claimStorageOwnership(ctx, {
+        storageId: args.storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "mediaImport",
+        ownerId: job._id,
+        expectedFileSize: args.fileSize,
+        expectedMimeType: args.mimeType,
+      });
       error = accessionNumber
         ? `No collection found for accession number: ${accessionNumber}`
         : "Could not determine accession number from filename";
@@ -439,6 +468,15 @@ export const mapFileToCollection = mutation({
         fileType === "image" && file.fileSize < MAX_SMALL_MEDIA_FILE_SIZE,
     });
     const mediaFileId = mediaAsset.mediaId;
+    const ownership = await transferStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: job.organizationId,
+      fromOwnerType: "mediaImport",
+      fromOwnerId: job._id,
+      ownerType: "media",
+      ownerId: mediaFileId,
+    });
+    await ctx.db.patch(mediaFileId, ownership);
 
     const updatedFiles = [...mediaData.uploadedFiles];
     updatedFiles[fileIndex] = {

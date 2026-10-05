@@ -65,7 +65,7 @@ test("import diagnostics are available to operators only in their organization",
   }
 });
 
-test("primary image batch rejects foreign objects in either position", async () => {
+test("primary image batch rejects foreign objects in first, middle and last positions", async () => {
   const t = createConvexTest();
   const own = await createOrgUserCollectionWithPermissions(t, ["media.read"]);
   const foreign = await createOrgUserCollectionWithPermissions(t, [
@@ -129,11 +129,37 @@ test("primary image batch rejects foreign objects in either position", async () 
   for (const collectionIds of [
     [own.collectionId, foreign.collectionId],
     [foreign.collectionId, own.collectionId],
+    [own.collectionId, foreign.collectionId, secondOwnCollectionId],
   ]) {
     await expect(
       authorized.query(api.media.getBatchPrimaryImageUrls, { collectionIds }),
     ).rejects.toThrow();
   }
+  const missingCollectionId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("collections", {
+      organizationId: own.organizationId,
+      accessionNumber: "MISSING",
+      title: "Missing",
+      status: "active",
+      catalogedBy: own.userId,
+      catalogedAt: Date.now(),
+    });
+    await ctx.db.delete(id);
+    return id;
+  });
+  expect(
+    await authorized.query(api.media.getBatchPrimaryImageUrls, {
+      collectionIds: [
+        own.collectionId,
+        missingCollectionId,
+        secondOwnCollectionId,
+      ],
+    }),
+  ).toMatchObject([
+    { collectionId: own.collectionId },
+    { collectionId: missingCollectionId, url: null },
+    { collectionId: secondOwnCollectionId, url: null },
+  ]);
   await expect(
     authorized.query(api.media.getBatchPrimaryImageUrls, {
       collectionIds: Array.from({ length: 201 }, () => own.collectionId),
@@ -152,7 +178,7 @@ test("primary image batch rejects foreign objects in either position", async () 
   ).rejects.toThrow();
 });
 
-test("active loan batch rejects foreign objects in either position", async () => {
+test("active loan batch rejects foreign objects in first, middle and last positions", async () => {
   const t = createConvexTest();
   const own = await createOrgUserCollectionWithPermissions(t, ["loans.read"], {
     subscriptionTier: "pro",
@@ -216,6 +242,7 @@ test("active loan batch rejects foreign objects in either position", async () =>
   for (const collectionIds of [
     [own.collectionId, foreign.collectionId],
     [foreign.collectionId, own.collectionId],
+    [own.collectionId, foreign.collectionId, secondOwnCollectionId],
   ]) {
     await expect(
       authorized.query(api.loans.checkCollectionsInActiveLoans, {
@@ -223,6 +250,27 @@ test("active loan batch rejects foreign objects in either position", async () =>
       }),
     ).rejects.toThrow();
   }
+  const missingCollectionId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("collections", {
+      organizationId: own.organizationId,
+      accessionNumber: "MISSING",
+      title: "Missing",
+      status: "active",
+      catalogedBy: own.userId,
+      catalogedAt: Date.now(),
+    });
+    await ctx.db.delete(id);
+    return id;
+  });
+  expect(
+    await authorized.query(api.loans.checkCollectionsInActiveLoans, {
+      collectionIds: [
+        own.collectionId,
+        missingCollectionId,
+        secondOwnCollectionId,
+      ],
+    }),
+  ).toMatchObject([{ loanNumber: "OWN-LOAN" }]);
   await expect(
     authorized.query(api.loans.checkCollectionsInActiveLoans, {
       collectionIds: Array.from({ length: 201 }, () => own.collectionId),

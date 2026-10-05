@@ -71,6 +71,8 @@ export async function loadExhibitionObjectMutationContext(
     throw new Error("Exhibition not found");
   }
 
+  if (exhibitionObject.organizationId !== exhibition.organizationId)
+    throw new Error("Exhibition object belongs to a different organization");
   await requireExhibitionUpdatePermission(ctx, exhibition.organizationId);
 
   return { userId, exhibitionObject, exhibition };

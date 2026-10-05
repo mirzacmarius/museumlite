@@ -98,12 +98,15 @@ export function ExhibitionDetailPageClient() {
 
     dispatch({ type: "setUploading", value: true });
     try {
-      const uploadUrl = await generateUploadUrl();
+      const uploadUrl = await generateUploadUrl({
+        exhibitionId: exhibitionId as Id<"exhibitions">,
+      });
       const result = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": state.selectedFile.type },
         body: state.selectedFile,
       });
+      if (!result.ok) throw new Error(await result.text());
       const { storageId } = await result.json();
 
       await uploadDocument({

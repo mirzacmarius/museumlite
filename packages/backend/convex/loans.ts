@@ -45,6 +45,7 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
@@ -1068,6 +1069,9 @@ export const createConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
+    const collection = await ctx.db.get(loanItem.collectionId);
+    if (!collection || collection.organizationId !== loan.organizationId)
+      throw new Error("Loan object not found in this organization");
     if (!loan.useDetailedConditionReports) {
       throw new Error("Loan does not use detailed condition reports");
     }
@@ -1087,6 +1091,14 @@ export const createConditionReport = mutation({
       assessedAt: Date.now(),
     });
 
+    for (const storageId of args.photos ?? [])
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: loan.organizationId,
+        uploadedBy: userId,
+        ownerType: "conditionReport",
+        ownerId: reportId,
+      });
     // Link report to loan item
     await ctx.db.patch(args.loanItemId, {
       conditionReportId: reportId,

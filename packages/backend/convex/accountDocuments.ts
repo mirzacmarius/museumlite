@@ -1,10 +1,14 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import { assertMuseumEvidenceDeletionAllowed } from "./utils/evidenceRetention";
 import { requireModuleAndPermission } from "./utils/permissions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+} from "./utils/uploadOwnership";
 
 const documentTypeValidator = v.union(
   v.literal("contract"),
@@ -158,6 +162,15 @@ export const create = mutation({
         uploadedAt: Date.now(),
       })
       .then(async (documentId) => {
+        await claimStorageOwnership(ctx, {
+          storageId: args.storageId,
+          organizationId: account.organizationId,
+          uploadedBy: userId,
+          ownerType: "accountDocument",
+          ownerId: documentId,
+          expectedFileSize: args.size,
+          expectedMimeType: args.mimeType,
+        });
         await ctx.runMutation(internal.audit.logAction, {
           organizationId: account.organizationId,
           userId,
@@ -228,17 +241,24 @@ export const remove = mutation({
   },
 });
 
-export const generateUploadUrl = action({
-  args: {},
+export const generateUploadUrl = mutation({
+  args: { accountId: v.id("accounts") },
   returns: v.string(),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const uploadUrl = await ctx.storage.generateUploadUrl();
-
-    return uploadUrl;
+    const account = await ctx.db.get(args.accountId);
+    if (!account) throw new Error("Account not found");
+    await requireAccountAdministration(ctx, account);
+    await requireModuleAndPermission(
+      ctx,
+      account.organizationId,
+      "accounts",
+      "accounts.write",
+    );
+    return await createAuthorizedUploadUrl(ctx, userId, account.organizationId);
   },
 });

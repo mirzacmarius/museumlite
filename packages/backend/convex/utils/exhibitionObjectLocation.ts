@@ -8,6 +8,11 @@ import {
   requireExhibitionReadPermission,
 } from "./exhibitionContext";
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
+import {
+  moveCollectionToLocation,
+  requireCollectionInOrganization,
+  requireUsableLocation,
+} from "./locationIntegrity";
 
 export async function addExhibitionObjectHandler(
   ctx: MutationCtx,
@@ -49,12 +54,26 @@ export async function addExhibitionObjectHandler(
   const originalLocation =
     args.originalLocationId ?? collection.currentLocationId ?? undefined;
 
+  if (originalLocation)
+    await requireUsableLocation(
+      ctx,
+      exhibition.organizationId,
+      originalLocation,
+    );
+  const exhibitionLocationId =
+    args.exhibitionLocationId ?? exhibition.locationId;
+  if (exhibitionLocationId)
+    await requireUsableLocation(
+      ctx,
+      exhibition.organizationId,
+      exhibitionLocationId,
+    );
   const objectId = await ctx.db.insert("exhibitionObjects", {
     exhibitionId: args.exhibitionId,
     organizationId: exhibition.organizationId,
     collectionId: args.collectionId,
     originalLocationId: originalLocation,
-    exhibitionLocationId: args.exhibitionLocationId ?? exhibition.locationId,
+    exhibitionLocationId,
     status: "pending",
   });
 
@@ -121,10 +140,11 @@ export async function installObjectHandler(
     throw new Error("Object is not in pending status");
   }
 
-  const collection = await ctx.db.get(exhibitionObject.collectionId);
-  if (!collection) {
-    throw new Error("Collection object not found");
-  }
+  const collection = await requireCollectionInOrganization(
+    ctx,
+    exhibitionObject.collectionId,
+    exhibition.organizationId,
+  );
   await assertCollectionNotOnLoan(
     ctx,
     exhibitionObject.collectionId,
@@ -145,9 +165,13 @@ export async function installObjectHandler(
   });
 
   if (newLocationId) {
-    await ctx.db.patch(exhibitionObject.collectionId, {
-      currentLocationId: newLocationId,
-    });
+    await moveCollectionToLocation(
+      ctx,
+      collection,
+      newLocationId,
+      userId,
+      "Exhibition installation",
+    );
   }
 
   await ctx.runMutation(internal.audit.logAction, {
@@ -222,10 +246,19 @@ export async function returnObjectToOriginalLocationHandler(
   const returnLocation =
     args.overrideLocationId ?? exhibitionObject.originalLocationId;
 
+  const collection = await requireCollectionInOrganization(
+    ctx,
+    exhibitionObject.collectionId,
+    exhibition.organizationId,
+  );
   if (returnLocation) {
-    await ctx.db.patch(exhibitionObject.collectionId, {
-      currentLocationId: returnLocation,
-    });
+    await moveCollectionToLocation(
+      ctx,
+      collection,
+      returnLocation,
+      userId,
+      "Exhibition return",
+    );
   }
 
   await Promise.all([
@@ -285,12 +318,24 @@ export async function listExhibitionObjectsHandler(
       return {
         _id: obj._id,
         collectionId: obj.collectionId,
-        collectionTitle: collection?.title,
-        collectionAccessionNumber: collection?.accessionNumber,
+        collectionTitle:
+          collection?.organizationId === exhibition.organizationId
+            ? collection.title
+            : undefined,
+        collectionAccessionNumber:
+          collection?.organizationId === exhibition.organizationId
+            ? collection.accessionNumber
+            : undefined,
         originalLocationId: obj.originalLocationId,
-        originalLocationName: originalLocation?.name,
+        originalLocationName:
+          originalLocation?.organizationId === exhibition.organizationId
+            ? originalLocation.name
+            : undefined,
         exhibitionLocationId: obj.exhibitionLocationId,
-        exhibitionLocationName: exhibitionLocation?.name,
+        exhibitionLocationName:
+          exhibitionLocation?.organizationId === exhibition.organizationId
+            ? exhibitionLocation.name
+            : undefined,
         status: obj.status,
         installedAt: obj.installedAt,
         installedByName: installer?.name ?? installer?.username ?? undefined,
@@ -321,7 +366,21 @@ export async function bulkInstallObjectsHandler(
   ] as const);
 
   await Promise.all([
-    ...pendingObjects.map((obj) => {
+    ...pendingObjects.map(async (obj) => {
+      if (obj.organizationId !== exhibition.organizationId)
+        throw new Error(
+          "Exhibition object belongs to a different organization",
+        );
+      const collection = await requireCollectionInOrganization(
+        ctx,
+        obj.collectionId,
+        exhibition.organizationId,
+      );
+      await assertCollectionNotOnLoan(
+        ctx,
+        obj.collectionId,
+        "Cannot install an object that is currently on loan",
+      );
       const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
 
       return Promise.all([
@@ -331,9 +390,13 @@ export async function bulkInstallObjectsHandler(
           installedBy: userId,
         }),
         newLocationId
-          ? ctx.db.patch(obj.collectionId, {
-              currentLocationId: newLocationId,
-            })
+          ? moveCollectionToLocation(
+              ctx,
+              collection,
+              newLocationId,
+              userId,
+              "Exhibition installation",
+            )
           : Promise.resolve(),
       ]);
     }),
@@ -366,20 +429,33 @@ export async function bulkReturnObjectsHandler(
   ] as const);
 
   await Promise.all([
-    ...deinstalledObjects.map((obj) =>
-      Promise.all([
+    ...deinstalledObjects.map(async (obj) => {
+      if (obj.organizationId !== exhibition.organizationId)
+        throw new Error(
+          "Exhibition object belongs to a different organization",
+        );
+      const collection = await requireCollectionInOrganization(
+        ctx,
+        obj.collectionId,
+        exhibition.organizationId,
+      );
+      return Promise.all([
         obj.originalLocationId
-          ? ctx.db.patch(obj.collectionId, {
-              currentLocationId: obj.originalLocationId,
-            })
+          ? moveCollectionToLocation(
+              ctx,
+              collection,
+              obj.originalLocationId,
+              userId,
+              "Exhibition return",
+            )
           : Promise.resolve(),
         ctx.db.patch(obj._id, {
           status: "returned",
           returnedToOriginalLocation: true,
           returnedAt: Date.now(),
         }),
-      ]),
-    ),
+      ]);
+    }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
       userId,

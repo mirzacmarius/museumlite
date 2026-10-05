@@ -2159,6 +2159,11 @@ export default defineSchema({
     uvLevel: v.optional(v.number()), // UV index or µW/lumen
     // Metadata
     recordedAt: v.number(),
+    observedAt: v.optional(v.number()),
+    receivedAt: v.optional(v.number()),
+    sensorDeviceId: v.optional(v.id("environmentalDevices")),
+    sensorProbeId: v.optional(v.string()),
+    externalReadingId: v.optional(v.string()),
     recordedBy: v.optional(v.id("users")), // If manual entry
     source: v.union(
       v.literal("manual"),
@@ -2173,7 +2178,42 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_location", ["locationId"])
-    .index("by_location_and_time", ["locationId", "recordedAt"]),
+    .index("by_location_and_time", ["locationId", "recordedAt"])
+    .index("by_sensor_device_and_probe_and_external_reading", [
+      "sensorDeviceId",
+      "sensorProbeId",
+      "externalReadingId",
+    ]),
+
+  environmentalDevices: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    credentialPrefix: v.string(),
+    credentialHash: v.string(),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastSeenAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    lastErrorAt: v.optional(v.number()),
+    rotatedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_credential_prefix", ["credentialPrefix"]),
+
+  environmentalProbes: defineTable({
+    organizationId: v.id("organizations"),
+    deviceId: v.id("environmentalDevices"),
+    probeId: v.string(),
+    locationId: v.id("locations"),
+    isActive: v.boolean(),
+    boundBy: v.id("users"),
+    boundAt: v.number(),
+  })
+    .index("by_device_and_probe", ["deviceId", "probeId"])
+    .index("by_organization_and_device", ["organizationId", "deviceId"])
+    .index("by_location", ["locationId"]),
 
   // Conservation treatment attachments (before/after photos, reports)
   conservationAttachments: defineTable({
