@@ -11,6 +11,7 @@ interface PublicObjectImage {
   url: string;
   isPrimary: boolean;
   caption?: string;
+  originalDownloadUrl?: string;
 }
 
 interface PublicObjectValuation {
@@ -101,10 +102,10 @@ function PublicObjectGallery({ object }: PublicObjectDetailProps) {
         </div>
       ) : null}
 
-      {object.isHighResDownloadable && currentImage ? (
+      {currentImage?.originalDownloadUrl ? (
         <Button asChild variant="outline" className="w-full border-white/20">
           <a
-            href={currentImage.url}
+            href={currentImage.originalDownloadUrl}
             download
             target="_blank"
             rel="noopener noreferrer"

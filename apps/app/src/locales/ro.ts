@@ -1,4 +1,30 @@
 export default {
+  mediaPage: {
+    publication: {
+      title: "Aprobarea imaginii publice",
+      status: {
+        private: "Privată",
+        processing: "Se creează imaginea publică...",
+        approved: "Publicată",
+        failed: "Procesarea imaginii a eșuat",
+      },
+      publicPreview: "Previzualizarea imaginii publice aprobate",
+      rightsStatus: "Statutul drepturilor",
+      licenseType: "Licență",
+      noLicense: "Nicio licență specificată",
+      expiry: "Expirarea licenței",
+      restrictions: "Restricții de utilizare",
+      acknowledgment: "Afișarea publică necesită atribuire",
+      saveRights: "Salvează drepturile",
+      approve: "Aprobă imaginea publică",
+      retry: "Reîncearcă procesarea",
+      unpublish: "Retrage imaginea",
+      originalDownload: "Permite descărcarea publică a originalului",
+      invalidExpiry: "Introdu o dată validă.",
+      failed: "Actualizarea a eșuat. Încearcă din nou.",
+      unavailable: "Imagine indisponibilă",
+    },
+  },
   collections: {
     createPage: {
       description:

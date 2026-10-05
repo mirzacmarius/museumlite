@@ -26,6 +26,7 @@ import {
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { revokePublicRendition } from "./utils/publicMedia";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
 function isImageMedia(media: {
@@ -388,6 +389,7 @@ export const deleteMedia = mutation({
 
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.delete");
+    await revokePublicRendition(ctx, media);
 
     await deleteMediaAsset(ctx, {
       media,
@@ -1105,6 +1107,8 @@ export const getWithMetadata = query({
         ),
       ),
       rightsHolder: v.optional(v.string()),
+      licenseExpiry: v.optional(v.number()),
+      usageRestrictions: v.optional(v.string()),
       requiresAcknowledgment: v.optional(v.boolean()),
       acknowledgmentText: v.optional(v.string()),
     }),
@@ -1148,6 +1152,8 @@ export const getWithMetadata = query({
       rightsStatus: media.rightsStatus,
       licenseType: media.licenseType,
       rightsHolder: media.rightsHolder,
+      licenseExpiry: media.licenseExpiry,
+      usageRestrictions: media.usageRestrictions,
       requiresAcknowledgment: media.requiresAcknowledgment,
       acknowledgmentText: media.acknowledgmentText,
     };
@@ -1404,10 +1410,10 @@ export const updateRights = mutation({
   args: {
     mediaId: v.id("mediaFiles"),
     rightsStatus: v.optional(rightsStatusValidator),
-    licenseType: v.optional(licenseTypeValidator),
-    licenseExpiry: v.optional(v.number()),
+    licenseType: v.optional(v.union(licenseTypeValidator, v.null())),
+    licenseExpiry: v.optional(v.union(v.number(), v.null())),
     rightsHolder: v.optional(v.string()),
-    usageRestrictions: v.optional(v.string()),
+    usageRestrictions: v.optional(v.union(v.string(), v.null())),
     requiresAcknowledgment: v.optional(v.boolean()),
     acknowledgmentText: v.optional(v.string()),
   },
@@ -1429,17 +1435,22 @@ export const updateRights = mutation({
     const updates: Record<string, unknown> = {};
     if (args.rightsStatus !== undefined)
       updates.rightsStatus = args.rightsStatus;
-    if (args.licenseType !== undefined) updates.licenseType = args.licenseType;
+    if (args.licenseType !== undefined)
+      updates.licenseType = args.licenseType ?? undefined;
     if (args.licenseExpiry !== undefined)
-      updates.licenseExpiry = args.licenseExpiry;
+      updates.licenseExpiry = args.licenseExpiry ?? undefined;
     if (args.rightsHolder !== undefined)
       updates.rightsHolder = args.rightsHolder;
     if (args.usageRestrictions !== undefined)
-      updates.usageRestrictions = args.usageRestrictions;
+      updates.usageRestrictions = args.usageRestrictions ?? undefined;
     if (args.requiresAcknowledgment !== undefined)
       updates.requiresAcknowledgment = args.requiresAcknowledgment;
     if (args.acknowledgmentText !== undefined)
       updates.acknowledgmentText = args.acknowledgmentText;
+    if (Object.keys(updates).length > 0) {
+      await revokePublicRendition(ctx, media);
+      updates.publicApproval = undefined;
+    }
 
     await Promise.all([
       ctx.db.patch(args.mediaId, updates),

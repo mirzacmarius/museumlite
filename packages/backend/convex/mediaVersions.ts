@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { recordMediaVersionUsage } from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
+import { revokePublicRendition } from "./utils/publicMedia";
 
 /**
  * Create a new version of a media file with edits applied
@@ -35,6 +36,7 @@ export const createVersion = mutation({
 
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.upload");
+    await revokePublicRendition(ctx, media);
 
     // Get the current version count (default to 0 if not set)
     const currentVersionCount = media.versionCount ?? 0;
@@ -56,6 +58,7 @@ export const createVersion = mutation({
       ctx.db.patch(args.mediaId, {
         currentVersionId: versionId,
         versionCount: newVersionNumber,
+        publicApproval: undefined,
       }),
       recordMediaVersionUsage(ctx, {
         organizationId: media.organizationId,
@@ -95,10 +98,12 @@ export const revertToVersion = mutation({
 
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.upload");
+    await revokePublicRendition(ctx, media);
 
     // Update the media file to use this version
     await ctx.db.patch(version.originalMediaId, {
       currentVersionId: args.versionId,
+      publicApproval: undefined,
     });
 
     return version.originalMediaId;
