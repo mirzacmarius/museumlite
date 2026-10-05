@@ -8,6 +8,64 @@ import { env } from "./env";
 
 const http = httpRouter();
 
+function isValidIsoTimestamp(value: string): boolean {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/.exec(
+      value,
+    );
+  if (!match) return false;
+  const [
+    ,
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+    secondText,
+    ,
+    ,
+    offsetHourText,
+    offsetMinuteText,
+  ] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ][month - 1];
+  const offsetHour = Number(offsetHourText ?? 0);
+  const offsetMinute = Number(offsetMinuteText ?? 0);
+  return (
+    year > 0 &&
+    month >= 1 &&
+    month <= 12 &&
+    daysInMonth !== undefined &&
+    day >= 1 &&
+    day <= daysInMonth &&
+    hour <= 23 &&
+    minute <= 59 &&
+    second <= 59 &&
+    offsetHour <= 23 &&
+    offsetMinute <= 59 &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
 auth.addHttpRoutes(http);
 
 function encodeBase64(value: string) {
@@ -181,15 +239,29 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
   if (!credential || credential.length > 256) {
     return json(401, { error: "invalid_device_credential" });
   }
+  const noteError = async (
+    error:
+      | "Invalid payload"
+      | "Invalid measurement"
+      | "Measurement out of range",
+  ) =>
+    ctx.runMutation(internal.environmentalDevices.noteIngestionError, {
+      credential,
+      error,
+    });
   if (
     !request.headers
       .get("Content-Type")
       ?.toLowerCase()
       .includes("application/json")
   ) {
+    await noteError("Invalid payload");
     return json(400, { error: "invalid_content_type" });
   }
-  if (!request.body) return json(400, { error: "invalid_payload" });
+  if (!request.body) {
+    await noteError("Invalid payload");
+    return json(400, { error: "invalid_payload" });
+  }
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
@@ -199,6 +271,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     totalBytes += chunk.value.byteLength;
     if (totalBytes > 4096) {
       await reader.cancel();
+      await noteError("Invalid payload");
       return json(413, { error: "payload_too_large" });
     }
     chunks.push(chunk.value);
@@ -215,9 +288,11 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
   try {
     body = JSON.parse(bodyText);
   } catch {
+    await noteError("Invalid payload");
     return json(400, { error: "invalid_payload" });
   }
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    await noteError("Invalid payload");
     return json(400, { error: "invalid_payload" });
   }
   const payload = body as Record<string, unknown>;
@@ -235,9 +310,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     (typeof payload.timestamp !== "number" &&
       typeof payload.timestamp !== "string") ||
     (typeof payload.timestamp === "string" &&
-      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
-        payload.timestamp,
-      )) ||
+      !isValidIsoTimestamp(payload.timestamp)) ||
     typeof temperature !== "object" ||
     temperature === null ||
     Array.isArray(temperature) ||
@@ -245,6 +318,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     humidity === null ||
     Array.isArray(humidity)
   ) {
+    await noteError("Invalid payload");
     return json(400, { error: "invalid_payload" });
   }
   const timestamp =
@@ -265,6 +339,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
       temp.unit !== "°F") ||
     (humid.unit !== "%" && humid.unit !== "percent")
   ) {
+    await noteError("Invalid measurement");
     return json(400, { error: "invalid_measurement" });
   }
   const normalizedTemperature =
@@ -280,6 +355,7 @@ const receiveEnvironmentalReading = httpAction(async (ctx, request) => {
     timestamp > now + 300_000 ||
     timestamp < now - 90 * 24 * 60 * 60 * 1000
   ) {
+    await noteError("Measurement out of range");
     return json(400, { error: "measurement_out_of_range" });
   }
   const result = await ctx.runMutation(internal.environmentalDevices.ingest, {

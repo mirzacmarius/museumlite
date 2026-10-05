@@ -10,6 +10,16 @@ const limiter = new RateLimiter(components.rateLimiter, {
   environmentalReadings: { kind: "token bucket", rate: 120, period: MINUTE },
 });
 
+const ingestionErrorValidator = v.union(
+  v.literal("Invalid payload"),
+  v.literal("Invalid measurement"),
+  v.literal("Measurement out of range"),
+  v.literal("Unknown probe"),
+  v.literal("Inactive location"),
+  v.literal("Reading rate limit exceeded"),
+  v.literal("Reading ID conflict"),
+);
+
 function createCredential(): string {
   const alphabet =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -108,6 +118,7 @@ export const bindProbe = mutation({
       device.organizationId !== args.organizationId ||
       !location ||
       location.organizationId !== args.organizationId ||
+      !location.isActive ||
       !probeId ||
       probeId.length > 100
     ) {
@@ -298,6 +309,36 @@ export const listLocations = query({
   },
 });
 
+export const noteIngestionError = internalMutation({
+  args: { credential: v.string(), error: ingestionErrorValidator },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (args.credential.length > 256) return null;
+    const prefix = args.credential.slice(0, 12);
+    const candidateHash = await hashCredential(args.credential);
+    const devices = await ctx.db
+      .query("environmentalDevices")
+      .withIndex("by_credential_prefix", (q) =>
+        q.eq("credentialPrefix", prefix),
+      )
+      .take(10);
+    for (const device of devices) {
+      if (
+        device.status === "active" &&
+        equalHash(device.credentialHash, candidateHash)
+      ) {
+        await ctx.db.patch(device._id, {
+          lastSeenAt: Date.now(),
+          lastError: args.error,
+          lastErrorAt: Date.now(),
+        });
+        break;
+      }
+    }
+    return null;
+  },
+});
+
 export const ingest = internalMutation({
   args: {
     credential: v.string(),
@@ -312,6 +353,13 @@ export const ingest = internalMutation({
     duplicate: v.boolean(),
     conflict: v.boolean(),
     rateLimited: v.boolean(),
+    error: v.union(
+      v.literal("unknown_probe"),
+      v.literal("inactive_location"),
+      v.literal("reading_id_conflict"),
+      v.literal("rate_limit_exceeded"),
+      v.null(),
+    ),
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -336,6 +384,7 @@ export const ingest = internalMutation({
         duplicate: false,
         conflict: false,
         rateLimited: false,
+        error: null,
       };
     }
     const prefix = args.credential.slice(0, 12);
@@ -357,6 +406,24 @@ export const ingest = internalMutation({
         duplicate: false,
         conflict: false,
         rateLimited: false,
+        error: null,
+      };
+    }
+    const status = await limiter.limit(ctx, "environmentalReadings", {
+      key: device._id,
+    });
+    if (!status.ok) {
+      await ctx.db.patch(device._id, {
+        lastSeenAt: now,
+        lastError: "Reading rate limit exceeded",
+        lastErrorAt: now,
+      });
+      return {
+        accepted: false,
+        duplicate: false,
+        conflict: false,
+        rateLimited: true,
+        error: "rate_limit_exceeded" as const,
       };
     }
     const probe = await ctx.db
@@ -369,31 +436,27 @@ export const ingest = internalMutation({
       ? await ctx.db.get(probe.locationId)
       : null;
     if (
-      !probe ||
+      !probe?.isActive ||
       !location ||
+      probe.organizationId !== device.organizationId ||
       location.organizationId !== device.organizationId ||
-      probe.organizationId !== device.organizationId
+      !location.isActive
     ) {
-      return {
-        accepted: false,
-        duplicate: false,
-        conflict: false,
-        rateLimited: false,
-      };
-    }
-    const status = await limiter.limit(ctx, "environmentalReadings", {
-      key: device._id,
-    });
-    if (!status.ok) {
+      const error: "Inactive location" | "Unknown probe" =
+        location && !location.isActive ? "Inactive location" : "Unknown probe";
+      const errorCode: "inactive_location" | "unknown_probe" =
+        error === "Inactive location" ? "inactive_location" : "unknown_probe";
       await ctx.db.patch(device._id, {
-        lastError: "Reading rate limit exceeded",
+        lastSeenAt: now,
+        lastError: error,
         lastErrorAt: now,
       });
       return {
         accepted: false,
         duplicate: false,
         conflict: false,
-        rateLimited: true,
+        rateLimited: false,
+        error: errorCode,
       };
     }
     const existing = await ctx.db
@@ -411,11 +474,17 @@ export const ingest = internalMutation({
         existing.temperature !== args.temperature ||
         existing.humidity !== args.humidity
       ) {
+        await ctx.db.patch(device._id, {
+          lastSeenAt: now,
+          lastError: "Reading ID conflict",
+          lastErrorAt: now,
+        });
         return {
           accepted: false,
           duplicate: false,
           conflict: true,
           rateLimited: false,
+          error: "reading_id_conflict" as const,
         };
       }
       await ctx.db.patch(device._id, {
@@ -428,6 +497,7 @@ export const ingest = internalMutation({
         duplicate: true,
         conflict: false,
         rateLimited: false,
+        error: null,
       };
     }
     const violations: string[] = [];
@@ -511,6 +581,7 @@ export const ingest = internalMutation({
       duplicate: false,
       conflict: false,
       rateLimited: false,
+      error: null,
     };
   },
 });

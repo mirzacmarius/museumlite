@@ -19,6 +19,7 @@ async function createReceiver(t: ReturnType<typeof convexTest>) {
       name: "Receiver Test Museum",
       slug: `receiver-test-${Math.random().toString(36).slice(2, 8)}`,
       type: "museum",
+      subscriptionTier: "pro",
     });
     const userId = await ctx.db.insert("users", {
       name: "Receiver Admin",
@@ -139,14 +140,9 @@ describe("POST /v1/environmental-readings", () => {
     const devices = await admin.query(api.environmentalDevices.list, {
       organizationId,
     });
-    const persisted = await t.run(async (ctx) =>
-      ctx.db
-        .query("environmentalReadings")
-        .withIndex("by_location_and_time", (q) =>
-          q.eq("locationId", locationId),
-        )
-        .take(10),
-    );
+    const alerts = await admin.query(api.conservationTreatments.listAlerts, {
+      organizationId,
+    });
 
     expect(first.status).toBe(202);
     expect(retry.status).toBe(200);
@@ -160,24 +156,15 @@ describe("POST /v1/environmental-readings", () => {
     });
     expect(readings).toHaveLength(1);
     expect(readings[0]?.temperature).toBeCloseTo(20);
-    expect(persisted).toHaveLength(1);
-    expect(persisted[0]?.recordedAt).toBe(observedAt);
-    expect(persisted[0]?.receivedAt).toBeGreaterThan(observedAt);
-    expect(persisted[0]?.organizationId).toBe(organizationId);
-    expect(persisted[0]?.sensorDeviceId).toBe(deviceId);
-    expect(persisted[0]?.sensorProbeId).toBe("probe-1");
-    expect(persisted[0]?.externalReadingId).toBe("probe-1/reading-42");
+    expect(readings[0]?.recordedAt).toBe(observedAt);
+    expect(readings[0]?.observedAt).toBe(observedAt);
+    expect(readings[0]?.receivedAt).toBeGreaterThan(observedAt);
+    expect(readings[0]?.source).toBe("sensor");
+    expect(readings[0]?.sensorDeviceId).toBe(deviceId);
+    expect(readings[0]?.sensorProbeId).toBe("probe-1");
+    expect(readings[0]?.externalReadingId).toBe("probe-1/reading-42");
     expect(devices[0]?.lastSeenAt).toBeGreaterThan(observedAt);
-    expect(
-      await t.run(async (ctx) =>
-        ctx.db
-          .query("conservationAlerts")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", organizationId),
-          )
-          .take(10),
-      ),
-    ).toHaveLength(0);
+    expect(alerts).toHaveLength(0);
   });
 
   test("deduplicates current alerts and keeps delayed breaches out of active alert state", async () => {
@@ -213,14 +200,9 @@ describe("POST /v1/environmental-readings", () => {
       api.conservationTreatments.getEnvironmentalSummary,
       { locationId },
     );
-    const alerts = await t.run(async (ctx) =>
-      ctx.db
-        .query("conservationAlerts")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        )
-        .take(10),
-    );
+    const alerts = await admin.query(api.conservationTreatments.listAlerts, {
+      organizationId,
+    });
 
     expect(readings).toHaveLength(2);
     expect(summary.temperature.current).toBe(30);
@@ -261,6 +243,159 @@ describe("POST /v1/environmental-readings", () => {
     });
     expect(devices[0]?.lastError).toBe("Reading rate limit exceeded");
     expect(devices[0]?.lastErrorAt).toBeDefined();
+  });
+
+  test("charges known devices for unknown-probe attempts", async () => {
+    const t = createTestContext();
+    const { token } = await createReceiver(t);
+    const submit = (probeId: string, readingId: string) =>
+      t.fetch("/v1/environmental-readings", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          readingId,
+          probeId,
+          timestamp: Date.now(),
+          temperature: { value: 20, unit: "C" },
+          humidity: { value: 50, unit: "%" },
+        }),
+      });
+    for (let index = 0; index < 120; index++) {
+      expect((await submit("unknown-probe", `bad-probe-${index}`)).status).toBe(
+        401,
+      );
+    }
+
+    expect((await submit("probe-1", "valid-after-invalid-probes")).status).toBe(
+      429,
+    );
+  });
+
+  test("records safe health errors for verified device failures only", async () => {
+    const t = createTestContext();
+    const { organizationId, token, admin } = await createReceiver(t);
+    const send = (credential: string, body: unknown) =>
+      t.fetch("/v1/environmental-readings", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${credential}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    const valid = {
+      readingId: "health-check",
+      probeId: "probe-1",
+      timestamp: Date.now(),
+      temperature: { value: 20, unit: "C" },
+      humidity: { value: 50, unit: "%" },
+    };
+    await send(token, valid);
+    expect(
+      (await send(token, { ...valid, probeId: "unknown-probe" })).status,
+    ).toBe(401);
+    let devices = await admin.query(api.environmentalDevices.list, {
+      organizationId,
+    });
+    expect(devices[0]?.lastError).toBe("Unknown probe");
+    expect(JSON.stringify(devices)).not.toContain(token);
+
+    expect(
+      (
+        await send(token, {
+          ...valid,
+          temperature: { value: 25, unit: "C" },
+        })
+      ).status,
+    ).toBe(409);
+    devices = await admin.query(api.environmentalDevices.list, {
+      organizationId,
+    });
+    expect(devices[0]?.lastError).toBe("Reading ID conflict");
+
+    await send(token, { ...valid, temperature: { value: "hot", unit: "C" } });
+    devices = await admin.query(api.environmentalDevices.list, {
+      organizationId,
+    });
+    expect(devices[0]?.lastError).toBe("Invalid measurement");
+
+    await send("env_unknown-credential", { ...valid, readingId: "bad-auth" });
+    const afterBadCredential = await admin.query(
+      api.environmentalDevices.list,
+      { organizationId },
+    );
+    expect(afterBadCredential[0]?.lastError).toBe("Invalid measurement");
+    expect(afterBadCredential[0]?.lastError).not.toContain("env_");
+  });
+
+  test("rejects impossible ISO calendar dates without normalizing them", async () => {
+    const t = createTestContext();
+    const { token, organizationId, locationId, admin } =
+      await createReceiver(t);
+    const response = await t.fetch("/v1/environmental-readings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        readingId: "nonexistent-date",
+        probeId: "probe-1",
+        timestamp: "2026-09-31T12:00:00Z",
+        temperature: { value: 20, unit: "C" },
+        humidity: { value: 50, unit: "%" },
+      }),
+    });
+    const devices = await admin.query(api.environmentalDevices.list, {
+      organizationId,
+    });
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toBe("invalid_payload");
+    expect(devices[0]?.lastError).toBe("Invalid payload");
+    expect(
+      await admin.query(api.conservationTreatments.getEnvironmentalReadings, {
+        locationId,
+      }),
+    ).toHaveLength(0);
+  });
+
+  test("rejects bound probes whose location later becomes inactive", async () => {
+    const t = createTestContext();
+    const { organizationId, locationId, token, admin } =
+      await createReceiver(t);
+    await t.run((ctx) => ctx.db.patch(locationId, { isActive: false }));
+    const response = await t.fetch("/v1/environmental-readings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        readingId: "inactive-location",
+        probeId: "probe-1",
+        timestamp: Date.now(),
+        temperature: { value: 30, unit: "C" },
+        humidity: { value: 50, unit: "%" },
+      }),
+    });
+    expect(response.status).toBe(401);
+    expect(
+      await admin.query(api.conservationTreatments.getEnvironmentalReadings, {
+        locationId,
+      }),
+    ).toHaveLength(0);
+    expect(
+      await admin.query(api.conservationTreatments.listAlerts, {
+        organizationId,
+      }),
+    ).toHaveLength(0);
+    expect(
+      (await admin.query(api.environmentalDevices.list, { organizationId }))[0]
+        ?.lastError,
+    ).toBe("Inactive location");
   });
 
   test("rotation invalidates the old credential and revocation invalidates the replacement", async () => {
@@ -384,14 +519,9 @@ describe("POST /v1/environmental-readings", () => {
     const devices = await admin.query(api.environmentalDevices.list, {
       organizationId,
     });
-    const alerts = await t.run(async (ctx) =>
-      ctx.db
-        .query("conservationAlerts")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", organizationId),
-        )
-        .take(10),
-    );
+    const alerts = await admin.query(api.conservationTreatments.listAlerts, {
+      organizationId,
+    });
 
     expect(malformed.status).toBe(400);
     expect(oversized.status).toBe(413);
@@ -403,18 +533,9 @@ describe("POST /v1/environmental-readings", () => {
     expect(revoked.status).toBe(401);
     expect(readings).toHaveLength(0);
     expect(alerts).toHaveLength(0);
-    expect(devices[0]?.lastSeenAt).toBeUndefined();
+    expect(devices[0]?.lastSeenAt).toBeDefined();
     expect(devices[0]?.probes).toHaveLength(1);
-    expect(
-      await t.run(async (ctx) =>
-        ctx.db
-          .query("environmentalReadings")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", organizationId),
-          )
-          .take(10),
-      ),
-    ).toHaveLength(0);
+    expect(readings).toHaveLength(0);
   });
 
   test("reserves sensor provenance for device ingestion and audits manual capture", async () => {
@@ -437,13 +558,9 @@ describe("POST /v1/environmental-readings", () => {
         humidity: 50,
       }),
     ).rejects.toThrow();
-    const noUnauthorizedReadings = await t.run(async (ctx) =>
-      ctx.db
-        .query("environmentalReadings")
-        .withIndex("by_location_and_time", (q) =>
-          q.eq("locationId", locationId),
-        )
-        .take(10),
+    const noUnauthorizedReadings = await admin.query(
+      api.conservationTreatments.getEnvironmentalReadings,
+      { locationId },
     );
     expect(noUnauthorizedReadings).toHaveLength(0);
 
@@ -462,9 +579,11 @@ describe("POST /v1/environmental-readings", () => {
       entityType: "environmentalReading",
       limit: 10,
     });
-    const manualReading = await t.run(async (ctx) =>
-      ctx.db.get(recorded.readingId),
-    );
+    const manualReading = (
+      await admin.query(api.conservationTreatments.getEnvironmentalReadings, {
+        locationId,
+      })
+    ).find((reading) => reading._id === recorded.readingId);
     expect(audit.activities).toContainEqual(
       expect.objectContaining({
         action: "recorded_environmental_reading",

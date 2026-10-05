@@ -128,6 +128,29 @@ describe("environmental device management", () => {
     expect(devices[0]?.probes).toHaveLength(0);
   });
 
+  test("rejects binding probes to inactive locations", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, locationId, admin } = await setup(t);
+    const created = await admin.mutation(api.environmentalDevices.register, {
+      organizationId,
+      name: "Logger",
+    });
+    await t.run((ctx) => ctx.db.patch(locationId, { isActive: false }));
+
+    await expect(
+      admin.mutation(api.environmentalDevices.bindProbe, {
+        organizationId,
+        deviceId: created.deviceId,
+        probeId: "probe-1",
+        locationId,
+      }),
+    ).rejects.toThrow("Device, probe, or location is invalid");
+    expect(
+      (await admin.query(api.environmentalDevices.list, { organizationId }))[0]
+        ?.probes,
+    ).toHaveLength(0);
+  });
+
   test("rotation replaces the credential and revoke disables it", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, admin } = await setup(t);
