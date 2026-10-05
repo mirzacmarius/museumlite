@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import {
@@ -718,6 +719,107 @@ test("an upload session cannot be used after expiry and another member cannot cl
       ).status,
     ).toBe(403);
   } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("a trusted HTTP upload passes public-image ownership review and a fresh version revokes display", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "media.upload",
+    "media.read",
+    "organization.manage_settings",
+  ]);
+  const { slug, accessionNumber } = await t.run(async (ctx) => {
+    const org = await ctx.db.get(own.organizationId);
+    const collection = await ctx.db.get(own.collectionId);
+    await ctx.db.patch(own.organizationId, {
+      settings: { portalSettings: { isEnabled: true } },
+    });
+    await ctx.db.patch(own.collectionId, { isPubliclyVisible: true });
+    return {
+      slug: org?.slug ?? "",
+      accessionNumber: collection?.accessionNumber ?? "",
+    };
+  });
+  const input = await sharp({
+    create: { width: 20, height: 10, channels: 3, background: "red" },
+  })
+    .png()
+    .toBuffer();
+  const file = new Blob([new Uint8Array(input)], { type: "image/png" });
+  const authorized = authedForUser(t, own.userId);
+  const uploadArgs = {
+    organizationId: own.organizationId,
+    collectionId: own.collectionId,
+    fileName: "verified.png",
+    fileSize: file.size,
+    mimeType: file.type,
+  };
+  const uploadUrl = new URL(
+    (await authorized.mutation(api.media.generateUploadUrl, uploadArgs))
+      .uploadUrl,
+  );
+  const uploaded = await t.fetch(uploadUrl.pathname + uploadUrl.search, {
+    method: "POST",
+    body: file,
+  });
+  const {
+    storageId,
+  }: { storageId: import("../convex/_generated/dataModel").Id<"_storage"> } =
+    await uploaded.json();
+  const mediaId = await authorized.mutation(api.media.create, {
+    ...uploadArgs,
+    storageId,
+  });
+  await authorized.mutation(api.media.updateRights, {
+    mediaId,
+    rightsStatus: "owned",
+  });
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(
+      async () => new Response(new Uint8Array(input), { status: 200 }),
+    );
+  vi.useFakeTimers();
+  try {
+    await authorized.mutation(api.mediaPublications.approve, { mediaId });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(
+      await authorized.query(api.mediaPublications.getReview, { mediaId }),
+    ).toMatchObject({
+      status: "approved",
+      blocker: null,
+      originalDownloadAllowed: false,
+    });
+    const publicArgs = { organizationSlug: slug, accessionNumber };
+    expect(
+      (await t.query(api.collections.getPublic, publicArgs))?.images,
+    ).toHaveLength(1);
+    const versionUrl = new URL(
+      (await authorized.mutation(api.media.generateUploadUrl, uploadArgs))
+        .uploadUrl,
+    );
+    const versionUpload = await t.fetch(
+      versionUrl.pathname + versionUrl.search,
+      { method: "POST", body: file },
+    );
+    const version: {
+      storageId: import("../convex/_generated/dataModel").Id<"_storage">;
+    } = await versionUpload.json();
+    await authorized.mutation(api.mediaVersions.createVersion, {
+      mediaId,
+      storageId: version.storageId,
+      editType: "crop",
+    });
+    expect(
+      (await t.query(api.collections.getPublic, publicArgs))?.images,
+    ).toEqual([]);
+    expect(
+      await authorized.query(api.mediaPublications.getReview, { mediaId }),
+    ).toMatchObject({ status: "private", blocker: null });
+  } finally {
+    fetchMock.mockRestore();
     vi.useRealTimers();
   }
 });
