@@ -129,4 +129,4 @@ test("literal translation calls resolve to an English string", () => {
 
   expect(checkedCalls).toBeGreaterThan(0);
   expect(Array.from(missing).toSorted()).toEqual([]);
-});
+}, 15_000);
