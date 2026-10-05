@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "env:sync": "node scripts/sync-worktree-env.mjs",
+    "worktree:setup": "node scripts/worktree-setup.mjs",
+    "worktree:check": "node scripts/worktree-setup.mjs --check",
     "predev": "node scripts/sync-worktree-env.mjs",
     "postinstall": "node scripts/apply-patches.js; node scripts/sync-worktree-env.mjs || true",
     "build": "turbo build",

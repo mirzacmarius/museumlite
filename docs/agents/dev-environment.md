@@ -60,6 +60,11 @@ Running `bun dev` at root starts `convex dev --tail-logs` against the cloud depl
 - `bun run typecheck`
 - `bun run test` (uses `convex-test`; no cloud)
 
+## Worktrees and agent runs
+
+- A new or stale git worktree needs `bun run worktree:setup` (syncs env files, runs `bun install --frozen-lockfile`, verifies declared dependencies). Run it after creating a worktree and after merging a branch that changed `package.json` or `bun.lock`. `bun run worktree:check` verifies without installing; a `Cannot find module` error for a declared dependency means this was skipped.
+- Package scripts that touch the linked Convex cloud deployment (`dev`, `codegen`, `setup`, `seed` in `packages/backend`) refuse to run under a coding agent unless `ALLOW_CONVEX_CLOUD=1` is set, which requires explicit user authorization. Running `convex` directly bypasses this guard; the rule in `packages/backend/convex/AGENTS.md` still applies.
+
 ## Gotchas
 
 - `postinstall` runs `node scripts/apply-patches.js` for `@xixixao/uploadstuff` / React 19.
