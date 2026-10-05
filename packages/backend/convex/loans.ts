@@ -3,8 +3,8 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds } from "./utils/batchLookup";
 import {
@@ -14,23 +14,23 @@ import {
 import { hasFeatureAccess } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
 import {
-  cancelLoanHandler,
-  dispatchLoanHandler,
-  returnLoanHandler,
-  returnLoanItemHandler,
-} from "./utils/loanLifecycle";
-import {
   deleteLoanDocumentHandler,
   listLoanDocumentsHandler,
   uploadLoanDocumentHandler,
 } from "./utils/loanDocuments";
-import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import {
   approveLoanExtensionHandler,
   listLoanExtensionRequestsHandler,
   rejectLoanExtensionHandler,
   requestLoanExtensionHandler,
 } from "./utils/loanExtensions";
+import {
+  cancelLoanHandler,
+  dispatchLoanHandler,
+  returnLoanHandler,
+  returnLoanItemHandler,
+} from "./utils/loanLifecycle";
+import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import {
   approveLoanHandler,
   bulkApproveLoansHandler,
@@ -39,12 +39,13 @@ import {
   rejectLoanHandler,
 } from "./utils/loanWorkflow";
 import { generateNextLoanNumber } from "./utils/numberGenerator";
-import { emitWebhookEvent } from "./utils/webhookEvents";
 import {
   getUsersToNotifyForWorkflowStep,
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
+import { emitWebhookEvent } from "./utils/webhookEvents";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
@@ -116,9 +117,7 @@ export const create = mutation({
           q.eq("organizationId", args.organizationId),
         )
         .collect();
-      const duplicate = existingLoans.some(
-        (l) => l.loanNumber === loanNumber,
-      );
+      const duplicate = existingLoans.some((l) => l.loanNumber === loanNumber);
       if (duplicate) {
         throw new Error("Loan number already in use");
       }
@@ -1056,6 +1055,9 @@ export const createConditionReport = mutation({
       throw new Error("Loan not found");
     }
 
+    const collection = await ctx.db.get(loanItem.collectionId);
+    if (!collection || collection.organizationId !== loan.organizationId)
+      throw new Error("Loan object not found in this organization");
     if (!loan.useDetailedConditionReports) {
       throw new Error("Loan does not use detailed condition reports");
     }
@@ -1075,6 +1077,14 @@ export const createConditionReport = mutation({
       assessedAt: Date.now(),
     });
 
+    for (const storageId of args.photos ?? [])
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: loan.organizationId,
+        uploadedBy: userId,
+        ownerType: "conditionReport",
+        ownerId: reportId,
+      });
     // Link report to loan item
     await ctx.db.patch(args.loanItemId, {
       conditionReportId: reportId,

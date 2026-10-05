@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+vi.stubEnv("CONVEX_SITE_URL", "https://example.convex.site");
+
 type AsOptions = { as: string };
 
 function isAsOptions(value: unknown): value is AsOptions {

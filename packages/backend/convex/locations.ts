@@ -10,6 +10,7 @@ import {
   requireLocationAdminPermission,
   requirePermission,
 } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
 type LocationCustomFields = Record<
@@ -203,6 +204,23 @@ export const create = mutation({
       customFields: args.customFields,
     });
 
+    if (args.customFields?.locationImageId) {
+      const storageId =
+        typeof args.customFields.locationImageId === "string"
+          ? ctx.db.system.normalizeId(
+              "_storage",
+              args.customFields.locationImageId,
+            )
+          : null;
+      if (!storageId) throw new Error("Invalid location image");
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "locationImage",
+        ownerId: locationId,
+      });
+    }
     return locationId;
   },
 });
@@ -660,6 +678,27 @@ export const update = mutation({
     if (args.customFields !== undefined)
       updates.customFields = args.customFields;
 
+    if (
+      args.customFields?.locationImageId &&
+      args.customFields.locationImageId !==
+        location.customFields?.locationImageId
+    ) {
+      const storageId =
+        typeof args.customFields.locationImageId === "string"
+          ? ctx.db.system.normalizeId(
+              "_storage",
+              args.customFields.locationImageId,
+            )
+          : null;
+      if (!storageId) throw new Error("Invalid location image");
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: location.organizationId,
+        uploadedBy: userId,
+        ownerType: "locationImage",
+        ownerId: location._id,
+      });
+    }
     await ctx.db.patch(args.locationId, updates);
 
     return null;
@@ -1744,11 +1783,7 @@ export const getLocationPath = query({
       if (!location) break;
 
       try {
-        await requirePermission(
-          ctx,
-          location.organizationId,
-          "locations.read",
-        );
+        await requirePermission(ctx, location.organizationId, "locations.read");
       } catch (error) {
         if (
           error instanceof Error &&
@@ -2101,6 +2136,7 @@ export const listAllWithPaths = query({
       name: v.string(),
       locationCode: v.string(),
       type: v.string(),
+      status: v.string(),
       path: v.array(
         v.object({
           _id: v.id("locations"),
@@ -2164,6 +2200,7 @@ export const listAllWithPaths = query({
       name: location.name,
       locationCode: getLocationCodeValue(location),
       type: location.type,
+      status: location.status ?? "active",
       path: buildPath(location._id),
     }));
   },
@@ -2329,8 +2366,14 @@ export const getCollectionLocationHistory = query({
         ] as const);
         return {
           ...entry,
-          fromLocationName: fromLocation?.name || undefined,
-          toLocationName: toLocation?.name || "",
+          fromLocationName:
+            fromLocation?.organizationId === collection.organizationId
+              ? fromLocation.name
+              : undefined,
+          toLocationName:
+            toLocation?.organizationId === collection.organizationId
+              ? toLocation.name
+              : "",
           movedByName: movedBy?.name || movedBy?.username || undefined,
         };
       }),
