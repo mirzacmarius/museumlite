@@ -2,6 +2,10 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type QueryCtx, query } from "./_generated/server";
+import {
+  normalizeIdentifier,
+  searchCatalogIdentifiers,
+} from "./utils/identifiers";
 import { hasPermission } from "./utils/permissions";
 
 /**
@@ -73,18 +77,7 @@ async function multiFieldSearch(
         q.search("title", searchQuery).eq("organizationId", organizationId),
       )
       .take(limit),
-    ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_accessionNumber", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("accessionNumber"), searchQuery),
-          q.gte(q.field("accessionNumber"), searchQuery),
-        ),
-      )
-      .take(limit),
+    searchCatalogIdentifiers(ctx, organizationId, searchQuery, limit),
     ctx.db
       .query("collections")
       .withIndex("by_organization", (q) =>
@@ -149,7 +142,19 @@ async function multiFieldSearch(
   const allResults = [
     ...titleResults,
     ...accessionResults,
-    ...metadataResults,
+    ...metadataResults.filter((row) =>
+      [
+        row.creator,
+        row.alternativeTitle,
+        row.objectName,
+        row.objectType,
+        row.culture,
+      ].some(
+        (value) =>
+          value &&
+          normalizeIdentifier(value).includes(normalizeIdentifier(searchQuery)),
+      ),
+    ),
   ].filter((obj) => {
     if (seen.has(obj._id)) return false;
     seen.add(obj._id);

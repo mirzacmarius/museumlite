@@ -47,6 +47,7 @@ import type * as exhibitions from "../exhibitions.js";
 import type * as fineArtDetails from "../fineArtDetails.js";
 import type * as http from "../http.js";
 import type * as importValidation from "../importValidation.js";
+import type * as identifiers from "../identifiers.js";
 import type * as imports from "../imports.js";
 import type * as init from "../init.js";
 import type * as installations from "../installations.js";
@@ -233,6 +234,7 @@ declare const fullApi: ApiFromModules<{
   fineArtDetails: typeof fineArtDetails;
   http: typeof http;
   importValidation: typeof importValidation;
+  identifiers: typeof identifiers;
   imports: typeof imports;
   init: typeof init;
   installations: typeof installations;

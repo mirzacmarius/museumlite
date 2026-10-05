@@ -5,9 +5,10 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { Archive, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { AccessionCatalogIdentifier } from "./accession-catalog-identifier";
 
 import { AccessionDetailHeroBanner } from "./accession-detail-hero-banner";
 import { AccessionDetailMainContent } from "./accession-detail-main-content";
@@ -232,6 +233,16 @@ export function AccessionDetailPageClient() {
     <main className="z-10 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col bg-background">
       <AccessionDetailHeroBanner {...detailProps} />
       <div className="flex-1 overflow-y-auto">
+        {accession.status === "pending" && !accession.collectionId ? (
+          <Suspense fallback={<p>Loading catalog numbering...</p>}>
+            <AccessionCatalogIdentifier
+              accessionId={accession._id}
+              organizationId={accession.organizationId}
+              accessionNumber={accession.accessionNumber}
+              catalogIdentifier={accession.catalogIdentifier}
+            />
+          </Suspense>
+        ) : null}
         <AccessionDetailMainContent {...detailProps} />
       </div>
     </main>
