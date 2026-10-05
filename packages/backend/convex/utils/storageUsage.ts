@@ -16,6 +16,9 @@ export async function getStorageUsageFromMedia(
     if (media.thumbnailStorageId) {
       storageIds.add(media.thumbnailStorageId);
     }
+    if (media.publicApproval?.renditionStorageId) {
+      storageIds.add(media.publicApproval.renditionStorageId);
+    }
   }
 
   for (const version of mediaVersions) {
