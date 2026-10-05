@@ -12,7 +12,9 @@ function authedForUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
   });
 }
 
-async function createMultiSuperAdminOrganization(t: ReturnType<typeof convexTest>) {
+async function createMultiSuperAdminOrganization(
+  t: ReturnType<typeof convexTest>,
+) {
   const ownerUserId = await t.run(async (ctx) => {
     return await ctx.db.insert("users", {
       name: "SuperAdmin Owner",
@@ -29,7 +31,7 @@ async function createMultiSuperAdminOrganization(t: ReturnType<typeof convexTest
     return await ctx.db.insert("organizations", {
       name: "SuperAdmin Test Org",
       slug: `sa-org-${Math.random().toString(36).slice(2, 8)}`,
-      type: "museum",
+      type: "library",
       subscriptionTier: "pro",
       ownerUserId,
       isActive: true,
@@ -224,7 +226,7 @@ describe("superAdmin roles", () => {
       return await ctx.db.insert("organizations", {
         name: "Pre-Migration SuperAdmin Org",
         slug: `pre-migration-${Math.random().toString(36).slice(2, 8)}`,
-        type: "museum",
+        type: "library",
         subscriptionTier: "pro",
         ownerUserId,
         isActive: true,
@@ -232,28 +234,28 @@ describe("superAdmin roles", () => {
     });
 
     const { superAdminRoleId, adminRoleId } = await t.run(async (ctx) => {
-        const superAdminRoleId = await ctx.db.insert("roles", {
-          organizationId,
-          name: "super_admin",
-          isSystemRole: true,
-        });
-        const adminRoleId = await ctx.db.insert("roles", {
-          organizationId,
-          name: "admin",
-          isSystemRole: true,
-        });
-        const manageSettingsPermissionId = await ctx.db.insert("permissions", {
-          name: "organization.manage_settings",
-          category: "organization",
-        });
-        for (const roleId of [superAdminRoleId, adminRoleId]) {
-          await ctx.db.insert("rolePermissions", {
-            roleId,
-            permissionId: manageSettingsPermissionId,
-          });
-        }
-        return { superAdminRoleId, adminRoleId };
+      const superAdminRoleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "super_admin",
+        isSystemRole: true,
       });
+      const adminRoleId = await ctx.db.insert("roles", {
+        organizationId,
+        name: "admin",
+        isSystemRole: true,
+      });
+      const manageSettingsPermissionId = await ctx.db.insert("permissions", {
+        name: "organization.manage_settings",
+        category: "organization",
+      });
+      for (const roleId of [superAdminRoleId, adminRoleId]) {
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId: manageSettingsPermissionId,
+        });
+      }
+      return { superAdminRoleId, adminRoleId };
+    });
 
     await t.run(async (ctx) => {
       await ctx.db.insert("userOrganizations", {

@@ -62,7 +62,7 @@ export const getUser = query({
       return null;
     }
     const user = await ctx.db.get(userId);
-    if (!user) {
+    if (!user || user.deactivatedAt !== undefined) {
       return null;
     }
     const avatarUrl = user.imageId

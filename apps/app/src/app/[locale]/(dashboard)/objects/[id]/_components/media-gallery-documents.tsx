@@ -1,19 +1,8 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import { Edit, FileText, Trash2 } from "lucide-react";
+import { Edit, FileText } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { MediaEditDialog } from "./media-edit-dialog";
@@ -37,16 +26,13 @@ export function MediaGalleryDocuments({
   gallery,
   editable,
 }: MediaGalleryDocumentsProps) {
-  const tMedia = useScopedI18n("objects.form.media");
+  const _tMedia = useScopedI18n("objects.form.media");
   const t = useScopedI18n("objects.mediaGallery");
   const {
     common,
     documents,
     editingMedia,
     setEditingMedia,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
-    handleDelete,
     handleUpdateMedia,
   } = gallery;
 
@@ -117,43 +103,6 @@ export function MediaGalleryDocuments({
                         setEditingMedia(open ? doc._id : null)
                       }
                     />
-                    <AlertDialog
-                      open={deleteConfirmOpen === doc._id}
-                      onOpenChange={(open) =>
-                        setDeleteConfirmOpen(open ? doc._id : null)
-                      }
-                    >
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          title={common("delete")}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {tMedia("deleteDocument")}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {tMedia("deleteDocumentConfirm")}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>
-                            {common("cancel")}
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(doc._id)}
-                          >
-                            {common("delete")}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </PermissionGate>
                 )}
               </div>

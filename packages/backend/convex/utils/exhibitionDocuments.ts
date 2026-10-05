@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import { requireExhibitionAccess } from "./exhibitionAccess";
 import { requirePermission } from "./permissions";
 import { claimStorageOwnership } from "./uploadOwnership";
@@ -114,17 +114,6 @@ export async function deleteExhibitionDocumentHandler(
   await Promise.all([
     requireExhibitionAccess(ctx, exhibition.organizationId),
     requirePermission(ctx, exhibition.organizationId, "collections.delete"),
-    ctx.storage.delete(document.storageId),
-    ctx.db.delete(args.documentId),
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "deleted_document",
-      entityType: "exhibition",
-      entityId: document.exhibitionId,
-      changes: { fileName: document.fileName },
-    }),
-  ] as const);
-
-  return null;
+  ]);
+  return rejectPermanentEvidenceDeletion();
 }

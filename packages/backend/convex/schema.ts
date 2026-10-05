@@ -116,6 +116,8 @@ export default defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
 
+    // Account access is revoked while institutional actor identity is retained.
+    deactivatedAt: v.optional(v.number()),
     // custom fields
     username: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
@@ -2740,9 +2742,18 @@ export default defineSchema({
     approvedBy: v.id("users"),
     approvedAt: v.number(),
     comment: v.optional(v.string()),
+    clearedAt: v.optional(v.number()),
   })
     .index("by_entity_and_step", ["workflowType", "entityId", "stepNumber"])
-    .index("by_user", ["approvedBy"]),
+    .index("by_user", ["approvedBy"])
+    .index("by_organization", ["organizationId"])
+    .index("by_entity_and_step_and_clearedAt_and_approvedBy", [
+      "workflowType",
+      "entityId",
+      "stepNumber",
+      "clearedAt",
+      "approvedBy",
+    ]),
 
   // SLA configurations for workflow types (Task 5)
   workflowSlaConfigs: defineTable({

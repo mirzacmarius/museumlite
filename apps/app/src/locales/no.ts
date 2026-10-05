@@ -69,7 +69,7 @@ export default {
     deleteAccount: {
       title: "Slett konto",
       description:
-        "Slett MuseumLite-brukerkontoen din og personlige profildata permanent.",
+        "Avslutt MuseumLite-kontoen og fjern innlogging og personlige kontaktopplysninger. Navnet ditt beholdes i institusjonens historikk.",
       warning: "Denne handlingen kan ikke angres, vær forsiktig.",
       deleteButton: "Slett konto",
       confirmButton: "Er du sikker?",

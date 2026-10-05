@@ -73,7 +73,7 @@ export default {
     deleteAccount: {
       title: "Eliminar Cuenta",
       description:
-        "Elimina permanentemente tu cuenta de usuario de MuseumLite y los datos de tu perfil personal.",
+        "Cierra tu cuenta de MuseumLite y elimina el acceso y los datos de contacto personales. Tu nombre permanece vinculado al historial institucional.",
       warning: "Esta acción no se puede deshacer, procede con precaución.",
       deleteButton: "Eliminar Cuenta",
       confirmButton: "¿Estás seguro?",

@@ -2,10 +2,9 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { FileUp, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { FileUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 import {
@@ -32,8 +31,7 @@ export function AccessionsPageClient({
 }: AccessionsPageClientProps) {
   const t = useScopedI18n("accessions");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
-  const [bulkActionError, setBulkActionError] = useState<string | null>(null);
+
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const accessions = useQuery(api.accessions.list, {
     organizationId,
@@ -50,7 +48,6 @@ export function AccessionsPageClient({
   const exportAccessionsWithFormat = useMutation(
     api.imports.exportAccessionsWithFormat,
   );
-  const emptyRejectedAccessions = useMutation(api.accessions.emptyRejected);
 
   if (accessions === undefined) {
     return <AccessionsPageSkeleton />;
@@ -78,31 +75,6 @@ export function AccessionsPageClient({
     });
   };
 
-  const handleEmptyTrash = async () => {
-    if (rejected === 0) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      t("actions.emptyTrashConfirm", { count: rejected }),
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    setIsEmptyingTrash(true);
-    setBulkActionError(null);
-
-    try {
-      await emptyRejectedAccessions({ organizationId });
-    } catch (error) {
-      console.error("Failed to empty rejected accessions:", error);
-      setBulkActionError(t("error.failedToEmptyTrash"));
-    } finally {
-      setIsEmptyingTrash(false);
-    }
-  };
-
   return (
     <div className="flex h-full flex-col p-6">
       <div className="mb-6 flex min-h-[52px] items-center justify-between gap-6">
@@ -114,9 +86,6 @@ export function AccessionsPageClient({
               rejected,
             }}
           />
-          {bulkActionError ? (
-            <p className="text-xs text-destructive">{bulkActionError}</p>
-          ) : null}
         </div>
 
         <div className="flex items-center gap-3">
@@ -171,30 +140,6 @@ export function AccessionsPageClient({
               <Plus className="size-3.5" />
               {t("addObject")}
             </Link>
-          </PermissionGate>
-          <PermissionGate
-            loadingFallback={
-              <div className="h-8 w-24 animate-pulse rounded-md bg-muted/60" />
-            }
-            permission="collections.delete"
-          >
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="h-8 px-2.5 text-xs"
-              onClick={handleEmptyTrash}
-              disabled={rejected === 0 || isEmptyingTrash}
-            >
-              {isEmptyingTrash ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="size-3.5" />
-              )}
-              {isEmptyingTrash
-                ? t("actions.emptyingTrash")
-                : t("actions.emptyTrash")}
-            </Button>
           </PermissionGate>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import {
   loadExhibitionMutationContext,
   loadExhibitionObjectMutationContext,
@@ -97,6 +98,16 @@ export async function removeExhibitionObjectHandler(
 
   if (exhibitionObject.status !== "pending") {
     throw new Error("Cannot remove object that has been installed");
+  }
+
+  if (
+    exhibitionObject.installedAt !== undefined ||
+    exhibitionObject.deinstalledAt !== undefined ||
+    exhibitionObject.returnedAt !== undefined ||
+    exhibitionObject.conditionAtInstallation !== undefined ||
+    exhibitionObject.conditionAtDeinstallation !== undefined
+  ) {
+    rejectPermanentEvidenceDeletion();
   }
 
   await Promise.all([

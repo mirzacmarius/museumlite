@@ -10,6 +10,7 @@ import {
   query,
 } from "./_generated/server";
 import { env } from "./env";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireFeatureAccess } from "./utils/featureGates";
 import { requirePermission } from "./utils/permissions";
 
@@ -190,31 +191,7 @@ export const deleteTask = mutation({
       requireInstallationAccess(ctx, task.organizationId),
       requirePermission(ctx, task.organizationId, "collections.delete"),
     ]);
-    const [comments, checklists] = await Promise.all([
-      ctx.db
-        .query("installationTaskComments")
-        .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
-        .collect(),
-      ctx.db
-        .query("installationTaskChecklists")
-        .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
-        .collect(),
-    ] as const);
-    await Promise.all([
-      ...comments.map((comment) => ctx.db.delete(comment._id)),
-      ...checklists.map((item) => ctx.db.delete(item._id)),
-      ctx.db.delete(args.taskId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: task.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "installationTask",
-        entityId: args.taskId,
-        changes: { title: task.title },
-      }),
-    ] as const);
-
-    return null;
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -1201,8 +1178,16 @@ export const removeChecklistItem = mutation({
     await Promise.all([
       requireInstallationAccess(ctx, task.organizationId),
       requirePermission(ctx, task.organizationId, "collections.delete"),
-      ctx.db.delete(args.checklistItemId),
-    ] as const);
+    ]);
+    if (
+      checklistItem.completed ||
+      checklistItem.completedAt !== undefined ||
+      checklistItem.completedBy ||
+      task.status !== "todo"
+    ) {
+      rejectPermanentEvidenceDeletion();
+    }
+    await ctx.db.delete(args.checklistItemId);
 
     return null;
   },

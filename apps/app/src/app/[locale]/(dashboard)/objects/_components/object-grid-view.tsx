@@ -283,6 +283,8 @@ export function ObjectActionsMenu({
                   <ArrowRightLeft className="mr-2 size-4 text-blue-500" />
                   Transfer
                 </DropdownMenuItem>
+              </PermissionGate>
+              <PermissionGate permission="collections.delete">
                 <DropdownMenuItem
                   className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
                   onClick={(event) => {

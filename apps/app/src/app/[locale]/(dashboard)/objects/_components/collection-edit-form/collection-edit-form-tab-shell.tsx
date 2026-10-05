@@ -63,7 +63,6 @@ interface CollectionEditFormTabShellProps {
   documentInputRef: RefObject<HTMLInputElement | null>;
   handleDocumentSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSetPrimary: CollectionEditMediaTabProps["handleSetPrimary"];
-  handleDeleteMedia: CollectionEditMediaTabProps["handleDeleteMedia"];
   setEditingImageId: CollectionEditMediaTabProps["setEditingImageId"];
 }
 
@@ -98,7 +97,6 @@ export function CollectionEditFormTabShell({
   documentInputRef,
   handleDocumentSelect,
   handleSetPrimary,
-  handleDeleteMedia,
   setEditingImageId,
 }: CollectionEditFormTabShellProps) {
   const tabProps = {
@@ -191,7 +189,6 @@ export function CollectionEditFormTabShell({
               documentInputRef={documentInputRef}
               handleDocumentSelect={handleDocumentSelect}
               handleSetPrimary={handleSetPrimary}
-              handleDeleteMedia={handleDeleteMedia}
               setEditingImageId={setEditingImageId}
               hasConditionChanged={hasConditionChanged}
               requiresConditionChangeNote={requiresConditionChangeNote}

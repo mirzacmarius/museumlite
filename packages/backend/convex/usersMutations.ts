@@ -90,7 +90,21 @@ export const deleteUserAccount = internalMutation({
     ]);
 
     if (pendingEmailChange) await ctx.db.delete(pendingEmailChange._id);
-    await ctx.db.delete(args.userId);
+    const user = await ctx.db.get(args.userId);
+    if (user) {
+      await ctx.db.patch(args.userId, {
+        deactivatedAt: user.deactivatedAt ?? Date.now(),
+        name: user.name ?? user.username ?? "Former staff member",
+        email: undefined,
+        emailVerificationTime: undefined,
+        phone: undefined,
+        phoneVerificationTime: undefined,
+        accountEmailOverride: undefined,
+        accountNameOverride: undefined,
+        image: undefined,
+        imageId: undefined,
+      });
+    }
     return null;
   },
 });
@@ -114,8 +128,8 @@ export const relinkUserAuthRecords = internalMutation({
         )
         .collect(),
     ]);
-    if (!targetUser) {
-      throw new Error("Target user not found");
+    if (!targetUser || targetUser.deactivatedAt !== undefined) {
+      throw new Error("Active target user not found");
     }
 
     const [, userOrganizations] = await Promise.all([

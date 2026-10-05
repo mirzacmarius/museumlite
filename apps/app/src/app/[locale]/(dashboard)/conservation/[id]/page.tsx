@@ -2,32 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import { useMutation, useQuery } from "convex/react";
-import {
-  ArrowLeft,
-  Box,
-  Calendar,
-  Loader2,
-  Pencil,
-  Trash2,
-  User,
-} from "lucide-react";
+import { useQuery } from "convex/react";
+import { ArrowLeft, Box, Calendar, Loader2, Pencil, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { use } from "react";
-import { toast } from "sonner";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
@@ -50,11 +29,10 @@ export default function TreatmentDetailPage({
   const locale = useCurrentLocale();
   const t = useScopedI18n("conservation");
   const { id } = use(params);
-  const { push } = useRouter();
+
   const treatment = useQuery(api.conservationTreatments.get, {
     id: id as Id<"conservationTreatments">,
   });
-  const removeTreatment = useMutation(api.conservationTreatments.remove);
 
   if (treatment === undefined) {
     return (
@@ -74,17 +52,6 @@ export default function TreatmentDetailPage({
       </div>
     );
   }
-
-  const handleDelete = async () => {
-    try {
-      await removeTreatment({ id: id as Id<"conservationTreatments"> });
-      toast.success(t("form.deleteSuccess"));
-      push("/conservation");
-    } catch (error) {
-      console.error(error);
-      toast.error(t("form.deleteError"));
-    }
-  };
 
   const typeStyle =
     TREATMENT_TYPE_STYLES[treatment.treatmentType] ||
@@ -140,39 +107,6 @@ export default function TreatmentDetailPage({
                   {t("detail.edit")}
                 </Link>
               </Button>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="border-red-900/30 bg-red-950/10 text-red-400 hover:bg-red-950/30 hover:text-red-300 hover:border-red-900/50"
-                  >
-                    <Trash2 className="mr-2 size-4" />
-                    {t("detail.delete")}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {t("detail.deleteDialog.title")}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("detail.deleteDialog.description")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>
-                      {t("detail.deleteDialog.cancel")}
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-red-600 text-white hover:bg-red-700"
-                    >
-                      {t("detail.deleteDialog.confirm")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </PermissionGate>
           </div>
         </div>

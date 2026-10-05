@@ -9,6 +9,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { generateNextTransitNumber } from "./utils/numberGenerator";
 import { requirePermission } from "./utils/permissions";
 
@@ -63,13 +64,7 @@ const ALLOWED_TRANSIT_TRANSITIONS: Record<
 > = {
   draft: ["scheduled", "in_transit", "cancelled"],
   scheduled: ["in_transit", "cancelled", "delayed"],
-  in_transit: [
-    "out_for_delivery",
-    "delivered",
-    "delayed",
-    "held",
-    "cancelled",
-  ],
+  in_transit: ["out_for_delivery", "delivered", "delayed", "held", "cancelled"],
   out_for_delivery: ["delivered", "delayed", "held"],
   delivered: ["returned"],
   delayed: ["in_transit", "cancelled"],
@@ -83,15 +78,11 @@ function assertAllowedTransitTransition(
   to: TransitStatus,
 ): void {
   if (from === to) {
-    throw new Error(
-      `Invalid transit status transition from ${from} to ${to}`,
-    );
+    throw new Error(`Invalid transit status transition from ${from} to ${to}`);
   }
   const allowed = ALLOWED_TRANSIT_TRANSITIONS[from];
   if (!allowed.includes(to)) {
-    throw new Error(
-      `Invalid transit status transition from ${from} to ${to}`,
-    );
+    throw new Error(`Invalid transit status transition from ${from} to ${to}`);
   }
 }
 
@@ -542,41 +533,12 @@ export const deleteTransitRecord = mutation({
       throw new Error("Can only delete draft or cancelled transit records");
     }
 
-    const [, transitItems, statusUpdates] = await Promise.all([
-      requirePermission(
-        ctx,
-        transitRecord.organizationId,
-        "organization.manage_settings",
-      ),
-      ctx.db
-        .query("transitItems")
-        .withIndex("by_transitRecord", (q) =>
-          q.eq("transitRecordId", args.transitRecordId),
-        )
-        .collect(),
-      ctx.db
-        .query("transitStatusUpdates")
-        .withIndex("by_transitRecord", (q) =>
-          q.eq("transitRecordId", args.transitRecordId),
-        )
-        .collect(),
-    ] as const);
-
-    await Promise.all([
-      ...transitItems.map((item) => ctx.db.delete(item._id)),
-      ...statusUpdates.map((update) => ctx.db.delete(update._id)),
-      ctx.db.delete(args.transitRecordId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: transitRecord.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "transitRecord",
-        entityId: args.transitRecordId,
-        changes: { transitNumber: transitRecord.transitNumber },
-      }),
-    ]);
-
-    return null;
+    await requirePermission(
+      ctx,
+      transitRecord.organizationId,
+      "organization.manage_settings",
+    );
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -968,9 +930,7 @@ export const listTransitRecords = query({
             .withIndex("by_exhibition", (q) =>
               q.eq("exhibitionId", args.exhibitionId!),
             )
-            .filter((q) =>
-              q.eq(q.field("organizationId"), args.organizationId),
-            )
+            .filter((q) => q.eq(q.field("organizationId"), args.organizationId))
             .order("desc")
             .paginate(args.paginationOpts)
         : args.carrier
@@ -1143,6 +1103,14 @@ export const removeItemFromTransit = mutation({
     }
 
     await requirePermission(ctx, transitRecord.organizationId, "loans.update");
+
+    if (
+      transitItem.status !== "pending" ||
+      transitItem.conditionAtPickup !== undefined ||
+      transitItem.conditionAtDelivery !== undefined
+    ) {
+      rejectPermanentEvidenceDeletion();
+    }
 
     await ctx.db.delete(args.transitItemId);
 

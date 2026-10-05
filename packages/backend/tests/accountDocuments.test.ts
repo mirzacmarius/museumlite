@@ -302,18 +302,27 @@ test("accountDocuments: remove", async () => {
     await ctx.db.insert("rolePermissions", { roleId, permissionId });
   });
 
+  await t.run(async (ctx) => {
+    const permissionId = await ctx.db.insert("permissions", {
+      name: "accounts.read",
+      category: "accounts",
+    });
+    await ctx.db.insert("rolePermissions", { roleId, permissionId });
+  });
+
   const authed = t.withIdentity({
     subject: `${userId}|session-remove`,
     issuer: "https://example.test",
   });
 
-  await authed.mutation(api.accountDocuments.remove, {
-    documentId,
-  });
+  await expect(
+    authed.mutation(api.accountDocuments.remove, { documentId }),
+  ).rejects.toThrow("Permanent evidence");
 
-  const document = await t.run(async (ctx) => {
-    return await ctx.db.get(documentId);
+  const document = await authed.query(api.accountDocuments.get, { documentId });
+  expect(document).toMatchObject({
+    _id: documentId,
+    storageId,
+    filename: "test.pdf",
   });
-
-  expect(document).toBeNull();
 });

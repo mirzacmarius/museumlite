@@ -9,6 +9,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess, requireFeatureAccess } from "./utils/featureGates";
 import {
   canApproveAtStep,
@@ -227,18 +228,7 @@ export const remove = mutation({
       "collections.delete",
     );
 
-    await Promise.all([
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: treatment.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "conservationTreatment",
-        entityId: args.id,
-        changes: { title: treatment.title },
-      }),
-      ctx.db.delete(args.id),
-    ]);
-    return null;
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -920,21 +910,12 @@ export const removeAttachment = mutation({
     if (!attachment) {
       throw new Error("Attachment not found");
     }
-    await Promise.all([
-      requirePermission(ctx, attachment.organizationId, "collections.update"),
-      ctx.storage.delete(attachment.storageId),
-      ctx.db.delete(args.attachmentId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: attachment.organizationId,
-        userId,
-        action: "deleted_attachment",
-        entityType: "conservationTreatment",
-        entityId: attachment.treatmentId,
-        changes: { fileName: attachment.fileName },
-      }),
-    ] as const);
-
-    return null;
+    await requirePermission(
+      ctx,
+      attachment.organizationId,
+      "collections.update",
+    );
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

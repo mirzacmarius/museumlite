@@ -410,11 +410,14 @@ describe("Epic 24: Multi-Approver Logic", () => {
     ).rejects.toThrow("User has already approved this step");
   });
 
-  test("clearStepApprovals removes all approvals for a step", async () => {
+  test("clearStepApprovals retains original votes for review", async () => {
     // #given
     const t = convexTest(schema, modules);
     const [{ organizationId, userId }, userId2] = await Promise.all([
-      createOrgWithRole(t, ["organization.manage_settings"]),
+      createOrgWithRole(t, [
+        "organization.manage_settings",
+        "collections.read",
+      ]),
       t.run(async (ctx) => {
         return await ctx.db.insert("users", {
           name: "Another User",
@@ -451,19 +454,20 @@ describe("Epic 24: Multi-Approver Logic", () => {
     });
 
     // #then
-    const remainingApprovals = await t.run(async (ctx) => {
-      return await ctx.db
-        .query("workflowStepApprovals")
-        .withIndex("by_entity_and_step", (q) =>
-          q
-            .eq("workflowType", "accession")
-            .eq("entityId", "clear-test-entity")
-            .eq("stepNumber", 1),
-        )
-        .collect();
-    });
-
-    expect(remainingApprovals.length).toBe(0);
+    const retained = await t
+      .withIdentity({
+        subject: `${userId}|retained-votes`,
+        issuer: "https://example.test",
+      })
+      .query(api.workflows.listRetainedApprovals, {
+        organizationId,
+        paginationOpts: { numItems: 25, cursor: null },
+      });
+    expect(retained.page).toHaveLength(2);
+    expect(retained.page.every((vote) => vote.clearedAt !== null)).toBe(true);
+    expect(retained.page.map((vote) => vote.approvedBy)).toEqual(
+      expect.arrayContaining([userId, userId2]),
+    );
   });
 });
 

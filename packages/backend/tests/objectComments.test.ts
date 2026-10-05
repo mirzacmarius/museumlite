@@ -151,7 +151,7 @@ describe("objectComments", () => {
     expect(comments[0]?.content).toBe("First note");
   });
 
-  test("deletes own comment", async () => {
+  test("retains original museum field notes", async () => {
     const t = convexTest(schema, modules);
     const { organizationId, userId } = await createTestOrg(t);
     const collectionId = await createCollection(t, organizationId, userId);
@@ -166,13 +166,16 @@ describe("objectComments", () => {
       content: "Delete me",
     });
 
-    await authed.mutation(api.objectComments.remove, { commentId });
+    await expect(
+      authed.mutation(api.objectComments.remove, { commentId }),
+    ).rejects.toThrow("Permanent evidence");
 
     const comments = await authed.query(api.objectComments.list, {
       objectId: collectionId,
     });
 
-    expect(comments).toHaveLength(0);
+    expect(comments).toHaveLength(1);
+    expect(comments[0]).toMatchObject({ _id: commentId, content: "Delete me" });
   });
 
   test("stores mentions and notifies users", async () => {

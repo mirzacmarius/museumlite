@@ -11,6 +11,7 @@ import {
   markCollectionActive,
   markCollectionLoaned,
 } from "./utils/collectionLifecycle";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { hasFeatureAccess } from "./utils/featureGates";
 import { requireLoansAccess } from "./utils/loanAccess";
 import {
@@ -430,6 +431,19 @@ export const removeItems = mutation({
         const loanItem = await ctx.db.get(loanItemId);
         if (!loanItem || loanItem.loanId !== args.loanId) {
           throw new Error(`Loan item ${loanItemId} not found or invalid`);
+        }
+
+        const report = await ctx.db
+          .query("conditionReports")
+          .withIndex("by_loanItem", (q) => q.eq("loanItemId", loanItemId))
+          .first();
+        if (
+          report ||
+          loanItem.conditionReportId ||
+          loanItem.conditionOut !== undefined ||
+          loanItem.conditionIn !== undefined
+        ) {
+          rejectPermanentEvidenceDeletion();
         }
 
         // Update collection status back to active
@@ -1299,52 +1313,8 @@ export const deleteAllLoans = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check permission
-    const [, loans] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.update"),
-      ctx.db
-        .query("loans")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
-
-    let deletedLoanItems = 0;
-    let updatedCollections = 0;
-
-    // For each loan, delete loan items and update collection statuses
-    await Promise.all(
-      Array.from(loans).map(async (loan) => {
-        const loanItems = await ctx.db
-          .query("loanItems")
-          .withIndex("by_loan", (q) => q.eq("loanId", loan._id))
-          .collect();
-
-        await Promise.all(
-          Array.from(loanItems).map(async (item) => {
-            await Promise.all([
-              markCollectionActive(ctx, {
-                collectionId: item.collectionId,
-                changedBy: userId,
-              }),
-              ctx.db.delete(item._id),
-            ]);
-            updatedCollections++;
-            deletedLoanItems++;
-          }),
-        );
-
-        // Delete the loan
-        await ctx.db.delete(loan._id);
-      }),
-    );
-
-    return {
-      deletedLoans: loans.length,
-      deletedLoanItems,
-      updatedCollections,
-    };
+    await requirePermission(ctx, args.organizationId, "loans.update");
+    return rejectPermanentEvidenceDeletion();
   },
 });
 

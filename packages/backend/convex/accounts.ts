@@ -10,6 +10,10 @@ import {
   buildAccountUpdatePatch,
   validateAccountProfileForCreate,
 } from "./utils/accountProfile";
+import {
+  assertMuseumEvidenceDeletionAllowed,
+  isOrganizationEvidenceProtected,
+} from "./utils/evidenceRetention";
 import { requireModuleEnabled } from "./utils/featureGates";
 import { generateNextAccountNumber } from "./utils/numberGenerator";
 import { hasPermission, requirePermission } from "./utils/permissions";
@@ -488,6 +492,7 @@ export const remove = mutation({
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.delete"),
     ]);
+    await assertMuseumEvidenceDeletionAllowed(ctx, account.organizationId);
     const loansUsingAccount = await ctx.db
       .query("loans")
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
@@ -891,5 +896,21 @@ export const bulkExport = query({
       (account): account is Exclude<(typeof results)[number], null> =>
         account !== null,
     );
+  },
+});
+
+export const canDeleteEvidence = query({
+  args: { accountId: v.id("accounts") },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account) return false;
+    await requireModuleEnabled(ctx, account.organizationId, "accounts");
+    await requirePermission(ctx, account.organizationId, "accounts.read");
+    await requireAccountAdministration(ctx, account);
+    return !(await isOrganizationEvidenceProtected(
+      ctx,
+      account.organizationId,
+    ));
   },
 });

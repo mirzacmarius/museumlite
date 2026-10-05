@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { requireAccountAdministration } from "./utils/accountAdministration";
+import { assertMuseumEvidenceDeletionAllowed } from "./utils/evidenceRetention";
 import { requireModuleAndPermission } from "./utils/permissions";
 import {
   claimStorageOwnership,
@@ -220,6 +221,7 @@ export const remove = mutation({
       "accounts",
       "accounts.delete",
     );
+    await assertMuseumEvidenceDeletionAllowed(ctx, account.organizationId);
     await Promise.all([
       ctx.db.delete(args.documentId),
       ctx.runMutation(internal.audit.logAction, {

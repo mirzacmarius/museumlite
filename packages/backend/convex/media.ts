@@ -11,10 +11,10 @@ import {
 } from "./_generated/server";
 import { getAuthorizedCollectionBatch } from "./utils/authorizedCollectionBatch";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requireExhibitionAccess } from "./utils/exhibitionAccess";
 import { enforceMediaQuota } from "./utils/featureGates";
 import {
-  deleteMediaAsset,
   getDefaultMediaCategory,
   getMediaFileType,
   insertCompletedMediaAsset,
@@ -386,14 +386,7 @@ export const deleteMedia = mutation({
 
     // Check permission
     await requirePermission(ctx, media.organizationId, "media.delete");
-    await revokePublicRendition(ctx, media);
-
-    await deleteMediaAsset(ctx, {
-      media,
-      deletedBy: userId,
-    });
-
-    return null;
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
