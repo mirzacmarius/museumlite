@@ -6592,7 +6592,7 @@ export default {
         "You have unsaved changes that will be lost if you leave this page. Would you like to save your changes first?",
       discardChanges: "Discard changes",
       enterCode: "Enter code",
-      orContinueWithEmail: "Or continue with email",
+      orContinueWithGoogle: "Or continue with Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
         "Enter your email once. If you do not have an account yet, we will help you create one.",
       clearEmail: "Clear email",

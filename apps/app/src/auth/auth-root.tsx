@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@v1/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useReducer } from "react";
@@ -91,18 +92,20 @@ function AuthModeSwitchLink({
     returnTo: redirectTo,
   });
 
-  return (
-    <p className="pt-5 text-center text-sm text-muted-foreground">
-      {mode === "signIn"
-        ? translate("untranslatedComponents.auth.noAccountYet")
-        : translate("untranslatedComponents.auth.alreadyHaveAccount")}{" "}
+  return mode === "signIn" ? (
+    <Button asChild className="h-10 w-full" variant="outline">
+      <Link href={href}>
+        {translate("untranslatedComponents.auth.createAccount")}
+      </Link>
+    </Button>
+  ) : (
+    <p className="pt-1 text-center text-sm text-muted-foreground">
+      {translate("untranslatedComponents.auth.alreadyHaveAccount")}{" "}
       <Link
         className="font-medium text-foreground underline underline-offset-4"
         href={href}
       >
-        {mode === "signIn"
-          ? translate("untranslatedComponents.auth.createOne")
-          : translate("untranslatedComponents.auth.signIn")}
+        {translate("untranslatedComponents.auth.signIn")}
       </Link>
     </p>
   );
@@ -137,12 +140,6 @@ export function AuthRoot({
 
       <AuthHeader mode={state.mode} step={state.step} />
 
-      <SignInWithOAuth
-        compact={state.step === "password"}
-        redirectTo={redirectTo}
-        showDivider
-      />
-
       <AuthFormRoot
         codeFlow={state.codeFlow}
         currentAuthMode={initialMode}
@@ -162,6 +159,11 @@ export function AuthRoot({
         email={state.email}
         mode={state.mode}
         redirectTo={redirectTo}
+      />
+      <SignInWithOAuth
+        compact={state.step === "password"}
+        redirectTo={redirectTo}
+        showDivider
       />
     </FormContainer>
   );

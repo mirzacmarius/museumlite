@@ -7557,7 +7557,7 @@ export default {
         "Ai modificări nesalvate care se vor pierde dacă părăsești această pagină. Dorești să le salvezi mai întâi?",
       discardChanges: "Renunță la modificări",
       enterCode: "Introdu codul",
-      orContinueWithEmail: "Sau continuă cu e-mailul",
+      orContinueWithGoogle: "Sau continuă cu Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
         "Introdu adresa de e-mail. Dacă nu ai încă un cont, te vom ajuta să creezi unul.",
       clearEmail: "Șterge adresa de e-mail",

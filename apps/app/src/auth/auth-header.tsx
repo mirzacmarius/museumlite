@@ -38,13 +38,15 @@ export function AuthHeader({ mode, step }: AuthHeaderProps) {
   const translate = useI18n();
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[20px] font-semibold text-foreground">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         {mode === "signIn"
-          ? translate("untranslatedComponents.auth.signInOrCreateAccount")
-          : translate("untranslatedComponents.auth.createYourAccount")}
-      </span>
+          ? translate("loginPage.heading")
+          : translate("registerPage.heading")}
+      </h1>
       <span className="text-sm text-muted-foreground">
-        {getAuthHeaderDescription({ mode, step, translate })}
+        {mode === "signIn" && step === "email"
+          ? translate("loginPage.description")
+          : getAuthHeaderDescription({ mode, step, translate })}
       </span>
     </div>
   );

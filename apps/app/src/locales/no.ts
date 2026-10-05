@@ -6765,7 +6765,7 @@ export default {
         "Du har ulagrede endringer som går tapt hvis du forlater denne siden. Vil du lagre dem først?",
       discardChanges: "Forkast endringer",
       enterCode: "Angi kode",
-      orContinueWithEmail: "Eller fortsett med e-post",
+      orContinueWithGoogle: "Eller fortsett med Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
         "Oppgi e-postadressen din. Hvis du ikke har en konto ennå, hjelper vi deg med å opprette en.",
       clearEmail: "Fjern e-postadresse",

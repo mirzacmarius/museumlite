@@ -6879,7 +6879,7 @@ export default {
         "Tienes cambios sin guardar que se perderán si sales de esta página. ¿Quieres guardarlos primero?",
       discardChanges: "Descartar cambios",
       enterCode: "Introduce el código",
-      orContinueWithEmail: "O continúa con tu correo electrónico",
+      orContinueWithGoogle: "O continúa con Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
         "Introduce tu correo electrónico. Si aún no tienes una cuenta, te ayudaremos a crearla.",
       clearEmail: "Borrar correo electrónico",
