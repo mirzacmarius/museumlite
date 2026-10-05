@@ -16,3 +16,5 @@ All data, authentication, storage, and scheduled work lives in Convex.
 | Backend tests | Tests in this directory and `../tests/` |
 
 Run backend tests from `packages/backend/` using `bun test`. Other checks and env notes are in `docs/agents/dev-environment.md`.
+
+Agents must not run `convex dev`, `convex codegen`, `convex deploy`, `bun dev`, `bun run setup` or `bun run seed` against the linked cloud deployment unless the user explicitly authorizes it. `bun run test` (`convex-test`) needs no cloud.
