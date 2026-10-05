@@ -42,6 +42,7 @@ import {
 import { collectionTypeValidator } from "./utils/moduleValidators";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { getApprovedPublicMedia } from "./utils/publicMedia";
 import { findPublicPortalOrganization } from "./utils/publicPortal";
 import { emitWebhookEvent } from "./utils/webhookEvents";
 
@@ -488,17 +489,6 @@ async function getPublicLibraryCatalogItems(
       q.eq("organizationId", organization._id).eq("catalogStatus", "published"),
     )
     .collect();
-}
-
-async function getLibraryCoverImageUrl(
-  ctx: QueryCtx,
-  item: Doc<"libraryItems">,
-) {
-  if (item.coverImageId) {
-    return (await ctx.storage.getUrl(item.coverImageId)) ?? item.coverImageUrl;
-  }
-
-  return item.coverImageUrl;
 }
 
 export const listForApi = internalQuery({
@@ -2966,7 +2956,7 @@ export const listPublic = query({
       paged.map(async (entry) => {
         if (entry.source === "library") {
           const item = entry.item;
-          const primaryImageUrl = await getLibraryCoverImageUrl(ctx, item);
+          const primaryImageUrl = undefined;
           const accessionNumber =
             item.accessionNumber ?? item.callNumber ?? item.isbn13 ?? item.isbn;
 
@@ -2992,17 +2982,18 @@ export const listPublic = query({
         }
 
         const c = entry.item;
-        const primaryMedia = await ctx.db
+        const mediaFiles = await ctx.db
           .query("mediaFiles")
           .withIndex("by_collection", (q) => q.eq("collectionId", c._id))
-          .filter((q) => q.eq(q.field("isPrimary"), true))
-          .first();
-
-        let primaryImageUrl: string | undefined;
-        if (primaryMedia?.storageId) {
-          primaryImageUrl =
-            (await ctx.storage.getUrl(primaryMedia.storageId)) ?? undefined;
-        }
+          .collect();
+        const approved = await Promise.all(
+          mediaFiles.map((media) =>
+            getApprovedPublicMedia(ctx, media, organization._id, c._id),
+          ),
+        );
+        const primaryImageUrl = (
+          approved.find((image) => image?.isPrimary) ?? approved.find(Boolean)
+        )?.url;
 
         return {
           _id: c._id,
@@ -3074,6 +3065,7 @@ export const getPublic = query({
           url: v.string(),
           isPrimary: v.boolean(),
           caption: v.optional(v.string()),
+          originalDownloadUrl: v.optional(v.string()),
         }),
       ),
       organizationName: v.string(),
@@ -3133,7 +3125,6 @@ export const getPublic = query({
         return null;
       }
 
-      const coverImageUrl = await getLibraryCoverImageUrl(ctx, libraryItem);
       const accessionNumber =
         libraryItem.accessionNumber ??
         libraryItem.callNumber ??
@@ -3163,16 +3154,7 @@ export const getPublic = query({
           ...(libraryItem.genres ?? []),
           ...(libraryItem.subjects ?? []),
         ],
-        images: coverImageUrl
-          ? [
-              {
-                _id: libraryItem._id,
-                url: coverImageUrl,
-                isPrimary: true,
-                caption: "Cover image",
-              },
-            ]
-          : [],
+        images: [],
         organizationName: organization.name,
       };
     }
@@ -3190,17 +3172,9 @@ export const getPublic = query({
       .collect();
 
     const images = await Promise.all(
-      mediaFiles.map(async (m) => {
-        const url = m.storageId ? await ctx.storage.getUrl(m.storageId) : null;
-        return url
-          ? {
-              _id: m._id,
-              url,
-              isPrimary: m.isPrimary ?? false,
-              caption: m.caption,
-            }
-          : null;
-      }),
+      mediaFiles.map((media) =>
+        getApprovedPublicMedia(ctx, media, organization._id, collection._id),
+      ),
     );
 
     let valuation:
@@ -3248,7 +3222,7 @@ export const getPublic = query({
       exhibitionHistory: collection.exhibitionHistory,
       creditLine: collection.creditLine,
       tags: collection.tags,
-      isHighResDownloadable: collection.isHighResDownloadable,
+      isHighResDownloadable: images.some((image) => image?.originalDownloadUrl),
       valuation,
       images: images.filter((i): i is NonNullable<typeof i> => i !== null),
       organizationName: organization.name,

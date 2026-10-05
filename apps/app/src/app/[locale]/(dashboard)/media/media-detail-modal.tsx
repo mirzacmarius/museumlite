@@ -17,6 +17,7 @@ import NextImage from "next/image";
 import Link from "next/link";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import { MediaPublicationPanel } from "./media-publication-panel";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -79,7 +80,7 @@ export function MediaDetailModal({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl border-zinc-800 bg-zinc-900">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto border-zinc-800 bg-zinc-900">
         <DialogHeader>
           <DialogTitle className="text-zinc-200">
             {t("mediaPage.details.title")}
@@ -185,6 +186,8 @@ export function MediaDetailModal({
                   </Button>
                 )}
               </div>
+
+              <MediaPublicationPanel mediaId={mediaId} item={item} />
 
               <div className="space-y-2 border-t border-zinc-800 pt-4">
                 <p className="text-sm font-medium text-zinc-200">Versions</p>

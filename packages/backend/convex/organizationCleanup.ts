@@ -151,6 +151,7 @@ type OrganizationScopedTableName = (typeof organizationScopedTables)[number];
 const storageIdFieldNames = new Set([
   "storageId",
   "thumbnailStorageId",
+  "renditionStorageId",
   "logoId",
   "imageId",
   "proceedsReceiptDocument",
@@ -752,7 +753,10 @@ export const purgeOrganizationsInternal = internalMutation({
               ),
               deleteDocuments(ctx, snapshot.childDocuments.rolePermissions),
               deleteDocuments(ctx, snapshot.childDocuments.userSites),
-              deleteDocuments(ctx, snapshot.childDocuments.collectionGroupItems),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.collectionGroupItems,
+              ),
               deleteDocuments(ctx, snapshot.childDocuments.locationHistory),
               deleteDocuments(
                 ctx,
@@ -764,7 +768,10 @@ export const purgeOrganizationsInternal = internalMutation({
               deleteDocuments(ctx, snapshot.childDocuments.loanItems),
               deleteDocuments(ctx, snapshot.childDocuments.exhibitionDocuments),
               deleteDocuments(ctx, snapshot.childDocuments.transitItems),
-              deleteDocuments(ctx, snapshot.childDocuments.transitStatusUpdates),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.transitStatusUpdates,
+              ),
               deleteDocuments(
                 ctx,
                 snapshot.childDocuments.installationTaskComments,
@@ -797,9 +804,7 @@ export const purgeOrganizationsInternal = internalMutation({
           };
         }),
       )
-    ).filter(
-      (result): result is NonNullable<typeof result> => result !== null,
-    );
+    ).filter((result): result is NonNullable<typeof result> => result !== null);
 
     return results;
   },

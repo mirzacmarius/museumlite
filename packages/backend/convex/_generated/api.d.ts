@@ -71,6 +71,8 @@ import type * as materialOptions from "../materialOptions.js";
 import type * as media from "../media.js";
 import type * as mediaEdits from "../mediaEdits.js";
 import type * as mediaImports from "../mediaImports.js";
+import type * as mediaPublications from "../mediaPublications.js";
+import type * as mediaPublicationsActions from "../mediaPublicationsActions.js";
 import type * as mediaThumbnails from "../mediaThumbnails.js";
 import type * as mediaVersions from "../mediaVersions.js";
 import type * as migrations from "../migrations.js";
@@ -249,6 +251,8 @@ declare const fullApi: ApiFromModules<{
   media: typeof media;
   mediaEdits: typeof mediaEdits;
   mediaImports: typeof mediaImports;
+  mediaPublications: typeof mediaPublications;
+  mediaPublicationsActions: typeof mediaPublicationsActions;
   mediaThumbnails: typeof mediaThumbnails;
   mediaVersions: typeof mediaVersions;
   migrations: typeof migrations;

@@ -793,6 +793,22 @@ export default defineSchema({
     // Version Tracking
     currentVersionId: v.optional(v.id("mediaVersions")),
     versionCount: v.optional(v.number()),
+    publicApproval: v.optional(
+      v.object({
+        status: v.union(
+          v.literal("processing"),
+          v.literal("approved"),
+          v.literal("failed"),
+        ),
+        requestId: v.string(),
+        sourceStorageId: v.id("_storage"),
+        versionId: v.optional(v.id("mediaVersions")),
+        renditionStorageId: v.optional(v.id("_storage")),
+        approvedBy: v.id("users"),
+        approvedAt: v.number(),
+        allowOriginalDownload: v.boolean(),
+      }),
+    ),
   })
     .index("by_collection", ["collectionId"])
     .index("by_collection_and_fileType", ["collectionId", "fileType"])
