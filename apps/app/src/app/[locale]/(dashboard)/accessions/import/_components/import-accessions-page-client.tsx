@@ -7,7 +7,10 @@ import { useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { ImportAccessionsStepPanels } from "./import-accessions-step-panels";
-import type { ImportState } from "./import-accessions-types";
+import {
+  EMPTY_IMPORT_STATE,
+  type ImportState,
+} from "./import-accessions-types";
 import { useImportAccessions } from "./use-import-accessions";
 
 export function ImportAccessionsPageClient() {
@@ -15,23 +18,16 @@ export function ImportAccessionsPageClient() {
   const t = useScopedI18n("accessions");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [state, setState] = useState<ImportState>({
-    step: "upload",
-    file: null,
-    rawData: [],
-    sourceFields: [],
-    fieldMappings: [],
-    rows: [],
-    validationErrors: [],
-    errors: [],
-    jobId: null,
-  });
+  const [state, setState] = useState<ImportState>(EMPTY_IMPORT_STATE);
 
   const {
     handleFileSelect,
     handleSaveMappings,
     handleContinueAfterValidation,
     handleStartImport,
+    handleRetryFailed,
+    handleUploadCorrection,
+    handleCancelImport,
     handleReset,
     downloadTemplate,
     onBackToMapping,
@@ -80,6 +76,9 @@ export function ImportAccessionsPageClient() {
               handleReset={handleReset}
               handleContinueAfterValidation={handleContinueAfterValidation}
               handleStartImport={handleStartImport}
+              handleRetryFailed={handleRetryFailed}
+              handleUploadCorrection={handleUploadCorrection}
+              handleCancelImport={handleCancelImport}
               onBackToMapping={onBackToMapping}
               onBackToValidation={onBackToValidation}
             />

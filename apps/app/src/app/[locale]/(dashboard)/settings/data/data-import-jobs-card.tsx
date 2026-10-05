@@ -1,71 +1,162 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import { Badge } from "@v1/ui/badge";
+import { Button } from "@v1/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import { Progress } from "@v1/ui/progress";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import {
+  AlertCircle,
+  Ban,
+  CheckCircle2,
+  Download,
+  Loader2,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useDownloadImportFailures } from "@/hooks/use-download-import-failures";
+import { useScopedI18n } from "@/locales/client";
 
-interface ImportJob {
-  _id: string;
-  type: string;
-  status: string;
-  processedItems: number;
-  totalItems: number;
-  progress: number;
-}
+type ImportJob = FunctionReturnType<typeof api.imports.listImportJobs>[number];
 
 interface DataImportJobsCardProps {
   importJobs: ImportJob[];
 }
 
+const ACTIVE_STATUSES = new Set(["pending", "processing"]);
+
 export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
+  const t = useScopedI18n("settings.data.importJobs");
+  const cancelImportJob = useMutation(api.imports.cancelImportJob);
+  const downloadFailures = useDownloadImportFailures();
+  const [busyJobId, setBusyJobId] = useState<string | null>(null);
+
   if (importJobs.length === 0) {
     return null;
+  }
+
+  function statusLabel(status: ImportJob["status"]) {
+    switch (status) {
+      case "pending":
+        return t("statusPending");
+      case "processing":
+        return t("statusProcessing");
+      case "completed":
+        return t("statusCompleted");
+      case "completed_with_errors":
+        return t("statusCompletedWithErrors");
+      case "cancelled":
+        return t("statusCancelled");
+      default:
+        return t("statusFailed");
+    }
+  }
+
+  async function handleCancel(job: ImportJob) {
+    setBusyJobId(job._id);
+    try {
+      await cancelImportJob({ jobId: job._id });
+      toast.success(t("cancelled"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("cancelFailed"));
+    } finally {
+      setBusyJobId(null);
+    }
+  }
+
+  async function handleDownload(job: ImportJob) {
+    setBusyJobId(job._id);
+    try {
+      await downloadFailures(job._id, `import-${job._id}-failed-rows.csv`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("downloadFailed"));
+    } finally {
+      setBusyJobId(null);
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Import Jobs</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {importJobs.map((job) => (
-            <div
-              key={job._id}
-              className="flex items-center justify-between rounded-lg border p-4"
-            >
-              <div className="flex items-center gap-4">
-                {job.status === "completed" ? (
-                  <CheckCircle2 className="size-5 text-green-500" />
-                ) : job.status === "failed" ? (
-                  <AlertCircle className="size-5 text-red-500" />
-                ) : (
-                  <Loader2 className="size-5 animate-spin text-blue-500" />
-                )}
-                <div>
-                  <p className="font-medium capitalize">{job.type} Import</p>
-                  <p className="text-sm text-muted-foreground">
-                    {job.processedItems} / {job.totalItems} items
-                  </p>
+          {importJobs.map((job) => {
+            const busy = busyJobId === job._id;
+            return (
+              <div
+                key={job._id}
+                className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-center gap-4">
+                  {job.status === "completed" ? (
+                    <CheckCircle2 className="size-5 shrink-0 text-green-500" />
+                  ) : job.status === "cancelled" ? (
+                    <Ban className="size-5 shrink-0 text-muted-foreground" />
+                  ) : job.status === "failed" ||
+                    job.status === "completed_with_errors" ? (
+                    <AlertCircle className="size-5 shrink-0 text-amber-500" />
+                  ) : (
+                    <Loader2 className="size-5 shrink-0 animate-spin text-blue-500" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">
+                      {job.sourceName ??
+                        t("jobTitle", { type: job.entityType ?? job.type })}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("counts", {
+                        attempted: job.attemptedItems,
+                        total: job.totalItems,
+                        accepted: job.acceptedItems,
+                        failed: job.failedItems,
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Progress value={job.progress} className="w-32" />
+                  <Badge
+                    variant={
+                      job.status === "completed"
+                        ? "default"
+                        : job.status === "failed"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                  >
+                    {statusLabel(job.status)}
+                  </Badge>
+                  {job.failedItems > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => handleDownload(job)}
+                    >
+                      <Download className="mr-1 size-3" />
+                      {t("downloadFailedRows")}
+                    </Button>
+                  )}
+                  {ACTIVE_STATUSES.has(job.status) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => handleCancel(job)}
+                    >
+                      {t("cancel")}
+                    </Button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <Progress value={job.progress} className="w-32" />
-                <Badge
-                  variant={
-                    job.status === "completed"
-                      ? "default"
-                      : job.status === "failed"
-                        ? "destructive"
-                        : "secondary"
-                  }
-                >
-                  {job.status}
-                </Badge>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>

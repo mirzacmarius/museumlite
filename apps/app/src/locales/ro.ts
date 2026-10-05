@@ -573,6 +573,23 @@ export default {
       export: "Exportă",
     },
     data: {
+      importJobs: {
+        title: "Importuri recente",
+        jobTitle: "Import {type}",
+        counts:
+          "{attempted} din {total} rânduri încercate · {accepted} acceptate · {failed} eșuate",
+        statusPending: "În așteptare",
+        statusProcessing: "În procesare",
+        statusCompleted: "Finalizat",
+        statusCompletedWithErrors: "Finalizat cu erori",
+        statusCancelled: "Anulat",
+        statusFailed: "Eșuat",
+        cancel: "Anulează",
+        cancelled: "Import anulat. Rândurile acceptate au fost păstrate.",
+        cancelFailed: "Importul nu a putut fi anulat.",
+        downloadFailedRows: "Rânduri eșuate",
+        downloadFailed: "Rândurile eșuate nu au putut fi descărcate.",
+      },
       title: "Import/Export Date",
       description: "Importă și exportă date pentru organizația ta",
       export: {

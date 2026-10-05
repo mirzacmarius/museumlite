@@ -18,6 +18,9 @@ import {
 import { ArrowRight, Save, X } from "lucide-react";
 import { useCallback, useState } from "react";
 
+// Radix Select reserves the empty string for "no selection".
+const DO_NOT_IMPORT = "__do_not_import__";
+
 export interface FieldMapping {
   sourceField: string;
   targetField: string | null;
@@ -167,11 +170,11 @@ export function ImportFieldMapper({
 
                 <div className="flex flex-1 items-center gap-2">
                   <Select
-                    value={mapping?.targetField || ""}
+                    value={mapping?.targetField || DO_NOT_IMPORT}
                     onValueChange={(value) =>
                       handleMappingChange(
                         sourceField,
-                        value === "" ? null : value,
+                        value === DO_NOT_IMPORT ? null : value,
                       )
                     }
                   >
@@ -179,7 +182,7 @@ export function ImportFieldMapper({
                       <SelectValue placeholder="Select target field..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">
+                      <SelectItem value={DO_NOT_IMPORT}>
                         <span className="text-muted-foreground">
                           Do not import
                         </span>

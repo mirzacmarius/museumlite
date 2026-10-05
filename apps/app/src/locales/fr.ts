@@ -4053,6 +4053,35 @@ export default {
       unknownSource: "Source inconnue",
     },
     import: {
+      progressDetail:
+        "{attempted} sur {total} lignes traitées · {accepted} acceptées · {failed} en échec",
+      cancelImport: "Annuler l'import",
+      cancelling: "Arrêt après le lot en cours…",
+      cancelledTitle: "Import annulé",
+      interruptedTitle: "Import interrompu",
+      outcome:
+        "{accepted} acceptées, {failed} en échec ({attempted} sur {total} lignes traitées).",
+      resumeHint:
+        "Importez à nouveau le même fichier pour reprendre ; les lignes acceptées sont ignorées.",
+      downloadFailedRows: "Télécharger les lignes en échec",
+      downloadFailed: "Impossible de télécharger les lignes en échec.",
+      retryFailedRows: "Retenter les lignes en échec",
+      backToValidation: "Retour à la validation",
+      startNewImport: "Nouvel import",
+      resumeNotice:
+        "Ce fichier a été importé le {date} : {attempted} sur {total} lignes traitées, {accepted} acceptées, {failed} en échec. La reprise ignore les lignes acceptées.",
+      resumeImport: "Reprendre l'import",
+      validationTitle: "Rapport de validation",
+      validationSummary: "{valid} lignes valides, {errors} erreurs",
+      backToMapping: "Retour au mappage",
+      rowsPassed: "{count} lignes validées",
+      uploadCorrectedFile: "Importer le fichier corrigé",
+      continueWithErrors:
+        "Continuer ({count} lignes en erreur seront enregistrées comme échouées)",
+      rowsWillFail:
+        "{count} lignes contiennent des erreurs et seront enregistrées comme lignes en échec, téléchargeables et corrigeables",
+      correctionHint:
+        "Corrigez les lignes en échec dans votre fichier sans ajouter, supprimer ni réordonner de lignes, puis choisissez Importer le fichier corrigé. Les lignes acceptées sont conservées et ignorées.",
       title: "Importer des Acquisitions depuis CSV",
       description:
         "Téléchargez un fichier CSV avec vos données d'acquisition. Colonnes requises : dateReceived, source, method.",

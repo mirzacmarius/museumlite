@@ -118,6 +118,7 @@ const organizationScopedTables = [
   "webhooks",
   "apiKeys",
   "importJobs",
+  "importRowResults",
   "importValidationReports",
   "importFieldMappings",
   "exportUsage",

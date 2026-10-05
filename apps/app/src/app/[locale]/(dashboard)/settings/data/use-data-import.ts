@@ -4,7 +4,9 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useCallback, useRef, useState } from "react";
-import { downloadCsv, type ImportType, parseCSV } from "./data-csv-utils";
+import { toast } from "sonner";
+import { parseCsvTable, sha256Hex } from "@/lib/csv-parser";
+import { downloadCsv, type ImportType } from "./data-csv-utils";
 
 interface ImportTemplate {
   headers: string[];
@@ -23,7 +25,9 @@ export function useDataImport(
 
   const createImportJob = useMutation(api.imports.createImportJob);
   const importObjectsBatch = useMutation(api.imports.importObjectsBatch);
-  const importObjectsDublinCore = useMutation(api.imports.importObjectsDublinCore);
+  const importObjectsDublinCore = useMutation(
+    api.imports.importObjectsDublinCore,
+  );
   const importAccessionsBatch = useMutation(api.imports.importAccessionsBatch);
   const importLocationsBatch = useMutation(api.imports.importLocationsBatch);
   const importAccountsBatch = useMutation(api.imports.importAccountsBatch);
@@ -71,11 +75,9 @@ export function useDataImport(
         }
 
         const text = await file.text();
-        const rows = parseCSV(text);
-        const headers = rows[0];
-        const dataRows = rows
-          .slice(1)
-          .filter((row) => row.some((cell) => cell));
+        const table = parseCsvTable(text);
+        const headers = table.headers;
+        const dataRows = table.records;
 
         if (dataRows.length === 0) {
           throw new Error("No data rows found in CSV");
@@ -84,18 +86,21 @@ export function useDataImport(
         const jobId = await createImportJob({
           organizationId,
           type: "csv",
+          entityType: importType,
           totalItems: dataRows.length,
+          sourceName: file.name,
+          sourceFingerprint: await sha256Hex(text),
         });
 
+        // Batches run in order so progress and replays stay deterministic.
         const batchSize = 50;
-        const importTasks = [];
         for (let i = 0; i < dataRows.length; i += batchSize) {
           const batch = dataRows.slice(i, i + batchSize);
-          const batchData = batch.map((row) => {
+          const batchData = batch.map((record) => {
             const obj: Record<string, string | undefined> = {};
-            headers?.forEach((header, idx) => {
-              if (header && row[idx] !== undefined) {
-                obj[header] = row[idx] || undefined;
+            headers.forEach((header, idx) => {
+              if (header && record.values[idx] !== undefined) {
+                obj[header] = record.values[idx] || undefined;
               }
             });
             return obj;
@@ -105,70 +110,63 @@ export function useDataImport(
 
           switch (importType) {
             case "objects":
-              importTasks.push(
-                importObjectsBatch({
-                  organizationId,
-                  jobId,
-                  rows: batchData as Parameters<
-                    typeof importObjectsBatch
-                  >[0]["rows"],
-                  batchIndex,
-                }),
-              );
+              await importObjectsBatch({
+                organizationId,
+                jobId,
+                rows: batchData as Parameters<
+                  typeof importObjectsBatch
+                >[0]["rows"],
+                batchIndex,
+              });
               break;
             case "accessions":
-              importTasks.push(
-                importAccessionsBatch({
-                  organizationId,
-                  jobId,
-                  rows: batchData as Parameters<
-                    typeof importAccessionsBatch
-                  >[0]["rows"],
-                  batchIndex,
-                }),
-              );
+              await importAccessionsBatch({
+                organizationId,
+                jobId,
+                rows: batch.map((record, index) => ({
+                  ...(batchData[index] as Omit<
+                    Parameters<typeof importAccessionsBatch>[0]["rows"][number],
+                    "rowNumber"
+                  >),
+                  rowNumber: record.rowNumber,
+                })),
+                batchIndex,
+              });
               break;
             case "locations":
-              importTasks.push(
-                importLocationsBatch({
-                  organizationId,
-                  jobId,
-                  rows: batchData as Parameters<
-                    typeof importLocationsBatch
-                  >[0]["rows"],
-                  batchIndex,
-                }),
-              );
+              await importLocationsBatch({
+                organizationId,
+                jobId,
+                rows: batchData as Parameters<
+                  typeof importLocationsBatch
+                >[0]["rows"],
+                batchIndex,
+              });
               break;
             case "accounts":
-              importTasks.push(
-                importAccountsBatch({
-                  organizationId,
-                  jobId,
-                  rows: batchData as Parameters<
-                    typeof importAccountsBatch
-                  >[0]["rows"],
-                  batchIndex,
-                }),
-              );
+              await importAccountsBatch({
+                organizationId,
+                jobId,
+                rows: batchData as Parameters<
+                  typeof importAccountsBatch
+                >[0]["rows"],
+                batchIndex,
+              });
               break;
             case "loans":
-              importTasks.push(
-                importLoansBatch({
-                  organizationId,
-                  jobId,
-                  rows: batchData as Parameters<
-                    typeof importLoansBatch
-                  >[0]["rows"],
-                  batchIndex,
-                }),
-              );
+              await importLoansBatch({
+                organizationId,
+                jobId,
+                rows: batchData as Parameters<
+                  typeof importLoansBatch
+                >[0]["rows"],
+                batchIndex,
+              });
               break;
           }
         }
-        await Promise.all(importTasks);
       } catch (error) {
-        console.error("Import error:", error);
+        toast.error(error instanceof Error ? error.message : "Import failed");
       } finally {
         setImporting(false);
         if (fileInputRef.current) {
