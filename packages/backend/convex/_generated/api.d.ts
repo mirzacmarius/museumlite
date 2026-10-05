@@ -170,6 +170,7 @@ import type * as utils_polarComponentSync from "../utils/polarComponentSync.js";
 import type * as utils_publicMedia from "../utils/publicMedia.js";
 import type * as utils_publicPortal from "../utils/publicPortal.js";
 import type * as utils_relatedEntityIntegrity from "../utils/relatedEntityIntegrity.js";
+import type * as utils_reportSchedule from "../utils/reportSchedule.js";
 import type * as utils_reportingCatalogAnalytics from "../utils/reportingCatalogAnalytics.js";
 import type * as utils_spectrum from "../utils/spectrum.js";
 import type * as utils_storageUsage from "../utils/storageUsage.js";
@@ -359,6 +360,7 @@ declare const fullApi: ApiFromModules<{
   "utils/publicMedia": typeof utils_publicMedia;
   "utils/publicPortal": typeof utils_publicPortal;
   "utils/relatedEntityIntegrity": typeof utils_relatedEntityIntegrity;
+  "utils/reportSchedule": typeof utils_reportSchedule;
   "utils/reportingCatalogAnalytics": typeof utils_reportingCatalogAnalytics;
   "utils/spectrum": typeof utils_spectrum;
   "utils/storageUsage": typeof utils_storageUsage;
