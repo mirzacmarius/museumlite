@@ -26,8 +26,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ClientTime } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
+import { ClientDate } from "@/components/client-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface ScheduledReportsCardProps {
   organizationId: Id<"organizations">;
@@ -36,6 +36,15 @@ interface ScheduledReportsCardProps {
 type ScheduleOption = "daily" | "weekly" | "monthly" | "quarterly";
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
+
+const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  weekday: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+};
 
 function getBrowserTimezone() {
   try {
@@ -57,6 +66,7 @@ export function ScheduledReportsCard({
   organizationId,
 }: ScheduledReportsCardProps) {
   const t = useScopedI18n("analytics.scheduledReports");
+  const locale = useCurrentLocale();
   const convex = useConvex();
   const [timezone] = useState(getBrowserTimezone);
   const [name, setName] = useState("");
@@ -438,7 +448,11 @@ export function ScheduledReportsCard({
                         <>
                           {" · "}
                           {t("nextRun")}{" "}
-                          <ClientTime timestamp={report.nextRunAt} />
+                          <ClientDate
+                            timestamp={report.nextRunAt}
+                            locale={locale}
+                            options={DATE_TIME_OPTIONS}
+                          />
                         </>
                       )}
                     </p>
@@ -534,7 +548,11 @@ export function ScheduledReportsCard({
                         {run.reportName}
                       </p>
                       <p className="text-muted-foreground">
-                        <ClientTime timestamp={run.startedAt} />
+                        <ClientDate
+                          timestamp={run.startedAt}
+                          locale={locale}
+                          options={DATE_TIME_OPTIONS}
+                        />
                         {" · "}
                         {run.triggeredBy === "schedule"
                           ? t("triggeredSchedule")
