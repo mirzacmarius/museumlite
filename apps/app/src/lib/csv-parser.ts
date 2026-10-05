@@ -1,115 +1,96 @@
-interface ParseCSVOptions<T> {
-  text: string;
-  requiredColumns: string[];
-  allColumns: string[];
-  mapRow: (getValue: (col: string) => string, rowIndex: number) => T | null;
+export interface CsvRecord {
+  /** 1-based line on which the record starts in the source file. */
+  rowNumber: number;
+  values: string[];
 }
 
-interface ParseCSVResult<T> {
-  rows: T[];
-  errors: string[];
+export interface CsvTable {
+  headers: string[];
+  records: CsvRecord[];
 }
 
-export function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
+/**
+ * RFC 4180 parser: quoted fields may contain commas, doubled quotes and line
+ * breaks; CRLF and a leading byte-order mark are accepted. Blank records are
+ * dropped but keep their line numbers out of later records.
+ */
+export function parseCsvRecords(text: string): CsvRecord[] {
+  const source = text.startsWith("﻿") ? text.slice(1) : text;
+  const records: CsvRecord[] = [];
+  let values: string[] = [];
+  let field = "";
   let inQuotes = false;
+  let line = 1;
+  let recordStart = 1;
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
+  const endRecord = () => {
+    values.push(field);
+    if (values.some((value) => value.trim() !== "")) {
+      records.push({ rowNumber: recordStart, values });
+    }
+    values = [];
+    field = "";
+  };
 
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i];
+    if (inQuotes) {
+      if (char === '"') {
+        if (source[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
       } else {
-        inQuotes = !inQuotes;
+        if (char === "\n") line++;
+        field += char;
       }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
+      continue;
+    }
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      values.push(field);
+      field = "";
+    } else if (char === "\n" || char === "\r") {
+      if (char === "\r" && source[i + 1] === "\n") i++;
+      endRecord();
+      line++;
+      recordStart = line;
     } else {
-      current += char;
+      field += char;
     }
   }
-
-  result.push(current);
-  return result;
+  if (inQuotes) {
+    throw new Error(`Unclosed quoted field starting on line ${recordStart}`);
+  }
+  if (field !== "" || values.length > 0) endRecord();
+  return records;
 }
 
-export function parseCSV<T>({
-  text,
-  requiredColumns,
-  allColumns,
-  mapRow,
-}: ParseCSVOptions<T>): ParseCSVResult<T> {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) {
-    return {
-      rows: [],
-      errors: ["CSV must have a header row and at least one data row"],
-    };
+/** Header row plus data records; headers and values are trimmed. */
+export function parseCsvTable(text: string): CsvTable {
+  const [header, ...records] = parseCsvRecords(text);
+  if (!header) {
+    throw new Error("CSV file is empty");
   }
+  return {
+    headers: header.values.map((value) => value.trim()),
+    records: records.map((record) => ({
+      rowNumber: record.rowNumber,
+      values: record.values.map((value) => value.trim()),
+    })),
+  };
+}
 
-  const headerLine = lines[0];
-  if (!headerLine) {
-    return { rows: [], errors: ["Missing header row"] };
-  }
-
-  const headers = headerLine
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
-
-  const missingRequired = requiredColumns.filter(
-    (col) => !headers.some((h) => h.toLowerCase() === col.toLowerCase()),
+/** SHA-256 of the file text, used to recognise a re-uploaded source file. */
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
   );
-
-  if (missingRequired.length > 0) {
-    return {
-      rows: [],
-      errors: [`Missing required columns: ${missingRequired.join(", ")}`],
-    };
-  }
-
-  const headerIndexByLowerName = new Map(
-    headers.map((header, index) => [header.toLowerCase(), index]),
-  );
-  const columnMap = new Map<string, number>();
-  for (const col of allColumns) {
-    const idx = headerIndexByLowerName.get(col.toLowerCase());
-    if (idx !== undefined) {
-      columnMap.set(col, idx);
-    }
-  }
-
-  const rows: T[] = [];
-  const errors: string[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line?.trim()) continue;
-
-    const values = parseCSVLine(line);
-
-    const getValue = (col: string): string => {
-      const idx = columnMap.get(col);
-      if (idx === undefined) return "";
-      return (values[idx] || "").trim();
-    };
-
-    try {
-      const row = mapRow(getValue, i + 1);
-      if (row !== null) {
-        rows.push(row);
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        errors.push(error.message);
-      } else {
-        errors.push(`Row ${i + 1}: Unknown error occurred`);
-      }
-    }
-  }
-
-  return { rows, errors };
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 }

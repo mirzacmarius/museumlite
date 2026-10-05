@@ -1,18 +1,20 @@
 "use client";
 
-import { FileSpreadsheet, Upload } from "lucide-react";
+import { AlertCircle, FileSpreadsheet, Upload } from "lucide-react";
 import type { RefObject } from "react";
 
 interface ImportAccessionsUploadStepProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   fileInputRef: RefObject<HTMLInputElement | null>;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  errors: string[];
 }
 
 export function ImportAccessionsUploadStep({
   t,
   fileInputRef,
   onFileSelect,
+  errors,
 }: ImportAccessionsUploadStepProps) {
   return (
     <div className="mx-auto max-w-2xl">
@@ -23,6 +25,16 @@ export function ImportAccessionsUploadStep({
           {t("import.description")}
         </p>
       </div>
+
+      {errors.length > 0 ? (
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <span>{errors.join(" ")}</span>
+        </div>
+      ) : null}
 
       <input
         ref={fileInputRef}

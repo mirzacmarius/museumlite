@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
@@ -15,6 +16,21 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
+import {
+  applyImportJobProgress,
+  getStoredRowResult,
+  type ImportRowResult,
+  importEntityTypeValidator,
+  importJobViewFields,
+  importRowResultValidator,
+  ROW_TRACKED_ENTITY_TYPES,
+  requireWritableImportJob,
+  resolveSourceRowNumbers,
+  storeRowOutcome,
+  toImportJobView,
+  toRowResult,
+  validateImportJobTotal,
+} from "./utils/importJobs";
 import { normalizeAccessionImportRow } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
 import {
@@ -80,6 +96,9 @@ export const createImportJob = mutation({
     organizationId: v.id("organizations"),
     type: v.union(v.literal("csv"), v.literal("media")),
     totalItems: v.number(),
+    entityType: v.optional(importEntityTypeValidator),
+    sourceName: v.optional(v.string()),
+    sourceFingerprint: v.optional(v.string()),
   },
   returns: v.id("importJobs"),
   handler: async (ctx, args) => {
@@ -90,17 +109,32 @@ export const createImportJob = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    validateImportJobTotal(args.totalItems);
+    if (
+      args.sourceFingerprint !== undefined &&
+      !/^[0-9a-f]{64}$/.test(args.sourceFingerprint)
+    ) {
+      throw new Error("Source fingerprint must be a SHA-256 hex digest");
+    }
 
+    const now = Date.now();
     const jobId = await ctx.db.insert("importJobs", {
       organizationId: args.organizationId,
       type: args.type,
+      entityType: args.entityType,
       status: "pending",
       progress: 0,
       totalItems: args.totalItems,
       processedItems: 0,
+      ...(args.entityType && ROW_TRACKED_ENTITY_TYPES.has(args.entityType)
+        ? { attemptedItems: 0, acceptedItems: 0, failedItems: 0 }
+        : {}),
+      sourceName: args.sourceName?.trim().slice(0, 200) || undefined,
+      sourceFingerprint: args.sourceFingerprint,
       errors: [],
       createdBy: userId,
-      createdAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     });
 
     return jobId;
@@ -111,25 +145,7 @@ export const getImportJob = query({
   args: {
     jobId: v.id("importJobs"),
   },
-  returns: v.union(
-    v.object({
-      _id: v.id("importJobs"),
-      organizationId: v.id("organizations"),
-      type: v.union(v.literal("csv"), v.literal("media")),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("processing"),
-        v.literal("completed"),
-        v.literal("failed"),
-      ),
-      progress: v.number(),
-      totalItems: v.number(),
-      processedItems: v.number(),
-      errors: v.optional(v.array(v.string())),
-      createdAt: v.number(),
-    }),
-    v.null(),
-  ),
+  returns: v.union(v.object(importJobViewFields), v.null()),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
@@ -140,17 +156,7 @@ export const getImportJob = query({
       return null;
     }
 
-    return {
-      _id: job._id,
-      organizationId: job.organizationId,
-      type: job.type,
-      status: job.status,
-      progress: job.progress,
-      totalItems: job.totalItems,
-      processedItems: job.processedItems,
-      errors: job.errors,
-      createdAt: job.createdAt,
-    };
+    return toImportJobView(job);
   },
 });
 
@@ -158,23 +164,7 @@ export const listImportJobs = query({
   args: {
     organizationId: v.id("organizations"),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("importJobs"),
-      type: v.union(v.literal("csv"), v.literal("media")),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("processing"),
-        v.literal("completed"),
-        v.literal("failed"),
-      ),
-      progress: v.number(),
-      totalItems: v.number(),
-      processedItems: v.number(),
-      errors: v.optional(v.array(v.string())),
-      createdAt: v.number(),
-    }),
-  ),
+  returns: v.array(v.object(importJobViewFields)),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
@@ -192,16 +182,92 @@ export const listImportJobs = query({
       .order("desc")
       .take(20);
 
-    return jobs.map((job) => ({
-      _id: job._id,
-      type: job.type,
-      status: job.status,
-      progress: job.progress,
-      totalItems: job.totalItems,
-      processedItems: job.processedItems,
-      errors: job.errors,
-      createdAt: job.createdAt,
-    }));
+    return jobs.map(toImportJobView);
+  },
+});
+
+/** The latest unfinished or partly failed import of the same source file. */
+export const findResumableImportJob = query({
+  args: {
+    organizationId: v.id("organizations"),
+    entityType: importEntityTypeValidator,
+    sourceFingerprint: v.string(),
+  },
+  returns: v.union(v.object(importJobViewFields), v.null()),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.create");
+    const jobs = await ctx.db
+      .query("importJobs")
+      .withIndex("by_organization_and_sourceFingerprint", (q) =>
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("sourceFingerprint", args.sourceFingerprint),
+      )
+      .order("desc")
+      .take(10);
+    const job = jobs.find(
+      (candidate) =>
+        candidate.entityType === args.entityType &&
+        (candidate.status === "pending" ||
+          candidate.status === "processing" ||
+          candidate.status === "completed_with_errors"),
+    );
+    return job ? toImportJobView(job) : null;
+  },
+});
+
+export const listImportRowResults = query({
+  args: {
+    jobId: v.id("importJobs"),
+    status: v.optional(v.union(v.literal("accepted"), v.literal("failed"))),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: v.object({
+    page: v.array(
+      v.object({
+        rowNumber: v.number(),
+        status: v.union(v.literal("accepted"), v.literal("failed")),
+        recordId: v.optional(v.string()),
+        identifier: v.optional(v.string()),
+        errors: v.array(v.string()),
+        attempts: v.number(),
+      }),
+    ),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) throw new Error("Import job not found");
+    await requirePermission(ctx, job.organizationId, "collections.create");
+    const paginationOpts = {
+      ...args.paginationOpts,
+      numItems: Math.min(Math.max(args.paginationOpts.numItems, 1), 200),
+    };
+    const status = args.status;
+    const result = status
+      ? await ctx.db
+          .query("importRowResults")
+          .withIndex("by_job_and_status_and_rowNumber", (q) =>
+            q.eq("jobId", args.jobId).eq("status", status),
+          )
+          .paginate(paginationOpts)
+      : await ctx.db
+          .query("importRowResults")
+          .withIndex("by_job_and_rowNumber", (q) => q.eq("jobId", args.jobId))
+          .paginate(paginationOpts);
+    return {
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+      page: result.page.map((row) => ({
+        rowNumber: row.rowNumber,
+        status: row.status,
+        recordId: row.recordId,
+        identifier: row.identifier,
+        errors: row.errors,
+        attempts: row.attempts,
+      })),
+    };
   },
 });
 
@@ -211,6 +277,7 @@ export const importAccessionsBatch = mutation({
     jobId: v.id("importJobs"),
     rows: v.array(
       v.object({
+        rowNumber: v.optional(v.number()),
         accessionNumber: v.optional(v.string()),
         dateReceived: v.string(),
         source: v.string(),
@@ -224,6 +291,7 @@ export const importAccessionsBatch = mutation({
   returns: v.object({
     processed: v.number(),
     errors: v.array(v.string()),
+    results: v.array(importRowResultValidator),
   }),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -231,109 +299,112 @@ export const importAccessionsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    const [, job] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.create"),
-      ctx.db.get(args.jobId),
-    ]);
-    if (!job || job.organizationId !== args.organizationId) {
-      throw new Error("Import job not found");
-    }
+    await requirePermission(ctx, args.organizationId, "collections.create");
+    const job = await requireWritableImportJob(
+      ctx,
+      args.jobId,
+      args.organizationId,
+      "accessions",
+    );
+    const sourceRows = resolveSourceRowNumbers(args.rows, args.batchIndex);
 
-    await ctx.db.patch(args.jobId, { status: "processing" });
-
-    const importResults: { processed: boolean; errors: string[] }[] = [];
-    for (const [i, row] of args.rows.entries()) {
-      importResults.push(
-        await (async () => {
-          if (!row) {
-            return { processed: false, errors: [] as string[] };
-          }
-
-          const rowNum = args.batchIndex * 50 + i + 2;
-
-          try {
-            const normalizedRow = normalizeAccessionImportRow(row, rowNum);
-            const rowErrors = normalizedRow.issues.filter(
-              (issue) => issue.severity === "error",
-            );
-
-            if (rowErrors.length > 0 || normalizedRow.normalized === null) {
-              return {
-                processed: false,
-                errors: rowErrors.map(
-                  (issue) => `Row ${rowNum}: ${issue.message}`,
-                ),
-              };
-            }
-
-            const accessionNumber = row.accessionNumber?.trim()
-              ? row.accessionNumber
-              : await generateConfiguredIdentifier(
-                  ctx,
-                  args.organizationId,
-                  "accession",
-                );
-            const normalizedIdentifier = await ensureIdentifierAvailable(
-              ctx,
-              args.organizationId,
-              "accession",
-              accessionNumber,
-            );
-            await ctx.db.insert("accessions", {
-              organizationId: args.organizationId,
-              accessionNumber,
-              normalizedIdentifier,
-              dateReceived: normalizedRow.normalized.dateReceived,
-              source: normalizedRow.normalized.source,
-              method: normalizedRow.normalized.method,
-              cost: normalizedRow.normalized.cost,
-              notes: normalizedRow.normalized.notes,
-              status: "pending",
-              workflowStep: 0,
-              workflowHistory: [
-                {
-                  step: 0,
-                  approvedBy: userId,
-                  approvedAt: Date.now(),
-                  comment: "Imported via CSV",
-                },
-              ],
-            });
-
-            return { processed: true, errors: [] as string[] };
-          } catch (err) {
-            return {
-              processed: false,
-              errors: [
-                `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-              ],
-            };
-          }
-        })(),
-      );
-    }
-
-    const errors: string[] = [];
-    let processed = 0;
-    for (const result of importResults) {
-      errors.push(...result.errors);
-      if (result.processed) {
-        processed++;
+    const results: ImportRowResult[] = [];
+    const deltas: Parameters<typeof applyImportJobProgress>[2] = [];
+    const correctedRows: number[] = [];
+    // Rows run sequentially so equivalent identifiers in one batch cannot race.
+    for (const { row, rowNumber } of sourceRows) {
+      const previous = await getStoredRowResult(ctx, job._id, rowNumber);
+      if (previous?.status === "accepted") {
+        results.push(toRowResult(previous, true));
+        continue;
       }
+
+      let outcome: Omit<ImportRowResult, "replayed">;
+      try {
+        const normalizedRow = normalizeAccessionImportRow(row, rowNumber);
+        const rowErrors = normalizedRow.issues.filter(
+          (issue) => issue.severity === "error",
+        );
+
+        if (rowErrors.length > 0 || normalizedRow.normalized === null) {
+          outcome = {
+            rowNumber,
+            status: "failed",
+            errors: rowErrors.map(
+              (issue) => `Row ${rowNumber}: ${issue.message}`,
+            ),
+          };
+        } else {
+          const accessionNumber = row.accessionNumber?.trim()
+            ? row.accessionNumber
+            : await generateConfiguredIdentifier(
+                ctx,
+                args.organizationId,
+                "accession",
+              );
+          const normalizedIdentifier = await ensureIdentifierAvailable(
+            ctx,
+            args.organizationId,
+            "accession",
+            accessionNumber,
+          );
+          const accessionId = await ctx.db.insert("accessions", {
+            organizationId: args.organizationId,
+            accessionNumber,
+            normalizedIdentifier,
+            dateReceived: normalizedRow.normalized.dateReceived,
+            source: normalizedRow.normalized.source,
+            method: normalizedRow.normalized.method,
+            cost: normalizedRow.normalized.cost,
+            notes: normalizedRow.normalized.notes,
+            status: "pending",
+            workflowStep: 0,
+            workflowHistory: [
+              {
+                step: 0,
+                approvedBy: userId,
+                approvedAt: Date.now(),
+                comment: `Imported via CSV (job ${job._id}, row ${rowNumber})`,
+              },
+            ],
+          });
+          outcome = {
+            rowNumber,
+            status: "accepted",
+            recordId: accessionId,
+            identifier: accessionNumber,
+            errors: [],
+          };
+        }
+      } catch (err) {
+        outcome = {
+          rowNumber,
+          status: "failed",
+          errors: [
+            `Row ${rowNumber}: ${err instanceof Error ? err.message : "Unknown error"}`,
+          ],
+        };
+      }
+
+      deltas.push(await storeRowOutcome(ctx, job, previous, outcome));
+      if (previous && outcome.status === "accepted") {
+        correctedRows.push(rowNumber);
+      }
+      results.push({ ...outcome, replayed: false });
     }
 
-    const newProcessedItems = job.processedItems + processed;
-    const newProgress = Math.round((newProcessedItems / job.totalItems) * 100);
-    const allErrors = [...(job.errors || []), ...errors];
+    const errors = results.flatMap((result) =>
+      result.replayed ? [] : result.errors,
+    );
+    await applyImportJobProgress(ctx, job._id, deltas, errors, correctedRows);
 
-    await ctx.db.patch(args.jobId, {
-      processedItems: newProcessedItems,
-      progress: newProgress,
-      errors: allErrors.slice(-100),
-      status: newProcessedItems >= job.totalItems ? "completed" : "processing",
-    });
-
-    return { processed, errors };
+    return {
+      processed: results.filter(
+        (result) => result.status === "accepted" && !result.replayed,
+      ).length,
+      errors,
+      results,
+    };
   },
 });
 
@@ -356,8 +427,18 @@ export const cancelImportJob = mutation({
 
     await requirePermission(ctx, job.organizationId, "collections.create");
 
-    if (job.status === "pending" || job.status === "processing") {
-      await ctx.db.patch(args.jobId, { status: "failed" });
+    if (
+      job.status === "pending" ||
+      job.status === "processing" ||
+      job.status === "completed_with_errors"
+    ) {
+      const now = Date.now();
+      // Accepted rows stay in the register; only further rows are refused.
+      await ctx.db.patch(args.jobId, {
+        status: "cancelled",
+        updatedAt: now,
+        finishedAt: now,
+      });
     }
 
     return null;

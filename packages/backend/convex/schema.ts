@@ -2814,17 +2814,57 @@ export default defineSchema({
       v.literal("pending"),
       v.literal("processing"),
       v.literal("completed"),
+      v.literal("completed_with_errors"),
+      v.literal("cancelled"),
       v.literal("failed"),
     ),
     progress: v.number(),
     totalItems: v.number(),
+    // Accepted rows. Kept for clients that predate attempted/failed counts.
     processedItems: v.number(),
     errors: v.optional(v.array(v.string())),
     createdBy: v.id("users"),
     createdAt: v.number(),
+    // Row-tracked imports (absent on legacy jobs)
+    entityType: v.optional(
+      v.union(
+        v.literal("objects"),
+        v.literal("accessions"),
+        v.literal("locations"),
+        v.literal("accounts"),
+        v.literal("loans"),
+      ),
+    ),
+    attemptedItems: v.optional(v.number()),
+    acceptedItems: v.optional(v.number()),
+    failedItems: v.optional(v.number()),
+    sourceName: v.optional(v.string()),
+    sourceFingerprint: v.optional(v.string()),
+    updatedAt: v.optional(v.number()),
+    finishedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_organization_and_sourceFingerprint", [
+      "organizationId",
+      "sourceFingerprint",
+    ]),
+
+  // One durable outcome per import job and source row; replays return it.
+  importRowResults: defineTable({
+    organizationId: v.id("organizations"),
+    jobId: v.id("importJobs"),
+    rowNumber: v.number(),
+    status: v.union(v.literal("accepted"), v.literal("failed")),
+    recordId: v.optional(v.string()),
+    identifier: v.optional(v.string()),
+    errors: v.array(v.string()),
+    attempts: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_job_and_rowNumber", ["jobId", "rowNumber"])
+    .index("by_job_and_status_and_rowNumber", ["jobId", "status", "rowNumber"]),
 
   // Import validation reports
   importValidationReports: defineTable({

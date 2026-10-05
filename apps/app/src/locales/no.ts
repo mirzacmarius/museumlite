@@ -3996,6 +3996,35 @@ export default {
       unknownSource: "Ukjent kilde",
     },
     import: {
+      progressDetail:
+        "{attempted} av {total} rader forsøkt · {accepted} godtatt · {failed} feilet",
+      cancelImport: "Avbryt import",
+      cancelling: "Stopper etter gjeldende parti…",
+      cancelledTitle: "Import avbrutt",
+      interruptedTitle: "Import avbrutt underveis",
+      outcome:
+        "{accepted} godtatt, {failed} feilet ({attempted} av {total} rader forsøkt).",
+      resumeHint:
+        "Last opp den samme filen igjen for å fortsette; godtatte rader hoppes over.",
+      downloadFailedRows: "Last ned feilede rader",
+      downloadFailed: "Kunne ikke laste ned feilede rader.",
+      retryFailedRows: "Prøv feilede rader på nytt",
+      backToValidation: "Tilbake til validering",
+      startNewImport: "Start ny import",
+      resumeNotice:
+        "Denne filen ble importert {date}: {attempted} av {total} rader forsøkt, {accepted} godtatt, {failed} feilet. Fortsettelse hopper over godtatte rader.",
+      resumeImport: "Fortsett import",
+      validationTitle: "Valideringsrapport",
+      validationSummary: "{valid} gyldige rader, {errors} feil",
+      backToMapping: "Tilbake til kobling",
+      rowsPassed: "{count} rader besto valideringen",
+      uploadCorrectedFile: "Last opp rettet fil",
+      continueWithErrors:
+        "Fortsett ({count} rader med feil registreres som feilet)",
+      rowsWillFail:
+        "{count} rader har feil og registreres som feilede rader du kan laste ned og rette",
+      correctionHint:
+        "Rett de feilede radene i filen uten å legge til, fjerne eller endre rekkefølgen på rader, og velg Last opp rettet fil. Godtatte rader beholdes og hoppes over.",
       title: "Importer Aksesjoner fra CSV",
       description:
         "Last opp en CSV-fil med aksesjonsdataene dine. Påkrevde kolonner: dateReceived, source, method.",

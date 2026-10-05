@@ -1,10 +1,12 @@
 "use client";
 
 import { api } from "@v1/backend/convex/_generated/api";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import type { RefObject } from "react";
 import type { FieldMapping } from "@/components/import-field-mapper";
 import { ImportJobUnavailable } from "@/components/import-job-unavailable";
+import { useOrganization } from "@/components/organization-provider";
 import type { ImportState } from "./import-accessions-types";
 import { ImportAccessionsCompleteStep } from "./steps/import-accessions-complete-step";
 import { ImportAccessionsImportingStep } from "./steps/import-accessions-importing-step";
@@ -21,7 +23,10 @@ export interface ImportAccessionsStepPanelsProps {
   handleSaveMappings: (mappings: FieldMapping[]) => void;
   handleReset: () => void;
   handleContinueAfterValidation: () => void;
-  handleStartImport: () => void;
+  handleStartImport: (resumeJobId?: Id<"importJobs">) => void;
+  handleRetryFailed: () => Promise<void>;
+  handleUploadCorrection: (file: File) => Promise<void>;
+  handleCancelImport: () => Promise<void>;
   onBackToMapping: () => void;
   onBackToValidation: () => void;
 }
@@ -35,12 +40,26 @@ export function ImportAccessionsStepPanels({
   handleReset,
   handleContinueAfterValidation,
   handleStartImport,
+  handleRetryFailed,
+  handleUploadCorrection,
+  handleCancelImport,
   onBackToMapping,
   onBackToValidation,
 }: ImportAccessionsStepPanelsProps) {
+  const { currentOrganizationId } = useOrganization();
   const importJob = useQuery(
     api.imports.getImportJob,
     state.jobId ? { jobId: state.jobId } : "skip",
+  );
+  const resumableJob = useQuery(
+    api.imports.findResumableImportJob,
+    state.step === "preview" && state.fingerprint && currentOrganizationId
+      ? {
+          organizationId: currentOrganizationId as Id<"organizations">,
+          entityType: "accessions",
+          sourceFingerprint: state.fingerprint,
+        }
+      : "skip",
   );
 
   if (
@@ -57,6 +76,7 @@ export function ImportAccessionsStepPanels({
         t={t}
         fileInputRef={fileInputRef}
         onFileSelect={handleFileSelect}
+        errors={state.errors}
       />
     );
   }
@@ -76,6 +96,7 @@ export function ImportAccessionsStepPanels({
     return (
       <ImportAccessionsValidationStep
         state={state}
+        t={t}
         onBackToMapping={onBackToMapping}
         onContinueAfterValidation={handleContinueAfterValidation}
       />
@@ -87,6 +108,7 @@ export function ImportAccessionsStepPanels({
       <ImportAccessionsPreviewStep
         state={state}
         t={t}
+        resumableJob={resumableJob}
         onBackToValidation={onBackToValidation}
         onStartImport={handleStartImport}
       />
@@ -99,6 +121,7 @@ export function ImportAccessionsStepPanels({
         state={state}
         importJob={importJob}
         t={t}
+        onCancel={handleCancelImport}
       />
     );
   }
@@ -110,6 +133,8 @@ export function ImportAccessionsStepPanels({
         importJob={importJob}
         t={t}
         onReset={handleReset}
+        onRetryFailed={handleRetryFailed}
+        onUploadCorrection={handleUploadCorrection}
       />
     );
   }

@@ -369,6 +369,23 @@ export default {
       stepName: "e.g. Curator Approval",
     },
     data: {
+      importJobs: {
+        title: "Recent Import Jobs",
+        jobTitle: "{type} import",
+        counts:
+          "{attempted} of {total} rows attempted · {accepted} accepted · {failed} failed",
+        statusPending: "Pending",
+        statusProcessing: "Processing",
+        statusCompleted: "Completed",
+        statusCompletedWithErrors: "Completed with errors",
+        statusCancelled: "Cancelled",
+        statusFailed: "Failed",
+        cancel: "Cancel",
+        cancelled: "Import cancelled. Accepted rows were kept.",
+        cancelFailed: "Could not cancel the import.",
+        downloadFailedRows: "Failed rows",
+        downloadFailed: "Could not download failed rows.",
+      },
       title: "Data Import/Export",
       description: "Import and export your collection data",
       selectType: "Select type...",
@@ -4203,6 +4220,35 @@ export default {
       unknownSource: "Unknown source",
     },
     import: {
+      progressDetail:
+        "{attempted} of {total} rows attempted · {accepted} accepted · {failed} failed",
+      cancelImport: "Cancel import",
+      cancelling: "Stopping after the current batch…",
+      cancelledTitle: "Import cancelled",
+      interruptedTitle: "Import interrupted",
+      outcome:
+        "{accepted} accepted, {failed} failed ({attempted} of {total} rows attempted).",
+      resumeHint:
+        "Upload the same file again to resume; accepted rows are skipped.",
+      downloadFailedRows: "Download failed rows",
+      downloadFailed: "Could not download failed rows.",
+      retryFailedRows: "Retry failed rows",
+      backToValidation: "Back to Validation",
+      startNewImport: "Start new import",
+      resumeNotice:
+        "This file was imported on {date}: {attempted} of {total} rows attempted, {accepted} accepted, {failed} failed. Resuming skips accepted rows.",
+      resumeImport: "Resume import",
+      validationTitle: "Validation Report",
+      validationSummary: "{valid} valid rows, {errors} errors",
+      backToMapping: "Back to Mapping",
+      rowsPassed: "{count} rows passed validation",
+      uploadCorrectedFile: "Upload corrected file",
+      continueWithErrors:
+        "Continue ({count} rows with errors will be recorded as failed)",
+      rowsWillFail:
+        "{count} rows have errors and will be recorded as failed rows you can download and correct",
+      correctionHint:
+        "Fix the failed rows in your file without adding, removing or reordering rows, then choose Upload corrected file. Accepted rows are kept and skipped.",
       title: "Import Accessions from CSV",
       description:
         "Upload a CSV file with your accession data. Required columns: dateReceived, source, method.",

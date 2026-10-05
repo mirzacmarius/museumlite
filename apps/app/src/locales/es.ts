@@ -4034,6 +4034,35 @@ export default {
       unknownSource: "Fuente desconocida",
     },
     import: {
+      progressDetail:
+        "{attempted} de {total} filas procesadas · {accepted} aceptadas · {failed} con error",
+      cancelImport: "Cancelar importación",
+      cancelling: "Deteniendo tras el lote actual…",
+      cancelledTitle: "Importación cancelada",
+      interruptedTitle: "Importación interrumpida",
+      outcome:
+        "{accepted} aceptadas, {failed} con error ({attempted} de {total} filas procesadas).",
+      resumeHint:
+        "Vuelve a subir el mismo archivo para reanudar; las filas aceptadas se omiten.",
+      downloadFailedRows: "Descargar filas con error",
+      downloadFailed: "No se pudieron descargar las filas con error.",
+      retryFailedRows: "Reintentar filas con error",
+      backToValidation: "Volver a la validación",
+      startNewImport: "Nueva importación",
+      resumeNotice:
+        "Este archivo se importó el {date}: {attempted} de {total} filas procesadas, {accepted} aceptadas, {failed} con error. Al reanudar se omiten las filas aceptadas.",
+      resumeImport: "Reanudar importación",
+      validationTitle: "Informe de validación",
+      validationSummary: "{valid} filas válidas, {errors} errores",
+      backToMapping: "Volver al mapeo",
+      rowsPassed: "{count} filas superaron la validación",
+      uploadCorrectedFile: "Subir archivo corregido",
+      continueWithErrors:
+        "Continuar ({count} filas con errores se registrarán como fallidas)",
+      rowsWillFail:
+        "{count} filas tienen errores y se registrarán como filas fallidas que puedes descargar y corregir",
+      correctionHint:
+        "Corrige las filas con error en tu archivo sin añadir, eliminar ni reordenar filas y elige Subir archivo corregido. Las filas aceptadas se conservan y se omiten.",
       title: "Importar Adquisiciones desde CSV",
       description:
         "Sube un archivo CSV con los datos de adquisición. Columnas requeridas: dateReceived, source, method.",

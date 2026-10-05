@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
+import { importJobStatusValidator } from "./utils/importJobs";
 import {
   getMediaFileType,
   insertCompletedMediaAsset,
@@ -113,12 +114,7 @@ export const getMediaImportJob = query({
       _id: v.id("importJobs"),
       organizationId: v.id("organizations"),
       type: v.literal("media"),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("processing"),
-        v.literal("completed"),
-        v.literal("failed"),
-      ),
+      status: importJobStatusValidator,
       progress: v.number(),
       totalItems: v.number(),
       processedItems: v.number(),
@@ -607,12 +603,7 @@ export const listMediaImportJobs = query({
   returns: v.array(
     v.object({
       _id: v.id("importJobs"),
-      status: v.union(
-        v.literal("pending"),
-        v.literal("processing"),
-        v.literal("completed"),
-        v.literal("failed"),
-      ),
+      status: importJobStatusValidator,
       progress: v.number(),
       totalItems: v.number(),
       processedItems: v.number(),

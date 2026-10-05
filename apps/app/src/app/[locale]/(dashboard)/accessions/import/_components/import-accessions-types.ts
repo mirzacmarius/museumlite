@@ -2,6 +2,8 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FieldMapping } from "@/components/import-field-mapper";
 
 export interface ParsedRow {
+  /** Line in the source file, used as the row's stable identity on the job. */
+  rowNumber: number;
   accessionNumber?: string;
   dateReceived: string;
   source: string;
@@ -19,7 +21,9 @@ export interface ImportState {
     | "importing"
     | "complete";
   file: File | null;
-  rawData: Record<string, string>[];
+  rawData: { rowNumber: number; values: Record<string, string> }[];
+  /** SHA-256 of the source text; identifies a re-uploaded file. */
+  fingerprint: string | null;
   sourceFields: string[];
   fieldMappings: FieldMapping[];
   rows: ParsedRow[];
@@ -27,6 +31,21 @@ export interface ImportState {
   errors: string[];
   jobId: Id<"importJobs"> | null;
 }
+
+export const MAX_IMPORT_ROWS = 1000;
+
+export const EMPTY_IMPORT_STATE: ImportState = {
+  step: "upload",
+  file: null,
+  rawData: [],
+  fingerprint: null,
+  sourceFields: [],
+  fieldMappings: [],
+  rows: [],
+  validationErrors: [],
+  errors: [],
+  jobId: null,
+};
 
 export const REQUIRED_COLUMNS = ["dateReceived", "source", "method"];
 export const OPTIONAL_COLUMNS = ["accessionNumber", "cost", "notes"];

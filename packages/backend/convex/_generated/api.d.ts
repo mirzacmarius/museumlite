@@ -138,6 +138,7 @@ import type * as utils_featureGates from "../utils/featureGates.js";
 import type * as utils_featurePolicy from "../utils/featurePolicy.js";
 import type * as utils_formatConverters from "../utils/formatConverters.js";
 import type * as utils_identifiers from "../utils/identifiers.js";
+import type * as utils_importJobs from "../utils/importJobs.js";
 import type * as utils_importRows from "../utils/importRows.js";
 import type * as utils_indexedCounts from "../utils/indexedCounts.js";
 import type * as utils_insuranceCoverageAlerts from "../utils/insuranceCoverageAlerts.js";
@@ -328,6 +329,7 @@ declare const fullApi: ApiFromModules<{
   "utils/featurePolicy": typeof utils_featurePolicy;
   "utils/formatConverters": typeof utils_formatConverters;
   "utils/identifiers": typeof utils_identifiers;
+  "utils/importJobs": typeof utils_importJobs;
   "utils/importRows": typeof utils_importRows;
   "utils/indexedCounts": typeof utils_indexedCounts;
   "utils/insuranceCoverageAlerts": typeof utils_insuranceCoverageAlerts;
