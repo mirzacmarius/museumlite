@@ -4273,6 +4273,7 @@ export default defineSchema({
         ),
         filters: v.optional(
           v.object({
+            siteIds: v.optional(v.array(v.id("sites"))),
             locationIds: v.optional(v.array(v.id("locations"))),
             collectionGroupIds: v.optional(v.array(v.id("collectionGroups"))),
             objectTypes: v.optional(v.array(v.string())),
@@ -4292,6 +4293,7 @@ export default defineSchema({
     scheduledDay: v.optional(v.number()), // Day of week (0-6) or day of month (1-31)
     scheduledTime: v.optional(v.string()), // HH:MM in 24hr format
     timezone: v.optional(v.string()),
+    scheduleRevision: v.optional(v.number()),
 
     // Email delivery
     emailRecipients: v.optional(v.array(v.string())),
@@ -4323,6 +4325,10 @@ export default defineSchema({
   reportRuns: defineTable({
     organizationId: v.id("organizations"),
     scheduledReportId: v.optional(v.id("scheduledReports")),
+    scheduledFor: v.optional(v.number()),
+    scheduleRevision: v.optional(v.number()),
+    attemptCount: v.optional(v.number()),
+    lastAttemptAt: v.optional(v.number()),
     reportType: v.string(),
     reportName: v.string(),
 
@@ -4339,6 +4345,15 @@ export default defineSchema({
 
     // Report data
     reportData: v.optional(v.any()), // JSON blob of report results
+    artifact: v.optional(
+      v.object({
+        schemaVersion: v.literal(1),
+        format: v.literal("json"),
+        content: v.string(),
+        generatedAt: v.number(),
+        storedAt: v.number(),
+      }),
+    ),
     storageId: v.optional(v.id("_storage")), // For PDF/Excel exports
 
     // Delivery
@@ -4351,6 +4366,11 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_scheduled_report", ["scheduledReportId"])
+    .index("by_scheduledReportId_and_scheduleRevision_and_scheduledFor", [
+      "scheduledReportId",
+      "scheduleRevision",
+      "scheduledFor",
+    ])
     .index("by_status", ["organizationId", "status"]),
 
   // ============================================
