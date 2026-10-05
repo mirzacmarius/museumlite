@@ -12,8 +12,6 @@ import {
 } from "./_generated/server";
 import { createDeaccessionRecord } from "./deaccessions";
 import { customFieldValue } from "./schema";
-import { getNextCounterValue } from "./utils/accessionCounter";
-import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import {
   getLocationPathStrings,
@@ -31,6 +29,10 @@ import {
 } from "./utils/collectionListHelpers";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import { enforceObjectQuota, hasModuleEnabled } from "./utils/featureGates";
+import {
+  ensureIdentifierAvailable,
+  generateConfiguredIdentifier,
+} from "./utils/identifiers";
 import {
   assertCollectionNotOnLoan,
   collectionHasOccupyingLoan,
@@ -220,54 +222,8 @@ const objectDetailLocationPathItemValidator = v.object({
 async function generateAccessionNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
-): Promise<string> {
-  const org = await ctx.db.get(organizationId);
-  if (!org) {
-    throw new Error("Organization not found");
-  }
-
-  const template = org.settings?.accessionNumberFormat;
-  const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
-
-  if (!autoGenerate) {
-    throw new Error(
-      "Auto-generate accession numbers is disabled. Please enable it in Organization Settings or provide a custom accession number.",
-    );
-  }
-
-  if (!template) {
-    throw new Error(
-      "Accession number format is not configured. Please set up an accession format template in Organization Settings.",
-    );
-  }
-
-  const now = new Date();
-
-  // Determine counter scope from settings or template
-  const counterScope =
-    org.settings?.accessionCounterScope ||
-    accessionParser.getCounterScopeFromTemplate(template);
-
-  // Get scope key for counter tracking
-  const scopeKey = accessionParser.getScopeKey(counterScope, now);
-
-  // Get next counter value (atomic operation)
-  const counterValue = await getNextCounterValue(
-    ctx,
-    organizationId,
-    counterScope,
-    scopeKey,
-  );
-
-  // Parse template and generate accession number
-  const accessionNumber = accessionParser.parse(template, {
-    organizationSlug: org.slug,
-    currentDate: now,
-    counterValue,
-    counterScope,
-  });
-
-  return accessionNumber;
+) {
+  return generateConfiguredIdentifier(ctx, organizationId, "catalog");
 }
 
 async function getObjectDetailHeroImage(
@@ -626,19 +582,12 @@ export const create = mutation({
       accessionNumber = await generateAccessionNumber(ctx, args.organizationId);
     }
 
-    // Check uniqueness
-    const existing = await ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_accessionNumber", (q) =>
-        q
-          .eq("organizationId", args.organizationId)
-          .eq("accessionNumber", accessionNumber),
-      )
-      .first();
-
-    if (existing) {
-      throw new Error("Accession number already exists");
-    }
+    const normalizedIdentifier = await ensureIdentifierAvailable(
+      ctx,
+      args.organizationId,
+      "catalog",
+      accessionNumber,
+    );
 
     const normalizedCondition = normalizeOptionalString(args.condition);
     const conditionHistory = normalizedCondition
@@ -657,6 +606,7 @@ export const create = mutation({
       organizationId: args.organizationId,
       collectionGroupId: args.collectionGroupId,
       accessionNumber,
+      normalizedIdentifier,
       title: args.title,
       alternativeTitle: args.alternativeTitle,
       creator: args.creator,

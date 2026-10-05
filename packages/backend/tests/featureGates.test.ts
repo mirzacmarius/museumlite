@@ -291,6 +291,7 @@ describe("Feature Gates - Quota Enforcement", () => {
           ctx.db.insert("collections", {
             organizationId,
             accessionNumber: `E-${index}`,
+            normalizedIdentifier: `e-${index}`,
             title: `Enterprise Object ${index}`,
             status: "active",
             catalogedBy: userId,

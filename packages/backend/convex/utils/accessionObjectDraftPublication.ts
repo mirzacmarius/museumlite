@@ -1,7 +1,8 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { insertCompletedMediaAsset } from "./mediaAssets";
 import { syncCollectionOptionUsages } from "./collectionOptionUsages";
+import { ensureIdentifierAvailable } from "./identifiers";
+import { insertCompletedMediaAsset } from "./mediaAssets";
 import {
   applyUsageCounterDelta,
   ensureUsageCounter,
@@ -27,6 +28,14 @@ export async function publishAccessionObjectDraft(
     displayStatus?: string;
   },
 ) {
+  const catalogIdentifier =
+    accession.catalogIdentifier ?? accession.accessionNumber;
+  const normalizedIdentifier = await ensureIdentifierAvailable(
+    ctx,
+    accession.organizationId,
+    "catalog",
+    catalogIdentifier,
+  );
   const draftObjectData = accession.draftObjectData;
   const collectionGroupIds =
     draftObjectData?.collectionGroupIds ??
@@ -38,7 +47,8 @@ export async function publishAccessionObjectDraft(
     ensureUsageCounter(ctx, accession.organizationId),
     ctx.db.insert("collections", {
       organizationId: accession.organizationId,
-      accessionNumber: accession.accessionNumber,
+      accessionNumber: catalogIdentifier,
+      normalizedIdentifier,
       collectionGroupId: collectionGroupIds[0],
       title:
         draftObjectData?.title?.trim() ||

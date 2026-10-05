@@ -3,6 +3,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
+import { ensureIdentifierAvailable } from "./utils/identifiers";
 import {
   applyUsageCounterDelta,
   createEmptyUsageCounter,
@@ -259,9 +260,16 @@ export const createCollection = internalMutation({
   },
   returns: v.id("collections"),
   handler: async (ctx, args) => {
+    const normalizedIdentifier = await ensureIdentifierAvailable(
+      ctx,
+      args.organizationId,
+      "catalog",
+      args.accessionNumber,
+    );
     const collectionId = await ctx.db.insert("collections", {
       organizationId: args.organizationId,
       accessionNumber: args.accessionNumber,
+      normalizedIdentifier,
       title: args.title,
       creator: args.creator,
       objectType: args.objectType,
@@ -1683,10 +1691,17 @@ export const createAccession = internalMutation({
       return existing._id;
     }
 
+    const normalizedIdentifier = await ensureIdentifierAvailable(
+      ctx,
+      args.organizationId,
+      "accession",
+      args.accessionNumber,
+    );
     return await ctx.db.insert("accessions", {
       organizationId: args.organizationId,
       collectionId: args.collectionId,
       accessionNumber: args.accessionNumber,
+      normalizedIdentifier,
       dateReceived: args.dateReceived,
       source: args.source,
       donorAccountId: args.donorAccountId,

@@ -3,9 +3,11 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useReducer } from "react";
+import { Suspense, useEffect, useMemo, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
+
+import { IdentifierReview } from "./identifier-review";
 
 interface PreferencesPageState {
   error: string | null;
@@ -207,7 +209,11 @@ export default function PreferencesSettingsPage() {
     void ensureTransferRegistryFields({
       organizationId: currentOrganizationId as Id<"organizations">,
     });
-  }, [currentOrganizationId, ensureTransferRegistryFields, organization?.accountNumber]);
+  }, [
+    currentOrganizationId,
+    ensureTransferRegistryFields,
+    organization?.accountNumber,
+  ]);
 
   const systemPresets = useMemo(
     () =>
@@ -426,6 +432,10 @@ export default function PreferencesSettingsPage() {
         isSubmitting={state.isSubmitting}
         onSavePreferences={handleSavePreferences}
       />
+
+      <Suspense fallback={<p>Loading identifier review...</p>}>
+        <IdentifierReview organizationId={currentOrganizationId} />
+      </Suspense>
 
       <PreferencesSaveTemplateDialog
         accessionNumberFormat={state.formData.accessionNumberFormat}

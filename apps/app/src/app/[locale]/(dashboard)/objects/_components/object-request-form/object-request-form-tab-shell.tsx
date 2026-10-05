@@ -1,5 +1,6 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import type { RefObject } from "react";
 import type {
@@ -31,7 +32,8 @@ interface ObjectRequestFormTabShellProps {
   formData: CollectionFormData;
   updateField: UpdateCollectionFormField;
   placeholders: (key: string) => string;
-  currentOrganizationId: string;
+  currentOrganizationId: Id<"organizations">;
+  identifierAccessionId?: Id<"accessions">;
   isLocationTrackingEnabled: boolean;
   enabledModules: ObjectRequestGeneralTabProps["enabledModules"];
   common: (key: string) => string;
@@ -54,6 +56,7 @@ export function ObjectRequestFormTabShell({
   updateField,
   placeholders,
   currentOrganizationId,
+  identifierAccessionId,
   isLocationTrackingEnabled,
   enabledModules,
   common,
@@ -102,6 +105,7 @@ export function ObjectRequestFormTabShell({
             <ObjectRequestGeneralTab
               {...tabProps}
               enabledModules={enabledModules}
+              identifierAccessionId={identifierAccessionId}
             />
           ) : null}
           {activeTab === "accession" ? (

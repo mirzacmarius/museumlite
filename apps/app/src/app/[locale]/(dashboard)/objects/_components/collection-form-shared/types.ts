@@ -88,6 +88,6 @@ export interface CollectionFormTabProps {
   formData: CollectionFormData;
   updateField: UpdateCollectionFormField;
   placeholders: (key: string) => string;
-  currentOrganizationId: string;
+  currentOrganizationId: Id<"organizations">;
   isLocationTrackingEnabled: boolean;
 }

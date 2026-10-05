@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
   collectionsToDublinCore,
   fromDublinCore,
@@ -10,9 +11,12 @@ import {
 } from "./utils/dublinCore";
 import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
 import { toJSON, toXML } from "./utils/formatConverters";
+import {
+  ensureIdentifierAvailable,
+  generateConfiguredIdentifier,
+} from "./utils/identifiers";
 import { normalizeAccessionImportRow } from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
-import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
   hasPermission,
   requireLocationAdminPermission,
@@ -237,62 +241,77 @@ export const importAccessionsBatch = mutation({
 
     await ctx.db.patch(args.jobId, { status: "processing" });
 
-    const importResults = await Promise.all(
-      args.rows.map(async (row, i) => {
-        if (!row) {
-          return { processed: false, errors: [] as string[] };
-        }
-
-        const rowNum = args.batchIndex * 50 + i + 2;
-
-        try {
-          const normalizedRow = normalizeAccessionImportRow(row, rowNum);
-          const rowErrors = normalizedRow.issues.filter(
-            (issue) => issue.severity === "error",
-          );
-
-          if (rowErrors.length > 0 || normalizedRow.normalized === null) {
-            return {
-              processed: false,
-              errors: rowErrors.map(
-                (issue) => `Row ${rowNum}: ${issue.message}`,
-              ),
-            };
+    const importResults: { processed: boolean; errors: string[] }[] = [];
+    for (const [i, row] of args.rows.entries()) {
+      importResults.push(
+        await (async () => {
+          if (!row) {
+            return { processed: false, errors: [] as string[] };
           }
 
-          await ctx.db.insert("accessions", {
-            organizationId: args.organizationId,
-            accessionNumber:
-              normalizedRow.normalized.accessionNumber ??
-              `IMP-${Date.now()}-${i}`,
-            dateReceived: normalizedRow.normalized.dateReceived,
-            source: normalizedRow.normalized.source,
-            method: normalizedRow.normalized.method,
-            cost: normalizedRow.normalized.cost,
-            notes: normalizedRow.normalized.notes,
-            status: "pending",
-            workflowStep: 0,
-            workflowHistory: [
-              {
-                step: 0,
-                approvedBy: userId,
-                approvedAt: Date.now(),
-                comment: "Imported via CSV",
-              },
-            ],
-          });
+          const rowNum = args.batchIndex * 50 + i + 2;
 
-          return { processed: true, errors: [] as string[] };
-        } catch (err) {
-          return {
-            processed: false,
-            errors: [
-              `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-            ],
-          };
-        }
-      }),
-    );
+          try {
+            const normalizedRow = normalizeAccessionImportRow(row, rowNum);
+            const rowErrors = normalizedRow.issues.filter(
+              (issue) => issue.severity === "error",
+            );
+
+            if (rowErrors.length > 0 || normalizedRow.normalized === null) {
+              return {
+                processed: false,
+                errors: rowErrors.map(
+                  (issue) => `Row ${rowNum}: ${issue.message}`,
+                ),
+              };
+            }
+
+            const accessionNumber = row.accessionNumber?.trim()
+              ? row.accessionNumber
+              : await generateConfiguredIdentifier(
+                  ctx,
+                  args.organizationId,
+                  "accession",
+                );
+            const normalizedIdentifier = await ensureIdentifierAvailable(
+              ctx,
+              args.organizationId,
+              "accession",
+              accessionNumber,
+            );
+            await ctx.db.insert("accessions", {
+              organizationId: args.organizationId,
+              accessionNumber,
+              normalizedIdentifier,
+              dateReceived: normalizedRow.normalized.dateReceived,
+              source: normalizedRow.normalized.source,
+              method: normalizedRow.normalized.method,
+              cost: normalizedRow.normalized.cost,
+              notes: normalizedRow.normalized.notes,
+              status: "pending",
+              workflowStep: 0,
+              workflowHistory: [
+                {
+                  step: 0,
+                  approvedBy: userId,
+                  approvedAt: Date.now(),
+                  comment: "Imported via CSV",
+                },
+              ],
+            });
+
+            return { processed: true, errors: [] as string[] };
+          } catch (err) {
+            return {
+              processed: false,
+              errors: [
+                `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
+              ],
+            };
+          }
+        })(),
+      );
+    }
 
     const errors: string[] = [];
     let processed = 0;
@@ -870,7 +889,11 @@ export const importAccountsBatch = mutation({
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(ctx, args.organizationId, "organization.manage_settings");
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
     const [, job] = await Promise.all([
       requirePermission(ctx, args.organizationId, "loans.create"),
       ctx.db.get(args.jobId),
@@ -1164,12 +1187,24 @@ export const importObjectsBatch = mutation({
           }
         }
 
-        const accessionNumber =
-          row.accessionNumber || `IMP-${Date.now()}-${args.batchIndex}-${i}`;
+        const accessionNumber = row.accessionNumber?.trim()
+          ? row.accessionNumber
+          : await generateConfiguredIdentifier(
+              ctx,
+              args.organizationId,
+              "catalog",
+            );
 
+        const normalizedIdentifier = await ensureIdentifierAvailable(
+          ctx,
+          args.organizationId,
+          "catalog",
+          accessionNumber,
+        );
         const collectionId = await ctx.db.insert("collections", {
           organizationId: args.organizationId,
           accessionNumber,
+          normalizedIdentifier,
           title: row.title.trim(),
           alternativeTitle: row.alternativeTitle?.trim(),
           creator: row.creator?.trim(),
@@ -1284,12 +1319,24 @@ export const importObjectsDublinCore = mutation({
           continue;
         }
 
-        const accessionNumber =
-          row.accessionNumber || `IMP-DC-${Date.now()}-${i}`;
+        const accessionNumber = row.accessionNumber?.trim()
+          ? row.accessionNumber
+          : await generateConfiguredIdentifier(
+              ctx,
+              args.organizationId,
+              "catalog",
+            );
 
+        const normalizedIdentifier = await ensureIdentifierAvailable(
+          ctx,
+          args.organizationId,
+          "catalog",
+          accessionNumber,
+        );
         const collectionId = await ctx.db.insert("collections", {
           organizationId: args.organizationId,
           accessionNumber,
+          normalizedIdentifier,
           title: row.title.trim(),
           alternativeTitle: row.alternativeTitle?.trim(),
           creator: row.creator?.trim(),
@@ -1328,7 +1375,9 @@ export const importObjectsDublinCore = mutation({
       progress: newProgress,
       errors: allErrors.slice(-100),
       status:
-        newProcessedItems >= metadataRecords.length ? "completed" : "processing",
+        newProcessedItems >= metadataRecords.length
+          ? "completed"
+          : "processing",
     });
 
     return { processed, errors };

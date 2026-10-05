@@ -30,6 +30,7 @@ import {
   DropzoneUploader,
   type UploadFile,
 } from "@/components/dropzone-uploader";
+import { IdentifierAvailabilityHint } from "@/components/identifier-availability-hint";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
@@ -178,6 +179,7 @@ function AccessionIdentityFields({
   };
   setFormData: SetFormData;
 }) {
+  const { currentOrganizationId } = useOrganization();
   return (
     <>
       <div className="space-y-2">
@@ -196,6 +198,11 @@ function AccessionIdentityFields({
         <p className="text-xs text-muted-foreground">
           {labels.accessionNumberHint}
         </p>
+        <IdentifierAvailabilityHint
+          organizationId={currentOrganizationId}
+          register="accession"
+          identifier={formData.accessionNumber}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

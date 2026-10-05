@@ -441,6 +441,7 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     collectionGroupId: v.optional(v.id("collectionGroups")),
     accessionNumber: v.string(), // Primary accession number
+    normalizedIdentifier: v.optional(v.string()),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
     accessionNumberHistory: v.optional(
       v.array(
@@ -556,6 +557,10 @@ export default defineSchema({
     verifiedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_normalizedIdentifier", [
+      "organizationId",
+      "normalizedIdentifier",
+    ])
     .index("by_accessionNumber", ["accessionNumber"])
     .index("by_organization_and_accessionNumber", [
       "organizationId",
@@ -1263,6 +1268,8 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     collectionId: v.optional(v.id("collections")),
     accessionNumber: v.string(),
+    catalogIdentifier: v.optional(v.string()),
+    normalizedIdentifier: v.optional(v.string()),
     dateReceived: v.number(),
     source: v.string(),
     donorAccountId: v.optional(v.id("accounts")),
@@ -1319,6 +1326,10 @@ export default defineSchema({
     ),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_normalizedIdentifier", [
+      "organizationId",
+      "normalizedIdentifier",
+    ])
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
@@ -1337,6 +1348,21 @@ export default defineSchema({
       searchField: "accessionNumber",
       filterFields: ["organizationId", "status"],
     }),
+
+  identifierConflictReviews: defineTable({
+    organizationId: v.id("organizations"),
+    register: v.union(v.literal("catalog"), v.literal("accession")),
+    recordId: v.union(v.id("collections"), v.id("accessions")),
+    identifier: v.string(),
+    normalizedIdentifier: v.string(),
+    note: v.string(),
+    reviewedBy: v.id("users"),
+    reviewedAt: v.number(),
+  }).index("by_organization_and_register_and_record", [
+    "organizationId",
+    "register",
+    "recordId",
+  ]),
 
   accessionSearchDocuments: defineTable({
     organizationId: v.id("organizations"),

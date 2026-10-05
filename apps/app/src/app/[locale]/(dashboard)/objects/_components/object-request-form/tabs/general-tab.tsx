@@ -1,10 +1,12 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { CollectionTypeSelector } from "@/components/collection-type-selector";
+import { IdentifierAvailabilityHint } from "@/components/identifier-availability-hint";
 import { LocationSelector } from "@/components/location-selector";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
@@ -13,6 +15,7 @@ import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
 
 export interface ObjectRequestGeneralTabProps extends CollectionFormTabProps {
+  identifierAccessionId?: Id<"accessions">;
   enabledModules: ReturnType<typeof useFeatureAccess>["enabledModules"];
 }
 
@@ -23,6 +26,7 @@ export function ObjectRequestGeneralTab({
   currentOrganizationId,
   isLocationTrackingEnabled,
   enabledModules,
+  identifierAccessionId,
 }: ObjectRequestGeneralTabProps) {
   return (
     <div className="space-y-8">
@@ -43,11 +47,23 @@ export function ObjectRequestGeneralTab({
             <Label htmlFor="accessionNumber">Accession Number</Label>
             <Input
               id="accessionNumber"
+              readOnly={!!identifierAccessionId}
               value={formData.accessionNumber || ""}
               onChange={(event) =>
                 updateField("accessionNumber", event.target.value)
               }
               placeholder={placeholders("accessionNumber")}
+            />
+            {identifierAccessionId ? (
+              <p className="text-xs text-muted-foreground">
+                This permanent number is preserved when editing the draft.
+              </p>
+            ) : null}
+            <IdentifierAvailabilityHint
+              organizationId={currentOrganizationId}
+              register="accession"
+              existingId={identifierAccessionId}
+              identifier={formData.accessionNumber || ""}
             />
           </div>
 

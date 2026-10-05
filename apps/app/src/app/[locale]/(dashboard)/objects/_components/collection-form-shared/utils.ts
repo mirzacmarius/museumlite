@@ -212,7 +212,9 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
   }
 
   return {
-    accessionNumber: formData.accessionNumber?.trim() || undefined,
+    accessionNumber: formData.accessionNumber?.trim()
+      ? formData.accessionNumber
+      : undefined,
     title: formData.title.trim(),
     creator: formData.creator?.trim() || undefined,
     objectType: Array.isArray(formData.objectType)
