@@ -36,6 +36,10 @@ import {
   collectionHasOccupyingLoan,
 } from "./utils/loanOccupancy";
 import {
+  moveCollectionToLocation,
+  requireUsableLocation,
+} from "./utils/locationIntegrity";
+import {
   type CollectionType,
   getCollectionTypeModuleRequirement,
 } from "./utils/moduleCatalog";
@@ -62,10 +66,11 @@ async function validateCollectionReferences(
     }
   }
   if (references.currentLocationId) {
-    const location = await ctx.db.get(references.currentLocationId);
-    if (!location || location.organizationId !== organizationId) {
-      throw new Error("Location not found in this organization");
-    }
+    await requireUsableLocation(
+      ctx,
+      organizationId,
+      references.currentLocationId,
+    );
   }
 }
 
@@ -627,6 +632,11 @@ export const create = mutation({
       enforceObjectQuota(ctx, args.organizationId),
     ] as const);
     await validateCollectionReferences(ctx, args.organizationId, args);
+    if (args.collectionGroupId) {
+      const group = await ctx.db.get(args.collectionGroupId);
+      if (!group || group.organizationId !== args.organizationId)
+        throw new Error("Collection group not found in this organization");
+    }
 
     // Generate or validate accession number
     let accessionNumber: string;
@@ -1760,6 +1770,13 @@ export const update = mutation({
       "collections.update",
     );
     await validateCollectionReferences(ctx, collection.organizationId, args);
+    if (args.parentObjectId === args.collectionId)
+      throw new Error("Object cannot be its own parent");
+    if (args.collectionGroupId) {
+      const group = await ctx.db.get(args.collectionGroupId);
+      if (!group || group.organizationId !== collection.organizationId)
+        throw new Error("Collection group not found in this organization");
+    }
 
     // Build update object - using any to avoid verbose type definition
     const updates: Record<string, unknown> = {};
@@ -1840,7 +1857,10 @@ export const update = mutation({
     if (args.links !== undefined) updates.links = args.links;
     if (args.parentObjectId !== undefined)
       updates.parentObjectId = args.parentObjectId;
-    if (args.currentLocationId !== undefined)
+    if (
+      args.currentLocationId !== undefined &&
+      args.currentLocationId === collection.currentLocationId
+    )
       updates.currentLocationId = args.currentLocationId;
     if (args.alternateAccessionNumbers !== undefined)
       updates.alternateAccessionNumbers = args.alternateAccessionNumbers;
@@ -1866,6 +1886,15 @@ export const update = mutation({
     updates.lastModifiedAt = Date.now();
 
     await ctx.db.patch(args.collectionId, updates);
+    if (args.currentLocationId !== undefined) {
+      await moveCollectionToLocation(
+        ctx,
+        collection,
+        args.currentLocationId,
+        userId,
+        "Catalog location change",
+      );
+    }
     await syncCollectionOptionUsages(ctx, args.collectionId);
 
     if (args.collectionGroupIds !== undefined) {
@@ -2621,43 +2650,33 @@ export const bulkUpdateLocation = mutation({
       throw new Error("Not authenticated");
     }
 
-    const outcomes = await Promise.all(
-      Array.from(args.collectionIds).map(async (collectionId) => {
-        const collection = await ctx.db.get(collectionId);
-        if (!collection) {
-          return "failed" as const;
-        }
-
-        try {
-          await requirePermission(
-            ctx,
-            collection.organizationId,
-            "collections.update",
-          );
-
-          await ctx.db.patch(collectionId, {
-            currentLocationId: args.locationId,
-            lastModifiedBy: userId,
-            lastModifiedAt: Date.now(),
-          });
-          return "updated" as const;
-        } catch {
-          return "failed" as const;
-        }
-      }),
+    const uniqueIds = [...new Set(args.collectionIds)];
+    const collections = await Promise.all(
+      uniqueIds.map((id) => ctx.db.get(id)),
     );
-
-    let updated = 0;
-    let failed = 0;
-    for (const outcome of outcomes) {
-      if (outcome === "updated") {
-        updated++;
-      } else {
-        failed++;
-      }
+    if (collections.some((collection) => !collection))
+      throw new Error("Collection not found");
+    const organizationId = collections[0]?.organizationId;
+    if (!organizationId) return { updated: 0, failed: 0 };
+    if (
+      collections.some(
+        (collection) => collection?.organizationId !== organizationId,
+      )
+    )
+      throw new Error("Collections must belong to one organization");
+    await requirePermission(ctx, organizationId, "collections.update");
+    await requireUsableLocation(ctx, organizationId, args.locationId);
+    for (const collection of collections) {
+      if (collection)
+        await moveCollectionToLocation(
+          ctx,
+          collection,
+          args.locationId,
+          userId,
+          "Bulk catalog location change",
+        );
     }
-
-    return { updated, failed };
+    return { updated: uniqueIds.length, failed: 0 };
   },
 });
 

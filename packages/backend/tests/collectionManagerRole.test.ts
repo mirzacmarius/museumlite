@@ -169,11 +169,17 @@ describe("collection manager system role", () => {
       uploadArgs,
     );
     expect(upload.uploadUrl).toBeTruthy();
-    const storageId = await t.run(async (ctx) =>
-      ctx.storage.store(
-        new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
-      ),
+    const uploadUrl = new URL(upload.uploadUrl);
+    const uploadResponse = await t.fetch(
+      uploadUrl.pathname + uploadUrl.search,
+      {
+        method: "POST",
+        body: new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+      },
     );
+    expect(uploadResponse.status).toBe(200);
+    const { storageId }: { storageId: Id<"_storage"> } =
+      await uploadResponse.json();
     const draftMedia = [
       {
         storageId,

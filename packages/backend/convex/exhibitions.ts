@@ -1,6 +1,6 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { loadExhibitionMutationContext } from "./utils/exhibitionContext";
 import {
   createExhibitionHandler,
   getExhibitionHandler,
@@ -44,6 +44,7 @@ import {
   getWorkflowHistoryHandler,
   rejectExhibitionHandler,
 } from "./utils/exhibitionWorkflow";
+import { createAuthorizedUploadUrl } from "./utils/uploadOwnership";
 
 export const listByOrganization = query({
   args: {
@@ -298,14 +299,18 @@ export const deleteDocument = mutation({
 });
 
 export const generateUploadUrl = mutation({
-  args: {},
+  args: { exhibitionId: v.id("exhibitions") },
   returns: v.string(),
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    return await ctx.storage.generateUploadUrl();
+  handler: async (ctx, args) => {
+    const { userId, exhibition } = await loadExhibitionMutationContext(
+      ctx,
+      args.exhibitionId,
+    );
+    return await createAuthorizedUploadUrl(
+      ctx,
+      userId,
+      exhibition.organizationId,
+    );
   },
 });
 

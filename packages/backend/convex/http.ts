@@ -10,6 +10,61 @@ const http = httpRouter();
 
 auth.addHttpRoutes(http);
 
+const uploadCorsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+http.route({
+  path: "/upload-owned-file",
+  method: "OPTIONS",
+  handler: httpAction(
+    async () => new Response(null, { status: 204, headers: uploadCorsHeaders }),
+  ),
+});
+
+http.route({
+  path: "/upload-owned-file",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const token = new URL(request.url).searchParams.get("intent");
+    if (
+      !token ||
+      !(await ctx.runQuery(internal.users.checkUploadIntent, { token }))
+    ) {
+      return new Response("Upload session expired or invalid", {
+        status: 403,
+        headers: uploadCorsHeaders,
+      });
+    }
+    const blob = await request.blob();
+    if (blob.size === 0 || blob.size > 20 * 1024 * 1024) {
+      return new Response("File must be between 1 byte and 20 MB", {
+        status: 413,
+        headers: uploadCorsHeaders,
+      });
+    }
+    const storageId = await ctx.storage.store(blob);
+    try {
+      await ctx.runMutation(internal.users.completeOwnedUpload, {
+        token,
+        storageId,
+      });
+    } catch {
+      await ctx.storage.delete(storageId);
+      return new Response("Upload session expired or already used", {
+        status: 409,
+        headers: uploadCorsHeaders,
+      });
+    }
+    return new Response(JSON.stringify({ storageId }), {
+      status: 200,
+      headers: { ...uploadCorsHeaders, "Content-Type": "application/json" },
+    });
+  }),
+});
+
 function encodeBase64(value: string) {
   return btoa(value);
 }

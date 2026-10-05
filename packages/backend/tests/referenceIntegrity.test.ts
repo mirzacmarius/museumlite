@@ -1,0 +1,723 @@
+import { expect, test, vi } from "vitest";
+import { api } from "../convex/_generated/api";
+import {
+  authedForUser,
+  createConvexTest,
+  createOrgUserCollectionWithPermissions,
+  createOrgUserWithPermissions,
+} from "./testHarness";
+
+vi.stubEnv("CONVEX_SITE_URL", "https://example.convex.site");
+
+test("bulk edit rejects a foreign destination before creating a job", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "collections.update",
+    "collections.read",
+  ]);
+  const foreign = await createOrgUserWithPermissions(t, []);
+  const foreignLocationId = await t.run((ctx) =>
+    ctx.db.insert("locations", {
+      organizationId: foreign.organizationId,
+      name: "Private vault",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+
+  await expect(
+    authedForUser(t, own.userId).mutation(
+      api.batchOperations.createBulkEditJob,
+      {
+        organizationId: own.organizationId,
+        collectionIds: [own.collectionId],
+        updates: { currentLocationId: foreignLocationId },
+      },
+    ),
+  ).rejects.toThrow();
+  expect(
+    await authedForUser(t, own.userId).query(
+      api.batchOperations.listBatchJobs,
+      { organizationId: own.organizationId },
+    ),
+  ).toEqual([]);
+});
+
+test("delayed bulk edit rechecks references and records observed movement", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "collections.update",
+    "collections.read",
+  ]);
+  const [fromLocationId, toLocationId] = await t.run(async (ctx) =>
+    Promise.all(
+      ["From", "To"].map((name) =>
+        ctx.db.insert("locations", {
+          organizationId: own.organizationId,
+          name,
+          type: "room",
+          sortOrder: 0,
+          isActive: true,
+        }),
+      ),
+    ),
+  );
+  await t.run((ctx) =>
+    ctx.db.patch(own.collectionId, { currentLocationId: fromLocationId }),
+  );
+  vi.useFakeTimers();
+  const jobId = await authedForUser(t, own.userId).mutation(
+    api.batchOperations.createBulkEditJob,
+    {
+      organizationId: own.organizationId,
+      collectionIds: [own.collectionId],
+      updates: { currentLocationId: toLocationId },
+    },
+  );
+  await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+  const authorized = authedForUser(t, own.userId);
+  const collection = await authorized.query(api.collections.get, {
+    collectionId: own.collectionId,
+  });
+  const history = await authorized.query(
+    api.locations.getCollectionLocationHistory,
+    { collectionId: own.collectionId },
+  );
+  expect(collection?.currentLocationId).toBe(toLocationId);
+  expect(history).toMatchObject([
+    {
+      collectionId: own.collectionId,
+      fromLocationId,
+      toLocationId,
+      movedBy: own.userId,
+      reason: "Bulk edit location change",
+    },
+  ]);
+  expect(
+    await authorized.query(api.batchOperations.getBatchJobStatus, { jobId }),
+  ).toMatchObject({ successCount: 1, failureCount: 0 });
+  vi.useRealTimers();
+});
+
+test("direct bulk location write rejects a foreign destination without partial changes", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "collections.update",
+    "collections.read",
+  ]);
+  const secondId = await t.run((ctx) =>
+    ctx.db.insert("collections", {
+      organizationId: own.organizationId,
+      accessionNumber: "SECOND",
+      title: "Second",
+      status: "active",
+      catalogedBy: own.userId,
+      catalogedAt: Date.now(),
+    }),
+  );
+  const foreign = await createOrgUserWithPermissions(t, []);
+  const locationId = await t.run((ctx) =>
+    ctx.db.insert("locations", {
+      organizationId: foreign.organizationId,
+      name: "Foreign",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+  await expect(
+    authedForUser(t, own.userId).mutation(api.collections.bulkUpdateLocation, {
+      collectionIds: [own.collectionId, secondId],
+      locationId,
+    }),
+  ).rejects.toThrow();
+  expect(
+    (
+      await authedForUser(t, own.userId).query(api.collections.get, {
+        collectionId: own.collectionId,
+      })
+    )?.currentLocationId,
+  ).toBeUndefined();
+  expect(
+    (
+      await authedForUser(t, own.userId).query(api.collections.get, {
+        collectionId: secondId,
+      })
+    )?.currentLocationId,
+  ).toBeUndefined();
+});
+
+test("quick bulk edit rejects foreign locations and retains accountable valid movement", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "collections.update",
+    "collections.read",
+  ]);
+  const foreign = await createOrgUserWithPermissions(t, []);
+  const [valid, invalid] = await t.run(async (ctx) =>
+    Promise.all(
+      [own, foreign].map(({ organizationId }) =>
+        ctx.db.insert("locations", {
+          organizationId,
+          name: "Room",
+          type: "room",
+          sortOrder: 0,
+          isActive: true,
+        }),
+      ),
+    ),
+  );
+  const authorized = authedForUser(t, own.userId);
+  await expect(
+    authorized.mutation(api.batchOperations.quickBulkEdit, {
+      organizationId: own.organizationId,
+      collectionIds: [own.collectionId],
+      updates: { currentLocationId: invalid, condition: "good" },
+    }),
+  ).rejects.toThrow();
+  expect(
+    await authorized.query(api.locations.getCollectionLocationHistory, {
+      collectionId: own.collectionId,
+    }),
+  ).toEqual([]);
+  await authorized.mutation(api.batchOperations.quickBulkEdit, {
+    organizationId: own.organizationId,
+    collectionIds: [own.collectionId],
+    updates: { currentLocationId: valid },
+  });
+  expect(
+    await authorized.query(api.locations.getCollectionLocationHistory, {
+      collectionId: own.collectionId,
+    }),
+  ).toMatchObject([
+    {
+      toLocationId: valid,
+      movedBy: own.userId,
+      reason: "Bulk edit location change",
+    },
+  ]);
+});
+
+test("exhibition installation observes the current source and invalid return leaves status intact", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(
+    t,
+    ["collections.update", "collections.read"],
+    { subscriptionTier: "pro" },
+  );
+  const [original, observed, display] = await t.run(async (ctx) =>
+    Promise.all(
+      ["Original", "Observed", "Display"].map((name) =>
+        ctx.db.insert("locations", {
+          organizationId: own.organizationId,
+          name,
+          type: "room",
+          sortOrder: 0,
+          isActive: true,
+        }),
+      ),
+    ),
+  );
+  const exhibitionId = await t.run((ctx) =>
+    ctx.db.insert("exhibitions", {
+      collectionId: own.collectionId,
+      organizationId: own.organizationId,
+      title: "Show",
+      startDate: Date.now(),
+      isCurrent: false,
+      status: "approved",
+      locationId: display,
+    }),
+  );
+  const authorized = authedForUser(t, own.userId);
+  const exhibitionObjectId = await authorized.mutation(
+    api.exhibitions.addExhibitionObject,
+    {
+      exhibitionId,
+      collectionId: own.collectionId,
+      originalLocationId: original,
+    },
+  );
+  await t.run((ctx) =>
+    ctx.db.patch(own.collectionId, { currentLocationId: observed }),
+  );
+  await authorized.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId,
+  });
+  expect(
+    await authorized.query(api.locations.getCollectionLocationHistory, {
+      collectionId: own.collectionId,
+    }),
+  ).toMatchObject([
+    {
+      fromLocationId: observed,
+      toLocationId: display,
+      movedBy: own.userId,
+      reason: "Exhibition installation",
+    },
+  ]);
+  await t.run((ctx) => ctx.db.patch(original, { isActive: false }));
+  await expect(
+    authorized.mutation(api.exhibitions.returnObjectToOriginalLocation, {
+      exhibitionObjectId,
+    }),
+  ).rejects.toThrow();
+  expect(
+    await authorized.query(api.exhibitions.listExhibitionObjects, {
+      exhibitionId,
+    }),
+  ).toMatchObject([{ status: "installed" }]);
+});
+
+test("owned upload binds organization and uploader before attachment and sessions are single use", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "media.upload",
+    "media.read",
+  ]);
+  const foreign = await createOrgUserCollectionWithPermissions(t, [
+    "media.upload",
+    "media.read",
+  ]);
+  const authorized = authedForUser(t, own.userId);
+  const file = new Blob(["image"], { type: "image/jpeg" });
+  const { uploadUrl } = await authorized.mutation(api.media.generateUploadUrl, {
+    organizationId: own.organizationId,
+    collectionId: own.collectionId,
+    fileName: "owned.jpg",
+    fileSize: file.size,
+    mimeType: file.type,
+  });
+  const path = new URL(uploadUrl).pathname + new URL(uploadUrl).search;
+  const response = await t.fetch(path, { method: "POST", body: file });
+  expect(response.status).toBe(200);
+  const result: {
+    storageId: import("../convex/_generated/dataModel").Id<"_storage">;
+  } = await response.json();
+  expect((await t.fetch(path, { method: "POST", body: file })).status).toBe(
+    403,
+  );
+  const uploadArgs = {
+    storageId: result.storageId,
+    fileName: "owned.jpg",
+    fileSize: file.size,
+    mimeType: file.type,
+  };
+  await expect(
+    authedForUser(t, foreign.userId).mutation(api.media.create, {
+      ...uploadArgs,
+      organizationId: foreign.organizationId,
+      collectionId: foreign.collectionId,
+    }),
+  ).rejects.toThrow("different organization");
+  expect(
+    await authedForUser(t, foreign.userId).query(api.media.list, {
+      collectionId: foreign.collectionId,
+    }),
+  ).toEqual([]);
+  await authorized.mutation(api.media.create, {
+    ...uploadArgs,
+    organizationId: own.organizationId,
+    collectionId: own.collectionId,
+  });
+  expect(
+    await authorized.query(api.media.list, { collectionId: own.collectionId }),
+  ).toMatchObject([{ storageId: result.storageId }]);
+  const unbound = await t.run((ctx) => ctx.storage.store(file));
+  await expect(
+    authorized.mutation(api.media.create, {
+      ...uploadArgs,
+      storageId: unbound,
+      organizationId: own.organizationId,
+      collectionId: own.collectionId,
+    }),
+  ).rejects.toThrow("authorized upload session");
+  expect(
+    await authorized.query(api.media.list, { collectionId: own.collectionId }),
+  ).toHaveLength(1);
+});
+
+test("legacy integrity review reports foreign references and unbound media without modifying attachments", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "collections.read",
+    "media.read",
+  ]);
+  const foreign = await createOrgUserCollectionWithPermissions(t, []);
+  const storageId = await t.run(async (ctx) => {
+    const storageId = await ctx.storage.store(
+      new Blob(["legacy"], { type: "image/jpeg" }),
+    );
+    await ctx.db.patch(own.collectionId, {
+      parentObjectId: foreign.collectionId,
+    });
+    await ctx.db.insert("mediaFiles", {
+      collectionId: own.collectionId,
+      organizationId: own.organizationId,
+      storageId,
+      fileName: "legacy.jpg",
+      fileType: "image",
+      mimeType: "image/jpeg",
+      fileSize: 6,
+      isPrimary: false,
+      uploadedBy: own.userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "completed",
+    });
+    return storageId;
+  });
+  const authorized = authedForUser(t, own.userId);
+  const args = {
+    organizationId: own.organizationId,
+    paginationOpts: { cursor: null, numItems: 25 },
+  };
+  expect(
+    await authorized.query(api.media.reviewIntegrity, {
+      ...args,
+      kind: "collections",
+    }),
+  ).toMatchObject({
+    issues: [
+      { issue: "Parent object is missing or belongs to another organization" },
+    ],
+  });
+  expect(
+    await authorized.query(api.media.reviewIntegrity, {
+      ...args,
+      kind: "media",
+    }),
+  ).toMatchObject({
+    issues: [
+      {
+        referencedId: storageId,
+        issue: "File ownership is unverified; retain the file for review",
+      },
+    ],
+  });
+  expect(
+    await authorized.query(api.media.list, { collectionId: own.collectionId }),
+  ).toMatchObject([{ storageId }]);
+  await expect(
+    authedForUser(t, foreign.userId).query(api.media.reviewIntegrity, {
+      ...args,
+      kind: "media",
+    }),
+  ).rejects.toThrow();
+});
+
+test("delayed bulk edit rejects a destination closed after queuing without partial object changes", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "collections.update",
+    "collections.read",
+  ]);
+  const locationId = await t.run((ctx) =>
+    ctx.db.insert("locations", {
+      organizationId: own.organizationId,
+      name: "Destination",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
+  const authorized = authedForUser(t, own.userId);
+  vi.useFakeTimers();
+  try {
+    const jobId = await authorized.mutation(
+      api.batchOperations.createBulkEditJob,
+      {
+        organizationId: own.organizationId,
+        collectionIds: [own.collectionId],
+        updates: { currentLocationId: locationId, condition: "changed" },
+      },
+    );
+    await t.run((ctx) => ctx.db.patch(locationId, { isActive: false }));
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(
+      await authorized.query(api.batchOperations.getBatchJobStatus, { jobId }),
+    ).toMatchObject({
+      successCount: 0,
+      failureCount: 1,
+      errors: [
+        {
+          itemId: own.collectionId,
+          error: "Location Destination is unavailable for moves",
+        },
+      ],
+    });
+    const collection = await authorized.query(api.collections.get, {
+      collectionId: own.collectionId,
+    });
+    expect(collection?.currentLocationId).toBeUndefined();
+    expect(collection?.condition).toBeUndefined();
+    expect(
+      await authorized.query(api.locations.getCollectionLocationHistory, {
+        collectionId: own.collectionId,
+      }),
+    ).toEqual([]);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("scheduled bulk move records the observed source, requesting actor and supplied reason", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "locations.update",
+    "collections.read",
+  ]);
+  const [queuedSource, observedSource, destination] = await t.run((ctx) =>
+    Promise.all(
+      ["Queued", "Observed", "Destination"].map((name) =>
+        ctx.db.insert("locations", {
+          organizationId: own.organizationId,
+          name,
+          type: "room",
+          sortOrder: 0,
+          isActive: true,
+        }),
+      ),
+    ),
+  );
+  const authorized = authedForUser(t, own.userId);
+  await t.run((ctx) =>
+    ctx.db.patch(own.collectionId, { currentLocationId: queuedSource }),
+  );
+  vi.useFakeTimers();
+  try {
+    const jobId = await authorized.mutation(
+      api.batchOperations.createBulkMoveJob,
+      {
+        organizationId: own.organizationId,
+        collectionIds: [own.collectionId],
+        toLocationId: destination,
+        reason: "Prepare conservation treatment",
+      },
+    );
+    await t.run((ctx) =>
+      ctx.db.patch(own.collectionId, { currentLocationId: observedSource }),
+    );
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(
+      await authorized.query(api.batchOperations.getBatchJobStatus, { jobId }),
+    ).toMatchObject({ successCount: 1, failureCount: 0 });
+    expect(
+      await authorized.query(api.locations.getCollectionLocationHistory, {
+        collectionId: own.collectionId,
+      }),
+    ).toMatchObject([
+      {
+        fromLocationId: observedSource,
+        toLocationId: destination,
+        movedBy: own.userId,
+        reason: "Prepare conservation treatment",
+      },
+    ]);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("account relationships reject a foreign or missing related record before creating a link", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserWithPermissions(
+    t,
+    ["accounts.write", "accounts.read", "organization.manage_settings"],
+    { enabledModules: ["accounts"] },
+  );
+  const foreign = await createOrgUserWithPermissions(t, []);
+  const [accountId, ownLoanId, foreignLoanId] = await t.run(async (ctx) =>
+    Promise.all([
+      ctx.db.insert("accounts", {
+        organizationId: own.organizationId,
+        accountNumber: "A-1",
+        accountType: "institution",
+        businessName: "Own partner",
+        createdBy: own.userId,
+        createdAt: Date.now(),
+      }),
+      ctx.db.insert("loans", {
+        organizationId: own.organizationId,
+        loanNumber: "L-1",
+        lenderBorrowerName: "Own",
+        type: "outgoing",
+        status: "pending",
+        startDate: Date.now(),
+      }),
+      ctx.db.insert("loans", {
+        organizationId: foreign.organizationId,
+        loanNumber: "FOREIGN",
+        lenderBorrowerName: "Foreign",
+        type: "outgoing",
+        status: "pending",
+        startDate: Date.now(),
+      }),
+    ]),
+  );
+  const authorized = authedForUser(t, own.userId);
+  const args = {
+    accountId,
+    relatedEntityType: "loan" as const,
+    relationshipType: "lender" as const,
+    startDate: Date.now(),
+  };
+  for (const relatedEntityId of [foreignLoanId, "missing-record"])
+    await expect(
+      authorized.mutation(api.accountRelationships.create, {
+        ...args,
+        relatedEntityId,
+      }),
+    ).rejects.toThrow();
+  expect(
+    await authorized.query(api.accountRelationships.list, { accountId }),
+  ).toEqual([]);
+  await authorized.mutation(api.accountRelationships.create, {
+    ...args,
+    relatedEntityId: ownLoanId,
+  });
+  expect(
+    await authorized.query(api.accountRelationships.list, { accountId }),
+  ).toMatchObject([{ relatedEntityId: ownLoanId }]);
+});
+
+test("bulk exhibition install rejects a foreign middle destination without partial moves or foreign names", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(
+    t,
+    ["collections.update", "collections.read"],
+    { subscriptionTier: "pro" },
+  );
+  const foreign = await createOrgUserWithPermissions(t, []);
+  const { exhibitionId, collectionIds } = await t.run(async (ctx) => {
+    const valid = await ctx.db.insert("locations", {
+      organizationId: own.organizationId,
+      name: "Gallery",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    });
+    const invalid = await ctx.db.insert("locations", {
+      organizationId: foreign.organizationId,
+      name: "Private foreign vault",
+      type: "room",
+      sortOrder: 0,
+      isActive: true,
+    });
+    const exhibitionId = await ctx.db.insert("exhibitions", {
+      organizationId: own.organizationId,
+      collectionId: own.collectionId,
+      title: "Show",
+      startDate: Date.now(),
+      isCurrent: false,
+      status: "approved",
+      locationId: valid,
+    });
+    const collectionIds = [own.collectionId];
+    for (const index of [1, 2])
+      collectionIds.push(
+        await ctx.db.insert("collections", {
+          organizationId: own.organizationId,
+          accessionNumber: `B-${index}`,
+          title: `Object ${index}`,
+          status: "active",
+          catalogedBy: own.userId,
+          catalogedAt: Date.now(),
+        }),
+      );
+    for (const [index, collectionId] of collectionIds.entries())
+      await ctx.db.insert("exhibitionObjects", {
+        exhibitionId,
+        organizationId: own.organizationId,
+        collectionId,
+        exhibitionLocationId: index === 1 ? invalid : valid,
+        status: "pending",
+      });
+    return { exhibitionId, collectionIds };
+  });
+  const authorized = authedForUser(t, own.userId);
+  const before = await authorized.query(api.exhibitions.listExhibitionObjects, {
+    exhibitionId,
+  });
+  expect(before[1]?.exhibitionLocationName).toBeUndefined();
+  await expect(
+    authorized.mutation(api.exhibitions.bulkInstallObjects, { exhibitionId }),
+  ).rejects.toThrow();
+  expect(
+    await authorized.query(api.exhibitions.listExhibitionObjects, {
+      exhibitionId,
+    }),
+  ).toMatchObject([
+    { status: "pending" },
+    { status: "pending" },
+    { status: "pending" },
+  ]);
+  for (const collectionId of collectionIds)
+    expect(
+      await authorized.query(api.locations.getCollectionLocationHistory, {
+        collectionId,
+      }),
+    ).toEqual([]);
+});
+
+test("an upload session cannot be used after expiry and another member cannot claim its file", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "media.upload",
+    "media.read",
+  ]);
+  const other = await createOrgUserWithPermissions(t, []);
+  await t.run((ctx) =>
+    ctx.db.insert("userOrganizations", {
+      organizationId: own.organizationId,
+      userId: other.userId,
+      roleId: own.roleId,
+      joinedAt: Date.now(),
+    }),
+  );
+  const authorized = authedForUser(t, own.userId);
+  const args = {
+    organizationId: own.organizationId,
+    collectionId: own.collectionId,
+    fileName: "owned.jpg",
+    fileSize: 5,
+    mimeType: "image/jpeg",
+  };
+  const first = new URL(
+    (await authorized.mutation(api.media.generateUploadUrl, args)).uploadUrl,
+  );
+  const uploaded = await t.fetch(first.pathname + first.search, {
+    method: "POST",
+    body: new Blob(["image"], { type: "image/jpeg" }),
+  });
+  const {
+    storageId,
+  }: { storageId: import("../convex/_generated/dataModel").Id<"_storage"> } =
+    await uploaded.json();
+  await expect(
+    authedForUser(t, other.userId).mutation(api.media.create, {
+      ...args,
+      storageId,
+    }),
+  ).rejects.toThrow("different uploader");
+  expect(
+    await authorized.query(api.media.list, { collectionId: own.collectionId }),
+  ).toEqual([]);
+  vi.useFakeTimers();
+  try {
+    const expired = new URL(
+      (await authorized.mutation(api.media.generateUploadUrl, args)).uploadUrl,
+    );
+    vi.advanceTimersByTime(10 * 60 * 1000 + 1);
+    expect(
+      (
+        await t.fetch(expired.pathname + expired.search, {
+          method: "POST",
+          body: new Blob(["image"]),
+        })
+      ).status,
+    ).toBe(403);
+  } finally {
+    vi.useRealTimers();
+  }
+});

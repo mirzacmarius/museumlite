@@ -337,7 +337,10 @@ export function useEditLocationForm(
     dispatch({ type: "setLocationImagePreviewUrl", value: nextPreviewUrl });
 
     try {
-      const uploadUrl = await generateUploadUrl({ mimeType: file.type });
+      const uploadUrl = await generateUploadUrl({
+        mimeType: file.type,
+        organizationId: currentOrganizationId as Id<"organizations">,
+      });
       const response = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },

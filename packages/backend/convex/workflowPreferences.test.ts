@@ -77,11 +77,22 @@ test("disabled accession workflow publishes submitted object drafts immediately"
     });
   });
 
-  const mediaStorageId = await t.run(async (ctx) => {
-    return await ctx.storage.store(
-      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
-    );
+  const uploadUrl = new URL(
+    await asUser.mutation(api.users.generateUploadUrl, {
+      organizationId,
+      mimeType: "image/jpeg",
+    }),
+  );
+  const uploadResponse = await t.fetch(uploadUrl.pathname + uploadUrl.search, {
+    method: "POST",
+    headers: { "Content-Type": "image/jpeg" },
+    body: new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
   });
+  expect(uploadResponse.status).toBe(200);
+  const {
+    storageId: mediaStorageId,
+  }: { storageId: import("./_generated/dataModel").Id<"_storage"> } =
+    await uploadResponse.json();
 
   const accessionId = await asUser.mutation(api.accessions.upsertObjectDraft, {
     organizationId,

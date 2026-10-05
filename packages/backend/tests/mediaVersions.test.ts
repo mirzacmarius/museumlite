@@ -130,6 +130,24 @@ async function createTestSetup(
   };
 }
 
+async function uploadVersion(
+  t: ReturnType<typeof convexTest>,
+  setup: TestSetup,
+) {
+  const url = await authedForUser(t, setup.userId).mutation(
+    api.users.generateUploadUrl,
+    { organizationId: setup.organizationId, mimeType: "image/jpeg" },
+  );
+  const parsed = new URL(url);
+  const response = await t.fetch(parsed.pathname + parsed.search, {
+    method: "POST",
+    body: new Blob(["edited image"], { type: "image/jpeg" }),
+  });
+  expect(response.status).toBe(200);
+  const result: { storageId: Id<"_storage"> } = await response.json();
+  return result.storageId;
+}
+
 describe("mediaVersions", () => {
   test("should create first version of media file", async () => {
     const t = convexTest(schema, modules);
@@ -138,7 +156,7 @@ describe("mediaVersions", () => {
     const authed = authedForUser(t, setup.userId);
     const versionId = await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "crop",
       editMetadata: { x: 0, y: 0, width: 100, height: 100 },
     });
@@ -162,14 +180,14 @@ describe("mediaVersions", () => {
     // Create version 1
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "crop",
     });
 
     // Create version 2
     const version2Id = await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "rotate",
     });
 
@@ -187,7 +205,7 @@ describe("mediaVersions", () => {
 
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "adjust",
     });
 
@@ -212,19 +230,19 @@ describe("mediaVersions", () => {
     // Create multiple versions
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "crop",
     });
 
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "rotate",
     });
 
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "adjust",
     });
 
@@ -246,13 +264,13 @@ describe("mediaVersions", () => {
     // Create versions
     const version1Id = await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "crop",
     });
 
     await authed.mutation(api.mediaVersions.createVersion, {
       mediaId: setup.mediaFileId,
-      storageId: setup.storageId,
+      storageId: await uploadVersion(t, setup),
       editType: "rotate",
     });
 
@@ -304,7 +322,7 @@ describe("mediaVersions", () => {
         api.mediaVersions.createVersion,
         {
           mediaId: setup.mediaFileId,
-          storageId: setup.storageId,
+          storageId: await uploadVersion(t, setup),
           editType: "crop",
         },
       ),
@@ -365,7 +383,7 @@ describe("mediaVersions", () => {
     await expect(
       authedForUser(t, otherUserId).mutation(api.mediaVersions.createVersion, {
         mediaId: setup.mediaFileId,
-        storageId: setup.storageId,
+        storageId: await uploadVersion(t, setup),
         editType: "crop",
       }),
     ).rejects.toThrow();

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { recordMediaVersionUsage } from "./utils/mediaAssets";
 import { requirePermission } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 /**
  * Create a new version of a media file with edits applied
@@ -50,6 +51,13 @@ export const createVersion = mutation({
       editMetadata: args.editMetadata,
       createdBy: userId,
       createdAt: Date.now(),
+    });
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: media.organizationId,
+      uploadedBy: userId,
+      ownerType: "mediaVersion",
+      ownerId: versionId,
     });
 
     await Promise.all([

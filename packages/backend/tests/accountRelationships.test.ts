@@ -83,6 +83,17 @@ test("accountRelationships: create and list", async () => {
     await ctx.db.insert("rolePermissions", { roleId, permissionId });
   });
 
+  const relatedLoanId = await t.run((ctx) =>
+    ctx.db.insert("loans", {
+      organizationId: orgId,
+      loanNumber: "LN-001",
+      lenderBorrowerName: "Test partner",
+      type: "outgoing",
+      status: "pending",
+      startDate: Date.now(),
+    }),
+  );
+
   const authed = t.withIdentity({
     subject: `${userId}|session-create-and-list`,
     issuer: "https://example.test",
@@ -93,7 +104,7 @@ test("accountRelationships: create and list", async () => {
     {
       accountId,
       relatedEntityType: "loan",
-      relatedEntityId: "LN-001",
+      relatedEntityId: relatedLoanId,
       relationshipType: "lender",
       startDate: Date.now(),
       notes: "Test relationship",
