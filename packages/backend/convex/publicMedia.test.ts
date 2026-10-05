@@ -6,11 +6,15 @@ import {
   createOrgUserCollectionWithPermissions,
 } from "../tests/testHarness";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 test("anonymous catalog hides legacy and restricted attachments in list and detail", async () => {
   const t = createConvexTest();
-  const fixture = await createOrgUserCollectionWithPermissions(t, []);
-  const { slug, libraryItemId } = await t.run(async (ctx) => {
+  const fixture = await createOrgUserCollectionWithPermissions(t, [
+    "organization.manage_settings",
+    "media.read",
+  ]);
+  const { slug, libraryItemId, legacyMediaId } = await t.run(async (ctx) => {
     const org = await ctx.db.get(fixture.organizationId);
     await ctx.db.patch(fixture.organizationId, {
       type: "library",
@@ -20,6 +24,7 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
       isPubliclyVisible: true,
       isHighResDownloadable: true,
     });
+    let legacyMediaId: Id<"mediaFiles"> | undefined;
     for (const [fileName, mimeType, rightsStatus] of [
       ["legacy.jpg", "image/jpeg", "owned"],
       ["secret.pdf", "application/pdf", "restricted"],
@@ -27,7 +32,7 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
       const storageId = await ctx.storage.store(
         new Blob([fileName], { type: mimeType }),
       );
-      await ctx.db.insert("mediaFiles", {
+      const mediaId = await ctx.db.insert("mediaFiles", {
         organizationId: fixture.organizationId,
         collectionId: fixture.collectionId,
         storageId,
@@ -41,6 +46,7 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
         uploadedAt: Date.now(),
         uploadStatus: "completed",
       });
+      if (fileName === "legacy.jpg") legacyMediaId = mediaId;
     }
     const coverImageId = await ctx.storage.store(
       new Blob(["unreviewed cover"], { type: "image/jpeg" }),
@@ -60,7 +66,7 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
       createdBy: fixture.userId,
       createdAt: Date.now(),
     });
-    return { slug: org?.slug ?? "", libraryItemId };
+    return { slug: org?.slug ?? "", libraryItemId, legacyMediaId };
   });
   const collection = await t.run((ctx) => ctx.db.get(fixture.collectionId));
   const detail = await t.query(api.collections.getPublic, {
@@ -81,6 +87,20 @@ test("anonymous catalog hides legacy and restricted attachments in list and deta
     accessionNumber: `library-${libraryItemId}`,
   });
   expect(libraryDetail?.images).toEqual([]);
+  if (!legacyMediaId) throw new Error("Missing test media");
+  expect(
+    (
+      await authedForUser(t, fixture.userId).query(
+        api.mediaPublications.getReview,
+        { mediaId: legacyMediaId },
+      )
+    )?.blocker,
+  ).toContain("Source ownership");
+  await expect(
+    authedForUser(t, fixture.userId).mutation(api.mediaPublications.approve, {
+      mediaId: legacyMediaId,
+    }),
+  ).rejects.toThrow("Source ownership");
 });
 
 test("approval action creates a bounded JPEG rendition before public projection", async () => {
@@ -93,39 +113,66 @@ test("approval action creates a bounded JPEG rendition before public projection"
   })
     .png()
     .toBuffer();
-  const { mediaId, sourceStorageId, organizationSlug, accessionNumber } =
-    await t.run(async (ctx) => {
-      const org = await ctx.db.get(fixture.organizationId);
-      const collection = await ctx.db.get(fixture.collectionId);
-      await ctx.db.patch(fixture.organizationId, {
-        settings: { portalSettings: { isEnabled: true } },
-      });
-      await ctx.db.patch(fixture.collectionId, { isPubliclyVisible: true });
-      const sourceStorageId = await ctx.storage.store(
-        new Blob([new Uint8Array(input)], { type: "image/png" }),
-      );
-      const mediaId = await ctx.db.insert("mediaFiles", {
-        organizationId: fixture.organizationId,
-        collectionId: fixture.collectionId,
-        storageId: sourceStorageId,
-        fileName: "large.png",
-        fileType: "image",
-        fileSize: input.length,
-        mimeType: "image/png",
-        rightsStatus: "public_domain",
-        isPrimary: true,
-        uploadedBy: fixture.userId,
-        uploadedAt: Date.now(),
-        uploadStatus: "completed",
-      });
-      return {
-        mediaId,
-        sourceStorageId,
-        organizationSlug: org?.slug ?? "",
-        accessionNumber: collection?.accessionNumber ?? "",
-      };
+  const {
+    mediaId,
+    sourceStorageId,
+    sourceOwnershipId,
+    foreignOrganizationId,
+    organizationSlug,
+    accessionNumber,
+  } = await t.run(async (ctx) => {
+    const org = await ctx.db.get(fixture.organizationId);
+    const collection = await ctx.db.get(fixture.collectionId);
+    await ctx.db.patch(fixture.organizationId, {
+      settings: { portalSettings: { isEnabled: true } },
     });
+    await ctx.db.patch(fixture.collectionId, { isPubliclyVisible: true });
+    const sourceStorageId = await ctx.storage.store(
+      new Blob([new Uint8Array(input)], { type: "image/png" }),
+    );
+    const mediaId = await ctx.db.insert("mediaFiles", {
+      organizationId: fixture.organizationId,
+      collectionId: fixture.collectionId,
+      storageId: sourceStorageId,
+      fileName: "large.png",
+      fileType: "image",
+      fileSize: input.length,
+      mimeType: "image/png",
+      rightsStatus: "public_domain",
+      isPrimary: true,
+      uploadedBy: fixture.userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "completed",
+    });
+    const foreignOrganizationId = await ctx.db.insert("organizations", {
+      name: "Foreign",
+      slug: "foreign",
+      type: "museum",
+    });
+    const sourceOwnershipId = await ctx.db.insert("storageOwnership", {
+      storageId: sourceStorageId,
+      organizationId: foreignOrganizationId,
+      uploadedBy: fixture.userId,
+      uploadedAt: Date.now(),
+      ownerType: "media",
+      ownerId: mediaId,
+    });
+    return {
+      mediaId,
+      sourceStorageId,
+      sourceOwnershipId,
+      foreignOrganizationId,
+      organizationSlug: org?.slug ?? "",
+      accessionNumber: collection?.accessionNumber ?? "",
+    };
+  });
   const reviewer = authedForUser(t, fixture.userId);
+  await expect(
+    reviewer.mutation(api.mediaPublications.approve, { mediaId }),
+  ).rejects.toThrow("Source ownership");
+  await t.run((ctx) =>
+    ctx.db.patch(sourceOwnershipId, { organizationId: fixture.organizationId }),
+  );
   await reviewer.mutation(api.mediaPublications.approve, { mediaId });
   const requestId = await t.run(
     async (ctx) => (await ctx.db.get(mediaId))?.publicApproval?.requestId ?? "",
@@ -177,6 +224,33 @@ test("approval action creates a bounded JPEG rendition before public projection"
   expect(detail?.images).toHaveLength(1);
   expect(detail?.isHighResDownloadable).toBe(false);
   expect(detail?.images[0]?.originalDownloadUrl).toBeUndefined();
+  await t.run((ctx) =>
+    ctx.db.patch(sourceOwnershipId, { organizationId: foreignOrganizationId }),
+  );
+  expect(
+    (
+      await t.query(api.collections.getPublic, {
+        organizationSlug,
+        accessionNumber,
+      })
+    )?.images,
+  ).toEqual([]);
+  await t.run((ctx) =>
+    ctx.db.patch(sourceOwnershipId, { organizationId: fixture.organizationId }),
+  );
+  await reviewer.mutation(api.mediaPublications.unpublish, { mediaId });
+  expect(
+    (
+      await t.query(api.collections.getPublic, {
+        organizationSlug,
+        accessionNumber,
+      })
+    )?.images,
+  ).toEqual([]);
+  const revoked = await t.run(async (ctx) =>
+    approvedRenditionId ? await ctx.db.system.get(approvedRenditionId) : null,
+  );
+  expect(revoked).toBeNull();
 });
 
 test("approval publishes only its rendition and invalidates on rights, version, and unpublish", async () => {
@@ -186,8 +260,8 @@ test("approval publishes only its rendition and invalidates on rights, version, 
     "organization.manage_settings",
     "media.upload",
   ]);
-  const { slug, accessionNumber, mediaId, sourceStorageId } = await t.run(
-    async (ctx) => {
+  const { slug, accessionNumber, mediaId, sourceStorageId, sourceOwnershipId } =
+    await t.run(async (ctx) => {
       const org = await ctx.db.get(fixture.organizationId);
       const collection = await ctx.db.get(fixture.collectionId);
       await ctx.db.patch(fixture.organizationId, {
@@ -211,14 +285,22 @@ test("approval publishes only its rendition and invalidates on rights, version, 
         uploadedAt: Date.now(),
         uploadStatus: "completed",
       });
+      const sourceOwnershipId = await ctx.db.insert("storageOwnership", {
+        storageId: sourceStorageId,
+        organizationId: fixture.organizationId,
+        uploadedBy: fixture.userId,
+        uploadedAt: Date.now(),
+        ownerType: "media",
+        ownerId: mediaId,
+      });
       return {
         slug: org?.slug ?? "",
         accessionNumber: collection?.accessionNumber ?? "",
         mediaId,
         sourceStorageId,
+        sourceOwnershipId,
       };
-    },
-  );
+    });
   const reviewer = authedForUser(t, fixture.userId);
   const readerUserId = await t.run(async (ctx) => {
     const userId = await ctx.db.insert("users", { name: "Reader" });
@@ -264,6 +346,27 @@ test("approval publishes only its rendition and invalidates on rights, version, 
   expect(approval?.status).toBe("processing");
   const renditionStorageId = await t.run((ctx) =>
     ctx.storage.store(new Blob(["display"], { type: "image/jpeg" })),
+  );
+  const foreignOrganizationId = await t.run((ctx) =>
+    ctx.db.insert("organizations", {
+      name: "Foreign source owner",
+      slug: "foreign-source-owner",
+      type: "museum",
+    }),
+  );
+  await t.run((ctx) =>
+    ctx.db.patch(sourceOwnershipId, { organizationId: foreignOrganizationId }),
+  );
+  expect(
+    await t.mutation(internal.mediaPublications.completeRendition, {
+      mediaId,
+      requestId: approval?.requestId ?? "",
+      sourceStorageId,
+      renditionStorageId,
+    }),
+  ).toBe(false);
+  await t.run((ctx) =>
+    ctx.db.patch(sourceOwnershipId, { organizationId: fixture.organizationId }),
   );
   expect(
     await t.mutation(internal.mediaPublications.completeRendition, {

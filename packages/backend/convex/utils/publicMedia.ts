@@ -8,18 +8,41 @@ export async function getPublicationSource(
   ctx: ReadCtx,
   media: Doc<"mediaFiles">,
 ) {
-  if (!media.currentVersionId) {
-    return { storageId: media.storageId, versionId: undefined };
+  let storageId = media.storageId;
+  let versionId: Id<"mediaVersions"> | undefined;
+  let ownerType = "media";
+  let ownerId: string = media._id;
+  let uploadedBy = media.uploadedBy;
+  if (media.currentVersionId) {
+    const version = await ctx.db.get(media.currentVersionId);
+    if (
+      !version ||
+      version.originalMediaId !== media._id ||
+      version.organizationId !== media.organizationId
+    )
+      return null;
+    storageId = version.storageId;
+    versionId = version._id;
+    ownerType = "mediaVersion";
+    ownerId = version._id;
+    uploadedBy = version.createdBy;
   }
-  const version = await ctx.db.get(media.currentVersionId);
+  const [blob, ownership] = await Promise.all([
+    ctx.db.system.get(storageId),
+    ctx.db
+      .query("storageOwnership")
+      .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+      .unique(),
+  ]);
   if (
-    !version ||
-    version.originalMediaId !== media._id ||
-    version.organizationId !== media.organizationId
-  ) {
+    !blob ||
+    ownership?.organizationId !== media.organizationId ||
+    ownership.ownerType !== ownerType ||
+    ownership.ownerId !== ownerId ||
+    ownership.uploadedBy !== uploadedBy
+  )
     return null;
-  }
-  return { storageId: version.storageId, versionId: version._id };
+  return { storageId, versionId };
 }
 
 export function getPublicationBlocker(media: Doc<"mediaFiles">, now: number) {
@@ -75,15 +98,26 @@ export async function getApprovedPublicMedia(
   const approval = media.publicApproval;
   if (approval?.status !== "approved" || !approval.renditionStorageId)
     return null;
+  const renditionStorageId = approval.renditionStorageId;
   const source = await getPublicationSource(ctx, media);
   if (
     !source ||
     source.storageId !== approval.sourceStorageId ||
     source.versionId !== approval.versionId ||
-    approval.renditionStorageId === source.storageId
+    renditionStorageId === source.storageId
   )
     return null;
-  const url = await ctx.storage.getUrl(approval.renditionStorageId);
+  const ownership = await ctx.db
+    .query("storageOwnership")
+    .withIndex("by_storageId", (q) => q.eq("storageId", renditionStorageId))
+    .unique();
+  if (
+    ownership?.organizationId !== media.organizationId ||
+    ownership.ownerType !== "mediaRendition" ||
+    ownership.ownerId !== media._id
+  )
+    return null;
+  const url = await ctx.storage.getUrl(renditionStorageId);
   if (!url) return null;
   return {
     _id: media._id,
@@ -113,7 +147,19 @@ export async function revokePublicRendition(
   if (version?.storageId === renditionStorageId) return;
   const rendition = await ctx.db.system.get(renditionStorageId);
   if (!rendition) return;
+  const ownership = await ctx.db
+    .query("storageOwnership")
+    .withIndex("by_storageId", (q) => q.eq("storageId", renditionStorageId))
+    .unique();
+  if (
+    ownership &&
+    (ownership.organizationId !== media.organizationId ||
+      ownership.ownerType !== "mediaRendition" ||
+      ownership.ownerId !== media._id)
+  )
+    return;
   await ctx.storage.delete(renditionStorageId);
+  if (ownership) await ctx.db.delete(ownership._id);
   await applyUsageCounterDelta(ctx, media.organizationId, {
     storageBytes: -rendition.size,
   });

@@ -52,7 +52,11 @@ export const getReview = query({
         media.organizationId,
         "organization.manage_settings",
       ),
-      blocker: blocker ?? (!source ? "Image version is unavailable" : null),
+      blocker:
+        blocker ??
+        (!source
+          ? "Source ownership or version is unverified. Reupload the image or create a verified version before approval."
+          : null),
       status: !isCurrent
         ? ("private" as const)
         : approved
@@ -87,7 +91,10 @@ export const approve = mutation({
     const blocker = getPublicationBlocker(media, Date.now());
     if (blocker) throw new Error(blocker);
     const source = await getPublicationSource(ctx, media);
-    if (!source) throw new Error("Image version is unavailable");
+    if (!source)
+      throw new Error(
+        "Source ownership or version is unverified. Reupload the image or create a verified version before approval.",
+      );
     await revokePublicRendition(ctx, media);
     const requestId = crypto.randomUUID();
     await ctx.db.patch(media._id, {
