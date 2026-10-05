@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { expect, test, vi } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import {
   authedForUser,
   createConvexTest,
@@ -956,4 +956,78 @@ test("a legacy image stranded in thumbnail processing recovers when re-selected 
   });
   expect(listed).toMatchObject({ _id: mediaId, uploadStatus: "completed" });
   expect(listed?.thumbnailStorageId).toBeDefined();
+});
+
+test("stranded upload recovery restores completed originals and leaves chunked uploads in progress", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "media.read",
+    "media.upload",
+    "organization.manage_settings",
+  ]);
+  const input = await sharp({
+    create: { width: 30, height: 30, channels: 3, background: "white" },
+  })
+    .png()
+    .toBuffer();
+  const { strandedId, chunkedId } = await t.run(async (ctx) => {
+    const storageId = await ctx.storage.store(
+      new Blob([new Uint8Array(input)], { type: "image/png" }),
+    );
+    const base = {
+      organizationId: own.organizationId,
+      collectionId: own.collectionId,
+      storageId,
+      fileType: "image",
+      fileSize: input.length,
+      mimeType: "image/png",
+      uploadedBy: own.userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "processing" as const,
+    };
+    await ctx.db.insert("storageOwnership", {
+      storageId,
+      organizationId: own.organizationId,
+      uploadedBy: own.userId,
+      uploadedAt: Date.now(),
+      ownerType: "media",
+    });
+    const strandedId = await ctx.db.insert("mediaFiles", {
+      ...base,
+      fileName: "stranded.png",
+      isPrimary: true,
+      rightsStatus: "owned",
+    });
+    const chunkedId = await ctx.db.insert("mediaFiles", {
+      ...base,
+      fileName: "chunked.png",
+      isPrimary: false,
+      chunkedUploadId: "chunk-in-progress",
+    });
+    return { strandedId, chunkedId };
+  });
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(
+      async () => new Response(new Uint8Array(input), { status: 200 }),
+    );
+  vi.useFakeTimers();
+  try {
+    await t.mutation(internal.migrations.recoverStrandedMediaUploads, {});
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+  } finally {
+    fetchMock.mockRestore();
+    vi.useRealTimers();
+  }
+  const authorized = authedForUser(t, own.userId);
+  const media = await authorized.query(api.media.list, {
+    collectionId: own.collectionId,
+  });
+  expect(media.find((item) => item._id === strandedId)).toMatchObject({
+    uploadStatus: "completed",
+    thumbnailStorageId: expect.any(String),
+  });
+  expect(media.find((item) => item._id === chunkedId)?.uploadStatus).toBe(
+    "processing",
+  );
 });

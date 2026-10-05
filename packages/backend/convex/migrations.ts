@@ -1544,3 +1544,43 @@ export const grantCollectionManagerMediaUpload = internalMutation({
     };
   },
 });
+
+/**
+ * Migration: Restore uploads stranded in "processing" by the earlier
+ * thumbnail job, which marked completed originals as processing and never
+ * restored them. Chunked uploads that are genuinely in progress are skipped.
+ * Bounded and rerunnable; continues itself page by page.
+ *
+ * npx convex run migrations:recoverStrandedMediaUploads
+ */
+export const recoverStrandedMediaUploads = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  returns: v.object({ recovered: v.number(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("mediaFiles")
+      .withIndex("by_uploadStatus", (q) => q.eq("uploadStatus", "processing"))
+      .paginate({ numItems: 50, cursor: args.cursor ?? null });
+    let recovered = 0;
+    for (const media of page.page) {
+      if (media.chunkedUploadId) continue;
+      if (!(await ctx.db.system.get(media.storageId))) continue;
+      await ctx.db.patch(media._id, { uploadStatus: "completed" });
+      recovered += 1;
+      if (media.isPrimary && !media.thumbnailStorageId) {
+        await ctx.scheduler.runAfter(0, internal.media.generateThumbnail, {
+          mediaId: media._id,
+        });
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.recoverStrandedMediaUploads,
+        { cursor: page.continueCursor },
+      );
+    }
+    console.log(`Recovered ${recovered} stranded media uploads`);
+    return { recovered, isDone: page.isDone };
+  },
+});
