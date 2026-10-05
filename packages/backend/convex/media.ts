@@ -23,6 +23,7 @@ import {
   shouldGenerateMediaThumbnail,
 } from "./utils/mediaAssets";
 import {
+  applyUsageCounterDelta,
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
@@ -938,8 +939,10 @@ export const updateOrder = mutation({
 });
 
 /**
- * Internal: Generate thumbnail for primary images
- * Schedules the thumbnail processing action and updates the media record
+ * Internal: Generate thumbnail for primary images.
+ * The thumbnail is an optional derivative: the original upload keeps its
+ * completed status while the action runs, and the action reports back through
+ * `attachThumbnail`.
  */
 export const generateThumbnail = internalMutation({
   args: {
@@ -960,35 +963,80 @@ export const generateThumbnail = internalMutation({
       return null;
     }
 
+    // Earlier thumbnail processing marked finished uploads as "processing"
+    // and never restored them. A non-chunked record with a stored original is
+    // a completed upload.
+    if (
+      media.uploadStatus === "processing" &&
+      !media.chunkedUploadId &&
+      (await ctx.db.system.get(media.storageId))
+    ) {
+      await ctx.db.patch(args.mediaId, { uploadStatus: "completed" });
+    }
+
     // Skip if thumbnail already exists
     if (media.thumbnailStorageId) {
       return null;
     }
 
-    // Mark as processing
-    await ctx.db.patch(args.mediaId, {
-      uploadStatus: "processing",
+    await ctx.scheduler.runAfter(0, internal.mediaThumbnails.processThumbnail, {
+      mediaId: args.mediaId,
+      storageId: media.storageId,
     });
 
-    try {
-      // Schedule the action to process the thumbnail
-      // The action will update the media record via an internal mutation when it completes
-      await ctx.scheduler.runAfter(
-        0,
-        internal.mediaThumbnails.processThumbnail,
-        {
-          mediaId: args.mediaId,
-          storageId: media.storageId,
-        },
-      );
-    } catch (error) {
-      console.error("Error generating thumbnail:", error);
-      await ctx.db.patch(args.mediaId, {
-        uploadStatus: "failed",
-      });
-    }
-
     return null;
+  },
+});
+
+/**
+ * Internal: Attach a generated thumbnail. Returns false when the derivative
+ * is stale (source replaced, media removed, thumbnail already attached) so the
+ * action can delete the unreferenced blob.
+ */
+export const attachThumbnail = internalMutation({
+  args: {
+    mediaId: v.id("mediaFiles"),
+    sourceStorageId: v.id("_storage"),
+    thumbnailStorageId: v.id("_storage"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const media = await ctx.db.get(args.mediaId);
+    if (
+      !media ||
+      media.storageId !== args.sourceStorageId ||
+      media.thumbnailStorageId ||
+      args.thumbnailStorageId === args.sourceStorageId
+    ) {
+      return false;
+    }
+    const [thumbnail, existingOwnership] = await Promise.all([
+      ctx.db.system.get(args.thumbnailStorageId),
+      ctx.db
+        .query("storageOwnership")
+        .withIndex("by_storageId", (q) =>
+          q.eq("storageId", args.thumbnailStorageId),
+        )
+        .unique(),
+    ] as const);
+    if (!thumbnail || existingOwnership) {
+      return false;
+    }
+    await ctx.db.insert("storageOwnership", {
+      storageId: args.thumbnailStorageId,
+      organizationId: media.organizationId,
+      uploadedBy: media.uploadedBy,
+      uploadedAt: Date.now(),
+      ownerType: "mediaThumbnail",
+      ownerId: media._id,
+    });
+    await ctx.db.patch(media._id, {
+      thumbnailStorageId: args.thumbnailStorageId,
+    });
+    await applyUsageCounterDelta(ctx, media.organizationId, {
+      storageBytes: thumbnail.size,
+    });
+    return true;
   },
 });
 

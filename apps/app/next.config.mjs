@@ -1,3 +1,4 @@
+import { convexImageConfig } from "../../scripts/convex-image-config.mjs";
 import { loadMonorepoEnv } from "../../scripts/load-monorepo-env.mjs";
 
 loadMonorepoEnv(import.meta.url);
@@ -15,14 +16,7 @@ const skipTypeCheck =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {},
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.convex.cloud",
-      },
-    ],
-  },
+  images: convexImageConfig(),
   // Skip TypeScript checking during build to prevent OOM
   // Type checking runs in CI/pre-commit hooks for faster deployments
   typescript: {

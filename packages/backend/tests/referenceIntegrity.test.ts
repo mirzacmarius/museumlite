@@ -823,3 +823,137 @@ test("a trusted HTTP upload passes public-image ownership review and a fresh ver
     vi.useRealTimers();
   }
 });
+
+test("primary upload thumbnail attaches an owned derivative without stranding approval", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "media.upload",
+    "media.read",
+    "organization.manage_settings",
+  ]);
+  const input = await sharp({
+    create: { width: 900, height: 600, channels: 3, background: "blue" },
+  })
+    .png()
+    .toBuffer();
+  const file = new Blob([new Uint8Array(input)], { type: "image/png" });
+  const authorized = authedForUser(t, own.userId);
+  const uploadArgs = {
+    organizationId: own.organizationId,
+    collectionId: own.collectionId,
+    fileName: "primary.png",
+    fileSize: file.size,
+    mimeType: file.type,
+  };
+  const uploadUrl = new URL(
+    (await authorized.mutation(api.media.generateUploadUrl, uploadArgs))
+      .uploadUrl,
+  );
+  const uploaded = await t.fetch(uploadUrl.pathname + uploadUrl.search, {
+    method: "POST",
+    body: file,
+  });
+  const {
+    storageId,
+  }: { storageId: import("../convex/_generated/dataModel").Id<"_storage"> } =
+    await uploaded.json();
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(
+      async () => new Response(new Uint8Array(input), { status: 200 }),
+    );
+  vi.useFakeTimers();
+  try {
+    const mediaId = await authorized.mutation(api.media.create, {
+      ...uploadArgs,
+      storageId,
+      isPrimary: true,
+    });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    const [listed] = await authorized.query(api.media.list, {
+      collectionId: own.collectionId,
+    });
+    expect(listed).toMatchObject({
+      _id: mediaId,
+      storageId,
+      uploadStatus: "completed",
+    });
+    expect(listed?.thumbnailStorageId).toBeDefined();
+    expect(listed?.thumbnailUrl).toEqual(expect.any(String));
+    await authorized.mutation(api.media.updateRights, {
+      mediaId,
+      rightsStatus: "owned",
+    });
+    expect(
+      await authorized.query(api.mediaPublications.getReview, { mediaId }),
+    ).toMatchObject({ blocker: null });
+    await authorized.mutation(api.mediaPublications.approve, { mediaId });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(
+      await authorized.query(api.mediaPublications.getReview, { mediaId }),
+    ).toMatchObject({ status: "approved", blocker: null });
+
+    // Re-requesting a thumbnail for an image that already has one must not
+    // create another derivative.
+    await authorized.mutation(api.media.setPrimary, { mediaId });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    const [again] = await authorized.query(api.media.list, {
+      collectionId: own.collectionId,
+    });
+    expect(again?.thumbnailStorageId).toBe(listed?.thumbnailStorageId);
+    expect(again?.uploadStatus).toBe("completed");
+  } finally {
+    fetchMock.mockRestore();
+    vi.useRealTimers();
+  }
+});
+
+test("a legacy image stranded in thumbnail processing recovers when re-selected as primary", async () => {
+  const t = createConvexTest();
+  const own = await createOrgUserCollectionWithPermissions(t, [
+    "media.upload",
+    "media.read",
+  ]);
+  const input = await sharp({
+    create: { width: 40, height: 20, channels: 3, background: "green" },
+  })
+    .png()
+    .toBuffer();
+  const mediaId = await t.run(async (ctx) => {
+    const storageId = await ctx.storage.store(
+      new Blob([new Uint8Array(input)], { type: "image/png" }),
+    );
+    return await ctx.db.insert("mediaFiles", {
+      organizationId: own.organizationId,
+      collectionId: own.collectionId,
+      storageId,
+      fileName: "stranded.png",
+      fileType: "image",
+      fileSize: input.length,
+      mimeType: "image/png",
+      isPrimary: true,
+      uploadedBy: own.userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "processing",
+    });
+  });
+  const authorized = authedForUser(t, own.userId);
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(
+      async () => new Response(new Uint8Array(input), { status: 200 }),
+    );
+  vi.useFakeTimers();
+  try {
+    await authorized.mutation(api.media.setPrimary, { mediaId });
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+  } finally {
+    fetchMock.mockRestore();
+    vi.useRealTimers();
+  }
+  const [listed] = await authorized.query(api.media.list, {
+    collectionId: own.collectionId,
+  });
+  expect(listed).toMatchObject({ _id: mediaId, uploadStatus: "completed" });
+  expect(listed?.thumbnailStorageId).toBeDefined();
+});

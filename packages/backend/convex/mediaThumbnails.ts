@@ -1,6 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 
 /**
@@ -47,6 +48,15 @@ export const processThumbnail = internalAction({
         new Blob([new Uint8Array(thumbnailBuffer)], { type: "image/jpeg" }),
       );
 
+      const attached = await ctx.runMutation(internal.media.attachThumbnail, {
+        mediaId: args.mediaId,
+        sourceStorageId: args.storageId,
+        thumbnailStorageId,
+      });
+      if (!attached) {
+        await ctx.storage.delete(thumbnailStorageId);
+        return null;
+      }
       return thumbnailStorageId;
     } catch (error) {
       console.error("Error processing thumbnail:", error);
