@@ -163,13 +163,28 @@ export const completeRendition = internalMutation({
       return false;
     const source = await getPublicationSource(ctx, media);
     const rendition = await ctx.db.system.get(args.renditionStorageId);
+    const existingOwnership = await ctx.db
+      .query("storageOwnership")
+      .withIndex("by_storageId", (q) =>
+        q.eq("storageId", args.renditionStorageId),
+      )
+      .unique();
     if (
       !source ||
       source.storageId !== args.sourceStorageId ||
       source.versionId !== approval.versionId ||
-      !rendition
+      !rendition ||
+      existingOwnership
     )
       return false;
+    await ctx.db.insert("storageOwnership", {
+      storageId: args.renditionStorageId,
+      organizationId: media.organizationId,
+      uploadedBy: approval.approvedBy,
+      uploadedAt: Date.now(),
+      ownerType: "mediaRendition",
+      ownerId: media._id,
+    });
     await ctx.db.patch(media._id, {
       publicApproval: {
         ...approval,

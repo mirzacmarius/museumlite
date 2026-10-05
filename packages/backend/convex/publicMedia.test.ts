@@ -149,6 +149,17 @@ test("approval action creates a bounded JPEG rendition before public projection"
   );
   expect(approval?.status).toBe("approved");
   expect(approval?.renditionStorageId).toBeDefined();
+  const approvedRenditionId = approval?.renditionStorageId;
+  const ownership = await t.run(async (ctx) => {
+    if (!approvedRenditionId) return null;
+    return await ctx.db
+      .query("storageOwnership")
+      .withIndex("by_storageId", (q) => q.eq("storageId", approvedRenditionId))
+      .unique();
+  });
+  expect(ownership?.organizationId).toBe(fixture.organizationId);
+  expect(ownership?.ownerType).toBe("mediaRendition");
+  expect(ownership?.ownerId).toBe(mediaId);
   const rendition = await t.run(async (ctx) => {
     const blob = approval?.renditionStorageId
       ? await ctx.storage.get(approval.renditionStorageId)
@@ -298,6 +309,33 @@ test("approval publishes only its rendition and invalidates on rights, version, 
   const regeneratedApproval = await t.run(
     async (ctx) => (await ctx.db.get(mediaId))?.publicApproval,
   );
+  const foreignRenditionId = await t.run(async (ctx) => {
+    const foreignOrganizationId = await ctx.db.insert("organizations", {
+      name: "Other museum",
+      slug: "other-museum",
+      type: "museum",
+    });
+    const storageId = await ctx.storage.store(
+      new Blob(["foreign"], { type: "image/jpeg" }),
+    );
+    await ctx.db.insert("storageOwnership", {
+      storageId,
+      organizationId: foreignOrganizationId,
+      uploadedBy: fixture.userId,
+      uploadedAt: Date.now(),
+      ownerType: "mediaRendition",
+      ownerId: "other",
+    });
+    return storageId;
+  });
+  expect(
+    await t.mutation(internal.mediaPublications.completeRendition, {
+      mediaId,
+      requestId: regeneratedApproval?.requestId ?? "",
+      sourceStorageId,
+      renditionStorageId: foreignRenditionId,
+    }),
+  ).toBe(false);
   const replacementRenditionId = await t.run((ctx) =>
     ctx.storage.store(new Blob(["display again"], { type: "image/jpeg" })),
   );
