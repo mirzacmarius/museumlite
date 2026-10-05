@@ -46,6 +46,7 @@ type AccessionMethod =
 
 interface NewAccessionFormData {
   accessionNumber: string;
+  catalogIdentifier: string;
   dateReceived: Date;
   source: string;
   donorAccountId: string | undefined;
@@ -89,6 +90,7 @@ const initialNewAccessionPageState: NewAccessionPageState = {
   uploadedDocuments: [],
   formData: {
     accessionNumber: "",
+    catalogIdentifier: "",
     dateReceived: new Date(),
     source: "",
     donorAccountId: undefined,
@@ -202,6 +204,32 @@ function AccessionIdentityFields({
           organizationId={currentOrganizationId}
           register="accession"
           identifier={formData.accessionNumber}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="catalogIdentifier">
+          Catalog number on publication (optional)
+        </Label>
+        <Input
+          id="catalogIdentifier"
+          value={formData.catalogIdentifier}
+          onChange={(event) =>
+            setFormData((previous) => ({
+              ...previous,
+              catalogIdentifier: event.target.value,
+            }))
+          }
+        />
+        <p className="text-xs text-muted-foreground">
+          Defaults to the accession number. Select an unused catalog number if
+          the catalog already uses the accession number; each register preserves
+          its own permanent number.
+        </p>
+        <IdentifierAvailabilityHint
+          organizationId={currentOrganizationId}
+          register="catalog"
+          identifier={formData.catalogIdentifier || formData.accessionNumber}
         />
       </div>
 
@@ -576,6 +604,7 @@ export default function NewAccessionPage() {
       await createAccession({
         organizationId: currentOrganizationId as Id<"organizations">,
         accessionNumber: state.formData.accessionNumber || undefined,
+        catalogIdentifier: state.formData.catalogIdentifier || undefined,
         dateReceived: state.formData.dateReceived.getTime(),
         source: state.formData.source || "See linked account",
         donorAccountId: state.formData.donorAccountId

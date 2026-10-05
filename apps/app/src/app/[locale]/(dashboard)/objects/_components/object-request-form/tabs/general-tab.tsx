@@ -1,13 +1,16 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { useQuery } from "convex/react";
 import { CollectionGroupCombobox } from "@/components/collection-group-combobox";
 import { CollectionTypeSelector } from "@/components/collection-type-selector";
 import { IdentifierAvailabilityHint } from "@/components/identifier-availability-hint";
 import { LocationSelector } from "@/components/location-selector";
+import { usePermissions } from "@/components/permission-gate";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
 import { TypeCombobox } from "@/components/type-combobox";
 import type { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -28,6 +31,17 @@ export function ObjectRequestGeneralTab({
   enabledModules,
   identifierAccessionId,
 }: ObjectRequestGeneralTabProps) {
+  const { hasPermission } = usePermissions();
+  const savedAccession = useQuery(
+    api.accessions.get,
+    identifierAccessionId &&
+      !formData.accessionNumber &&
+      hasPermission("collections.read")
+      ? { accessionId: identifierAccessionId }
+      : "skip",
+  );
+  const displayedIdentifier =
+    formData.accessionNumber || savedAccession?.accessionNumber || "";
   return (
     <div className="space-y-8">
       <EditSection
@@ -48,7 +62,7 @@ export function ObjectRequestGeneralTab({
             <Input
               id="accessionNumber"
               readOnly={!!identifierAccessionId}
-              value={formData.accessionNumber || ""}
+              value={displayedIdentifier}
               onChange={(event) =>
                 updateField("accessionNumber", event.target.value)
               }
@@ -63,7 +77,7 @@ export function ObjectRequestGeneralTab({
               organizationId={currentOrganizationId}
               register="accession"
               existingId={identifierAccessionId}
-              identifier={formData.accessionNumber || ""}
+              identifier={displayedIdentifier}
             />
           </div>
 

@@ -190,6 +190,7 @@ export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     accessionNumber: v.optional(v.string()),
+    catalogIdentifier: v.optional(v.string()),
     dateReceived: v.number(),
     source: v.string(),
     donorAccountId: v.optional(v.id("accounts")),
@@ -280,9 +281,19 @@ export const create = mutation({
       args.organizationId,
       accessionNumber,
     );
+    if (args.catalogIdentifier !== undefined)
+      await ensureIdentifierAvailable(
+        ctx,
+        args.organizationId,
+        "catalog",
+        args.catalogIdentifier,
+      );
     const accessionId = await ctx.db.insert("accessions", {
       organizationId: args.organizationId,
       accessionNumber,
+      catalogIdentifier: args.catalogIdentifier,
+      approvedBy: workflowConfig ? undefined : userId,
+      approvedAt: workflowConfig ? undefined : Date.now(),
       normalizedIdentifier: normalizeIdentifier(accessionNumber),
       dateReceived: args.dateReceived,
       source: args.source,
@@ -2632,6 +2643,7 @@ export const processBulkImport = mutation({
     items: v.array(
       v.object({
         accessionNumber: v.optional(v.string()),
+        catalogIdentifier: v.optional(v.string()),
         dateReceived: v.number(),
         source: v.string(),
         method: v.union(
@@ -2717,9 +2729,19 @@ export const processBulkImport = mutation({
             args.organizationId,
             accessionNumber,
           );
+          if (!workflowConfig || item.catalogIdentifier !== undefined)
+            await ensureIdentifierAvailable(
+              ctx,
+              args.organizationId,
+              "catalog",
+              item.catalogIdentifier ?? accessionNumber,
+            );
           const accessionId = await ctx.db.insert("accessions", {
             organizationId: args.organizationId,
             accessionNumber,
+            catalogIdentifier: item.catalogIdentifier,
+            approvedBy: workflowConfig ? undefined : importingUserId,
+            approvedAt: workflowConfig ? undefined : Date.now(),
             normalizedIdentifier: normalizeIdentifier(accessionNumber),
             dateReceived: item.dateReceived,
             source: item.source,
