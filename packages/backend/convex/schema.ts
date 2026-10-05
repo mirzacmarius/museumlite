@@ -694,6 +694,24 @@ export default defineSchema({
     completedAt: v.number(),
   }).index("by_organization", ["organizationId"]),
 
+  uploadIntents: defineTable({
+    token: v.string(),
+    uploadedBy: v.id("users"),
+    organizationId: v.optional(v.id("organizations")),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_token", ["token"]),
+
+  storageOwnership: defineTable({
+    storageId: v.id("_storage"),
+    uploadedBy: v.id("users"),
+    organizationId: v.optional(v.id("organizations")),
+    uploadedAt: v.number(),
+    ownerType: v.optional(v.string()),
+    ownerId: v.optional(v.string()),
+  }).index("by_storageId", ["storageId"]),
+
   // Media attachments for objects
   mediaFiles: defineTable({
     collectionId: v.id("collections"),
