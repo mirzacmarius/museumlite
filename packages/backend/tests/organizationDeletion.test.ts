@@ -397,3 +397,40 @@ test("museum deletion is refused and legacy purge requests remain recoverable", 
     )?.name,
   ).toBe("Deletion Test Org");
 });
+
+test("library cleanup keeps orphaned museum approval evidence and its actor", async () => {
+  const t = convexTest(schema, modules);
+  const { organizationId, ownerUserId } = await createOwnerOrganization(t);
+  const approvalId = await t.run(async (ctx) =>
+    ctx.db.insert("workflowStepApprovals", {
+      organizationId,
+      workflowType: "accession",
+      entityId: "legacy-missing-register",
+      stepNumber: 1,
+      approvedBy: ownerUserId,
+      approvedAt: 100,
+      comment: "Original orphaned register decision",
+    }),
+  );
+  const owner = authedForUser(t, ownerUserId);
+  await expect(
+    owner.mutation(api.organizationDeletion.requestDeletion, {
+      organizationId,
+    }),
+  ).rejects.toThrow("Permanent evidence");
+  expect(
+    await owner.query(api.organizationCleanup.getRetentionPolicy, {
+      organizationId,
+    }),
+  ).toEqual({ canDeleteOrganization: false });
+  const history = await owner.query(api.workflows.listRetainedApprovals, {
+    organizationId,
+    paginationOpts: { numItems: 25, cursor: null },
+  });
+  expect(history.page[0]).toMatchObject({
+    approvalId,
+    approvedBy: ownerUserId,
+    entityId: "legacy-missing-register",
+    comment: "Original orphaned register decision",
+  });
+});

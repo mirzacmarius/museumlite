@@ -41,6 +41,10 @@ export async function isOrganizationEvidenceProtected(
         "transitRecords",
         "installationTasks",
         "insurancePolicies",
+        "conditionDisputes",
+        "mediaEditHistory",
+        "workflowHistory",
+        "workflowStepApprovals",
       ] as const
     ).map((table) =>
       ctx.db
