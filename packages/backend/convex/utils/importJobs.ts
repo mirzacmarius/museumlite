@@ -266,13 +266,20 @@ export async function applyImportJobProgress(
       ),
       ...newErrors,
     ].slice(-100),
-    status: finished
-      ? failedItems > 0
-        ? "completed_with_errors"
-        : "completed"
-      : "processing",
+    // Resolving an already-recorded item never reopens a cancelled job.
+    status:
+      job.status === "cancelled"
+        ? "cancelled"
+        : finished
+          ? failedItems > 0
+            ? "completed_with_errors"
+            : "completed"
+          : "processing",
     updatedAt: now,
-    finishedAt: finished ? (job.finishedAt ?? now) : undefined,
+    finishedAt:
+      finished || job.status === "cancelled"
+        ? (job.finishedAt ?? now)
+        : undefined,
   });
 }
 

@@ -2926,7 +2926,12 @@ export default defineSchema({
 
   mediaImportJobData: defineTable({
     jobId: v.id("importJobs"),
-    mappingType: v.union(v.literal("csv"), v.literal("filename")),
+    // Manual jobs created before MUS-622 have no row here.
+    mappingType: v.union(
+      v.literal("csv"),
+      v.literal("filename"),
+      v.literal("manual"),
+    ),
     mappingData: v.array(
       v.object({
         filename: v.string(),
@@ -2939,6 +2944,8 @@ export default defineSchema({
         storageId: v.id("_storage"),
         fileSize: v.number(),
         mimeType: v.string(),
+        // Source position on the job; matches importRowResults.rowNumber.
+        itemNumber: v.optional(v.number()),
         mapped: v.boolean(),
         collectionId: v.optional(v.id("collections")),
         mediaFileId: v.optional(v.id("mediaFiles")),
