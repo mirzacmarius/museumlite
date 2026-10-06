@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
@@ -9,6 +9,15 @@ import {
 } from "./testHarness";
 
 const MEDIA_PERMISSIONS = ["media.upload", "media.read"];
+
+// Attaching an image schedules thumbnail generation; keep it from running
+// after a test's database has gone away.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 async function setup() {
   const t = createConvexTest();
