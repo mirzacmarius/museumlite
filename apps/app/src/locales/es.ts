@@ -2010,12 +2010,6 @@ export default {
     rowsReadyToImport: "{count} filas listas para importar desde {filename}",
     importLocations: "Importar {count} Ubicaciones",
     validationErrors: "{count} errores de validación",
-    importingLocations: "Importando Ubicaciones...",
-    processedCount: "{current} de {total} procesados",
-    importComplete: "Importación Completa",
-    successfullyImported: "{count} ubicaciones importadas exitosamente",
-    rowsHadIssues: "{count} filas tuvieron problemas",
-    importMore: "Importar Más",
     viewLocations: "Ver Ubicaciones",
     selectOrganizationToImport:
       "Por favor seleccione una organización para importar ubicaciones.",
@@ -2041,7 +2035,9 @@ export default {
     },
     importFailed: "Error en la importación",
     importErrors: {
-      missingHeaderRow: "Falta la fila de encabezado",
+      unreadableFile: "No se pudo leer el archivo como CSV.",
+      tooManyRows: "Divide el archivo en archivos de como máximo {max} filas.",
+
       csvMustHaveRows:
         "El CSV debe tener una fila de encabezado y al menos una fila de datos",
       missingRequiredColumns: "Faltan columnas requeridas: {columns}",
@@ -2838,7 +2834,6 @@ export default {
       previewTitle: "Vista Previa de Importación",
       previewDescription: "{count} filas listas para importar desde {filename}",
       importButton: "Importar {count} Objetos",
-      validationErrors: "{count} errores de validación",
       tableHeaders: {
         number: "#",
         accession: "N° de Accesión",
@@ -2850,12 +2845,6 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Mostrando 20 de {count} filas",
-      importing: "Importando Objetos...",
-      progress: "{current} de {total} procesados",
-      complete: "Importación Completa",
-      successMessage: "Se importaron {count} objetos exitosamente",
-      issuesMessage: "{count} filas tuvieron problemas",
-      importMore: "Importar Más",
       viewCollections: "Ver Colecciones",
     },
     mediaImport: {
@@ -4034,35 +4023,7 @@ export default {
       unknownSource: "Fuente desconocida",
     },
     import: {
-      progressDetail:
-        "{attempted} de {total} filas procesadas · {accepted} aceptadas · {failed} con error",
-      cancelImport: "Cancelar importación",
-      cancelling: "Deteniendo tras el lote actual…",
-      cancelledTitle: "Importación cancelada",
-      interruptedTitle: "Importación interrumpida",
-      outcome:
-        "{accepted} aceptadas, {failed} con error ({attempted} de {total} filas procesadas).",
-      resumeHint:
-        "Vuelve a subir el mismo archivo para reanudar; las filas aceptadas se omiten.",
-      downloadFailedRows: "Descargar filas con error",
-      downloadFailed: "No se pudieron descargar las filas con error.",
-      retryFailedRows: "Reintentar filas con error",
       backToValidation: "Volver a la validación",
-      startNewImport: "Nueva importación",
-      resumeNotice:
-        "Este archivo se importó el {date}: {attempted} de {total} filas procesadas, {accepted} aceptadas, {failed} con error. Al reanudar se omiten las filas aceptadas.",
-      resumeImport: "Reanudar importación",
-      validationTitle: "Informe de validación",
-      validationSummary: "{valid} filas válidas, {errors} errores",
-      backToMapping: "Volver al mapeo",
-      rowsPassed: "{count} filas superaron la validación",
-      uploadCorrectedFile: "Subir archivo corregido",
-      continueWithErrors:
-        "Continuar ({count} filas con errores se registrarán como fallidas)",
-      rowsWillFail:
-        "{count} filas tienen errores y se registrarán como filas fallidas que puedes descargar y corregir",
-      correctionHint:
-        "Corrige las filas con error en tu archivo sin añadir, eliminar ni reordenar filas y elige Subir archivo corregido. Las filas aceptadas se conservan y se omiten.",
       title: "Importar Adquisiciones desde CSV",
       description:
         "Sube un archivo CSV con los datos de adquisición. Columnas requeridas: dateReceived, source, method.",
@@ -4082,13 +4043,6 @@ export default {
       rowsReady: "{count} filas listas para importar desde {filename}",
       importButton: "Importar {count} Adquisiciones",
       cancel: "Cancelar",
-      validationErrors: "{count} errores de validación",
-      importing: "Importando Adquisiciones...",
-      progress: "{current} de {total} procesados",
-      complete: "Importación Completa",
-      successMessage: "{count} adquisiciones importadas exitosamente",
-      issuesMessage: "{count} filas tuvieron problemas",
-      importMore: "Importar Más",
       viewAccessions: "Ver Adquisiciones",
       tableHeaders: {
         number: "#",
@@ -4273,5 +4227,45 @@ export default {
       selectDisposition: "ej., Vendido a coleccionista privado",
       addNotes: "Notas adicionales sobre esta desaccesión...",
     },
+  },
+  trackedImport: {
+    validationTitle: "Informe de validación",
+    validationSummary: "{valid} filas válidas, {errors} con errores",
+    backToMapping: "Volver al mapeo",
+    backToValidation: "Volver a la validación",
+    continueWithErrors:
+      "Continuar ({count} filas con errores se registrarán como fallidas)",
+    validationErrors: "{count} errores de validación",
+    rowsPassed: "{count} filas superaron la validación",
+    rowsWillFail:
+      "{count} filas tienen errores y se registrarán como filas fallidas que puedes descargar y corregir",
+    progressTitle: "Importando…",
+    progressDetail:
+      "{attempted} de {total} filas procesadas · {accepted} aceptadas · {failed} con error",
+    cancelImport: "Cancelar importación",
+    cancelling: "Deteniendo tras el lote actual…",
+    completeTitle: "Importación completada",
+    cancelledTitle: "Importación cancelada",
+    interruptedTitle: "Importación interrumpida",
+    outcome:
+      "{accepted} aceptadas, {failed} con error ({attempted} de {total} filas procesadas).",
+    resumeHint:
+      "Vuelve a subir el mismo archivo para reanudar; las filas aceptadas se omiten.",
+    issues: "{count} filas tuvieron problemas",
+    correctionHint:
+      "Corrige las filas con error en tu archivo sin añadir, eliminar ni reordenar filas y elige Subir archivo corregido. Las filas aceptadas se conservan y se omiten.",
+    downloadFailedRows: "Descargar filas con error",
+    downloadFailed: "No se pudieron descargar las filas con error.",
+    uploadCorrectedFile: "Subir archivo corregido",
+    correctionFailed: "No se pudo importar el archivo corregido.",
+    correctionMismatch:
+      "El archivo corregido debe conservar las mismas filas en el mismo orden. Corrige los valores sin añadir, eliminar ni reordenar filas.",
+    retryFailedRows: "Reintentar filas con error",
+    retryFailed: "No se pudieron reintentar las filas con error.",
+    importMore: "Importar más",
+    importFailed: "La importación falló",
+    resumeNotice:
+      "Este archivo se importó el {date}: {attempted} de {total} filas procesadas, {accepted} aceptadas, {failed} con error. Al reanudar se omiten las filas aceptadas.",
+    resumeImport: "Reanudar importación",
   },
 } as const;

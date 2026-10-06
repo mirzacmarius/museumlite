@@ -2,10 +2,11 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { parseCsvTable, sha256Hex } from "@/lib/csv-parser";
+import { useScopedI18n } from "@/locales/client";
 import { downloadCsv, type ImportType } from "./data-csv-utils";
 
 interface ImportTemplate {
@@ -15,11 +16,44 @@ interface ImportTemplate {
   requiredFields: string[];
 }
 
+type TemplateRow = Record<string, string | number | undefined> & {
+  rowNumber: number;
+};
+
+const BATCH_SIZE = 50;
+
+/**
+ * Keeps only the template's columns (matched case-insensitively). Required
+ * columns are always present so missing values fail on the server as
+ * recorded, correctable rows.
+ */
+function toTemplateRows(text: string, template: ImportTemplate) {
+  const table = parseCsvTable(text);
+  if (table.records.length === 0) {
+    throw new Error("No data rows found in CSV");
+  }
+  const columnIndex = new Map(
+    table.headers.map((header, index) => [header.toLowerCase(), index]),
+  );
+  return table.records.map((record) => {
+    const row: TemplateRow = { rowNumber: record.rowNumber };
+    for (const field of template.headers) {
+      const index = columnIndex.get(field.toLowerCase());
+      const value = index === undefined ? undefined : record.values[index];
+      if (value) row[field] = value;
+      else if (template.requiredFields.includes(field)) row[field] = "";
+    }
+    return row;
+  });
+}
+
 export function useDataImport(
   organizationId: Id<"organizations">,
   importType: ImportType,
   template: ImportTemplate | null | undefined,
 ) {
+  const t = useScopedI18n("settings.data.importJobs");
+  const convex = useConvex();
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +67,115 @@ export function useDataImport(
   const importAccountsBatch = useMutation(api.imports.importAccountsBatch);
   const importLoansBatch = useMutation(api.imports.importLoansBatch);
 
+  const sendBatch = useCallback(
+    (
+      type: ImportType,
+      args: {
+        jobId: Id<"importJobs">;
+        rows: TemplateRow[];
+        batchIndex: number;
+      },
+    ) => {
+      // Rows carry exactly the template columns for `type`; the server
+      // validates each value.
+      const base = {
+        organizationId,
+        jobId: args.jobId,
+        batchIndex: args.batchIndex,
+      };
+      switch (type) {
+        case "objects":
+          return importObjectsBatch({
+            ...base,
+            rows: args.rows as Parameters<typeof importObjectsBatch>[0]["rows"],
+          });
+        case "accessions":
+          return importAccessionsBatch({
+            ...base,
+            rows: args.rows as Parameters<
+              typeof importAccessionsBatch
+            >[0]["rows"],
+          });
+        case "locations":
+          return importLocationsBatch({
+            ...base,
+            rows: args.rows as Parameters<
+              typeof importLocationsBatch
+            >[0]["rows"],
+          });
+        case "accounts":
+          return importAccountsBatch({
+            ...base,
+            rows: args.rows as Parameters<
+              typeof importAccountsBatch
+            >[0]["rows"],
+          });
+        case "loans":
+          return importLoansBatch({
+            ...base,
+            rows: args.rows as Parameters<typeof importLoansBatch>[0]["rows"],
+          });
+      }
+    },
+    [
+      organizationId,
+      importObjectsBatch,
+      importAccessionsBatch,
+      importLocationsBatch,
+      importAccountsBatch,
+      importLoansBatch,
+    ],
+  );
+
+  const sendAll = useCallback(
+    async (type: ImportType, jobId: Id<"importJobs">, rows: TemplateRow[]) => {
+      let failed = 0;
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const result = await sendBatch(type, {
+          jobId,
+          rows: rows.slice(i, i + BATCH_SIZE),
+          batchIndex: Math.floor(i / BATCH_SIZE),
+        });
+        failed += result.errors.length;
+      }
+      return failed;
+    },
+    [sendBatch],
+  );
+
+  /** Reuses an unfinished job for the same file so accepted rows are skipped. */
+  const startOrResume = useCallback(
+    async (source: {
+      name: string;
+      fingerprint: string;
+      totalItems: number;
+      /** Dublin Core jobs learn their record count from the XML. */
+      matchTotal: boolean;
+    }) => {
+      const resumable = await convex.query(api.imports.findResumableImportJob, {
+        organizationId,
+        entityType: importType,
+        sourceFingerprint: source.fingerprint,
+      });
+      if (
+        resumable &&
+        (!source.matchTotal || resumable.totalItems === source.totalItems)
+      ) {
+        toast.info(t("resuming"));
+        return resumable._id;
+      }
+      return await createImportJob({
+        organizationId,
+        type: "csv",
+        entityType: importType,
+        totalItems: source.totalItems,
+        sourceName: source.name,
+        sourceFingerprint: source.fingerprint,
+      });
+    },
+    [convex, createImportJob, importType, organizationId, t],
+  );
+
   const downloadTemplate = useCallback(() => {
     if (!template) return;
     const csv = [
@@ -42,131 +185,54 @@ export function useDataImport(
     downloadCsv(`${importType}_template.csv`, csv);
   }, [template, importType]);
 
+  const reportOutcome = useCallback(
+    (failed: number) => {
+      if (failed > 0) toast.warning(t("finishedWithFailures", { failed }));
+      else toast.success(t("finished"));
+    },
+    [t],
+  );
+
   const handleFileSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file || !template) return;
 
       setImporting(true);
-
       try {
-        const isXml = file.name.toLowerCase().endsWith(".xml");
+        const text = await file.text();
+        const fingerprint = await sha256Hex(text);
 
-        if (isXml) {
+        if (file.name.toLowerCase().endsWith(".xml")) {
           if (importType !== "objects") {
-            throw new Error("XML import is only supported for objects");
+            throw new Error(t("xmlObjectsOnly"));
           }
-
-          const [xml, jobId] = await Promise.all([
-            file.text(),
-            createImportJob({
-              organizationId,
-              type: "csv",
-              totalItems: 1,
-            }),
-          ]);
-
-          await importObjectsDublinCore({
+          // The server sets the record count from the XML on first use.
+          const jobId = await startOrResume({
+            name: file.name,
+            fingerprint,
+            totalItems: 1,
+            matchTotal: false,
+          });
+          const result = await importObjectsDublinCore({
             organizationId,
             jobId,
-            xml,
+            xml: text,
           });
+          reportOutcome(result.errors.length);
           return;
         }
 
-        const text = await file.text();
-        const table = parseCsvTable(text);
-        const headers = table.headers;
-        const dataRows = table.records;
-
-        if (dataRows.length === 0) {
-          throw new Error("No data rows found in CSV");
-        }
-
-        const jobId = await createImportJob({
-          organizationId,
-          type: "csv",
-          entityType: importType,
-          totalItems: dataRows.length,
-          sourceName: file.name,
-          sourceFingerprint: await sha256Hex(text),
+        const rows = toTemplateRows(text, template);
+        const jobId = await startOrResume({
+          name: file.name,
+          fingerprint,
+          totalItems: rows.length,
+          matchTotal: true,
         });
-
-        // Batches run in order so progress and replays stay deterministic.
-        const batchSize = 50;
-        for (let i = 0; i < dataRows.length; i += batchSize) {
-          const batch = dataRows.slice(i, i + batchSize);
-          const batchData = batch.map((record) => {
-            const obj: Record<string, string | undefined> = {};
-            headers.forEach((header, idx) => {
-              if (header && record.values[idx] !== undefined) {
-                obj[header] = record.values[idx] || undefined;
-              }
-            });
-            return obj;
-          });
-
-          const batchIndex = Math.floor(i / batchSize);
-
-          switch (importType) {
-            case "objects":
-              await importObjectsBatch({
-                organizationId,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importObjectsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
-              break;
-            case "accessions":
-              await importAccessionsBatch({
-                organizationId,
-                jobId,
-                rows: batch.map((record, index) => ({
-                  ...(batchData[index] as Omit<
-                    Parameters<typeof importAccessionsBatch>[0]["rows"][number],
-                    "rowNumber"
-                  >),
-                  rowNumber: record.rowNumber,
-                })),
-                batchIndex,
-              });
-              break;
-            case "locations":
-              await importLocationsBatch({
-                organizationId,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importLocationsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
-              break;
-            case "accounts":
-              await importAccountsBatch({
-                organizationId,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importAccountsBatch
-                >[0]["rows"],
-                batchIndex,
-              });
-              break;
-            case "loans":
-              await importLoansBatch({
-                organizationId,
-                jobId,
-                rows: batchData as Parameters<
-                  typeof importLoansBatch
-                >[0]["rows"],
-                batchIndex,
-              });
-              break;
-          }
-        }
+        reportOutcome(await sendAll(importType, jobId, rows));
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Import failed");
+        toast.error(error instanceof Error ? error.message : t("importFailed"));
       } finally {
         setImporting(false);
         if (fileInputRef.current) {
@@ -175,17 +241,32 @@ export function useDataImport(
       }
     },
     [
-      organizationId,
-      template,
-      importType,
-      createImportJob,
-      importObjectsBatch,
       importObjectsDublinCore,
-      importAccessionsBatch,
-      importLocationsBatch,
-      importAccountsBatch,
-      importLoansBatch,
+      importType,
+      organizationId,
+      reportOutcome,
+      sendAll,
+      startOrResume,
+      t,
+      template,
     ],
+  );
+
+  /** Re-sends an edited copy of a job's file; the server skips accepted rows. */
+  const uploadCorrection = useCallback(
+    async (
+      job: { _id: Id<"importJobs">; entityType?: ImportType },
+      file: File,
+    ) => {
+      if (!job.entityType) throw new Error(t("correctionUnsupported"));
+      const jobTemplate = await convex.query(
+        api.imports.getImportTemplateByType,
+        { type: job.entityType },
+      );
+      const rows = toTemplateRows(await file.text(), jobTemplate);
+      reportOutcome(await sendAll(job.entityType, job._id, rows));
+    },
+    [convex, reportOutcome, sendAll, t],
   );
 
   return {
@@ -193,5 +274,6 @@ export function useDataImport(
     fileInputRef,
     downloadTemplate,
     handleFileSelect,
+    uploadCorrection,
   };
 }

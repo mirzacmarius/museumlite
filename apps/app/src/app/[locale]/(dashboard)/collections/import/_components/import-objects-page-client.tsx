@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { ImportObjectsStepPanels } from "./import-objects-step-panels";
-import type { ImportState } from "./import-objects-types";
+import { EMPTY_IMPORT_STATE, type ImportState } from "./import-objects-types";
 import { useImportObjects } from "./use-import-objects";
 
 export function ImportObjectsPageClient() {
@@ -16,20 +16,10 @@ export function ImportObjectsPageClient() {
   const { currentOrganizationId } = useOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [state, setState] = useState<ImportState>({
-    step: "upload",
-    file: null,
-    rawData: [],
-    sourceFields: [],
-    fieldMappings: [],
-    selectedTemplate: null,
-    rows: [],
-    validationErrors: [],
-    errors: [],
-    jobId: null,
-  });
+  const [state, setState] = useState<ImportState>(EMPTY_IMPORT_STATE);
 
   const {
+    run,
     handleFileSelect,
     handleSaveMappings,
     handleContinueAfterValidation,
@@ -77,6 +67,7 @@ export function ImportObjectsPageClient() {
               state={state}
               t={t}
               common={common}
+              run={run}
               fileInputRef={fileInputRef}
               handleFileSelect={handleFileSelect}
               handleTemplateSelect={handleTemplateSelect}

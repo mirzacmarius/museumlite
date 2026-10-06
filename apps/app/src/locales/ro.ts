@@ -574,6 +574,18 @@ export default {
     },
     data: {
       importJobs: {
+        resuming:
+          "Se continuă importul anterior al acestui fișier; rândurile acceptate sunt omise.",
+        finished: "Import finalizat.",
+        finishedWithFailures:
+          "Import finalizat cu {failed} rânduri eșuate. Descarcă-le din Importuri recente.",
+        xmlObjectsOnly: "Importul XML este disponibil doar pentru obiecte.",
+        importFailed: "Importul a eșuat.",
+        correctionUnsupported:
+          "Acest import nu poate fi corectat aici. Pornește un import nou.",
+        uploadCorrectedFile: "Încarcă fișierul corectat",
+        correctionFailed: "Fișierul corectat nu a putut fi importat.",
+
         title: "Importuri recente",
         jobTitle: "Import {type}",
         counts:
@@ -1089,12 +1101,6 @@ export default {
     rowsReadyToImport: "{count} rânduri gata de import din {filename}",
     importLocations: "Importă {count} locații",
     validationErrors: "{count} erori de validare",
-    importingLocations: "Se importă locațiile...",
-    processedCount: "{current} din {total} procesate",
-    importComplete: "Import finalizat",
-    successfullyImported: "{count} locații importate cu succes",
-    rowsHadIssues: "{count} rânduri au avut probleme",
-    importMore: "Importă mai multe",
     viewLocations: "Vezi locațiile",
     selectOrganizationToImport:
       "Selectează o organizație pentru a importa locații.",
@@ -1120,7 +1126,9 @@ export default {
     },
     importFailed: "Importul a eșuat",
     importErrors: {
-      missingHeaderRow: "Lipsește rândul de antet",
+      unreadableFile: "Fișierul nu a putut fi citit ca CSV.",
+      tooManyRows: "Împarte fișierul în fișiere de cel mult {max} rânduri.",
+
       csvMustHaveRows:
         "CSV-ul trebuie să aibă un rând de antet și cel puțin un rând de date",
       missingRequiredColumns: "Lipsesc coloanele obligatorii: {columns}",
@@ -2167,5 +2175,45 @@ export default {
       objectNotFound: "Obiectul nu a fost găsit: {code}",
       scannerError: "Eroare scaner: {error}",
     },
+  },
+  trackedImport: {
+    validationTitle: "Raport de validare",
+    validationSummary: "{valid} rânduri valide, {errors} cu erori",
+    backToMapping: "Înapoi la mapare",
+    backToValidation: "Înapoi la validare",
+    continueWithErrors:
+      "Continuă ({count} rânduri cu erori vor fi înregistrate ca eșuate)",
+    validationErrors: "{count} erori de validare",
+    rowsPassed: "{count} rânduri au trecut validarea",
+    rowsWillFail:
+      "{count} rânduri au erori și vor fi înregistrate ca rânduri eșuate pe care le poți descărca și corecta",
+    progressTitle: "Se importă…",
+    progressDetail:
+      "{attempted} din {total} rânduri încercate · {accepted} acceptate · {failed} eșuate",
+    cancelImport: "Anulează importul",
+    cancelling: "Se oprește după lotul curent…",
+    completeTitle: "Import finalizat",
+    cancelledTitle: "Import anulat",
+    interruptedTitle: "Import întrerupt",
+    outcome:
+      "{accepted} acceptate, {failed} eșuate ({attempted} din {total} rânduri încercate).",
+    resumeHint:
+      "Încarcă din nou același fișier pentru a relua; rândurile acceptate sunt omise.",
+    issues: "{count} rânduri au avut probleme",
+    correctionHint:
+      "Corectează rândurile eșuate în fișier fără a adăuga, șterge sau reordona rânduri, apoi alege Încarcă fișierul corectat. Rândurile acceptate sunt păstrate și omise.",
+    downloadFailedRows: "Descarcă rândurile eșuate",
+    downloadFailed: "Rândurile eșuate nu au putut fi descărcate.",
+    uploadCorrectedFile: "Încarcă fișierul corectat",
+    correctionFailed: "Fișierul corectat nu a putut fi importat.",
+    correctionMismatch:
+      "Fișierul corectat trebuie să păstreze aceleași rânduri în aceeași ordine. Corectează valorile fără a adăuga, șterge sau reordona rânduri.",
+    retryFailedRows: "Reîncearcă rândurile eșuate",
+    retryFailed: "Rândurile eșuate nu au putut fi reîncercate.",
+    importMore: "Importă mai mult",
+    importFailed: "Importul a eșuat",
+    resumeNotice:
+      "Acest fișier a fost importat la {date}: {attempted} din {total} rânduri încercate, {accepted} acceptate, {failed} eșuate. Reluarea omite rândurile acceptate.",
+    resumeImport: "Reia importul",
   },
 };

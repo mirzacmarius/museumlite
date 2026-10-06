@@ -13,8 +13,12 @@ export function useTranslatedParseError() {
       switch (error.type) {
         case "csvMustHaveRows":
           return t("csvMustHaveRows");
-        case "missingHeaderRow":
-          return t("missingHeaderRow");
+        case "tooManyRows":
+          return t("tooManyRows", { max: error.columns ?? "" });
+        case "unreadableFile":
+          return error.detail
+            ? `${t("unreadableFile")} ${error.detail}`
+            : t("unreadableFile");
         case "missingRequiredColumns":
           return t("missingRequiredColumns", { columns: error.columns ?? "" });
         case "nameRequired":

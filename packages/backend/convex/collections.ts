@@ -14,6 +14,10 @@ import { createDeaccessionRecord } from "./deaccessions";
 import { customFieldValue } from "./schema";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import {
+  buildConditionHistoryEntry,
+  syncCollectionGroupMemberships,
+} from "./utils/catalogObjects";
+import {
   getLocationPathStrings,
   isImageMedia,
 } from "./utils/collectionDisplayHelpers";
@@ -319,93 +323,6 @@ async function _getLocationPathString(
 function normalizeOptionalString(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
-}
-
-async function buildConditionHistoryEntry(
-  ctx: QueryCtx | MutationCtx,
-  userId: Id<"users">,
-  condition: string,
-  note?: string,
-) {
-  const user = await ctx.db.get(userId);
-
-  return {
-    condition,
-    note,
-    changedAt: Date.now(),
-    changedBy: userId,
-    changedByName: user?.name ?? user?.username ?? user?.email ?? undefined,
-  };
-}
-
-async function syncCollectionGroupMemberships(
-  ctx: MutationCtx,
-  collectionId: Id<"collections">,
-  organizationId: Id<"organizations">,
-  groupIds: Id<"collectionGroups">[],
-  userId: Id<"users">,
-) {
-  const uniqueGroupIds = [...new Set(groupIds)];
-  const existingMemberships = await ctx.db
-    .query("collectionGroupItems")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-    .collect();
-  const existingGroupIds = new Set(
-    existingMemberships.map((membership) => membership.collectionGroupId),
-  );
-  const nextGroupIds = new Set(uniqueGroupIds);
-  await Promise.all([
-    Promise.all(
-      Array.from(uniqueGroupIds).map(async (groupId) => {
-        const group = await ctx.db.get(groupId);
-        if (!group) {
-          throw new Error("Collection group not found");
-        }
-        if (group.organizationId !== organizationId) {
-          throw new Error(
-            "Collection group belongs to a different organization",
-          );
-        }
-      }),
-    ),
-    Promise.all(
-      Array.from(uniqueGroupIds).map(async (groupId) => {
-        if (existingGroupIds.has(groupId)) {
-          return;
-        }
-        const group = await ctx.db.get(groupId);
-        await ctx.db.insert("collectionGroupItems", {
-          collectionGroupId: groupId,
-          collectionId,
-          addedAt: Date.now(),
-          addedBy: userId,
-        });
-        if (group) {
-          await ctx.db.patch(groupId, {
-            itemsCount: (group.itemsCount || 0) + 1,
-            lastModifiedAt: Date.now(),
-            lastModifiedBy: userId,
-          });
-        }
-      }),
-    ),
-    Promise.all(
-      Array.from(existingMemberships).map(async (membership) => {
-        if (nextGroupIds.has(membership.collectionGroupId)) {
-          return;
-        }
-        const group = await ctx.db.get(membership.collectionGroupId);
-        await ctx.db.delete(membership._id);
-        if (group) {
-          await ctx.db.patch(membership.collectionGroupId, {
-            itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
-            lastModifiedAt: Date.now(),
-            lastModifiedBy: userId,
-          });
-        }
-      }),
-    ),
-  ] as const);
 }
 
 async function getPublicCatalogCollections(

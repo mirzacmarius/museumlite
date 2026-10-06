@@ -1,5 +1,6 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   Table,
@@ -10,6 +11,8 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { AlertCircle, Upload, X } from "lucide-react";
+import { ResumableImportNotice } from "@/components/import/resumable-import-notice";
+import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import type { ParsedRow, ParseError } from "../../import/import-csv";
@@ -17,21 +20,28 @@ import type { ParsedRow, ParseError } from "../../import/import-csv";
 interface ImportPreviewStepProps {
   rows: ParsedRow[];
   fileName?: string;
+  fingerprint: string | null;
   parseErrors: ParseError[];
+  /** Errors from a start attempt that never reached the server. */
+  runErrors: string[];
   translateParseError: (error: ParseError) => string;
   onReset: () => void;
-  onStartImport: () => void;
+  onStartImport: (resumeJobId?: Id<"importJobs">) => void;
 }
 
 export function ImportPreviewStep({
   rows,
   fileName,
+  fingerprint,
   parseErrors,
+  runErrors,
   translateParseError,
   onReset,
   onStartImport,
 }: ImportPreviewStepProps) {
   const t = useScopedI18n("locations");
+  const tracked = useScopedI18n("trackedImport");
+  const { currentOrganizationId } = useOrganization();
 
   return (
     <div className="space-y-6">
@@ -53,7 +63,7 @@ export function ImportPreviewStep({
           <PermissionGate permission="organization.manage_settings">
             <PermissionGate permission="locations.create">
               <Button
-                onClick={onStartImport}
+                onClick={() => onStartImport()}
                 disabled={rows.length === 0}
                 className="bg-primary hover:bg-primary/90"
               >
@@ -64,6 +74,33 @@ export function ImportPreviewStep({
           </PermissionGate>
         </div>
       </div>
+
+      <PermissionGate permission="organization.manage_settings">
+        <PermissionGate permission="locations.create">
+          <ResumableImportNotice
+            organizationId={currentOrganizationId}
+            entityType="locations"
+            fingerprint={fingerprint}
+            rowCount={rows.length}
+            onResume={(jobId) => onStartImport(jobId)}
+          />
+        </PermissionGate>
+      </PermissionGate>
+
+      {runErrors.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive"
+        >
+          {runErrors.join(" ")}
+        </div>
+      )}
+
+      {parseErrors.length > 0 && rows.length > 0 && (
+        <p className="text-sm text-amber-600">
+          {tracked("rowsWillFail", { count: parseErrors.length })}
+        </p>
+      )}
 
       {parseErrors.length > 0 && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
@@ -107,16 +144,14 @@ export function ImportPreviewStep({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.slice(0, 20).map((row, rowIndex) => (
-              <TableRow
-                key={`${row.name}-${row.locationCode}-${row.type}-${row.parentLocation ?? ""}`}
-              >
+            {rows.slice(0, 20).map((row) => (
+              <TableRow key={row.rowNumber}>
                 <TableCell className="text-muted-foreground">
-                  {rowIndex + 1}
+                  {row.rowNumber}
                 </TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.locationCode}</TableCell>
-                <TableCell>{row.type}</TableCell>
+                <TableCell>{row.name || "-"}</TableCell>
+                <TableCell>{row.locationCode || "-"}</TableCell>
+                <TableCell>{row.type || "-"}</TableCell>
                 <TableCell>{row.parentLocation || "-"}</TableCell>
                 <TableCell>{row.address || "-"}</TableCell>
                 <TableCell>{row.capacity || "-"}</TableCell>

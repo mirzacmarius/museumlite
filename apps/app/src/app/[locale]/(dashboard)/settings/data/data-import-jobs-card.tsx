@@ -12,9 +12,10 @@ import {
   Ban,
   CheckCircle2,
   Download,
+  FileUp,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDownloadImportFailures } from "@/hooks/use-download-import-failures";
 import { useScopedI18n } from "@/locales/client";
@@ -23,12 +24,18 @@ type ImportJob = FunctionReturnType<typeof api.imports.listImportJobs>[number];
 
 interface DataImportJobsCardProps {
   importJobs: ImportJob[];
+  onUploadCorrection: (job: ImportJob, file: File) => Promise<void>;
 }
 
 const ACTIVE_STATUSES = new Set(["pending", "processing"]);
 
-export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
+export function DataImportJobsCard({
+  importJobs,
+  onUploadCorrection,
+}: DataImportJobsCardProps) {
   const t = useScopedI18n("settings.data.importJobs");
+  const correctionInputRef = useRef<HTMLInputElement>(null);
+  const [correctionJob, setCorrectionJob] = useState<ImportJob | null>(null);
   const cancelImportJob = useMutation(api.imports.cancelImportJob);
   const downloadFailures = useDownloadImportFailures();
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
@@ -77,8 +84,35 @@ export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
     }
   }
 
+  async function handleCorrectionFile(file: File) {
+    const job = correctionJob;
+    if (!job) return;
+    setBusyJobId(job._id);
+    try {
+      await onUploadCorrection(job, file);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("correctionFailed"),
+      );
+    } finally {
+      setBusyJobId(null);
+      setCorrectionJob(null);
+    }
+  }
+
   return (
     <Card>
+      <input
+        ref={correctionInputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void handleCorrectionFile(file);
+        }}
+      />
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
       </CardHeader>
@@ -142,6 +176,23 @@ export function DataImportJobsCard({ importJobs }: DataImportJobsCardProps) {
                       {t("downloadFailedRows")}
                     </Button>
                   )}
+                  {job.failedItems > 0 &&
+                    job.entityType &&
+                    job.status !== "cancelled" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => {
+                          setCorrectionJob(job);
+                          correctionInputRef.current?.click();
+                        }}
+                      >
+                        <FileUp className="mr-1 size-3" />
+                        {t("uploadCorrectedFile")}
+                      </Button>
+                    )}
                   {ACTIVE_STATUSES.has(job.status) && (
                     <Button
                       type="button"

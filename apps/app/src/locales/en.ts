@@ -370,6 +370,18 @@ export default {
     },
     data: {
       importJobs: {
+        resuming:
+          "Continuing the earlier import of this file; accepted rows are skipped.",
+        finished: "Import finished.",
+        finishedWithFailures:
+          "Import finished with {failed} failed rows. Download them from Recent Import Jobs.",
+        xmlObjectsOnly: "XML import is only supported for objects.",
+        importFailed: "Import failed.",
+        correctionUnsupported:
+          "This import cannot be corrected here. Start a new import instead.",
+        uploadCorrectedFile: "Upload corrected file",
+        correctionFailed: "Could not import the corrected file.",
+
         title: "Recent Import Jobs",
         jobTitle: "{type} import",
         counts:
@@ -1641,12 +1653,6 @@ export default {
     rowsReadyToImport: "{count} rows ready to import from {filename}",
     importLocations: "Import {count} Locations",
     validationErrors: "{count} validation errors",
-    importingLocations: "Importing Locations...",
-    processedCount: "{current} of {total} processed",
-    importComplete: "Import Complete",
-    successfullyImported: "Successfully imported {count} locations",
-    rowsHadIssues: "{count} rows had issues",
-    importMore: "Import More",
     viewLocations: "View Locations",
     selectOrganizationToImport:
       "Please select an organization to import locations.",
@@ -1672,7 +1678,9 @@ export default {
     },
     importFailed: "Import failed",
     importErrors: {
-      missingHeaderRow: "Missing header row",
+      unreadableFile: "The file could not be read as CSV.",
+      tooManyRows: "Split the file into files of at most {max} rows.",
+
       csvMustHaveRows: "CSV must have a header row and at least one data row",
       missingRequiredColumns: "Missing required columns: {columns}",
       nameRequired: "Name is required",
@@ -2475,7 +2483,6 @@ export default {
       previewTitle: "Preview Import",
       previewDescription: "{count} rows ready to import from {filename}",
       importButton: "Import {count} Objects",
-      validationErrors: "{count} validation errors",
       tableHeaders: {
         number: "#",
         accession: "Accession #",
@@ -2487,12 +2494,6 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Showing 20 of {count} rows",
-      importing: "Importing Objects...",
-      progress: "{current} of {total} processed",
-      complete: "Import Complete",
-      successMessage: "Successfully imported {count} objects",
-      issuesMessage: "{count} rows had issues",
-      importMore: "Import More",
       viewCollections: "View Collections",
     },
     mediaImport: {
@@ -4220,35 +4221,7 @@ export default {
       unknownSource: "Unknown source",
     },
     import: {
-      progressDetail:
-        "{attempted} of {total} rows attempted · {accepted} accepted · {failed} failed",
-      cancelImport: "Cancel import",
-      cancelling: "Stopping after the current batch…",
-      cancelledTitle: "Import cancelled",
-      interruptedTitle: "Import interrupted",
-      outcome:
-        "{accepted} accepted, {failed} failed ({attempted} of {total} rows attempted).",
-      resumeHint:
-        "Upload the same file again to resume; accepted rows are skipped.",
-      downloadFailedRows: "Download failed rows",
-      downloadFailed: "Could not download failed rows.",
-      retryFailedRows: "Retry failed rows",
       backToValidation: "Back to Validation",
-      startNewImport: "Start new import",
-      resumeNotice:
-        "This file was imported on {date}: {attempted} of {total} rows attempted, {accepted} accepted, {failed} failed. Resuming skips accepted rows.",
-      resumeImport: "Resume import",
-      validationTitle: "Validation Report",
-      validationSummary: "{valid} valid rows, {errors} errors",
-      backToMapping: "Back to Mapping",
-      rowsPassed: "{count} rows passed validation",
-      uploadCorrectedFile: "Upload corrected file",
-      continueWithErrors:
-        "Continue ({count} rows with errors will be recorded as failed)",
-      rowsWillFail:
-        "{count} rows have errors and will be recorded as failed rows you can download and correct",
-      correctionHint:
-        "Fix the failed rows in your file without adding, removing or reordering rows, then choose Upload corrected file. Accepted rows are kept and skipped.",
       title: "Import Accessions from CSV",
       description:
         "Upload a CSV file with your accession data. Required columns: dateReceived, source, method.",
@@ -4268,13 +4241,6 @@ export default {
       rowsReady: "{count} rows ready to import from {filename}",
       importButton: "Import {count} Accessions",
       cancel: "Cancel",
-      validationErrors: "{count} validation errors",
-      importing: "Importing Accessions...",
-      progress: "{current} of {total} processed",
-      complete: "Import Complete",
-      successMessage: "Successfully imported {count} accessions",
-      issuesMessage: "{count} rows had issues",
-      importMore: "Import More",
       viewAccessions: "View Accessions",
       tableHeaders: {
         number: "#",
@@ -4501,5 +4467,45 @@ export default {
       objectNotFound: "Object not found: {code}",
       scannerError: "Scanner error: {error}",
     },
+  },
+  trackedImport: {
+    validationTitle: "Validation report",
+    validationSummary: "{valid} valid rows, {errors} with errors",
+    backToMapping: "Back to mapping",
+    backToValidation: "Back to validation",
+    continueWithErrors:
+      "Continue ({count} rows with errors will be recorded as failed)",
+    validationErrors: "{count} validation errors",
+    rowsPassed: "{count} rows passed validation",
+    rowsWillFail:
+      "{count} rows have errors and will be recorded as failed rows you can download and correct",
+    progressTitle: "Importing…",
+    progressDetail:
+      "{attempted} of {total} rows attempted · {accepted} accepted · {failed} failed",
+    cancelImport: "Cancel import",
+    cancelling: "Stopping after the current batch…",
+    completeTitle: "Import complete",
+    cancelledTitle: "Import cancelled",
+    interruptedTitle: "Import interrupted",
+    outcome:
+      "{accepted} accepted, {failed} failed ({attempted} of {total} rows attempted).",
+    resumeHint:
+      "Upload the same file again to resume; accepted rows are skipped.",
+    issues: "{count} rows had issues",
+    correctionHint:
+      "Fix the failed rows in your file without adding, removing or reordering rows, then choose Upload corrected file. Accepted rows are kept and skipped.",
+    downloadFailedRows: "Download failed rows",
+    downloadFailed: "Could not download failed rows.",
+    uploadCorrectedFile: "Upload corrected file",
+    correctionFailed: "Could not import the corrected file.",
+    correctionMismatch:
+      "The corrected file must keep the same rows in the same order. Fix values in place without adding, removing or reordering rows.",
+    retryFailedRows: "Retry failed rows",
+    retryFailed: "Could not retry the failed rows.",
+    importMore: "Import more",
+    importFailed: "Import failed",
+    resumeNotice:
+      "This file was imported on {date}: {attempted} of {total} rows attempted, {accepted} accepted, {failed} failed. Resuming skips accepted rows.",
+    resumeImport: "Resume import",
   },
 } as const;

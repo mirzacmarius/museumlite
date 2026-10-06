@@ -26,7 +26,11 @@ export type ImportEntityType = Doc<"importJobs">["entityType"] & string;
 
 /** Entity types whose batch handlers persist per-row outcomes. */
 export const ROW_TRACKED_ENTITY_TYPES: ReadonlySet<ImportEntityType> = new Set([
+  "objects",
   "accessions",
+  "locations",
+  "accounts",
+  "loans",
 ]);
 
 export const importRowResultValidator = v.object({
@@ -178,7 +182,7 @@ export function toRowResult(
   };
 }
 
-interface CounterDelta {
+export interface CounterDelta {
   attempted: number;
   accepted: number;
   failed: number;
@@ -270,4 +274,86 @@ export async function applyImportJobProgress(
     updatedAt: now,
     finishedAt: finished ? (job.finishedAt ?? now) : undefined,
   });
+}
+
+/**
+ * Runs one batch of a row-tracked import. Accepted rows replay their stored
+ * result; new or previously failed rows run `importRow`, whose thrown error
+ * message becomes the row's error. Rows run sequentially so identifiers and
+ * names created by earlier rows are visible to later ones.
+ */
+export async function runTrackedImportBatch<Row extends { rowNumber?: number }>(
+  ctx: MutationCtx,
+  job: Doc<"importJobs">,
+  rows: Row[],
+  batchIndex: number,
+  importRow: (
+    row: Row,
+    rowNumber: number,
+  ) => Promise<{ recordId: string; identifier?: string }>,
+) {
+  const sourceRows = resolveSourceRowNumbers(rows, batchIndex);
+  const previousResults = await Promise.all(
+    sourceRows.map(({ rowNumber }) =>
+      getStoredRowResult(ctx, job._id, rowNumber),
+    ),
+  );
+  const finished = toImportJobView(job).attemptedItems >= job.totalItems;
+  if (finished) {
+    const unknown = sourceRows.find((_, index) => !previousResults[index]);
+    if (unknown) {
+      throw new Error(
+        `Row ${unknown.rowNumber} is not part of this import. A corrected file must keep the same rows in the same order.`,
+      );
+    }
+  }
+
+  const results: ImportRowResult[] = [];
+  const deltas: CounterDelta[] = [];
+  const correctedRows: number[] = [];
+  for (const [index, { row, rowNumber }] of sourceRows.entries()) {
+    const previous = previousResults[index] ?? null;
+    if (previous?.status === "accepted") {
+      results.push(toRowResult(previous, true));
+      continue;
+    }
+    let outcome: Omit<ImportRowResult, "replayed">;
+    try {
+      const created = await importRow(row, rowNumber);
+      outcome = {
+        rowNumber,
+        status: "accepted",
+        recordId: created.recordId,
+        identifier: created.identifier,
+        errors: [],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      outcome = {
+        rowNumber,
+        status: "failed",
+        errors: [
+          message.startsWith(`Row ${rowNumber}:`)
+            ? message
+            : `Row ${rowNumber}: ${message}`,
+        ],
+      };
+    }
+    deltas.push(await storeRowOutcome(ctx, job, previous, outcome));
+    if (previous && outcome.status === "accepted")
+      correctedRows.push(rowNumber);
+    results.push({ ...outcome, replayed: false });
+  }
+
+  const errors = results.flatMap((result) =>
+    result.replayed ? [] : result.errors,
+  );
+  await applyImportJobProgress(ctx, job._id, deltas, errors, correctedRows);
+  return {
+    processed: results.filter(
+      (result) => result.status === "accepted" && !result.replayed,
+    ).length,
+    errors,
+    results,
+  };
 }

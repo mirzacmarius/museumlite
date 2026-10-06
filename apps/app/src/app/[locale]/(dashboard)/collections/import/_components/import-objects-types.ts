@@ -1,7 +1,9 @@
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FieldMapping } from "@/components/import-field-mapper";
+import type { CsvObjectRow } from "@/lib/csv-parser";
 
 export interface ParsedRow {
+  /** Line in the source file, used as the row's stable identity on the job. */
+  rowNumber: number;
   accessionNumber?: string;
   title: string;
   alternativeTitle?: string;
@@ -22,23 +24,34 @@ export interface ParsedRow {
 }
 
 export interface ImportState {
-  step:
-    | "upload"
-    | "mapping"
-    | "validation"
-    | "preview"
-    | "importing"
-    | "complete";
+  /** Wizard steps before the import runs; the run itself is tracked separately. */
+  step: "upload" | "mapping" | "validation" | "preview";
   file: File | null;
-  rawData: Record<string, string>[];
+  rawData: CsvObjectRow[];
+  /** SHA-256 of the source text; identifies a re-uploaded file. */
+  fingerprint: string | null;
   sourceFields: string[];
   fieldMappings: FieldMapping[];
   selectedTemplate: string | null;
   rows: ParsedRow[];
   validationErrors: string[];
   errors: string[];
-  jobId: Id<"importJobs"> | null;
 }
+
+export const MAX_IMPORT_ROWS = 1000;
+
+export const EMPTY_IMPORT_STATE: ImportState = {
+  step: "upload",
+  file: null,
+  rawData: [],
+  fingerprint: null,
+  sourceFields: [],
+  fieldMappings: [],
+  selectedTemplate: null,
+  rows: [],
+  validationErrors: [],
+  errors: [],
+};
 
 export const REQUIRED_COLUMNS = ["title"];
 export const OPTIONAL_COLUMNS = [

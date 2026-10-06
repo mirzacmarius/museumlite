@@ -95,7 +95,7 @@ test("should handle import errors gracefully", async () => {
   expect(validation.errors).toContainEqual(
     expect.objectContaining({
       field: "dateReceived",
-      message: "Invalid date format",
+      message: "Invalid date format. Use YYYY-MM-DD",
       severity: "error",
     }),
   );
@@ -121,7 +121,7 @@ test("should handle import errors gracefully", async () => {
   });
 
   expect(result.processed).toBe(0);
-  expect(result.errors).toEqual(["Row 2: Invalid date format"]);
+  expect(result.errors).toEqual(["Row 2: Invalid date format. Use YYYY-MM-DD"]);
 
   const accessions = await t.run(async (ctx) => {
     return await ctx.db

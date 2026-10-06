@@ -2095,12 +2095,6 @@ export default {
     rowsReadyToImport: "{count} lignes prêtes à importer depuis {filename}",
     importLocations: "Importer {count} Emplacements",
     validationErrors: "{count} erreurs de validation",
-    importingLocations: "Importation des Emplacements...",
-    processedCount: "{current} sur {total} traités",
-    importComplete: "Importation Terminée",
-    successfullyImported: "{count} emplacements importés avec succès",
-    rowsHadIssues: "{count} lignes ont eu des problèmes",
-    importMore: "Importer Plus",
     viewLocations: "Voir les Emplacements",
     selectOrganizationToImport:
       "Veuillez sélectionner une organisation pour importer des emplacements.",
@@ -2126,7 +2120,9 @@ export default {
     },
     importFailed: "Échec de l'importation",
     importErrors: {
-      missingHeaderRow: "Ligne d'en-tête manquante",
+      unreadableFile: "Le fichier n'a pas pu être lu comme CSV.",
+      tooManyRows: "Divisez le fichier en fichiers d'au plus {max} lignes.",
+
       csvMustHaveRows:
         "Le CSV doit avoir une ligne d'en-tête et au moins une ligne de données",
       missingRequiredColumns: "Colonnes requises manquantes : {columns}",
@@ -2859,7 +2855,6 @@ export default {
       previewTitle: "Aperçu de l'Import",
       previewDescription: "{count} lignes prêtes à importer depuis {filename}",
       importButton: "Importer {count} Objets",
-      validationErrors: "{count} erreurs de validation",
       tableHeaders: {
         number: "#",
         accession: "N° d'Accession",
@@ -2871,12 +2866,6 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Affichage de 20 sur {count} lignes",
-      importing: "Importation des Objets...",
-      progress: "{current} sur {total} traités",
-      complete: "Import Terminé",
-      successMessage: "{count} objets importés avec succès",
-      issuesMessage: "{count} lignes ont rencontré des problèmes",
-      importMore: "Importer Plus",
       viewCollections: "Voir les Collections",
     },
     mediaImport: {
@@ -4053,35 +4042,7 @@ export default {
       unknownSource: "Source inconnue",
     },
     import: {
-      progressDetail:
-        "{attempted} sur {total} lignes traitées · {accepted} acceptées · {failed} en échec",
-      cancelImport: "Annuler l'import",
-      cancelling: "Arrêt après le lot en cours…",
-      cancelledTitle: "Import annulé",
-      interruptedTitle: "Import interrompu",
-      outcome:
-        "{accepted} acceptées, {failed} en échec ({attempted} sur {total} lignes traitées).",
-      resumeHint:
-        "Importez à nouveau le même fichier pour reprendre ; les lignes acceptées sont ignorées.",
-      downloadFailedRows: "Télécharger les lignes en échec",
-      downloadFailed: "Impossible de télécharger les lignes en échec.",
-      retryFailedRows: "Retenter les lignes en échec",
       backToValidation: "Retour à la validation",
-      startNewImport: "Nouvel import",
-      resumeNotice:
-        "Ce fichier a été importé le {date} : {attempted} sur {total} lignes traitées, {accepted} acceptées, {failed} en échec. La reprise ignore les lignes acceptées.",
-      resumeImport: "Reprendre l'import",
-      validationTitle: "Rapport de validation",
-      validationSummary: "{valid} lignes valides, {errors} erreurs",
-      backToMapping: "Retour au mappage",
-      rowsPassed: "{count} lignes validées",
-      uploadCorrectedFile: "Importer le fichier corrigé",
-      continueWithErrors:
-        "Continuer ({count} lignes en erreur seront enregistrées comme échouées)",
-      rowsWillFail:
-        "{count} lignes contiennent des erreurs et seront enregistrées comme lignes en échec, téléchargeables et corrigeables",
-      correctionHint:
-        "Corrigez les lignes en échec dans votre fichier sans ajouter, supprimer ni réordonner de lignes, puis choisissez Importer le fichier corrigé. Les lignes acceptées sont conservées et ignorées.",
       title: "Importer des Acquisitions depuis CSV",
       description:
         "Téléchargez un fichier CSV avec vos données d'acquisition. Colonnes requises : dateReceived, source, method.",
@@ -4101,13 +4062,6 @@ export default {
       rowsReady: "{count} lignes prêtes à importer depuis {filename}",
       importButton: "Importer {count} Acquisitions",
       cancel: "Annuler",
-      validationErrors: "{count} erreurs de validation",
-      importing: "Import des Acquisitions...",
-      progress: "{current} sur {total} traités",
-      complete: "Import Terminé",
-      successMessage: "{count} acquisitions importées avec succès",
-      issuesMessage: "{count} lignes ont eu des problèmes",
-      importMore: "Importer Plus",
       viewAccessions: "Voir les Acquisitions",
       tableHeaders: {
         number: "#",
@@ -4296,5 +4250,45 @@ export default {
       selectDisposition: "ex. Vendu à un collectionneur privé",
       addNotes: "Notes supplémentaires sur cette désaccession...",
     },
+  },
+  trackedImport: {
+    validationTitle: "Rapport de validation",
+    validationSummary: "{valid} lignes valides, {errors} en erreur",
+    backToMapping: "Retour au mappage",
+    backToValidation: "Retour à la validation",
+    continueWithErrors:
+      "Continuer ({count} lignes en erreur seront enregistrées comme échouées)",
+    validationErrors: "{count} erreurs de validation",
+    rowsPassed: "{count} lignes validées",
+    rowsWillFail:
+      "{count} lignes contiennent des erreurs et seront enregistrées comme lignes en échec, téléchargeables et corrigeables",
+    progressTitle: "Import en cours…",
+    progressDetail:
+      "{attempted} sur {total} lignes traitées · {accepted} acceptées · {failed} en échec",
+    cancelImport: "Annuler l'import",
+    cancelling: "Arrêt après le lot en cours…",
+    completeTitle: "Import terminé",
+    cancelledTitle: "Import annulé",
+    interruptedTitle: "Import interrompu",
+    outcome:
+      "{accepted} acceptées, {failed} en échec ({attempted} sur {total} lignes traitées).",
+    resumeHint:
+      "Importez à nouveau le même fichier pour reprendre ; les lignes acceptées sont ignorées.",
+    issues: "{count} lignes ont posé problème",
+    correctionHint:
+      "Corrigez les lignes en échec dans votre fichier sans ajouter, supprimer ni réordonner de lignes, puis choisissez Importer le fichier corrigé. Les lignes acceptées sont conservées et ignorées.",
+    downloadFailedRows: "Télécharger les lignes en échec",
+    downloadFailed: "Impossible de télécharger les lignes en échec.",
+    uploadCorrectedFile: "Importer le fichier corrigé",
+    correctionFailed: "Impossible d'importer le fichier corrigé.",
+    correctionMismatch:
+      "Le fichier corrigé doit conserver les mêmes lignes dans le même ordre. Corrigez les valeurs sans ajouter, supprimer ni réordonner de lignes.",
+    retryFailedRows: "Retenter les lignes en échec",
+    retryFailed: "Impossible de retenter les lignes en échec.",
+    importMore: "Importer d'autres données",
+    importFailed: "L'import a échoué",
+    resumeNotice:
+      "Ce fichier a été importé le {date} : {attempted} sur {total} lignes traitées, {accepted} acceptées, {failed} en échec. La reprise ignore les lignes acceptées.",
+    resumeImport: "Reprendre l'import",
   },
 } as const;
