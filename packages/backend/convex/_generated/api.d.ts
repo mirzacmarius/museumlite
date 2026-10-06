@@ -157,6 +157,7 @@ import type * as utils_locationIntegrity from "../utils/locationIntegrity.js";
 import type * as utils_mediaAssets from "../utils/mediaAssets.js";
 import type * as utils_moduleCatalog from "../utils/moduleCatalog.js";
 import type * as utils_moduleValidators from "../utils/moduleValidators.js";
+import type * as utils_movementValidators from "../utils/movementValidators.js";
 import type * as utils_notificationRecipients from "../utils/notificationRecipients.js";
 import type * as utils_numberGenerator from "../utils/numberGenerator.js";
 import type * as utils_objectDraftData from "../utils/objectDraftData.js";
@@ -349,6 +350,7 @@ declare const fullApi: ApiFromModules<{
   "utils/mediaAssets": typeof utils_mediaAssets;
   "utils/moduleCatalog": typeof utils_moduleCatalog;
   "utils/moduleValidators": typeof utils_moduleValidators;
+  "utils/movementValidators": typeof utils_movementValidators;
   "utils/notificationRecipients": typeof utils_notificationRecipients;
   "utils/numberGenerator": typeof utils_numberGenerator;
   "utils/objectDraftData": typeof utils_objectDraftData;
