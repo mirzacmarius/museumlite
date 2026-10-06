@@ -44,7 +44,7 @@ export function planMediaImportItems<F>(
   acceptedItems: ReadonlySet<number>,
   retainedOriginals: ReadonlyMap<number, Id<"_storage">>,
 ): MediaImportItemAction<F>[] {
-  return files.flatMap((file, index) => {
+  return files.flatMap((file, index): MediaImportItemAction<F>[] => {
     const itemNumber = index + 1;
     if (acceptedItems.has(itemNumber)) return [];
     const storageId = retainedOriginals.get(itemNumber);

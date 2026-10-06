@@ -2848,6 +2848,20 @@ export default {
       viewCollections: "Ver Colecciones",
     },
     mediaImport: {
+      progressDetail:
+        "{attempted} de {total} archivos procesados · {accepted} adjuntados · {failed} requieren atención",
+      outcome:
+        "{accepted} adjuntados, {failed} requieren atención ({attempted} de {total} archivos procesados).",
+      resumeHint:
+        "Elige Reanudar importación para continuar. Los archivos adjuntados se omiten y los originales conservados no se vuelven a subir.",
+      correctionHint:
+        "Los archivos sin asignar se conservan con esta importación. Asígnalos a objetos, o corrige los números de registro y elige Reintentar archivos fallidos.",
+      downloadFailedFiles: "Descargar archivos fallidos",
+      retryFailedFiles: "Reintentar archivos fallidos",
+      resumeNotice:
+        "Estos archivos se importaron el {date}: {attempted} de {total} procesados, {accepted} adjuntados, {failed} requieren atención. Al reanudar se omiten los archivos adjuntados.",
+      sourceName: "{count} archivos multimedia",
+      uploadFailed: "Error al subir",
       title: "Importación de Medios en Masa",
       mappingTitle: "¿Cómo te gustaría mapear tus archivos?",
       csvMapping: "Mapeo CSV",
@@ -2873,15 +2887,8 @@ export default {
       filesSelected: "{count} archivos seleccionados",
       clearAll: "Limpiar Todo",
       startImport: "Iniciar Importación",
-      importing: "Importando Medios...",
-      uploadingProgress: "Subiendo {current} de {total}",
       doNotClose:
         "No cierres esta ventana hasta que se complete la importación.",
-      complete: "Importación Completa",
-      processed: "{count} archivos procesados",
-      mapped: "Mapeado",
-      unmapped: "Sin Mapear",
-      uploadErrors: "Errores de Subida",
       reviewUnmapped: "Revisar {count} Archivos Sin Mapear",
       reviewTitle: "Revisar Archivos Sin Mapear",
       filesNeedAttention: "{count} archivos necesitan atención",

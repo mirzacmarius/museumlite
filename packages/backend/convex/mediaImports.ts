@@ -130,15 +130,20 @@ async function resolveObject(
   ).filter((collection) => collection.status !== "deleted");
   if (matches.length === 0) {
     return {
+      collectionId: undefined,
       error: `No object found for accession number ${accessionNumber}`,
-    } as const;
+    };
   }
   if (matches.length > 1) {
     return {
+      collectionId: undefined,
       error: `Accession number ${accessionNumber} matches more than one object`,
-    } as const;
+    };
   }
-  return { collectionId: (matches[0] as Doc<"collections">)._id } as const;
+  return {
+    collectionId: (matches[0] as Doc<"collections">)._id,
+    error: undefined,
+  };
 }
 
 async function resolveTarget(
@@ -148,7 +153,10 @@ async function resolveTarget(
   fileName: string,
 ) {
   if (mediaData.mappingType === "manual") {
-    return { error: "Choose the object for this file" } as const;
+    return {
+      collectionId: undefined,
+      error: "Choose the object for this file",
+    };
   }
   const accessionNumber =
     mediaData.mappingType === "csv"
@@ -159,11 +167,12 @@ async function resolveTarget(
       : extractAccessionFromFilename(fileName);
   if (!accessionNumber) {
     return {
+      collectionId: undefined,
       error:
         mediaData.mappingType === "csv"
           ? "File is not listed in the mapping CSV"
           : "Could not determine accession number from filename",
-    } as const;
+    };
   }
   return await resolveObject(ctx, organizationId, accessionNumber);
 }
@@ -548,13 +557,13 @@ export const recordUploadedFile = mutation({
         mediaData,
         file.fileName,
       );
-      if ("collectionId" in target) {
+      if (target.collectionId) {
         collectionId = target.collectionId;
         mediaFileId = await attachRetainedFile(
           ctx,
           job,
           file,
-          collectionId,
+          target.collectionId,
           userId,
         );
       } else {

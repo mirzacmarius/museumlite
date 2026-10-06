@@ -19,12 +19,15 @@ interface TrackedImportProgressProps {
     | undefined;
   fallbackTotal: number;
   onCancel: () => Promise<void>;
+  /** Overrides the row-oriented progress line, e.g. when items are files. */
+  detail?: string;
 }
 
 export function TrackedImportProgress({
   importJob,
   fallbackTotal,
   onCancel,
+  detail,
 }: TrackedImportProgressProps) {
   const t = useScopedI18n("trackedImport");
   const [cancelling, setCancelling] = useState(false);
@@ -35,12 +38,13 @@ export function TrackedImportProgress({
       <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
       <h2 className="text-xl font-semibold">{t("progressTitle")}</h2>
       <p className="mt-2 text-muted-foreground" aria-live="polite">
-        {t("progressDetail", {
-          attempted: importJob?.attemptedItems ?? 0,
-          total: importJob?.totalItems ?? fallbackTotal,
-          accepted: importJob?.acceptedItems ?? 0,
-          failed: importJob?.failedItems ?? 0,
-        })}
+        {detail ??
+          t("progressDetail", {
+            attempted: importJob?.attemptedItems ?? 0,
+            total: importJob?.totalItems ?? fallbackTotal,
+            accepted: importJob?.acceptedItems ?? 0,
+            failed: importJob?.failedItems ?? 0,
+          })}
       </p>
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
         <div
