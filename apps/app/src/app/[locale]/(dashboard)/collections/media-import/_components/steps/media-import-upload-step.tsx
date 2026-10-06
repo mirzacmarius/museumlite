@@ -3,7 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { cn } from "@v1/ui/utils";
 import { FileImage, FileSpreadsheet, Trash2, Upload, X } from "lucide-react";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { PermissionGate } from "@/components/permission-gate";
 import type { MediaImportState } from "../media-import-types";
 
@@ -20,6 +20,8 @@ interface MediaImportUploadStepProps {
   onReset: () => void;
   onClearCsvFile: () => void;
   onClearMediaFiles: () => void;
+  /** Offer to resume an earlier import of the same files. */
+  notice?: ReactNode;
 }
 
 export function MediaImportUploadStep({
@@ -35,6 +37,7 @@ export function MediaImportUploadStep({
   onReset,
   onClearCsvFile,
   onClearMediaFiles,
+  notice,
 }: MediaImportUploadStepProps) {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -164,6 +167,8 @@ export function MediaImportUploadStep({
           </div>
         )}
       </div>
+
+      {notice}
 
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={onReset}>

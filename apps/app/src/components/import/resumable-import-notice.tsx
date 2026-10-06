@@ -38,20 +38,35 @@ export function ResumableImportNotice({
   if (!job || job.totalItems !== rowCount) return null;
 
   return (
+    <ResumableImportJobNotice
+      message={t("resumeNotice", {
+        date: new Date(job.createdAt).toLocaleString(),
+        attempted: job.attemptedItems,
+        total: job.totalItems,
+        accepted: job.acceptedItems,
+        failed: job.failedItems,
+      })}
+      onResume={() => onResume(job._id)}
+    />
+  );
+}
+
+/** Presentation of a resumable earlier import; callers supply the message. */
+export function ResumableImportJobNotice({
+  message,
+  onResume,
+}: {
+  message: string;
+  onResume: () => void;
+}) {
+  const t = useScopedI18n("trackedImport");
+  return (
     <div className="flex flex-col gap-3 rounded-lg border border-primary/40 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2 text-sm">
         <History className="mt-0.5 size-4 shrink-0 text-primary" />
-        <span>
-          {t("resumeNotice", {
-            date: new Date(job.createdAt).toLocaleString(),
-            attempted: job.attemptedItems,
-            total: job.totalItems,
-            accepted: job.acceptedItems,
-            failed: job.failedItems,
-          })}
-        </span>
+        <span>{message}</span>
       </div>
-      <Button onClick={() => onResume(job._id)}>{t("resumeImport")}</Button>
+      <Button onClick={onResume}>{t("resumeImport")}</Button>
     </div>
   );
 }

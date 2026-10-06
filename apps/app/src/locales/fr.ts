@@ -2968,6 +2968,20 @@ export default {
       viewCollections: "Voir les Collections",
     },
     mediaImport: {
+      progressDetail:
+        "{attempted} sur {total} fichiers traités · {accepted} rattachés · {failed} à vérifier",
+      outcome:
+        "{accepted} rattachés, {failed} à vérifier ({attempted} sur {total} fichiers traités).",
+      resumeHint:
+        "Choisissez Reprendre l'import pour continuer. Les fichiers rattachés sont ignorés et les originaux conservés ne sont pas renvoyés.",
+      correctionHint:
+        "Les fichiers non associés sont conservés avec cet import. Associez-les à des objets, ou corrigez les numéros d'inventaire puis choisissez Réessayer les fichiers en échec.",
+      downloadFailedFiles: "Télécharger les fichiers en échec",
+      retryFailedFiles: "Réessayer les fichiers en échec",
+      resumeNotice:
+        "Ces fichiers ont été importés le {date} : {attempted} sur {total} traités, {accepted} rattachés, {failed} à vérifier. La reprise ignore les fichiers rattachés.",
+      sourceName: "{count} fichiers média",
+      uploadFailed: "Échec de l'envoi",
       title: "Import Média en Masse",
       mappingTitle: "Comment souhaitez-vous mapper vos fichiers ?",
       csvMapping: "Mappage CSV",
@@ -2993,14 +3007,7 @@ export default {
       filesSelected: "{count} fichiers sélectionnés",
       clearAll: "Tout Effacer",
       startImport: "Démarrer l'Import",
-      importing: "Importation de Médias...",
-      uploadingProgress: "Téléchargement de {current} sur {total}",
       doNotClose: "Ne fermez pas cette fenêtre jusqu'à la fin de l'import.",
-      complete: "Import Terminé",
-      processed: "{count} fichiers traités",
-      mapped: "Mappé",
-      unmapped: "Non Mappé",
-      uploadErrors: "Erreurs de Téléchargement",
       reviewUnmapped: "Examiner {count} Fichiers Non Mappés",
       reviewTitle: "Examiner les Fichiers Non Mappés",
       filesNeedAttention: "{count} fichiers nécessitent attention",

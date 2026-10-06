@@ -2930,6 +2930,20 @@ export default {
       viewCollections: "Se Samlinger",
     },
     mediaImport: {
+      progressDetail:
+        "{attempted} av {total} filer forsøkt · {accepted} knyttet · {failed} trenger oppfølging",
+      outcome:
+        "{accepted} knyttet, {failed} trenger oppfølging ({attempted} av {total} filer forsøkt).",
+      resumeHint:
+        "Velg Gjenoppta import for å fortsette. Knyttede filer hoppes over, og beholdte originaler lastes ikke opp på nytt.",
+      correctionHint:
+        "Filer uten treff beholdes i denne importen. Knytt dem til objekter, eller rett aksesjonsnumrene og velg Prøv mislykkede filer igjen.",
+      downloadFailedFiles: "Last ned mislykkede filer",
+      retryFailedFiles: "Prøv mislykkede filer igjen",
+      resumeNotice:
+        "Disse filene ble importert {date}: {attempted} av {total} forsøkt, {accepted} knyttet, {failed} trenger oppfølging. Gjenopptak hopper over knyttede filer.",
+      sourceName: "{count} mediefiler",
+      uploadFailed: "Opplasting mislyktes",
       title: "Masseimport av Media",
       mappingTitle: "Hvordan vil du kartlegge filene dine?",
       csvMapping: "CSV-kartlegging",
@@ -2955,14 +2969,7 @@ export default {
       filesSelected: "{count} filer valgt",
       clearAll: "Fjern Alle",
       startImport: "Start Import",
-      importing: "Importerer Media...",
-      uploadingProgress: "Laster opp {current} av {total}",
       doNotClose: "Ikke lukk dette vinduet før importen er fullført.",
-      complete: "Import Fullført",
-      processed: "Behandlet {count} filer",
-      mapped: "Kartlagt",
-      unmapped: "Ikke Kartlagt",
-      uploadErrors: "Opplastingsfeil",
       reviewUnmapped: "Gjennomgå {count} Ikke-kartlagte Filer",
       reviewTitle: "Gjennomgå Ikke-kartlagte Filer",
       filesNeedAttention: "{count} filer trenger oppmerksomhet",

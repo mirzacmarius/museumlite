@@ -2595,6 +2595,20 @@ export default {
       viewCollections: "View Collections",
     },
     mediaImport: {
+      progressDetail:
+        "{attempted} of {total} files attempted · {accepted} attached · {failed} need attention",
+      outcome:
+        "{accepted} attached, {failed} need attention ({attempted} of {total} files attempted).",
+      resumeHint:
+        "Choose Resume import to continue. Attached files are skipped and kept originals are not uploaded again.",
+      correctionHint:
+        "Unmatched files are kept with this import. Map them to objects, or fix the accession numbers and choose Retry failed files.",
+      downloadFailedFiles: "Download failed files",
+      retryFailedFiles: "Retry failed files",
+      resumeNotice:
+        "These files were imported on {date}: {attempted} of {total} attempted, {accepted} attached, {failed} need attention. Resuming skips attached files.",
+      sourceName: "{count} media files",
+      uploadFailed: "Upload failed",
       title: "Bulk Media Import",
       mappingTitle: "How would you like to map your files?",
       csvMapping: "CSV Mapping",
@@ -2620,14 +2634,7 @@ export default {
       filesSelected: "{count} files selected",
       clearAll: "Clear All",
       startImport: "Start Import",
-      importing: "Importing Media...",
-      uploadingProgress: "Uploading {current} of {total}",
       doNotClose: "Do not close this window until the import is complete.",
-      complete: "Import Complete",
-      processed: "Processed {count} files",
-      mapped: "Mapped",
-      unmapped: "Unmapped",
-      uploadErrors: "Upload Errors",
       reviewUnmapped: "Review {count} Unmapped Files",
       reviewTitle: "Review Unmapped Files",
       filesNeedAttention: "{count} files need attention",
