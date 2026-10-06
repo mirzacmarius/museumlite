@@ -116,6 +116,7 @@ import type * as utils_accountProfile from "../utils/accountProfile.js";
 import type * as utils_authorizationContext from "../utils/authorizationContext.js";
 import type * as utils_authorizedCollectionBatch from "../utils/authorizedCollectionBatch.js";
 import type * as utils_batchLookup from "../utils/batchLookup.js";
+import type * as utils_catalogObjects from "../utils/catalogObjects.js";
 import type * as utils_collectionDetailLifecycle from "../utils/collectionDetailLifecycle.js";
 import type * as utils_collectionDisplayHelpers from "../utils/collectionDisplayHelpers.js";
 import type * as utils_collectionDisposition from "../utils/collectionDisposition.js";
@@ -307,6 +308,7 @@ declare const fullApi: ApiFromModules<{
   "utils/authorizationContext": typeof utils_authorizationContext;
   "utils/authorizedCollectionBatch": typeof utils_authorizedCollectionBatch;
   "utils/batchLookup": typeof utils_batchLookup;
+  "utils/catalogObjects": typeof utils_catalogObjects;
   "utils/collectionDetailLifecycle": typeof utils_collectionDetailLifecycle;
   "utils/collectionDisplayHelpers": typeof utils_collectionDisplayHelpers;
   "utils/collectionDisposition": typeof utils_collectionDisposition;

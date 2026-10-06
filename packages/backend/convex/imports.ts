@@ -1,38 +1,53 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { syncCollectionOptionUsages } from "./utils/collectionOptionUsages";
+import { mutation, type QueryCtx, query } from "./_generated/server";
+import { requireAccountAdministration } from "./utils/accountAdministration";
+import {
+  buildAccountCreateDocument,
+  validateAccountProfileForCreate,
+} from "./utils/accountProfile";
+import { createImportedCatalogObject } from "./utils/catalogObjects";
 import {
   collectionsToDublinCore,
   fromDublinCore,
   fromDublinCoreXML,
   toDublinCoreXML,
 } from "./utils/dublinCore";
-import { enforceExportQuota, recordExportUsage } from "./utils/featureGates";
+import {
+  enforceExportQuota,
+  recordExportUsage,
+  requireModuleEnabled,
+} from "./utils/featureGates";
 import { toJSON, toXML } from "./utils/formatConverters";
 import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
 import {
-  applyImportJobProgress,
-  getStoredRowResult,
-  type ImportRowResult,
+  type ImportEntityType,
   importEntityTypeValidator,
   importJobViewFields,
   importRowResultValidator,
+  MAX_IMPORT_BATCH_ROWS,
   ROW_TRACKED_ENTITY_TYPES,
   requireWritableImportJob,
-  resolveSourceRowNumbers,
-  storeRowOutcome,
+  runTrackedImportBatch,
   toImportJobView,
-  toRowResult,
   validateImportJobTotal,
 } from "./utils/importJobs";
-import { normalizeAccessionImportRow } from "./utils/importRows";
+import {
+  normalizeAccessionImportRow,
+  parseImportDate,
+  parseImportDecimal,
+} from "./utils/importRows";
 import { getTemplate, listTemplates } from "./utils/legacyTemplates";
+import {
+  generateNextAccountNumber,
+  generateNextLoanNumber,
+} from "./utils/numberGenerator";
 import {
   hasPermission,
   requireLocationAdminPermission,
@@ -46,21 +61,6 @@ import {
 } from "./utils/spectrum";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
-
-function parseDate(value: string): number {
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) {
-    return Date.now();
-  }
-  return parsed;
-}
-
-function parseCost(value: string): number | undefined {
-  if (!value || value.trim() === "") return undefined;
-  const cleaned = value.replace(/[^0-9.-]/g, "");
-  const num = Number.parseFloat(cleaned);
-  return Number.isNaN(num) ? undefined : num;
-}
 
 function normalizeLocationCode(locationCode: string) {
   return locationCode.trim().toLowerCase();
@@ -78,6 +78,94 @@ function validateLocationCode(locationCode: string) {
     locationCode: trimmedLocationCode,
     locationCodeNormalized: normalizeLocationCode(trimmedLocationCode),
   };
+}
+
+const IMPORT_ACCOUNT_TYPES = [
+  "lender",
+  "borrower",
+  "both",
+  "institution",
+  "patron",
+] as const;
+
+function isImportAccountType(
+  value: string | undefined,
+): value is (typeof IMPORT_ACCOUNT_TYPES)[number] {
+  return IMPORT_ACCOUNT_TYPES.some((type) => type === value);
+}
+
+function groupByLowerName<T extends { _id: string; name: string }>(
+  records: T[],
+) {
+  const byName = new Map<string, Pick<T, "_id" | "name">[]>();
+  for (const record of records) {
+    const key = record.name.trim().toLowerCase();
+    byName.set(key, [...(byName.get(key) ?? []), record]);
+  }
+  return byName;
+}
+
+/** Resolves a name to exactly one record; ambiguity is an error, not a guess. */
+function resolveUniqueName<Id extends string>(
+  byName: Map<string, { _id: Id; name: string }[]>,
+  name: string,
+  label: string,
+) {
+  const matches = byName.get(name.trim().toLowerCase()) ?? [];
+  if (matches.length === 0) {
+    throw new Error(
+      `${label[0]?.toUpperCase()}${label.slice(1)} "${name}" not found`,
+    );
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `"${name}" matches more than one ${label}. Rename one or assign it after import.`,
+    );
+  }
+  return matches[0] as { _id: Id; name: string };
+}
+
+const importBatchResultValidator = v.object({
+  processed: v.number(),
+  errors: v.array(v.string()),
+  results: v.array(importRowResultValidator),
+});
+
+/** Permissions needed to run or inspect an import of each record type. */
+const IMPORT_PERMISSIONS: Record<ImportEntityType, string[]> = {
+  objects: ["collections.create"],
+  accessions: ["collections.create"],
+  locations: ["locations.create", "organization.manage_settings"],
+  accounts: ["accounts.write"],
+  loans: ["loans.create"],
+};
+
+function importPermissions(entityType: ImportEntityType | undefined) {
+  // Legacy and media jobs predate entity types and stay collection-scoped.
+  return entityType ? IMPORT_PERMISSIONS[entityType] : ["collections.create"];
+}
+
+async function canManageImport(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  entityType: ImportEntityType | undefined,
+) {
+  const checks = await Promise.all(
+    importPermissions(entityType).map((permission) =>
+      hasPermission(ctx, organizationId, permission),
+    ),
+  );
+  return checks.every(Boolean);
+}
+
+async function requireImportPermission(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  entityType: ImportEntityType | undefined,
+) {
+  for (const permission of importPermissions(entityType)) {
+    await requirePermission(ctx, organizationId, permission);
+  }
 }
 
 function getFallbackLocationCode(locationId: Id<"locations">) {
@@ -102,13 +190,11 @@ export const createImportJob = mutation({
   },
   returns: v.id("importJobs"),
   handler: async (ctx, args) => {
-    const [userId] = await Promise.all([
-      getAuthUserId(ctx),
-      requirePermission(ctx, args.organizationId, "collections.create"),
-    ] as const);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
+    await requireImportPermission(ctx, args.organizationId, args.entityType);
     validateImportJobTotal(args.totalItems);
     if (
       args.sourceFingerprint !== undefined &&
@@ -152,7 +238,7 @@ export const getImportJob = query({
 
     const job = await ctx.db.get(args.jobId);
     if (!job) return null;
-    if (!(await hasPermission(ctx, job.organizationId, "collections.create"))) {
+    if (!(await canManageImport(ctx, job.organizationId, job.entityType))) {
       return null;
     }
 
@@ -168,11 +254,6 @@ export const listImportJobs = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    if (
-      !(await hasPermission(ctx, args.organizationId, "collections.create"))
-    ) {
-      return [];
-    }
 
     const jobs = await ctx.db
       .query("importJobs")
@@ -181,8 +262,18 @@ export const listImportJobs = query({
       )
       .order("desc")
       .take(20);
-
-    return jobs.map(toImportJobView);
+    const allowed = new Map<ImportEntityType | undefined, boolean>();
+    const visible: ReturnType<typeof toImportJobView>[] = [];
+    for (const job of jobs) {
+      if (!allowed.has(job.entityType)) {
+        allowed.set(
+          job.entityType,
+          await canManageImport(ctx, args.organizationId, job.entityType),
+        );
+      }
+      if (allowed.get(job.entityType)) visible.push(toImportJobView(job));
+    }
+    return visible;
   },
 });
 
@@ -195,7 +286,7 @@ export const findResumableImportJob = query({
   },
   returns: v.union(v.object(importJobViewFields), v.null()),
   handler: async (ctx, args) => {
-    await requirePermission(ctx, args.organizationId, "collections.create");
+    await requireImportPermission(ctx, args.organizationId, args.entityType);
     const jobs = await ctx.db
       .query("importJobs")
       .withIndex("by_organization_and_sourceFingerprint", (q) =>
@@ -239,7 +330,7 @@ export const listImportRowResults = query({
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
     if (!job) throw new Error("Import job not found");
-    await requirePermission(ctx, job.organizationId, "collections.create");
+    await requireImportPermission(ctx, job.organizationId, job.entityType);
     const paginationOpts = {
       ...args.paginationOpts,
       numItems: Math.min(Math.max(args.paginationOpts.numItems, 1), 200),
@@ -288,11 +379,7 @@ export const importAccessionsBatch = mutation({
     ),
     batchIndex: v.number(),
   },
-  returns: v.object({
-    processed: v.number(),
-    errors: v.array(v.string()),
-    results: v.array(importRowResultValidator),
-  }),
+  returns: importBatchResultValidator,
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -306,105 +393,57 @@ export const importAccessionsBatch = mutation({
       args.organizationId,
       "accessions",
     );
-    const sourceRows = resolveSourceRowNumbers(args.rows, args.batchIndex);
 
-    const results: ImportRowResult[] = [];
-    const deltas: Parameters<typeof applyImportJobProgress>[2] = [];
-    const correctedRows: number[] = [];
-    // Rows run sequentially so equivalent identifiers in one batch cannot race.
-    for (const { row, rowNumber } of sourceRows) {
-      const previous = await getStoredRowResult(ctx, job._id, rowNumber);
-      if (previous?.status === "accepted") {
-        results.push(toRowResult(previous, true));
-        continue;
-      }
-
-      let outcome: Omit<ImportRowResult, "replayed">;
-      try {
+    return await runTrackedImportBatch(
+      ctx,
+      job,
+      args.rows,
+      args.batchIndex,
+      async (row, rowNumber) => {
         const normalizedRow = normalizeAccessionImportRow(row, rowNumber);
         const rowErrors = normalizedRow.issues.filter(
           (issue) => issue.severity === "error",
         );
-
         if (rowErrors.length > 0 || normalizedRow.normalized === null) {
-          outcome = {
-            rowNumber,
-            status: "failed",
-            errors: rowErrors.map(
-              (issue) => `Row ${rowNumber}: ${issue.message}`,
-            ),
-          };
-        } else {
-          const accessionNumber = row.accessionNumber?.trim()
-            ? row.accessionNumber
-            : await generateConfiguredIdentifier(
-                ctx,
-                args.organizationId,
-                "accession",
-              );
-          const normalizedIdentifier = await ensureIdentifierAvailable(
-            ctx,
-            args.organizationId,
-            "accession",
-            accessionNumber,
-          );
-          const accessionId = await ctx.db.insert("accessions", {
-            organizationId: args.organizationId,
-            accessionNumber,
-            normalizedIdentifier,
-            dateReceived: normalizedRow.normalized.dateReceived,
-            source: normalizedRow.normalized.source,
-            method: normalizedRow.normalized.method,
-            cost: normalizedRow.normalized.cost,
-            notes: normalizedRow.normalized.notes,
-            status: "pending",
-            workflowStep: 0,
-            workflowHistory: [
-              {
-                step: 0,
-                approvedBy: userId,
-                approvedAt: Date.now(),
-                comment: `Imported via CSV (job ${job._id}, row ${rowNumber})`,
-              },
-            ],
-          });
-          outcome = {
-            rowNumber,
-            status: "accepted",
-            recordId: accessionId,
-            identifier: accessionNumber,
-            errors: [],
-          };
+          throw new Error(rowErrors.map((issue) => issue.message).join("; "));
         }
-      } catch (err) {
-        outcome = {
-          rowNumber,
-          status: "failed",
-          errors: [
-            `Row ${rowNumber}: ${err instanceof Error ? err.message : "Unknown error"}`,
+
+        const accessionNumber = row.accessionNumber?.trim()
+          ? row.accessionNumber
+          : await generateConfiguredIdentifier(
+              ctx,
+              args.organizationId,
+              "accession",
+            );
+        const normalizedIdentifier = await ensureIdentifierAvailable(
+          ctx,
+          args.organizationId,
+          "accession",
+          accessionNumber,
+        );
+        const accessionId = await ctx.db.insert("accessions", {
+          organizationId: args.organizationId,
+          accessionNumber,
+          normalizedIdentifier,
+          dateReceived: normalizedRow.normalized.dateReceived,
+          source: normalizedRow.normalized.source,
+          method: normalizedRow.normalized.method,
+          cost: normalizedRow.normalized.cost,
+          notes: normalizedRow.normalized.notes,
+          status: "pending",
+          workflowStep: 0,
+          workflowHistory: [
+            {
+              step: 0,
+              approvedBy: userId,
+              approvedAt: Date.now(),
+              comment: `Imported via CSV (job ${job._id}, row ${rowNumber})`,
+            },
           ],
-        };
-      }
-
-      deltas.push(await storeRowOutcome(ctx, job, previous, outcome));
-      if (previous && outcome.status === "accepted") {
-        correctedRows.push(rowNumber);
-      }
-      results.push({ ...outcome, replayed: false });
-    }
-
-    const errors = results.flatMap((result) =>
-      result.replayed ? [] : result.errors,
+        });
+        return { recordId: accessionId, identifier: accessionNumber };
+      },
     );
-    await applyImportJobProgress(ctx, job._id, deltas, errors, correctedRows);
-
-    return {
-      processed: results.filter(
-        (result) => result.status === "accepted" && !result.replayed,
-      ).length,
-      errors,
-      results,
-    };
   },
 });
 
@@ -425,7 +464,7 @@ export const cancelImportJob = mutation({
       throw new Error("Import job not found");
     }
 
-    await requirePermission(ctx, job.organizationId, "collections.create");
+    await requireImportPermission(ctx, job.organizationId, job.entityType);
 
     if (
       job.status === "pending" ||
@@ -786,6 +825,7 @@ export const importLocationsBatch = mutation({
     jobId: v.id("importJobs"),
     rows: v.array(
       v.object({
+        rowNumber: v.optional(v.number()),
         name: v.string(),
         locationCode: v.string(),
         type: v.string(),
@@ -797,29 +837,24 @@ export const importLocationsBatch = mutation({
     ),
     batchIndex: v.number(),
   },
-  returns: v.object({
-    processed: v.number(),
-    errors: v.array(v.string()),
-  }),
+  returns: importBatchResultValidator,
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const [, job] = await Promise.all([
-      requireLocationAdminPermission(
-        ctx,
-        args.organizationId,
-        "locations.create",
-      ),
-      ctx.db.get(args.jobId),
-    ]);
-    if (!job || job.organizationId !== args.organizationId) {
-      throw new Error("Import job not found");
-    }
-
-    await ctx.db.patch(args.jobId, { status: "processing" });
+    await requireLocationAdminPermission(
+      ctx,
+      args.organizationId,
+      "locations.create",
+    );
+    const job = await requireWritableImportJob(
+      ctx,
+      args.jobId,
+      args.organizationId,
+      "locations",
+    );
 
     const existingLocations = await ctx.db
       .query("locations")
@@ -827,112 +862,76 @@ export const importLocationsBatch = mutation({
         q.eq("organizationId", args.organizationId),
       )
       .collect();
-
-    const locationNameMap = new Map(
-      existingLocations.map((l) => [l.name.toLowerCase(), l._id]),
-    );
-    const siblingLocationCodeMap = new Set(
+    const locationsByName = groupByLowerName(existingLocations);
+    const siblingLocationCodes = new Set(
       existingLocations.map(
         (location) =>
           `${location.parentLocationId ?? "root"}:${location.locationCodeNormalized}`,
       ),
     );
+    let nextSortOrder = existingLocations.length;
 
-    const errors: string[] = [];
-    let processed = 0;
-
-    for (let i = 0; i < args.rows.length; i++) {
-      const row = args.rows[i];
-      if (!row) continue;
-
-      const rowNum = args.batchIndex * 50 + i + 2;
-
-      try {
-        if (!row.name || row.name.trim() === "") {
-          errors.push(`Row ${rowNum}: Name is required`);
-          continue;
-        }
-
-        if (!row.type || row.type.trim() === "") {
-          errors.push(`Row ${rowNum}: Type is required`);
-          continue;
-        }
-
-        let locationCode: string;
-        let locationCodeNormalized: string;
-        try {
-          const validatedLocationCode = validateLocationCode(row.locationCode);
-          locationCode = validatedLocationCode.locationCode;
-          locationCodeNormalized = validatedLocationCode.locationCodeNormalized;
-        } catch (error) {
-          errors.push(
-            `Row ${rowNum}: ${error instanceof Error ? error.message : "Invalid location ID"}`,
-          );
-          continue;
-        }
+    return await runTrackedImportBatch(
+      ctx,
+      job,
+      args.rows,
+      args.batchIndex,
+      async (row) => {
+        const name = row.name.trim();
+        if (!name) throw new Error("Name is required");
+        const type = row.type.trim();
+        if (!type) throw new Error("Type is required");
+        const { locationCode, locationCodeNormalized } = validateLocationCode(
+          row.locationCode,
+        );
 
         let parentLocationId: Id<"locations"> | undefined;
-        if (row.parentLocation) {
-          const parentId = locationNameMap.get(
-            row.parentLocation.toLowerCase(),
-          );
-          if (!parentId) {
-            errors.push(
-              `Row ${rowNum}: Parent location "${row.parentLocation}" not found`,
-            );
-            continue;
-          }
-          parentLocationId = parentId;
+        if (row.parentLocation?.trim()) {
+          parentLocationId = resolveUniqueName(
+            locationsByName,
+            row.parentLocation,
+            "parent location",
+          )._id;
         }
 
         const siblingCodeKey = `${parentLocationId ?? "root"}:${locationCodeNormalized}`;
-        if (siblingLocationCodeMap.has(siblingCodeKey)) {
-          errors.push(
-            `Row ${rowNum}: Location ID already exists in this parent location`,
-          );
-          continue;
+        if (siblingLocationCodes.has(siblingCodeKey)) {
+          throw new Error("Location ID already exists in this parent location");
         }
 
-        const capacity = row.capacity
-          ? Number.parseInt(row.capacity, 10)
-          : undefined;
+        let capacity: number | undefined;
+        if (row.capacity?.trim()) {
+          const parsed = parseImportDecimal(row.capacity);
+          if (parsed === null || !Number.isInteger(parsed) || parsed < 0) {
+            throw new Error("Capacity must be a whole number of 0 or more");
+          }
+          capacity = parsed;
+        }
 
-        const newLocId = await ctx.db.insert("locations", {
+        const location = {
           organizationId: args.organizationId,
-          name: row.name.trim(),
+          name,
           locationCode,
           locationCodeNormalized,
-          type: row.type.trim(),
+          type,
           parentLocationId,
-          address: row.address?.trim(),
-          capacity: Number.isNaN(capacity ?? 0) ? undefined : capacity,
-          notes: row.notes?.trim(),
+          address: row.address?.trim() || undefined,
+          capacity,
+          notes: row.notes?.trim() || undefined,
           isActive: true,
-          sortOrder: existingLocations.length + processed,
-        });
-
-        locationNameMap.set(row.name.toLowerCase(), newLocId);
-        siblingLocationCodeMap.add(siblingCodeKey);
-        processed++;
-      } catch (err) {
-        errors.push(
-          `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
-      }
-    }
-
-    const newProcessedItems = job.processedItems + processed;
-    const newProgress = Math.round((newProcessedItems / job.totalItems) * 100);
-    const allErrors = [...(job.errors || []), ...errors];
-
-    await ctx.db.patch(args.jobId, {
-      processedItems: newProcessedItems,
-      progress: newProgress,
-      errors: allErrors.slice(-100),
-      status: newProcessedItems >= job.totalItems ? "completed" : "processing",
-    });
-
-    return { processed, errors };
+          sortOrder: nextSortOrder,
+        };
+        const locationId = await ctx.db.insert("locations", location);
+        nextSortOrder += 1;
+        siblingLocationCodes.add(siblingCodeKey);
+        const key = name.toLowerCase();
+        locationsByName.set(key, [
+          ...(locationsByName.get(key) ?? []),
+          { _id: locationId, name },
+        ]);
+        return { recordId: locationId, identifier: locationCode };
+      },
+    );
   },
 });
 
@@ -942,6 +941,7 @@ export const importAccountsBatch = mutation({
     jobId: v.id("importJobs"),
     rows: v.array(
       v.object({
+        rowNumber: v.optional(v.number()),
         accountNumber: v.optional(v.string()),
         accountType: v.string(),
         businessName: v.optional(v.string()),
@@ -960,113 +960,84 @@ export const importAccountsBatch = mutation({
     ),
     batchIndex: v.number(),
   },
-  returns: v.object({
-    processed: v.number(),
-    errors: v.array(v.string()),
-  }),
+  returns: importBatchResultValidator,
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    await requirePermission(
+    // Same gates as creating an account by hand.
+    await requireModuleEnabled(ctx, args.organizationId, "accounts");
+    await requirePermission(ctx, args.organizationId, "accounts.write");
+    const job = await requireWritableImportJob(
       ctx,
+      args.jobId,
       args.organizationId,
-      "organization.manage_settings",
+      "accounts",
     );
-    const [, job] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.create"),
-      ctx.db.get(args.jobId),
-    ]);
-    if (!job || job.organizationId !== args.organizationId) {
-      throw new Error("Import job not found");
-    }
 
-    await ctx.db.patch(args.jobId, { status: "processing" });
+    return await runTrackedImportBatch(
+      ctx,
+      job,
+      args.rows,
+      args.batchIndex,
+      async (row) => {
+        const accountType = row.accountType?.toLowerCase().trim();
+        if (!isImportAccountType(accountType)) {
+          throw new Error(
+            `Invalid accountType "${row.accountType}". Use: ${IMPORT_ACCOUNT_TYPES.join(", ")}`,
+          );
+        }
+        const profile = {
+          ...row,
+          organizationId: args.organizationId,
+          accountType,
+        };
+        validateAccountProfileForCreate(profile);
+        await requireAccountAdministration(ctx, profile);
 
-    const validTypes = ["lender", "borrower", "both", "institution", "patron"];
-
-    const accountImportResults = await Promise.all(
-      args.rows.map(async (row, i) => {
-        if (!row) {
-          return { processed: false, errors: [] as string[] };
+        let accountNumber = row.accountNumber?.trim();
+        if (accountNumber) {
+          const existing = await ctx.db
+            .query("accounts")
+            .withIndex("by_organization_and_accountNumber", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("accountNumber", accountNumber as string),
+            )
+            .first();
+          if (existing) {
+            throw new Error(
+              `Account number ${accountNumber} is already in use`,
+            );
+          }
+        } else {
+          accountNumber = await generateNextAccountNumber(
+            ctx,
+            args.organizationId,
+          );
         }
 
-        const rowNum = args.batchIndex * 50 + i + 2;
-
-        try {
-          const accountType = row.accountType?.toLowerCase().trim();
-          if (!accountType || !validTypes.includes(accountType)) {
-            return {
-              processed: false,
-              errors: [
-                `Row ${rowNum}: Invalid accountType "${row.accountType}". Use: lender, borrower, both, institution, or patron`,
-              ],
-            };
-          }
-
-          const accountNumber =
-            row.accountNumber || `ACC-${Date.now()}-${args.batchIndex}-${i}`;
-
-          await ctx.db.insert("accounts", {
-            organizationId: args.organizationId,
+        const accountId = await ctx.db.insert(
+          "accounts",
+          buildAccountCreateDocument(profile, {
             accountNumber,
-            accountType: accountType as
-              | "lender"
-              | "borrower"
-              | "both"
-              | "institution"
-              | "patron",
-            businessName: row.businessName?.trim(),
-            firstName: row.firstName?.trim(),
-            lastName: row.lastName?.trim(),
-            email: row.email?.trim(),
-            phone: row.phone?.trim(),
-            address: row.address?.trim(),
-            city: row.city?.trim(),
-            zipCode: row.zipCode?.trim(),
-            country: row.country?.trim(),
-            contactPerson: row.contactPerson?.trim(),
-            contactEmail: row.contactEmail?.trim(),
-            notes: row.notes?.trim(),
             createdBy: userId,
             createdAt: Date.now(),
-          });
-
-          return { processed: true, errors: [] as string[] };
-        } catch (err) {
-          return {
-            processed: false,
-            errors: [
-              `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-            ],
-          };
-        }
-      }),
+          }),
+        );
+        await ctx.runMutation(internal.audit.logAction, {
+          organizationId: args.organizationId,
+          userId,
+          action: "created_account",
+          entityType: "account",
+          entityId: accountId,
+          changes: { accountType, accountNumber, source: "CSV import" },
+        });
+        return { recordId: accountId, identifier: accountNumber };
+      },
     );
-
-    const errors: string[] = [];
-    let processed = 0;
-    for (const result of accountImportResults) {
-      errors.push(...result.errors);
-      if (result.processed) {
-        processed++;
-      }
-    }
-
-    const newProcessedItems = job.processedItems + processed;
-    const newProgress = Math.round((newProcessedItems / job.totalItems) * 100);
-    const allErrors = [...(job.errors || []), ...errors];
-
-    await ctx.db.patch(args.jobId, {
-      processedItems: newProcessedItems,
-      progress: newProgress,
-      errors: allErrors.slice(-100),
-      status: newProcessedItems >= job.totalItems ? "completed" : "processing",
-    });
-
-    return { processed, errors };
   },
 });
 
@@ -1170,6 +1141,7 @@ export const importObjectsBatch = mutation({
     jobId: v.id("importJobs"),
     rows: v.array(
       v.object({
+        rowNumber: v.optional(v.number()),
         accessionNumber: v.optional(v.string()),
         title: v.string(),
         alternativeTitle: v.optional(v.string()),
@@ -1191,143 +1163,71 @@ export const importObjectsBatch = mutation({
     ),
     batchIndex: v.number(),
   },
-  returns: v.object({
-    processed: v.number(),
-    errors: v.array(v.string()),
-  }),
+  returns: importBatchResultValidator,
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const [, job] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.create"),
-      ctx.db.get(args.jobId),
+    await requirePermission(ctx, args.organizationId, "collections.create");
+    const job = await requireWritableImportJob(
+      ctx,
+      args.jobId,
+      args.organizationId,
+      "objects",
+    );
+
+    const [locations, groups] = await Promise.all([
+      ctx.db
+        .query("locations")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
+      ctx.db
+        .query("collectionGroups")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect(),
     ]);
-    if (!job || job.organizationId !== args.organizationId) {
-      throw new Error("Import job not found");
-    }
+    const locationsByName = groupByLowerName(locations);
+    const groupsByName = groupByLowerName(groups);
 
-    await ctx.db.patch(args.jobId, { status: "processing" });
-
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const locationNameMap = new Map(
-      locations.map((l) => [l.name.toLowerCase(), l._id]),
-    );
-
-    const groups = await ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const groupNameMap = new Map(
-      groups.map((g) => [g.name.toLowerCase(), g._id]),
-    );
-
-    const errors: string[] = [];
-    let processed = 0;
-
-    for (let i = 0; i < args.rows.length; i++) {
-      const row = args.rows[i];
-      if (!row) continue;
-
-      const rowNum = args.batchIndex * 50 + i + 2;
-
-      try {
-        if (!row.title || row.title.trim() === "") {
-          errors.push(`Row ${rowNum}: Title is required`);
-          continue;
-        }
-
-        let currentLocationId: Id<"locations"> | undefined;
-        if (row.location) {
-          currentLocationId = locationNameMap.get(row.location.toLowerCase());
-          if (!currentLocationId) {
-            errors.push(`Row ${rowNum}: Location "${row.location}" not found`);
-            continue;
-          }
-        }
-
-        let collectionGroupId: Id<"collectionGroups"> | undefined;
-        if (row.collectionGroup) {
-          collectionGroupId = groupNameMap.get(
-            row.collectionGroup.toLowerCase(),
-          );
-          if (!collectionGroupId) {
-            errors.push(
-              `Row ${rowNum}: Collection group "${row.collectionGroup}" not found`,
-            );
-            continue;
-          }
-        }
-
-        const accessionNumber = row.accessionNumber?.trim()
-          ? row.accessionNumber
-          : await generateConfiguredIdentifier(
-              ctx,
-              args.organizationId,
-              "catalog",
-            );
-
-        const normalizedIdentifier = await ensureIdentifierAvailable(
-          ctx,
-          args.organizationId,
-          "catalog",
-          accessionNumber,
-        );
-        const collectionId = await ctx.db.insert("collections", {
+    return await runTrackedImportBatch(
+      ctx,
+      job,
+      args.rows,
+      args.batchIndex,
+      async (row, rowNumber) => {
+        if (!row.title.trim()) throw new Error("Title is required");
+        const locationId = row.location?.trim()
+          ? resolveUniqueName(locationsByName, row.location, "location")._id
+          : undefined;
+        const collectionGroupId = row.collectionGroup?.trim()
+          ? resolveUniqueName(
+              groupsByName,
+              row.collectionGroup,
+              "collection group",
+            )._id
+          : undefined;
+        const { location: _location, collectionGroup: _group, ...fields } = row;
+        const created = await createImportedCatalogObject(ctx, {
           organizationId: args.organizationId,
-          accessionNumber,
-          normalizedIdentifier,
-          title: row.title.trim(),
-          alternativeTitle: row.alternativeTitle?.trim(),
-          creator: row.creator?.trim(),
-          objectType: row.objectType?.trim(),
-          objectName: row.objectName?.trim(),
-          culture: row.culture?.trim(),
-          period: row.period?.trim(),
-          dateCreated: row.dateCreated?.trim(),
-          materials: row.materials?.trim(),
-          technique: row.technique?.trim(),
-          dimensions: row.dimensions?.trim(),
-          description: row.description?.trim(),
-          condition: row.condition?.trim(),
-          provenance: row.provenance?.trim(),
-          currentLocationId,
+          userId,
+          accessionNumber: row.accessionNumber,
+          fields,
+          locationId,
           collectionGroupId,
-          status: "active",
-          catalogedBy: userId,
-          catalogedAt: Date.now(),
+          sourceLabel: `CSV import (job ${job._id}, row ${rowNumber})`,
         });
-        await syncCollectionOptionUsages(ctx, collectionId);
-
-        processed++;
-      } catch (err) {
-        errors.push(
-          `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
-      }
-    }
-
-    const newProcessedItems = job.processedItems + processed;
-    const newProgress = Math.round((newProcessedItems / job.totalItems) * 100);
-    const allErrors = [...(job.errors || []), ...errors];
-
-    await ctx.db.patch(args.jobId, {
-      processedItems: newProcessedItems,
-      progress: newProgress,
-      errors: allErrors.slice(-100),
-      status: newProcessedItems >= job.totalItems ? "completed" : "processing",
-    });
-
-    return { processed, errors };
+        return {
+          recordId: created.collectionId,
+          identifier: created.accessionNumber,
+        };
+      },
+    );
   },
 });
 
@@ -1337,131 +1237,87 @@ export const importObjectsDublinCore = mutation({
     jobId: v.id("importJobs"),
     xml: v.string(),
   },
-  returns: v.object({
-    processed: v.number(),
-    errors: v.array(v.string()),
-  }),
+  returns: importBatchResultValidator,
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const [, job] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.create"),
-      ctx.db.get(args.jobId),
-    ]);
-    if (!job || job.organizationId !== args.organizationId) {
-      throw new Error("Import job not found");
-    }
+    await requirePermission(ctx, args.organizationId, "collections.create");
+    let job = await requireWritableImportJob(
+      ctx,
+      args.jobId,
+      args.organizationId,
+      "objects",
+    );
 
     const metadataRecords = fromDublinCoreXML(args.xml);
     if (metadataRecords.length === 0) {
       throw new Error("No valid Dublin Core records found in XML");
     }
+    if (metadataRecords.length > MAX_IMPORT_BATCH_ROWS) {
+      throw new Error(
+        `A Dublin Core file can contain at most ${MAX_IMPORT_BATCH_ROWS} records`,
+      );
+    }
+    if (job.totalItems !== metadataRecords.length) {
+      if (toImportJobView(job).attemptedItems > 0) {
+        throw new Error(
+          "This XML has a different number of records than the original import",
+        );
+      }
+      await ctx.db.patch(job._id, {
+        totalItems: metadataRecords.length,
+        entityType: "objects",
+      });
+      job = { ...job, totalItems: metadataRecords.length };
+    }
 
-    await ctx.db.patch(args.jobId, {
-      status: "processing",
-      totalItems: metadataRecords.length,
-    });
-
-    const rows = metadataRecords.map((metadata) => {
+    // Each record's position in the file is its stable row identity.
+    const rows = metadataRecords.map((metadata, index) => {
       const collection = fromDublinCore(metadata);
       return {
+        rowNumber: index + 1,
         accessionNumber: collection.accessionNumber,
-        title: collection.title ?? metadata.title,
-        alternativeTitle: collection.alternativeTitle,
-        creator: collection.creator,
-        objectType: collection.objectType,
-        objectName: collection.objectName,
-        culture: collection.culture,
-        period: collection.period,
-        dateCreated: collection.dateCreated,
-        materials: collection.materials,
-        technique: collection.technique,
-        dimensions: collection.dimensions,
-        description: collection.description,
-        provenance: collection.provenance,
+        fields: {
+          title: collection.title ?? metadata.title ?? "",
+          alternativeTitle: collection.alternativeTitle,
+          creator: collection.creator,
+          objectType: collection.objectType,
+          objectName: collection.objectName,
+          culture: collection.culture,
+          period: collection.period,
+          dateCreated: collection.dateCreated,
+          materials: collection.materials,
+          technique: collection.technique,
+          dimensions: collection.dimensions,
+          description: collection.description,
+          provenance: collection.provenance,
+        },
       };
     });
 
-    const errors: string[] = [];
-    let processed = 0;
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row) continue;
-
-      const rowNum = i + 1;
-
-      try {
-        if (!row.title || row.title.trim() === "") {
-          errors.push(`Record ${rowNum}: Title is required`);
-          continue;
-        }
-
-        const accessionNumber = row.accessionNumber?.trim()
-          ? row.accessionNumber
-          : await generateConfiguredIdentifier(
-              ctx,
-              args.organizationId,
-              "catalog",
-            );
-
-        const normalizedIdentifier = await ensureIdentifierAvailable(
-          ctx,
-          args.organizationId,
-          "catalog",
-          accessionNumber,
-        );
-        const collectionId = await ctx.db.insert("collections", {
+    return await runTrackedImportBatch(
+      ctx,
+      job,
+      rows,
+      0,
+      async (row, rowNumber) => {
+        if (!row.fields.title.trim()) throw new Error("Title is required");
+        const created = await createImportedCatalogObject(ctx, {
           organizationId: args.organizationId,
-          accessionNumber,
-          normalizedIdentifier,
-          title: row.title.trim(),
-          alternativeTitle: row.alternativeTitle?.trim(),
-          creator: row.creator?.trim(),
-          objectType: row.objectType?.trim(),
-          objectName: row.objectName?.trim(),
-          culture: row.culture?.trim(),
-          period: row.period?.trim(),
-          dateCreated: row.dateCreated?.trim(),
-          materials: row.materials?.trim(),
-          technique: row.technique?.trim(),
-          dimensions: row.dimensions?.trim(),
-          description: row.description?.trim(),
-          provenance: row.provenance?.trim(),
-          status: "active",
-          catalogedBy: userId,
-          catalogedAt: Date.now(),
+          userId,
+          accessionNumber: row.accessionNumber,
+          fields: row.fields,
+          sourceLabel: `Dublin Core import (job ${job._id}, record ${rowNumber})`,
         });
-        await syncCollectionOptionUsages(ctx, collectionId);
-
-        processed++;
-      } catch (err) {
-        errors.push(
-          `Record ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-        );
-      }
-    }
-
-    const newProcessedItems = job.processedItems + processed;
-    const newProgress = Math.round(
-      (newProcessedItems / metadataRecords.length) * 100,
+        return {
+          recordId: created.collectionId,
+          identifier: created.accessionNumber,
+        };
+      },
     );
-    const allErrors = [...(job.errors || []), ...errors];
-
-    await ctx.db.patch(args.jobId, {
-      processedItems: newProcessedItems,
-      progress: newProgress,
-      errors: allErrors.slice(-100),
-      status:
-        newProcessedItems >= metadataRecords.length
-          ? "completed"
-          : "processing",
-    });
-
-    return { processed, errors };
   },
 });
 
@@ -1471,6 +1327,7 @@ export const importLoansBatch = mutation({
     jobId: v.id("importJobs"),
     rows: v.array(
       v.object({
+        rowNumber: v.optional(v.number()),
         loanNumber: v.optional(v.string()),
         type: v.string(),
         lenderBorrowerName: v.string(),
@@ -1484,123 +1341,105 @@ export const importLoansBatch = mutation({
     ),
     batchIndex: v.number(),
   },
-  returns: v.object({
-    processed: v.number(),
-    errors: v.array(v.string()),
-  }),
+  returns: importBatchResultValidator,
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Not authenticated");
     }
 
-    const [, job] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "loans.create"),
-      ctx.db.get(args.jobId),
-    ]);
-    if (!job || job.organizationId !== args.organizationId) {
-      throw new Error("Import job not found");
-    }
-
-    await ctx.db.patch(args.jobId, { status: "processing" });
-
-    const validTypes = ["incoming", "outgoing"];
-
-    const loanImportResults = await Promise.all(
-      args.rows.map(async (row, i) => {
-        if (!row) {
-          return { processed: false, errors: [] as string[] };
-        }
-
-        const rowNum = args.batchIndex * 50 + i + 2;
-
-        try {
-          const loanType = row.type?.toLowerCase().trim();
-          if (!loanType || !validTypes.includes(loanType)) {
-            return {
-              processed: false,
-              errors: [
-                `Row ${rowNum}: Invalid type "${row.type}". Use: incoming or outgoing`,
-              ],
-            };
-          }
-
-          if (!row.lenderBorrowerName || row.lenderBorrowerName.trim() === "") {
-            return {
-              processed: false,
-              errors: [`Row ${rowNum}: Lender/Borrower name is required`],
-            };
-          }
-
-          const startDate = parseDate(row.startDate);
-          const endDate = row.endDate ? parseDate(row.endDate) : undefined;
-          const insuranceValue = parseCost(row.insuranceValue || "");
-
-          const loanNumber =
-            row.loanNumber || `LN-${Date.now()}-${args.batchIndex}-${i}`;
-
-          await ctx.db.insert("loans", {
-            organizationId: args.organizationId,
-            loanNumber,
-            type: loanType as "incoming" | "outgoing",
-            lenderBorrowerName: row.lenderBorrowerName.trim(),
-            lenderBorrowerContact: row.lenderBorrowerContact?.trim(),
-            startDate,
-            endDate,
-            terms: row.terms?.trim(),
-            insuranceValue,
-            notes: row.notes?.trim(),
-            status: "pending",
-            workflowStep: 0,
-            workflowHistory: [
-              {
-                step: 0,
-                approvedBy: userId,
-                approvedAt: Date.now(),
-                comment: "Imported via CSV",
-              },
-            ],
-          });
-
-          return { processed: true, errors: [] as string[] };
-        } catch (err) {
-          return {
-            processed: false,
-            errors: [
-              `Row ${rowNum}: ${err instanceof Error ? err.message : "Unknown error"}`,
-            ],
-          };
-        }
-      }),
+    await requirePermission(ctx, args.organizationId, "loans.create");
+    const job = await requireWritableImportJob(
+      ctx,
+      args.jobId,
+      args.organizationId,
+      "loans",
     );
 
-    const errors: string[] = [];
-    let processed = 0;
-    for (const result of loanImportResults) {
-      errors.push(...result.errors);
-      if (result.processed) {
-        processed++;
-      }
-    }
+    return await runTrackedImportBatch(
+      ctx,
+      job,
+      args.rows,
+      args.batchIndex,
+      async (row, rowNumber) => {
+        const loanType = row.type?.toLowerCase().trim();
+        if (loanType !== "incoming" && loanType !== "outgoing") {
+          throw new Error(
+            `Invalid type "${row.type}". Use: incoming or outgoing`,
+          );
+        }
+        const lenderBorrowerName = row.lenderBorrowerName.trim();
+        if (!lenderBorrowerName) {
+          throw new Error("Lender/Borrower name is required");
+        }
+        const startDate = parseImportDate(row.startDate);
+        if (startDate === null) {
+          throw new Error("Start date must be a date in YYYY-MM-DD format");
+        }
+        let endDate: number | undefined;
+        if (row.endDate?.trim()) {
+          const parsedEnd = parseImportDate(row.endDate);
+          if (parsedEnd === null) {
+            throw new Error("End date must be a date in YYYY-MM-DD format");
+          }
+          if (parsedEnd < startDate) {
+            throw new Error("End date cannot be before the start date");
+          }
+          endDate = parsedEnd;
+        }
+        let insuranceValue: number | undefined;
+        if (row.insuranceValue?.trim()) {
+          const parsedValue = parseImportDecimal(row.insuranceValue);
+          if (parsedValue === null || parsedValue < 0) {
+            throw new Error("Insurance value must be a number of 0 or more");
+          }
+          insuranceValue = parsedValue;
+        }
 
-    const newProcessedItems = job.processedItems + processed;
-    const newProgress = Math.round((newProcessedItems / job.totalItems) * 100);
-    const allErrors = [...(job.errors || []), ...errors];
+        let loanNumber = row.loanNumber?.trim();
+        if (loanNumber) {
+          const existing = await ctx.db
+            .query("loans")
+            .withIndex("by_organization_and_loanNumber", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("loanNumber", loanNumber as string),
+            )
+            .first();
+          if (existing) {
+            throw new Error(`Loan number ${loanNumber} is already in use`);
+          }
+        } else {
+          loanNumber = await generateNextLoanNumber(ctx, args.organizationId);
+        }
 
-    await ctx.db.patch(args.jobId, {
-      processedItems: newProcessedItems,
-      progress: newProgress,
-      errors: allErrors.slice(-100),
-      status: newProcessedItems >= job.totalItems ? "completed" : "processing",
-    });
-
-    return { processed, errors };
+        const loanId = await ctx.db.insert("loans", {
+          organizationId: args.organizationId,
+          loanNumber,
+          type: loanType,
+          lenderBorrowerName,
+          lenderBorrowerContact: row.lenderBorrowerContact?.trim() || undefined,
+          startDate,
+          endDate,
+          terms: row.terms?.trim() || undefined,
+          insuranceValue,
+          notes: row.notes?.trim() || undefined,
+          status: "pending",
+          workflowStep: 0,
+          workflowHistory: [
+            {
+              step: 0,
+              approvedBy: userId,
+              approvedAt: Date.now(),
+              comment: `Imported via CSV (job ${job._id}, row ${rowNumber})`,
+            },
+          ],
+        });
+        return { recordId: loanId, identifier: loanNumber };
+      },
+    );
   },
 });
-
-// ============================================
-// MULTI-FORMAT EXPORT MUTATIONS
-// ============================================
 
 export const exportAccessionsWithFormat = mutation({
   args: {

@@ -3,41 +3,41 @@
 import { Button } from "@v1/ui/button";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import type { ImportState } from "../import-accessions-types";
+import { useScopedI18n } from "@/locales/client";
 
-interface ImportJobProgress {
-  attemptedItems?: number;
-  acceptedItems?: number;
-  failedItems?: number;
-  totalItems?: number;
-  progress?: number;
-  status?: string;
-}
-
-interface ImportAccessionsImportingStepProps {
-  state: ImportState;
-  importJob: ImportJobProgress | null | undefined;
-  t: (key: string, params?: Record<string, string | number>) => string;
+interface TrackedImportProgressProps {
+  importJob:
+    | {
+        status: string;
+        progress: number;
+        totalItems: number;
+        attemptedItems: number;
+        acceptedItems: number;
+        failedItems: number;
+      }
+    | null
+    | undefined;
+  fallbackTotal: number;
   onCancel: () => Promise<void>;
 }
 
-export function ImportAccessionsImportingStep({
-  state,
+export function TrackedImportProgress({
   importJob,
-  t,
+  fallbackTotal,
   onCancel,
-}: ImportAccessionsImportingStepProps) {
+}: TrackedImportProgressProps) {
+  const t = useScopedI18n("trackedImport");
   const [cancelling, setCancelling] = useState(false);
   const cancelled = importJob?.status === "cancelled";
 
   return (
     <div className="mx-auto max-w-md text-center">
       <Loader2 className="mx-auto mb-4 size-12 animate-spin text-primary" />
-      <h2 className="text-xl font-semibold">{t("import.importing")}</h2>
+      <h2 className="text-xl font-semibold">{t("progressTitle")}</h2>
       <p className="mt-2 text-muted-foreground" aria-live="polite">
-        {t("import.progressDetail", {
+        {t("progressDetail", {
           attempted: importJob?.attemptedItems ?? 0,
-          total: importJob?.totalItems ?? state.rows.length,
+          total: importJob?.totalItems ?? fallbackTotal,
           accepted: importJob?.acceptedItems ?? 0,
           failed: importJob?.failedItems ?? 0,
         })}
@@ -62,7 +62,7 @@ export function ImportAccessionsImportingStep({
           }
         }}
       >
-        {cancelled ? t("import.cancelling") : t("import.cancelImport")}
+        {cancelled ? t("cancelling") : t("cancelImport")}
       </Button>
     </div>
   );

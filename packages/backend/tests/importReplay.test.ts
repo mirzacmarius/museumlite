@@ -98,7 +98,11 @@ test("failed rows count as attempted and can be corrected on the same job", asyn
   });
   expect(result.results).toMatchObject([
     { rowNumber: 2, status: "accepted" },
-    { rowNumber: 3, status: "failed", errors: ["Row 3: Invalid date format"] },
+    {
+      rowNumber: 3,
+      status: "failed",
+      errors: [expect.stringContaining("Row 3: Invalid date format")],
+    },
   ]);
   expect(await user.query(api.imports.getImportJob, { jobId })).toMatchObject({
     status: "completed_with_errors",
@@ -113,7 +117,11 @@ test("failed rows count as attempted and can be corrected on the same job", asyn
     paginationOpts: { numItems: 10, cursor: null },
   });
   expect(failures.page).toMatchObject([
-    { rowNumber: 3, status: "failed", errors: ["Row 3: Invalid date format"] },
+    {
+      rowNumber: 3,
+      status: "failed",
+      errors: [expect.stringContaining("Row 3: Invalid date format")],
+    },
   ]);
 
   // Resubmitting the whole corrected file replays row 2 and accepts row 3.

@@ -21,13 +21,11 @@ export function ImportAccessionsPageClient() {
   const [state, setState] = useState<ImportState>(EMPTY_IMPORT_STATE);
 
   const {
+    run,
     handleFileSelect,
     handleSaveMappings,
     handleContinueAfterValidation,
     handleStartImport,
-    handleRetryFailed,
-    handleUploadCorrection,
-    handleCancelImport,
     handleReset,
     downloadTemplate,
     onBackToMapping,
@@ -70,15 +68,13 @@ export function ImportAccessionsPageClient() {
             <ImportAccessionsStepPanels
               state={state}
               t={t}
+              run={run}
               fileInputRef={fileInputRef}
               handleFileSelect={handleFileSelect}
               handleSaveMappings={handleSaveMappings}
               handleReset={handleReset}
               handleContinueAfterValidation={handleContinueAfterValidation}
               handleStartImport={handleStartImport}
-              handleRetryFailed={handleRetryFailed}
-              handleUploadCorrection={handleUploadCorrection}
-              handleCancelImport={handleCancelImport}
               onBackToMapping={onBackToMapping}
               onBackToValidation={onBackToValidation}
             />

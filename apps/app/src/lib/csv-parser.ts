@@ -94,3 +94,34 @@ export async function sha256Hex(text: string): Promise<string> {
     byte.toString(16).padStart(2, "0"),
   ).join("");
 }
+
+export interface CsvObjectRow {
+  rowNumber: number;
+  values: Record<string, string>;
+}
+
+/** Data rows keyed by header, with a row-count limit for browser imports. */
+export function parseCsvObjects(
+  text: string,
+  { maxRows }: { maxRows: number },
+): { headers: string[]; rows: CsvObjectRow[] } {
+  const table = parseCsvTable(text);
+  if (table.records.length === 0) {
+    throw new Error("CSV file has no data rows");
+  }
+  if (table.records.length > maxRows) {
+    throw new Error(
+      `This file has ${table.records.length} rows. Split it into files of at most ${maxRows} rows.`,
+    );
+  }
+  return {
+    headers: table.headers,
+    rows: table.records.map((record) => {
+      const values: Record<string, string> = {};
+      table.headers.forEach((header, index) => {
+        if (header) values[header] = record.values[index] ?? "";
+      });
+      return { rowNumber: record.rowNumber, values };
+    }),
+  };
+}

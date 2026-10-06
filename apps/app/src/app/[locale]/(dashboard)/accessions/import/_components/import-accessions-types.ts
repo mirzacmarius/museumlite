@@ -1,4 +1,3 @@
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FieldMapping } from "@/components/import-field-mapper";
 
 export interface ParsedRow {
@@ -13,13 +12,8 @@ export interface ParsedRow {
 }
 
 export interface ImportState {
-  step:
-    | "upload"
-    | "mapping"
-    | "validation"
-    | "preview"
-    | "importing"
-    | "complete";
+  /** Wizard steps before the import runs; the run itself is tracked separately. */
+  step: "upload" | "mapping" | "validation" | "preview";
   file: File | null;
   rawData: { rowNumber: number; values: Record<string, string> }[];
   /** SHA-256 of the source text; identifies a re-uploaded file. */
@@ -29,7 +23,6 @@ export interface ImportState {
   rows: ParsedRow[];
   validationErrors: string[];
   errors: string[];
-  jobId: Id<"importJobs"> | null;
 }
 
 export const MAX_IMPORT_ROWS = 1000;
@@ -44,7 +37,6 @@ export const EMPTY_IMPORT_STATE: ImportState = {
   rows: [],
   validationErrors: [],
   errors: [],
-  jobId: null,
 };
 
 export const REQUIRED_COLUMNS = ["dateReceived", "source", "method"];

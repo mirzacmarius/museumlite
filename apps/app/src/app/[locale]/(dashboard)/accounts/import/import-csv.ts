@@ -1,0 +1,118 @@
+import { parseCsvTable } from "@/lib/csv-parser";
+
+export interface ParsedRow {
+  /** Line in the source file; the row's stable identity on its import job. */
+  rowNumber: number;
+  accountNumber?: string;
+  accountType: string;
+  businessName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  zipCode?: string;
+  country?: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  notes?: string;
+}
+
+export const MAX_ACCOUNT_IMPORT_ROWS = 1000;
+
+const OPTIONAL_COLUMNS = [
+  "accountNumber",
+  "businessName",
+  "firstName",
+  "lastName",
+  "email",
+  "phone",
+  "address",
+  "city",
+  "zipCode",
+  "country",
+  "contactPerson",
+  "contactEmail",
+  "notes",
+] as const;
+
+const VALID_ACCOUNT_TYPES = new Set([
+  "lender",
+  "borrower",
+  "both",
+  "institution",
+  "patron",
+]);
+
+/**
+ * Parses an account CSV. `fileErrors` stop the import; `rowErrors` are shown
+ * in the preview while the rows are still sent so the server records them as
+ * failed rows that can be corrected on the same import.
+ */
+export function parseAccountCsv(text: string): {
+  rows: ParsedRow[];
+  fileErrors: string[];
+  rowErrors: string[];
+} {
+  let table: ReturnType<typeof parseCsvTable>;
+  try {
+    table = parseCsvTable(text);
+  } catch (error) {
+    return {
+      rows: [],
+      fileErrors: [error instanceof Error ? error.message : "Unreadable CSV"],
+      rowErrors: [],
+    };
+  }
+  if (table.records.length === 0) {
+    return {
+      rows: [],
+      fileErrors: ["CSV must have a header row and at least one data row"],
+      rowErrors: [],
+    };
+  }
+  if (table.records.length > MAX_ACCOUNT_IMPORT_ROWS) {
+    return {
+      rows: [],
+      fileErrors: [
+        `This file has ${table.records.length} rows. Split it into files of at most ${MAX_ACCOUNT_IMPORT_ROWS} rows.`,
+      ],
+      rowErrors: [],
+    };
+  }
+  const columnIndex = new Map(
+    table.headers.map((header, index) => [header.toLowerCase(), index]),
+  );
+  if (!columnIndex.has("accounttype")) {
+    return {
+      rows: [],
+      fileErrors: ["Missing required columns: accountType"],
+      rowErrors: [],
+    };
+  }
+
+  const rows: ParsedRow[] = [];
+  const rowErrors: string[] = [];
+  for (const record of table.records) {
+    const getValue = (column: string) => {
+      const index = columnIndex.get(column.toLowerCase());
+      return index === undefined ? "" : (record.values[index] ?? "");
+    };
+    const row: ParsedRow = {
+      rowNumber: record.rowNumber,
+      accountType: getValue("accountType").toLowerCase(),
+    };
+    for (const column of OPTIONAL_COLUMNS) {
+      const value = getValue(column);
+      if (value) row[column] = value;
+    }
+    if (!VALID_ACCOUNT_TYPES.has(row.accountType)) {
+      rowErrors.push(
+        `Row ${row.rowNumber}: Invalid accountType "${getValue("accountType")}". Use: lender, borrower, both, institution, or patron`,
+      );
+    }
+    rows.push(row);
+  }
+  return { rows, fileErrors: [], rowErrors };
+}

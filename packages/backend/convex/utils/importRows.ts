@@ -62,9 +62,7 @@ function parseOptionalCost(value: string | undefined) {
     return undefined;
   }
 
-  const cleaned = trimmed.replace(/[^0-9.-]/g, "");
-  const parsed = Number.parseFloat(cleaned);
-  return Number.isNaN(parsed) ? null : parsed;
+  return parseImportDecimal(trimmed);
 }
 
 export function normalizeAccessionImportRow(
@@ -96,12 +94,12 @@ export function normalizeAccessionImportRow(
       value: row.dateReceived,
     });
   } else {
-    const parsedDate = Date.parse(trimmedDateReceived);
-    if (Number.isNaN(parsedDate)) {
+    const parsedDate = parseImportDate(trimmedDateReceived);
+    if (parsedDate === null) {
       issues.push({
         row: rowNumber,
         field: "dateReceived",
-        message: "Invalid date format",
+        message: "Invalid date format. Use YYYY-MM-DD",
         severity: "error",
         value: row.dateReceived,
       });
@@ -198,4 +196,43 @@ export function normalizeAccessionImportRow(
       notes: trimOptional(row.notes),
     },
   };
+}
+
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const ISO_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Strict import date: `YYYY-MM-DD` (UTC midnight) or a full ISO 8601 date-time
+ * with an offset. Ambiguous forms such as `01/02/2024` are rejected rather than
+ * guessed, and impossible calendar dates fail. Returns null when invalid.
+ */
+export function parseImportDate(value: string): number | null {
+  const text = value.trim();
+  const match = ISO_DATE.exec(text) ?? ISO_DATE_TIME.exec(text);
+  if (!match) return null;
+  const [year, month, day] = [match[1], match[2], match[3]].map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendar.getUTCFullYear() !== year ||
+    calendar.getUTCMonth() !== month - 1 ||
+    calendar.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  if (ISO_DATE.test(text)) return calendar.getTime();
+  const parsed = Date.parse(text);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+/** Plain decimal (optional thousands commas or currency symbol); null when invalid. */
+export function parseImportDecimal(value: string): number | null {
+  const text = value.trim().replace(/^[$€£¥]\s*/, "");
+  if (!/^-?(\d{1,3}(,\d{3})+|\d+)(\.\d+)?$/.test(text)) return null;
+  const parsed = Number(text.replace(/,/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
 }

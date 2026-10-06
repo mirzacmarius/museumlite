@@ -2005,12 +2005,6 @@ export default {
     rowsReadyToImport: "{count} rader klare til import fra {filename}",
     importLocations: "Importer {count} Plasseringer",
     validationErrors: "{count} valideringsfeil",
-    importingLocations: "Importerer Plasseringer...",
-    processedCount: "{current} av {total} behandlet",
-    importComplete: "Import Fullført",
-    successfullyImported: "Vellykket importert {count} plasseringer",
-    rowsHadIssues: "{count} rader hadde problemer",
-    importMore: "Importer Flere",
     viewLocations: "Se Plasseringer",
     selectOrganizationToImport:
       "Vennligst velg en organisasjon for å importere plasseringer.",
@@ -2036,7 +2030,9 @@ export default {
     },
     importFailed: "Import mislyktes",
     importErrors: {
-      missingHeaderRow: "Mangler overskriftsrad",
+      unreadableFile: "Filen kunne ikke leses som CSV.",
+      tooManyRows: "Del filen i filer med høyst {max} rader.",
+
       csvMustHaveRows: "CSV må ha en overskriftsrad og minst én datarad",
       missingRequiredColumns: "Mangler påkrevde kolonner: {columns}",
       nameRequired: "Navn er påkrevd",
@@ -2821,7 +2817,6 @@ export default {
       previewTitle: "Forhåndsvisning av Import",
       previewDescription: "{count} rader klare til import fra {filename}",
       importButton: "Importer {count} Objekter",
-      validationErrors: "{count} valideringsfeil",
       tableHeaders: {
         number: "#",
         accession: "Aksesjon #",
@@ -2833,12 +2828,6 @@ export default {
       },
       autoAccession: "(auto)",
       showingRows: "Viser 20 av {count} rader",
-      importing: "Importerer Objekter...",
-      progress: "{current} av {total} behandlet",
-      complete: "Import Fullført",
-      successMessage: "Importerte {count} objekter",
-      issuesMessage: "{count} rader hadde problemer",
-      importMore: "Importer Mer",
       viewCollections: "Se Samlinger",
     },
     mediaImport: {
@@ -3996,35 +3985,7 @@ export default {
       unknownSource: "Ukjent kilde",
     },
     import: {
-      progressDetail:
-        "{attempted} av {total} rader forsøkt · {accepted} godtatt · {failed} feilet",
-      cancelImport: "Avbryt import",
-      cancelling: "Stopper etter gjeldende parti…",
-      cancelledTitle: "Import avbrutt",
-      interruptedTitle: "Import avbrutt underveis",
-      outcome:
-        "{accepted} godtatt, {failed} feilet ({attempted} av {total} rader forsøkt).",
-      resumeHint:
-        "Last opp den samme filen igjen for å fortsette; godtatte rader hoppes over.",
-      downloadFailedRows: "Last ned feilede rader",
-      downloadFailed: "Kunne ikke laste ned feilede rader.",
-      retryFailedRows: "Prøv feilede rader på nytt",
       backToValidation: "Tilbake til validering",
-      startNewImport: "Start ny import",
-      resumeNotice:
-        "Denne filen ble importert {date}: {attempted} av {total} rader forsøkt, {accepted} godtatt, {failed} feilet. Fortsettelse hopper over godtatte rader.",
-      resumeImport: "Fortsett import",
-      validationTitle: "Valideringsrapport",
-      validationSummary: "{valid} gyldige rader, {errors} feil",
-      backToMapping: "Tilbake til kobling",
-      rowsPassed: "{count} rader besto valideringen",
-      uploadCorrectedFile: "Last opp rettet fil",
-      continueWithErrors:
-        "Fortsett ({count} rader med feil registreres som feilet)",
-      rowsWillFail:
-        "{count} rader har feil og registreres som feilede rader du kan laste ned og rette",
-      correctionHint:
-        "Rett de feilede radene i filen uten å legge til, fjerne eller endre rekkefølgen på rader, og velg Last opp rettet fil. Godtatte rader beholdes og hoppes over.",
       title: "Importer Aksesjoner fra CSV",
       description:
         "Last opp en CSV-fil med aksesjonsdataene dine. Påkrevde kolonner: dateReceived, source, method.",
@@ -4044,13 +4005,6 @@ export default {
       rowsReady: "{count} rader klare til import fra {filename}",
       importButton: "Importer {count} Aksesjoner",
       cancel: "Avbryt",
-      validationErrors: "{count} valideringsfeil",
-      importing: "Importerer Aksesjoner...",
-      progress: "{current} av {total} behandlet",
-      complete: "Import Fullført",
-      successMessage: "{count} aksesjoner importert",
-      issuesMessage: "{count} rader hadde problemer",
-      importMore: "Importer Flere",
       viewAccessions: "Se Aksesjoner",
       tableHeaders: {
         number: "#",
@@ -4233,5 +4187,45 @@ export default {
       selectDisposition: "f.eks., Solgt til privat samler",
       addNotes: "Tilleggsnotater om denne deaksesjonen...",
     },
+  },
+  trackedImport: {
+    validationTitle: "Valideringsrapport",
+    validationSummary: "{valid} gyldige rader, {errors} med feil",
+    backToMapping: "Tilbake til kobling",
+    backToValidation: "Tilbake til validering",
+    continueWithErrors:
+      "Fortsett ({count} rader med feil registreres som feilet)",
+    validationErrors: "{count} valideringsfeil",
+    rowsPassed: "{count} rader besto valideringen",
+    rowsWillFail:
+      "{count} rader har feil og registreres som feilede rader du kan laste ned og rette",
+    progressTitle: "Importerer…",
+    progressDetail:
+      "{attempted} av {total} rader forsøkt · {accepted} godtatt · {failed} feilet",
+    cancelImport: "Avbryt import",
+    cancelling: "Stopper etter gjeldende parti…",
+    completeTitle: "Import fullført",
+    cancelledTitle: "Import avbrutt",
+    interruptedTitle: "Import avbrutt underveis",
+    outcome:
+      "{accepted} godtatt, {failed} feilet ({attempted} av {total} rader forsøkt).",
+    resumeHint:
+      "Last opp den samme filen igjen for å fortsette; godtatte rader hoppes over.",
+    issues: "{count} rader hadde problemer",
+    correctionHint:
+      "Rett de feilede radene i filen uten å legge til, fjerne eller endre rekkefølgen på rader, og velg Last opp rettet fil. Godtatte rader beholdes og hoppes over.",
+    downloadFailedRows: "Last ned feilede rader",
+    downloadFailed: "Kunne ikke laste ned feilede rader.",
+    uploadCorrectedFile: "Last opp rettet fil",
+    correctionFailed: "Kunne ikke importere den rettede filen.",
+    correctionMismatch:
+      "Den rettede filen må beholde de samme radene i samme rekkefølge. Rett verdiene uten å legge til, fjerne eller endre rekkefølgen på rader.",
+    retryFailedRows: "Prøv feilede rader på nytt",
+    retryFailed: "Kunne ikke prøve feilede rader på nytt.",
+    importMore: "Importer mer",
+    importFailed: "Importen mislyktes",
+    resumeNotice:
+      "Denne filen ble importert {date}: {attempted} av {total} rader forsøkt, {accepted} godtatt, {failed} feilet. Fortsettelse hopper over godtatte rader.",
+    resumeImport: "Fortsett import",
   },
 } as const;

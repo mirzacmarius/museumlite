@@ -1926,6 +1926,7 @@ export default defineSchema({
     useDetailedConditionReports: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_loanNumber", ["organizationId", "loanNumber"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_startDate", ["organizationId", "startDate"])

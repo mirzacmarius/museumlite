@@ -10,23 +10,18 @@ import {
   TableHeader,
   TableRow,
 } from "@v1/ui/table";
-import { AlertCircle, ArrowLeft, History, Upload } from "lucide-react";
+import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
+import { ResumableImportNotice } from "@/components/import/resumable-import-notice";
+import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import type { ImportState } from "../import-accessions-types";
-
-interface ResumableImportJob {
-  _id: Id<"importJobs">;
-  createdAt: number;
-  totalItems: number;
-  attemptedItems: number;
-  acceptedItems: number;
-  failedItems: number;
-}
 
 interface ImportAccessionsPreviewStepProps {
   state: ImportState;
   t: (key: string, params?: Record<string, string | number>) => string;
-  resumableJob: ResumableImportJob | null | undefined;
+  /** Errors from a start attempt that never reached the server. */
+  runErrors: string[];
   onBackToValidation: () => void;
   onStartImport: (resumeJobId?: Id<"importJobs">) => void;
 }
@@ -34,14 +29,13 @@ interface ImportAccessionsPreviewStepProps {
 export function ImportAccessionsPreviewStep({
   state,
   t,
-  resumableJob,
+  runErrors,
   onBackToValidation,
   onStartImport,
 }: ImportAccessionsPreviewStepProps) {
-  const canResume =
-    resumableJob !== null &&
-    resumableJob !== undefined &&
-    resumableJob.totalItems === state.rows.length;
+  const { currentOrganizationId } = useOrganization();
+  const tracked = useScopedI18n("trackedImport");
+  const errors = [...state.errors, ...runErrors];
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -66,42 +60,28 @@ export function ImportAccessionsPreviewStep({
               className="bg-primary hover:bg-primary/90"
             >
               <Upload className="mr-2 size-4" />
-              {canResume
-                ? t("import.startNewImport")
-                : t("import.importButton", { count: state.rows.length })}
+              {t("import.importButton", { count: state.rows.length })}
             </Button>
           </PermissionGate>
         </div>
       </div>
 
-      {canResume ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-primary/40 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-2 text-sm">
-            <History className="mt-0.5 size-4 shrink-0 text-primary" />
-            <span>
-              {t("import.resumeNotice", {
-                date: new Date(resumableJob.createdAt).toLocaleString(),
-                attempted: resumableJob.attemptedItems,
-                total: resumableJob.totalItems,
-                accepted: resumableJob.acceptedItems,
-                failed: resumableJob.failedItems,
-              })}
-            </span>
-          </div>
-          <PermissionGate permission="collections.create">
-            <Button onClick={() => onStartImport(resumableJob._id)}>
-              {t("import.resumeImport")}
-            </Button>
-          </PermissionGate>
-        </div>
-      ) : null}
+      <PermissionGate permission="collections.create">
+        <ResumableImportNotice
+          organizationId={currentOrganizationId}
+          entityType="accessions"
+          fingerprint={state.fingerprint}
+          rowCount={state.rows.length}
+          onResume={(jobId) => onStartImport(jobId)}
+        />
+      </PermissionGate>
 
       {state.validationErrors.length > 0 ? (
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
           <div className="flex items-center gap-2 text-amber-600">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {t("import.rowsWillFail", {
+              {tracked("rowsWillFail", {
                 count: state.validationErrors.length,
               })}
             </span>
@@ -109,20 +89,20 @@ export function ImportAccessionsPreviewStep({
         </div>
       ) : null}
 
-      {state.errors.length > 0 ? (
+      {errors.length > 0 ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {t("import.validationErrors", { count: state.errors.length })}
+              {tracked("issues", { count: errors.length })}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-destructive">
-            {state.errors.slice(0, 5).map((error) => (
+            {errors.slice(0, 5).map((error) => (
               <li key={error}>• {error}</li>
             ))}
-            {state.errors.length > 5 ? (
-              <li>• ... and {state.errors.length - 5} more</li>
+            {errors.length > 5 ? (
+              <li>• ... and {errors.length - 5} more</li>
             ) : null}
           </ul>
         </div>

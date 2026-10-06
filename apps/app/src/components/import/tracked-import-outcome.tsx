@@ -1,0 +1,189 @@
+"use client";
+
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
+import {
+  AlertCircle,
+  Ban,
+  CheckCircle2,
+  Download,
+  FileUp,
+  RotateCcw,
+} from "lucide-react";
+import Link from "next/link";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { useDownloadImportFailures } from "@/hooks/use-download-import-failures";
+import { useScopedI18n } from "@/locales/client";
+
+interface TrackedImportOutcomeProps {
+  importJob:
+    | {
+        _id: Id<"importJobs">;
+        status: string;
+        totalItems: number;
+        attemptedItems: number;
+        acceptedItems: number;
+        failedItems: number;
+      }
+    | null
+    | undefined;
+  errors: string[];
+  fileName?: string;
+  viewHref: string;
+  viewLabel: string;
+  onReset: () => void;
+  onRetryFailed: () => Promise<void>;
+  onUploadCorrection: (file: File) => Promise<void>;
+}
+
+export function TrackedImportOutcome({
+  importJob,
+  errors,
+  fileName,
+  viewHref,
+  viewLabel,
+  onReset,
+  onRetryFailed,
+  onUploadCorrection,
+}: TrackedImportOutcomeProps) {
+  const t = useScopedI18n("trackedImport");
+  const downloadFailures = useDownloadImportFailures();
+  const correctionInputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const failed = importJob?.failedItems ?? 0;
+  const cancelled = importJob?.status === "cancelled";
+  const unfinished =
+    importJob !== null &&
+    importJob !== undefined &&
+    importJob.attemptedItems < importJob.totalItems;
+  const attention = failed > 0 || unfinished;
+
+  const Icon = cancelled ? Ban : attention ? AlertCircle : CheckCircle2;
+  const iconClass = cancelled
+    ? "text-muted-foreground"
+    : attention
+      ? "text-amber-500"
+      : "text-green-500";
+
+  async function run(action: () => Promise<unknown>, fallback: string) {
+    setBusy(true);
+    try {
+      await action();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : fallback);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-lg text-center">
+      <Icon className={`mx-auto mb-4 size-12 ${iconClass}`} />
+      <h2 className="text-xl font-semibold">
+        {cancelled
+          ? t("cancelledTitle")
+          : unfinished
+            ? t("interruptedTitle")
+            : t("completeTitle")}
+      </h2>
+      <p className="mt-2 text-muted-foreground">
+        {t("outcome", {
+          accepted: importJob?.acceptedItems ?? 0,
+          failed,
+          attempted: importJob?.attemptedItems ?? 0,
+          total: importJob?.totalItems ?? 0,
+        })}
+      </p>
+      {unfinished && !cancelled ? (
+        <p className="mt-2 text-sm text-muted-foreground">{t("resumeHint")}</p>
+      ) : null}
+
+      {errors.length > 0 ? (
+        <div className="mt-6 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-left">
+          <div className="flex items-center gap-2 text-amber-600">
+            <AlertCircle className="size-4" />
+            <span className="font-medium">
+              {t("issues", { count: errors.length })}
+            </span>
+          </div>
+          <ul className="mt-2 max-h-48 space-y-1 overflow-auto text-sm text-amber-600">
+            {errors.map((error) => (
+              <li key={error}>• {error}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {failed > 0 && !cancelled ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {t("correctionHint")}
+        </p>
+      ) : null}
+
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {failed > 0 && importJob ? (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() =>
+              run(
+                () =>
+                  downloadFailures(
+                    importJob._id,
+                    `${fileName?.replace(/\.csv$/i, "") ?? "import"}-failed-rows.csv`,
+                  ),
+                t("downloadFailed"),
+              )
+            }
+          >
+            <Download className="mr-2 size-4" />
+            {t("downloadFailedRows")}
+          </Button>
+        ) : null}
+        {failed > 0 && !cancelled ? (
+          <>
+            <input
+              ref={correctionInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) {
+                  void run(
+                    () => onUploadCorrection(file),
+                    t("correctionFailed"),
+                  );
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => correctionInputRef.current?.click()}
+            >
+              <FileUp className="mr-2 size-4" />
+              {t("uploadCorrectedFile")}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => run(onRetryFailed, t("retryFailed"))}
+            >
+              <RotateCcw className="mr-2 size-4" />
+              {t("retryFailedRows")}
+            </Button>
+          </>
+        ) : null}
+        <Button variant="outline" onClick={onReset}>
+          {t("importMore")}
+        </Button>
+        <Button asChild className="bg-primary hover:bg-primary/90">
+          <Link href={viewHref}>{viewLabel}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
