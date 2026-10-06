@@ -29,6 +29,7 @@ import { type ReactNode, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useI18n } from "@/locales/client";
+import { getNotificationCopy } from "@/lib/notification-copy";
 import { NotificationsPageSkeleton } from "./notifications-page-skeleton";
 
 type FilterType = "all" | "unread";
@@ -307,7 +308,7 @@ function CategoryTabs({
   const t = useI18n();
 
   return (
-    <SegmentedControl ariaLabel="Notification categories">
+    <SegmentedControl ariaLabel={t("untranslatedDashboard.notifications.categories")}>
       {CATEGORY_TABS.map(({ value, icon: Icon }) => {
         const count = value === "all" ? unreadCount : unreadByCategory[value];
         const tone = CATEGORY_TONES[value];
@@ -361,7 +362,7 @@ function UnreadPulseChips({
   return (
     <div className="mt-4 flex flex-wrap items-center gap-1.5">
       <span className="mr-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-        Needs attention
+        {t("untranslatedDashboard.notifications.needsAttention")}
       </span>
       {chips.map((value) => {
         const Icon = CATEGORY_ICONS[value];
@@ -396,6 +397,7 @@ interface NotificationRowProps {
 function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
   const t = useI18n();
   const locale = useCurrentLocale();
+  const copy = getNotificationCopy(notification, t);
   const Icon = getNotificationIcon(notification.type);
   const tone = getCategoryTone(notification.category);
   const link = getNotificationLink(
@@ -455,17 +457,17 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
                   !notification.read && "font-medium",
                 )}
               >
-                {notification.title}
+                {copy.title}
               </p>
               {!notification.read ? (
                 <span className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                   <span className="size-1 rounded-full bg-current" />
-                  Unread
+                  {t("notificationsPage.filters.unread")}
                 </span>
               ) : null}
             </div>
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-              {notification.message}
+              {copy.message}
             </p>
           </div>
 
@@ -474,7 +476,7 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
               variant="ghost"
               size="sm"
               className="size-8 shrink-0 p-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100"
-              title="Mark as read"
+              title={t("untranslatedDashboard.notifications.markAsRead")}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -592,12 +594,12 @@ export default function NotificationsPage() {
               {unreadCount > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-normal tracking-normal text-primary">
                   <span className="size-1.5 animate-pulse rounded-full bg-current" />
-                  {unreadCount} waiting
+                  {unreadCount} {t("untranslatedDashboard.notifications.waiting")}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-normal tracking-normal text-emerald-400">
                   <span className="size-1 rounded-full bg-current" />
-                  Clear
+                  {t("untranslatedDashboard.notifications.clear")}
                 </span>
               )}
             </h2>
@@ -637,7 +639,7 @@ export default function NotificationsPage() {
           onCategoryChange={setCategory}
         />
 
-        <SegmentedControl ariaLabel="Read status filter">
+        <SegmentedControl ariaLabel={t("untranslatedDashboard.notifications.readStatus")}>
           <SegmentedButton
             pressed={filter === "all"}
             onClick={() => setFilter("all")}

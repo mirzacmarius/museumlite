@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Star, Upload, X } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type {
   CollectionFormTabProps,
@@ -38,17 +39,20 @@ export function ObjectRequestMediaTab({
   handleDeleteImage,
   handleDeleteDocument,
 }: ObjectRequestMediaTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Images"
-        description="Select images for the object and choose which one becomes primary after approval."
+        title={tRoot("untranslatedRecords.objects.printView.images")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.selectImagesAfterApproval",
+        )}
       >
         {persistedDraftMedia.filter((item) => item.mediaCategory === "image")
           .length > 0 ? (
           <div className="mb-5 space-y-3">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Already attached
+              {tRoot("untranslatedRecords.objects.detail.alreadyAttached")}
             </p>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {persistedDraftMedia.flatMap((item) =>
@@ -75,8 +79,12 @@ export function ObjectRequestMediaTab({
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {item.isPrimary
-                              ? "Primary image already saved"
-                              : "Saved with this draft"}
+                              ? tRoot(
+                                  "untranslatedRecords.objects.media.primaryAlreadySaved",
+                                )
+                              : tRoot(
+                                  "untranslatedRecords.objects.media.savedWithDraft",
+                                )}
                           </p>
                         </div>
                       </div>,
@@ -105,7 +113,7 @@ export function ObjectRequestMediaTab({
                 <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
                   {file.isPrimary ? (
                     <div className="rounded-full bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground">
-                      Primary
+                      {tRoot("objects.form.media.primary")}
                     </div>
                   ) : (
                     <div />
@@ -151,16 +159,18 @@ export function ObjectRequestMediaTab({
               {persistedDraftMedia.some(
                 (item) => item.mediaCategory === "image",
               )
-                ? "No new images selected yet."
-                : "No images selected yet."}
+                ? tRoot("untranslatedRecords.objects.media.noNewImages")
+                : tRoot("untranslatedRecords.objects.media.noImages")}
             </p>
           </div>
         )}
       </EditSection>
 
       <EditSection
-        title="Documents"
-        description="Attach supporting PDFs, scans, and reference files to upload when this request is submitted."
+        title={tRoot("objects.digitalAssetsTab.title")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.attachDocumentsDescription",
+        )}
       >
         <input
           ref={documentInputRef}
@@ -178,7 +188,7 @@ export function ObjectRequestMediaTab({
             onClick={() => documentInputRef.current?.click()}
           >
             <Upload className="mr-2 size-4" />
-            Upload Documents
+            {tRoot("objects.form.actions.uploadDocuments")}
           </Button>
         </div>
 
@@ -186,7 +196,7 @@ export function ObjectRequestMediaTab({
           .length > 0 ? (
           <div className="mb-5 space-y-3">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Already attached
+              {tRoot("untranslatedRecords.objects.detail.alreadyAttached")}
             </p>
             <div className="space-y-3">
               {persistedDraftMedia.flatMap((item) =>
@@ -201,7 +211,9 @@ export function ObjectRequestMediaTab({
                             {item.fileName}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Saved with this draft
+                            {tRoot(
+                              "untranslatedRecords.objects.form.savedWithDraft",
+                            )}
                           </p>
                         </div>
                       </div>,
@@ -224,7 +236,7 @@ export function ObjectRequestMediaTab({
                     {document.fileName}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Queued for upload on submit
+                    {tRoot("untranslatedRecords.objects.form.queuedForSubmit")}
                   </p>
                 </div>
                 <Button
@@ -245,8 +257,8 @@ export function ObjectRequestMediaTab({
               {persistedDraftMedia.some(
                 (item) => item.mediaCategory === "document",
               )
-                ? "No new documents selected yet."
-                : "No documents selected yet."}
+                ? tRoot("untranslatedRecords.objects.media.noNewDocuments")
+                : tRoot("untranslatedRecords.objects.media.noDocuments")}
             </p>
           </div>
         )}

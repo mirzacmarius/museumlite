@@ -1,5 +1,6 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import {
   Select,
   SelectContent,
@@ -8,11 +9,28 @@ import {
 } from "@v1/ui/select";
 import { cn } from "@v1/ui/utils";
 import { Languages } from "lucide-react";
-import { useChangeLocale, useCurrentLocale } from "@/locales/client";
+import { useMutation } from "convex/react";
+import { toast } from "sonner";
+import {
+  useChangeLocale,
+  useCurrentLocale,
+  useScopedI18n,
+} from "@/locales/client";
 
 export function LanguageSwitcher({ triggerClass }: { triggerClass?: string }) {
   const changeLocale = useChangeLocale();
   const locale = useCurrentLocale();
+  const setPreference = useMutation(api.userPreferences.set);
+  const t = useScopedI18n("untranslatedDashboard.languageSwitcher");
+
+  const handleLocaleChange = async (nextLocale: string) => {
+    try {
+      await setPreference({ key: "language", value: nextLocale });
+    } catch {
+      toast.error(t("saveFailed"));
+    }
+    changeLocale(nextLocale as "en" | "fr" | "es" | "no" | "ro");
+  };
 
   const langs = [
     { text: "English", value: "en" },
@@ -26,7 +44,7 @@ export function LanguageSwitcher({ triggerClass }: { triggerClass?: string }) {
   };
 
   return (
-    <Select value={locale} onValueChange={changeLocale}>
+    <Select value={locale} onValueChange={handleLocaleChange}>
       <SelectTrigger
         className={cn(
           "h-6 rounded border-primary/20 bg-secondary !px-2 hover:border-primary/40",

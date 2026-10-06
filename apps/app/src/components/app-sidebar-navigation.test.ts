@@ -22,7 +22,38 @@ function buildNavigation({
   isLibraryModuleEnabled?: boolean;
   isInsuranceModuleEnabled?: boolean;
 } = {}) {
+  const navigationLabels: Record<string, string> = {
+    "untranslatedComponents.navigation.patronManagement": "Patron Management",
+    "untranslatedComponents.navigation.overview": "Overview",
+    "untranslatedComponents.navigation.objectCatalog": "Object Catalog",
+    "untranslatedComponents.navigation.locationTracking": "Location & Tracking",
+    "untranslatedComponents.navigation.scan": "Scan",
+    "untranslatedComponents.navigation.accessions": "Accessions",
+    "untranslatedComponents.navigation.deaccessions": "Deaccessions",
+    "untranslatedComponents.navigation.conservation": "Conservation",
+    "untranslatedComponents.navigation.insurance": "Insurance",
+    "untranslatedComponents.navigation.loansTransport": "Loans & Transport",
+    "untranslatedComponents.navigation.transitLog": "Transit Log",
+    "untranslatedComponents.navigation.exhibitions": "Exhibitions",
+    "untranslatedComponents.navigation.installations": "Installations",
+    "untranslatedComponents.navigation.libraryDashboard": "Library Dashboard",
+    "untranslatedComponents.navigation.catalogSearch": "Catalog & Search",
+    "untranslatedComponents.navigation.circulationDesk": "Circulation Desk",
+    "untranslatedComponents.navigation.holds": "Holds",
+    "untranslatedComponents.navigation.finesFees": "Fines & Fees",
+    "untranslatedComponents.navigation.acquisitions": "Acquisitions",
+    "untranslatedComponents.navigation.analyticsReports": "Analytics & Reports",
+    "untranslatedComponents.navigation.accountsCrm": "Accounts & CRM",
+    "untranslatedComponents.navigation.publicPortal": "Public Portal",
+    "untranslatedComponents.navigation.digitalAssets": "Digital Assets",
+    "untranslatedComponents.navigation.preferences": "Preferences",
+    "untranslatedComponents.navigation.settings": "Settings",
+    "untranslatedComponents.navigation.exhibitionsLoans": "Exhibitions & Loans",
+    "untranslatedComponents.navigation.library": "Library",
+    "untranslatedComponents.navigation.administration": "Administration",
+  };
   return buildSidebarNavigation({
+    translate: (key) => navigationLabels[key] ?? key,
     hasFeature: (featureId) => enabledFeatures.has(featureId),
     isLibraryModuleEnabled,
     isInsuranceModuleEnabled,
@@ -96,9 +127,9 @@ describe("buildSidebarNavigation", () => {
       isLibraryModuleEnabled: false,
     });
 
-    expect(
-      navigationGroups.some((group) => group.title === "Library"),
-    ).toBe(false);
+    expect(navigationGroups.some((group) => group.title === "Library")).toBe(
+      false,
+    );
   });
 
   test("shows Conservation as a top-level item locked with the conservation feature", () => {
@@ -130,9 +161,9 @@ describe("buildSidebarNavigation", () => {
       isInsuranceModuleEnabled: false,
     });
 
-    expect(
-      topLevelNavigation.some((item) => item.title === "Insurance"),
-    ).toBe(false);
+    expect(topLevelNavigation.some((item) => item.title === "Insurance")).toBe(
+      false,
+    );
     expect(
       navigationGroups.some((group) =>
         group.items.some((item) => item.title === "Insurance"),

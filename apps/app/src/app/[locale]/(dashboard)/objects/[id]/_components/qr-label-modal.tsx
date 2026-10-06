@@ -9,7 +9,6 @@ import {
 } from "@v1/ui/dialog";
 import { Label } from "@v1/ui/label";
 import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
-import { Switch } from "@v1/ui/switch";
 import { Printer } from "lucide-react";
 import { useRef, useState } from "react";
 import type { LabelData, LabelSize } from "@/components/qr-label-generator";
@@ -34,7 +33,7 @@ export function QRLabelModal({
 }: QRLabelModalProps) {
   const t = useScopedI18n("objects.qrLabel");
   const tCommon = useScopedI18n("common");
-  const [labelSize, setLabelSize] = useState<LabelSize>("2x2");
+  const [labelSize, setLabelSize] = useState<LabelSize>("1x1");
   const [showObjectName, setShowObjectName] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -68,8 +67,17 @@ export function QRLabelModal({
             <RadioGroup
               value={labelSize}
               onValueChange={(value) => setLabelSize(value as LabelSize)}
-              className="flex gap-4"
+              className="flex flex-wrap gap-x-4 gap-y-2"
             >
+              <div className="flex items-center gap-x-2">
+                <RadioGroupItem value="1x1" id="size-1x1" />
+                <Label
+                  htmlFor="size-1x1"
+                  className="text-sm text-black cursor-pointer"
+                >
+                  {t("size1x1")} (1" × 1")
+                </Label>
+              </div>
               <div className="flex items-center gap-x-2">
                 <RadioGroupItem value="2x2" id="size-2x2" />
                 <Label
@@ -90,14 +98,26 @@ export function QRLabelModal({
               </div>
             </RadioGroup>
             <div className="mt-5 flex items-center justify-between gap-4">
-              <Label htmlFor="qr-label-object-name" className="text-black">
+              <Label
+                htmlFor="qr-label-object-name"
+                id="qr-label-object-name-label"
+                className="text-black"
+              >
                 {t("showObjectName")}
               </Label>
-              <Switch
+              <button
+                type="button"
+                role="switch"
                 id="qr-label-object-name"
-                checked={showObjectName}
-                onCheckedChange={setShowObjectName}
-              />
+                aria-labelledby="qr-label-object-name-label"
+                aria-checked={showObjectName}
+                onClick={() => setShowObjectName((visible) => !visible)}
+                className={`inline-flex h-5 w-8 shrink-0 items-center rounded-full border border-zinc-500 p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 ${showObjectName ? "bg-zinc-900" : "bg-zinc-300"}`}
+              >
+                <span
+                  className={`size-3.5 rounded-full bg-white shadow-sm transition-transform ${showObjectName ? "translate-x-3" : "translate-x-0"}`}
+                />
+              </button>
             </div>
           </div>
 

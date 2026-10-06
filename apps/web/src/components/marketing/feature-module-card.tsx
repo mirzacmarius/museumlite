@@ -37,19 +37,21 @@ export function FeatureModuleCard({
           {module.desc}
         </p>
       </div>
-      <ul className="mt-auto pt-6 border-t border-gold/20 space-y-3">
-        {module.items.map((item) => (
-          <li
-            key={item}
-            className="flex items-baseline gap-3 text-sm text-muted-foreground"
-          >
-            <span className="text-gold shrink-0 text-[10px]" aria-hidden>
-              ✦
-            </span>
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
+      {module.items.length > 0 ? (
+        <ul className="mt-auto pt-6 border-t border-gold/20 space-y-3">
+          {module.items.map((item) => (
+            <li
+              key={item}
+              className="flex items-baseline gap-3 text-sm text-muted-foreground"
+            >
+              <span className="text-gold shrink-0 text-[10px]" aria-hidden>
+                ✦
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </article>
   );
 }

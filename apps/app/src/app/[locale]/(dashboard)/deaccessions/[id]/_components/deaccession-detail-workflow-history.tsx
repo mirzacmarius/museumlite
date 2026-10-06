@@ -1,9 +1,8 @@
 "use client";
 
 import { ClientDateFns } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
-
 export function DeaccessionDetailWorkflowHistory({
   locale,
   workflowHistory,
@@ -12,6 +11,7 @@ export function DeaccessionDetailWorkflowHistory({
   DeaccessionDetailViewProps,
   "locale" | "workflowHistory" | "workflowEntryCount"
 >) {
+  const tRoot = useI18n();
   const t = useScopedI18n("deaccessions");
 
   if (!workflowHistory || workflowHistory.length === 0) {
@@ -23,14 +23,15 @@ export function DeaccessionDetailWorkflowHistory({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/65">
-            Process Log
+            {tRoot("untranslatedRecords.deaccessions.detail.processLog")}
           </p>
           <h2 className="mt-1 text-lg font-semibold">
             {t("detail.workflowHistory")}
           </h2>
         </div>
         <div className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-muted-foreground">
-          {workflowEntryCount} entries
+          {workflowEntryCount}{" "}
+          {tRoot("untranslatedRecords.deaccessions.detail.entries")}
         </div>
       </div>
 

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { formatCurrency, formatNumber } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.vehicleDetails.get>
@@ -25,6 +25,7 @@ interface VehicleDetailsContentProps {
 }
 
 export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const t = useScopedI18n("modules.vehicle");
   const _common = useScopedI18n("modules.common");
@@ -89,12 +90,12 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <h4 className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Specifications
+            {tRoot("untranslatedRecords.objects.detail.specifications")}
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <span className="text-[10px] text-muted-foreground">
-                Body Style
+                {tRoot("untranslatedRecords.objects.detail.bodyStyle")}
               </span>
               <p className="text-sm text-foreground">
                 {details.bodyStyle || "—"}
@@ -102,7 +103,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground">
-                Fuel Type
+                {tRoot("untranslatedRecords.objects.detail.fuelType")}
               </span>
               <p className="text-sm text-foreground">
                 {details.fuelType || "—"}
@@ -110,7 +111,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground">
-                Transmission
+                {tRoot("untranslatedRecords.objects.detail.transmission")}
               </span>
               <p className="text-sm text-foreground">
                 {details.transmissionType || "—"}
@@ -118,7 +119,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground">
-                Engine #
+                {tRoot("untranslatedRecords.objects.detail.engineNumber")}
               </span>
               <p className="font-mono text-sm text-foreground">
                 {details.engineNumber || "—"}
@@ -126,7 +127,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground">
-                Exterior
+                {tRoot("untranslatedRecords.objects.detail.exterior")}
               </span>
               <p className="text-sm text-foreground">
                 {details.exteriorColor || "—"}
@@ -134,7 +135,7 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground">
-                Interior
+                {tRoot("untranslatedRecords.objects.detail.interior")}
               </span>
               <p className="text-sm text-foreground">
                 {details.interiorColor || "—"}
@@ -145,23 +146,29 @@ export function VehicleDetailsContent({ details }: VehicleDetailsContentProps) {
 
         <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
           <h4 className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Registration
+            {tRoot("untranslatedRecords.objects.detail.registration")}
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="text-[10px] text-muted-foreground">Plate #</span>
+              <span className="text-[10px] text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.detail.plateNumber")}
+              </span>
               <p className="font-mono text-sm text-foreground">
                 {details.registrationNumber || "—"}
               </p>
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground">State</span>
+              <span className="text-[10px] text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.detail.state")}
+              </span>
               <p className="text-sm text-foreground">
                 {details.registrationState || "—"}
               </p>
             </div>
             <div className="col-span-2">
-              <span className="text-[10px] text-muted-foreground">Title #</span>
+              <span className="text-[10px] text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.detail.titleNumber")}
+              </span>
               <p className="font-mono text-sm text-foreground">
                 {details.titleNumber || "—"}
               </p>

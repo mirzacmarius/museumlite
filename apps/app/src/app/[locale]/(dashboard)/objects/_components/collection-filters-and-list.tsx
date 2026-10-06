@@ -1,8 +1,8 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { BulkActionsBar } from "./bulk-actions-bar";
 import { AddObjectsToCollectionDialog } from "./add-objects-to-collection-dialog";
+import { BulkActionsBar } from "./bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./bulk-add-to-group-dialog";
 import { BulkDeaccessionDialog } from "./bulk-deaccession-dialog";
 import { BulkMoveLocationDialog } from "./bulk-move-location-dialog";

@@ -36,7 +36,8 @@ import {
 } from "@/components/deaccession-dialog";
 import { PermissionGate } from "@/components/permission-gate";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { useCurrentLocale } from "@/locales/client";
+import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 const LoadingPanel = () => (
   <div className="h-32 w-full animate-pulse rounded-xl bg-card/40" />
@@ -137,6 +138,7 @@ export function ObjectActionsMenu({
   triggerClassName,
   iconClassName,
 }: ObjectActionsMenuProps) {
+  const tRoot = useI18n();
   const [state, dispatch] = useReducer(
     objectActionsMenuReducer,
     initialObjectActionsMenuState,
@@ -212,7 +214,9 @@ export function ObjectActionsMenu({
             }}
           >
             <MoreVertical className={cn("size-3", iconClassName)} />
-            <span className="sr-only">Actions</span>
+            <span className="sr-only">
+              {tRoot("collections.mediaImport.tableHeaders.actions")}
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -233,7 +237,9 @@ export function ObjectActionsMenu({
             ) : (
               <Link2 className="mr-2 size-4" />
             )}
-            {state.linkCopied ? "Link copied" : "Copy Link"}
+            {state.linkCopied
+              ? tRoot("untranslatedRecords.objects.actions.linkCopied")
+              : tRoot("untranslatedRecords.objects.actions.copyLink")}
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
@@ -244,7 +250,7 @@ export function ObjectActionsMenu({
             }}
           >
             <Printer className="mr-2 size-4" />
-            Print
+            {tRoot("objects.objectLabel.print")}
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
@@ -255,7 +261,7 @@ export function ObjectActionsMenu({
             }}
           >
             <FileDown className="mr-2 size-4" />
-            Export to PDF
+            {tRoot("objects.detail.exportToPdf")}
           </DropdownMenuItem>
           {canDeaccession && (
             <>
@@ -270,7 +276,7 @@ export function ObjectActionsMenu({
                   }}
                 >
                   <DollarSign className="mr-2 size-4 text-green-500" />
-                  Sold
+                  {tRoot("untranslatedRecords.objects.status.sold")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
@@ -281,7 +287,7 @@ export function ObjectActionsMenu({
                   }}
                 >
                   <ArrowRightLeft className="mr-2 size-4 text-blue-500" />
-                  Transfer
+                  {tRoot("deaccessions.method.transfer")}
                 </DropdownMenuItem>
               </PermissionGate>
               <PermissionGate permission="collections.delete">
@@ -294,7 +300,7 @@ export function ObjectActionsMenu({
                   }}
                 >
                   <Archive className="mr-2 size-4 text-amber-500" />
-                  Archive
+                  {tRoot("library.catalog.detail.archive")}
                 </DropdownMenuItem>
               </PermissionGate>
             </>
@@ -372,31 +378,32 @@ function ObjectGridItem({
   onSelect,
   shouldEagerLoad = false,
 }: ObjectGridItemProps) {
+  const tRoot = useI18n();
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
       case "verified":
         return (
           <span className="rounded bg-status-success/80 px-1.5 py-0.5 text-[9px] font-medium text-background capitalize shadow-sm">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
       case "loaned":
         return (
           <span className="rounded bg-status-info/80 px-1.5 py-0.5 text-[9px] font-medium text-background capitalize shadow-sm">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
       case "deaccessioned":
         return (
           <span className="rounded bg-status-error/80 px-1.5 py-0.5 text-[9px] font-medium text-background capitalize shadow-sm">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
       default:
         return (
           <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground capitalize shadow-sm">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
     }

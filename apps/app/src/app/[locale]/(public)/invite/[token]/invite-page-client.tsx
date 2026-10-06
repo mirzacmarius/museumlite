@@ -12,7 +12,7 @@ import {
 import { AlertCircle, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, use, useState } from "react";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 interface PageProps {
   params: Promise<{
@@ -173,6 +173,7 @@ function InviteActions({
 export function InvitePageClient({ params }: PageProps) {
   const { token } = use(params);
   const t = useScopedI18n("invitePage");
+  const translate = useI18n();
   const locale = useCurrentLocale();
   const { push } = useRouter();
   const [isAccepting, setIsAccepting] = useState(false);
@@ -198,7 +199,9 @@ export function InvitePageClient({ params }: PageProps) {
           push(`/${locale}/`);
         }, 1500);
       } else if (!result.success && "error" in result) {
-        setError(result.error ?? null);
+        setError(
+          result.error ? getInvitationErrorCopy(result.error, translate) : null,
+        );
       }
     } catch (_err) {
       setError(t("acceptFailed"));
@@ -219,7 +222,9 @@ export function InvitePageClient({ params }: PageProps) {
           push(`/${locale}/login`);
         }, 1500);
       } else if (!result.success && "error" in result) {
-        setError(result.error ?? null);
+        setError(
+          result.error ? getInvitationErrorCopy(result.error, translate) : null,
+        );
       }
     } catch (_err) {
       setError(t("declineFailed"));
@@ -392,4 +397,25 @@ export function InvitePageClient({ params }: PageProps) {
       </p>
     </InviteShell>
   );
+}
+
+function getInvitationErrorCopy(
+  message: string,
+  translate: (key: string) => string,
+): string {
+  const knownErrors: Record<string, string> = {
+    "Not authenticated": "notAuthenticated",
+    "Invitation not found": "notFound",
+    "Invitation already accepted": "alreadyAccepted",
+    "Invitation was declined": "wasDeclined",
+    "Invitation already declined": "alreadyDeclined",
+    "Invitation has expired": "expired",
+    "User email not found": "userEmailNotFound",
+    "This invitation is for a different email address": "differentEmail",
+    "Already a member of this organization": "alreadyMember",
+  };
+  const key = knownErrors[message];
+  return key
+    ? translate(`untranslatedComponents.invitationErrors.${key}`)
+    : message;
 }

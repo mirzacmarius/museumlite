@@ -50,6 +50,8 @@ interface TrackedImportOutcomeProps {
   children?: ReactNode;
 }
 
+const EMPTY_COPY: NonNullable<TrackedImportOutcomeProps["copy"]> = {};
+
 export function TrackedImportOutcome({
   importJob,
   errors,
@@ -60,7 +62,7 @@ export function TrackedImportOutcome({
   onRetryFailed,
   onUploadCorrection,
   onResume,
-  copy = {},
+  copy = EMPTY_COPY,
   children,
 }: TrackedImportOutcomeProps) {
   const t = useScopedI18n("trackedImport");

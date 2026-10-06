@@ -2,27 +2,29 @@
 
 import type { Doc } from "@v1/backend/convex/_generated/dataModel";
 import { Building2, Mail, MapPin, Phone, User, UserCog } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 
 interface AccountDetailInfoProps {
   account: Doc<"accounts">;
 }
 
 export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
+  const t = useScopedI18n("untranslatedDashboard.accounts");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
-      <h2 className="mb-6 text-lg font-medium">Account Information</h2>
+      <h2 className="mb-6 text-lg font-medium">{t("accountInformation")}</h2>
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <div>
             <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-              Business Information
+              {t("businessInformation")}
             </h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Building2 className="mt-0.5 size-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">{account.businessName}</p>
-                  <p className="text-xs text-muted-foreground">Business Name</p>
+                  <p className="text-xs text-muted-foreground">{t("businessName")}</p>
                 </div>
               </div>
               {account.phone && (
@@ -30,7 +32,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                   <Phone className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.phone}</p>
-                    <p className="text-xs text-muted-foreground">Phone</p>
+                    <p className="text-xs text-muted-foreground">{t("phone")}</p>
                   </div>
                 </div>
               )}
@@ -39,7 +41,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                   <Mail className="mt-0.5 size-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm">{account.email}</p>
-                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-xs text-muted-foreground">{t("email")}</p>
                   </div>
                 </div>
               )}
@@ -55,7 +57,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
           <div className="space-y-4">
             <div>
               <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                Address
+                {t("address")}
               </h3>
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 size-4 text-muted-foreground" />
@@ -88,7 +90,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
           <div className="space-y-4">
             <div>
               <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                Contact Person
+                {t("contactPerson")}
               </h3>
               <div className="space-y-3">
                 {account.contactPerson && (
@@ -97,7 +99,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                     <div>
                       <p className="text-sm">{account.contactPerson}</p>
                       <p className="text-xs text-muted-foreground">
-                        Contact Name
+                        {t("contactName")}
                       </p>
                     </div>
                   </div>
@@ -108,7 +110,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                     <div>
                       <p className="text-sm">{account.contactPhone}</p>
                       <p className="text-xs text-muted-foreground">
-                        Contact Phone
+                        {t("contactPhone")}
                       </p>
                     </div>
                   </div>
@@ -119,7 +121,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
                     <div>
                       <p className="text-sm">{account.contactEmail}</p>
                       <p className="text-xs text-muted-foreground">
-                        Contact Email
+                        {t("contactEmail")}
                       </p>
                     </div>
                   </div>
@@ -133,7 +135,7 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
           <div className="space-y-4 md:col-span-2">
             <div>
               <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                Notes
+                {t("notes")}
               </h3>
               <p className="text-sm whitespace-pre-wrap">{account.notes}</p>
             </div>
@@ -145,12 +147,12 @@ export function AccountDetailInfo({ account }: AccountDetailInfoProps) {
             <div>
               <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <UserCog className="size-4" />
-                Account Type
+                {t("accountType")}
               </h3>
               <div className="flex items-start gap-3">
                 <div className="mt-0.5">
                   <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary capitalize">
-                    {account.accountType}
+                    {t(`accountTypes.${account.accountType}`)}
                   </span>
                 </div>
               </div>

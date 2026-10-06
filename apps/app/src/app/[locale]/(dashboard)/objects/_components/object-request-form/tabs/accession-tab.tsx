@@ -10,31 +10,40 @@ import {
 } from "@v1/ui/select";
 import { DonationDetailsField } from "@/components/donation-details-field";
 import { RepeatableTextField } from "@/components/repeatable-text-field";
+import { useI18n } from "@/locales/client";
 import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
-
 export function ObjectRequestAccessionTab({
   formData,
   updateField,
   placeholders,
   currentOrganizationId,
 }: CollectionFormTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Acquisition information"
-        description="Record how the object enters the collection and who it comes from."
+        title={tRoot(
+          "untranslatedRecords.objects.detail.acquisitionInformation",
+        )}
+        description={tRoot("untranslatedRecords.objects.form.recordHowEnters")}
       >
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="acquisitionMethod">Acquisition Type</Label>
+            <Label htmlFor="acquisitionMethod">
+              {tRoot("untranslatedRecords.objects.detail.acquisitionType")}
+            </Label>
             <Select
               value={formData.acquisitionMethod || undefined}
               onValueChange={(value) => updateField("acquisitionMethod", value)}
             >
               <SelectTrigger id="acquisitionMethod">
-                <SelectValue placeholder="Select acquisition type" />
+                <SelectValue
+                  placeholder={tRoot(
+                    "untranslatedRecords.objects.form.selectAcquisitionType",
+                  )}
+                />
               </SelectTrigger>
               <SelectContent>
                 {ACQUISITION_METHODS.map((method) => (
@@ -63,15 +72,17 @@ export function ObjectRequestAccessionTab({
       </EditSection>
 
       <EditSection
-        title="Previous owners"
-        description="Capture known previous owners as simple accession context."
+        title={tRoot("untranslatedRecords.objects.form.previousOwners")}
+        description={tRoot(
+          "untranslatedRecords.objects.form.capturePreviousOwners",
+        )}
       >
         <RepeatableTextField
           id="previous_owners"
-          label="Previous Owner"
+          label={tRoot("untranslatedRecords.objects.form.previousOwner")}
           value={formData.previous_owners || []}
           onChange={(value) => updateField("previous_owners", value)}
-          placeholder="Owner name"
+          placeholder={tRoot("objects.form.placeholders.ownerName")}
         />
       </EditSection>
     </div>

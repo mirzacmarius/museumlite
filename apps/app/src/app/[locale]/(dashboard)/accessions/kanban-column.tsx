@@ -10,7 +10,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { formatAccessionMethodLabel } from "./[id]/_components/accession-detail-ui";
 
 type AccessionItem = {
   _id: Id<"accessions">;
@@ -77,6 +78,7 @@ export function KanbanColumn({
   searchQuery,
   accessions,
 }: KanbanColumnProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("accessions");
 
   const dotStyle = getStepDotStyle(stepNumber);
@@ -144,7 +146,9 @@ export function KanbanColumn({
                       t("kanban.unknownSource")}
                   </p>
                   <p className="mb-3 line-clamp-2 text-xs text-muted-foreground">
-                    {accession.draftTitle ? accession.source : accession.method}
+                    {accession.draftTitle
+                      ? accession.source
+                      : formatAccessionMethodLabel(accession.method, tRoot)}
                   </p>
                   {accession.assigneeName && (
                     <div className="flex items-center gap-2">

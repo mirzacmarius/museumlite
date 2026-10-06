@@ -109,10 +109,8 @@ export function ApiKeysTab({
       });
       dispatch({ type: "setCreatedKey", value: result.key });
       dispatch({ type: "setNewKeyName", value: "" });
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : t("errors.failedToCreateKey"),
-      );
+    } catch {
+      alert(t("errors.failedToCreateKey"));
     } finally {
       dispatch({ type: "setCreating", value: false });
     }
@@ -135,20 +133,16 @@ export function ApiKeysTab({
   const handleRevoke = async (keyId: Id<"apiKeys">) => {
     try {
       await revokeKey({ organizationId, keyId });
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : t("errors.failedToRevokeKey"),
-      );
+    } catch {
+      alert(t("errors.failedToRevokeKey"));
     }
   };
 
   const handleDelete = async (keyId: Id<"apiKeys">) => {
     try {
       await deleteKey({ organizationId, keyId });
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : t("errors.failedToDeleteKey"),
-      );
+    } catch {
+      alert(t("errors.failedToDeleteKey"));
     }
   };
 

@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { useObjectFilters } from "@/hooks/use-url-filters";
+import { useI18n } from "@/locales/client";
 import { exportCollectionsToCsv } from "./collection-bulk-export";
 import {
   INITIAL_OBJECTS_PAGE_SIZE,
@@ -91,6 +92,7 @@ function catalogPreferencesReducer(
 }
 
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
+  const tRoot = useI18n();
   const { filters, setFilters, resetFilters } = useObjectFilters();
   const [searchInput, setSearchInput] = useState(filters.search);
 
@@ -291,7 +293,33 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     if (!bulkExport || bulkExport.length === 0) {
       return;
     }
-    exportCollectionsToCsv(bulkExport);
+    exportCollectionsToCsv(
+      bulkExport,
+      [
+        tRoot("objects.form.accessionNumber"),
+        tRoot("objects.form.title"),
+        tRoot("objects.detail.alternativeTitle"),
+        tRoot("objects.form.creator"),
+        tRoot("objects.filters.objectType"),
+        tRoot("objects.form.objectName"),
+        tRoot("objects.form.culture"),
+        tRoot("objects.form.period"),
+        tRoot("objects.form.dateCreated"),
+        tRoot("objects.form.materials"),
+        tRoot("objects.printView.technique"),
+        tRoot("objects.form.dimensions"),
+        tRoot("objects.form.description"),
+        tRoot("objects.form.condition"),
+        tRoot("objects.form.provenance"),
+        tRoot("common.status"),
+        tRoot("objects.form.currentLocation"),
+        tRoot("objects.form.collectionGroup"),
+        tRoot("untranslatedRecords.objects.export.catalogedDate"),
+      ],
+      tRoot("untranslatedRecords.objects.bulk.exported", {
+        count: bulkExport.length,
+      }),
+    );
   };
 
   const handleBulkSuccess = () => {

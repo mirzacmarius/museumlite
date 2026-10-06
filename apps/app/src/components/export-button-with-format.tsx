@@ -20,33 +20,47 @@ interface ExportFormatOption {
   description: string;
 }
 
-const EXPORT_FORMATS: ExportFormatOption[] = [
-  {
-    value: "csv",
-    label: "CSV",
-    description: "Comma-separated values for spreadsheets",
-  },
-  {
-    value: "json",
-    label: "JSON",
-    description: "JavaScript Object Notation for APIs",
-  },
-  {
-    value: "xml",
-    label: "XML",
-    description: "Extensible Markup Language",
-  },
-  {
-    value: "dublin-core",
-    label: "Dublin Core",
-    description: "Standardized metadata format",
-  },
-  {
-    value: "spectrum",
-    label: "SPECTRUM",
-    description: "UK museum standard",
-  },
-];
+function getExportFormats(
+  translate: (key: string) => string,
+): ExportFormatOption[] {
+  return [
+    {
+      value: "csv",
+      label: "CSV",
+      description: translate(
+        "untranslatedComponents.exportFormats.csvDescription",
+      ),
+    },
+    {
+      value: "json",
+      label: "JSON",
+      description: translate(
+        "untranslatedComponents.exportFormats.jsonDescription",
+      ),
+    },
+    {
+      value: "xml",
+      label: "XML",
+      description: translate(
+        "untranslatedComponents.exportFormats.xmlDescription",
+      ),
+    },
+    {
+      value: "dublin-core",
+      label: "Dublin Core",
+      description: translate(
+        "untranslatedComponents.exportFormats.dublinCoreDescription",
+      ),
+    },
+    {
+      value: "spectrum",
+      label: "SPECTRUM",
+      description: translate(
+        "untranslatedComponents.exportFormats.spectrumDescription",
+      ),
+    },
+  ];
+}
 
 interface ExportButtonWithFormatProps {
   onExport: (format: ExportFormat) => Promise<string | undefined>;
@@ -65,6 +79,7 @@ export function ExportButtonWithFormat({
   buttonSize,
   buttonClassName,
 }: ExportButtonWithFormatProps) {
+  const translate = useI18n();
   const t = useI18n();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -122,7 +137,7 @@ export function ExportButtonWithFormat({
     [filename, isExporting, onExport, t],
   );
 
-  const availableFormats = EXPORT_FORMATS.filter((format) =>
+  const availableFormats = getExportFormats(translate).filter((format) =>
     supportedFormats.includes(format.value),
   );
 
@@ -140,7 +155,7 @@ export function ExportButtonWithFormat({
           ) : (
             <Download className="mr-2 size-4" />
           )}
-          Export
+          {translate("untranslatedComponents.labels.export")}
           <ChevronDown className="ml-2 size-4" />
         </Button>
       </DropdownMenuTrigger>

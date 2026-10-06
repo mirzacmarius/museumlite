@@ -19,9 +19,9 @@ import {
   HoldsStatisticsGrid,
 } from "./holds-page-parts";
 import {
+  type HoldStatus,
   holdsPageReducer,
   initialHoldsPageState,
-  type HoldStatus,
 } from "./holds-page-state";
 import { PlaceHoldDialog } from "./place-hold-dialog";
 
@@ -174,8 +174,7 @@ export function LibraryHoldsPageClient() {
   const formatDate = (timestamp: number) =>
     formatDateUtil(new Date(timestamp), locale);
 
-  const getStatusBadge = (status: string) =>
-    getHoldStatusBadge(status, tHolds);
+  const getStatusBadge = (status: string) => getHoldStatusBadge(status, tHolds);
 
   return (
     <div className="flex size-full bg-background px-6">

@@ -14,6 +14,7 @@ import {
 } from "@v1/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 
 export function ClaimForm({
   organizationId,
@@ -41,6 +42,7 @@ export function ClaimForm({
     incidentLocation?: string;
   }) => Promise<void>;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.insurance");
   const [form, setForm] = useState({
     policyId: "",
     incidentDate: "",
@@ -68,13 +70,13 @@ export function ClaimForm({
       !form.incidentDescription ||
       !form.claimedAmount
     ) {
-      toast.error("Please fill all required fields.");
+      toast.error(t("requiredFieldsError"));
       return;
     }
 
     const incidentDate = Date.parse(form.incidentDate);
     if (Number.isNaN(incidentDate)) {
-      toast.error("Please provide a valid incident date.");
+      toast.error(t("validIncidentDateError"));
       return;
     }
 
@@ -105,7 +107,7 @@ export function ClaimForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
-        <Label>Policy *</Label>
+        <Label>{t("policyRequiredLabel")}</Label>
         <Select
           value={form.policyId}
           onValueChange={(value) =>
@@ -113,12 +115,12 @@ export function ClaimForm({
           }
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select policy" />
+            <SelectValue placeholder={t("selectPolicy")} />
           </SelectTrigger>
           <SelectContent>
             {policyOptions.length === 0 && (
               <SelectItem value="none" disabled>
-                No policies found
+                {t("noPoliciesFound")}
               </SelectItem>
             )}
             {policyOptions.map((option) => (
@@ -132,7 +134,7 @@ export function ClaimForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <DatePickerInput
-          label="Incident Date *"
+          label={t("incidentDateRequiredLabel")}
           id="incidentDate"
           value={form.incidentDate}
           onChange={(value) =>
@@ -140,7 +142,7 @@ export function ClaimForm({
           }
         />
         <div className="space-y-2">
-          <Label>Incident Type *</Label>
+          <Label>{t("incidentTypeRequiredLabel")}</Label>
           <Select
             value={form.incidentType}
             onValueChange={(value) =>
@@ -154,22 +156,22 @@ export function ClaimForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="damage">Damage</SelectItem>
-              <SelectItem value="theft">Theft</SelectItem>
-              <SelectItem value="loss">Loss</SelectItem>
-              <SelectItem value="fire">Fire</SelectItem>
-              <SelectItem value="water">Water</SelectItem>
-              <SelectItem value="vandalism">Vandalism</SelectItem>
-              <SelectItem value="natural_disaster">Natural disaster</SelectItem>
-              <SelectItem value="transit">Transit</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value="damage">{t("incidentDamage")}</SelectItem>
+              <SelectItem value="theft">{t("incidentTheft")}</SelectItem>
+              <SelectItem value="loss">{t("incidentLoss")}</SelectItem>
+              <SelectItem value="fire">{t("incidentFire")}</SelectItem>
+              <SelectItem value="water">{t("incidentWater")}</SelectItem>
+              <SelectItem value="vandalism">{t("incidentVandalism")}</SelectItem>
+              <SelectItem value="natural_disaster">{t("incidentNaturalDisaster")}</SelectItem>
+              <SelectItem value="transit">{t("incidentTransit")}</SelectItem>
+              <SelectItem value="other">{t("other")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="incidentLocation">Incident Location</Label>
+        <Label htmlFor="incidentLocation">{t("incidentLocation")}</Label>
         <Input
           id="incidentLocation"
           value={form.incidentLocation}
@@ -179,12 +181,14 @@ export function ClaimForm({
               incidentLocation: event.target.value,
             }))
           }
-          placeholder="Gallery A, Storage, etc."
+          placeholder={t("incidentLocationPlaceholder")}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="incidentDescription">Incident Description *</Label>
+        <Label htmlFor="incidentDescription">
+          {t("incidentDescriptionRequiredLabel")}
+        </Label>
         <Input
           id="incidentDescription"
           value={form.incidentDescription}
@@ -194,13 +198,13 @@ export function ClaimForm({
               incidentDescription: event.target.value,
             }))
           }
-          placeholder="Describe the incident..."
+          placeholder={t("incidentDescriptionPlaceholder")}
           required
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="claimedAmount">Claimed Amount *</Label>
+        <Label htmlFor="claimedAmount">{t("claimedAmountRequiredLabel")}</Label>
         <Input
           id="claimedAmount"
           type="number"
@@ -219,7 +223,7 @@ export function ClaimForm({
           type="submit"
           disabled={isSubmitting || policyOptions.length === 0}
         >
-          {isSubmitting ? "Creating..." : "Create Claim"}
+          {isSubmitting ? t("creating") : t("createClaim")}
         </Button>
       </div>
     </form>

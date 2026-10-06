@@ -3,6 +3,7 @@
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "@/locales/client";
 import type { NewAccountForm } from "./account-combobox-types";
 
 interface AccountComboboxContactSectionProps {
@@ -14,14 +15,19 @@ export function AccountComboboxContactSection({
   formData,
   setFormData,
 }: AccountComboboxContactSectionProps) {
+  const translate = useI18n();
   if (formData.holderType !== "organization") return null;
 
   return (
     <div className="space-y-4">
-      <h4 className="text-sm font-medium">Contact Person</h4>
+      <h4 className="text-sm font-medium">
+        {translate("untranslatedComponents.labels.contactPerson")}
+      </h4>
       <div className="grid gap-4">
         <div>
-          <Label htmlFor="contactPerson">Name</Label>
+          <Label htmlFor="contactPerson">
+            {translate("untranslatedComponents.labels.name")}
+          </Label>
           <Input
             id="contactPerson"
             value={formData.contactPerson}
@@ -31,12 +37,16 @@ export function AccountComboboxContactSection({
                 contactPerson: e.target.value,
               }))
             }
-            placeholder="Contact person name"
+            placeholder={translate(
+              "untranslatedComponents.labels.contactPersonName",
+            )}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="contactPhone">Phone</Label>
+            <Label htmlFor="contactPhone">
+              {translate("untranslatedComponents.labels.phone")}
+            </Label>
             <Input
               id="contactPhone"
               value={formData.contactPhone}
@@ -50,7 +60,9 @@ export function AccountComboboxContactSection({
             />
           </div>
           <div>
-            <Label htmlFor="contactEmail">Email</Label>
+            <Label htmlFor="contactEmail">
+              {translate("untranslatedComponents.labels.email")}
+            </Label>
             <Input
               id="contactEmail"
               type="email"

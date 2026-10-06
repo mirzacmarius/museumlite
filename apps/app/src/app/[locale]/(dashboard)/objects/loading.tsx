@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 export function ObjectCatalogSkeleton() {
   return (
     <div className="flex size-full flex-col overflow-hidden bg-background">
@@ -27,6 +28,7 @@ export function ObjectCatalogSkeleton() {
 }
 
 export function ObjectCatalogTableSkeleton() {
+  const tRoot = useI18n();
   return (
     <div className="flex h-full flex-col">
       <div className="custom-scrollbar relative flex-1 overflow-y-auto">
@@ -37,22 +39,24 @@ export function ObjectCatalogTableSkeleton() {
                 <div className="size-4 rounded bg-muted/60" />
               </th>
               <th className="w-16 border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                Image
+                {tRoot("objects.columnConfig.image")}
               </th>
               <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                Object ID & Description
+                {tRoot(
+                  "untranslatedRecords.objects.detail.objectIdDescription",
+                )}
               </th>
               <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                Collection
+                {tRoot("objects.form.collectionGroup")}
               </th>
               <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                Location
+                {tRoot("objects.filters.location")}
               </th>
               <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                Date Acquired
+                {tRoot("untranslatedRecords.objects.detail.dateAcquired")}
               </th>
               <th className="border-b border-border px-4 py-3 text-right font-medium text-muted-foreground">
-                Status
+                {tRoot("objects.filters.status")}
               </th>
               <th className="w-10 border-b border-border px-4 py-3 font-medium text-muted-foreground" />
             </tr>

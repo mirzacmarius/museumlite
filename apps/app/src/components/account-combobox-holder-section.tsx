@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@v1/ui/radio-group";
 import { cn } from "@v1/ui/utils";
 import type { Dispatch, SetStateAction } from "react";
 import type { AccountHolderType } from "@/lib/account-holder";
+import { useI18n } from "@/locales/client";
 import type { NewAccountForm } from "./account-combobox-types";
 
 interface AccountComboboxHolderSectionProps {
@@ -18,12 +19,15 @@ export function AccountComboboxHolderSection({
   formData,
   setFormData,
 }: AccountComboboxHolderSectionProps) {
+  const translate = useI18n();
   return (
     <div className="space-y-4">
-      <h4 className="text-sm font-medium">Account Holder</h4>
+      <h4 className="text-sm font-medium">
+        {translate("untranslatedComponents.labels.accountHolder")}
+      </h4>
       <div className="grid gap-4">
         <div className="space-y-3">
-          <Label>Holder type</Label>
+          <Label>{translate("untranslatedComponents.labels.holderType")}</Label>
           <RadioGroup
             className="grid gap-3 sm:grid-cols-2"
             value={formData.holderType}
@@ -48,9 +52,13 @@ export function AccountComboboxHolderSection({
                 className="mt-0.5"
               />
               <div className="space-y-1">
-                <div className="font-medium">Private Person</div>
+                <div className="font-medium">
+                  {translate("untranslatedComponents.labels.privatePerson")}
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Use this for individuals acting in their own name.
+                  {translate(
+                    "untranslatedComponents.labels.useThisForIndividualsActingInTheirOwnName",
+                  )}
                 </p>
               </div>
             </Label>
@@ -68,9 +76,15 @@ export function AccountComboboxHolderSection({
                 className="mt-0.5"
               />
               <div className="space-y-1">
-                <div className="font-medium">Business / Organization</div>
+                <div className="font-medium">
+                  {translate(
+                    "untranslatedComponents.labels.businessOrganization",
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Use this for companies, museums, galleries, and institutions.
+                  {translate(
+                    "untranslatedComponents.labels.useThisForCompaniesMuseumsGalleriesAndInstitutions",
+                  )}
                 </p>
               </div>
             </Label>
@@ -79,8 +93,10 @@ export function AccountComboboxHolderSection({
         <div>
           <Label htmlFor="businessName">
             {formData.holderType === "organization"
-              ? "Business Name / Organisation *"
-              : "Full Name *"}
+              ? translate(
+                  "untranslatedComponents.labels.businessNameOrganisationRequired",
+                )
+              : translate("untranslatedComponents.labels.fullNameRequired")}
           </Label>
           <Input
             id="businessName"
@@ -93,26 +109,32 @@ export function AccountComboboxHolderSection({
             }
             placeholder={
               formData.holderType === "organization"
-                ? "Enter business or organization name"
-                : "Enter full name"
+                ? translate(
+                    "untranslatedComponents.labels.enterBusinessOrOrganizationName",
+                  )
+                : translate("untranslatedComponents.labels.enterFullName")
             }
           />
         </div>
         {formData.holderType === "organization" ? (
           <div>
-            <Label htmlFor="taxId">Organization Number</Label>
+            <Label htmlFor="taxId">
+              {translate("untranslatedComponents.labels.organizationNumber")}
+            </Label>
             <Input
               id="taxId"
               value={formData.taxId}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, taxId: e.target.value }))
               }
-              placeholder="Enter organization number"
+              placeholder={translate(
+                "untranslatedComponents.labels.enterOrganizationNumber",
+              )}
             />
           </div>
         ) : (
           <DatePickerInput
-            label="Date of Birth"
+            label={translate("untranslatedComponents.labels.dateOfBirth")}
             id="dateOfBirth"
             value={formData.dateOfBirth}
             onChange={(value) =>
@@ -125,7 +147,9 @@ export function AccountComboboxHolderSection({
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">
+              {translate("untranslatedComponents.labels.phone")}
+            </Label>
             <Input
               id="phone"
               value={formData.phone}
@@ -136,7 +160,9 @@ export function AccountComboboxHolderSection({
             />
           </div>
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">
+              {translate("untranslatedComponents.labels.email")}
+            </Label>
             <Input
               id="email"
               type="email"

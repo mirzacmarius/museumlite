@@ -40,6 +40,7 @@ const initialFormData: AccountFormValues = {
 export default function NewAccountPage() {
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
+  const untranslated = useScopedI18n("untranslatedDashboard.accounts");
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccount = useMutation(api.accounts.create);
@@ -102,9 +103,7 @@ export default function NewAccountPage() {
       push("/accounts");
     } catch (err) {
       console.error("Error creating account:", err);
-      setError(
-        err instanceof Error ? err.message : t("form.errors.createFailed"),
-      );
+      setError(t("form.errors.createFailed"));
       setIsSubmitting(false);
     }
   };
@@ -138,6 +137,7 @@ export default function NewAccountPage() {
             <AccountFormFields
               formData={formData}
               t={t}
+              untranslated={untranslated}
               onChange={updateFormData}
             />
             <div className="flex justify-end gap-4 pt-4">

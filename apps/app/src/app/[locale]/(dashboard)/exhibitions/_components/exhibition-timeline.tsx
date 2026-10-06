@@ -148,7 +148,7 @@ export function ExhibitionTimeline({
                       </div>
                       {ex.endDate && (
                         <div className="mt-0.5 text-xs text-muted-foreground">
-                          to{" "}
+                          –{" "}
                           <ClientDate
                             timestamp={ex.endDate}
                             locale={locale}

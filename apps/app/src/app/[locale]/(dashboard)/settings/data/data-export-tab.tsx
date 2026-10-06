@@ -103,6 +103,7 @@ const EXPORT_HEADERS: Record<ImportType, string[]> = {
 
 export function DataExportTab({ organizationId }: DataExportTabProps) {
   const t = useScopedI18n("settings.data");
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const [exportType, setExportType] = useState<ImportType>("objects");
   const [exporting, setExporting] = useState(false);
 
@@ -162,10 +163,10 @@ export function DataExportTab({ organizationId }: DataExportTabProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="size-5" />
-            CSV Export
+            {tDashboard("csvExport")}
           </CardTitle>
           <CardDescription>
-            Export your data to a CSV file for backup, analysis, or migration.
+            {tDashboard("csvExportDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

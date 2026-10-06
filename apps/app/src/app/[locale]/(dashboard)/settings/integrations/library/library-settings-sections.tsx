@@ -13,6 +13,7 @@ import {
 import { Switch } from "@v1/ui/switch";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import Link from "next/link";
+import { useScopedI18n } from "@/locales/client";
 import type { LibrarySettingsFormData } from "./library-settings-types";
 
 interface LibrarySettingsSectionProps {
@@ -27,22 +28,17 @@ export function LibrarySettingsHeader({
   isSaving: boolean;
   onSave: () => void;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-3">
         <Button variant="ghost" size="sm" className="w-fit" asChild>
           <Link href="/settings/integrations">
-            <ArrowLeft className="mr-2 size-4" />
-            Back
-          </Link>
+            <ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
         </Button>
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-medium text-foreground">
-            Library Settings
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Configure circulation policies, fines, and patron settings
-          </p>
+          <h2 className="text-xl font-medium text-foreground">{t("librarySettings")}</h2>
+          <p className="text-sm text-muted-foreground">{t("librarySettingsDescription")}</p>
         </div>
       </div>
       <Button onClick={onSave} disabled={isSaving}>
@@ -51,7 +47,7 @@ export function LibrarySettingsHeader({
         ) : (
           <Save className="mr-2 size-4" />
         )}
-        Save Changes
+        {t("saveChanges")}
       </Button>
     </div>
   );
@@ -61,17 +57,16 @@ export function LibraryCirculationSection({
   formData,
   setFormData,
 }: LibrarySettingsSectionProps) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
-        <h3 className="text-lg font-medium">Circulation Policies</h3>
-        <p className="text-sm text-muted-foreground">
-          Default settings for item checkouts and renewals
-        </p>
+        <h3 className="text-lg font-medium">{t("circulationPolicies")}</h3>
+        <p className="text-sm text-muted-foreground">{t("checkoutRenewalDefaults")}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Default Loan Period (days)</Label>
+          <Label>{t("defaultLoanPeriod")}</Label>
           <Input
             type="number"
             min={1}
@@ -86,7 +81,7 @@ export function LibraryCirculationSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Renewal Period (days)</Label>
+          <Label>{t("renewalPeriod")}</Label>
           <Input
             type="number"
             min={1}
@@ -100,7 +95,7 @@ export function LibraryCirculationSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Default Renewal Limit</Label>
+          <Label>{t("defaultRenewalLimit")}</Label>
           <Input
             type="number"
             min={0}
@@ -114,7 +109,7 @@ export function LibraryCirculationSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Maximum Renewals Allowed</Label>
+          <Label>{t("maximumRenewals")}</Label>
           <Input
             type="number"
             min={0}
@@ -136,17 +131,16 @@ export function LibraryFineSettingsSection({
   formData,
   setFormData,
 }: LibrarySettingsSectionProps) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
-        <h3 className="text-lg font-medium">Fine Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure overdue fine rates and limits
-        </p>
+        <h3 className="text-lg font-medium">{t("fineSettings")}</h3>
+        <p className="text-sm text-muted-foreground">{t("fineSettingsDescription")}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Fine Per Day ($)</Label>
+          <Label>{t("finePerDay")}</Label>
           <Input
             type="number"
             min={0}
@@ -161,7 +155,7 @@ export function LibraryFineSettingsSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Maximum Fine Per Item ($)</Label>
+          <Label>{t("maxFinePerItem")}</Label>
           <Input
             type="number"
             min={0}
@@ -176,7 +170,7 @@ export function LibraryFineSettingsSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Grace Period (days)</Label>
+          <Label>{t("gracePeriod")}</Label>
           <Input
             type="number"
             min={0}
@@ -190,7 +184,7 @@ export function LibraryFineSettingsSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Fine Threshold to Block Patron ($)</Label>
+          <Label>{t("fineThreshold")}</Label>
           <Input
             type="number"
             min={0}
@@ -213,17 +207,16 @@ export function LibraryHoldSettingsSection({
   formData,
   setFormData,
 }: LibrarySettingsSectionProps) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
-        <h3 className="text-lg font-medium">Hold Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure hold queue and pickup policies
-        </p>
+        <h3 className="text-lg font-medium">{t("holdSettings")}</h3>
+        <p className="text-sm text-muted-foreground">{t("holdSettingsDescription")}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Hold Expiration (days after available)</Label>
+          <Label>{t("holdExpiration")}</Label>
           <Input
             type="number"
             min={1}
@@ -237,7 +230,7 @@ export function LibraryHoldSettingsSection({
           />
         </div>
         <div className="space-y-2">
-          <Label>Maximum Holds Per Patron</Label>
+          <Label>{t("maxHolds")}</Label>
           <Input
             type="number"
             min={1}
@@ -259,17 +252,16 @@ export function LibraryCardSettingsSection({
   formData,
   setFormData,
 }: LibrarySettingsSectionProps) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
-        <h3 className="text-lg font-medium">Library Card Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure patron card number generation
-        </p>
+        <h3 className="text-lg font-medium">{t("libraryCardSettings")}</h3>
+        <p className="text-sm text-muted-foreground">{t("libraryCardDescription")}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Card Number Prefix</Label>
+          <Label>{t("cardNumberPrefix")}</Label>
           <Input
             value={formData.cardNumberPrefix}
             onChange={(e) =>
@@ -278,11 +270,11 @@ export function LibraryCardSettingsSection({
                 cardNumberPrefix: e.target.value,
               }))
             }
-            placeholder="e.g., LIB"
+            placeholder="LIB"
           />
         </div>
         <div className="space-y-2">
-          <Label>Card Number Length</Label>
+          <Label>{t("cardNumberLength")}</Label>
           <Input
             type="number"
             min={6}
@@ -298,10 +290,8 @@ export function LibraryCardSettingsSection({
         </div>
         <div className="flex items-center justify-between gap-y-0 sm:col-span-2">
           <div>
-            <Label>Auto-generate Card Numbers</Label>
-            <p className="text-sm text-muted-foreground">
-              Automatically generate card numbers for new patrons
-            </p>
+            <Label>{t("autoGenerateCardNumbers")}</Label>
+            <p className="text-sm text-muted-foreground">{t("autoGenerateCardNumbersDescription")}</p>
           </div>
           <Switch
             checked={formData.autoGenerateCardNumbers}
@@ -322,17 +312,16 @@ export function LibraryCatalogingSection({
   formData,
   setFormData,
 }: LibrarySettingsSectionProps) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border p-6">
-        <h3 className="text-lg font-medium">Cataloging Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure cataloging and classification options
-        </p>
+        <h3 className="text-lg font-medium">{t("catalogingSettings")}</h3>
+        <p className="text-sm text-muted-foreground">{t("catalogingDescription")}</p>
       </div>
       <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Classification System</Label>
+          <Label>{t("classificationSystem")}</Label>
           <Select
             value={formData.classificationSystem}
             onValueChange={(value: "dewey" | "lc" | "custom") =>
@@ -346,14 +335,14 @@ export function LibraryCatalogingSection({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="dewey">Dewey Decimal System</SelectItem>
-              <SelectItem value="lc">Library of Congress</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
+              <SelectItem value="dewey">{t("deweyDecimal")}</SelectItem>
+              <SelectItem value="lc">{t("libraryOfCongress")}</SelectItem>
+              <SelectItem value="custom">{t("custom")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Due Date Reminder (days before)</Label>
+          <Label>{t("dueDateReminder")}</Label>
           <Input
             type="number"
             min={0}

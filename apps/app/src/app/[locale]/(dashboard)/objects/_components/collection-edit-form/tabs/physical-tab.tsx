@@ -1,27 +1,20 @@
 "use client";
 
-import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import type { FunctionReturnType } from "convex/server";
 import { ConditionCombobox } from "@/components/condition-combobox";
 import { MaterialsCombobox } from "@/components/materials-combobox";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
-
-type CollectionDoc = NonNullable<
-  FunctionReturnType<typeof api.collections.get>
->;
-
 export interface CollectionEditPhysicalTabProps extends CollectionFormTabProps {
-  collection: CollectionDoc;
-  typedCollectionId: Id<"collections">;
-  hasConditionChanged: boolean;
-  requiresConditionChangeNote: boolean;
-  conditionChangeNote: string;
-  onConditionChangeNoteChange: (value: string) => void;
+  typedCollectionId?: Id<"collections">;
+  hasConditionChanged?: boolean;
+  requiresConditionChangeNote?: boolean;
+  conditionChangeNote?: string;
+  onConditionChangeNoteChange?: (value: string) => void;
 }
 
 export function CollectionEditPhysicalTab({
@@ -35,15 +28,20 @@ export function CollectionEditPhysicalTab({
   conditionChangeNote,
   onConditionChangeNoteChange,
 }: CollectionEditPhysicalTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Physical characteristics"
-        description="Material, dimensional, and condition details for the object."
+        title={tRoot(
+          "untranslatedRecords.objects.form.physicalCharacteristics",
+        )}
+        description={tRoot(
+          "untranslatedRecords.objects.attributes.materialDimensionsCondition",
+        )}
       >
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="materials">Materials</Label>
+            <Label htmlFor="materials">{tRoot("objects.form.materials")}</Label>
             <MaterialsCombobox
               organizationId={currentOrganizationId}
               collectionId={typedCollectionId}
@@ -55,7 +53,7 @@ export function CollectionEditPhysicalTab({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="condition">Condition</Label>
+            <Label htmlFor="condition">{tRoot("objects.form.condition")}</Label>
             <ConditionCombobox
               organizationId={currentOrganizationId}
               value={formData.condition || ""}
@@ -64,26 +62,36 @@ export function CollectionEditPhysicalTab({
             {hasConditionChanged ? (
               <div className="rounded-lg border border-dashed border-border/60 bg-secondary/10 p-3">
                 <p className="text-xs text-muted-foreground">
-                  This change will be dated and attributed automatically.
+                  {tRoot(
+                    "untranslatedRecords.objects.form.conditionChangeDated",
+                  )}
                 </p>
                 <div className="mt-3 space-y-2">
                   <Label htmlFor="conditionChangeNote">
-                    Condition change note
+                    {tRoot(
+                      "untranslatedRecords.objects.form.conditionChangeNote",
+                    )}
                   </Label>
                   <Textarea
                     autoResize
                     id="conditionChangeNote"
                     value={conditionChangeNote}
                     onChange={(event) =>
-                      onConditionChangeNoteChange(event.target.value)
+                      onConditionChangeNoteChange?.(event.target.value)
                     }
                     rows={3}
-                    placeholder="Explain what changed and why."
+                    placeholder={tRoot(
+                      "untranslatedRecords.objects.form.explainChange",
+                    )}
                   />
                   <p className="text-xs text-muted-foreground">
                     {requiresConditionChangeNote
-                      ? "Required when replacing an existing condition."
-                      : "Optional for the initial condition entry."}
+                      ? tRoot(
+                          "untranslatedRecords.objects.form.conditionChangeRequired",
+                        )
+                      : tRoot(
+                          "untranslatedRecords.objects.form.initialConditionOptional",
+                        )}
                   </p>
                 </div>
               </div>
@@ -93,15 +101,19 @@ export function CollectionEditPhysicalTab({
           <div className="space-y-3 md:col-span-2 xl:col-span-3">
             <div className="space-y-1">
               <h3 className="text-sm font-medium text-foreground">
-                Detailed Dimensions
+                {tRoot("objects.printView.detailedDimensions")}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Document dimensions, diameter, and weight.
+                {tRoot(
+                  "untranslatedRecords.objects.form.detailedDimensionsHint",
+                )}
               </p>
             </div>
             <div className="grid gap-5 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="dimensions">Dimensions</Label>
+                <Label htmlFor="dimensions">
+                  {tRoot("objects.form.dimensions")}
+                </Label>
                 <Input
                   id="dimensions"
                   value={formData.dimensions || ""}
@@ -113,19 +125,26 @@ export function CollectionEditPhysicalTab({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dimensionDiameter">Diameter</Label>
+                <Label htmlFor="dimensionDiameter">
+                  {tRoot("objects.printView.diameter")}
+                </Label>
                 <Input
                   id="dimensionDiameter"
                   value={formData.dimensionDiameter || ""}
                   onChange={(event) =>
                     updateField("dimensionDiameter", event.target.value)
                   }
-                  placeholder="e.g., 43 mm"
+                  placeholder={tRoot(
+                    "untranslatedRecords.objects.examples.dimensions",
+                    { value: "43 mm" },
+                  )}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dimensionWeight">Weight</Label>
+                <Label htmlFor="dimensionWeight">
+                  {tRoot("objects.printView.weight")}
+                </Label>
                 <Input
                   id="dimensionWeight"
                   inputMode="decimal"
@@ -133,14 +152,19 @@ export function CollectionEditPhysicalTab({
                   onChange={(event) =>
                     updateField("dimensionWeight", event.target.value)
                   }
-                  placeholder="e.g., 200gram or 2kg"
+                  placeholder={tRoot(
+                    "untranslatedRecords.objects.examples.weight",
+                    { value: "200gram or 2kg" },
+                  )}
                 />
               </div>
             </div>
           </div>
 
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
-            <Label htmlFor="inscriptions">Inscriptions & Marks</Label>
+            <Label htmlFor="inscriptions">
+              {tRoot("untranslatedRecords.objects.detail.inscriptionsMarks")}
+            </Label>
             <Textarea
               autoResize
               id="inscriptions"
@@ -149,7 +173,9 @@ export function CollectionEditPhysicalTab({
                 updateField("inscriptions", event.target.value)
               }
               rows={4}
-              placeholder="Document signatures, stamps, labels, engravings, or collector marks"
+              placeholder={tRoot(
+                "untranslatedRecords.objects.form.documentMarksDescription",
+              )}
             />
           </div>
         </div>

@@ -2346,8 +2346,9 @@ export const reviewIntegrity = query({
           q.eq("organizationId", args.organizationId),
         )
         .paginate(paginationOpts);
+      const database = ctx.db;
       for (const record of result.page) {
-        const documents = await ctx.db
+        const documents = await database
           .query("loanDocuments")
           .withIndex("by_loan", (q) => q.eq("loanId", record._id))
           .take(101);
@@ -2363,7 +2364,7 @@ export const reviewIntegrity = query({
             type: "loanDocument",
             id: document._id,
           });
-        const items = await ctx.db
+        const items = await database
           .query("loanItems")
           .withIndex("by_loan", (q) => q.eq("loanId", record._id))
           .take(101);
@@ -2383,7 +2384,7 @@ export const reviewIntegrity = query({
               item.collectionId,
               "Loan object is missing or belongs to another organization",
             );
-          const reports = await ctx.db
+          const reports = await database
             .query("conditionReports")
             .withIndex("by_loanItem", (q) => q.eq("loanItemId", item._id))
             .take(101);

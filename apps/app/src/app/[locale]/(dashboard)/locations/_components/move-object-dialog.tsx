@@ -86,6 +86,7 @@ export function MoveObjectDialog({
   onSuccess,
 }: MoveObjectDialogProps) {
   const t = useScopedI18n("locations.moveObject");
+  const tDashboard = useScopedI18n("untranslatedDashboard.locationViews");
   const tForm = useScopedI18n("locations.form");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
@@ -202,14 +203,14 @@ export function MoveObjectDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason</Label>
+              <Label htmlFor="reason">{tDashboard("moveReason")}</Label>
               <Input
                 id="reason"
                 value={state.reason}
                 onChange={(e) =>
                   dispatch({ type: "setReason", value: e.target.value })
                 }
-                placeholder="e.g., Loan, Exhibition, Conservation"
+                placeholder={tDashboard("moveReasonPlaceholder")}
               />
             </div>
             <div className="space-y-2">

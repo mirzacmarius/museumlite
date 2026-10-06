@@ -13,9 +13,9 @@ import Link from "next/link";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
-import { StatusTile } from "./accession-detail-ui";
+import { useI18n } from "@/locales/client";
+import { formatAccessionMethodLabel, StatusTile } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
-
 export function AccessionDetailHeroBanner({
   accession,
   locale,
@@ -33,6 +33,7 @@ export function AccessionDetailHeroBanner({
   getStatusIcon,
   getStatusColor,
 }: AccessionDetailViewProps) {
+  const tRoot = useI18n();
   return (
     <>
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-6 backdrop-blur-xl">
@@ -42,7 +43,9 @@ export function AccessionDetailHeroBanner({
               <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-muted-foreground">Accessions</span>
+          <span className="text-muted-foreground">
+            {tRoot("accessions.title")}
+          </span>
           <span className="text-muted-foreground/50">/</span>
           <span className="font-medium text-foreground">
             {accession.accessionNumber}
@@ -55,7 +58,7 @@ export function AccessionDetailHeroBanner({
               <Button variant="outline" size="sm" asChild>
                 <Link href={draftEditHref}>
                   <Edit className="mr-2 size-4" />
-                  Edit Draft
+                  {tRoot("untranslatedRecords.accessions.detail.editDraft")}
                 </Link>
               </Button>
             </PermissionGate>
@@ -65,7 +68,7 @@ export function AccessionDetailHeroBanner({
               <Button variant="outline" size="sm" asChild>
                 <Link href={draftEditHref}>
                   <Edit className="mr-2 size-4" />
-                  Edit
+                  {tRoot("accessions.detail.edit")}
                 </Link>
               </Button>
             </PermissionGate>
@@ -74,7 +77,7 @@ export function AccessionDetailHeroBanner({
             <Button variant="outline" size="sm" asChild>
               <Link href={`/collections/${accession.collectionId}`}>
                 <ExternalLink className="mr-2 size-4" />
-                View Collection
+                {tRoot("accessions.detail.viewCollection")}
               </Link>
             </Button>
           ) : null}
@@ -86,7 +89,7 @@ export function AccessionDetailHeroBanner({
             {getStatusIcon(displayStatus)}
             <div className="mt-4 space-y-1 px-6">
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Accession
+                {tRoot("untranslatedRecords.objects.detail.accession")}
               </p>
               <p className="text-sm font-medium text-foreground">
                 {accession.accessionNumber}
@@ -101,7 +104,15 @@ export function AccessionDetailHeroBanner({
                   displayStatus,
                 )}`}
               >
-                {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+                {displayStatus === "draft"
+                  ? tRoot("untranslatedRecords.accessions.detail.statusDraft")
+                  : displayStatus === "pending"
+                    ? tRoot("accessions.status.pending")
+                    : displayStatus === "approved"
+                      ? tRoot("accessions.status.approved")
+                      : displayStatus === "rejected"
+                        ? tRoot("accessions.status.rejected")
+                        : displayStatus}
               </span>
               <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                 {accession.accessionNumber}
@@ -125,7 +136,7 @@ export function AccessionDetailHeroBanner({
               <div className="flex items-center gap-2">
                 <Calendar className="size-4" />
                 <span>
-                  Received{" "}
+                  {tRoot("library.acquisitions.stats.received")}{" "}
                   <ClientDate
                     timestamp={accession.dateReceived}
                     locale={locale}
@@ -138,25 +149,36 @@ export function AccessionDetailHeroBanner({
               </div>
               <div className="flex items-center gap-2">
                 <Package className="size-4" />
-                <span className="capitalize">{accession.method}</span>
+                <span>
+                  {formatAccessionMethodLabel(accession.method, tRoot)}
+                </span>
               </div>
             </div>
 
             <div className="grid gap-2 pt-1 sm:grid-cols-2 xl:grid-cols-4">
               <StatusTile
-                label="Review state"
+                label={tRoot(
+                  "untranslatedRecords.accessions.detail.reviewState",
+                )}
                 value={heroReviewStateLabel}
                 tone={reviewStateTone}
                 compact
               />
               <StatusTile
-                label="Current step"
-                value={currentWorkflowStep?.name || "No active step"}
+                label={tRoot(
+                  "untranslatedRecords.accessions.detail.currentStep",
+                )}
+                value={
+                  currentWorkflowStep?.name ||
+                  tRoot("untranslatedRecords.accessions.status.noActiveStep")
+                }
                 tone={currentWorkflowStep ? "warning" : "default"}
                 compact
               />
               <StatusTile
-                label="Source check"
+                label={tRoot(
+                  "untranslatedRecords.accessions.detail.sourceCheck",
+                )}
                 value={heroSourceVerificationState}
                 tone={
                   requiresSourceVerification && !isSourceVerified
@@ -166,7 +188,7 @@ export function AccessionDetailHeroBanner({
                 compact
               />
               <StatusTile
-                label="Cost"
+                label={tRoot("accessions.form.cost")}
                 value={
                   accession.cost
                     ? formatCurrency(
@@ -174,7 +196,7 @@ export function AccessionDetailHeroBanner({
                         locale as FormatLocale,
                         "USD",
                       )
-                    : "Not recorded"
+                    : tRoot("untranslatedRecords.accessions.status.notRecorded")
                 }
                 compact
               />

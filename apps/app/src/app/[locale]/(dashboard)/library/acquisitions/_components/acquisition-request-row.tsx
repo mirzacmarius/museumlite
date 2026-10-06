@@ -5,7 +5,7 @@ import { Button } from "@v1/ui/button";
 import { Check, CheckCircle, Package, Truck, X } from "lucide-react";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   AcquisitionPriorityBadge,
   AcquisitionStatusBadge,
@@ -41,6 +41,7 @@ export function AcquisitionRequestRow({
   onReject,
   onStatusChange,
 }: AcquisitionRequestRowProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const tAcq = useScopedI18n("library.acquisitions");
 
@@ -58,7 +59,7 @@ export function AcquisitionRequestRow({
           </div>
           {request.authors && request.authors.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              by {request.authors.join(", ")}
+              {tRoot("library.catalog.labels.by")} {request.authors.join(", ")}
             </p>
           )}
           <p className="text-xs text-muted-foreground">

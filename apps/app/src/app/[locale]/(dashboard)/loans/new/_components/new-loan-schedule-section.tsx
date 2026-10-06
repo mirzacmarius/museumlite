@@ -4,7 +4,7 @@ import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { NewLoanFormData } from "./types";
 
 interface NewLoanScheduleSectionProps {
@@ -18,6 +18,7 @@ export function NewLoanScheduleSection({
   formData,
   onFormDataChange,
 }: NewLoanScheduleSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans");
 
   return (
@@ -26,7 +27,7 @@ export function NewLoanScheduleSection({
         <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
           2
         </span>
-        Schedule & Terms
+        {tRoot("loans.actions.scheduleTerms")}
       </h2>
 
       <div className="grid gap-6">
@@ -34,7 +35,8 @@ export function NewLoanScheduleSection({
           <DatePicker
             label={
               <>
-                Start Date <span className="text-destructive">*</span>
+                {tRoot("loans.actions.startDate")}{" "}
+                <span className="text-destructive">*</span>
               </>
             }
             id="startDate"
@@ -48,7 +50,7 @@ export function NewLoanScheduleSection({
             placeholder={t("placeholders.selectDate")}
           />
           <DatePicker
-            label="End Date"
+            label={tRoot("loans.actions.endDate")}
             id="endDate"
             date={formData.endDate}
             onSelect={(date: Date | undefined) =>
@@ -59,7 +61,9 @@ export function NewLoanScheduleSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="insuranceValue">Total Insurance Value</Label>
+          <Label htmlFor="insuranceValue">
+            {tRoot("untranslatedRecords.loans.detail.totalInsuranceValue")}
+          </Label>
           <Input
             id="insuranceValue"
             type="number"
@@ -77,7 +81,9 @@ export function NewLoanScheduleSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="terms">Terms & Conditions</Label>
+          <Label htmlFor="terms">
+            {tRoot("loans.actions.termsConditions")}
+          </Label>
           <Textarea
             id="terms"
             value={formData.terms}
@@ -94,7 +100,7 @@ export function NewLoanScheduleSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="notes">Internal Notes</Label>
+          <Label htmlFor="notes">{tRoot("loans.actions.internalNotes")}</Label>
           <Textarea
             id="notes"
             value={formData.notes}

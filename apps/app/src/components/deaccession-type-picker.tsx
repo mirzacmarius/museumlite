@@ -1,6 +1,7 @@
 "use client";
 
 import { Archive, ArrowRightLeft, DollarSign } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type {
   DeaccessionWorkflowConfig,
   RemovalType,
@@ -15,6 +16,7 @@ export function DeaccessionTypePicker({
   deaccessionWorkflow,
   onSelect,
 }: DeaccessionTypePickerProps) {
+  const translate = useI18n();
   return (
     <div className="grid gap-4 py-4">
       <button
@@ -26,14 +28,19 @@ export function DeaccessionTypePicker({
           <DollarSign className="size-5 text-green-500" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold">Object Sold</h3>
+          <h3 className="font-semibold">
+            {translate("untranslatedComponents.labels.objectSold")}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Record the sale of this object. Enter details about the transaction
-            including buyer information and sale price.
+            {translate(
+              "untranslatedComponents.labels.recordTheSaleOfThisObjectEnterDetailsAboutTheTransactionIncludingBuyerInformationAndSalePrice",
+            )}
           </p>
           {deaccessionWorkflow && (
             <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-              Requires approval workflow
+              {translate(
+                "untranslatedComponents.labels.requiresApprovalWorkflow",
+              )}
             </p>
           )}
         </div>
@@ -48,14 +55,20 @@ export function DeaccessionTypePicker({
           <ArrowRightLeft className="size-5 text-blue-500" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold">Move to Another Organization</h3>
+          <h3 className="font-semibold">
+            {translate(
+              "untranslatedComponents.labels.moveToAnotherOrganization",
+            )}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Request approval to transfer this object to another organization you
-            belong to. You can keep the current accession number or assign a new
-            one.
+            {translate(
+              "untranslatedComponents.labels.requestApprovalToTransferThisObjectToAnotherOrganizationYouBelongToYouCanKeepTheCurrentAccessionNumberOrAssignANewOne",
+            )}
           </p>
           <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-            Requires administrator approval before the move is executed
+            {translate(
+              "untranslatedComponents.labels.requiresAdministratorApprovalBeforeTheMoveIsExecuted",
+            )}
           </p>
         </div>
       </button>
@@ -69,10 +82,13 @@ export function DeaccessionTypePicker({
           <Archive className="size-5 text-amber-500" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold">Archive Object</h3>
+          <h3 className="font-semibold">
+            {translate("untranslatedComponents.labels.archiveObject")}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Withdraw from routine views while preserving the register, linked
-            evidence, and media. An authorized user can restore it later.
+            {translate(
+              "untranslatedComponents.labels.removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater",
+            )}
           </p>
         </div>
       </button>

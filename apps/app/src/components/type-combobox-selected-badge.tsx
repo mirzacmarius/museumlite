@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 export function TypeComboboxSelectedBadge({
   type,
@@ -9,6 +10,7 @@ export function TypeComboboxSelectedBadge({
   type: string;
   onRemove: (type: string) => void;
 }) {
+  const translate = useI18n();
   return (
     <span className="inline-flex items-center gap-1 rounded-md border bg-secondary px-1.5 py-0.5 text-xs">
       <span>{type}</span>
@@ -19,7 +21,9 @@ export function TypeComboboxSelectedBadge({
           onRemove(type);
         }}
         className="cursor-pointer hover:text-destructive"
-        aria-label={`Remove ${type}`}
+        aria-label={translate("untranslatedComponents.labels.removeNamedItem", {
+          name: type,
+        })}
       >
         <X className="size-3" />
       </button>

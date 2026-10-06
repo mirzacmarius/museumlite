@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import type * as React from "react";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 
 const Dialog = DialogPrimitive.Root;
@@ -33,32 +34,41 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = ({
   className,
   children,
+  closeLabel,
   ref,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> &
-  React.RefAttributes<React.ElementRef<typeof DialogPrimitive.Content>>) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
-      {...props}
-    >
-      <div
-        className={cn(
-          "relative grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg",
-          className,
-        )}
+  React.RefAttributes<React.ElementRef<typeof DialogPrimitive.Content>> & {
+    closeLabel?: string;
+  }) => {
+  const { messages } = useUiLocale();
+
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        {...props}
       >
-        {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="size-4" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
-      </div>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-);
+        <div
+          className={cn(
+            "relative grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg",
+            className,
+          )}
+        >
+          {children}
+          <DialogPrimitive.Close className="absolute right-4 top-4 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <X className="size-4" />
+            <span className="sr-only">
+              {closeLabel ?? messages.dialog.close}
+            </span>
+          </DialogPrimitive.Close>
+        </div>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+};
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({

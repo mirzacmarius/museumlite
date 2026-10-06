@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import type { IsbnLookupData } from "@/components/library/isbn-lookup";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { CatalogItemFormData, TargetAudience } from "./types";
 import { TARGET_AUDIENCE_VALUES } from "./types";
 
@@ -30,6 +30,7 @@ export function CatalogItemClassificationSection({
   setFormData,
   getAudienceLabel,
 }: CatalogItemClassificationSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");
   const _tLib = useScopedI18n("library");
@@ -53,7 +54,10 @@ export function CatalogItemClassificationSection({
                   deweyDecimal: e.target.value,
                 }))
               }
-              placeholder="e.g., 823.912"
+              placeholder={tRoot(
+                "untranslatedRecords.objects.examples.callNumber",
+                { value: "823.912" },
+              )}
             />
           </div>
           <div className="space-y-2">
@@ -67,7 +71,9 @@ export function CatalogItemClassificationSection({
                   lcClassification: e.target.value,
                 }))
               }
-              placeholder="e.g., PR6019.O9"
+              placeholder={tRoot("untranslatedRecords.objects.examples.isbn", {
+                value: "PR6019.O9",
+              })}
             />
           </div>
           <div className="space-y-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle, Tag } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { CollectionData } from "./types";
 
 interface GeneralTabProps {
@@ -12,8 +13,25 @@ export function GeneralTab({
   collection,
   collectionGroupName,
 }: GeneralTabProps) {
-  const collectionTypeLabel =
-    collection.collectionType?.replace(/_/g, " ") || "General";
+  const tRoot = useI18n();
+  const collectionType: string | undefined = collection.collectionType;
+  const collectionTypeLabel = collectionType
+    ? collectionType === "fine_art"
+      ? tRoot("untranslatedRecords.objects.enums.fineArt")
+      : collectionType === "wine"
+        ? tRoot("untranslatedRecords.objects.enums.wine")
+        : collectionType === "automotive"
+          ? tRoot("untranslatedRecords.objects.enums.automotive")
+          : collectionType === "natural_history"
+            ? tRoot("untranslatedRecords.objects.enums.naturalHistory")
+            : collectionType === "archive"
+              ? tRoot("untranslatedRecords.objects.enums.archive")
+              : collectionType === "coins_stamps"
+                ? tRoot("untranslatedRecords.objects.enums.coinsStamps")
+                : collectionType === "general"
+                  ? tRoot("untranslatedRecords.objects.enums.generalCollection")
+                  : collectionType
+    : tRoot("untranslatedRecords.objects.enums.generalCollection");
 
   return (
     <div>
@@ -21,7 +39,7 @@ export function GeneralTab({
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
             <Tag className="size-4 text-accent" />
-            Classification & Metadata
+            {tRoot("untranslatedRecords.objects.detail.classificationMetadata")}
           </h3>
         </div>
 
@@ -29,7 +47,7 @@ export function GeneralTab({
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Collection Type
+                {tRoot("objects.form.collectionType")}
               </div>
               <div className="text-sm capitalize text-foreground">
                 {collectionTypeLabel}
@@ -38,7 +56,7 @@ export function GeneralTab({
 
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Object Name
+                {tRoot("objects.form.objectName")}
               </div>
               <div className="text-sm text-foreground">
                 {collection.objectName || "-"}
@@ -47,7 +65,7 @@ export function GeneralTab({
 
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Collection
+                {tRoot("objects.form.collectionGroup")}
               </div>
               <div className="text-sm text-foreground">
                 {collectionGroupName || "-"}
@@ -56,7 +74,7 @@ export function GeneralTab({
 
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Culture
+                {tRoot("objects.form.culture")}
               </div>
               <div className="text-sm text-foreground">
                 {collection.culture || "-"}
@@ -65,7 +83,7 @@ export function GeneralTab({
 
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Artist / Maker
+                {tRoot("untranslatedRecords.objects.detail.artistMaker")}
               </div>
               <div className="text-sm text-foreground">
                 {collection.creator || "-"}
@@ -74,7 +92,7 @@ export function GeneralTab({
 
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Period
+                {tRoot("objects.form.period")}
               </div>
               <div className="text-sm text-foreground">
                 {collection.period || "-"}
@@ -83,7 +101,7 @@ export function GeneralTab({
 
             <div className="grid gap-1">
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Date Created
+                {tRoot("objects.form.dateCreated")}
               </div>
               <div className="text-sm text-foreground">
                 {collection.dateCreated || "-"}
@@ -96,7 +114,9 @@ export function GeneralTab({
                   <CheckCircle className="size-1.5 text-white" />
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">
-                  High-Res Downloadable
+                  {tRoot(
+                    "untranslatedRecords.objects.detail.highResDownloadable",
+                  )}
                 </span>
               </div>
             )}

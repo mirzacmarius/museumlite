@@ -63,7 +63,7 @@ import { useCommandPalette } from "@/components/command-palette-provider";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermissions } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 function getUserInitials(user: {
   name?: string | null;
@@ -315,6 +315,7 @@ function OrganizationSwitcher({
   organizations: SidebarOrganization[];
   onOrganizationChange: (organizationId: Id<"organizations">) => void;
 }) {
+  const translate = useI18n();
   return (
     <SidebarHeader className="px-2 pb-1 pt-2">
       <SidebarMenu>
@@ -330,10 +331,14 @@ function OrganizationSwitcher({
                 </div>
                 <div className="grid flex-1 text-left leading-tight">
                   <span className="truncate font-medium">
-                    {currentOrg?.name || "Select Org"}
+                    {currentOrg?.name ||
+                      translate(
+                        "untranslatedComponents.labels.selectOrganization",
+                      )}
                   </span>
                   <span className="truncate text-[10px] text-sidebar-foreground/70">
-                    {currentOrg?.role.name || "No Organization"}
+                    {currentOrg?.role.name ||
+                      translate("untranslatedComponents.labels.noOrganization")}
                   </span>
                 </div>
                 <ChevronsUpDown className="ml-auto" />
@@ -346,7 +351,7 @@ function OrganizationSwitcher({
               sideOffset={4}
             >
               <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Organizations
+                {translate("untranslatedComponents.labels.organizations")}
               </DropdownMenuLabel>
               {organizations.map((org, index) => (
                 <DropdownMenuItem
@@ -373,6 +378,7 @@ function OrganizationSwitcher({
 }
 
 function SidebarSearch({ onOpen }: { onOpen: () => void }) {
+  const translate = useI18n();
   return (
     <SidebarGroup className="px-2 py-1 group-data-[collapsible=icon]:hidden">
       <SidebarGroupContent>
@@ -384,7 +390,7 @@ function SidebarSearch({ onOpen }: { onOpen: () => void }) {
               onClick={onOpen}
             >
               <Search />
-              <span>Search</span>
+              <span>{translate("untranslatedComponents.labels.search")}</span>
               <kbd className="ml-auto rounded border border-sidebar-border px-1 text-[10px] text-sidebar-foreground/70">
                 ⌘K
               </kbd>
@@ -409,6 +415,7 @@ function UserMenu({
   onSignOut: () => void;
   user: SidebarUser | null | undefined;
 }) {
+  const translate = useI18n();
   const t = useScopedI18n("account");
   const userAvatarUrl = user?.avatarUrl ?? user?.image ?? undefined;
   const userInitials = getUserInitials(user ?? {});
@@ -482,7 +489,7 @@ function UserMenu({
                 <>
                   <DropdownMenuItem asChild>
                     <Link href="/settings/billing" onClick={onNavigate}>
-                      Manage Billing
+                      {translate("untranslatedComponents.labels.manageBilling")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -493,7 +500,9 @@ function UserMenu({
                   className="grid grid-cols-[1fr_auto] items-center gap-4"
                   onSelect={(event) => event.preventDefault()}
                 >
-                  <span>Theme</span>
+                  <span>
+                    {translate("untranslatedComponents.labels.theme")}
+                  </span>
                   <div className="justify-self-end">
                     <ThemeSwitcher triggerClass="w-auto min-w-24" />
                   </div>
@@ -502,7 +511,9 @@ function UserMenu({
                   className="grid grid-cols-[1fr_auto] items-center gap-4"
                   onSelect={(event) => event.preventDefault()}
                 >
-                  <span>Language</span>
+                  <span>
+                    {translate("untranslatedComponents.labels.language")}
+                  </span>
                   <div className="justify-self-end">
                     <LanguageSwitcher triggerClass="w-auto min-w-28" />
                   </div>
@@ -511,7 +522,7 @@ function UserMenu({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onSignOut}>
                 <LogOut />
-                Log out
+                {translate("untranslatedComponents.labels.logOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -556,6 +567,7 @@ function AppSidebarClientInner({
 }: {
   preloadedUser: Preloaded<typeof api.users.getUser>;
 }) {
+  const translate = useI18n();
   const { organizations, currentOrganizationId, setCurrentOrganizationId } =
     useOrganization();
   const { hasPermission } = usePermissions();
@@ -611,6 +623,7 @@ function AppSidebarClientInner({
   };
 
   const { topLevelNavigation, navigationGroups } = buildSidebarNavigation({
+    translate,
     hasFeature,
     isLibraryModuleEnabled,
     isInsuranceModuleEnabled,

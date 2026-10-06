@@ -5,6 +5,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 interface RepeatableTextFieldProps {
   label: string;
@@ -27,6 +28,7 @@ export function RepeatableTextField({
   placeholder,
   id,
 }: RepeatableTextFieldProps) {
+  const translate = useI18n();
   const [itemIds, setItemIds] = useState(() =>
     value.map(() => createRepeatableFieldItemId()),
   );
@@ -75,7 +77,9 @@ export function RepeatableTextField({
       <div className="space-y-2">
         {value.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            No entries yet. Click "Add {label}" to add one.
+            {translate("untranslatedComponents.labels.noEntriesYetClickAdd")}{" "}
+            {label}
+            {translate("untranslatedComponents.labels.toAddOne")}
           </div>
         ) : (
           value.map((item, index) => (
@@ -90,7 +94,7 @@ export function RepeatableTextField({
                 variant="outline"
                 size="icon"
                 onClick={() => handleRemove(index)}
-                title="Remove"
+                title={translate("untranslatedComponents.labels.remove")}
               >
                 <X className="size-4" />
               </Button>
@@ -105,7 +109,7 @@ export function RepeatableTextField({
           className="w-full"
         >
           <Plus className="mr-2 size-4" />
-          Add {label}
+          {translate("untranslatedComponents.labels.add")} {label}
         </Button>
       </div>
     </div>

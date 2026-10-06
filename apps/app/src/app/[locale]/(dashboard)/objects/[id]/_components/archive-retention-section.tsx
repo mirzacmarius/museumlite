@@ -5,7 +5,7 @@ import type { FunctionReturnType } from "convex/server";
 import { Clock } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { ClientDateFns } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.archiveDetails.get>
@@ -26,28 +26,33 @@ interface ArchiveRetentionSectionProps {
 export function ArchiveRetentionSection({
   details,
 }: ArchiveRetentionSectionProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
 
   return (
     <div>
       <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
         <Clock className="size-4 text-cyan-500" />
-        Retention Schedule
+        {tRoot("modules.archive.retentionSchedule")}
       </h3>
 
       <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Retention Period
+              {tRoot("modules.archive.retentionPeriod")}
             </div>
             <div className="text-sm font-medium text-foreground">
-              {details.retentionYears ? `${details.retentionYears} years` : "—"}
+              {details.retentionYears
+                ? tRoot("untranslatedRecords.objects.archive.retentionYears", {
+                    count: details.retentionYears,
+                  })
+                : "—"}
             </div>
           </div>
           <div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Retention Start Date
+              {tRoot("modules.archive.retentionStartDate")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.retentionStartDate ? (
@@ -63,7 +68,7 @@ export function ArchiveRetentionSection({
           </div>
           <div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Retention Expires
+              {tRoot("modules.archive.retentionExpires")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.retentionExpiresAt ? (
@@ -79,7 +84,7 @@ export function ArchiveRetentionSection({
           </div>
           <div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
-              Days Until Expiry
+              {tRoot("modules.archive.daysUntilExpiry")}
             </div>
             <div className="text-sm font-medium text-foreground">
               {details.retentionExpiresAt ? (

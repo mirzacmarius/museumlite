@@ -6,10 +6,8 @@ import type { ComponentType, ReactNode } from "react";
 type Locale = "en" | "fr" | "es" | "no" | "ro";
 type TranslationValues = Record<string, string | number | null | undefined>;
 type Translate = (key: string, values?: TranslationValues) => string;
-type UseI18n = <Scope extends string = string>(scope?: Scope) => Translate;
-type UseScopedI18n = <Scope extends string = string>(
-  scope?: Scope,
-) => Translate;
+type UseI18n = () => Translate;
+type UseScopedI18n = <Scope extends string>(scope: Scope) => Translate;
 type UseChangeLocale = () => (locale: Locale) => void;
 type UseCurrentLocale = () => Locale;
 type I18nProviderClientType = ComponentType<{

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, X } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface DonorComboboxTriggerProps {
   listId: string;
@@ -27,6 +28,7 @@ export function DonorComboboxTrigger({
   onRemove,
   onEnterKey,
 }: DonorComboboxTriggerProps) {
+  const translate = useI18n();
   return (
     <div
       role="combobox"
@@ -58,7 +60,10 @@ export function DonorComboboxTrigger({
               onRemove(donor);
             }}
             className="hover:text-destructive cursor-pointer"
-            aria-label={`Remove ${donor}`}
+            aria-label={translate(
+              "untranslatedComponents.labels.removeNamedItem",
+              { name: donor },
+            )}
           >
             <X className="size-3" />
           </button>
@@ -69,7 +74,9 @@ export function DonorComboboxTrigger({
         type="text"
         className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
         placeholder={
-          selectedValues.length === 0 ? placeholder : "Search or add…"
+          selectedValues.length === 0
+            ? placeholder
+            : translate("untranslatedComponents.labels.searchOrAdd")
         }
         value={inputValue}
         onChange={(e) => {

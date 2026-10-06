@@ -176,7 +176,7 @@ export default function UsersSettingsPage() {
       console.error("Error inviting user:", err);
       dispatchInvite({
         type: "submit-error",
-        error: err instanceof Error ? err.message : t("inviteFailed"),
+        error: t("inviteFailed"),
       });
     }
   };
@@ -190,7 +190,7 @@ export default function UsersSettingsPage() {
       await removeUser({ organizationId, userId });
     } catch (err) {
       console.error("Error removing user:", err);
-      alert(err instanceof Error ? err.message : t("removeFailed"));
+      alert(t("removeFailed"));
     }
   };
 
@@ -203,7 +203,7 @@ export default function UsersSettingsPage() {
       });
     } catch (err) {
       console.error("Error updating user role:", err);
-      alert(err instanceof Error ? err.message : t("updateRoleFailed"));
+      alert(t("updateRoleFailed"));
     }
   };
 
@@ -213,11 +213,11 @@ export default function UsersSettingsPage() {
     try {
       const result = await resendInvitation({ invitationId });
       if ("error" in result) {
-        alert(result.error);
+        alert(t("resendFailed"));
       }
     } catch (err) {
       console.error("Error resending invitation:", err);
-      alert(err instanceof Error ? err.message : t("resendFailed"));
+      alert(t("resendFailed"));
     }
   };
 
@@ -232,7 +232,7 @@ export default function UsersSettingsPage() {
       await cancelInvitation({ invitationId });
     } catch (err) {
       console.error("Error cancelling invitation:", err);
-      alert(err instanceof Error ? err.message : t("cancelFailed"));
+      alert(t("cancelFailed"));
     }
   };
 
@@ -337,6 +337,7 @@ function InviteUserDialog({
   onInvite,
   onInviteAction,
 }: InviteUserDialogProps) {
+  const tRoles = useScopedI18n("settings.roles");
   return (
     <Dialog
       open={inviteState.isOpen}
@@ -392,7 +393,7 @@ function InviteUserDialog({
                   {roles?.map((role) => (
                     <SelectItem key={role._id} value={role._id}>
                       {role.name}
-                      {role.isSystemRole && " (System)"}
+                      {role.isSystemRole && ` (${tRoles("systemBadge")})`}
                     </SelectItem>
                   ))}
                 </SelectContent>

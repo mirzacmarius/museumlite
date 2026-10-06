@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { useScopedI18n } from "@/locales/client";
 import {
   LibraryCardSettingsSection,
   LibraryCatalogingSection,
@@ -23,6 +24,7 @@ import {
 } from "./library-settings-types";
 
 export default function LibrarySettingsPage() {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   const { currentOrganizationId } = useOrganization();
   const { hasModule } = useFeatureAccess();
   const isLibraryEnabled = hasModule("library");
@@ -81,7 +83,7 @@ export default function LibrarySettingsPage() {
       <div className="flex size-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">
-            Please select an organization to manage library settings.
+            {t("selectOrganizationLibrarySettings")}
           </p>
         </div>
       </div>
@@ -93,10 +95,10 @@ export default function LibrarySettingsPage() {
       <div className="flex size-full flex-col gap-6">
         <div className="flex w-full flex-col items-start rounded-lg border border-border bg-card p-6">
           <p className="text-muted-foreground">
-            The Library integration is not enabled for this organization.
+            {t("libraryIntegrationDisabled")}
           </p>
           <Button asChild className="mt-4">
-            <Link href="/settings/integrations">Enable Integration</Link>
+            <Link href="/settings/integrations">{t("enableIntegration")}</Link>
           </Button>
         </div>
       </div>

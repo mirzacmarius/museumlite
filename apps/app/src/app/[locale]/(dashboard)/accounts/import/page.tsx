@@ -37,7 +37,11 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useTrackedImportFlow } from "@/hooks/use-tracked-import-flow";
 import { sha256Hex } from "@/lib/csv-parser";
 import { useScopedI18n } from "@/locales/client";
-import { type ParsedRow, parseAccountCsv } from "./import-csv";
+import {
+  type AccountImportMessages,
+  type ParsedRow,
+  parseAccountCsv,
+} from "./import-csv";
 
 interface ImportState {
   /** File steps before the import runs; the run itself is tracked separately. */
@@ -310,6 +314,7 @@ function AccountImportPreviewStep({
 
 export default function ImportAccountsPage() {
   const t = useScopedI18n("accounts.csvImport");
+  const tImport = useScopedI18n("untranslatedDashboard.accountsImport");
   const tAccounts = useScopedI18n("accounts");
   const _tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
@@ -317,39 +322,54 @@ export default function ImportAccountsPage() {
 
   const [state, setState] = useState<ImportState>(INITIAL_STATE);
 
+  const importMessages: AccountImportMessages = {
+    csvMissingHeaderAndRows: () => tImport("csvMissingHeaderAndRows"),
+    csvMissingRequiredColumns: (columns) =>
+      tImport("csvMissingRequiredColumns", { columns }),
+    invalidAccountType: (row, value) =>
+      tImport("invalidAccountType", { row, value }),
+    emptyValue: () => tImport("emptyValue"),
+  };
+
   const importBatch = useMutation(api.imports.importAccountsBatch);
   const run = useTrackedImportFlow<ParsedRow>({
     organizationId: currentOrganizationId,
     entityType: "accounts",
     sendBatch: importBatch,
     parseCorrection: (text) => {
-      const { rows, fileErrors } = parseAccountCsv(text);
+      const { rows, fileErrors } = parseAccountCsv(text, importMessages);
       if (fileErrors.length > 0) throw new Error(fileErrors.join(" "));
       return rows;
     },
   });
 
-  const handleFileSelect = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileSelect = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    void (async () => {
-      const text = await file.text();
-      const { rows, fileErrors, rowErrors } = parseAccountCsv(text);
-      setState({
-        step: "preview",
-        file,
-        fingerprint: await sha256Hex(text),
-        rows: fileErrors.length > 0 ? [] : rows,
-        fileErrors,
-        rowErrors,
-      });
-    })();
+      void (async () => {
+        const text = await file.text();
+        const { rows, fileErrors, rowErrors } = parseAccountCsv(
+          text,
+          importMessages,
+        );
+        setState({
+          step: "preview",
+          file,
+          fingerprint: await sha256Hex(text),
+          rows: fileErrors.length > 0 ? [] : rows,
+          fileErrors,
+          rowErrors,
+        });
+      })();
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }, []);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [importMessages],
+  );
 
   const handleStartImport = useCallback(
     (resumeJobId?: Id<"importJobs">) => {

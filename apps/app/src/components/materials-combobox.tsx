@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronsUpDown, Plus, X } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 import { MaterialsComboboxDeleteDialog } from "./materials-combobox-delete-dialog";
 import { MaterialsComboboxListContent } from "./materials-combobox-list-content";
 
@@ -32,9 +33,10 @@ export function MaterialsCombobox({
   collectionId,
   value = EMPTY_MATERIAL_VALUES,
   onValueChange,
-  placeholder = "Select or add materials...",
+  placeholder,
   disabled = false,
 }: MaterialsComboboxProps) {
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
@@ -190,7 +192,10 @@ export function MaterialsCombobox({
                     handleRemove(material);
                   }}
                   className="hover:text-destructive cursor-pointer"
-                  aria-label={`Remove ${material}`}
+                  aria-label={translate(
+                    "untranslatedComponents.labels.removeNamedItem",
+                    { name: material },
+                  )}
                 >
                   <X className="size-3" />
                 </button>
@@ -202,7 +207,12 @@ export function MaterialsCombobox({
               type="text"
               className="flex-1 min-w-[120px] outline-none bg-transparent text-sm placeholder:text-muted-foreground"
               placeholder={
-                selectedValues.length === 0 ? placeholder : "Search or add..."
+                selectedValues.length === 0
+                  ? (placeholder ??
+                    translate(
+                      "untranslatedComponents.labels.selectOrAddMaterials",
+                    ))
+                  : translate("untranslatedComponents.labels.searchOrAdd")
               }
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -229,7 +239,10 @@ export function MaterialsCombobox({
                 variant="secondary"
                 size="sm"
                 className="h-7 shrink-0 gap-1.5 border border-border px-2 text-xs font-medium shadow-sm"
-                aria-label={`Add ${formatMaterialName(inputValue)}`}
+                aria-label={translate(
+                  "untranslatedComponents.labels.addNamedItem",
+                  { name: formatMaterialName(inputValue) },
+                )}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -241,7 +254,7 @@ export function MaterialsCombobox({
                 }}
               >
                 <Plus className="size-3.5" />
-                Add
+                {translate("untranslatedComponents.labels.add")}
               </Button>
             ) : null}
             <ChevronsUpDown className="size-4 shrink-0 opacity-50" />

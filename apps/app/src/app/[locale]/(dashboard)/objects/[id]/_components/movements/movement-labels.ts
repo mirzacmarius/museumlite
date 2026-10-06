@@ -1,6 +1,7 @@
-import type { useScopedI18n } from "@/locales/client";
+import type { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type MovementsT = ReturnType<typeof useScopedI18n<"locations.movements">>;
+type AppLocale = ReturnType<typeof useCurrentLocale>;
 
 const MOVEMENT_ISSUE_TYPES = [
   "location_missing",
@@ -29,8 +30,39 @@ export function movementIssueLabel(
 }
 
 export function formatMovementTime(locale: string, timestamp: number) {
-  return new Intl.DateTimeFormat(locale, {
+  const supportedLocale = isAppLocale(locale) ? locale : "en";
+  return movementTimeFormatters[supportedLocale].format(timestamp);
+}
+
+const APP_LOCALES = ["en", "fr", "es", "no", "ro"] as const;
+const movementTimeFormatters: Record<AppLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(timestamp);
+    timeZone: "UTC",
+  }),
+  fr: new Intl.DateTimeFormat("fr", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  es: new Intl.DateTimeFormat("es", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  no: new Intl.DateTimeFormat("no", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  ro: new Intl.DateTimeFormat("ro", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+};
+
+function isAppLocale(locale: string): locale is AppLocale {
+  return (APP_LOCALES as readonly string[]).includes(locale);
 }

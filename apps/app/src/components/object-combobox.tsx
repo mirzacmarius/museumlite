@@ -14,6 +14,7 @@ import { cn } from "@v1/ui/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
+import { useI18n } from "@/locales/client";
 
 interface ObjectComboboxProps {
   organizationId?: string;
@@ -32,6 +33,7 @@ export function ObjectCombobox({
   placeholder = "Select parent object...",
   disabled = false,
 }: ObjectComboboxProps) {
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
@@ -109,7 +111,9 @@ export function ObjectCombobox({
         <Command>
           <CommandList id={listId}>
             <CommandEmpty>
-              {isComplete ? "No objects found." : "Loading collections..."}
+              {isComplete
+                ? translate("untranslatedComponents.labels.noObjectsFound")
+                : translate("untranslatedComponents.labels.loadingCollections")}
             </CommandEmpty>
             <CommandGroup>
               {filteredObjects.map(

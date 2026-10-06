@@ -5,7 +5,7 @@ import { cn } from "@v1/ui/utils";
 import type { FunctionReturnType } from "convex/server";
 import { AlertTriangle, Clock, FileText, Shield } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<
   FunctionReturnType<typeof api.archiveDetails.get>
@@ -19,7 +19,20 @@ export function ArchiveDetailsSummaryCards({
   details,
 }: ArchiveDetailsSummaryCardsProps) {
   const locale = useCurrentLocale();
+  const tRoot = useI18n();
   const t = useScopedI18n("modules.archive");
+  const confidentialityLevel =
+    details.confidentialityLevel === "public"
+      ? tRoot("untranslatedRecords.objects.enums.statusPublic")
+      : details.confidentialityLevel === "internal"
+        ? tRoot("untranslatedRecords.objects.enums.statusInternal")
+        : details.confidentialityLevel === "confidential"
+          ? tRoot("untranslatedRecords.objects.enums.statusConfidential")
+          : details.confidentialityLevel === "restricted"
+            ? tRoot("untranslatedRecords.objects.enums.statusRestricted")
+            : details.confidentialityLevel === "top_secret"
+              ? tRoot("untranslatedRecords.objects.enums.statusTopSecret")
+              : details.confidentialityLevel;
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -63,8 +76,7 @@ export function ArchiveDetailsSummaryCards({
                       : "bg-secondary text-muted-foreground",
           )}
         >
-          {details.confidentialityLevel?.replace(/_/g, " ") ||
-            t("notClassified")}
+          {confidentialityLevel || t("notClassified")}
         </span>
       </div>
 

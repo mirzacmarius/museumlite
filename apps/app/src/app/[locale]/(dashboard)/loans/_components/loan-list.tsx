@@ -22,10 +22,7 @@ export function LoanList({
 }: LoanListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<Id<"loans">>>(new Set());
 
-  const {
-    results: loansPage,
-    status,
-  } = usePaginatedQuery(
+  const { results: loansPage, status } = usePaginatedQuery(
     api.loans.list,
     organizationId
       ? {

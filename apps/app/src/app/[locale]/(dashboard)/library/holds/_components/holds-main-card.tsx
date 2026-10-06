@@ -10,13 +10,13 @@ import {
 } from "@v1/ui/select";
 import { Bookmark, Filter, Loader2, Plus } from "lucide-react";
 import type { Dispatch, ReactNode } from "react";
+import { HoldsList, type Translate } from "./holds-page-parts";
 import {
-  STATUS_FILTER_VALUES,
   type HoldsPageAction,
   type HoldsPageState,
+  STATUS_FILTER_VALUES,
   type StatusFilter,
 } from "./holds-page-state";
-import { HoldsList, type Translate } from "./holds-page-parts";
 
 interface HoldListItem {
   _id: Id<"libraryHolds">;
@@ -66,7 +66,9 @@ export function HoldsMainCard({
     <div className="flex w-full flex-col rounded-lg border border-border bg-card">
       <div className="flex w-full items-center justify-between rounded-lg p-6">
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-medium text-primary">{tHolds("title")}</h2>
+          <h2 className="text-xl font-medium text-primary">
+            {tHolds("title")}
+          </h2>
           <p className="text-sm font-normal text-primary/60">
             {tHolds("description")}
           </p>
@@ -98,7 +100,9 @@ export function HoldsMainCard({
             }
           >
             <SelectTrigger className="w-44">
-              <SelectValue>{getStatusFilterLabel(state.statusFilter)}</SelectValue>
+              <SelectValue>
+                {getStatusFilterLabel(state.statusFilter)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {STATUS_FILTER_VALUES.map((value) => (

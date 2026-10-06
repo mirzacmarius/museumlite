@@ -13,12 +13,37 @@ import {
 } from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
 import { AlertTriangle, CheckCircle } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import type { AccessionMode } from "./deaccession-dialog-types";
 import { TransferDestinationPicker } from "./transfer-destination-picker";
 
 interface MoveBlocker {
   code: string;
   message: string;
+}
+
+function getMoveBlockerMessage(
+  blocker: MoveBlocker,
+  translate: ReturnType<typeof useI18n>,
+) {
+  const keys: Record<string, string> = {
+    status_not_active: "onlyActiveObjectsCanMove",
+    same_organization: "destinationMustBeDifferentOrganization",
+    active_loan: "objectOnLoanCannotMove",
+    pending_location_move: "pendingLocationMoveRequest",
+    pending_organization_move: "pendingOrganizationMoveRequest",
+    has_parent_object: "parentObjectMustBeUnlinked",
+    has_child_objects: "childObjectsMustBeUnlinked",
+    active_transit: "objectInActiveTransitCannotMove",
+    active_exhibition: "objectInActiveExhibitionCannotMove",
+    has_deaccessions: "objectWithDeaccessionCannotMove",
+    insurance_coverage: "insuranceCoverageMustBeResolved",
+    insurance_claim: "objectReferencedByInsuranceClaim",
+  };
+  const key = keys[blocker.code];
+  return key
+    ? translate(`untranslatedComponents.moveBlockers.${key}`)
+    : blocker.message;
 }
 
 interface DeaccessionMoveFormProps {
@@ -54,11 +79,12 @@ export function DeaccessionMoveForm({
   onReasonChange,
   onNotesChange,
 }: DeaccessionMoveFormProps) {
+  const translate = useI18n();
   return (
     <div className="space-y-4 py-4">
       {!isDirectRemovalFlow && (
         <Button variant="ghost" size="sm" onClick={onBack} className="mb-2">
-          ← Back to options
+          {translate("untranslatedComponents.labels.backToOptions")}
         </Button>
       )}
 
@@ -67,18 +93,23 @@ export function DeaccessionMoveForm({
           <CheckCircle className="mt-0.5 size-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
           <div className="text-sm">
             <p className="font-medium text-blue-900 dark:text-blue-100">
-              Administrator Approval Required
+              {translate(
+                "untranslatedComponents.labels.administratorApprovalRequired",
+              )}
             </p>
             <p className="mt-1 text-blue-700 dark:text-blue-300">
-              The object will remain in its current organization until a source
-              organization administrator approves the move.
+              {translate(
+                "untranslatedComponents.labels.theObjectWillRemainInItsCurrentOrganizationUntilASourceOrganizationAdministratorApprovesTheMove",
+              )}
             </p>
           </div>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Destination Organization *</Label>
+        <Label>
+          {translate("untranslatedComponents.labels.destinationOrganization")}
+        </Label>
         <TransferDestinationPicker
           collectionId={collectionId}
           value={targetOrganizationId}
@@ -87,19 +118,25 @@ export function DeaccessionMoveForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="move-reason">Reason for Move *</Label>
+        <Label htmlFor="move-reason">
+          {translate("untranslatedComponents.labels.reasonForMove")}
+        </Label>
         <Textarea
           id="move-reason"
           value={reason}
           onChange={(event) => onReasonChange(event.target.value)}
-          placeholder="Explain why this object should be moved to another organization..."
+          placeholder={translate(
+            "untranslatedComponents.labels.explainWhyThisObjectShouldBeMovedToAnotherOrganization",
+          )}
           rows={4}
           required
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="accession-mode">Accession Number Handling *</Label>
+        <Label htmlFor="accession-mode">
+          {translate("untranslatedComponents.labels.accessionNumberHandling")}
+        </Label>
         <Select
           value={accessionMode}
           onValueChange={(value) =>
@@ -110,25 +147,34 @@ export function DeaccessionMoveForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="keep">Keep current accession number</SelectItem>
+            <SelectItem value="keep">
+              {translate(
+                "untranslatedComponents.labels.keepCurrentAccessionNumber",
+              )}
+            </SelectItem>
             <SelectItem value="auto">
-              Generate a new accession number
+              {translate(
+                "untranslatedComponents.labels.generateANewAccessionNumber",
+              )}
             </SelectItem>
             <SelectItem value="manual">
-              Enter a new accession number manually
+              {translate(
+                "untranslatedComponents.labels.enterANewAccessionNumberManually",
+              )}
             </SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">
-          If you assign a new accession number, the current one will be stored
-          in Alternate Accession Numbers.
+          {translate(
+            "untranslatedComponents.labels.ifYouAssignANewAccessionNumberTheCurrentOneWillBeStoredInAlternateAccessionNumbers",
+          )}
         </p>
       </div>
 
       {accessionMode === "manual" && (
         <div className="space-y-2">
           <Label htmlFor="manual-accession-number">
-            New Accession Number *
+            {translate("untranslatedComponents.labels.newAccessionNumber")}
           </Label>
           <Input
             id="manual-accession-number"
@@ -136,18 +182,24 @@ export function DeaccessionMoveForm({
             onChange={(event) =>
               onManualAccessionNumberChange(event.target.value)
             }
-            placeholder="Enter the new accession number"
+            placeholder={translate(
+              "untranslatedComponents.labels.enterTheNewAccessionNumber",
+            )}
           />
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="move-notes">Additional Notes</Label>
+        <Label htmlFor="move-notes">
+          {translate("untranslatedComponents.labels.additionalNotes")}
+        </Label>
         <Textarea
           id="move-notes"
           value={notes}
           onChange={(event) => onNotesChange(event.target.value)}
-          placeholder="Add any context for the reviewing administrator..."
+          placeholder={translate(
+            "untranslatedComponents.labels.addAnyContextForTheReviewingAdministrator",
+          )}
           rows={3}
         />
       </div>
@@ -158,11 +210,15 @@ export function DeaccessionMoveForm({
             <AlertTriangle className="mt-0.5 size-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
             <div className="space-y-2 text-sm">
               <p className="font-medium text-amber-900 dark:text-amber-100">
-                This object cannot be moved yet
+                {translate(
+                  "untranslatedComponents.labels.thisObjectCannotBeMovedYet",
+                )}
               </p>
               <ul className="list-disc space-y-1 pl-4 text-amber-700 dark:text-amber-300">
                 {blockers.map((blocker) => (
-                  <li key={blocker.code}>{blocker.message}</li>
+                  <li key={blocker.code}>
+                    {getMoveBlockerMessage(blocker, translate)}
+                  </li>
                 ))}
               </ul>
             </div>

@@ -11,7 +11,7 @@ export interface MediaImportSourceFile {
  * item number on its import job, whatever order the browser returned them in.
  */
 export function orderMediaFiles<F extends MediaImportSourceFile>(files: F[]) {
-  return [...files].sort(
+  return files.toSorted(
     (a, b) =>
       a.name.localeCompare(b.name) ||
       a.size - b.size ||

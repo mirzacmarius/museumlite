@@ -21,6 +21,23 @@ export interface ParsedRow {
 
 export const MAX_ACCOUNT_IMPORT_ROWS = 1000;
 
+export interface AccountImportMessages {
+  csvMissingHeaderAndRows: () => string;
+  csvMissingRequiredColumns: (columns: string) => string;
+  invalidAccountType: (row: number, value: string) => string;
+  emptyValue: () => string;
+}
+
+const DEFAULT_MESSAGES: AccountImportMessages = {
+  csvMissingHeaderAndRows: () =>
+    "CSV must have a header row and at least one data row",
+  csvMissingRequiredColumns: (columns) =>
+    `Missing required columns: ${columns}`,
+  invalidAccountType: (row, value) =>
+    `Row ${row}: Invalid accountType "${value}". Use: lender, borrower, both, institution, or patron`,
+  emptyValue: () => "empty",
+};
+
 const OPTIONAL_COLUMNS = [
   "accountNumber",
   "businessName",
@@ -50,7 +67,10 @@ const VALID_ACCOUNT_TYPES = new Set([
  * in the preview while the rows are still sent so the server records them as
  * failed rows that can be corrected on the same import.
  */
-export function parseAccountCsv(text: string): {
+export function parseAccountCsv(
+  text: string,
+  messages: AccountImportMessages = DEFAULT_MESSAGES,
+): {
   rows: ParsedRow[];
   fileErrors: string[];
   rowErrors: string[];
@@ -68,7 +88,7 @@ export function parseAccountCsv(text: string): {
   if (table.records.length === 0) {
     return {
       rows: [],
-      fileErrors: ["CSV must have a header row and at least one data row"],
+      fileErrors: [messages.csvMissingHeaderAndRows()],
       rowErrors: [],
     };
   }
@@ -87,7 +107,7 @@ export function parseAccountCsv(text: string): {
   if (!columnIndex.has("accounttype")) {
     return {
       rows: [],
-      fileErrors: ["Missing required columns: accountType"],
+      fileErrors: [messages.csvMissingRequiredColumns("accountType")],
       rowErrors: [],
     };
   }
@@ -109,7 +129,10 @@ export function parseAccountCsv(text: string): {
     }
     if (!VALID_ACCOUNT_TYPES.has(row.accountType)) {
       rowErrors.push(
-        `Row ${row.rowNumber}: Invalid accountType "${getValue("accountType")}". Use: lender, borrower, both, institution, or patron`,
+        messages.invalidAccountType(
+          row.rowNumber,
+          getValue("accountType") || messages.emptyValue(),
+        ),
       );
     }
     rows.push(row);

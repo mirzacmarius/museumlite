@@ -12,6 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 import { render } from "@react-email/render";
+import type { ReactNode } from "react";
 import { env } from "../env";
 import { sendEmail } from "./index";
 import {
@@ -26,12 +27,226 @@ import {
   emailMutedTextWithMarginStyle,
   emailTextStyle,
 } from "./styles";
+import {
+  type EmailLocale,
+  getEmailTranslations,
+  interpolateEmailText,
+} from "./translations";
 
-// ============================================
-// Invitation Email
-// ============================================
+type LocalizedEmail = { locale?: EmailLocale };
 
-type InvitationEmailOptions = {
+const emailDateLocales: Record<EmailLocale, string> = {
+  en: "en-US",
+  fr: "fr-FR",
+  es: "es-ES",
+  no: "nb-NO",
+  ro: "ro-RO",
+};
+
+const notificationDateFormatters: Record<EmailLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat(emailDateLocales.en, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+  fr: new Intl.DateTimeFormat(emailDateLocales.fr, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+  es: new Intl.DateTimeFormat(emailDateLocales.es, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+  no: new Intl.DateTimeFormat(emailDateLocales.no, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+  ro: new Intl.DateTimeFormat(emailDateLocales.ro, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }),
+};
+
+const emailDateFormatters: Record<EmailLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat(emailDateLocales.en, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }),
+  fr: new Intl.DateTimeFormat(emailDateLocales.fr, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }),
+  es: new Intl.DateTimeFormat(emailDateLocales.es, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }),
+  no: new Intl.DateTimeFormat(emailDateLocales.no, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }),
+  ro: new Intl.DateTimeFormat(emailDateLocales.ro, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }),
+};
+
+const emailPluralRules: Record<EmailLocale, Intl.PluralRules> = {
+  en: new Intl.PluralRules("en"),
+  fr: new Intl.PluralRules("fr"),
+  es: new Intl.PluralRules("es"),
+  no: new Intl.PluralRules("no"),
+  ro: new Intl.PluralRules("ro"),
+};
+
+function formatNotificationDate(
+  value: number | string | undefined,
+  locale: EmailLocale,
+): string {
+  if (
+    value === undefined ||
+    value === "" ||
+    (typeof value === "string" && value.trim().toLowerCase() === "tbd")
+  ) {
+    return getEmailTranslations(locale).loanDateUnavailable;
+  }
+
+  const date = typeof value === "number" ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return notificationDateFormatters[locale].format(date);
+}
+
+function formatLoanItemName(
+  itemName: string,
+  itemCount: number | undefined,
+  locale: EmailLocale,
+): string {
+  const messages = getEmailTranslations(locale);
+  const name = itemName || messages.loanItemsFallback;
+  const additionalCount = Math.max((itemCount ?? 1) - 1, 0);
+  if (additionalCount === 0) {
+    return name;
+  }
+
+  const plural = emailPluralRules[locale].select(additionalCount);
+  const suffix =
+    plural === "one"
+      ? messages.loanAdditionalItems.one
+      : messages.loanAdditionalItems.other;
+  return `${name}${text(suffix, { count: additionalCount })}`;
+}
+
+function localizedSiteUrl(path: string, locale: EmailLocale): string {
+  const siteUrl = (env.SITE_URL || "https://app.museumlite.com").replace(
+    /\/+$/,
+    "",
+  );
+  return `${siteUrl}/${locale}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function localizeInternalAppUrl(url: string, locale: EmailLocale): string {
+  try {
+    const parsedUrl = new URL(url);
+    const siteUrl = new URL(env.SITE_URL || "https://app.museumlite.com");
+    if (parsedUrl.origin !== siteUrl.origin) {
+      return url;
+    }
+
+    const [firstSegment] = parsedUrl.pathname.split("/").filter(Boolean);
+    if (
+      firstSegment === "en" ||
+      firstSegment === "fr" ||
+      firstSegment === "es" ||
+      firstSegment === "no" ||
+      firstSegment === "ro"
+    ) {
+      return url;
+    }
+
+    parsedUrl.pathname = `/${locale}${parsedUrl.pathname.startsWith("/") ? parsedUrl.pathname : `/${parsedUrl.pathname}`}`;
+    return parsedUrl.toString();
+  } catch {
+    return url;
+  }
+}
+
+function EmailShell({
+  locale,
+  preview,
+  children,
+  footer,
+}: {
+  locale: EmailLocale;
+  preview: string;
+  children: ReactNode;
+  footer?: string;
+}) {
+  const t = getEmailTranslations(locale);
+  return (
+    <Html lang={locale}>
+      <Head />
+      <Preview>{preview}</Preview>
+      <Body style={emailBodyStyle}>
+        <Container style={emailContainerStyle}>
+          <Img
+            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
+            width="40"
+            height="37"
+            alt=""
+          />
+          {children}
+          <Hr style={emailHrStyle} />
+          <Text style={footer ? emailFooterTextStyle : emailMutedTextStyle}>
+            {footer ?? t.footerBrand}
+          </Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+
+function Greeting({ email, locale }: { email: string; locale: EmailLocale }) {
+  return (
+    <Text style={emailTextStyle}>
+      {interpolateEmailText(getEmailTranslations(locale).greeting, { email })}
+    </Text>
+  );
+}
+
+function TeamSignature({ locale }: { locale: EmailLocale }) {
+  const t = getEmailTranslations(locale);
+  return (
+    <Text style={emailTextStyle}>
+      <Link href={env.SITE_URL} style={emailLinkStyle}>
+        {t.footerBrand}
+      </Link>
+      {" — "}
+      {t.team}
+    </Text>
+  );
+}
+
+function text(template: string, values: Record<string, string | number> = {}) {
+  return interpolateEmailText(template, values);
+}
+
+type InvitationEmailOptions = LocalizedEmail & {
   email: string;
   organizationName: string;
   inviterName: string;
@@ -45,291 +260,152 @@ function InvitationEmail({
   inviterName,
   role,
   token,
-}: InvitationEmailOptions) {
-  const acceptUrl = `${env.SITE_URL}/invite/${token}`;
-  const declineUrl = `${env.SITE_URL}/invite/${token}?action=decline`;
-
+  locale,
+}: InvitationEmailOptions & { locale: EmailLocale }) {
+  const t = getEmailTranslations(locale).invitation;
+  const acceptUrl = localizedSiteUrl(`/invite/${token}`, locale);
+  const declineUrl = localizedSiteUrl(
+    `/invite/${token}?action=decline`,
+    locale,
+  );
   return (
-    <Html>
-      <Head />
-      <Preview>You've been invited to join {organizationName}</Preview>
-      <Body style={emailBodyStyle}>
-        <Container style={emailContainerStyle}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={emailTextStyle}>Hello {email}!</Text>
-          <Text style={emailTextStyle}>
-            <strong>{inviterName}</strong> has invited you to join{" "}
-            <strong>{organizationName}</strong> as a <strong>{role}</strong>.
-          </Text>
-          <Text style={emailTextStyle}>
-            Click the button below to accept the invitation and get started.
-          </Text>
-          <Section style={emailButtonSectionStyle}>
-            <Button href={acceptUrl} style={emailInvitationButtonStyle}>
-              Accept Invitation
-            </Button>
-          </Section>
-          <Text style={emailMutedTextStyle}>
-            Or copy and paste this URL into your browser:
-            <br />
-            <Link href={acceptUrl} style={emailLinkStyle}>
-              {acceptUrl}
-            </Link>
-          </Text>
-          <Text style={emailMutedTextWithMarginStyle}>
-            <strong>Important:</strong> This invitation will expire in 7 days.
-          </Text>
-          <Text style={emailMutedTextStyle}>
-            If you don't want to join this organization, you can{" "}
-            <Link href={declineUrl} style={emailLinkStyle}>
-              decline this invitation
-            </Link>
-            .
-          </Text>
-          <Hr style={emailHrStyle} />
-          <Text style={emailFooterTextStyle}>
-            This invitation was sent to {email}. If you weren't expecting this
-            invitation, you can safely ignore this email.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
+    <EmailShell
+      locale={locale}
+      preview={text(t.preview, { organizationName })}
+      footer={text(t.footer, { email })}
+    >
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>
+        {text(t.invited, { inviterName, organizationName, role })}
+      </Text>
+      <Text style={emailTextStyle}>{t.instructions}</Text>
+      <Section style={emailButtonSectionStyle}>
+        <Button href={acceptUrl} style={emailInvitationButtonStyle}>
+          {t.accept}
+        </Button>
+      </Section>
+      <Text style={emailMutedTextStyle}>
+        {t.copyLink}
+        <br />
+        <Link href={acceptUrl} style={emailLinkStyle}>
+          {acceptUrl}
+        </Link>
+      </Text>
+      <Text style={emailMutedTextWithMarginStyle}>
+        <strong>{t.important}</strong> {t.expires}
+      </Text>
+      <Text style={emailMutedTextStyle}>
+        {t.decline}{" "}
+        <Link href={declineUrl} style={emailLinkStyle}>
+          {t.declineLink}
+        </Link>
+        .
+      </Text>
+    </EmailShell>
   );
 }
 
 export async function sendInvitationEmail(args: InvitationEmailOptions) {
-  const html = await render(<InvitationEmail {...args} />);
+  const locale = args.locale ?? "en";
+  const t = getEmailTranslations(locale).invitation;
+  const html = await render(<InvitationEmail {...args} locale={locale} />);
   await sendEmail({
     to: args.email,
-    subject: `You've been invited to join ${args.organizationName}`,
+    subject: text(t.subject, { organizationName: args.organizationName }),
     html,
   });
 }
 
-// ============================================
-// Loan Notification Emails
-// ============================================
-
-type LoanNotificationEmailOptions = {
+type LoanNotificationEmailOptions = LocalizedEmail & {
   email: string;
   loanId: string;
   itemName: string;
+  itemCount?: number;
   borrowerName: string;
-  startDate: string;
-  endDate: string;
+  startDate: number | string;
+  endDate?: number | string;
   loanUrl?: string;
 };
+type LoanKind = "loanApproved" | "loanRejected" | "loanPending";
 
-function LoanApprovedEmail({
+function LoanNotificationEmail({
   email,
+  loanId,
   itemName,
+  itemCount,
   borrowerName,
   startDate,
   endDate,
   loanUrl,
-}: LoanNotificationEmailOptions) {
-  const viewUrl = loanUrl || `${env.SITE_URL}/loans`;
-
+  locale,
+  kind,
+}: LoanNotificationEmailOptions & { locale: EmailLocale; kind: LoanKind }) {
+  const t = getEmailTranslations(locale)[kind];
+  const viewUrl = loanUrl
+    ? localizeInternalAppUrl(loanUrl, locale)
+    : localizedSiteUrl(`/loans/${loanId}`, locale);
   return (
-    <Html>
-      <Head />
-      <Preview>Loan Request Approved</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}!
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Your loan request has been approved.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <strong>Item:</strong> {itemName}
-            <br />
-            <strong>Borrower:</strong> {borrowerName}
-            <br />
-            <strong>Loan Period:</strong> {startDate} to {endDate}
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <Link href={viewUrl}>View loan details</Link>
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            The <Link href={`${env.SITE_URL}`}>MuseumLite</Link> team.
-          </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>MuseumLite</Text>
-        </Container>
-      </Body>
-    </Html>
+    <EmailShell locale={locale} preview={t.preview}>
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>{t.body}</Text>
+      <Text style={emailTextStyle}>
+        <strong>{t.item}</strong>{" "}
+        {formatLoanItemName(itemName, itemCount, locale)}
+        <br />
+        <strong>{t.borrower}</strong> {borrowerName}
+        <br />
+        <strong>{t.period}</strong>{" "}
+        {text(t.dateRange, {
+          startDate: formatNotificationDate(startDate, locale),
+          endDate: formatNotificationDate(endDate, locale),
+        })}
+      </Text>
+      <Text style={emailTextStyle}>
+        <Link href={viewUrl} style={emailLinkStyle}>
+          {t.view}
+        </Link>
+      </Text>
+      <TeamSignature locale={locale} />
+    </EmailShell>
   );
 }
 
-function LoanRejectedEmail({
-  email,
-  itemName,
-  borrowerName,
-  startDate,
-  endDate,
-  loanUrl,
-}: LoanNotificationEmailOptions) {
-  const viewUrl = loanUrl || `${env.SITE_URL}/loans`;
-
-  return (
-    <Html>
-      <Head />
-      <Preview>Loan Request Rejected</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            We regret to inform you that your loan request has been rejected.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <strong>Item:</strong> {itemName}
-            <br />
-            <strong>Borrower:</strong> {borrowerName}
-            <br />
-            <strong>Requested Period:</strong> {startDate} to {endDate}
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <Link href={viewUrl}>View loan details</Link>
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            The <Link href={`${env.SITE_URL}`}>MuseumLite</Link> team.
-          </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>MuseumLite</Text>
-        </Container>
-      </Body>
-    </Html>
+async function sendLoanNotification(
+  args: LoanNotificationEmailOptions,
+  kind: LoanKind,
+) {
+  const locale = args.locale ?? "en";
+  const html = await render(
+    <LoanNotificationEmail {...args} locale={locale} kind={kind} />,
   );
-}
-
-function LoanPendingEmail({
-  email,
-  itemName,
-  borrowerName,
-  startDate,
-  endDate,
-  loanUrl,
-}: LoanNotificationEmailOptions) {
-  const viewUrl = loanUrl || `${env.SITE_URL}/loans`;
-
-  return (
-    <Html>
-      <Head />
-      <Preview>New Loan Request Pending</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}!
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            A new loan request has been submitted and is awaiting review.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <strong>Item:</strong> {itemName}
-            <br />
-            <strong>Borrower:</strong> {borrowerName}
-            <br />
-            <strong>Requested Period:</strong> {startDate} to {endDate}
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <Link href={viewUrl}>Review loan request</Link>
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            The <Link href={`${env.SITE_URL}`}>MuseumLite</Link> team.
-          </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>MuseumLite</Text>
-        </Container>
-      </Body>
-    </Html>
-  );
+  await sendEmail({
+    to: args.email,
+    subject: getEmailTranslations(locale)[kind].subject,
+    html,
+  });
 }
 
 export async function sendLoanApprovedEmail(
   args: LoanNotificationEmailOptions,
 ) {
-  const html = await render(<LoanApprovedEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: "Loan Request Approved",
-    html,
-  });
+  await sendLoanNotification(args, "loanApproved");
 }
 
 export async function sendLoanRejectedEmail(
   args: LoanNotificationEmailOptions,
 ) {
-  const html = await render(<LoanRejectedEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: "Loan Request Rejected",
-    html,
-  });
+  await sendLoanNotification(args, "loanRejected");
 }
 
 export async function sendLoanPendingEmail(args: LoanNotificationEmailOptions) {
-  const html = await render(<LoanPendingEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: "New Loan Request Pending Review",
-    html,
-  });
+  await sendLoanNotification(args, "loanPending");
 }
 
-// ============================================
-// Task Assignment Email
-// ============================================
-
-type TaskAssignedEmailOptions = {
+type TaskAssignedEmailOptions = LocalizedEmail & {
   email: string;
   taskTitle: string;
   assignedBy: string;
-  dueDate?: string;
+  dueDate?: number | string;
   taskUrl?: string;
 };
 
@@ -339,188 +415,103 @@ function TaskAssignedEmail({
   assignedBy,
   dueDate,
   taskUrl,
-}: TaskAssignedEmailOptions) {
-  const viewUrl = taskUrl || `${env.SITE_URL}/tasks`;
-
+  locale,
+}: TaskAssignedEmailOptions & { locale: EmailLocale }) {
+  const t = getEmailTranslations(locale).taskAssigned;
   return (
-    <Html>
-      <Head />
-      <Preview>New Task Assigned</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}!
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            You have been assigned a new task.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <strong>Task:</strong> {taskTitle}
+    <EmailShell locale={locale} preview={t.preview}>
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>{t.body}</Text>
+      <Text style={emailTextStyle}>
+        <strong>{t.task}</strong> {taskTitle}
+        <br />
+        <strong>{t.assignedBy}</strong> {assignedBy}
+        {dueDate !== undefined ? (
+          <>
             <br />
-            <strong>Assigned by:</strong> {assignedBy}
-            {dueDate && (
-              <>
-                <br />
-                <strong>Due date:</strong> {dueDate}
-              </>
-            )}
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            <Link href={viewUrl}>View task details</Link>
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            The <Link href={`${env.SITE_URL}`}>MuseumLite</Link> team.
-          </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>MuseumLite</Text>
-        </Container>
-      </Body>
-    </Html>
+            <strong>{t.dueDate}</strong>{" "}
+            {formatNotificationDate(dueDate, locale)}
+          </>
+        ) : null}
+      </Text>
+      <Text style={emailTextStyle}>
+        <Link
+          href={
+            taskUrl
+              ? localizeInternalAppUrl(taskUrl, locale)
+              : localizedSiteUrl("/tasks", locale)
+          }
+          style={emailLinkStyle}
+        >
+          {t.view}
+        </Link>
+      </Text>
+      <TeamSignature locale={locale} />
+    </EmailShell>
   );
 }
 
 export async function sendTaskAssignedEmail(args: TaskAssignedEmailOptions) {
-  const html = await render(<TaskAssignedEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: "New Task Assigned",
-    html,
-  });
+  const locale = args.locale ?? "en";
+  const t = getEmailTranslations(locale).taskAssigned;
+  const html = await render(<TaskAssignedEmail {...args} locale={locale} />);
+  await sendEmail({ to: args.email, subject: t.subject, html });
 }
 
-// ============================================
-// Subscription Emails
-// ============================================
-
-type SubscriptionEmailOptions = {
+type SubscriptionEmailOptions = LocalizedEmail & {
   email: string;
   subscriptionId: string;
 };
+type SubscriptionKind = "subscriptionSuccess" | "subscriptionError";
 
-function SubscriptionSuccessEmail({ email }: SubscriptionEmailOptions) {
+function SubscriptionEmail({
+  email,
+  locale,
+  kind,
+}: SubscriptionEmailOptions & { locale: EmailLocale; kind: SubscriptionKind }) {
+  const t = getEmailTranslations(locale)[kind];
   return (
-    <Html>
-      <Head />
-      <Preview>Successfully Subscribed to PRO</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}!
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Your subscription to PRO has been successfully processed.
-            <br />
-            We hope you enjoy the new features!
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            The <Link href={`${env.SITE_URL}`}>MuseumLite</Link> team.
-          </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>MuseumLite</Text>
-        </Container>
-      </Body>
-    </Html>
+    <EmailShell locale={locale} preview={t.preview}>
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>
+        {t.body}
+        <br />
+        {"delight" in t ? t.delight : t.reassurance}
+      </Text>
+      <TeamSignature locale={locale} />
+    </EmailShell>
   );
 }
 
-function SubscriptionErrorEmail({ email }: SubscriptionEmailOptions) {
-  return (
-    <Html>
-      <Head />
-      <Preview>Subscription Issue - Customer Support</Preview>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily:
-            '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-        }}
-      >
-        <Container style={{ margin: "0 auto", padding: "20px 0 48px" }}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            Hello {email}.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            We were unable to process your subscription to PRO tier.
-            <br />
-            But don't worry, we'll not charge you anything.
-          </Text>
-          <Text style={{ fontSize: "16px", lineHeight: "26px" }}>
-            The <Link href={`${env.SITE_URL}`}>MuseumLite</Link> team.
-          </Text>
-          <Hr style={{ borderColor: "#cccccc", margin: "20px 0" }} />
-          <Text style={{ color: "#8898aa", fontSize: "12px" }}>MuseumLite</Text>
-        </Container>
-      </Body>
-    </Html>
+async function sendSubscriptionEmail(
+  args: SubscriptionEmailOptions,
+  kind: SubscriptionKind,
+) {
+  const locale = args.locale ?? "en";
+  const t = getEmailTranslations(locale)[kind];
+  const html = await render(
+    <SubscriptionEmail {...args} locale={locale} kind={kind} />,
   );
+  await sendEmail({ to: args.email, subject: t.subject, html });
 }
 
 export async function sendSubscriptionSuccessEmail(
   args: SubscriptionEmailOptions,
 ) {
-  const html = await render(<SubscriptionSuccessEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: "Successfully Subscribed to PRO",
-    html,
-  });
+  await sendSubscriptionEmail(args, "subscriptionSuccess");
 }
 
 export async function sendSubscriptionErrorEmail(
   args: SubscriptionEmailOptions,
 ) {
-  const html = await render(<SubscriptionErrorEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: "Subscription Issue - Customer Support",
-    html,
-  });
+  await sendSubscriptionEmail(args, "subscriptionError");
 }
 
-// ============================================
-// Organization deletion emails
-// ============================================
-
-function formatEmailDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+function formatEmailDate(timestamp: number, locale: EmailLocale): string {
+  return emailDateFormatters[locale].format(new Date(timestamp));
 }
 
-type OrganizationDeletionGraceEmailOptions = {
+type OrganizationDeletionGraceEmailOptions = LocalizedEmail & {
   email: string;
   organizationName: string;
   token: string;
@@ -532,50 +523,54 @@ function OrganizationDeletionGraceEmail({
   organizationName,
   token,
   graceEndsAt,
-}: OrganizationDeletionGraceEmailOptions) {
-  const cancelUrl = `${env.SITE_URL}/organization-deletion/cancel/${token}`;
-
+  locale,
+}: OrganizationDeletionGraceEmailOptions & { locale: EmailLocale }) {
+  const t = getEmailTranslations(locale).deletionGrace;
+  const cancelUrl = localizedSiteUrl(
+    `/organization-deletion/cancel/${token}`,
+    locale,
+  );
   return (
-    <Html>
-      <Head />
-      <Preview>Your organization deletion request for {organizationName}</Preview>
-      <Body style={emailBodyStyle}>
-        <Container style={emailContainerStyle}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={emailTextStyle}>Hello {email},</Text>
-          <Text style={emailTextStyle}>
-            You requested deletion of <strong>{organizationName}</strong>. The
-            organization is now inactive while we wait for your confirmation.
-          </Text>
-          <Text style={emailTextStyle}>
-            If you do nothing, the deletion process will continue after{" "}
-            <strong>{formatEmailDate(graceEndsAt)}</strong>.
-          </Text>
-          <Section style={emailButtonSectionStyle}>
-            <Button href={cancelUrl} style={emailInvitationButtonStyle}>
-              Stop deletion
-            </Button>
-          </Section>
-          <Text style={emailMutedTextStyle}>
-            You can also transfer ownership to another member from organization
-            settings before the account is removed.
-          </Text>
-          <Hr style={emailHrStyle} />
-          <Text style={emailFooterTextStyle}>
-            This message was sent to {email} regarding {organizationName}.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
+    <EmailShell
+      locale={locale}
+      preview={text(t.preview, { organizationName })}
+      footer={text(t.footer, { email, organizationName })}
+    >
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>
+        {text(t.requested, { organizationName })}
+      </Text>
+      <Text style={emailTextStyle}>
+        {text(t.continues, {
+          date: formatEmailDate(graceEndsAt, locale),
+        })}
+      </Text>
+      <Section style={emailButtonSectionStyle}>
+        <Button href={cancelUrl} style={emailInvitationButtonStyle}>
+          {t.stop}
+        </Button>
+      </Section>
+      <Text style={emailMutedTextStyle}>{t.transfer}</Text>
+    </EmailShell>
   );
 }
 
-type OrganizationDeletionFinalNoticeEmailOptions = {
+export async function sendOrganizationDeletionGraceEmail(
+  args: OrganizationDeletionGraceEmailOptions,
+) {
+  const locale = args.locale ?? "en";
+  const t = getEmailTranslations(locale).deletionGrace;
+  const html = await render(
+    <OrganizationDeletionGraceEmail {...args} locale={locale} />,
+  );
+  await sendEmail({
+    to: args.email,
+    subject: text(t.subject, { organizationName: args.organizationName }),
+    html,
+  });
+}
+
+type OrganizationDeletionFinalNoticeEmailOptions = LocalizedEmail & {
   email: string;
   organizationName: string;
   token: string;
@@ -588,64 +583,47 @@ function OrganizationDeletionFinalNoticeEmail({
   organizationName,
   token,
   scheduledDeletionDate,
-}: OrganizationDeletionFinalNoticeEmailOptions) {
-  const cancelUrl = `${env.SITE_URL}/organization-deletion/cancel/${token}`;
-
-  return (
-    <Html>
-      <Head />
-      <Preview>Final notice: {organizationName} will be deleted soon</Preview>
-      <Body style={emailBodyStyle}>
-        <Container style={emailContainerStyle}>
-          <Img
-            src={`${env.SITE_URL}/images/convex-logo-email.jpg`}
-            width="40"
-            height="37"
-            alt=""
-          />
-          <Text style={emailTextStyle}>Hello {email},</Text>
-          <Text style={emailTextStyle}>
-            Your organization <strong>{organizationName}</strong> is scheduled
-            for permanent deletion on{" "}
-            <strong>{formatEmailDate(scheduledDeletionDate)}</strong>.
-          </Text>
-          <Text style={emailTextStyle}>
-            If you want to keep this account, stop the deletion now or transfer
-            ownership to another team member.
-          </Text>
-          <Section style={emailButtonSectionStyle}>
-            <Button href={cancelUrl} style={emailInvitationButtonStyle}>
-              Stop deletion
-            </Button>
-          </Section>
-          <Hr style={emailHrStyle} />
-          <Text style={emailFooterTextStyle}>
-            This final notice was sent to {email} for {organizationName}.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
+  locale,
+}: OrganizationDeletionFinalNoticeEmailOptions & { locale: EmailLocale }) {
+  const t = getEmailTranslations(locale).deletionFinal;
+  const cancelUrl = localizedSiteUrl(
+    `/organization-deletion/cancel/${token}`,
+    locale,
   );
-}
-
-export async function sendOrganizationDeletionGraceEmail(
-  args: OrganizationDeletionGraceEmailOptions,
-) {
-  const html = await render(<OrganizationDeletionGraceEmail {...args} />);
-  await sendEmail({
-    to: args.email,
-    subject: `Deletion requested for ${args.organizationName}`,
-    html,
-  });
+  return (
+    <EmailShell
+      locale={locale}
+      preview={text(t.preview, { organizationName })}
+      footer={text(t.footer, { email, organizationName })}
+    >
+      <Greeting email={email} locale={locale} />
+      <Text style={emailTextStyle}>
+        {text(t.scheduled, {
+          organizationName,
+          date: formatEmailDate(scheduledDeletionDate, locale),
+        })}
+      </Text>
+      <Text style={emailTextStyle}>{t.keep}</Text>
+      <Section style={emailButtonSectionStyle}>
+        <Button href={cancelUrl} style={emailInvitationButtonStyle}>
+          {t.stop}
+        </Button>
+      </Section>
+    </EmailShell>
+  );
 }
 
 export async function sendOrganizationDeletionFinalNoticeEmail(
   args: OrganizationDeletionFinalNoticeEmailOptions,
 ) {
-  const html = await render(<OrganizationDeletionFinalNoticeEmail {...args} />);
+  const locale = args.locale ?? "en";
+  const t = getEmailTranslations(locale).deletionFinal;
+  const html = await render(
+    <OrganizationDeletionFinalNoticeEmail {...args} locale={locale} />,
+  );
   await sendEmail({
     to: args.email,
-    subject: `Final notice: ${args.organizationName} will be deleted`,
+    subject: text(t.subject, { organizationName: args.organizationName }),
     html,
   });
 }

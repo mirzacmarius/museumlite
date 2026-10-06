@@ -10,6 +10,7 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Building2, Check, Mail, Phone, Plus, User } from "lucide-react";
+import { useI18n } from "@/locales/client";
 
 interface AccountListItem {
   _id: string;
@@ -41,17 +42,20 @@ export function AccountComboboxListContent({
   onSelect,
   onOpenCreateDialog,
 }: AccountComboboxListContentProps) {
+  const translate = useI18n();
   return (
     <>
       <CommandInput
-        placeholder="Search accounts..."
+        placeholder={translate("untranslatedComponents.labels.searchAccounts")}
         value={searchQuery}
         onValueChange={onSearchQueryChange}
       />
       <CommandList id={listId} className="max-h-[300px]">
         <CommandEmpty>
           <div className="p-4 text-sm text-center">
-            <p className="text-muted-foreground mb-2">No accounts found.</p>
+            <p className="text-muted-foreground mb-2">
+              {translate("untranslatedComponents.labels.noAccountsFound")}
+            </p>
             {organizationId && (
               <Button
                 type="button"
@@ -61,14 +65,16 @@ export function AccountComboboxListContent({
                 className="w-full"
               >
                 <Plus className="mr-2 size-4" />
-                Create New Account
+                {translate("untranslatedComponents.labels.createNewAccount")}
               </Button>
             )}
           </div>
         </CommandEmpty>
 
         {accounts && accounts.length > 0 && (
-          <CommandGroup heading="Accounts">
+          <CommandGroup
+            heading={translate("untranslatedComponents.labels.accounts")}
+          >
             {accounts.map((account) => (
               <CommandItem
                 key={account._id}
@@ -130,7 +136,7 @@ export function AccountComboboxListContent({
               className="w-full justify-start"
             >
               <Plus className="mr-2 size-4" />
-              Create New Account
+              {translate("untranslatedComponents.labels.createNewAccount")}
             </Button>
           </div>
         )}

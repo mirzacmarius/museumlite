@@ -1,6 +1,8 @@
 import { absoluteUrl, siteConfig } from "@/lib/site";
+import { getWebI18n } from "@/locales/server";
 
-export function MarketingJsonLd() {
+export async function MarketingJsonLd() {
+  const { t } = await getWebI18n();
   const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -15,7 +17,7 @@ export function MarketingJsonLd() {
     "@type": "WebSite",
     name: siteConfig.name,
     url: siteConfig.url,
-    description: siteConfig.description,
+    description: t("site.description"),
   };
 
   const software = {
@@ -24,7 +26,7 @@ export function MarketingJsonLd() {
     name: siteConfig.name,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
-    description: siteConfig.description,
+    description: t("site.description"),
     url: siteConfig.url,
     offers: {
       "@type": "Offer",
@@ -34,9 +36,7 @@ export function MarketingJsonLd() {
 
   return (
     <>
-      <script type="application/ld+json">
-        {JSON.stringify(organization)}
-      </script>
+      <script type="application/ld+json">{JSON.stringify(organization)}</script>
       <script type="application/ld+json">{JSON.stringify(website)}</script>
       <script type="application/ld+json">{JSON.stringify(software)}</script>
     </>

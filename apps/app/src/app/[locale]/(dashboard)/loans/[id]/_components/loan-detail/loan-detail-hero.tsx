@@ -4,7 +4,7 @@ import { cn } from "@v1/ui/utils";
 import { Banknote, CalendarRange, Check, Copy, Layers } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { Loan } from "../types";
 
 interface LoanDetailHeroProps {
@@ -20,6 +20,7 @@ export function LoanDetailHero({
   copied,
   onCopyId,
 }: LoanDetailHeroProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
 
   return (
@@ -63,7 +64,9 @@ export function LoanDetailHero({
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-foreground font-mono bg-background px-2 py-1 rounded border border-border shadow-sm ml-auto">
-              <span className="text-muted-foreground select-none">ID:</span>
+              <span className="text-muted-foreground select-none">
+                {tRoot("untranslatedRecords.loans.detail.idLabel")}
+              </span>
               <span>{loan.loanNumber}</span>
               {copied ? (
                 <Check className="size-3 text-green-500" />
@@ -78,7 +81,7 @@ export function LoanDetailHero({
 
           <div>
             <h1 className="text-3xl font-semibold text-foreground tracking-tight leading-tight mb-1">
-              Loan {loan.loanNumber}
+              {tRoot("accessions.form.methods.loan")} {loan.loanNumber}
             </h1>
             <p className="text-muted-foreground text-sm">
               {loan.type === "outgoing"
@@ -101,7 +104,7 @@ export function LoanDetailHero({
                     year: "numeric",
                   }}
                 />{" "}
-                to{" "}
+                {tRoot("untranslatedRecords.objects.transfer.to")}{" "}
                 {loan.endDate ? (
                   <ClientDate
                     timestamp={loan.endDate}
@@ -120,7 +123,8 @@ export function LoanDetailHero({
             <div className="flex items-center gap-2 text-xs">
               <Layers className="size-4 text-muted-foreground" />
               <span className="text-muted-foreground">
-                {loan.items.length} Objects (Paintings)
+                {loan.items.length}{" "}
+                {tRoot("untranslatedRecords.loans.items.objectsPaintings")}
               </span>
             </div>
             {loan.insuranceValue && (

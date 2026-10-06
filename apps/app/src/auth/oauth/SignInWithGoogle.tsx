@@ -4,7 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@v1/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface SignInWithGoogleProps {
   redirectTo?: string;
@@ -15,6 +15,7 @@ export function SignInWithGoogle({
   redirectTo,
   compact = false,
 }: SignInWithGoogleProps) {
+  const translate = useI18n();
   const { signIn } = useAuthActions();
   const locale = useCurrentLocale();
   const { push, refresh } = useRouter();
@@ -24,23 +25,24 @@ export function SignInWithGoogle({
       className={compact ? "w-full h-9" : "w-full h-10"}
       onClick={async () => {
         try {
-          const result = await signIn(
-            "google",
-            redirectTo ? { redirectTo } : undefined,
-          );
+          const result = await signIn("google", {
+            redirectTo: redirectTo ?? `/${locale}`,
+          });
 
           if (result.signingIn) {
             push(redirectTo ?? `/${locale}`);
             refresh();
           }
         } catch {
-          toast.error("Could not start Google sign-in. Please try again.");
+          toast.error(
+            translate("untranslatedComponents.auth.googleSignInFailed"),
+          );
         }
       }}
       type="button"
       variant="outline"
     >
-      Continue with Google
+      {translate("untranslatedComponents.labels.continueWithGoogle")}
     </Button>
   );
 }

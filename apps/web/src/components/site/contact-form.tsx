@@ -1,10 +1,12 @@
 "use client";
 
-import { submitTourRequest } from "@/app/(marketing)/contact/actions";
 import { useState } from "react";
+import { submitTourRequest } from "@/app/(marketing)/contact/actions";
+import { useWebI18n } from "@/locales/provider";
 import { SectionLabel } from "./section-label";
 
 export function ContactForm() {
+  const { t } = useWebI18n();
   const [sent, setSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,10 +14,11 @@ export function ContactForm() {
   if (sent) {
     return (
       <div className="border border-gold/40 bg-card p-12 text-center">
-        <div className="font-display text-4xl text-gold mb-4">Received.</div>
+        <div className="font-display text-4xl text-gold mb-4">
+          {t("marketing.contact.received")}
+        </div>
         <p className="text-muted-foreground">
-          We will be in touch within two business days to arrange your
-          walkthrough.
+          {t("marketing.contact.followUp")}
         </p>
       </div>
     );
@@ -40,27 +43,31 @@ export function ContactForm() {
           if (result.ok) {
             setSent(true);
           } else {
-            setError(result.error);
+            setError(
+              result.error === "submission_failed"
+                ? t("marketing.contact.genericError")
+                : t("marketing.contact.fieldError"),
+            );
           }
-        } catch (submitError) {
-          setError(
-            submitError instanceof Error
-              ? submitError.message
-              : "Something went wrong. Please try again.",
-          );
+        } catch {
+          setError(t("marketing.contact.genericError"));
         } finally {
           setIsSubmitting(false);
         }
       }}
     >
-      <SectionLabel index="✦" title="Tell us a little" />
-      <Field label="Your name" name="name" />
-      <Field label="Institution" name="institution" />
-      <Field label="Email" name="email" type="email" />
+      <SectionLabel index="✦" title={t("marketing.contact.tellUs")} />
+      <Field label={t("marketing.contact.yourName")} name="name" />
+      <Field label={t("marketing.contact.institution")} name="institution" />
       <Field
-        label="Approximate collection size"
+        label={t("marketing.contact.fieldEmail")}
+        name="email"
+        type="email"
+      />
+      <Field
+        label={t("marketing.contact.collectionSize")}
         name="size"
-        placeholder="e.g. 12,000 objects"
+        placeholder={t("marketing.contact.collectionSizePlaceholder")}
       />
       <div>
         <label
@@ -68,7 +75,7 @@ export function ContactForm() {
           id="message-label"
           className="block text-[10px] uppercase tracking-[0.3em] text-gold mb-3"
         >
-          Anything you&apos;d like us to know
+          {t("marketing.contact.message")}
         </label>
         <textarea
           id="message"
@@ -84,7 +91,9 @@ export function ContactForm() {
         disabled={isSubmitting}
         className="btn-marketing mt-4 bg-gold text-ink px-8 py-4 text-xs uppercase tracking-[0.3em] hover:bg-ivory transition-colors disabled:opacity-60"
       >
-        {isSubmitting ? "Sending…" : "Request a private tour"}
+        {isSubmitting
+          ? t("marketing.contact.sending")
+          : t("marketing.contact.submit")}
       </button>
     </form>
   );

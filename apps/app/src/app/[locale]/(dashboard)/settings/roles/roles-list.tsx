@@ -5,6 +5,7 @@ import { Button } from "@v1/ui/button";
 import { EmptyState } from "@v1/ui/empty-state";
 import { Edit, Shield, Trash2 } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 
 interface RolePermission {
   _id: Id<"permissions">;
@@ -40,18 +41,19 @@ export function RolesList({
   onDeleteRole,
   t,
 }: RolesListProps) {
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {roles === undefined ? (
         <div className="col-span-2 flex h-64 items-center justify-center">
-          <p className="text-muted-foreground">Loading roles…</p>
+          <p className="text-muted-foreground">{tDashboard("loadingRoles")}</p>
         </div>
       ) : roles.length === 0 ? (
         <div className="col-span-2">
           <EmptyState
             icon={Shield}
-            title="No roles found"
-            description="Create custom roles to manage team permissions"
+            title={tDashboard("noRolesFound")}
+            description={tDashboard("noRolesDescription")}
             size="md"
           />
         </div>
@@ -78,7 +80,9 @@ export function RolesList({
                 )}
                 <div className="mt-3">
                   <p className="text-xs font-medium text-muted-foreground">
-                    Permissions ({role.permissions.length})
+                    {tDashboard("permissionsCount", {
+                      count: role.permissions.length,
+                    })}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {role.permissions.slice(0, 5).map((perm) => (

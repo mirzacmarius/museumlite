@@ -3,6 +3,7 @@
 import { DollarSign } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
 import { type FormatLocale, formatCurrency } from "@/lib/format-number";
+import { useI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 type ExportData = NonNullable<DeaccessionDetailViewProps["exportData"]>;
@@ -16,6 +17,7 @@ export function DeaccessionBoardReportProceedsSection({
   exportData,
   locale,
 }: DeaccessionBoardReportProceedsSectionProps) {
+  const tRoot = useI18n();
   if (
     !exportData.deaccession.proceedsAmount &&
     !exportData.deaccession.proceedsRecipient
@@ -27,13 +29,13 @@ export function DeaccessionBoardReportProceedsSection({
     <div className="print:break-inside-avoid">
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
         <DollarSign className="mr-1 inline size-3" />
-        Proceeds Information
+        {tRoot("deaccessions.report.proceedsInfo")}
       </h2>
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm print:gap-x-4 print:gap-y-1 print:text-xs">
         {exportData.deaccession.proceedsAmount !== undefined ? (
           <div>
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Amount
+              {tRoot("deaccessions.report.amount")}
             </p>
             <p className="font-semibold text-black">
               {formatCurrency(
@@ -47,7 +49,7 @@ export function DeaccessionBoardReportProceedsSection({
         {exportData.deaccession.proceedsRecipient ? (
           <div>
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Recipient
+              {tRoot("deaccessions.report.recipient")}
             </p>
             <p className="text-black">
               {exportData.deaccession.proceedsRecipient}
@@ -57,7 +59,7 @@ export function DeaccessionBoardReportProceedsSection({
         {exportData.deaccession.proceedsDate ? (
           <div>
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Date Received
+              {tRoot("deaccessions.report.dateReceived")}
             </p>
             <p className="text-black">
               <ClientDateFns
@@ -71,7 +73,7 @@ export function DeaccessionBoardReportProceedsSection({
         {exportData.deaccession.proceedsNotes ? (
           <div className="col-span-2">
             <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-              Proceeds Notes
+              {tRoot("deaccessions.report.proceedsNotes")}
             </p>
             <p className="whitespace-pre-wrap text-black">
               {exportData.deaccession.proceedsNotes}

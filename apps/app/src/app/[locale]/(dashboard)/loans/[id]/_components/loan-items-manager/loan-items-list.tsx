@@ -15,7 +15,7 @@ import { Button } from "@v1/ui/button";
 import { ExternalLink, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { ManagedLoanItem } from "./types";
 import type { useLoanItemsManager } from "./use-loan-items-manager";
 
@@ -27,13 +27,16 @@ interface LoanItemsListProps {
 }
 
 export function LoanItemsList({ loanItems, manager }: LoanItemsListProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const common = useScopedI18n("common");
 
   if (loanItems.length === 0) {
     return (
       <div className="rounded-lg border border-border bg-muted/50 p-8 text-center">
-        <p className="text-muted-foreground">No items in this loan</p>
+        <p className="text-muted-foreground">
+          {tRoot("loans.actions.noItemsInLoan")}
+        </p>
       </div>
     );
   }
@@ -58,12 +61,14 @@ export function LoanItemsList({ loanItems, manager }: LoanItemsListProps) {
             </div>
             {item.conditionOut && (
               <p className="mt-1 text-sm text-muted-foreground">
-                Condition Out: {item.conditionOut}
+                {tRoot("untranslatedRecords.loans.items.conditionOut")}{" "}
+                {item.conditionOut}
               </p>
             )}
             {item.conditionIn && (
               <p className="mt-1 text-sm text-muted-foreground">
-                Condition In: {item.conditionIn}
+                {tRoot("untranslatedRecords.loans.items.conditionIn")}{" "}
+                {item.conditionIn}
               </p>
             )}
             {item.notes && <p className="mt-1 text-sm">{item.notes}</p>}
@@ -77,7 +82,7 @@ export function LoanItemsList({ loanItems, manager }: LoanItemsListProps) {
                   onClick={() => manager.handleReturnItemClick(item)}
                 >
                   <RotateCcw className="mr-2 size-4" />
-                  Return
+                  {tRoot("loans.actions.returnItem")}
                 </Button>
               </PermissionGate>
             )}
@@ -96,7 +101,9 @@ export function LoanItemsList({ loanItems, manager }: LoanItemsListProps) {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Remove Item from Loan</AlertDialogTitle>
+                      <AlertDialogTitle>
+                        {tRoot("loans.actions.removeLoanItem")}
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
                         {tActions("removeItemConfirm")}
                       </AlertDialogDescription>

@@ -7,7 +7,7 @@ import { DataTable } from "@v1/ui/data-table";
 import { ChevronRight, Handshake, Plus } from "lucide-react";
 import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   formatLoanDateRange,
   getLoanStatusLabel,
@@ -38,9 +38,11 @@ export function LoanListTable({
   onToggleSelection,
 }: LoanListTableProps) {
   const t = useScopedI18n("loans");
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
 
   const statusLabels = {
+    pending: t("status.pendingReview"),
     pendingReview: t("status.pendingReview"),
     active: t("status.active"),
     dispatched: t("status.dispatched"),
@@ -67,7 +69,12 @@ export function LoanListTable({
                   checked={isSelected}
                   onCheckedChange={() => onToggleSelection(loanId)}
                   onClick={(event) => event.stopPropagation()}
-                  aria-label={`Select loan ${loan.loanNumber}`}
+                  aria-label={tRoot(
+                    "untranslatedRecords.loans.items.selectLoan",
+                    {
+                      number: loan.loanNumber,
+                    },
+                  )}
                 />
               );
             },
@@ -141,7 +148,11 @@ export function LoanListTable({
           },
         ]}
         rowHref={(loan) => `/loans/${loan._id}`}
-        rowAriaLabel={(loan) => `View loan ${loan.loanNumber ?? loan._id}`}
+        rowAriaLabel={(loan) =>
+          tRoot("untranslatedRecords.loans.actions.viewLoan", {
+            number: loan.loanNumber ?? loan._id,
+          })
+        }
         emptyState={
           <div className="flex flex-col items-center justify-center gap-4 py-8">
             <Handshake className="size-12 text-muted-foreground/50" />
@@ -154,7 +165,19 @@ export function LoanListTable({
                   ? t("emptyState.adjustSearch")
                   : statusFilter === "all" && typeFilter === "all"
                     ? t("emptyState.createFirst")
-                    : `No ${statusFilter !== "all" ? statusFilter : ""} ${typeFilter !== "all" ? typeFilter : ""} loans`}
+                    : tRoot(
+                        "untranslatedRecords.loans.items.noLoansForStatus",
+                        {
+                          status:
+                            statusFilter !== "all"
+                              ? statusLabels[statusFilter]
+                              : "",
+                          type:
+                            typeFilter !== "all"
+                              ? t(`filters.${typeFilter}`)
+                              : "",
+                        },
+                      )}
               </p>
             </div>
             {statusFilter === "all" && typeFilter === "all" && (

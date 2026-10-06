@@ -1,22 +1,23 @@
 import Image from "next/image";
 import { SectionLabel } from "@/components/site/section-label";
+import { getWebI18n } from "@/locales/server";
 
-const highlights = [
-  {
-    title: "Floorplan editor",
-    detail: "Walls, vitrines & visitor flow",
-  },
-  {
-    title: "Label PDF export",
-    detail: "Typography tied to your catalogue",
-  },
-  {
-    title: "Install schedule",
-    detail: "Timeline shared with registrars",
-  },
-] as const;
-
-export function ExhibitionsShowcase() {
+export async function ExhibitionsShowcase() {
+  const { t } = await getWebI18n();
+  const highlights = [
+    {
+      title: t("marketing.exhibitions.floorplan"),
+      detail: t("marketing.exhibitions.detail1"),
+    },
+    {
+      title: t("marketing.exhibitions.labelExport"),
+      detail: t("marketing.exhibitions.detail2"),
+    },
+    {
+      title: t("marketing.exhibitions.installSchedule"),
+      detail: t("marketing.exhibitions.detail3"),
+    },
+  ];
   return (
     <section
       id="exhibitions"
@@ -26,14 +27,15 @@ export function ExhibitionsShowcase() {
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
         <div className="max-w-3xl mb-12 md:mb-16">
-          <SectionLabel index="II." title="Exhibitions" />
+          <SectionLabel index="II." title={t("marketing.exhibitions.alt")} />
           <h2 className="mt-6 font-display text-4xl md:text-5xl lg:text-6xl text-ivory text-balance leading-[0.95]">
-            Shows & <em className="not-italic text-gold">loans</em>
+            {t("marketing.exhibitions.headingStart")}{" "}
+            <em className="not-italic text-gold">
+              {t("marketing.exhibitions.headingEnd")}
+            </em>
           </h2>
           <p className="mt-6 text-lg text-soft-foreground leading-relaxed">
-            Plan walls, labels, vitrines, and lighting on a timeline — then
-            generate install schedules and label exports from the same
-            catalogue your registrars maintain every day.
+            {t("marketing.exhibitions.body")}
           </p>
         </div>
 
@@ -41,7 +43,7 @@ export function ExhibitionsShowcase() {
           <div className="exhibitions-showcase-media relative min-h-[280px] sm:min-h-[360px] lg:min-h-full">
             <Image
               src="/marketing/artifact-frame.jpg"
-              alt="Exhibition planning with vitrines and framed works in a gallery"
+              alt={t("marketing.exhibitions.imageAlt")}
               fill
               loading="lazy"
               quality={70}
@@ -55,15 +57,13 @@ export function ExhibitionsShowcase() {
           <article className="feature-module-card exhibitions-showcase-panel flex flex-col justify-center gap-6 p-8 md:p-10 lg:p-12">
             <div className="space-y-4">
               <p className="text-[10px] uppercase tracking-[0.4em] text-gold">
-                Exhibitions & installations
+                {t("marketing.exhibitions.sectionTitle")}
               </p>
               <h3 className="font-display text-3xl md:text-4xl text-ivory leading-[1.05]">
-                From loan agreement to opening night
+                {t("marketing.exhibitions.sectionHeading")}
               </h3>
               <p className="text-soft-foreground leading-relaxed">
-                Outgoing and incoming loans, courier briefs, crate manifests, and
-                condition checks at every hop — linked to the objects on your
-                gallery floor.
+                {t("marketing.exhibitions.sectionBody")}
               </p>
             </div>
             <ul className="pt-6 border-t border-gold/20 space-y-3">

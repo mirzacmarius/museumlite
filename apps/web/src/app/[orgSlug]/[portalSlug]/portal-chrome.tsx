@@ -7,8 +7,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ClientCurrentYear } from "@/components/client-date";
+import { LocaleSwitcher } from "@/components/site/locale-switcher";
+import { useWebI18n } from "@/locales/provider";
 
 export function PortalChrome({ children }: { children: React.ReactNode }) {
+  const { t } = useWebI18n();
   const params = useParams();
   const orgSlug = params.orgSlug as string;
   const portalSlug = params.portalSlug as string;
@@ -19,10 +22,10 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
   });
 
   const orgTypeLabels: Record<string, string> = {
-    museum: "Museum",
-    gallery: "Gallery",
-    library: "Library",
-    collector: "Private Collection",
+    museum: t("public.orgTypeMuseum"),
+    gallery: t("public.orgTypeGallery"),
+    library: t("public.orgTypeLibrary"),
+    collector: t("public.orgTypePrivateCollection"),
   };
 
   return (
@@ -59,8 +62,10 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
 
-            <div className="text-xs text-white/40">
-              Powered by{" "}
+            <div className="flex items-center gap-4 text-xs text-white/40">
+              <LocaleSwitcher />
+              <span>
+              {t("common.poweredBy")} {" "}
               <a
                 href="https://museumlite.com"
                 target="_blank"
@@ -69,6 +74,7 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
               >
                 MuseumLite
               </a>
+              </span>
             </div>
           </div>
         </div>
@@ -88,7 +94,7 @@ export function PortalChrome({ children }: { children: React.ReactNode }) {
               rel="noopener noreferrer"
               className="hover:text-white/60 transition-colors"
             >
-              Powered by MuseumLite
+              {t("common.poweredBy")} MuseumLite
             </a>
           </div>
         </div>

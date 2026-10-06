@@ -12,7 +12,7 @@ The user subsequently invoked `implement-spec` and explicitly instructed impleme
 
 ## Review workflow
 
-Locally verified ticket implementations are handed off in Linear as In Review with concrete review checklists. They are not marked Done before human review. Integration progress is distinct from institutional rollout approval.
+Tickets remain In Progress through integration and deployment. After the production commit is verified at https://app.museumlite.com, they receive deployed review checklists and move to In Review. Done requires human validation. Historical evidence below describes the verification state at each checkpoint.
 
 ## Accepted identifier policy (MUS-619)
 
@@ -36,3 +36,11 @@ For concurrent local app QA, `LOCAL_QA=1` selects `.next/local-qa` rather than t
 No production deployment or live migration was performed. A local Convex diagnostic command changed the symlinked backend environment file; its deployment and URLs were restored from the unchanged root environment. Further local verification used guarded loopback deployment commands.
 
 Final integration verification: `bun run lint`, `bun run typecheck:all` and `bun run test` passed (1,160 backend tests and 90 app tests). Independent review confirmed the retention correction and found no remaining blocker in the changed identifier, KPI or media behavior. The full `bun run react-doctor` warning gate still fails, with 18 app warnings in broader integrated workflows and design heuristics, including the explicitly required black theme. This is an outstanding umbrella verification gap; the program and draft PR are not complete or ready to merge.
+
+### Production integration follow-up
+
+The release integrates main's five-locale UI and authentication improvements. React Doctor exceptions are restricted to concrete domain constraints: authorization and storage-ownership checks must precede record-dependent validation and early returns; resumable import batches intentionally commit in order to preserve progress, recovery, and identifier allocation; media upload workers await each item within an already concurrent, bounded worker pool; publication previews follow the project's required black design theme. Timezone-dependent backend formatters use a bounded module-level cache; their constructor cannot move to a single timezone-independent instance. UI timestamp formatters are preconstructed for the five supported locales with an explicit UTC timezone. The warning gate remains enabled. Other reported component, date-formatting, and lookup issues are corrected rather than excluded.
+
+Release reconciliation checks: lint, React Doctor (no reported issues), workspace typecheck, i18n typecheck, and all tests pass: 1,222 backend, 137 app, 5 shared UI, and 7 marketing tests. Missing import translations were completed in Spanish, French, Norwegian, and Romanian. Unsupported unmapped-file deletion UI was removed because the retention policy deliberately rejects that endpoint. Production build/deployment evidence follows once complete.
+
+Final release candidate: local production build passes with typechecking enabled and CI placeholder Convex URL (no deployment). Account parser validation and environmental-device instructions retain five-locale UI coverage. Publication tests now use controlled timers because they explicitly execute or complete rendition work; this prevents a scheduled duplicate worker racing with fixture mutations. The focused publication suite and full 1,371-test suite pass without unhandled errors after that correction. Hosted checks and production verification remain pending.

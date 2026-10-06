@@ -35,13 +35,14 @@ function toTemplateRows(text: string, template: ImportTemplate) {
   const columnIndex = new Map(
     table.headers.map((header, index) => [header.toLowerCase(), index]),
   );
+  const requiredFields = new Set(template.requiredFields);
   return table.records.map((record) => {
     const row: TemplateRow = { rowNumber: record.rowNumber };
     for (const field of template.headers) {
       const index = columnIndex.get(field.toLowerCase());
       const value = index === undefined ? undefined : record.values[index];
       if (value) row[field] = value;
-      else if (template.requiredFields.includes(field)) row[field] = "";
+      else if (requiredFields.has(field)) row[field] = "";
     }
     return row;
   });

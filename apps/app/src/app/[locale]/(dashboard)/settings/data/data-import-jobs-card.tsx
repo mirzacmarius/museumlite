@@ -34,8 +34,9 @@ export function DataImportJobsCard({
   onUploadCorrection,
 }: DataImportJobsCardProps) {
   const t = useScopedI18n("settings.data.importJobs");
+  const tSettings = useScopedI18n("untranslatedDashboard.settings");
   const correctionInputRef = useRef<HTMLInputElement>(null);
-  const [correctionJob, setCorrectionJob] = useState<ImportJob | null>(null);
+  const correctionJobRef = useRef<ImportJob | null>(null);
   const cancelImportJob = useMutation(api.imports.cancelImportJob);
   const downloadFailures = useDownloadImportFailures();
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export function DataImportJobsCard({
   }
 
   async function handleCorrectionFile(file: File) {
-    const job = correctionJob;
+    const job = correctionJobRef.current;
     if (!job) return;
     setBusyJobId(job._id);
     try {
@@ -96,7 +97,7 @@ export function DataImportJobsCard({
       );
     } finally {
       setBusyJobId(null);
-      setCorrectionJob(null);
+      correctionJobRef.current = null;
     }
   }
 
@@ -114,7 +115,7 @@ export function DataImportJobsCard({
         }}
       />
       <CardHeader>
-        <CardTitle>{t("title")}</CardTitle>
+        <CardTitle>{tSettings("recentImportJobs")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -185,7 +186,7 @@ export function DataImportJobsCard({
                         size="sm"
                         disabled={busy}
                         onClick={() => {
-                          setCorrectionJob(job);
+                          correctionJobRef.current = job;
                           correctionInputRef.current?.click();
                         }}
                       >

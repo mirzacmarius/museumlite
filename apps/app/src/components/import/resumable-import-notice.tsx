@@ -6,7 +6,8 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { History } from "lucide-react";
 import type { ImportEntityType } from "@/hooks/use-tracked-import-runner";
-import { useScopedI18n } from "@/locales/client";
+import { formatDateTimeUtc } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface ResumableImportNoticeProps {
   organizationId: string | null;
@@ -25,6 +26,7 @@ export function ResumableImportNotice({
   onResume,
 }: ResumableImportNoticeProps) {
   const t = useScopedI18n("trackedImport");
+  const locale = useCurrentLocale();
   const job = useQuery(
     api.imports.findResumableImportJob,
     organizationId && fingerprint
@@ -40,7 +42,7 @@ export function ResumableImportNotice({
   return (
     <ResumableImportJobNotice
       message={t("resumeNotice", {
-        date: new Date(job.createdAt).toLocaleString(),
+        date: formatDateTimeUtc(job.createdAt, locale),
         attempted: job.attemptedItems,
         total: job.totalItems,
         accepted: job.acceptedItems,

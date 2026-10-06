@@ -5,6 +5,7 @@ import { CheckCircle, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
+import { useI18n } from "@/locales/client";
 import { AccessionDetailReviewPanel } from "./accession-detail-review-panel";
 import type {
   WorkflowHistoryEntry,
@@ -16,8 +17,8 @@ import {
   SectionCard,
 } from "./accession-detail-ui";
 import type { AccessionDetailViewProps } from "./accession-detail-view-props";
-
 export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
+  const tRoot = useI18n();
   const {
     accession,
     locale,
@@ -46,7 +47,9 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
         !(accession.status === "pending" && !isDraft) ? (
           <SectionCard
             eyebrow="Workflow"
-            title="Approval workflow"
+            title={tRoot(
+              "untranslatedRecords.accessions.detail.approvalWorkflow",
+            )}
             description={workflowSummary}
           >
             <div className="grid gap-2.5 lg:grid-cols-2">
@@ -66,7 +69,7 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                         {step.name}
                       </p>
                       <p className="text-xs leading-5 text-muted-foreground">
-                        {formatWorkflowStepDetails(step)}
+                        {formatWorkflowStepDetails(step, tRoot)}
                       </p>
                     </div>
                     <span
@@ -79,10 +82,17 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                       }`}
                     >
                       {isCurrent
-                        ? "Current"
+                        ? tRoot(
+                            "untranslatedRecords.accessions.workflow.current",
+                          )
                         : isCompleted
-                          ? "Done"
-                          : `Step ${step.stepNumber}`}
+                          ? tRoot(
+                              "untranslatedRecords.accessions.workflow.done",
+                            )
+                          : tRoot(
+                              "untranslatedRecords.accessions.workflow.step",
+                              { step: step.stepNumber },
+                            )}
                     </span>
                   </div>
                 );
@@ -93,9 +103,11 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
 
         {accession.collectionId ? (
           <SectionCard
-            eyebrow="Collection"
-            title="Linked object"
-            description="This accession already created a collection record."
+            eyebrow={tRoot("untranslatedRecords.objects.attributes.collection")}
+            title={tRoot("untranslatedRecords.accessions.detail.linkedObject")}
+            description={tRoot(
+              "untranslatedRecords.accessions.detail.linkedObjectDescription",
+            )}
           >
             <Button
               variant="outline"
@@ -104,7 +116,9 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
               asChild
             >
               <Link href={`/collections/${accession.collectionId}`}>
-                Open created object
+                {tRoot(
+                  "untranslatedRecords.accessions.detail.openCreatedObject",
+                )}
                 <ExternalLink className="size-4" />
               </Link>
             </Button>
@@ -114,35 +128,44 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
         <div className="space-y-6">
           {accession.draftObjectData ? (
             <SectionCard
-              eyebrow="Proposed Object"
+              eyebrow={tRoot(
+                "untranslatedRecords.accessions.detail.proposedObject",
+              )}
               title={accession.draftObjectData.title}
               description={
-                accession.draftObjectData.creator || "Unknown creator"
+                accession.draftObjectData.creator ||
+                tRoot("untranslatedRecords.accessions.detail.unknownCreator")
               }
             >
               <div className="grid gap-4 md:grid-cols-3">
                 <DetailField
-                  label="Object Type"
+                  label={tRoot("objects.filters.objectType")}
                   value={
                     accession.draftObjectData.objectName ||
                     accession.draftObjectData.objectType?.join(", ") ||
-                    "Not set"
+                    tRoot("untranslatedRecords.accessions.detail.notSet")
                   }
                 />
                 <DetailField
-                  label="Date Created"
-                  value={accession.draftObjectData.dateCreated || "Unknown"}
+                  label={tRoot("objects.form.dateCreated")}
+                  value={
+                    accession.draftObjectData.dateCreated ||
+                    tRoot("untranslatedRecords.accessions.detail.unknown")
+                  }
                 />
                 <DetailField
-                  label="Collection"
-                  value={accession.draftObjectData.collectionType || "general"}
+                  label={tRoot("objects.form.collectionGroup")}
+                  value={
+                    accession.draftObjectData.collectionType ||
+                    tRoot("untranslatedRecords.objects.enums.generalCollection")
+                  }
                 />
               </div>
 
               {accession.draftObjectData.description ? (
                 <div className="mt-5">
                   <DetailField
-                    label="Description"
+                    label={tRoot("library.catalog.detail.description")}
                     value={
                       <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
                         {accession.draftObjectData.description}
@@ -158,7 +181,11 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                     <Button variant="outline" size="sm" asChild>
                       <Link href={draftEditHref}>
                         <Edit className="mr-2 size-4" />
-                        {isDraft ? "Edit Draft" : "Edit"}
+                        {isDraft
+                          ? tRoot(
+                              "untranslatedRecords.accessions.detail.editDraft",
+                            )
+                          : tRoot("untranslatedRecords.objects.actions.edit")}
                       </Link>
                     </Button>
                   </PermissionGate>
@@ -172,12 +199,18 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                         >
                           <CheckCircle className="mr-2 size-4" />
                           {isSubmittingDraft
-                            ? "Submitting..."
-                            : "Submit for Approval"}
+                            ? tRoot(
+                                "untranslatedRecords.accessions.detail.submitting",
+                              )
+                            : tRoot(
+                                "untranslatedRecords.accessions.detail.submitForApproval",
+                              )}
                         </Button>
                       </PermissionGate>
                       <p className="text-sm text-muted-foreground">
-                        Drafts must be submitted before approval can begin.
+                        {tRoot(
+                          "untranslatedRecords.accessions.detail.draftsMustBeSubmitted",
+                        )}
                       </p>
                     </>
                   ) : null}
@@ -188,9 +221,13 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
 
           {accession.workflowHistory && accession.workflowHistory.length > 0 ? (
             <SectionCard
-              eyebrow="History"
-              title="Workflow history"
-              description="Completed approval events for this accession."
+              eyebrow={tRoot("untranslatedRecords.accessions.detail.history")}
+              title={tRoot(
+                "untranslatedRecords.accessions.detail.workflowHistory",
+              )}
+              description={tRoot(
+                "untranslatedRecords.accessions.detail.workflowHistoryDescription",
+              )}
             >
               <div className="space-y-3">
                 {accession.workflowHistory.map(
@@ -201,7 +238,9 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Step {entry.step}</p>
+                          <p className="font-medium">
+                            {tRoot("assignmentsPage.card.step")} {entry.step}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             <ClientDate
                               timestamp={entry.approvedAt}

@@ -9,6 +9,7 @@ import {
 import { cn } from "@v1/ui/utils";
 import { HelpCircle } from "lucide-react";
 import type * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface InfoTooltipProps {
   content: React.ReactNode;
@@ -21,6 +22,7 @@ export function InfoTooltip({
   side = "right",
   className,
 }: InfoTooltipProps) {
+  const translate = useI18n();
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
@@ -33,7 +35,9 @@ export function InfoTooltip({
             )}
           >
             <HelpCircle className="size-4" />
-            <span className="sr-only">More information</span>
+            <span className="sr-only">
+              {translate("untranslatedComponents.labels.moreInformation")}
+            </span>
           </button>
         </TooltipTrigger>
         <TooltipContent side={side} className="max-w-xs">

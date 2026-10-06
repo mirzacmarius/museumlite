@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
+import { useI18n } from "@/locales/client";
 import { DeaccessionArchiveDeleteForm } from "./deaccession-archive-delete-form";
 import {
   getDeaccessionDialogCopy,
@@ -120,6 +121,7 @@ export function DeaccessionDialog({
   organizationId,
   initialRemovalType = null,
 }: DeaccessionDialogProps) {
+  const translate = useI18n();
   const [state, dispatch] = useReducer(
     deaccessionDialogReducer,
     initialDeaccessionDialogState,
@@ -182,6 +184,7 @@ export function DeaccessionDialog({
         accessionMode: state.accessionMode,
         manualAccessionNumber: state.manualAccessionNumber,
         moveEligibility,
+        translate,
         createDeaccession,
         createMoveRequest,
       });
@@ -205,7 +208,7 @@ export function DeaccessionDialog({
         value:
           err instanceof Error
             ? err.message
-            : "Failed to process object removal or transfer",
+            : translate("untranslatedComponents.deaccession.processFailed"),
       });
     } finally {
       dispatch({ type: "setIsSubmitting", value: false });
@@ -222,6 +225,7 @@ export function DeaccessionDialog({
   const { dialogTitle, dialogDescription } = getDeaccessionDialogCopy(
     state.removalType,
     collectionTitle,
+    translate,
   );
 
   return (
@@ -307,7 +311,7 @@ export function DeaccessionDialog({
               onClick={handleClose}
               disabled={state.isSubmitting}
             >
-              Cancel
+              {translate("untranslatedComponents.labels.cancel")}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -326,9 +330,18 @@ export function DeaccessionDialog({
               {state.isSubmitting && (
                 <Loader2 className="mr-2 size-4 animate-spin" />
               )}
-              {state.removalType === "sold" && "Submit for Approval"}
-              {state.removalType === "move" && "Submit Move Request"}
-              {state.removalType === "archived" && "Withdraw to Archive"}
+              {state.removalType === "sold" &&
+                translate(
+                  "untranslatedComponents.deaccession.submitForApproval",
+                )}
+              {state.removalType === "move" &&
+                translate(
+                  "untranslatedComponents.deaccession.submitMoveRequest",
+                )}
+              {state.removalType === "archived" &&
+                translate(
+                  "untranslatedComponents.deaccession.submitArchiveRequest",
+                )}
             </Button>
           </DialogFooter>
         )}

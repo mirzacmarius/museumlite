@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "@/locales/client";
 
 export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -49,6 +50,7 @@ export function useAutoSave<T>({
   onError,
   hasChanged = defaultHasChanged,
 }: UseAutoSaveOptions<T>): UseAutoSaveReturn {
+  const translate = useI18n();
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -102,13 +104,15 @@ export function useAutoSave<T>({
     } catch (err) {
       if (isMountedRef.current) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to save";
+          err instanceof Error
+            ? err.message
+            : translate("untranslatedComponents.validation.failedToSave");
         setError(errorMessage);
         setStatus("error");
         onError?.(err instanceof Error ? err : new Error(errorMessage));
       }
     }
-  }, [data, onSave, onSuccess, onError]);
+  }, [data, onSave, onSuccess, onError, translate]);
 
   // Auto-save with debounce
   useEffect(() => {

@@ -46,38 +46,43 @@ export const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 export const TARGET_FIELDS = [
   {
     id: "dateReceived",
-    label: "Date Received",
+    label: "untranslatedRecords.accessions.import.fields.dateReceived",
     required: true,
-    description: "Date the item was received",
+    description:
+      "untranslatedRecords.accessions.import.fieldDescriptions.dateReceived",
   },
   {
     id: "source",
-    label: "Source",
+    label: "untranslatedRecords.accessions.import.fields.source",
     required: true,
-    description: "Source or donor of the item",
+    description:
+      "untranslatedRecords.accessions.import.fieldDescriptions.source",
   },
   {
     id: "method",
-    label: "Method",
+    label: "untranslatedRecords.accessions.import.fields.method",
     required: true,
-    description: "Acquisition method (purchase, donation, etc.)",
+    description:
+      "untranslatedRecords.accessions.import.fieldDescriptions.method",
   },
   {
     id: "accessionNumber",
-    label: "Accession Number",
+    label: "untranslatedRecords.accessions.import.fields.accessionNumber",
     required: false,
-    description: "Unique identifier (auto-generated if empty)",
+    description:
+      "untranslatedRecords.accessions.import.fieldDescriptions.accessionNumber",
   },
   {
     id: "cost",
-    label: "Cost",
+    label: "untranslatedRecords.accessions.import.fields.cost",
     required: false,
-    description: "Acquisition cost",
+    description: "untranslatedRecords.accessions.import.fieldDescriptions.cost",
   },
   {
     id: "notes",
-    label: "Notes",
+    label: "untranslatedRecords.accessions.import.fields.notes",
     required: false,
-    description: "Additional notes",
+    description:
+      "untranslatedRecords.accessions.import.fieldDescriptions.notes",
   },
 ];

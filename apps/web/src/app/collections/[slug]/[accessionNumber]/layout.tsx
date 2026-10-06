@@ -1,6 +1,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
+import { getWebI18n } from "@/locales/server";
 
 interface Props {
   params: Promise<{ slug: string; accessionNumber: string }>;
@@ -8,7 +9,10 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug, accessionNumber } = await params;
+  const [{ slug, accessionNumber }, { t }] = await Promise.all([
+    params,
+    getWebI18n(),
+  ]);
   const decodedAccessionNumber = decodeURIComponent(accessionNumber);
 
   try {
@@ -19,13 +23,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     if (!object) {
       return {
-        title: "Object Not Found | MuseumLite",
+        title: t("public.objectMissingMetadata"),
       };
     }
 
     const description = object.description
       ? object.description.slice(0, 160)
-      : `${object.title}${object.creator ? ` by ${object.creator}` : ""}${object.dateCreated ? `, ${object.dateCreated}` : ""}`;
+      : `${object.title}${object.creator ? ` — ${object.creator}` : ""}${object.dateCreated ? `, ${object.dateCreated}` : ""}`;
 
     const primaryImage = object.images.find(
       (img: {
@@ -61,7 +65,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch {
     return {
-      title: "Object | MuseumLite",
+      title: `${t("public.objectMetadataTitle")} | MuseumLite`,
+      description: t("public.objectMetadata"),
     };
   }
 }

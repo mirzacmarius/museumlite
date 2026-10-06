@@ -5,6 +5,7 @@ import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
+import { useI18n } from "@/locales/client";
 import type { MoveRequestSubmitAction } from "./use-move-request-detail";
 
 interface MoveRequestActionsPanelAvailability {
@@ -60,6 +61,7 @@ function MoveRequestActionsPanelProvider({
   onCancel,
   children,
 }: MoveRequestActionsPanelProps) {
+  const tRoot = useI18n();
   const value = useMemo(
     () => ({
       reviewNotes,
@@ -97,16 +99,22 @@ function MoveRequestActionsPanelProvider({
   return (
     <MoveRequestActionsPanelContext.Provider value={value}>
       <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold">Actions</h2>
+        <h2 className="text-lg font-semibold">
+          {tRoot("collections.mediaImport.tableHeaders.actions")}
+        </h2>
         <div className="mt-4 space-y-4">
           {showReviewNotes && (
             <div className="space-y-2">
-              <Label htmlFor="reviewNotes">Review notes</Label>
+              <Label htmlFor="reviewNotes">
+                {tRoot("untranslatedRecords.accessions.transfer.reviewNotes")}
+              </Label>
               <Textarea
                 id="reviewNotes"
                 value={reviewNotes}
                 onChange={(event) => onReviewNotesChange(event.target.value)}
-                placeholder="Add notes for the requester or approval record"
+                placeholder={tRoot(
+                  "untranslatedRecords.objects.detail.additionalNotesHint",
+                )}
                 rows={4}
               />
             </div>
@@ -128,6 +136,7 @@ function MoveRequestActionsPanelProvider({
 }
 
 function MoveRequestActionsPanelSourceActions() {
+  const tRoot = useI18n();
   const { submittingAction, availableActions, onApprove, onReject } =
     useMoveRequestActionsPanel();
   const { sourceReview, targetReview } = availableActions;
@@ -141,7 +150,7 @@ function MoveRequestActionsPanelSourceActions() {
           {submittingAction === "approve" && (
             <Loader2 className="mr-2 size-4 animate-spin" />
           )}
-          Approve for transfer
+          {tRoot("untranslatedRecords.objects.move.approve")}
         </Button>
       )}
       <Button
@@ -152,13 +161,14 @@ function MoveRequestActionsPanelSourceActions() {
         {submittingAction === "reject" && (
           <Loader2 className="mr-2 size-4 animate-spin" />
         )}
-        Reject request
+        {tRoot("untranslatedRecords.objects.move.reject")}
       </Button>
     </>
   );
 }
 
 function MoveRequestActionsPanelTargetActions() {
+  const tRoot = useI18n();
   const { submittingAction, availableActions, onAccept } =
     useMoveRequestActionsPanel();
   const { targetReview } = availableActions;
@@ -170,12 +180,13 @@ function MoveRequestActionsPanelTargetActions() {
       {submittingAction === "accept" && (
         <Loader2 className="mr-2 size-4 animate-spin" />
       )}
-      Accept and complete transfer
+      {tRoot("untranslatedRecords.objects.move.accept")}
     </Button>
   );
 }
 
 function MoveRequestActionsPanelCancelAction() {
+  const tRoot = useI18n();
   const { submittingAction, availableActions, onCancel } =
     useMoveRequestActionsPanel();
   const { cancel } = availableActions;
@@ -191,7 +202,7 @@ function MoveRequestActionsPanelCancelAction() {
       {submittingAction === "cancel" && (
         <Loader2 className="mr-2 size-4 animate-spin" />
       )}
-      Cancel request
+      {tRoot("untranslatedRecords.objects.move.cancel")}
     </Button>
   );
 }

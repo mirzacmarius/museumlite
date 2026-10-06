@@ -1,9 +1,10 @@
 "use client";
 
-import { FormStickyFooter } from "@/components/form-sticky-footer";
 import { Button } from "@v1/ui/button";
 import { Save } from "lucide-react";
+import { FormStickyFooter } from "@/components/form-sticky-footer";
 
+import { useI18n } from "@/locales/client";
 export type CollectionEditFormFooterState =
   | { kind: "submitting" }
   | { kind: "dirty" }
@@ -42,28 +43,35 @@ function CollectionEditFormFooterStatus({
   error: string | null;
   state: CollectionEditFormFooterState;
 }) {
+  const tRoot = useI18n();
   if (error) {
     return <span className="text-destructive">{error}</span>;
   }
 
   switch (state.kind) {
     case "submitting":
-      return <span className="text-foreground">Saving changes…</span>;
+      return (
+        <span className="text-foreground">
+          {tRoot("untranslatedRecords.objects.edit.saveChanges")}
+        </span>
+      );
     case "dirty":
       return (
         <span className="text-foreground">
-          You have unsaved field changes across tabs.
+          {tRoot("untranslatedRecords.objects.edit.unsavedAcrossTabs")}
         </span>
       );
     case "media-only":
       return (
         <span className="text-muted-foreground">
-          Media changes are already applied.
+          {tRoot("untranslatedRecords.objects.edit.mediaAlreadyApplied")}
         </span>
       );
     case "idle":
       return (
-        <span className="text-muted-foreground">No unsaved field changes.</span>
+        <span className="text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.edit.noUnsavedChanges")}
+        </span>
       );
   }
 }

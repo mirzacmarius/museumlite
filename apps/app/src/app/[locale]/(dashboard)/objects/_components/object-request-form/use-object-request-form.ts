@@ -1,6 +1,8 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import {
   useCallback,
   useEffect,
@@ -12,7 +14,7 @@ import {
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type {
   CollectionFormData,
   DraftMediaItem,
@@ -48,6 +50,7 @@ export function useObjectRequestForm({
   prefilledCollectionGroupId,
   backHref,
 }: UseObjectRequestFormOptions) {
+  const tRoot = useI18n();
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
@@ -82,6 +85,21 @@ export function useObjectRequestForm({
     initialized: false,
   });
 
+  const currentLocationPath = useQuery(
+    api.locations.getLocationPath,
+    mode === "draft-edit" &&
+      isLocationTrackingEnabled &&
+      formData.currentLocationId
+      ? { locationId: formData.currentLocationId as Id<"locations"> }
+      : "skip",
+  );
+  const collectionGroups = useQuery(
+    api.collectionGroups.list,
+    mode === "draft-edit" && currentOrganizationId
+      ? { organizationId: currentOrganizationId as Id<"organizations"> }
+      : "skip",
+  );
+
   const { tabs, activeTab, setActiveTab } = useFormTabState(
     isLocationTrackingEnabled,
   );
@@ -104,11 +122,25 @@ export function useObjectRequestForm({
     (isDraftEditMode && accessionId
       ? `/accessions/${accessionId}`
       : "/objects");
-  const pageTitle = isDraftEditMode ? "Edit Object" : "New Object";
-  const pageBadge = isDraftEditMode ? "Draft object" : "New object";
+  const pageTitle = isDraftEditMode
+    ? tRoot("untranslatedRecords.objects.request.editTitle")
+    : tRoot("untranslatedRecords.objects.request.newTitle");
+  const pageBadge = isDraftEditMode
+    ? tRoot("untranslatedRecords.objects.request.draftBadge")
+    : tRoot("untranslatedRecords.objects.request.newBadge");
   const organizationPrompt = isDraftEditMode
-    ? "Please select an organization to edit drafts."
-    : "Please select an organization to create objects.";
+    ? tRoot("untranslatedRecords.objects.request.selectOrgEdit")
+    : tRoot("untranslatedRecords.objects.request.selectOrgCreate");
+  const locationSummary =
+    currentLocationPath?.map((location) => location.name).join(" / ") ||
+    tRoot("untranslatedRecords.objects.location.noneAssigned");
+  const collectionSummary =
+    collectionGroups
+      ?.flatMap((group) =>
+        formData.collectionGroupIds?.includes(group._id) ? [group.name] : [],
+      )
+      .join(", ") ||
+    tRoot("untranslatedRecords.objects.collection.noneAssigned");
 
   useBeforeUnload(hasUnsavedChanges);
 
@@ -202,6 +234,7 @@ export function useObjectRequestForm({
     heroImage: localMedia.heroImage,
     pageTitle,
     pageBadge,
+    mode,
     resolvedBackHref,
     handleNavigate: navigation.handleNavigate,
     handleSubmit: submitState.handleSubmit,
@@ -219,6 +252,8 @@ export function useObjectRequestForm({
     handleDeleteDocument: localMedia.handleDeleteDocument,
     isLocationTrackingEnabled,
     enabledModules,
+    locationSummary,
+    collectionSummary,
     updateField,
     isDraftCurrent,
     hasSavedFieldDraft,

@@ -10,7 +10,8 @@ import { ArrowRightLeft, Bell, Check, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
-import { useCurrentLocale } from "@/locales/client";
+import { getNotificationCopy } from "@/lib/notification-copy";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 import { useOrganization } from "./organization-provider";
 
 function NotificationTimestamp({ timestamp }: { timestamp: number }) {
@@ -19,6 +20,7 @@ function NotificationTimestamp({ timestamp }: { timestamp: number }) {
 }
 
 export function NotificationBell() {
+  const translate = useI18n();
   const { currentOrganizationId } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -103,7 +105,9 @@ export function NotificationBell() {
         <div className="flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <h3 className="text-sm font-semibold">Notifications</h3>
+            <h3 className="text-sm font-semibold">
+              {translate("untranslatedComponents.labels.notifications")}
+            </h3>
             {unreadCountValue > 0 && (
               <Button
                 variant="ghost"
@@ -112,7 +116,7 @@ export function NotificationBell() {
                 onClick={handleMarkAllRead}
               >
                 <CheckCheck className="mr-1 size-3" />
-                Mark all read
+                {translate("untranslatedComponents.labels.markAllRead")}
               </Button>
             )}
           </div>
@@ -122,7 +126,7 @@ export function NotificationBell() {
               href="/notifications"
               className="text-xs text-primary hover:underline"
             >
-              View all notifications
+              {translate("untranslatedComponents.labels.viewAllNotifications")}
             </Link>
           </div>
 
@@ -130,18 +134,28 @@ export function NotificationBell() {
           <div className="max-h-96 overflow-y-auto">
             {isOpen && notificationCenter === undefined ? (
               <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-                <p className="text-sm text-muted-foreground">Loading…</p>
+                <p className="text-sm text-muted-foreground">
+                  {translate("untranslatedComponents.labels.loading")}
+                </p>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
                 <Bell className="mb-2 size-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  No notifications
+                  {translate("untranslatedComponents.labels.noNotifications")}
                 </p>
               </div>
             ) : (
               <div className="divide-y">
                 {notifications.map((notification) => {
+                  const notificationCopy = getNotificationCopy(
+                    {
+                      type: notification.type,
+                      title: notification.title,
+                      message: notification.message,
+                    },
+                    translate,
+                  );
                   const link = getNotificationLink(
                     notification.relatedEntityType,
                     notification.relatedEntityId,
@@ -162,10 +176,10 @@ export function NotificationBell() {
                       </div>
                       <div className="flex flex-1 flex-col gap-1">
                         <p className="text-sm font-medium">
-                          {notification.title}
+                          {notificationCopy.title}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {notification.message}
+                          {notificationCopy.message}
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">

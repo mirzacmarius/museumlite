@@ -159,9 +159,12 @@ function BasicInformationCard({
 }
 
 function WatermarkPreview({ settings }: { settings: WatermarkSettings }) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="rounded-lg border bg-muted/20 p-4">
-      <p className="mb-2 text-xs font-medium text-muted-foreground">Preview</p>
+      <p className="mb-2 text-xs font-medium text-muted-foreground">
+        {t("preview")}
+      </p>
       <div className="relative h-32 overflow-hidden rounded border bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
         {settings.text ? (
           <div
@@ -194,18 +197,19 @@ function WatermarkSettingsCard({
   onSettingsChange: (settings: WatermarkSettings) => void;
   settings: WatermarkSettings;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.settings");
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="mb-4 flex items-center gap-2">
         <Droplet className="size-5" />
-        <h2 className="text-lg font-medium">Watermark Settings</h2>
+        <h2 className="text-lg font-medium">{t("watermarkSettings")}</h2>
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label htmlFor="watermarkEnabled">Enable Watermark</Label>
+            <Label htmlFor="watermarkEnabled">{t("enableWatermark")}</Label>
             <p className="text-xs text-muted-foreground">
-              Apply watermark to edited images
+              {t("applyWatermarkEditedImages")}
             </p>
           </div>
           <Switch
@@ -223,7 +227,7 @@ function WatermarkSettingsCard({
         {settings.isEnabled ? (
           <>
             <div className="space-y-2">
-              <Label htmlFor="watermarkText">Watermark Text</Label>
+              <Label htmlFor="watermarkText">{t("watermarkText")}</Label>
               <Input
                 id="watermarkText"
                 value={settings.text}
@@ -233,12 +237,12 @@ function WatermarkSettingsCard({
                     text: event.target.value,
                   })
                 }
-                placeholder="(c) Your Organization Name"
+                placeholder={t("watermarkPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="watermarkPosition">Position</Label>
+              <Label htmlFor="watermarkPosition">{t("position")}</Label>
               <Select
                 value={settings.position}
                 onValueChange={(value) =>
@@ -252,18 +256,20 @@ function WatermarkSettingsCard({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="center">Center</SelectItem>
-                  <SelectItem value="top-left">Top Left</SelectItem>
-                  <SelectItem value="top-right">Top Right</SelectItem>
-                  <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                  <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                  <SelectItem value="center">{t("center")}</SelectItem>
+                  <SelectItem value="top-left">{t("topLeft")}</SelectItem>
+                  <SelectItem value="top-right">{t("topRight")}</SelectItem>
+                  <SelectItem value="bottom-left">{t("bottomLeft")}</SelectItem>
+                  <SelectItem value="bottom-right">
+                    {t("bottomRight")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="watermarkOpacity">Opacity</Label>
+                <Label htmlFor="watermarkOpacity">{t("opacity")}</Label>
                 <span className="text-sm text-muted-foreground">
                   {Math.round(settings.opacity * 100)}%
                 </span>
@@ -294,7 +300,7 @@ function WatermarkSettingsCard({
                 disabled={isSubmitting || !settings.text.trim()}
               >
                 <Save className="mr-2 size-4" />
-                Save Watermark Settings
+                {t("saveWatermarkSettings")}
               </Button>
             </div>
           </>
@@ -326,6 +332,7 @@ function OrganizationSaveActions({
 
 export default function OrganizationSettingsPage() {
   const t = useScopedI18n("settings");
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -375,7 +382,9 @@ export default function OrganizationSettingsPage() {
     return (
       <div className="flex w-full flex-col gap-6">
         {pageHeader}
-        <OrganizationMessageCard message="Please select an organization to manage settings." />
+        <OrganizationMessageCard
+          message={tDashboard("organizationSettingsRequired")}
+        />
       </div>
     );
   }
@@ -413,10 +422,8 @@ export default function OrganizationSettingsPage() {
         organizationId: currentOrganizationId as Id<"organizations">,
         name: name.trim(),
       });
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("organization.updateError"),
-      );
+    } catch {
+      setError(t("organization.updateError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -436,12 +443,8 @@ export default function OrganizationSettingsPage() {
           position: watermarkSettings.position,
         },
       });
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update watermark settings",
-      );
+    } catch {
+      setError(tDashboard("failedToUpdateWatermarkSettings"));
     } finally {
       setIsSubmitting(false);
     }

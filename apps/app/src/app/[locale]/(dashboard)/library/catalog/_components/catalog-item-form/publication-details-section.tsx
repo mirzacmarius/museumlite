@@ -3,7 +3,7 @@
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import type { IsbnLookupData } from "@/components/library/isbn-lookup";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { CatalogItemFormData } from "./types";
 
 interface CatalogItemPublicationDetailsSectionProps {
@@ -21,6 +21,7 @@ export function CatalogItemPublicationDetailsSection({
   formData,
   setFormData,
 }: CatalogItemPublicationDetailsSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("library.placeholders");
   const tNew = useScopedI18n("library.catalog.new");
   const _tLib = useScopedI18n("library");
@@ -59,7 +60,9 @@ export function CatalogItemPublicationDetailsSection({
                   publicationYear: e.target.value,
                 }))
               }
-              placeholder="e.g., 2024"
+              placeholder={tRoot("untranslatedRecords.objects.examples.year", {
+                value: "2024",
+              })}
             />
           </div>
           <div className="space-y-2">
@@ -73,7 +76,9 @@ export function CatalogItemPublicationDetailsSection({
                   publicationPlace: e.target.value,
                 }))
               }
-              placeholder="e.g., New York"
+              placeholder={tRoot("untranslatedRecords.objects.examples.place", {
+                value: "New York",
+              })}
             />
           </div>
           <div className="space-y-2">
@@ -87,7 +92,10 @@ export function CatalogItemPublicationDetailsSection({
                   edition: e.target.value,
                 }))
               }
-              placeholder="e.g., 2nd Edition"
+              placeholder={tRoot(
+                "untranslatedRecords.objects.examples.edition",
+                { value: "2nd Edition" },
+              )}
             />
           </div>
           <div className="space-y-2">
@@ -110,7 +118,10 @@ export function CatalogItemPublicationDetailsSection({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, format: e.target.value }))
               }
-              placeholder="e.g., Hardcover, Paperback"
+              placeholder={tRoot(
+                "untranslatedRecords.objects.examples.binding",
+                { value: "Hardcover, Paperback" },
+              )}
             />
           </div>
         </div>

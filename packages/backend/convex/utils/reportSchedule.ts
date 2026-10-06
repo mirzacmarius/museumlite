@@ -6,8 +6,12 @@ export interface ReportSchedule {
   timezone?: string;
 }
 
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
 function dateFormatter(timezone: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  const existing = dateFormatters.get(timezone);
+  if (existing) return existing;
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     calendar: "iso8601",
     numberingSystem: "latn",
@@ -19,6 +23,9 @@ function dateFormatter(timezone: string) {
     second: "2-digit",
     hourCycle: "h23",
   });
+  if (dateFormatters.size >= 100) dateFormatters.clear();
+  dateFormatters.set(timezone, formatter);
+  return formatter;
 }
 
 function localTimestamp(formatter: Intl.DateTimeFormat, timestamp: number) {

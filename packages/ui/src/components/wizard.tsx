@@ -2,6 +2,7 @@
 
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 
@@ -140,9 +141,10 @@ interface WizardStepsProps {
 
 function WizardSteps({ className }: WizardStepsProps) {
   const { steps, currentStep, completedSteps, goToStep } = useWizard();
+  const { messages } = useUiLocale();
 
   return (
-    <nav aria-label="Progress" className={className}>
+    <nav aria-label={messages.wizard.progress} className={className}>
       <ol className="flex items-center">
         {steps.map((step, index) => {
           const isCompleted = completedSteps.has(index);
@@ -252,9 +254,9 @@ interface WizardFooterProps {
 
 function WizardFooter({
   className,
-  prevLabel = "Back",
-  nextLabel = "Continue",
-  completeLabel = "Complete",
+  prevLabel,
+  nextLabel,
+  completeLabel,
   showPrev = true,
   showNext = true,
   onPrev,
@@ -262,6 +264,10 @@ function WizardFooter({
 }: WizardFooterProps) {
   const { isFirstStep, isLastStep, canGoNext, canGoPrev, goNext, goPrev } =
     useWizard();
+  const { messages } = useUiLocale();
+  const previousText = prevLabel ?? messages.wizard.previous;
+  const nextText = nextLabel ?? messages.wizard.next;
+  const finishText = completeLabel ?? messages.wizard.finish;
 
   const handlePrev = () => {
     onPrev?.();
@@ -284,7 +290,7 @@ function WizardFooter({
             disabled={!canGoPrev}
           >
             <ChevronLeft className="mr-1 size-4" />
-            {prevLabel}
+            {previousText}
           </Button>
         )}
       </div>
@@ -292,7 +298,7 @@ function WizardFooter({
       <div>
         {showNext && (
           <Button type="button" onClick={handleNext} disabled={!canGoNext}>
-            {isLastStep ? completeLabel : nextLabel}
+            {isLastStep ? finishText : nextText}
             {!isLastStep && <ChevronRight className="ml-1 size-4" />}
           </Button>
         )}

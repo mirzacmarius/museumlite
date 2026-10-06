@@ -4,7 +4,8 @@ import { cn } from "@v1/ui/utils";
 import { Droplets, Thermometer } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { useScopedI18n } from "@/locales/client";
+import { formatNumber } from "@/lib/format-number";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { occupancyBar } from "./location-occupancy";
 import { LocationTypeIcon } from "./location-type-icon";
 
@@ -40,9 +41,24 @@ export function LocationHeader({
   directObjectCount,
 }: LocationHeaderProps) {
   const t = useScopedI18n("locations.header");
+  const locale = useCurrentLocale();
   const tCommon = useScopedI18n("common");
+  const tLocations = useScopedI18n("locations");
+  const formatLocationType = (type: string) =>
+    [
+      "building",
+      "room",
+      "gallery",
+      "storage",
+      "cabinet",
+      "shelf",
+      "vault",
+      "other",
+    ].includes(type)
+      ? tLocations(`form.locationTypes.${type}`)
+      : type;
   const bar = occupancyBar(directObjectCount, capacity);
-  const capacityRatio = `${directObjectCount.toLocaleString()} / ${capacity.toLocaleString()}`;
+  const capacityRatio = `${formatNumber(directObjectCount, locale)} / ${formatNumber(capacity, locale)}`;
   const capacityLabel =
     bar.kind === "unconfigured"
       ? t("notConfigured")
@@ -107,7 +123,7 @@ export function LocationHeader({
             <div className="flex size-full flex-col items-center justify-center gap-2 px-2 text-center text-muted-foreground">
               <LocationTypeIcon type={location.type} className="size-8" />
               <span className="text-[10px] capitalize">
-                {location.type.replaceAll("_", " ")}
+                {formatLocationType(location.type)}
               </span>
             </div>
           )}
@@ -119,7 +135,7 @@ export function LocationHeader({
             </span>
             <span className="text-muted-foreground/40">/</span>
             <span className="capitalize text-muted-foreground">
-              {location.type.replaceAll("_", " ")}
+              {formatLocationType(location.type)}
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -161,7 +177,7 @@ export function LocationHeader({
                 {t("totalObjects")}
               </dt>
               <dd className="mt-1.5 text-lg font-medium tabular-nums text-foreground">
-                {totalObjects.toLocaleString()}
+                {formatNumber(totalObjects, locale)}
               </dd>
             </div>
             <div className="min-w-0">

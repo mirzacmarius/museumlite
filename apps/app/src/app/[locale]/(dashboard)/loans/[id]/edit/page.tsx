@@ -8,12 +8,12 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { EditLoanForm } from "../_components/edit-loan/edit-loan-form";
 import { EditLoanLockedView } from "../_components/edit-loan/edit-loan-locked-view";
 import type { Loan } from "../_components/types";
-
 export default function EditLoanPage() {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
   const tLoans = useScopedI18n("loans");
   const tCommon = useScopedI18n("common");
@@ -68,11 +68,13 @@ export default function EditLoanPage() {
               <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-muted-foreground">Loans</span>
+          <span className="text-muted-foreground">{tRoot("loans.title")}</span>
           <span className="text-muted-foreground/50">/</span>
           <span className="text-muted-foreground">{loan.loanNumber}</span>
           <span className="text-muted-foreground/50">/</span>
-          <span className="font-medium text-foreground">Edit</span>
+          <span className="font-medium text-foreground">
+            {tRoot("accessions.detail.edit")}
+          </span>
         </div>
       </header>
 
@@ -80,10 +82,10 @@ export default function EditLoanPage() {
         <div className="mx-auto max-w-3xl px-6 py-8 pb-20">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              Edit Loan Record
+              {tRoot("loans.actions.editLoanRecord")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Update details for loan{" "}
+              {tRoot("loans.actions.updateDetailsFor")}{" "}
               <span className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">
                 {loan.loanNumber}
               </span>

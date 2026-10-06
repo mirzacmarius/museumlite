@@ -3,7 +3,8 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { RefObject } from "react";
 import { ResumableImportJobNotice } from "@/components/import/resumable-import-notice";
-import { useScopedI18n } from "@/locales/client";
+import { formatDateTimeUtc } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { MediaImportState } from "./media-import-types";
 import {
   MediaImportOutcomeStep,
@@ -62,6 +63,7 @@ export function MediaImportStepPanels({
   goToReviewUnmapped,
 }: MediaImportStepPanelsProps) {
   const collections = useScopedI18n("collections");
+  const locale = useCurrentLocale();
 
   if (state.step === "select-mapping") {
     return (
@@ -91,7 +93,7 @@ export function MediaImportStepPanels({
           resumableJob ? (
             <ResumableImportJobNotice
               message={collections("mediaImport.resumeNotice", {
-                date: new Date(resumableJob.createdAt).toLocaleString(),
+                date: formatDateTimeUtc(resumableJob.createdAt, locale),
                 attempted: resumableJob.attemptedItems,
                 total: resumableJob.totalItems,
                 accepted: resumableJob.acceptedItems,

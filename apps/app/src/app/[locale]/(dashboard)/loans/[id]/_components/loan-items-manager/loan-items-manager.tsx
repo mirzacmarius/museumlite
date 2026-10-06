@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import { AddItemsDialog } from "./add-items-dialog";
 import { LoanItemsList } from "./loan-items-list";
 import { ReturnItemDialog } from "./return-item-dialog";
@@ -12,6 +13,7 @@ export function LoanItemsManager({
   organizationId,
   loanStatus,
 }: LoanItemsManagerProps) {
+  const tRoot = useI18n();
   const manager = useLoanItemsManager({
     loanId,
     loanItems,
@@ -27,7 +29,11 @@ export function LoanItemsManager({
         </div>
       )}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Loan Items ({loanItems.length})</h3>
+        <h3 className="text-lg font-medium">
+          {tRoot("loans.actions.loanItems", {
+            count: loanItems.length,
+          })}
+        </h3>
         <AddItemsDialog manager={manager} />
       </div>
 

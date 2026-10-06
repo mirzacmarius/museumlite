@@ -11,6 +11,7 @@ import { ExternalLink, Loader2, Save } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { getPublicPortalBaseUrl } from "@/lib/portal-url";
+import { useScopedI18n } from "@/locales/client";
 
 interface PortalSettingsSidebarState {
   isSubmitting: boolean;
@@ -83,6 +84,7 @@ function portalSettingsSidebarReducer(
 }
 
 export function PortalSettingsSidebar() {
+  const t = useScopedI18n("untranslatedDashboard.portal");
   const { currentOrganizationId } = useOrganization();
   const [state, dispatch] = useReducer(
     portalSettingsSidebarReducer,
@@ -167,16 +169,16 @@ export function PortalSettingsSidebar() {
     <div className="w-80 flex-shrink-0">
       <div className="space-y-5 rounded-lg border border-border bg-card p-5">
         <div>
-          <h3 className="section-title mb-1">Portal Settings</h3>
+          <h3 className="section-title mb-1">{t("portalSettings")}</h3>
           <p className="caption text-muted-foreground">
-            Configure your public collection portal
+            {t("configurePortal")}
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="portal-slug" className="field-label">
-              Portal URL Slug
+              {t("portalUrlSlug")}
             </Label>
             <div className="caption mb-2 flex items-center gap-1 text-muted-foreground">
               <span className="truncate">
@@ -189,16 +191,16 @@ export function PortalSettingsSidebar() {
               onChange={(e) =>
                 dispatch({ type: "setPortalSlug", value: e.target.value })
               }
-              placeholder="gallery"
+              placeholder={t("galleryPlaceholder")}
               className="code-text"
             />
           </div>
 
           <div className="space-y-1">
-            <Label className="field-label">Full Portal URL</Label>
+            <Label className="field-label">{t("fullPortalUrl")}</Label>
             <div className="flex items-center gap-2">
               <div className="code-text flex-1 truncate rounded-md border border-border bg-secondary/50 px-3 py-2 text-muted-foreground">
-                {fullPortalUrl || "Not configured"}
+                {fullPortalUrl || t("notConfigured")}
               </div>
               {fullPortalUrl && state.isEnabled && (
                 <a
@@ -218,10 +220,10 @@ export function PortalSettingsSidebar() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="portal-enabled" className="field-label">
-                Portal Enabled
+                {t("portalEnabled")}
               </Label>
               <p className="caption text-muted-foreground">
-                Make your collection publicly accessible
+                {t("publiclyAccessible")}
               </p>
             </div>
             <Switch
@@ -236,10 +238,10 @@ export function PortalSettingsSidebar() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="search-enabled" className="field-label">
-                Public Search
+                {t("publicSearch")}
               </Label>
               <p className="caption text-muted-foreground">
-                Allow visitors to search your collection
+                {t("allowVisitorsToSearch")}
               </p>
             </div>
             <Switch
@@ -255,10 +257,10 @@ export function PortalSettingsSidebar() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="highres-enabled" className="field-label">
-                High-Res Downloads
+                {t("highResDownloads")}
               </Label>
               <p className="caption text-muted-foreground">
-                Allow downloading high-resolution images
+                {t("allowHighResDownloads")}
               </p>
             </div>
             <Switch
@@ -274,10 +276,10 @@ export function PortalSettingsSidebar() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="valuations-visible" className="field-label">
-                Show Valuations
+                {t("showValuations")}
               </Label>
               <p className="caption text-muted-foreground">
-                Display valuation information publicly
+                {t("displayValuationsPublicly")}
               </p>
             </div>
             <Switch
@@ -300,17 +302,17 @@ export function PortalSettingsSidebar() {
             {state.isSubmitting ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Saving…
+                {t("saving")}
               </>
             ) : state.showSuccess ? (
               <>
                 <Save className="mr-2 size-4" />
-                Saved!
+                {t("saved")}
               </>
             ) : (
               <>
                 <Save className="mr-2 size-4" />
-                Save Settings
+                {t("saveSettings")}
               </>
             )}
           </Button>

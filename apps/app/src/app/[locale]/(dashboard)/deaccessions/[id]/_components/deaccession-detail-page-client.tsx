@@ -6,7 +6,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { DeaccessionDetailBoardReportDialog } from "./deaccession-detail-board-report-dialog";
 import { DeaccessionDetailMainContent } from "./deaccession-detail-main-content";
 import {
@@ -32,6 +32,7 @@ function DeaccessionDetailPageInner({
   deaccessionId: string;
 }) {
   const locale = useCurrentLocale();
+  const tRoot = useI18n();
   const t = useScopedI18n("deaccessions");
   const tCommon = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
@@ -97,7 +98,7 @@ function DeaccessionDetailPageInner({
     );
   }
 
-  const actionLabel = getDeaccessionActionLabel(deaccession);
+  const actionLabel = getDeaccessionActionLabel(deaccession, tRoot);
 
   const handleApprove = async () => {
     setIsApproving(true);
@@ -130,7 +131,7 @@ function DeaccessionDetailPageInner({
   };
 
   const collectionStatusLabel = collection
-    ? formatDeaccessionStatusLabel(collection.status)
+    ? formatDeaccessionStatusLabel(collection.status, tRoot)
     : null;
   const workflowEntryCount = workflowHistory?.length ?? 0;
   const reviewStateLabel =

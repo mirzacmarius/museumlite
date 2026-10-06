@@ -14,6 +14,7 @@ import { cn } from "@v1/ui/utils";
 import { useMutation, useQuery } from "convex/react";
 import { Check, ChevronsUpDown, FolderOpen, X } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface CollectionGroupComboboxProps {
   organizationId?: string;
@@ -27,9 +28,10 @@ export function CollectionGroupCombobox({
   organizationId,
   value,
   onValueChange,
-  placeholder = "Select collection...",
+  placeholder,
   disabled = false,
 }: CollectionGroupComboboxProps) {
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const listId = React.useId();
@@ -143,7 +145,10 @@ export function CollectionGroupCombobox({
                   handleRemove(group._id);
                 }}
                 className="cursor-pointer hover:text-destructive"
-                aria-label={`Remove ${group.name}`}
+                aria-label={translate(
+                  "untranslatedComponents.labels.removeNamedItem",
+                  { name: group.name },
+                )}
               >
                 <X className="size-3" />
               </button>
@@ -154,7 +159,10 @@ export function CollectionGroupCombobox({
             type="text"
             className="min-w-[120px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             placeholder={
-              selectedValues.length === 0 ? placeholder : "Search or add..."
+              selectedValues.length === 0
+                ? (placeholder ??
+                  translate("untranslatedComponents.labels.selectCollection"))
+                : translate("untranslatedComponents.labels.searchOrAdd")
             }
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
@@ -185,15 +193,17 @@ export function CollectionGroupCombobox({
               {inputValue ? (
                 <div className="p-4 text-center text-sm">
                   <p className="mb-2 text-muted-foreground">
-                    No matching collections found.
+                    {translate(
+                      "untranslatedComponents.labels.noMatchingCollectionsFound",
+                    )}
                   </p>
                   {organizationId ? (
                     <p className="text-xs text-muted-foreground">
-                      Press{" "}
+                      {translate("untranslatedComponents.labels.press")}{" "}
                       <kbd className="rounded border bg-muted px-1.5 py-0.5 font-semibold text-xs">
                         Enter
                       </kbd>{" "}
-                      to add{" "}
+                      {translate("untranslatedComponents.labels.toAdd")}{" "}
                       <span className="font-medium text-foreground">
                         "{formatGroupName(inputValue)}"
                       </span>
@@ -202,11 +212,15 @@ export function CollectionGroupCombobox({
                 </div>
               ) : (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Type to search collections
+                  {translate(
+                    "untranslatedComponents.labels.typeToSearchCollections",
+                  )}
                 </div>
               )}
             </CommandEmpty>
-            <CommandGroup heading="Collections">
+            <CommandGroup
+              heading={translate("untranslatedComponents.labels.collections")}
+            >
               {filteredGroups.map((group) => (
                 <CommandItem
                   key={group._id}

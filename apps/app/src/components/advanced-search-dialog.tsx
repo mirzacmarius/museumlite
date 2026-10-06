@@ -25,6 +25,7 @@ import type {
   FilterGroup,
   FilterOperator,
 } from "@/hooks/use-url-filters";
+import { useI18n } from "@/locales/client";
 
 interface AdvancedSearchDialogProps {
   open: boolean;
@@ -36,30 +37,29 @@ interface AdvancedSearchDialogProps {
 
 // Available fields for filtering
 const FILTER_FIELDS = [
-  { value: "title", label: "Title" },
-  { value: "accessionNumber", label: "Accession Number" },
-  { value: "creator", label: "Creator" },
-  { value: "objectType", label: "Object Type" },
-  { value: "objectName", label: "Object Name" },
-  { value: "culture", label: "Culture" },
-  { value: "period", label: "Period" },
-  { value: "dateCreated", label: "Date Created" },
-  { value: "materials", label: "Materials" },
-  { value: "technique", label: "Technique" },
-  { value: "condition", label: "Condition" },
-  { value: "description", label: "Description" },
+  { value: "title" },
+  { value: "accessionNumber" },
+  { value: "creator" },
+  { value: "objectType" },
+  { value: "objectName" },
+  { value: "culture" },
+  { value: "period" },
+  { value: "dateCreated" },
+  { value: "materials" },
+  { value: "technique" },
+  { value: "condition" },
+  { value: "description" },
 ];
 
-// Filter operators with labels
 const FILTER_OPERATORS = [
-  { value: "eq", label: "Equals" },
-  { value: "ne", label: "Not Equals" },
-  { value: "contains", label: "Contains" },
-  { value: "in", label: "In List" },
-  { value: "gt", label: "Greater Than" },
-  { value: "lt", label: "Less Than" },
-  { value: "gte", label: "Greater Than or Equal" },
-  { value: "lte", label: "Less Than or Equal" },
+  { value: "eq" },
+  { value: "ne" },
+  { value: "contains" },
+  { value: "in" },
+  { value: "gt" },
+  { value: "lt" },
+  { value: "gte" },
+  { value: "lte" },
 ];
 
 type FilterConditionWithId = FilterCondition & { id: string };
@@ -75,18 +75,23 @@ function GroupOperatorSelector({
   groupOperator: "AND" | "OR";
   onGroupOperatorChange: (operator: "AND" | "OR") => void;
 }) {
+  const translate = useI18n();
   return (
     <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
       <Label className="text-sm font-medium">
-        Combine filter groups using:
+        {translate("untranslatedComponents.labels.combineFilterGroupsUsing")}
       </Label>
       <Select value={groupOperator} onValueChange={onGroupOperatorChange}>
         <SelectTrigger className="w-24">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="AND">AND</SelectItem>
-          <SelectItem value="OR">OR</SelectItem>
+          <SelectItem value="AND">
+            {translate("untranslatedComponents.searchLogic.and")}
+          </SelectItem>
+          <SelectItem value="OR">
+            {translate("untranslatedComponents.searchLogic.or")}
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -110,10 +115,13 @@ function FilterConditionRow({
     updates: Partial<FilterCondition>,
   ) => void;
 }) {
+  const translate = useI18n();
   return (
     <div className="flex items-end gap-2 rounded bg-muted/30 p-2">
       <div className="flex-1 space-y-1">
-        <Label className="text-xs">Field</Label>
+        <Label className="text-xs">
+          {translate("untranslatedComponents.labels.field")}
+        </Label>
         <Select
           value={filter.field}
           onValueChange={(value) =>
@@ -126,7 +134,9 @@ function FilterConditionRow({
           <SelectContent>
             {FILTER_FIELDS.map((field) => (
               <SelectItem key={field.value} value={field.value}>
-                {field.label}
+                {translate(
+                  `untranslatedComponents.searchFields.${field.value}`,
+                )}
               </SelectItem>
             ))}
           </SelectContent>
@@ -134,7 +144,9 @@ function FilterConditionRow({
       </div>
 
       <div className="flex-1 space-y-1">
-        <Label className="text-xs">Operator</Label>
+        <Label className="text-xs">
+          {translate("untranslatedComponents.labels.operator")}
+        </Label>
         <Select
           value={filter.operator}
           onValueChange={(value) =>
@@ -149,7 +161,9 @@ function FilterConditionRow({
           <SelectContent>
             {FILTER_OPERATORS.map((operator) => (
               <SelectItem key={operator.value} value={operator.value}>
-                {operator.label}
+                {translate(
+                  `untranslatedComponents.filterOperators.${operator.value}`,
+                )}
               </SelectItem>
             ))}
           </SelectContent>
@@ -157,7 +171,9 @@ function FilterConditionRow({
       </div>
 
       <div className="flex-1 space-y-1">
-        <Label className="text-xs">Value</Label>
+        <Label className="text-xs">
+          {translate("untranslatedComponents.labels.value")}
+        </Label>
         <Input
           type="text"
           value={filter.value as string}
@@ -166,7 +182,7 @@ function FilterConditionRow({
               value: event.target.value,
             })
           }
-          placeholder="Enter value..."
+          placeholder={translate("untranslatedComponents.labels.enterValue")}
         />
       </div>
 
@@ -206,17 +222,19 @@ function FilterGroupEditor({
   ) => void;
   onUpdateGroupOperator: (groupIndex: number, operator: "AND" | "OR") => void;
 }) {
+  const translate = useI18n();
   return (
     <div className="space-y-3 rounded-lg border bg-card p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-semibold">
-            Filter Group {groupIndex + 1}
+            {translate("untranslatedComponents.labels.filterGroup")}{" "}
+            {groupIndex + 1}
           </Label>
           {group.filters.length > 1 ? (
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground">
-                Combine with:
+                {translate("untranslatedComponents.labels.combineWith")}
               </span>
               <Select
                 value={group.operator}
@@ -228,8 +246,12 @@ function FilterGroupEditor({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="AND">AND</SelectItem>
-                  <SelectItem value="OR">OR</SelectItem>
+                  <SelectItem value="AND">
+                    {translate("untranslatedComponents.searchLogic.and")}
+                  </SelectItem>
+                  <SelectItem value="OR">
+                    {translate("untranslatedComponents.searchLogic.or")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -268,7 +290,7 @@ function FilterGroupEditor({
         className="w-full"
       >
         <Plus className="mr-2 size-4" />
-        Add Filter
+        {translate("untranslatedComponents.labels.addFilter")}
       </Button>
     </div>
   );
@@ -283,6 +305,7 @@ export function AdvancedSearchDialog({
   initialFilterGroups = EMPTY_FILTER_GROUPS,
   initialGroupOperator = "AND",
 }: AdvancedSearchDialogProps) {
+  const translate = useI18n();
   const createId = () => {
     const uuid = globalThis.crypto?.randomUUID?.();
     if (uuid) return uuid;
@@ -417,11 +440,12 @@ export function AdvancedSearchDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Filter className="size-5" />
-            Advanced Search Filters
+            {translate("untranslatedComponents.labels.advancedSearchFilters")}
           </DialogTitle>
           <DialogDescription>
-            Build complex filter combinations to search your collection. Add
-            multiple filter groups and combine them with AND/OR logic.
+            {translate(
+              "untranslatedComponents.labels.buildComplexFilterCombinationsToSearchYourCollectionAddMultipleFilterGroupsAndCombineThemWithANDORLogic",
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -456,20 +480,24 @@ export function AdvancedSearchDialog({
             className="w-full"
           >
             <Plus className="mr-2 size-4" />
-            Add Filter Group
+            {translate("untranslatedComponents.labels.addFilterGroup")}
           </Button>
         </div>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
           <div className="text-sm text-muted-foreground">
-            {totalFilters} {totalFilters === 1 ? "filter" : "filters"} defined
+            {totalFilters}{" "}
+            {totalFilters === 1
+              ? translate("untranslatedComponents.labels.filter")
+              : translate("untranslatedComponents.labels.filters")}{" "}
+            {translate("untranslatedComponents.labels.defined")}
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={handleClear}>
-              Clear All
+              {translate("untranslatedComponents.labels.clearAll")}
             </Button>
             <Button type="button" onClick={handleApply}>
-              Apply Filters
+              {translate("untranslatedComponents.labels.applyFilters")}
             </Button>
           </div>
         </DialogFooter>

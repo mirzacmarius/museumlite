@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
   authedForUser,
   createConvexTest,
@@ -7,6 +7,9 @@ import {
 } from "../tests/testHarness";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
 
 test("anonymous catalog hides legacy and restricted attachments in list and detail", async () => {
   const t = createConvexTest();

@@ -3,12 +3,8 @@ import { createI18nServer } from "next-international/server";
 type Locale = string;
 type TranslationValues = Record<string, string | number | null | undefined>;
 type Translate = (key: string, values?: TranslationValues) => string;
-type GetI18n = <Scope extends string = string>(
-  scope?: Scope,
-) => Promise<Translate>;
-type GetScopedI18n = <Scope extends string = string>(
-  scope?: Scope,
-) => Promise<Translate>;
+type GetI18n = () => Promise<Translate>;
+type GetScopedI18n = <Scope extends string>(scope: Scope) => Promise<Translate>;
 type GetStaticParams = () => Array<{ locale: Locale }>;
 
 const localeLoaders: Record<

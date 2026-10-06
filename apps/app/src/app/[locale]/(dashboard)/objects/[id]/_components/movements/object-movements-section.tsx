@@ -129,10 +129,7 @@ export function ObjectMovementsSection({
                       {entry.toLocationName || t("unknownLocation")}
                     </span>
                   </div>
-                  <time
-                    dateTime={new Date(entry.movedAt).toISOString()}
-                    className="text-right text-xs text-white/60"
-                  >
+                  <time className="text-right text-xs text-white/60">
                     {formatMovementTime(locale, entry.movedAt)}
                   </time>
                 </div>

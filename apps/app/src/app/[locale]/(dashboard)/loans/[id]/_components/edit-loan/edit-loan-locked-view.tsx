@@ -1,6 +1,7 @@
 import { Button } from "@v1/ui/button";
 import { Lock } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/locales/client";
 
 interface EditLoanLockedViewProps {
   loanId: string;
@@ -11,6 +12,7 @@ export function EditLoanLockedView({
   loanId,
   status,
 }: EditLoanLockedViewProps) {
+  const tRoot = useI18n();
   return (
     <div className="flex size-full bg-background px-6">
       <div className="z-10 mx-auto flex size-full max-w-screen-md flex-col items-center justify-center gap-6">
@@ -18,14 +20,18 @@ export function EditLoanLockedView({
           <Lock className="size-6" />
         </div>
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-foreground">Loan Locked</h1>
+          <h1 className="text-lg font-semibold text-foreground">
+            {tRoot("untranslatedRecords.loans.edit.lockedTitle")}
+          </h1>
           <p className="text-muted-foreground mt-2 max-w-sm">
-            This loan is currently{" "}
-            <span className="font-medium text-foreground">{status}</span> and
-            cannot be edited. Only pending loans can be modified.
+            {tRoot("loans.actions.loanLockedDesc", {
+              status,
+            })}
           </p>
           <Button variant="outline" className="mt-6" asChild>
-            <Link href={`/loans/${loanId}`}>Return to Loan Details</Link>
+            <Link href={`/loans/${loanId}`}>
+              {tRoot("untranslatedRecords.loans.edit.returnToDetails")}
+            </Link>
           </Button>
         </div>
       </div>

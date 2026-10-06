@@ -16,13 +16,59 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
 import { LocationSelector } from "@/components/location-selector";
 import { useScopedI18n } from "@/locales/client";
 import { movementIssueLabel } from "./movement-labels";
 
 export type MoveDialogMode = "direct" | "request";
+
+interface MoveFormState {
+  toLocationId: string;
+  reason: string;
+  notes: string;
+  override: boolean;
+  error: string | null;
+  isSubmitting: boolean;
+}
+
+type MoveFormAction =
+  | { type: "destinationChanged"; value: string }
+  | { type: "reasonChanged"; value: string }
+  | { type: "notesChanged"; value: string }
+  | { type: "overrideChanged"; value: boolean }
+  | { type: "errorChanged"; value: string | null }
+  | { type: "submittingChanged"; value: boolean };
+
+const initialMoveFormState: MoveFormState = {
+  toLocationId: "",
+  reason: "",
+  notes: "",
+  override: false,
+  error: null,
+  isSubmitting: false,
+};
+
+function moveFormReducer(
+  state: MoveFormState,
+  action: MoveFormAction,
+): MoveFormState {
+  switch (action.type) {
+    case "destinationChanged":
+      return { ...state, toLocationId: action.value, override: false };
+    case "reasonChanged":
+      return { ...state, reason: action.value };
+    case "notesChanged":
+      return { ...state, notes: action.value };
+    case "overrideChanged":
+      return { ...state, override: action.value };
+    case "errorChanged":
+      return { ...state, error: action.value };
+    case "submittingChanged":
+      return { ...state, isSubmitting: action.value };
+  }
+}
 
 interface MoveObjectFormDialogProps {
   mode: MoveDialogMode;
@@ -43,19 +89,14 @@ export function MoveObjectFormDialog({
 }: MoveObjectFormDialogProps) {
   const t = useScopedI18n("locations.movements");
   const tCommon = useScopedI18n("common");
-  const [toLocationId, setToLocationId] = useState("");
-  const [reason, setReason] = useState("");
-  const [notes, setNotes] = useState("");
-  const [override, setOverride] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, dispatch] = useReducer(moveFormReducer, initialMoveFormState);
 
   const moveObject = useMutation(api.locations.moveObject);
   const createMoveRequest = useMutation(api.locations.createMoveRequest);
   const preflight = useQuery(
     api.locations.checkMoveAllowed,
-    toLocationId
-      ? { collectionId, toLocationId: toLocationId as Id<"locations"> }
+    state.toLocationId
+      ? { collectionId, toLocationId: state.toLocationId as Id<"locations"> }
       : "skip",
   );
 
@@ -66,47 +107,55 @@ export function MoveObjectFormDialog({
     preflight?.issues.filter((issue) => issue.canOverride) ?? [];
   const isBlocked =
     isDirect &&
-    (blockingIssues.length > 0 || (overridableIssues.length > 0 && !override));
+    (blockingIssues.length > 0 ||
+      (overridableIssues.length > 0 && !state.override));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
-    if (!toLocationId) {
-      setError(t("dialog.selectDestinationError"));
+    dispatch({ type: "errorChanged", value: null });
+    if (!state.toLocationId) {
+      dispatch({
+        type: "errorChanged",
+        value: t("dialog.selectDestinationError"),
+      });
       return;
     }
-    if (!isDirect && !reason.trim()) {
-      setError(t("dialog.reasonRequired"));
+    if (!isDirect && !state.reason.trim()) {
+      dispatch({ type: "errorChanged", value: t("dialog.reasonRequired") });
       return;
     }
-    setIsSubmitting(true);
+    dispatch({ type: "submittingChanged", value: true });
     try {
       if (isDirect) {
         await moveObject({
           collectionId,
-          toLocationId: toLocationId as Id<"locations">,
-          reason: reason.trim() || undefined,
-          notes: notes.trim() || undefined,
+          toLocationId: state.toLocationId as Id<"locations">,
+          reason: state.reason.trim() || undefined,
+          notes: state.notes.trim() || undefined,
           expectedFromLocationId: currentLocationId ?? null,
-          overrideStatus: override || undefined,
-          overrideCapacity: override || undefined,
+          overrideStatus: state.override || undefined,
+          overrideCapacity: state.override || undefined,
         });
         toast.success(t("dialog.moved"));
       } else {
         await createMoveRequest({
           collectionId,
-          toLocationId: toLocationId as Id<"locations">,
-          reason: reason.trim(),
-          notes: notes.trim() || undefined,
+          toLocationId: state.toLocationId as Id<"locations">,
+          reason: state.reason.trim(),
+          notes: state.notes.trim() || undefined,
         });
         toast.success(t("dialog.requested"));
       }
       onClose();
     } catch (submitError) {
-      setError(
-        submitError instanceof Error ? submitError.message : t("dialog.failed"),
-      );
-      setIsSubmitting(false);
+      dispatch({
+        type: "errorChanged",
+        value:
+          submitError instanceof Error
+            ? submitError.message
+            : t("dialog.failed"),
+      });
+      dispatch({ type: "submittingChanged", value: false });
     }
   };
 
@@ -127,12 +176,12 @@ export function MoveObjectFormDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {error && (
+            {state.error && (
               <div
                 role="alert"
                 className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
               >
-                {error}
+                {state.error}
               </div>
             )}
             <div className="space-y-1">
@@ -148,16 +197,15 @@ export function MoveObjectFormDialog({
               <div id="move-destination">
                 <LocationSelector
                   organizationId={organizationId}
-                  value={toLocationId}
-                  onValueChange={(value) => {
-                    setToLocationId(value);
-                    setOverride(false);
-                  }}
+                  value={state.toLocationId}
+                  onValueChange={(value) =>
+                    dispatch({ type: "destinationChanged", value })
+                  }
                   placeholder={t("dialog.destinationPlaceholder")}
                   allowNone={false}
                 />
               </div>
-              {toLocationId && preflight === undefined && (
+              {state.toLocationId && preflight === undefined && (
                 <p className="text-xs text-muted-foreground" aria-live="polite">
                   {t("dialog.checking")}
                 </p>
@@ -178,9 +226,12 @@ export function MoveObjectFormDialog({
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="move-override"
-                      checked={override}
+                      checked={state.override}
                       onCheckedChange={(checked) =>
-                        setOverride(checked === true)
+                        dispatch({
+                          type: "overrideChanged",
+                          value: checked === true,
+                        })
                       }
                     />
                     <Label htmlFor="move-override" className="text-sm">
@@ -196,8 +247,10 @@ export function MoveObjectFormDialog({
               </Label>
               <Input
                 id="move-reason"
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
+                value={state.reason}
+                onChange={(event) =>
+                  dispatch({ type: "reasonChanged", value: event.target.value })
+                }
                 placeholder={t("dialog.reasonPlaceholder")}
                 required={!isDirect}
               />
@@ -206,8 +259,10 @@ export function MoveObjectFormDialog({
               <Label htmlFor="move-notes">{t("dialog.notes")}</Label>
               <Textarea
                 id="move-notes"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
+                value={state.notes}
+                onChange={(event) =>
+                  dispatch({ type: "notesChanged", value: event.target.value })
+                }
                 rows={3}
               />
             </div>
@@ -216,8 +271,8 @@ export function MoveObjectFormDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               {tCommon("cancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting || isBlocked}>
-              {isSubmitting
+            <Button type="submit" disabled={state.isSubmitting || isBlocked}>
+              {state.isSubmitting
                 ? t("dialog.submitting")
                 : isDirect
                   ? t("dialog.submitMove")

@@ -3,14 +3,16 @@ function getAppOrigin(): string | null {
   return configured || null;
 }
 
-export function getAppLoginUrl(): string {
+export function getAppLoginUrl(locale = "en"): string {
   const appOrigin = getAppOrigin();
-  if (!appOrigin) return "/login";
-  return new URL("/login", appOrigin).href;
+  const path = `/${locale}/login`;
+  if (!appOrigin) return path;
+  return new URL(path, appOrigin).href;
 }
 
-export function getAppRegisterUrl(): string {
+export function getAppRegisterUrl(locale = "en"): string {
   const appOrigin = getAppOrigin();
-  if (!appOrigin) return "/register";
-  return new URL("/register", appOrigin).href;
+  const path = `/${locale}/register`;
+  if (!appOrigin) return path;
+  return new URL(path, appOrigin).href;
 }

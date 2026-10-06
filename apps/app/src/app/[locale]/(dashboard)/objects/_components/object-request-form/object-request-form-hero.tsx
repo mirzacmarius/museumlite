@@ -2,15 +2,20 @@
 
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import { Textarea } from "@v1/ui/textarea";
 
 import type * as React from "react";
 import type { RefObject } from "react";
-
+import { useI18n } from "@/locales/client";
+import { ObjectFormSummaryCards } from "../collection-form-shared/object-form-summary-cards";
 import {
   ObjectImageGallery,
   type ObjectImageGalleryItem,
 } from "../collection-form-shared/object-image-gallery";
-import type { CollectionFormData } from "../collection-form-shared/types";
+import type {
+  CollectionEditTabId,
+  CollectionFormData,
+} from "../collection-form-shared/types";
 
 interface ObjectRequestFormHeroProps {
   formData: CollectionFormData;
@@ -23,6 +28,13 @@ interface ObjectRequestFormHeroProps {
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholders: (key: string) => string;
   onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
+  locationSummary: string;
+  collectionSummary: string;
+  isLocationTrackingEnabled: boolean;
+  onTabSelect: (tabId: CollectionEditTabId) => void;
+  unknownLabel: string;
+  mode: "create" | "draft-edit";
 }
 
 export function ObjectRequestFormHero({
@@ -36,7 +48,15 @@ export function ObjectRequestFormHero({
   handleFileSelect,
   placeholders,
   onTitleChange,
+  onDescriptionChange,
+  locationSummary,
+  collectionSummary,
+  isLocationTrackingEnabled,
+  onTabSelect,
+  unknownLabel,
+  mode,
 }: ObjectRequestFormHeroProps) {
+  const tRoot = useI18n();
   return (
     <div className="border-b border-border/60 bg-secondary/10 px-6 py-8 sm:px-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 lg:flex-row lg:items-start">
@@ -54,10 +74,10 @@ export function ObjectRequestFormHero({
             </div>
             <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
               {isDraftCurrent
-                ? "Draft saved"
+                ? tRoot("untranslatedRecords.objects.draft.saved")
                 : hasSavedFieldDraft
-                  ? "Draft outdated"
-                  : "Not created yet"}
+                  ? tRoot("untranslatedRecords.objects.draft.outdated")
+                  : tRoot("untranslatedRecords.objects.draft.notCreated")}
             </div>
           </div>
 
@@ -66,7 +86,7 @@ export function ObjectRequestFormHero({
               htmlFor="hero-title"
               className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground"
             >
-              Object title
+              {tRoot("untranslatedRecords.objects.form.objectTitle")}
             </Label>
             <Input
               id="hero-title"
@@ -78,12 +98,31 @@ export function ObjectRequestFormHero({
             />
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            Build the record using the same tab structure as object detail and
-            edit. Draft saves keep this object in the accession draft workflow
-            until you explicitly submit it for approval. Images and documents
-            stay local until you submit the object request for approval.
-          </p>
+          <div className="space-y-2">
+            <Label htmlFor="hero-description">
+              {tRoot("objects.form.description")}
+            </Label>
+            <Textarea
+              autoResize
+              id="hero-description"
+              value={formData.description || ""}
+              onChange={(event) => onDescriptionChange(event.target.value)}
+              rows={5}
+              placeholder={placeholders("description")}
+            />
+          </div>
+
+          {mode === "draft-edit" ? (
+            <ObjectFormSummaryCards
+              creator={formData.creator}
+              dateCreated={formData.dateCreated}
+              locationSummary={locationSummary}
+              collectionSummary={collectionSummary}
+              isLocationTrackingEnabled={isLocationTrackingEnabled}
+              unknownLabel={unknownLabel}
+              onTabSelect={onTabSelect}
+            />
+          ) : null}
         </div>
       </div>
     </div>

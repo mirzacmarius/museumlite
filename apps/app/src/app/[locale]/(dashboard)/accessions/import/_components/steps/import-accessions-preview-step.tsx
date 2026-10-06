@@ -14,7 +14,8 @@ import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
 import { ResumableImportNotice } from "@/components/import/resumable-import-notice";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
+import { formatAccessionMethodLabel } from "../../../[id]/_components/accession-detail-ui";
 import type { ImportState } from "../import-accessions-types";
 
 interface ImportAccessionsPreviewStepProps {
@@ -34,6 +35,7 @@ export function ImportAccessionsPreviewStep({
   onStartImport,
 }: ImportAccessionsPreviewStepProps) {
   const { currentOrganizationId } = useOrganization();
+  const tRoot = useI18n();
   const tracked = useScopedI18n("trackedImport");
   const errors = [...state.errors, ...runErrors];
   return (
@@ -134,7 +136,9 @@ export function ImportAccessionsPreviewStep({
                 </TableCell>
                 <TableCell>{row.dateReceived}</TableCell>
                 <TableCell>{row.source}</TableCell>
-                <TableCell>{row.method}</TableCell>
+                <TableCell>
+                  {formatAccessionMethodLabel(row.method, tRoot)}
+                </TableCell>
                 <TableCell>{row.cost || "-"}</TableCell>
                 <TableCell className="max-w-[200px] truncate">
                   {row.notes || "-"}

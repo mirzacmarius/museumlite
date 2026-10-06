@@ -3,6 +3,7 @@ import Resend from "@auth/core/providers/resend";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
+import { sendLocalizedMagicLinkEmail } from "./email/authCopy";
 import { env } from "./env";
 import { ResendOTP } from "./otp/ResendOTP";
 import { ResendOTPPasswordReset } from "./passwordReset/ResendOTPPasswordReset";
@@ -20,6 +21,7 @@ const normalizedEmailProfile = (params: Record<string, unknown>) => {
 const verifyProvider = Resend({
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
+  sendVerificationRequest: sendLocalizedMagicLinkEmail,
 });
 
 const magicLinkEmail = Email({
@@ -27,7 +29,7 @@ const magicLinkEmail = Email({
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
   authorize: undefined,
-  sendVerificationRequest: verifyProvider.sendVerificationRequest,
+  sendVerificationRequest: sendLocalizedMagicLinkEmail,
 });
 
 const passwordBasic = Password({

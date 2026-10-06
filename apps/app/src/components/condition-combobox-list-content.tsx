@@ -10,10 +10,10 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Check, Edit3, Trash2 } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import {
   type ConditionOption,
   formatConditionName,
-  STANDARD_CONDITIONS,
 } from "./condition-combobox-types";
 
 interface ConditionComboboxListContentProps {
@@ -46,13 +46,16 @@ export function ConditionComboboxListContent({
   onCreateCondition,
   onDeleteCondition,
 }: ConditionComboboxListContentProps) {
+  const translate = useI18n();
   const hasResults =
     filteredSystemConditions.length > 0 || filteredCustomConditions.length > 0;
 
   return (
     <>
       <CommandInput
-        placeholder="Search conditions or type new..."
+        placeholder={translate(
+          "untranslatedComponents.labels.searchConditionsOrTypeNew",
+        )}
         value={inputValue}
         onValueChange={onInputChange}
         onKeyDown={(e) => {
@@ -67,15 +70,17 @@ export function ConditionComboboxListContent({
           {inputValue ? (
             <div className="p-4 text-sm text-center">
               <div className="text-muted-foreground mb-2">
-                No matching conditions found.
+                {translate(
+                  "untranslatedComponents.labels.noMatchingConditionsFound",
+                )}
               </div>
               {organizationId && (
                 <div className="text-xs text-muted-foreground">
-                  Press{" "}
+                  {translate("untranslatedComponents.labels.press")}{" "}
                   <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">
                     Enter
                   </kbd>{" "}
-                  to add{" "}
+                  {translate("untranslatedComponents.labels.toAdd")}{" "}
                   <span className="font-medium text-foreground">
                     "{formatConditionName(inputValue)}"
                   </span>
@@ -84,7 +89,9 @@ export function ConditionComboboxListContent({
             </div>
           ) : (
             <div className="p-4 text-sm text-muted-foreground text-center">
-              Type to search conditions
+              {translate(
+                "untranslatedComponents.labels.typeToSearchConditions",
+              )}
             </div>
           )}
         </CommandEmpty>
@@ -181,5 +188,3 @@ function ConditionListItem({
     </CommandItem>
   );
 }
-
-export { STANDARD_CONDITIONS };

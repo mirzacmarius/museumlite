@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { AlertCircle, CheckCircle, Save, X, Zap } from "lucide-react";
 import type { RefObject } from "react";
+import { useI18n } from "@/locales/client";
 import type { ValidationResult } from "./template-combobox-types";
 
 interface TemplateComboboxFormatModifierProps {
@@ -27,12 +28,13 @@ export function TemplateComboboxFormatModifier({
   onSave,
   onInsertToken,
 }: TemplateComboboxFormatModifierProps) {
+  const translate = useI18n();
   return (
     <div className="border-t border-border bg-muted/30">
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs font-medium text-muted-foreground">
-            Format Modifier
+            {translate("untranslatedComponents.labels.formatModifier")}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -43,7 +45,9 @@ export function TemplateComboboxFormatModifier({
               onClick={() => setShowQuickInsert(!showQuickInsert)}
             >
               <Zap className="size-3 mr-1" />
-              <span className="text-xs">Quick Insert</span>
+              <span className="text-xs">
+                {translate("untranslatedComponents.labels.quickInsert")}
+              </span>
             </Button>
             {onSave && validation?.isValid && (
               <Button
@@ -54,7 +58,9 @@ export function TemplateComboboxFormatModifier({
                 onClick={onSave}
               >
                 <Save className="size-3 mr-1" />
-                <span className="text-xs">Save</span>
+                <span className="text-xs">
+                  {translate("untranslatedComponents.labels.save")}
+                </span>
               </Button>
             )}
           </div>
@@ -75,7 +81,9 @@ export function TemplateComboboxFormatModifier({
             {validation.isValid ? (
               <>
                 <CheckCircle className="size-3 text-green-600 shrink-0" />
-                <span className="text-green-700">Valid format</span>
+                <span className="text-green-700">
+                  {translate("untranslatedComponents.labels.validFormat")}
+                </span>
                 {validation.preview && (
                   <code className="text-[10px] bg-background px-1.5 py-0.5 rounded border">
                     {validation.preview}
@@ -111,11 +119,12 @@ function TemplateQuickInsertPanel({
   onClose: () => void;
   onInsertToken: (token: string) => void;
 }) {
+  const translate = useI18n();
   return (
     <div className="border rounded-md p-2 space-y-2 bg-background">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium text-muted-foreground">
-          QUICK INSERT TOKENS
+          {translate("untranslatedComponents.labels.qUICKINSERTTOKENS")}
         </span>
         <Button
           type="button"
@@ -130,22 +139,22 @@ function TemplateQuickInsertPanel({
 
       <div className="grid grid-cols-2 gap-2 text-[10px]">
         <TokenGroup
-          title="Date"
+          title={translate("untranslatedComponents.labels.date")}
           tokens={["{YYYY}", "{YY}", "{MM}", "{DD}"]}
           onInsertToken={onInsertToken}
         />
         <TokenGroup
-          title="Counter"
+          title={translate("untranslatedComponents.labels.counter")}
           tokens={["{#}", "{###}", "{####}", "{#####}"]}
           onInsertToken={onInsertToken}
         />
         <TokenGroup
-          title="Org"
+          title={translate("untranslatedComponents.labels.org")}
           tokens={["{ORG}", "{ORG:3}"]}
           onInsertToken={onInsertToken}
         />
         <TokenGroup
-          title="Separators"
+          title={translate("untranslatedComponents.labels.separators")}
           tokens={["-", ".", "/", "_"]}
           onInsertToken={onInsertToken}
         />

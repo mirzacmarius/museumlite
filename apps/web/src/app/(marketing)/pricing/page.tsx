@@ -1,50 +1,46 @@
-import { PricingPlans } from "@/components/site/pricing-plans";
 import { SiteFooter } from "@/components/site/footer";
 import { Nav } from "@/components/site/nav";
+import { PricingPlans } from "@/components/site/pricing-plans";
 import { PageHeader } from "@/components/site/section-label";
 import { createPageMetadata } from "@/lib/metadata";
+import { getWebI18n } from "@/locales/server";
 
-export const metadata = createPageMetadata({
-  title: "Pricing",
-  description:
-    "Free, Pro, and Enterprise plans for museums and collections. Start free with no credit card — upgrade when you need loans, exhibitions, and more.",
-  path: "/pricing",
-});
+export async function generateMetadata() {
+  const { locale, t } = await getWebI18n();
+  return createPageMetadata({
+    title: t("marketing.pricing.title"),
+    description: t("marketing.pricing.description"),
+    path: "/pricing",
+    locale,
+  });
+}
 
-const faqs = [
-  [
-    "Is the Free plan really free?",
-    "Yes. Create an account, set up your organization, and use core catalog tools at no cost. Paid plans unlock advanced modules and higher limits when you are ready.",
-  ],
-  [
-    "How do I upgrade to Pro or Enterprise?",
-    "Sign up free, then open Settings → Billing in the app to choose Pro or Enterprise. Monthly and yearly billing are available.",
-  ],
-  [
-    "Where is data hosted?",
-    "EU (Frankfurt) by default. Additional regions can be discussed for Enterprise teams.",
-  ],
-  [
-    "Do you offer non-profit pricing?",
-    "We offer discounts for accredited non-profits on paid plans. Mention it when you request a tour or contact us.",
-  ],
-];
-
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { t } = await getWebI18n();
+  const faqs = (
+    [
+      ["marketing.pricing.faq1q", "marketing.pricing.faq1a"],
+      ["marketing.pricing.faq2q", "marketing.pricing.faq2a"],
+      ["marketing.pricing.faq3q", "marketing.pricing.faq3a"],
+      ["marketing.pricing.faq4q", "marketing.pricing.faq4a"],
+    ] as const
+  ).map(([questionKey, answerKey]) => [t(questionKey), t(answerKey)]);
   return (
     <>
       <Nav />
       <main id="main-content" className="bg-background text-foreground">
         <PageHeader
-          eyebrow="Pricing"
+          eyebrow={t("marketing.pricing.title")}
           title={
             <>
-              Start free,
+              {t("marketing.pricing.headlineStart")}
               <br />
-              <span className="text-gold">scale when you need to.</span>
+              <span className="text-gold">
+                {t("marketing.pricing.headlineEnd")}
+              </span>
             </>
           }
-          lede="The same Free, Pro, and Enterprise plans you see in the app — transparent pricing with no per-object fees."
+          lede={t("marketing.pricing.lede")}
         />
 
         <section className="py-16 md:py-24 border-b border-border">
@@ -54,7 +50,7 @@ export default function PricingPage() {
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-3xl px-6 lg:px-10">
             <h2 className="font-display text-3xl text-ivory mb-10 text-center">
-              Common questions
+              {t("marketing.pricing.questions")}
             </h2>
             <div className="divide-y divide-border border-y border-border">
               {faqs.map(([q, a]) => (
@@ -65,7 +61,9 @@ export default function PricingPage() {
                       +
                     </span>
                   </summary>
-                  <p className="mt-3 text-muted-foreground leading-relaxed">{a}</p>
+                  <p className="mt-3 text-muted-foreground leading-relaxed">
+                    {a}
+                  </p>
                 </details>
               ))}
             </div>
