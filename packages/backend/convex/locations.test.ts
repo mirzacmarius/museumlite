@@ -847,8 +847,9 @@ test("locations.deleteLocation creates deaccessions for active objects before de
   );
 
   expect(location?.isActive).toBe(false);
-  expect(collection?.status).toBe("deaccessioned");
+  expect(collection?.status).toBe("active");
   expect(deaccessions).toHaveLength(1);
+  expect(deaccessions[0]?.status).toBe("pending");
   expect(deaccessions[0]?.reason).toBe("Location retired");
   expect(deaccessions[0]?.method).toBe("destruction");
 });

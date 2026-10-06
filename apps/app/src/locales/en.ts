@@ -2032,6 +2032,8 @@ export default {
       itemsAddedToGroup: "Successfully added {count} item(s) to group",
       itemsAddToGroupFailed: "Failed to add items to group",
       selectDeaccessionReason: "Please provide a reason for deaccessioning",
+      itemsAwaitingDecision:
+        "{count} deaccession request(s) are awaiting an approval decision",
       itemsDeaccessioned: "Successfully deaccessioned {count} item(s)",
       someItemsSkipped: "{count} item(s) were skipped (on active loan)",
       failedOnLoan: "{count} failed (may be on loan)",

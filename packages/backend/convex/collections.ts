@@ -2546,6 +2546,7 @@ export const bulkDeaccession = mutation({
   },
   returns: v.object({
     deaccessioned: v.number(),
+    awaitingDecision: v.number(),
     failed: v.number(),
     skipped: v.number(),
   }),
@@ -2556,6 +2557,7 @@ export const bulkDeaccession = mutation({
     }
 
     let deaccessioned = 0;
+    let awaitingDecision = 0;
     let failed = 0;
     let skipped = 0;
 
@@ -2586,7 +2588,7 @@ export const bulkDeaccession = mutation({
           "collections.delete",
         );
         // Bulk UI has no method picker yet; default to destruction.
-        await createDeaccessionRecord(
+        const deaccessionId = await createDeaccessionRecord(
           ctx,
           {
             organizationId: collection.organizationId,
@@ -2597,13 +2599,20 @@ export const bulkDeaccession = mutation({
           },
           userId,
         );
-        deaccessioned++;
+        // Bulk removal records no intended disposition, so the decision waits
+        // for an approver instead of being finalized without evidence.
+        const created = await ctx.db.get(deaccessionId);
+        if (created?.status === "approved") {
+          deaccessioned++;
+        } else {
+          awaitingDecision++;
+        }
       } catch {
         failed++;
       }
     }
 
-    return { deaccessioned, failed, skipped };
+    return { deaccessioned, awaitingDecision, failed, skipped };
   },
 });
 

@@ -20,6 +20,11 @@ import {
   describeBlockingDecisionChecks,
   evaluateDisposalDecisionChecks,
   getBlockingDecisionChecks,
+  hasCurrentValuation,
+  isDisposalDecision,
+  resolveDecisionBasis,
+  resolveExitState,
+  resolveProceedsState,
 } from "./utils/disposalPolicy";
 import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
@@ -332,6 +337,26 @@ export async function createDeaccessionRecord(
     throw new Error("Workflow has no approval steps configured");
   }
 
+  // Without an approval workflow the initiator's request becomes the decision
+  // only when every decision-stage check passes; otherwise it waits for an
+  // approver, who can complete the evidence or authorize an exception.
+  const now = Date.now();
+  const autoDecisionChecks = workflowConfig
+    ? []
+    : evaluateDisposalDecisionChecks(
+        {
+          method: args.method,
+          reason: args.reason,
+          disposition: args.disposition,
+          targetCollectionStatus: args.targetCollectionStatus,
+        },
+        now,
+      );
+  const isAutoApproved =
+    !workflowConfig &&
+    getBlockingDecisionChecks(autoDecisionChecks).length === 0;
+  const status = isAutoApproved ? "approved" : "pending";
+
   const workflowHistory = workflowConfig
     ? [
         {
@@ -352,7 +377,18 @@ export async function createDeaccessionRecord(
     method: args.method,
     disposition: args.disposition,
     notes: args.notes,
-    status: workflowConfig ? "pending" : "approved",
+    status,
+    ...(isAutoApproved
+      ? {
+          approvedBy: userId,
+          approvedAt: now,
+          decisionReview: {
+            policyVersion: DISPOSAL_POLICY_VERSION,
+            checkedAt: now,
+            checks: autoDecisionChecks,
+          },
+        }
+      : {}),
     targetCollectionStatus: args.targetCollectionStatus ?? "deaccessioned",
     workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
     workflowHistory,
@@ -372,7 +408,7 @@ export async function createDeaccessionRecord(
       entityId: deaccessionId,
       changes: {
         deaccessionNumber,
-        status: workflowConfig ? "pending" : "approved",
+        status,
       },
     }),
   ]);
@@ -402,7 +438,7 @@ export async function createDeaccessionRecord(
     );
   }
 
-  if (!workflowConfig) {
+  if (isAutoApproved) {
     const createdDeaccession = await ctx.db.get(deaccessionId);
     if (createdDeaccession) {
       await applyApprovedCollectionStatus(ctx, createdDeaccession, userId);
@@ -2165,6 +2201,173 @@ export const getCurrentAppraisal = query({
       currency: current.currency,
       ageDays,
       isValid: appraisalAge <= maxAgeMs,
+    };
+  },
+});
+
+const disposalCheckValidator = v.object({
+  key: v.string(),
+  required: v.boolean(),
+  passed: v.boolean(),
+});
+
+/**
+ * Stage-by-stage disposal evidence: the decision checklist (live while
+ * pending, the retained snapshot once decided), the physical exit and, for
+ * sales, proceeds receipt. Legacy decisions are reported without checks.
+ */
+export const getDisposalStages = query({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+  },
+  returns: v.union(
+    v.object({
+      appliesToDisposal: v.boolean(),
+      decision: v.object({
+        basis: v.union(
+          v.literal("pending"),
+          v.literal("rejected"),
+          v.literal("policy_checked"),
+          v.literal("authorized_exception"),
+          v.literal("legacy"),
+        ),
+        ready: v.boolean(),
+        checks: v.array(disposalCheckValidator),
+        checkedAt: v.optional(v.number()),
+        exception: v.optional(
+          v.object({
+            reason: v.string(),
+            waivedCheckKeys: v.array(v.string()),
+            authorizedBy: v.id("users"),
+            authorizedByName: v.optional(v.string()),
+            authorizedAt: v.number(),
+          }),
+        ),
+      }),
+      valuation: v.object({
+        linkedAppraisalId: v.optional(v.id("appraisals")),
+        value: v.optional(v.number()),
+        appraisalDate: v.optional(v.number()),
+        isCurrent: v.boolean(),
+      }),
+      exit: v.object({
+        state: v.union(
+          v.literal("not_applicable"),
+          v.literal("awaiting_decision"),
+          v.literal("outstanding"),
+          v.literal("recorded"),
+        ),
+        record: v.optional(
+          v.object({
+            exitDate: v.number(),
+            recipient: v.string(),
+            reference: v.optional(v.string()),
+            notes: v.optional(v.string()),
+            recordedByName: v.optional(v.string()),
+            recordedAt: v.number(),
+          }),
+        ),
+        correctionCount: v.number(),
+      }),
+      proceeds: v.object({
+        state: v.union(
+          v.literal("not_applicable"),
+          v.literal("awaiting_decision"),
+          v.literal("outstanding"),
+          v.literal("recorded"),
+          v.literal("verified"),
+        ),
+        amount: v.optional(v.number()),
+        currency: v.optional(v.string()),
+        recipient: v.optional(v.string()),
+        date: v.optional(v.number()),
+        hasReceipt: v.boolean(),
+        verifiedAt: v.optional(v.number()),
+      }),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      return null;
+    }
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.read",
+    );
+
+    const now = Date.now();
+    const basis = resolveDecisionBasis(deaccession);
+    const review = deaccession.decisionReview;
+    const checks =
+      basis === "pending"
+        ? evaluateDisposalDecisionChecks(deaccession, now)
+        : (review?.checks ?? []);
+    const userName = async (userId: Id<"users">) => {
+      const user = await ctx.db.get(userId);
+      return user?.name || user?.username || undefined;
+    };
+    const [exceptionAuthorName, exitRecorderName] = await Promise.all([
+      review?.exception
+        ? userName(review.exception.authorizedBy)
+        : Promise.resolve(undefined),
+      deaccession.exitRecord
+        ? userName(deaccession.exitRecord.recordedBy)
+        : Promise.resolve(undefined),
+    ] as const);
+
+    return {
+      appliesToDisposal: isDisposalDecision(deaccession),
+      decision: {
+        basis,
+        ready:
+          basis === "pending"
+            ? getBlockingDecisionChecks(checks).length === 0
+            : basis !== "rejected",
+        checks: checks.map(({ key, required, passed }) => ({
+          key,
+          required,
+          passed,
+        })),
+        checkedAt: review?.checkedAt,
+        exception: review?.exception
+          ? {
+              ...review.exception,
+              authorizedByName: exceptionAuthorName,
+            }
+          : undefined,
+      },
+      valuation: {
+        linkedAppraisalId: deaccession.appraisalId,
+        value: deaccession.appraisalValue,
+        appraisalDate: deaccession.appraisalDate,
+        isCurrent: hasCurrentValuation(deaccession, now),
+      },
+      exit: {
+        state: resolveExitState(deaccession),
+        record: deaccession.exitRecord
+          ? {
+              exitDate: deaccession.exitRecord.exitDate,
+              recipient: deaccession.exitRecord.recipient,
+              reference: deaccession.exitRecord.reference,
+              notes: deaccession.exitRecord.notes,
+              recordedByName: exitRecorderName,
+              recordedAt: deaccession.exitRecord.recordedAt,
+            }
+          : undefined,
+        correctionCount: deaccession.supersededExitRecords?.length ?? 0,
+      },
+      proceeds: {
+        state: resolveProceedsState(deaccession),
+        amount: deaccession.proceedsAmount,
+        currency: deaccession.proceedsCurrency,
+        recipient: deaccession.proceedsRecipient,
+        date: deaccession.proceedsDate,
+        hasReceipt: deaccession.proceedsReceiptDocument !== undefined,
+        verifiedAt: deaccession.proceedsVerifiedAt,
+      },
     };
   },
 });

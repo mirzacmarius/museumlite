@@ -2612,6 +2612,8 @@ export default {
       itemsAddedToGroup: "{count} element lagt til gruppe",
       itemsAddToGroupFailed: "Kunne ikke legge til elementer i gruppe",
       selectDeaccessionReason: "Vennligst oppgi en årsak for fraregistrering",
+      itemsAwaitingDecision:
+        "{count} forespørsel(er) om fraregistrering venter på godkjenningsvedtak",
       itemsDeaccessioned: "{count} element fraregistrert",
       someItemsSkipped: "{count} element ble hoppet over (på aktivt utlån)",
       failedOnLoan: "{count} feilet (kan være på utlån)",

@@ -188,6 +188,7 @@ test("disabled deaccession workflow applies the collection disposition immediate
     dateDeaccessioned: Date.now(),
     reason: "Duplicate object",
     method: "destruction",
+    disposition: "Witnessed destruction by contractor",
   });
 
   const result = await t.run(async (ctx) => {

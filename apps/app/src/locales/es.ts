@@ -2656,6 +2656,8 @@ export default {
       itemsAddToGroupFailed: "Error al agregar elementos al grupo",
       selectDeaccessionReason:
         "Por favor proporciona una razón para la desaccesión",
+      itemsAwaitingDecision:
+        "{count} solicitud(es) de desaccesión pendientes de decisión de aprobación",
       itemsDeaccessioned: "{count} elemento(s) desaccesionado(s) exitosamente",
       someItemsSkipped:
         "{count} elemento(s) fueron omitidos (en préstamo activo)",

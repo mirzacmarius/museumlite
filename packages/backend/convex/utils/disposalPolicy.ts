@@ -74,10 +74,7 @@ export function methodHasProceedsStage(method: DisposalMethod) {
 }
 
 export function hasCurrentValuation(
-  deaccession: Pick<
-    Doc<"deaccessions">,
-    "appraisalVerified" | "appraisalDate"
-  >,
+  deaccession: Pick<Doc<"deaccessions">, "appraisalVerified" | "appraisalDate">,
   now: number,
 ) {
   return (
