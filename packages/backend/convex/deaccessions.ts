@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -15,6 +15,12 @@ import {
   canRestoreRejectedDisposition,
   markCollectionActive,
 } from "./utils/collectionLifecycle";
+import {
+  DISPOSAL_POLICY_VERSION,
+  describeBlockingDecisionChecks,
+  evaluateDisposalDecisionChecks,
+  getBlockingDecisionChecks,
+} from "./utils/disposalPolicy";
 import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
@@ -142,6 +148,70 @@ async function applyApprovedCollectionStatus(
     changedBy: userId,
     targetStatus: resolveTargetCollectionStatus(deaccession),
     reason: deaccession.reason,
+  });
+}
+
+/**
+ * Evaluate the decision-stage checks for a disposal about to be authorized.
+ * Outstanding required checks block the decision unless the authorizing
+ * approver records an exception reason, which is retained with the decision.
+ */
+function reviewDisposalDecision(
+  deaccession: Doc<"deaccessions">,
+  userId: Id<"users">,
+  exceptionReason: string | undefined,
+  now: number,
+): NonNullable<Doc<"deaccessions">["decisionReview"]> {
+  const checks = evaluateDisposalDecisionChecks(deaccession, now);
+  const blocking = getBlockingDecisionChecks(checks);
+  const trimmedExceptionReason = exceptionReason?.trim();
+
+  if (blocking.length === 0) {
+    if (trimmedExceptionReason) {
+      throw new ConvexError(
+        "No decision checks are outstanding; approve without an exception",
+      );
+    }
+    return { policyVersion: DISPOSAL_POLICY_VERSION, checkedAt: now, checks };
+  }
+
+  if (!trimmedExceptionReason) {
+    throw new ConvexError(
+      `Disposal decision is blocked. Outstanding: ${describeBlockingDecisionChecks(blocking)}. Complete the evidence or record an authorized exception reason.`,
+    );
+  }
+
+  return {
+    policyVersion: DISPOSAL_POLICY_VERSION,
+    checkedAt: now,
+    checks,
+    exception: {
+      reason: trimmedExceptionReason,
+      waivedCheckKeys: blocking.map((check) => check.key),
+      authorizedBy: userId,
+      authorizedAt: now,
+    },
+  };
+}
+
+async function logDecisionException(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+  userId: Id<"users">,
+  decisionReview: NonNullable<Doc<"deaccessions">["decisionReview"]>,
+) {
+  if (!decisionReview.exception) return;
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: deaccession.organizationId,
+    userId,
+    action: "disposal_decision_exception_authorized",
+    entityType: "deaccession",
+    entityId: deaccession._id,
+    changes: {
+      reason: decisionReview.exception.reason,
+      waivedCheckKeys: decisionReview.exception.waivedCheckKeys,
+      policyVersion: decisionReview.policyVersion,
+    },
   });
 }
 
@@ -1063,6 +1133,7 @@ export const approve = mutation({
   args: {
     deaccessionId: v.id("deaccessions"),
     comment: v.optional(v.string()),
+    exceptionReason: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1087,11 +1158,12 @@ export const approve = mutation({
       "collections.approve_deaccession",
     );
 
-    const workflowConfig = await getWorkflowConfig(
+    const workflowConfig = (await isDeaccessionWorkflowEnabled(
       ctx,
       deaccession.organizationId,
-      "deaccession",
-    );
+    ))
+      ? await getWorkflowConfig(ctx, deaccession.organizationId, "deaccession")
+      : null;
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(
@@ -1125,6 +1197,23 @@ export const approve = mutation({
         throw new Error("Current workflow step is not configured");
       }
 
+      // Check if this is the last step
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
+      if (!isLastStep && args.exceptionReason?.trim()) {
+        throw new ConvexError(
+          "Exceptions can only be authorized at the final disposal decision",
+        );
+      }
+      const decisionReview = isLastStep
+        ? reviewDisposalDecision(
+            deaccession,
+            userId,
+            args.exceptionReason,
+            Date.now(),
+          )
+        : undefined;
+
       const { approvalDecision, approvalMode } =
         await recordWorkflowStepApproval(ctx, {
           organizationId: deaccession.organizationId,
@@ -1152,18 +1241,16 @@ export const approve = mutation({
         });
       }
 
-      // Check if this is the last step
-      const isLastStep =
-        workflowState.isPastLastStep || workflowState.isLastStep;
-
-      if (isLastStep) {
+      if (isLastStep && decisionReview) {
         await Promise.all([
           ctx.db.patch(args.deaccessionId, {
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
             workflowHistory: history,
+            decisionReview,
           }),
+          logDecisionException(ctx, deaccession, userId, decisionReview),
           syncDeaccessionSearchDocument(ctx, args.deaccessionId),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: deaccession.organizationId,
@@ -1225,13 +1312,21 @@ export const approve = mutation({
         });
       }
     } else {
+      const decisionReview = reviewDisposalDecision(
+        deaccession,
+        userId,
+        args.exceptionReason,
+        Date.now(),
+      );
       const [, userOrgs] = await Promise.all([
         Promise.all([
           ctx.db.patch(args.deaccessionId, {
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
+            decisionReview,
           }),
+          logDecisionException(ctx, deaccession, userId, decisionReview),
           syncDeaccessionSearchDocument(ctx, args.deaccessionId),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: deaccession.organizationId,

@@ -1463,6 +1463,56 @@ export default defineSchema({
     appraisalVerifiedAt: v.optional(v.number()),
     appraisalValue: v.optional(v.number()),
     appraisalDate: v.optional(v.number()),
+    // Stage-specific disposal evidence. Approved records without a
+    // decisionReview predate stage checks and are reported as legacy.
+    decisionReview: v.optional(
+      v.object({
+        policyVersion: v.number(),
+        checkedAt: v.number(),
+        checks: v.array(
+          v.object({
+            key: v.string(),
+            required: v.boolean(),
+            passed: v.boolean(),
+          }),
+        ),
+        exception: v.optional(
+          v.object({
+            reason: v.string(),
+            waivedCheckKeys: v.array(v.string()),
+            authorizedBy: v.id("users"),
+            authorizedAt: v.number(),
+          }),
+        ),
+      }),
+    ),
+    exitRecord: v.optional(
+      v.object({
+        exitDate: v.number(),
+        recipient: v.string(),
+        reference: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        recordedBy: v.id("users"),
+        recordedAt: v.number(),
+      }),
+    ),
+    supersededExitRecords: v.optional(
+      v.array(
+        v.object({
+          exitDate: v.number(),
+          recipient: v.string(),
+          reference: v.optional(v.string()),
+          notes: v.optional(v.string()),
+          recordedBy: v.id("users"),
+          recordedAt: v.number(),
+          correctionReason: v.string(),
+          correctedBy: v.id("users"),
+          correctedAt: v.number(),
+        }),
+      ),
+    ),
+    proceedsRecordedBy: v.optional(v.id("users")),
+    proceedsRecordedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
