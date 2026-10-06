@@ -1,0 +1,38 @@
+packages/backend/convex/collections.test.ts(514,11): error TS2339: Property '_organizationId' does not exist on type '{ collectionId: Id<"collections">; organizationId: string & { __tableName: "organizations"; }; userId: string & { __tableName: "users"; }; }'.
+packages/backend/convex/collections.ts(2711,9): error TS2345: Argument of type 'Promise<{ _id: Id<"collections">; title: string; accessionNumber: string; status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted"; thumbnailUrl: string | null; }>' is not assignable to parameter of type 'never'.
+packages/backend/convex/collections.ts(2810,9): error TS2345: Argument of type 'Promise<{ _id: Id<"collections">; title: string; accessionNumber: string; thumbnailUrl: string | null; }>' is not assignable to parameter of type 'never'.
+packages/backend/convex/migrations.ts(204,45): error TS2550: Property 'toSorted' does not exist on type '{ _id: Id<"locations">; _creationTime: number; notes?: string | undefined; status?: "active" | "restricted" | "closed" | "renovation" | undefined; address?: string | undefined; ... 12 more ...; sortOrder: number; }[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/seedMet.test.ts(17,17): error TS2344: Type 'typeof convexTest<typeof schema, typeof modules>' does not satisfy the constraint '(...args: any) => any'.
+  Type 'typeof convexTest<typeof schema, typeof modules>' provides no match for the signature '(...args: any): any'.
+packages/backend/convex/seedMet.test.ts(17,35): error TS2635: Type '<Schema extends GenericSchema>(schema?: SchemaDefinition<Schema, boolean> | undefined, modules?: Record<string, () => Promise<any>> | undefined) => TestConvex<...>' has no signatures for which the type argument list is applicable.
+packages/backend/convex/seedMetAction.ts(2125,39): error TS2550: Property 'toSorted' does not exist on type '({ eventType: "commission"; owner: string; startYear: string; endYear: string; location: string; verified: boolean; salePrice?: undefined; currency?: undefined; auctionHouse?: undefined; notes?: undefined; } | ... 5 more ... | { ...; })[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/seedMetAction.ts(2166,39): error TS2550: Property 'toSorted' does not exist on type 'Id<"collectionGroups">[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/seedMetAction.ts(2172,13): error TS2322: Type 'unknown' is not assignable to type 'Id<"collectionGroups">'.
+  Type 'unknown' is not assignable to type 'string'.
+packages/backend/convex/seedMetAction.ts(3487,50): error TS2550: Property 'toSorted' does not exist on type '({ title: string; type: "lighting"; hours: number; } | { title: string; type: "signage"; hours: number; } | { title: string; type: "mounts"; hours: number; } | { title: string; type: "conservation"; hours: number; } | { ...; } | { ...; } | { ...; } | { ...; })[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/seedMetAction.ts(3505,22): error TS18046: 'task' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3506,31): error TS18046: 'task' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3507,25): error TS18046: 'task' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3517,31): error TS18046: 'task' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3520,21): error TS18046: 'task' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3574,58): error TS2550: Property 'toSorted' does not exist on type '({ title: string; type: "cleaning"; hours: number; cost: number; } | { title: string; type: "routine"; hours: number; cost: number; } | { title: string; type: "stabilization"; hours: number; cost: number; } | { ...; } | { ...; } | { ...; })[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/seedMetAction.ts(3592,28): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3593,20): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3594,29): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3611,25): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3613,24): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3614,39): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3615,24): error TS18046: 'treatment' is of type 'unknown'.
+packages/backend/convex/seedMetAction.ts(3817,46): error TS2550: Property 'toSorted' does not exist on type 'string[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/subscriptions.test.ts(12,17): error TS2339: Property 'glob' does not exist on type 'ImportMeta'.
+packages/backend/convex/subscriptions.test.ts(20,45): error TS2345: Argument of type '{ [k: string]: unknown; }' is not assignable to parameter of type 'Record<string, () => Promise<any>>'.
+  'string' index signatures are incompatible.
+    Type 'unknown' is not assignable to type '() => Promise<any>'.
+packages/backend/convex/utils/dashboardAnalytics.ts(108,8): error TS2550: Property 'toSorted' does not exist on type '{ _id: Id<"collectionGroups">; _creationTime: number; description?: string | undefined; imageId?: Id<"_storage"> | undefined; curatorId?: Id<"users"> | undefined; managedByRoleId?: Id<...> | undefined; ... 8 more ...; createdBy: Id<...>; }[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/utils/dashboardAnalytics.ts(196,8): error TS2550: Property 'toSorted' does not exist on type '{ _id: Id<"collections">; _creationTime: number; description?: string | undefined; verified?: boolean | undefined; creator?: string | undefined; objectType?: string | undefined; ... 59 more ...; catalogedAt: number; }[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/utils/moduleCatalog.test.ts(35,54): error TS2550: Property 'toSorted' does not exist on type 'string[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/utils/moduleCatalog.test.ts(36,29): error TS2339: Property 'toSorted' does not exist on type 'readonly ["fine_art", "wine", "automotive", "natural_history", "archive", "coins_stamps"]'.
+packages/backend/convex/utils/moduleCatalog.test.ts(41,61): error TS2550: Property 'toSorted' does not exist on type 'string[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+packages/backend/convex/utils/moduleCatalog.test.ts(42,29): error TS2339: Property 'toSorted' does not exist on type 'readonly ["fine_art", "wine", "automotive", "natural_history", "archive", "coins_stamps"]'.
+packages/backend/tests/testSetup.ts(43,17): error TS2339: Property 'glob' does not exist on type 'ImportMeta'.
+packages/backend/tests/testSetup.ts(44,17): error TS2339: Property 'glob' does not exist on type 'ImportMeta'.

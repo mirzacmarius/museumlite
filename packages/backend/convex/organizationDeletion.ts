@@ -4,11 +4,15 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalMutation,
-  mutation,
-  query,
   type MutationCtx,
+  mutation,
   type QueryCtx,
+  query,
 } from "./_generated/server";
+import {
+  isOrganizationEvidenceProtected,
+  rejectPermanentEvidenceDeletion,
+} from "./utils/evidenceRetention";
 import {
   addMs,
   ORGANIZATION_DELETION_FINAL_NOTICE_DISPLAY_MS,
@@ -375,6 +379,10 @@ export const requestDeletion = mutation({
       userId,
     );
 
+    if (await isOrganizationEvidenceProtected(ctx, args.organizationId)) {
+      rejectPermanentEvidenceDeletion();
+    }
+
     if (organization.parentOrganizationId) {
       throw new ConvexError(
         "Sub-organizations cannot be deleted from this screen",
@@ -402,17 +410,14 @@ export const requestDeletion = mutation({
     const deletionId = await ctx.db.insert("organizationDeletions", {
       organizationId: args.organizationId,
       status:
-        superAdminCount > 1
-          ? "pending_super_admin_approval"
-          : "grace_period",
+        superAdminCount > 1 ? "pending_super_admin_approval" : "grace_period",
       requestedAt: now,
       requestedByUserId: userId,
       cancelToken,
       graceEndsAt,
       finalNoticeAt,
       preservedSubscriptionTier: preservedTier,
-      superAdminApprovedByUserIds:
-        superAdminCount > 1 ? [] : undefined,
+      superAdminApprovedByUserIds: superAdminCount > 1 ? [] : undefined,
       initialEmailSentAt: superAdminCount > 1 ? undefined : now,
     });
 
@@ -469,12 +474,18 @@ export const approveDeletion = mutation({
       userId,
     );
 
+    if (await isOrganizationEvidenceProtected(ctx, args.organizationId)) {
+      rejectPermanentEvidenceDeletion();
+    }
+
     const deletion = await getActiveDeletionForOrganization(
       ctx,
       args.organizationId,
     );
     if (!deletion || deletion.status !== "pending_super_admin_approval") {
-      throw new ConvexError("No deletion request is awaiting SuperAdmin approval");
+      throw new ConvexError(
+        "No deletion request is awaiting SuperAdmin approval",
+      );
     }
 
     const approvedByUserIds = deletion.superAdminApprovedByUserIds ?? [];
@@ -627,7 +638,9 @@ export const transferOwnership = mutation({
     const membership = await ctx.db
       .query("userOrganizations")
       .withIndex("by_user_and_organization", (q) =>
-        q.eq("userId", args.newOwnerUserId).eq("organizationId", args.organizationId),
+        q
+          .eq("userId", args.newOwnerUserId)
+          .eq("organizationId", args.organizationId),
       )
       .first();
 
@@ -796,6 +809,9 @@ export const processOrganizationDeletionsInternal = internalMutation({
       .collect();
 
     for (const deletion of graceExpired) {
+      if (await isOrganizationEvidenceProtected(ctx, deletion.organizationId)) {
+        continue;
+      }
       await ctx.db.patch(deletion._id, {
         status: "awaiting_final_notice",
       });
@@ -810,6 +826,9 @@ export const processOrganizationDeletionsInternal = internalMutation({
       .collect();
 
     for (const deletion of readyForFinalNotice) {
+      if (await isOrganizationEvidenceProtected(ctx, deletion.organizationId)) {
+        continue;
+      }
       const scheduledDeletionDate = addMs(
         now,
         ORGANIZATION_DELETION_FINAL_NOTICE_DISPLAY_MS,
@@ -863,6 +882,9 @@ export const processOrganizationDeletionsInternal = internalMutation({
       .collect();
 
     for (const deletion of readyForPurge) {
+      if (await isOrganizationEvidenceProtected(ctx, deletion.organizationId)) {
+        continue;
+      }
       if (!deletion.scheduledPurgeAt || deletion.scheduledPurgeAt > now) {
         continue;
       }

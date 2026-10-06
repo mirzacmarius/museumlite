@@ -31,6 +31,7 @@ bun dev:web                # Marketing site only
 # Quality checks
 bun run lint               # Biome lint + sherif monorepo check
 bun run typecheck          # TypeScript check all workspaces
+bun run --cwd packages/backend typecheck # Standalone Convex backend compilation
 bun run format             # Biome format (writes files)
 
 # Testing

@@ -1,0 +1,13 @@
+{
+  "number": 52,
+  "batch": 8,
+  "id": "MUS-662",
+  "url": "https://linear.app/museumlite/issue/MUS-662/verify-inventory-with-scanning-labels-and-exceptions",
+  "title": "Verify inventory with scanning labels and exceptions",
+  "blockedBy": [
+    "MUS-628",
+    "MUS-652",
+    "MUS-654"
+  ],
+  "implementationApproved": false
+}

@@ -173,7 +173,10 @@ export function useAddChildLocationForm({
     });
 
     try {
-      const uploadUrl = await generateUploadUrl({ mimeType: file.type });
+      const uploadUrl = await generateUploadUrl({
+        mimeType: file.type,
+        organizationId: organizationId as Id<"organizations">,
+      });
       const response = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },

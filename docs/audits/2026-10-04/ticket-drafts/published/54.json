@@ -1,0 +1,15 @@
+{
+  "number": 54,
+  "batch": 8,
+  "id": "MUS-664",
+  "url": "https://linear.app/museumlite/issue/MUS-664/coordinate-incident-and-emergency-collection-response",
+  "title": "Coordinate incident and emergency collection response",
+  "blockedBy": [
+    "MUS-627",
+    "MUS-628",
+    "MUS-645",
+    "MUS-656",
+    "MUS-658"
+  ],
+  "implementationApproved": false
+}

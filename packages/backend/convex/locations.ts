@@ -1,15 +1,24 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { customFieldValue } from "./schema";
+import {
+  assessCollectionMovement,
+  moveCollectionToLocation,
+} from "./utils/locationIntegrity";
+import {
+  movementIssueValidator,
+  movementKindValidator,
+} from "./utils/movementValidators";
 import {
   hasPermission,
   requireLocationAdminPermission,
   requirePermission,
 } from "./utils/permissions";
+import { claimStorageOwnership } from "./utils/uploadOwnership";
 
 const MAX_LOCATION_CODE_LENGTH = 50;
 type LocationCustomFields = Record<
@@ -203,6 +212,23 @@ export const create = mutation({
       customFields: args.customFields,
     });
 
+    if (args.customFields?.locationImageId) {
+      const storageId =
+        typeof args.customFields.locationImageId === "string"
+          ? ctx.db.system.normalizeId(
+              "_storage",
+              args.customFields.locationImageId,
+            )
+          : null;
+      if (!storageId) throw new Error("Invalid location image");
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "locationImage",
+        ownerId: locationId,
+      });
+    }
     return locationId;
   },
 });
@@ -660,6 +686,27 @@ export const update = mutation({
     if (args.customFields !== undefined)
       updates.customFields = args.customFields;
 
+    if (
+      args.customFields?.locationImageId &&
+      args.customFields.locationImageId !==
+        location.customFields?.locationImageId
+    ) {
+      const storageId =
+        typeof args.customFields.locationImageId === "string"
+          ? ctx.db.system.normalizeId(
+              "_storage",
+              args.customFields.locationImageId,
+            )
+          : null;
+      if (!storageId) throw new Error("Invalid location image");
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: location.organizationId,
+        uploadedBy: userId,
+        ownerType: "locationImage",
+        ownerId: location._id,
+      });
+    }
     await ctx.db.patch(args.locationId, updates);
 
     return null;
@@ -922,8 +969,60 @@ export const deleteLocation = mutation({
   },
 });
 
+const moveRequestStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("approved"),
+  v.literal("rejected"),
+  v.literal("executed"),
+  v.literal("cancelled"),
+  v.literal("conflict"),
+);
+
+const OPEN_MOVE_REQUEST_STATUSES = new Set<
+  Doc<"locationMoveRequests">["status"]
+>(["pending", "approved", "conflict"]);
+
+async function requireAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+  return userId;
+}
+
+async function getMoveRequestForUpdate(
+  ctx: MutationCtx,
+  requestId: Id<"locationMoveRequests">,
+) {
+  const [userId, request] = await Promise.all([
+    requireAuthenticatedUser(ctx),
+    ctx.db.get(requestId),
+  ] as const);
+  if (!request) {
+    throw new Error("Move request not found");
+  }
+  await requirePermission(ctx, request.organizationId, "locations.update");
+  return { userId, request };
+}
+
+async function getRequestCollection(
+  ctx: MutationCtx,
+  request: Doc<"locationMoveRequests">,
+) {
+  const collection = await ctx.db.get(request.collectionId);
+  if (!collection || collection.organizationId !== request.organizationId) {
+    throw new Error("Collection not found");
+  }
+  return collection;
+}
+
+function trimmedOrUndefined(value: string | undefined) {
+  const text = value?.trim();
+  return text ? text : undefined;
+}
+
 /**
- * Move object to new location (creates history)
+ * Move object to new location now (creates accountable history)
  */
 export const moveObject = mutation({
   args: {
@@ -933,96 +1032,42 @@ export const moveObject = mutation({
     notes: v.optional(v.string()),
     overrideCapacity: v.optional(v.boolean()),
     overrideStatus: v.optional(v.boolean()),
+    // Location the mover saw before moving; null when the object had none.
+    expectedFromLocationId: v.optional(v.union(v.id("locations"), v.null())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
+      requireAuthenticatedUser(ctx),
       ctx.db.get(args.collectionId),
     ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
     if (!collection) {
       throw new Error("Collection not found");
     }
-
-    const toLocation = await ctx.db.get(args.toLocationId);
-    if (!toLocation) {
-      throw new Error("Target location not found");
-    }
-
-    if (toLocation.organizationId !== collection.organizationId) {
-      throw new Error("Location belongs to different organization");
-    }
-
-    const locationStatus = toLocation.status ?? "active";
-    if (!toLocation.isActive || locationStatus === "closed") {
-      if (!args.overrideStatus) {
-        throw new Error("Target location is closed and cannot receive objects");
-      }
-    }
-
-    if (locationStatus === "renovation") {
-      if (!args.overrideStatus) {
-        throw new Error("Target location is under renovation");
-      }
-    }
-
-    if (locationStatus === "restricted") {
-      if (!args.overrideStatus) {
-        throw new Error(
-          "Target location is restricted. Use override to move objects here.",
-        );
-      }
-    }
-
     await requirePermission(ctx, collection.organizationId, "locations.update");
 
-    // Check capacity
-    if (toLocation.capacity) {
-      const objectsAtLocation = await ctx.db
-        .query("collections")
-        .withIndex("by_currentLocation", (q) =>
-          q.eq("currentLocationId", args.toLocationId),
-        )
-        .collect();
-
-      if (objectsAtLocation.length >= toLocation.capacity) {
-        if (!args.overrideCapacity) {
-          throw new Error(
-            `Target location is at capacity (${objectsAtLocation.length}/${toLocation.capacity})`,
-          );
-        }
-      }
-    }
-
-    const fromLocationId = collection.currentLocationId;
-
-    // Create location history entry
-    await ctx.db.insert("locationHistory", {
-      collectionId: args.collectionId,
-      fromLocationId,
-      toLocationId: args.toLocationId,
-      movedBy: userId,
-      movedAt: Date.now(),
-      reason: args.reason,
-      notes: args.notes,
-    });
-
-    // Update collection location
-    await ctx.db.patch(args.collectionId, {
-      currentLocationId: args.toLocationId,
-      lastModifiedBy: userId,
-      lastModifiedAt: Date.now(),
-    });
+    await moveCollectionToLocation(
+      ctx,
+      collection,
+      args.toLocationId,
+      userId,
+      trimmedOrUndefined(args.reason) ?? "Direct move",
+      {
+        kind: "direct",
+        notes: trimmedOrUndefined(args.notes),
+        expectedFromLocationId: args.expectedFromLocationId,
+        statusOverride: args.overrideStatus,
+        capacityOverride: args.overrideCapacity,
+        checkCapacity: true,
+      },
+    );
 
     return null;
   },
 });
 
 /**
- * Check if a move is allowed (capacity and status)
+ * Check if a move is allowed (destination, capacity and custody)
  */
 export const checkMoveAllowed = query({
   args: {
@@ -1049,9 +1094,7 @@ export const checkMoveAllowed = query({
     ),
   }),
   handler: async (ctx, args) => {
-    if (!(await getAuthUserId(ctx))) {
-      throw new Error("Not authenticated");
-    }
+    await requireAuthenticatedUser(ctx);
 
     const collectionMissing = {
       allowed: false,
@@ -1087,11 +1130,13 @@ export const checkMoveAllowed = query({
       throw error;
     }
 
-    const toLocation = await ctx.db.get(args.toLocationId);
-    if (
-      !toLocation ||
-      toLocation.organizationId !== collection.organizationId
-    ) {
+    const { issues, toLocation } = await assessCollectionMovement(
+      ctx,
+      collection,
+      args.toLocationId,
+      { checkCapacity: true, requireInstitutionalCustody: true },
+    );
+    if (!toLocation) {
       return {
         allowed: false,
         requiresOverride: false,
@@ -1101,35 +1146,6 @@ export const checkMoveAllowed = query({
       };
     }
 
-    const issues: Array<{
-      type: string;
-      message: string;
-      canOverride: boolean;
-    }> = [];
-
-    // Check location status
-    const locationStatus = toLocation.status ?? "active";
-    if (!toLocation.isActive || locationStatus === "closed") {
-      issues.push({
-        type: "status_closed",
-        message: "Location is closed",
-        canOverride: true,
-      });
-    } else if (locationStatus === "renovation") {
-      issues.push({
-        type: "status_renovation",
-        message: "Location is under renovation",
-        canOverride: true,
-      });
-    } else if (locationStatus === "restricted") {
-      issues.push({
-        type: "status_restricted",
-        message: "Location is restricted",
-        canOverride: true,
-      });
-    }
-
-    // Check capacity
     let currentCount = 0;
     if (toLocation.capacity) {
       const objectsAtLocation = await ctx.db
@@ -1138,16 +1154,7 @@ export const checkMoveAllowed = query({
           q.eq("currentLocationId", args.toLocationId),
         )
         .collect();
-
       currentCount = objectsAtLocation.length;
-
-      if (currentCount >= toLocation.capacity) {
-        issues.push({
-          type: "capacity_exceeded",
-          message: `Location is at capacity (${currentCount}/${toLocation.capacity})`,
-          canOverride: true,
-        });
-      }
     }
 
     return {
@@ -1156,7 +1163,7 @@ export const checkMoveAllowed = query({
       issues,
       targetLocation: {
         name: toLocation.name,
-        status: locationStatus,
+        status: toLocation.status ?? "active",
         capacity: toLocation.capacity,
         currentCount,
       },
@@ -1185,42 +1192,42 @@ export const createMoveRequest = mutation({
   returns: v.id("locationMoveRequests"),
   handler: async (ctx, args) => {
     const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
+      requireAuthenticatedUser(ctx),
       ctx.db.get(args.collectionId),
     ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
     if (!collection) {
       throw new Error("Collection not found");
     }
+    await requirePermission(ctx, collection.organizationId, "locations.update");
 
-    const toLocation = await ctx.db.get(args.toLocationId);
-    if (!toLocation) {
-      throw new Error("Target location not found");
+    const reason = args.reason.trim();
+    if (!reason) {
+      throw new Error("A reason is required for a move request");
     }
 
-    if (toLocation.organizationId !== collection.organizationId) {
-      throw new Error("Location belongs to different organization");
+    const { issues } = await assessCollectionMovement(
+      ctx,
+      collection,
+      args.toLocationId,
+      // Status, capacity and custody are reviewed at approval and execution.
+      { statusOverride: true },
+    );
+    const [blocking] = issues;
+    if (blocking) {
+      throw new Error(blocking.message);
     }
 
-    const [, existingRequest] = await Promise.all([
-      requirePermission(ctx, collection.organizationId, "locations.update"),
-      ctx.db
-        .query("locationMoveRequests")
-        .withIndex("by_collection", (q) =>
-          q.eq("collectionId", args.collectionId),
-        )
-        .filter((q) =>
-          q.or(
-            q.eq(q.field("status"), "pending"),
-            q.eq(q.field("status"), "approved"),
-          ),
-        )
-        .first(),
-    ] as const);
-
-    if (existingRequest) {
+    const existingRequests = await ctx.db
+      .query("locationMoveRequests")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
+      .collect();
+    if (
+      existingRequests.some((request) =>
+        OPEN_MOVE_REQUEST_STATUSES.has(request.status),
+      )
+    ) {
       throw new Error("Object already has a pending move request");
     }
 
@@ -1229,13 +1236,13 @@ export const createMoveRequest = mutation({
       collectionId: args.collectionId,
       fromLocationId: collection.currentLocationId,
       toLocationId: args.toLocationId,
-      reason: args.reason,
+      reason,
       scheduledDate: args.scheduledDate,
       priority: args.priority ?? "normal",
       status: "pending",
       requestedBy: userId,
       requestedAt: Date.now(),
-      notes: args.notes,
+      notes: trimmedOrUndefined(args.notes),
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -1245,8 +1252,10 @@ export const createMoveRequest = mutation({
       entityType: "collection",
       entityId: args.collectionId,
       changes: {
+        requestId,
+        fromLocationId: collection.currentLocationId,
         toLocationId: args.toLocationId,
-        reason: args.reason,
+        reason,
       },
     });
 
@@ -1255,7 +1264,8 @@ export const createMoveRequest = mutation({
 });
 
 /**
- * Approve a move request
+ * Approve a pending move request, or re-approve one whose execution conflicted.
+ * The approval binds the move to the object's current location.
  */
 export const approveMoveRequest = mutation({
   args: {
@@ -1266,39 +1276,58 @@ export const approveMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, request] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.requestId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!request) {
-      throw new Error("Move request not found");
-    }
-
-    if (request.status !== "pending") {
+    const { userId, request } = await getMoveRequestForUpdate(
+      ctx,
+      args.requestId,
+    );
+    if (request.status !== "pending" && request.status !== "conflict") {
       throw new Error(`Request is already ${request.status}`);
     }
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
+    const collection = await getRequestCollection(ctx, request);
+    const { issues } = await assessCollectionMovement(
+      ctx,
+      collection,
+      request.toLocationId,
+      {
+        statusOverride: args.overrideStatus,
+        capacityOverride: args.overrideCapacity,
+        checkCapacity: true,
+        requireInstitutionalCustody: true,
+      },
+    );
+    const [blocking] = issues;
+    if (blocking) {
+      throw new Error(blocking.message);
+    }
 
+    const approvedFromLocationId = collection.currentLocationId ?? null;
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "approved",
         reviewedBy: userId,
         reviewedAt: Date.now(),
-        reviewNotes: args.reviewNotes,
+        reviewNotes: trimmedOrUndefined(args.reviewNotes),
         capacityOverride: args.overrideCapacity,
         statusOverride: args.overrideStatus,
+        approvedFromLocationId,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.organizationId,
         userId,
-        action: "approved_move_request",
+        action:
+          request.status === "conflict"
+            ? "reapproved_move_request"
+            : "approved_move_request",
         entityType: "collection",
         entityId: request.collectionId,
-        changes: { requestId: args.requestId },
+        changes: {
+          requestId: args.requestId,
+          approvedFromLocationId,
+          toLocationId: request.toLocationId,
+          capacityOverride: args.overrideCapacity,
+          statusOverride: args.overrideStatus,
+        },
       }),
     ]);
 
@@ -1307,7 +1336,7 @@ export const approveMoveRequest = mutation({
 });
 
 /**
- * Reject a move request
+ * Reject a pending or conflicted move request
  */
 export const rejectMoveRequest = mutation({
   args: {
@@ -1316,29 +1345,24 @@ export const rejectMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, request] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.requestId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!request) {
-      throw new Error("Move request not found");
-    }
-
-    if (request.status !== "pending") {
+    const { userId, request } = await getMoveRequestForUpdate(
+      ctx,
+      args.requestId,
+    );
+    if (request.status !== "pending" && request.status !== "conflict") {
       throw new Error(`Request is already ${request.status}`);
     }
-
-    await requirePermission(ctx, request.organizationId, "locations.update");
+    const reviewNotes = args.reviewNotes.trim();
+    if (!reviewNotes) {
+      throw new Error("Review notes are required to reject a move request");
+    }
 
     await Promise.all([
       ctx.db.patch(args.requestId, {
         status: "rejected",
         reviewedBy: userId,
         reviewedAt: Date.now(),
-        reviewNotes: args.reviewNotes,
+        reviewNotes,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.organizationId,
@@ -1346,7 +1370,7 @@ export const rejectMoveRequest = mutation({
         action: "rejected_move_request",
         entityType: "collection",
         entityId: request.collectionId,
-        changes: { requestId: args.requestId, reason: args.reviewNotes },
+        changes: { requestId: args.requestId, reason: reviewNotes },
       }),
     ]);
 
@@ -1354,88 +1378,117 @@ export const rejectMoveRequest = mutation({
   },
 });
 
+const executeMoveRequestResultValidator = v.union(
+  v.object({
+    outcome: v.literal("executed"),
+    movementId: v.union(v.id("locationHistory"), v.null()),
+    alreadyExecuted: v.boolean(),
+  }),
+  v.object({
+    outcome: v.literal("conflict"),
+    issues: v.array(movementIssueValidator),
+  }),
+);
+
 /**
- * Execute an approved move request
+ * Execute an approved move request. Source, destination and custody are
+ * revalidated now; a conflict is retained on the request for re-review
+ * instead of moving the object from a stale source. Retrying an executed
+ * request returns the recorded movement.
  */
 export const executeMoveRequest = mutation({
   args: {
     requestId: v.id("locationMoveRequests"),
     executionNotes: v.optional(v.string()),
   },
-  returns: v.null(),
+  returns: executeMoveRequestResultValidator,
   handler: async (ctx, args) => {
-    const [userId, request] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.requestId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    const { userId, request } = await getMoveRequestForUpdate(
+      ctx,
+      args.requestId,
+    );
+    if (request.status === "executed") {
+      return {
+        outcome: "executed" as const,
+        movementId: request.movementId ?? null,
+        alreadyExecuted: true,
+      };
     }
-    if (!request) {
-      throw new Error("Move request not found");
-    }
-
     if (request.status !== "approved") {
       throw new Error("Move request must be approved before execution");
     }
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
-
-    const collection = await ctx.db.get(request.collectionId);
-    if (!collection) {
-      throw new Error("Collection not found");
-    }
-
-    const toLocation = await ctx.db.get(request.toLocationId);
-    if (!toLocation) {
-      throw new Error("Target location not found");
-    }
-
-    // Check capacity (unless override approved)
-    if (!request.capacityOverride && toLocation.capacity) {
-      const objectsAtLocation = await ctx.db
-        .query("collections")
-        .withIndex("by_currentLocation", (q) =>
-          q.eq("currentLocationId", request.toLocationId),
-        )
-        .collect();
-
-      if (objectsAtLocation.length >= toLocation.capacity) {
-        throw new Error("Target location is now at capacity");
-      }
-    }
-
-    // Check status (unless override approved)
-    const locationStatus = toLocation.status ?? "active";
-    if (
-      !request.statusOverride &&
-      (!toLocation.isActive || locationStatus !== "active")
-    ) {
-      throw new Error(`Target location status is ${locationStatus}`);
-    }
-
-    // Execute the move
+    const collection = await getRequestCollection(ctx, request);
+    const guards = {
+      expectedFromLocationId:
+        request.approvedFromLocationId !== undefined
+          ? request.approvedFromLocationId
+          : (request.fromLocationId ?? null),
+      statusOverride: request.statusOverride,
+      capacityOverride: request.capacityOverride,
+      checkCapacity: true,
+    };
+    const { issues } = await assessCollectionMovement(
+      ctx,
+      collection,
+      request.toLocationId,
+      { ...guards, requireInstitutionalCustody: true },
+    );
     const now = Date.now();
+
+    if (issues.length > 0) {
+      await Promise.all([
+        ctx.db.patch(args.requestId, {
+          status: "conflict",
+          conflicts: [
+            ...(request.conflicts ?? []),
+            {
+              detectedAt: now,
+              detectedBy: userId,
+              observedFromLocationId: collection.currentLocationId,
+              issues,
+            },
+          ],
+        }),
+        ctx.runMutation(internal.audit.logAction, {
+          organizationId: request.organizationId,
+          userId,
+          action: "move_request_conflict",
+          entityType: "collection",
+          entityId: request.collectionId,
+          changes: {
+            requestId: args.requestId,
+            observedFromLocationId: collection.currentLocationId,
+            issues: issues.map((issue) => issue.type),
+          },
+        }),
+      ]);
+      return { outcome: "conflict" as const, issues };
+    }
+
+    const executionNotes = trimmedOrUndefined(args.executionNotes);
+    const movementId = await moveCollectionToLocation(
+      ctx,
+      collection,
+      request.toLocationId,
+      userId,
+      request.reason,
+      {
+        ...guards,
+        kind: "request",
+        notes: executionNotes,
+        authorizedBy: request.reviewedBy,
+        moveRequestId: request._id,
+      },
+    );
+
     await Promise.all([
-      ctx.db.insert("locationHistory", {
-        collectionId: request.collectionId,
-        fromLocationId: request.fromLocationId,
-        toLocationId: request.toLocationId,
-        movedBy: userId,
-        movedAt: now,
-        reason: request.reason,
-        notes: args.executionNotes,
-      }),
-      ctx.db.patch(request.collectionId, {
-        currentLocationId: request.toLocationId,
-        lastModifiedBy: userId,
-        lastModifiedAt: now,
-      }),
       ctx.db.patch(args.requestId, {
         status: "executed",
         executedBy: userId,
         executedAt: now,
-        executionNotes: args.executionNotes,
+        executionNotes,
+        movementId: movementId ?? undefined,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.organizationId,
@@ -1445,18 +1498,23 @@ export const executeMoveRequest = mutation({
         entityId: request.collectionId,
         changes: {
           requestId: args.requestId,
-          fromLocationId: request.fromLocationId,
+          movementId,
+          fromLocationId: collection.currentLocationId,
           toLocationId: request.toLocationId,
         },
       }),
-    ] as const);
+    ]);
 
-    return null;
+    return {
+      outcome: "executed" as const,
+      movementId,
+      alreadyExecuted: false,
+    };
   },
 });
 
 /**
- * Cancel a move request
+ * Cancel an open move request. The request remains as retained history.
  */
 export const cancelMoveRequest = mutation({
   args: {
@@ -1465,129 +1523,202 @@ export const cancelMoveRequest = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, request] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.requestId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!request) {
-      throw new Error("Move request not found");
-    }
-
-    if (request.status === "executed" || request.status === "cancelled") {
+    const { userId, request } = await getMoveRequestForUpdate(
+      ctx,
+      args.requestId,
+    );
+    if (!OPEN_MOVE_REQUEST_STATUSES.has(request.status)) {
       throw new Error(`Cannot cancel ${request.status} request`);
     }
+    const reason = trimmedOrUndefined(args.reason);
 
-    await requirePermission(ctx, request.organizationId, "locations.update");
-
-    await ctx.db.patch(args.requestId, {
-      status: "cancelled",
-      notes: args.reason
-        ? `${request.notes || ""} Cancelled: ${args.reason}`
-        : request.notes,
-    });
+    await Promise.all([
+      ctx.db.patch(args.requestId, {
+        status: "cancelled",
+        notes: reason
+          ? `${request.notes ? `${request.notes} ` : ""}Cancelled: ${reason}`
+          : request.notes,
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: request.organizationId,
+        userId,
+        action: "cancelled_move_request",
+        entityType: "collection",
+        entityId: request.collectionId,
+        changes: { requestId: args.requestId, reason },
+      }),
+    ]);
 
     return null;
   },
 });
 
+const moveRequestSummaryValidator = v.object({
+  _id: v.id("locationMoveRequests"),
+  collectionId: v.id("collections"),
+  collectionTitle: v.string(),
+  accessionNumber: v.string(),
+  fromLocationId: v.optional(v.id("locations")),
+  fromLocationName: v.optional(v.string()),
+  toLocationId: v.id("locations"),
+  toLocationName: v.string(),
+  reason: v.string(),
+  notes: v.optional(v.string()),
+  scheduledDate: v.optional(v.number()),
+  priority: v.optional(v.string()),
+  status: moveRequestStatusValidator,
+  requestedBy: v.id("users"),
+  requestedByName: v.optional(v.string()),
+  requestedAt: v.number(),
+  reviewedBy: v.optional(v.id("users")),
+  reviewedByName: v.optional(v.string()),
+  reviewedAt: v.optional(v.number()),
+  reviewNotes: v.optional(v.string()),
+  approvedFromLocationName: v.optional(v.string()),
+  capacityOverride: v.optional(v.boolean()),
+  statusOverride: v.optional(v.boolean()),
+  executedByName: v.optional(v.string()),
+  executedAt: v.optional(v.number()),
+  executionNotes: v.optional(v.string()),
+  movementId: v.optional(v.id("locationHistory")),
+  conflicts: v.array(
+    v.object({
+      detectedAt: v.number(),
+      detectedBy: v.id("users"),
+      detectedByName: v.optional(v.string()),
+      observedFromLocationId: v.optional(v.id("locations")),
+      observedFromLocationName: v.optional(v.string()),
+      issues: v.array(movementIssueValidator),
+    }),
+  ),
+});
+
+async function summarizeMoveRequest(
+  ctx: QueryCtx,
+  request: Doc<"locationMoveRequests">,
+) {
+  const userName = async (userId: Id<"users"> | undefined) => {
+    if (!userId) return undefined;
+    const user = await ctx.db.get(userId);
+    return user?.name ?? user?.username ?? undefined;
+  };
+  const locationName = async (
+    locationId: Id<"locations"> | undefined | null,
+  ) => {
+    if (!locationId) return undefined;
+    const location = await ctx.db.get(locationId);
+    return location?.organizationId === request.organizationId
+      ? location.name
+      : undefined;
+  };
+  const collection = await ctx.db.get(request.collectionId);
+  const ownCollection =
+    collection?.organizationId === request.organizationId ? collection : null;
+  const [
+    fromLocationName,
+    toLocationName,
+    approvedFromLocationName,
+    requestedByName,
+    reviewedByName,
+    executedByName,
+    conflicts,
+  ] = await Promise.all([
+    locationName(request.fromLocationId),
+    locationName(request.toLocationId),
+    locationName(request.approvedFromLocationId),
+    userName(request.requestedBy),
+    userName(request.reviewedBy),
+    userName(request.executedBy),
+    Promise.all(
+      (request.conflicts ?? []).map(async (conflict) => ({
+        ...conflict,
+        detectedByName: await userName(conflict.detectedBy),
+        observedFromLocationName: await locationName(
+          conflict.observedFromLocationId,
+        ),
+      })),
+    ),
+  ] as const);
+
+  return {
+    _id: request._id,
+    collectionId: request.collectionId,
+    collectionTitle: ownCollection?.title ?? "Unknown",
+    accessionNumber: ownCollection?.accessionNumber ?? "Unknown",
+    fromLocationId: request.fromLocationId,
+    fromLocationName,
+    toLocationId: request.toLocationId,
+    toLocationName: toLocationName ?? "Unknown",
+    reason: request.reason,
+    notes: request.notes,
+    scheduledDate: request.scheduledDate,
+    priority: request.priority,
+    status: request.status,
+    requestedBy: request.requestedBy,
+    requestedByName,
+    requestedAt: request.requestedAt,
+    reviewedBy: request.reviewedBy,
+    reviewedByName,
+    reviewedAt: request.reviewedAt,
+    reviewNotes: request.reviewNotes,
+    approvedFromLocationName,
+    capacityOverride: request.capacityOverride,
+    statusOverride: request.statusOverride,
+    executedByName,
+    executedAt: request.executedAt,
+    executionNotes: request.executionNotes,
+    movementId: request.movementId,
+    conflicts,
+  };
+}
+
 /**
- * List move requests for an organization
+ * List move requests for an organization, optionally for one object
  */
 export const listMoveRequests = query({
   args: {
     organizationId: v.id("organizations"),
-    status: v.optional(
-      v.union(
-        v.literal("pending"),
-        v.literal("approved"),
-        v.literal("rejected"),
-        v.literal("executed"),
-        v.literal("cancelled"),
-      ),
-    ),
+    status: v.optional(moveRequestStatusValidator),
+    collectionId: v.optional(v.id("collections")),
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("locationMoveRequests"),
-      collectionId: v.id("collections"),
-      collectionTitle: v.string(),
-      accessionNumber: v.string(),
-      fromLocationId: v.optional(v.id("locations")),
-      fromLocationName: v.optional(v.string()),
-      toLocationId: v.id("locations"),
-      toLocationName: v.string(),
-      reason: v.string(),
-      scheduledDate: v.optional(v.number()),
-      priority: v.optional(v.string()),
-      status: v.string(),
-      requestedBy: v.id("users"),
-      requestedByName: v.optional(v.string()),
-      requestedAt: v.number(),
-      reviewedByName: v.optional(v.string()),
-      reviewedAt: v.optional(v.number()),
-      reviewNotes: v.optional(v.string()),
-    }),
-  ),
+  returns: v.array(moveRequestSummaryValidator),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "locations.read");
 
-    const query = args.status
-      ? ctx.db
+    let requests: Doc<"locationMoveRequests">[];
+    if (args.collectionId) {
+      const collectionId = args.collectionId;
+      requests = (
+        await ctx.db
           .query("locationMoveRequests")
-          .withIndex("by_organization_and_status", (q) =>
-            q
-              .eq("organizationId", args.organizationId)
-              .eq("status", args.status!),
-          )
-      : ctx.db
-          .query("locationMoveRequests")
-          .withIndex("by_organization", (q) =>
-            q.eq("organizationId", args.organizationId),
-          );
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .collect()
+      ).filter(
+        (request) =>
+          request.organizationId === args.organizationId &&
+          (!args.status || request.status === args.status),
+      );
+    } else if (args.status) {
+      const status = args.status;
+      requests = await ctx.db
+        .query("locationMoveRequests")
+        .withIndex("by_organization_and_status", (q) =>
+          q.eq("organizationId", args.organizationId).eq("status", status),
+        )
+        .collect();
+    } else {
+      requests = await ctx.db
+        .query("locationMoveRequests")
+        .withIndex("by_organization", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .collect();
+    }
 
-    const requests = await query.collect();
-
-    const enriched = await Promise.all(
-      requests.map(async (req) => {
-        const collection = await ctx.db.get(req.collectionId);
-        const fromLocation = req.fromLocationId
-          ? await ctx.db.get(req.fromLocationId)
-          : null;
-        const [toLocation, requestedBy] = await Promise.all([
-          ctx.db.get(req.toLocationId),
-          ctx.db.get(req.requestedBy),
-        ] as const);
-        const reviewedBy = req.reviewedBy
-          ? await ctx.db.get(req.reviewedBy)
-          : null;
-
-        return {
-          _id: req._id,
-          collectionId: req.collectionId,
-          collectionTitle: collection?.title ?? "Unknown",
-          accessionNumber: collection?.accessionNumber ?? "Unknown",
-          fromLocationId: req.fromLocationId,
-          fromLocationName: fromLocation?.name,
-          toLocationId: req.toLocationId,
-          toLocationName: toLocation?.name ?? "Unknown",
-          reason: req.reason,
-          scheduledDate: req.scheduledDate,
-          priority: req.priority,
-          status: req.status,
-          requestedBy: req.requestedBy,
-          requestedByName: requestedBy?.name ?? requestedBy?.username,
-          requestedAt: req.requestedAt,
-          reviewedByName: reviewedBy?.name ?? reviewedBy?.username,
-          reviewedAt: req.reviewedAt,
-          reviewNotes: req.reviewNotes,
-        };
-      }),
+    const summaries = await Promise.all(
+      requests.map((request) => summarizeMoveRequest(ctx, request)),
     );
-
-    return enriched.sort((a, b) => b.requestedAt - a.requestedAt);
+    return summaries.sort((a, b) => b.requestedAt - a.requestedAt);
   },
 });
 
@@ -1598,39 +1729,16 @@ export const getMoveRequest = query({
   args: {
     requestId: v.id("locationMoveRequests"),
   },
-  returns: v.union(v.any(), v.null()),
+  returns: v.union(moveRequestSummaryValidator, v.null()),
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
       return null;
     }
-
-    await requirePermission(ctx, request.organizationId, "locations.read");
-
-    const collection = await ctx.db.get(request.collectionId);
-    const fromLocation = request.fromLocationId
-      ? await ctx.db.get(request.fromLocationId)
-      : null;
-    const [toLocation, requestedBy] = await Promise.all([
-      ctx.db.get(request.toLocationId),
-      ctx.db.get(request.requestedBy),
-    ] as const);
-    const reviewedBy = request.reviewedBy
-      ? await ctx.db.get(request.reviewedBy)
-      : null;
-    const executedBy = request.executedBy
-      ? await ctx.db.get(request.executedBy)
-      : null;
-
-    return {
-      ...request,
-      collection,
-      fromLocation,
-      toLocation,
-      requestedByUser: requestedBy,
-      reviewedByUser: reviewedBy,
-      executedByUser: executedBy,
-    };
+    if (!(await hasPermission(ctx, request.organizationId, "locations.read"))) {
+      return null;
+    }
+    return await summarizeMoveRequest(ctx, request);
   },
 });
 
@@ -1744,11 +1852,7 @@ export const getLocationPath = query({
       if (!location) break;
 
       try {
-        await requirePermission(
-          ctx,
-          location.organizationId,
-          "locations.read",
-        );
+        await requirePermission(ctx, location.organizationId, "locations.read");
       } catch (error) {
         if (
           error instanceof Error &&
@@ -2101,6 +2205,7 @@ export const listAllWithPaths = query({
       name: v.string(),
       locationCode: v.string(),
       type: v.string(),
+      status: v.string(),
       path: v.array(
         v.object({
           _id: v.id("locations"),
@@ -2164,6 +2269,7 @@ export const listAllWithPaths = query({
       name: location.name,
       locationCode: getLocationCodeValue(location),
       type: location.type,
+      status: location.status ?? "active",
       path: buildPath(location._id),
     }));
   },
@@ -2296,9 +2402,14 @@ export const getCollectionLocationHistory = query({
       movedAt: v.number(),
       reason: v.optional(v.string()),
       notes: v.optional(v.string()),
+      movementKind: v.optional(movementKindValidator),
+      authorizedBy: v.optional(v.id("users")),
+      moveRequestId: v.optional(v.id("locationMoveRequests")),
+      batchJobId: v.optional(v.id("batchJobs")),
       fromLocationName: v.optional(v.string()),
       toLocationName: v.string(),
       movedByName: v.optional(v.string()),
+      authorizedByName: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -2323,15 +2434,24 @@ export const getCollectionLocationHistory = query({
         const fromLocation = entry.fromLocationId
           ? await ctx.db.get(entry.fromLocationId)
           : null;
-        const [toLocation, movedBy] = await Promise.all([
+        const [toLocation, movedBy, authorizedBy] = await Promise.all([
           ctx.db.get(entry.toLocationId),
           ctx.db.get(entry.movedBy),
+          entry.authorizedBy ? ctx.db.get(entry.authorizedBy) : null,
         ] as const);
         return {
           ...entry,
-          fromLocationName: fromLocation?.name || undefined,
-          toLocationName: toLocation?.name || "",
+          fromLocationName:
+            fromLocation?.organizationId === collection.organizationId
+              ? fromLocation.name
+              : undefined,
+          toLocationName:
+            toLocation?.organizationId === collection.organizationId
+              ? toLocation.name
+              : "",
           movedByName: movedBy?.name || movedBy?.username || undefined,
+          authorizedByName:
+            authorizedBy?.name || authorizedBy?.username || undefined,
         };
       }),
     );

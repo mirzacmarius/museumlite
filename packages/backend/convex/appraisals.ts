@@ -3,7 +3,8 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import { mutation, type QueryCtx, query } from "./_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requirePermission } from "./utils/permissions";
 
 const appraisalTypeValidator = v.union(
@@ -191,20 +192,12 @@ export const remove = mutation({
     if (!appraisal) {
       throw new Error("Appraisal not found");
     }
-    await Promise.all([
-      requirePermission(ctx, appraisal.organizationId, "collections.delete"),
-      ctx.db.delete(args.appraisalId),
-      ctx.runMutation(internal.audit.logAction, {
-        organizationId: appraisal.organizationId,
-        userId,
-        action: "deleted",
-        entityType: "appraisal",
-        entityId: args.appraisalId,
-        changes: {},
-      }),
-    ] as const);
-
-    return null;
+    await requirePermission(
+      ctx,
+      appraisal.organizationId,
+      "collections.delete",
+    );
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -443,7 +436,9 @@ export const list = query({
 
       const expiringAppraisals = recentAppraisals.filter((appraisal) => {
         const appraisalAge = now - appraisal.appraisalDate;
-        return appraisalAge >= MAX_APPRAISAL_AGE_MS - APPRAISAL_EXPIRY_WARNING_MS;
+        return (
+          appraisalAge >= MAX_APPRAISAL_AGE_MS - APPRAISAL_EXPIRY_WARNING_MS
+        );
       });
 
       const cursor = args.paginationOpts.cursor

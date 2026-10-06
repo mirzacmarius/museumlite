@@ -1,5 +1,6 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   Table,
@@ -10,88 +11,99 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
+import { ResumableImportNotice } from "@/components/import/resumable-import-notice";
+import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
 import type { ImportState } from "../import-objects-types";
 
 interface ImportObjectsPreviewStepProps {
   state: ImportState;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Errors from a start attempt that never reached the server. */
+  runErrors: string[];
   onBackToValidation: () => void;
-  onStartImport: () => void;
+  onStartImport: (resumeJobId?: Id<"importJobs">) => void;
 }
 
 export function ImportObjectsPreviewStep({
   state,
   t,
+  runErrors,
   onBackToValidation,
   onStartImport,
 }: ImportObjectsPreviewStepProps) {
-  const tRoot = useI18n();
+  const { currentOrganizationId } = useOrganization();
+  const tracked = useScopedI18n("trackedImport");
+  const errors = [...state.errors, ...runErrors];
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">
             {t("csvImport.previewTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {state.rows.length}{" "}
-            {tRoot("untranslatedRecords.collections.import.rowsReady")}{" "}
-            {state.file?.name}
+            {t("csvImport.previewDescription", {
+              count: state.rows.length,
+              filename: state.file?.name ?? "",
+            })}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={onBackToValidation}>
             <ArrowLeft className="mr-2 size-4" />
-            {tRoot("untranslatedRecords.collections.import.backToValidation")}
+            {tracked("backToValidation")}
           </Button>
           <PermissionGate permission="collections.create">
             <Button
-              onClick={onStartImport}
+              onClick={() => onStartImport()}
               disabled={state.rows.length === 0}
               className="bg-primary hover:bg-primary/90"
             >
               <Upload className="mr-2 size-4" />
-              {tRoot("untranslatedRecords.objects.actions.import")}{" "}
-              {state.rows.length} {tRoot("loans.actions.objects")}
+              {t("csvImport.importButton", { count: state.rows.length })}
             </Button>
           </PermissionGate>
         </div>
       </div>
+
+      <PermissionGate permission="collections.create">
+        <ResumableImportNotice
+          organizationId={currentOrganizationId}
+          entityType="objects"
+          fingerprint={state.fingerprint}
+          rowCount={state.rows.length}
+          onResume={(jobId) => onStartImport(jobId)}
+        />
+      </PermissionGate>
 
       {state.validationErrors.length > 0 ? (
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
           <div className="flex items-center gap-2 text-amber-600">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.validationErrors.length}{" "}
-              {tRoot("untranslatedRecords.collections.import.rowsSkipped")}
+              {tracked("rowsWillFail", {
+                count: state.validationErrors.length,
+              })}
             </span>
           </div>
         </div>
       ) : null}
 
-      {state.errors.length > 0 ? (
+      {errors.length > 0 ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.errors.length}{" "}
-              {tRoot("untranslatedRecords.collections.import.validationErrors")}
+              {tracked("issues", { count: errors.length })}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-destructive">
-            {state.errors.slice(0, 5).map((error) => (
+            {errors.slice(0, 5).map((error) => (
               <li key={error}>{error}</li>
             ))}
-            {state.errors.length > 5 ? (
-              <li>
-                {tRoot("untranslatedRecords.collections.import.more")}{" "}
-                {state.errors.length - 5}{" "}
-                {tRoot("untranslatedRecords.objects.loading.more")}
-              </li>
-            ) : null}
           </ul>
         </div>
       ) : null}
@@ -100,43 +112,28 @@ export function ImportObjectsPreviewStep({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>
-                {tRoot("collections.csvImport.tableHeaders.accession")}
+              <TableHead className="w-12">
+                {t("csvImport.tableHeaders.number")}
               </TableHead>
-              <TableHead>
-                {tRoot("collections.csvImport.tableHeaders.title")}
-              </TableHead>
-              <TableHead>
-                {tRoot("collections.csvImport.tableHeaders.creator")}
-              </TableHead>
-              <TableHead>
-                {tRoot("collections.csvImport.tableHeaders.type")}
-              </TableHead>
-              <TableHead>
-                {tRoot("collections.csvImport.tableHeaders.period")}
-              </TableHead>
-              <TableHead>
-                {tRoot("collections.csvImport.tableHeaders.location")}
-              </TableHead>
+              <TableHead>{t("csvImport.tableHeaders.accession")}</TableHead>
+              <TableHead>{t("csvImport.tableHeaders.title")}</TableHead>
+              <TableHead>{t("csvImport.tableHeaders.creator")}</TableHead>
+              <TableHead>{t("csvImport.tableHeaders.type")}</TableHead>
+              <TableHead>{t("csvImport.tableHeaders.period")}</TableHead>
+              <TableHead>{t("csvImport.tableHeaders.location")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {state.rows.slice(0, 20).map((row, rowIndex) => (
-              <TableRow
-                key={`${row.title}-${row.accessionNumber ?? ""}-${row.creator ?? ""}-${row.period ?? ""}`}
-              >
+            {state.rows.slice(0, 20).map((row) => (
+              <TableRow key={row.rowNumber}>
                 <TableCell className="text-muted-foreground">
-                  {rowIndex + 1}
+                  {row.rowNumber}
                 </TableCell>
                 <TableCell>
-                  {row.accessionNumber ||
-                    tRoot(
-                      "untranslatedRecords.collections.media.autoAccession",
-                    )}
+                  {row.accessionNumber || t("csvImport.autoAccession")}
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate">
-                  {row.title}
+                  {row.title || "-"}
                 </TableCell>
                 <TableCell>{row.creator || "-"}</TableCell>
                 <TableCell>{row.objectType || "-"}</TableCell>
@@ -148,9 +145,7 @@ export function ImportObjectsPreviewStep({
         </Table>
         {state.rows.length > 20 ? (
           <div className="border-t border-border p-3 text-center text-sm text-muted-foreground">
-            {tRoot("untranslatedRecords.collections.import.showingRowsCount", {
-              count: state.rows.length,
-            })}
+            {t("csvImport.showingRows", { count: state.rows.length })}
           </div>
         ) : null}
       </div>

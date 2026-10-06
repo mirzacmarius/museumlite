@@ -32,7 +32,7 @@ export function useMediaGallery({
     collectionId ? { collectionId: collectionId as Id<"collections"> } : "skip",
   );
   const updateMedia = useMutation(api.media.update);
-  const deleteMedia = useMutation(api.media.deleteMedia);
+
   const setPrimary = useMutation(api.media.setPrimary);
   const updateOrder = useMutation(api.media.updateOrder);
 
@@ -40,9 +40,7 @@ export function useMediaGallery({
   const [editingImageId, setEditingImageId] = useState<Id<"mediaFiles"> | null>(
     null,
   );
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<string | null>(
-    null,
-  );
+
   const [error, setError] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<Id<"mediaFiles"> | null>(null);
   const [dragOverId, setDragOverId] = useState<Id<"mediaFiles"> | null>(null);
@@ -98,18 +96,6 @@ export function useMediaGallery({
     } catch (err) {
       setError(
         err instanceof Error ? err.message : formErrors("failedToSetPrimary"),
-      );
-    }
-  };
-
-  const handleDelete = async (mediaId: string) => {
-    setError(null);
-    try {
-      await deleteMedia({ mediaId: mediaId as Id<"mediaFiles"> });
-      setDeleteConfirmOpen(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : formErrors("failedToDeleteMedia"),
       );
     }
   };
@@ -214,12 +200,9 @@ export function useMediaGallery({
     setEditingMedia,
     editingImageId,
     setEditingImageId,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
     draggedId,
     dragOverId,
     handleSetPrimary,
-    handleDelete,
     handleUpdateMedia,
     handleDragStart,
     handleDragOver,

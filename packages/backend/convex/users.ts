@@ -2,13 +2,23 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, mutation, query } from "./_generated/server";
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { PASSWORD_PROVIDERS } from "./accountConstants";
 import {
   type AccountErrorResult,
   accountErrorResultValidator,
 } from "./accountErrors";
 import { polar } from "./subscriptions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+} from "./utils/uploadOwnership";
 import { username } from "./utils/validators";
 
 /**
@@ -52,7 +62,7 @@ export const getUser = query({
       return null;
     }
     const user = await ctx.db.get(userId);
-    if (!user) {
+    if (!user || user.deactivatedAt !== undefined) {
       return null;
     }
     const avatarUrl = user.imageId
@@ -209,6 +219,7 @@ export const cancelEmailChange = mutation({
 export const generateUploadUrl = mutation({
   args: {
     mimeType: v.string(),
+    organizationId: v.optional(v.id("organizations")),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -222,7 +233,56 @@ export const generateUploadUrl = mutation({
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
 
-    return await ctx.storage.generateUploadUrl();
+    if (args.organizationId) {
+      const membership = await ctx.db
+        .query("userOrganizations")
+        .withIndex("by_user_and_organization", (q) =>
+          q.eq("userId", userId).eq("organizationId", args.organizationId!),
+        )
+        .unique();
+      if (!membership) throw new Error("Organization access required");
+    }
+    return await createAuthorizedUploadUrl(ctx, userId, args.organizationId);
+  },
+});
+
+export const checkUploadIntent = internalQuery({
+  args: { token: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const intent = await ctx.db
+      .query("uploadIntents")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    return Boolean(intent && !intent.usedAt && intent.expiresAt > Date.now());
+  },
+});
+
+export const completeOwnedUpload = internalMutation({
+  args: { token: v.string(), storageId: v.id("_storage") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const intent = await ctx.db
+      .query("uploadIntents")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (!intent || intent.usedAt || intent.expiresAt <= Date.now())
+      throw new Error("Upload session expired or already used");
+    if (!(await ctx.db.system.get("_storage", args.storageId)))
+      throw new Error("Uploaded file missing");
+    const existing = await ctx.db
+      .query("storageOwnership")
+      .withIndex("by_storageId", (q) => q.eq("storageId", args.storageId))
+      .unique();
+    if (existing) throw new Error("File already bound");
+    await ctx.db.insert("storageOwnership", {
+      storageId: args.storageId,
+      uploadedBy: intent.uploadedBy,
+      organizationId: intent.organizationId,
+      uploadedAt: Date.now(),
+    });
+    await ctx.db.patch(intent._id, { usedAt: Date.now() });
+    return null;
   },
 });
 
@@ -236,6 +296,12 @@ export const updateUserImage = mutation({
     if (!userId) {
       return null;
     }
+    await claimStorageOwnership(ctx, {
+      storageId: args.imageId,
+      uploadedBy: userId,
+      ownerType: "userAvatar",
+      ownerId: userId,
+    });
     await ctx.db.patch(userId, { imageId: args.imageId });
     return null;
   },

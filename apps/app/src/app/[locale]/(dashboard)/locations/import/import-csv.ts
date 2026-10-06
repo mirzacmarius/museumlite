@@ -1,4 +1,8 @@
+import { parseCsvTable } from "@/lib/csv-parser";
+
 export interface ParsedRow {
+  /** Line in the source file; the row's stable identity on its import job. */
+  rowNumber: number;
   name: string;
   locationCode: string;
   type: string;
@@ -11,139 +15,92 @@ export interface ParsedRow {
 export interface ParseError {
   type:
     | "csvMustHaveRows"
-    | "missingHeaderRow"
+    | "tooManyRows"
+    | "unreadableFile"
     | "missingRequiredColumns"
     | "nameRequired"
     | "locationCodeRequired"
     | "typeRequired";
   row?: number;
   columns?: string;
+  detail?: string;
 }
 
-const REQUIRED_COLUMNS = ["name", "locationCode", "type"];
-const OPTIONAL_COLUMNS = ["parentLocation", "address", "capacity", "notes"];
-const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
+export const MAX_LOCATION_IMPORT_ROWS = 1000;
 
+const REQUIRED_COLUMNS = ["name", "locationCode", "type"] as const;
+const OPTIONAL_COLUMNS = [
+  "parentLocation",
+  "address",
+  "capacity",
+  "notes",
+] as const;
+
+/**
+ * Parses a location CSV. Every data row is returned, including rows with
+ * missing values: those are reported here and recorded as failed rows by the
+ * server so they can be corrected on the same import.
+ */
 export function parseCSV(text: string): {
   rows: ParsedRow[];
   errors: ParseError[];
 } {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim());
-  if (lines.length < 2) {
-    return {
-      rows: [],
-      errors: [{ type: "csvMustHaveRows" }],
-    };
-  }
-
-  const headerLine = lines[0];
-  if (!headerLine) {
-    return { rows: [], errors: [{ type: "missingHeaderRow" }] };
-  }
-
-  const headers = headerLine
-    .split(",")
-    .map((header) => header.trim().replace(/^"|"$/g, ""));
-
-  const missingRequired = REQUIRED_COLUMNS.filter(
-    (column) =>
-      !headers.some((header) => header.toLowerCase() === column.toLowerCase()),
-  );
-
-  if (missingRequired.length > 0) {
+  let table: ReturnType<typeof parseCsvTable>;
+  try {
+    table = parseCsvTable(text);
+  } catch (error) {
     return {
       rows: [],
       errors: [
         {
-          type: "missingRequiredColumns",
-          columns: missingRequired.join(", "),
+          type: "unreadableFile",
+          detail: error instanceof Error ? error.message : undefined,
         },
       ],
     };
   }
+  if (table.records.length === 0) {
+    return { rows: [], errors: [{ type: "csvMustHaveRows" }] };
+  }
 
-  const headerIndexByName = new Map(
-    headers.map((header, index) => [header.toLowerCase(), index]),
+  const columnIndex = new Map(
+    table.headers.map((header, index) => [header.toLowerCase(), index]),
   );
-  const columnMap = new Map<string, number>();
-  for (const column of ALL_COLUMNS) {
-    const index = headerIndexByName.get(column.toLowerCase()) ?? -1;
-    if (index !== -1) {
-      columnMap.set(column, index);
-    }
+  const missingRequired = REQUIRED_COLUMNS.filter(
+    (column) => !columnIndex.has(column.toLowerCase()),
+  );
+  if (missingRequired.length > 0) {
+    return {
+      rows: [],
+      errors: [
+        { type: "missingRequiredColumns", columns: missingRequired.join(", ") },
+      ],
+    };
   }
 
   const rows: ParsedRow[] = [];
   const errors: ParseError[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line?.trim()) continue;
-
-    const values = parseCSVLine(line);
-
-    const getValue = (column: string): string => {
-      const index = columnMap.get(column);
-      if (index === undefined) return "";
-      return (values[index] || "").trim();
+  for (const record of table.records) {
+    const getValue = (column: string) => {
+      const index = columnIndex.get(column.toLowerCase());
+      return index === undefined ? "" : (record.values[index] ?? "");
     };
-
-    const name = getValue("name");
-    const locationCode = getValue("locationCode");
-    const type = getValue("type");
-
-    if (!name) {
-      errors.push({ type: "nameRequired", row: i + 1 });
-      continue;
+    const row: ParsedRow = {
+      rowNumber: record.rowNumber,
+      name: getValue("name"),
+      locationCode: getValue("locationCode"),
+      type: getValue("type"),
+    };
+    for (const column of OPTIONAL_COLUMNS) {
+      const value = getValue(column);
+      if (value) row[column] = value;
     }
-
-    if (!type) {
-      errors.push({ type: "typeRequired", row: i + 1 });
-      continue;
+    if (!row.name) errors.push({ type: "nameRequired", row: row.rowNumber });
+    if (!row.type) errors.push({ type: "typeRequired", row: row.rowNumber });
+    if (!row.locationCode) {
+      errors.push({ type: "locationCodeRequired", row: row.rowNumber });
     }
-
-    if (!locationCode) {
-      errors.push({ type: "locationCodeRequired", row: i + 1 });
-      continue;
-    }
-
-    rows.push({
-      name,
-      locationCode,
-      type,
-      parentLocation: getValue("parentLocation") || undefined,
-      address: getValue("address") || undefined,
-      capacity: getValue("capacity") || undefined,
-      notes: getValue("notes") || undefined,
-    });
+    rows.push(row);
   }
-
   return { rows, errors };
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result;
 }

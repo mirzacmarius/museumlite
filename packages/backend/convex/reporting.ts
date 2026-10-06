@@ -1,11 +1,14 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
+import schema from "./schema";
 import { requireFeatureAccess } from "./utils/featureGates";
-import { requirePermission } from "./utils/permissions";
 import { loadOperationalKpis } from "./utils/operationalKpis";
+import { requirePermission } from "./utils/permissions";
 import { loadCatalogGrowthSnapshot } from "./utils/reportingCatalogAnalytics";
+import { nextReportRun, validateReportSchedule } from "./utils/reportSchedule";
 
 // ============================================
 // VALIDATORS
@@ -46,6 +49,65 @@ const comparisonPeriodValidator = v.union(
   v.literal("previous_period"),
   v.literal("same_period_last_year"),
 );
+
+const outputStateValidator = v.union(
+  v.literal("generated"),
+  v.literal("stored"),
+  v.literal("unavailable"),
+);
+const deliveryStateValidator = v.union(
+  v.literal("delivered"),
+  v.literal("unavailable"),
+);
+
+function runResultState(run: Doc<"reportRuns">) {
+  const data: unknown = run.reportData;
+  const generated =
+    run.reportType === "operational_kpis" &&
+    run.status === "success" &&
+    data !== null &&
+    typeof data === "object" &&
+    "generatorVersion" in data &&
+    data.generatorVersion === "v1" &&
+    "inventory" in data &&
+    "loans" in data &&
+    "exhibitions" in data;
+  return {
+    outputState: generated
+      ? run.artifact
+        ? ("stored" as const)
+        : ("generated" as const)
+      : ("unavailable" as const),
+    deliveryState:
+      run.emailSentAt !== undefined && (run.emailsSent?.length ?? 0) > 0
+        ? ("delivered" as const)
+        : ("unavailable" as const),
+  };
+}
+
+function validateKpiConfig(config: Doc<"scheduledReports">["reportConfig"]) {
+  if (config && Object.values(config).some((value) => value !== undefined))
+    throw new Error(
+      "KPI reports are current snapshots. Date ranges, filters and comparisons are unavailable; clear the legacy configuration to retry.",
+    );
+}
+
+function validateDelivery(args: {
+  emailRecipients?: string[];
+  emailSubject?: string;
+  includeAttachment?: boolean;
+  attachmentFormat?: string;
+}) {
+  if (
+    args.emailRecipients !== undefined ||
+    args.emailSubject !== undefined ||
+    args.includeAttachment !== undefined ||
+    args.attachmentFormat !== undefined
+  )
+    throw new Error(
+      "Email delivery and attachment formats are unavailable. KPI output is stored as JSON.",
+    );
+}
 
 // ============================================
 // 2.10.1 SCHEDULED REPORTS
@@ -104,6 +166,17 @@ export const createScheduledReport = mutation({
       throw new Error("Not authenticated");
     }
 
+    if (args.reportType !== "operational_kpis") {
+      throw new Error(
+        "Report generator unavailable. Only operational KPIs are supported.",
+      );
+    }
+
+    if (!args.name.trim() || args.name.length > 200)
+      throw new Error("Enter a report name of 1–200 characters");
+
+    validateKpiConfig(args.reportConfig);
+    validateDelivery(args);
     const nextRunAt = calculateNextRun(
       args.schedule,
       args.scheduledDay,
@@ -113,7 +186,7 @@ export const createScheduledReport = mutation({
 
     const reportId = await ctx.db.insert("scheduledReports", {
       organizationId: args.organizationId,
-      name: args.name,
+      name: args.name.trim(),
       description: args.description,
       reportType: args.reportType,
       reportConfig: args.reportConfig,
@@ -126,6 +199,7 @@ export const createScheduledReport = mutation({
       includeAttachment: args.includeAttachment,
       attachmentFormat: args.attachmentFormat,
       isActive: true,
+      scheduleRevision: 1,
       nextRunAt,
       createdBy: userId,
       createdAt: Date.now(),
@@ -194,41 +268,49 @@ export const updateScheduledReport = mutation({
       ),
     ]);
 
-    const updates: Record<string, unknown> = { updatedAt: Date.now() };
-
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.reportConfig !== undefined)
-      updates.reportConfig = args.reportConfig;
-    if (args.schedule !== undefined) updates.schedule = args.schedule;
-    if (args.scheduledDay !== undefined)
-      updates.scheduledDay = args.scheduledDay;
-    if (args.scheduledTime !== undefined)
-      updates.scheduledTime = args.scheduledTime;
-    if (args.timezone !== undefined) updates.timezone = args.timezone;
-    if (args.emailRecipients !== undefined)
-      updates.emailRecipients = args.emailRecipients;
-    if (args.emailSubject !== undefined)
-      updates.emailSubject = args.emailSubject;
-    if (args.includeAttachment !== undefined)
-      updates.includeAttachment = args.includeAttachment;
-    if (args.attachmentFormat !== undefined)
-      updates.attachmentFormat = args.attachmentFormat;
-    if (args.isActive !== undefined) updates.isActive = args.isActive;
-
-    // Recalculate next run if schedule changed
     if (
-      args.schedule ||
-      args.scheduledDay ||
-      args.scheduledTime ||
-      args.timezone
-    ) {
-      updates.nextRunAt = calculateNextRun(
-        args.schedule ?? report.schedule,
-        args.scheduledDay ?? report.scheduledDay,
-        args.scheduledTime ?? report.scheduledTime,
-        args.timezone ?? report.timezone,
-      );
+      args.name !== undefined &&
+      (!args.name.trim() || args.name.length > 200)
+    )
+      throw new Error("Enter a report name of 1–200 characters");
+    if (report.reportType !== "operational_kpis" && args.isActive === true)
+      throw new Error("Report generator unavailable");
+    if (args.reportConfig !== undefined) validateKpiConfig(args.reportConfig);
+    validateDelivery(args);
+    const schedule = args.schedule ?? report.schedule;
+    const scheduledDay =
+      args.scheduledDay ??
+      (args.schedule !== undefined && args.schedule !== report.schedule
+        ? undefined
+        : report.scheduledDay);
+    const scheduledTime = args.scheduledTime ?? report.scheduledTime;
+    const timezone = args.timezone ?? report.timezone ?? "UTC";
+    const isActive = args.isActive ?? report.isActive;
+    const calendarChanged =
+      args.schedule !== undefined ||
+      args.scheduledDay !== undefined ||
+      args.scheduledTime !== undefined ||
+      args.timezone !== undefined ||
+      args.isActive !== undefined;
+    if (calendarChanged)
+      validateReportSchedule({
+        schedule,
+        scheduledDay,
+        scheduledTime,
+        timezone,
+      });
+    const { reportId: _reportId, ...provided } = args;
+    const updates: Partial<Doc<"scheduledReports">> = {
+      ...provided,
+      updatedAt: Date.now(),
+      ...(args.name !== undefined ? { name: args.name.trim() } : {}),
+    };
+    if (calendarChanged) {
+      updates.scheduledDay = scheduledDay;
+      updates.scheduleRevision = (report.scheduleRevision ?? 0) + 1;
+      updates.nextRunAt = isActive
+        ? nextReportRun({ schedule, scheduledDay, scheduledTime, timezone })
+        : undefined;
     }
 
     await ctx.db.patch(args.reportId, updates);
@@ -284,6 +366,11 @@ export const listScheduledReports = query({
       description: v.optional(v.string()),
       reportType: reportTypeValidator,
       schedule: scheduleValidator,
+      scheduledDay: v.optional(v.number()),
+      scheduledTime: v.optional(v.string()),
+      timezone: v.optional(v.string()),
+      generatorAvailable: v.boolean(),
+      lastRunError: v.optional(v.string()),
       isActive: v.boolean(),
       lastRunAt: v.optional(v.number()),
       lastRunStatus: v.optional(
@@ -311,7 +398,7 @@ export const listScheduledReports = query({
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
-      .collect();
+      .take(100);
 
     return reports.map((r) => ({
       _id: r._id,
@@ -319,6 +406,11 @@ export const listScheduledReports = query({
       description: r.description,
       reportType: r.reportType,
       schedule: r.schedule,
+      scheduledDay: r.scheduledDay,
+      scheduledTime: r.scheduledTime,
+      timezone: r.timezone,
+      generatorAvailable: r.reportType === "operational_kpis",
+      lastRunError: r.lastRunError,
       isActive: r.isActive,
       lastRunAt: r.lastRunAt,
       lastRunStatus: r.lastRunStatus,
@@ -443,6 +535,9 @@ export const runReportManually = mutation({
       reportType: report.reportType,
       reportName: report.name,
       startedAt: Date.now(),
+      lastAttemptAt: Date.now(),
+      attemptCount: 1,
+      scheduleRevision: report.scheduleRevision ?? 0,
       status: "running",
       triggeredBy: "manual",
       triggeredByUserId: userId,
@@ -458,6 +553,52 @@ export const runReportManually = mutation({
   },
 });
 
+/** Retry the same logical run; an interrupted worker becomes recoverable after 15 minutes. */
+export const retryReportRun = mutation({
+  args: { runId: v.id("reportRuns") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) throw new Error("Report run not found");
+    await requireFeatureAccess(ctx, run.organizationId, "reporting");
+    await requirePermission(
+      ctx,
+      run.organizationId,
+      "organization.view_analytics",
+    );
+    if (
+      run.status === "running" &&
+      Date.now() - (run.lastAttemptAt ?? run.startedAt) < 15 * 60_000
+    )
+      throw new Error("Report is already running");
+    if (run.status !== "failed" && run.status !== "running")
+      throw new Error("This run cannot be retried");
+    const report = run.scheduledReportId
+      ? await ctx.db.get(run.scheduledReportId)
+      : null;
+    if (!report || report.organizationId !== run.organizationId)
+      throw new Error("Report configuration not found");
+    if (
+      report.reportType !== "operational_kpis" ||
+      report.reportType !== run.reportType
+    )
+      throw new Error("Report generator unavailable");
+    validateKpiConfig(report.reportConfig);
+    await ctx.db.patch(run._id, {
+      status: "running",
+      completedAt: undefined,
+      errorMessage: undefined,
+      lastAttemptAt: Date.now(),
+      attemptCount: (run.attemptCount ?? 1) + 1,
+    });
+    await ctx.scheduler.runAfter(0, internal.reporting.generateReport, {
+      runId: run._id,
+      reportId: report._id,
+    });
+    return null;
+  },
+});
+
 /**
  * List report run history
  */
@@ -470,6 +611,9 @@ export const listReportRuns = query({
   returns: v.array(
     v.object({
       _id: v.id("reportRuns"),
+      scheduledReportId: v.optional(v.id("scheduledReports")),
+      outputState: outputStateValidator,
+      deliveryState: deliveryStateValidator,
       reportType: v.string(),
       reportName: v.string(),
       startedAt: v.number(),
@@ -495,19 +639,31 @@ export const listReportRuns = query({
       ),
     ]);
 
+    if (
+      args.limit !== undefined &&
+      (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)
+    )
+      throw new Error("Run limit must be between 1 and 100");
+    if (args.scheduledReportId) {
+      const report = await ctx.db.get(args.scheduledReportId);
+      if (!report || report.organizationId !== args.organizationId)
+        throw new Error("Report not found");
+    }
     const runs = args.scheduledReportId
       ? await ctx.db
           .query("reportRuns")
           .withIndex("by_scheduled_report", (q) =>
             q.eq("scheduledReportId", args.scheduledReportId),
           )
-          .collect()
+          .order("desc")
+          .take(args.limit ?? 50)
       : await ctx.db
           .query("reportRuns")
           .withIndex("by_organization", (q) =>
             q.eq("organizationId", args.organizationId),
           )
-          .collect();
+          .order("desc")
+          .take(args.limit ?? 50);
 
     // Sort by start time descending
     runs.sort((a, b) => b.startedAt - a.startedAt);
@@ -528,6 +684,8 @@ export const listReportRuns = query({
 
         return {
           _id: run._id,
+          ...runResultState(run),
+          scheduledReportId: run.scheduledReportId,
           reportType: run.reportType,
           reportName: run.reportName,
           startedAt: run.startedAt,
@@ -544,6 +702,31 @@ export const listReportRuns = query({
   },
 });
 
+export const getReportRun = query({
+  args: { runId: v.id("reportRuns") },
+  returns: v.union(
+    v.object({
+      ...schema.tables.reportRuns.validator.fields,
+      _id: v.id("reportRuns"),
+      _creationTime: v.number(),
+      outputState: outputStateValidator,
+      deliveryState: deliveryStateValidator,
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) return null;
+    await requireFeatureAccess(ctx, run.organizationId, "reporting");
+    await requirePermission(
+      ctx,
+      run.organizationId,
+      "organization.view_analytics",
+    );
+    return { ...run, ...runResultState(run) };
+  },
+});
+
 /**
  * Internal: Process scheduled reports that are due to run
  */
@@ -556,31 +739,59 @@ export const processDueReports = internalMutation({
     const dueReports = await ctx.db
       .query("scheduledReports")
       .withIndex("by_next_run", (q) =>
-        q.eq("isActive", true).lte("nextRunAt", now),
+        q.eq("isActive", true).gt("nextRunAt", 0).lte("nextRunAt", now),
       )
       .take(25);
 
     for (const report of dueReports) {
+      if (report.nextRunAt === undefined || report.schedule === "on_demand")
+        continue;
+      let nextRunAt: number | undefined;
+      try {
+        nextRunAt = calculateNextRun(
+          report.schedule,
+          report.scheduledDay,
+          report.scheduledTime,
+          report.timezone,
+        );
+      } catch (error) {
+        await ctx.db.patch(report._id, {
+          isActive: false,
+          lastRunStatus: "failed",
+          lastRunError:
+            error instanceof Error ? error.message : "Invalid schedule",
+          nextRunAt: undefined,
+        });
+        continue;
+      }
+      const scheduleRevision = report.scheduleRevision ?? 0;
+      const existing = await ctx.db
+        .query("reportRuns")
+        .withIndex(
+          "by_scheduledReportId_and_scheduleRevision_and_scheduledFor",
+          (q) =>
+            q
+              .eq("scheduledReportId", report._id)
+              .eq("scheduleRevision", scheduleRevision)
+              .eq("scheduledFor", report.nextRunAt),
+        )
+        .first();
+      await ctx.db.patch(report._id, { nextRunAt });
+      if (existing) continue;
       const runId = await ctx.db.insert("reportRuns", {
         organizationId: report.organizationId,
         scheduledReportId: report._id,
         reportType: report.reportType,
         reportName: report.name,
+        scheduledFor: report.nextRunAt,
+        scheduleRevision,
         startedAt: now,
+        lastAttemptAt: now,
+        attemptCount: 1,
         status: "running",
         triggeredBy: "schedule",
       });
-
-      await ctx.db.patch(report._id, {
-        nextRunAt: calculateNextRun(
-          report.schedule,
-          report.scheduledDay,
-          report.scheduledTime,
-          report.timezone,
-        ),
-      });
-
-      await ctx.runMutation(internal.reporting.generateReport, {
+      await ctx.scheduler.runAfter(0, internal.reporting.generateReport, {
         runId,
         reportId: report._id,
       });
@@ -600,6 +811,13 @@ export const generateReport = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (
+      !run ||
+      run.status !== "running" ||
+      run.scheduledReportId !== args.reportId
+    )
+      return null;
     const report = await ctx.db.get(args.reportId);
     if (!report) {
       await ctx.db.patch(args.runId, {
@@ -610,9 +828,21 @@ export const generateReport = internalMutation({
       return null;
     }
 
-    const run = await ctx.db.get(args.runId);
-
+    if (
+      report.organizationId !== run.organizationId ||
+      report.reportType !== run.reportType
+    ) {
+      await ctx.db.patch(run._id, {
+        status: "failed",
+        errorMessage: "Report identity mismatch",
+        completedAt: Date.now(),
+      });
+      return null;
+    }
     try {
+      await requireFeatureAccess(ctx, report.organizationId, "reporting");
+      validateKpiConfig(report.reportConfig);
+      const generatedAt = Date.now();
       let reportData: Record<string, unknown>;
 
       if (report.reportType === "operational_kpis") {
@@ -632,12 +862,7 @@ export const generateReport = internalMutation({
           kpiGeneratedAt: kpis.generatedAt,
         };
       } else {
-        reportData = {
-          generatedAt: Date.now(),
-          reportType: report.reportType,
-          organizationId: report.organizationId,
-          generatorVersion: "stub",
-        };
+        throw new Error("Report generator unavailable");
       }
 
       // Update run record with success
@@ -645,26 +870,20 @@ export const generateReport = internalMutation({
         status: "success",
         completedAt: Date.now(),
         reportData,
+        artifact: {
+          schemaVersion: 1,
+          format: "json",
+          content: JSON.stringify(reportData, null, 2),
+          generatedAt,
+          storedAt: Date.now(),
+        },
       });
 
-      const scheduledReportUpdates: Record<string, unknown> = {
+      await ctx.db.patch(args.reportId, {
         lastRunAt: Date.now(),
         lastRunStatus: "success",
-      };
-
-      if (run?.triggeredBy !== "schedule") {
-        scheduledReportUpdates.nextRunAt = calculateNextRun(
-          report.schedule,
-          report.scheduledDay,
-          report.scheduledTime,
-          report.timezone,
-        );
-      }
-
-      await ctx.db.patch(args.reportId, scheduledReportUpdates);
-
-      // TODO: Send email if configured
-      // This would integrate with Resend or similar email service
+        lastRunError: undefined,
+      });
 
       return null;
     } catch (error) {
@@ -1478,51 +1697,17 @@ export const getCollectionHealthDashboard = query({
 // ============================================
 
 function calculateNextRun(
-  schedule: string,
+  schedule: Infer<typeof scheduleValidator>,
   scheduledDay?: number,
   scheduledTime?: string,
   _timezone?: string,
 ): number | undefined {
-  if (schedule === "on_demand") {
-    return undefined;
-  }
-
-  const now = new Date();
-  const [hours, minutes] = (scheduledTime || "09:00").split(":").map(Number);
-
-  const nextRun = new Date(now);
-  nextRun.setHours(hours ?? 9, minutes ?? 0, 0, 0);
-
-  if (schedule === "daily") {
-    if (nextRun <= now) {
-      nextRun.setDate(nextRun.getDate() + 1);
-    }
-  } else if (schedule === "weekly") {
-    const targetDay = scheduledDay ?? 1; // Default to Monday
-    const currentDay = nextRun.getDay();
-    let daysUntilTarget = targetDay - currentDay;
-    if (daysUntilTarget < 0 || (daysUntilTarget === 0 && nextRun <= now)) {
-      daysUntilTarget += 7;
-    }
-    nextRun.setDate(nextRun.getDate() + daysUntilTarget);
-  } else if (schedule === "monthly") {
-    const targetDate = scheduledDay ?? 1; // Default to 1st
-    nextRun.setDate(targetDate);
-    if (nextRun <= now) {
-      nextRun.setMonth(nextRun.getMonth() + 1);
-    }
-  } else if (schedule === "quarterly") {
-    const targetDate = scheduledDay ?? 1;
-    const currentMonth = nextRun.getMonth();
-    const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
-    nextRun.setMonth(quarterStartMonth);
-    nextRun.setDate(targetDate);
-    if (nextRun <= now) {
-      nextRun.setMonth(nextRun.getMonth() + 3);
-    }
-  }
-
-  return nextRun.getTime();
+  return nextReportRun({
+    schedule,
+    scheduledDay,
+    scheduledTime,
+    timezone: _timezone,
+  });
 }
 
 function generateDateBuckets(

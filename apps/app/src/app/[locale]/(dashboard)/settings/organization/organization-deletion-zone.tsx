@@ -83,6 +83,11 @@ export function OrganizationDeletionZone({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
 
+  const retentionPolicy = useQuery(api.organizationCleanup.getRetentionPolicy, {
+    organizationId,
+  });
+  const canDeleteOrganization = retentionPolicy?.canDeleteOrganization === true;
+
   const deletionStatus = useQuery(api.organizationDeletion.getDeletionStatus, {
     organizationId,
   });
@@ -98,7 +103,7 @@ export function OrganizationDeletionZone({
   );
 
   const statusMessage = useMemo(() => {
-    if (!deletionStatus) {
+    if (!deletionStatus || !canDeleteOrganization) {
       return null;
     }
     return getStatusMessage(
@@ -111,7 +116,7 @@ export function OrganizationDeletionZone({
       deletionStatus,
       locale,
     );
-  }, [deletionStatus, locale, t]);
+  }, [deletionStatus, locale, t, canDeleteOrganization]);
 
   if (isSubOrganization) {
     return (
@@ -128,8 +133,8 @@ export function OrganizationDeletionZone({
     setIsSubmitting(true);
     try {
       await requestDeletion({ organizationId });
-    } catch {
-      setError(t("requestError"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("requestError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -140,8 +145,8 @@ export function OrganizationDeletionZone({
     setIsSubmitting(true);
     try {
       await cancelDeletion({ organizationId });
-    } catch {
-      setError(t("cancelError"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("cancelError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -159,8 +164,8 @@ export function OrganizationDeletionZone({
         newOwnerUserId: selectedOwnerId as Id<"users">,
       });
       setSelectedOwnerId("");
-    } catch {
-      setError(t("transferError"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("transferError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -178,6 +183,13 @@ export function OrganizationDeletionZone({
         </div>
       ) : null}
 
+      {!canDeleteOrganization && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Permanent institutional evidence is retained. Withdraw objects from
+          the catalog to archive them. Existing deletion requests are suspended;
+          cancel the request to restore organization access.
+        </p>
+      )}
       {deletionStatus ? (
         <div className="mb-4 space-y-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
           <div className="flex items-start gap-3">
@@ -258,7 +270,7 @@ export function OrganizationDeletionZone({
             </Button>
           </div>
         </div>
-      ) : (
+      ) : canDeleteOrganization ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
@@ -298,7 +310,7 @@ export function OrganizationDeletionZone({
             </AlertDialog>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { FileSpreadsheet, Upload } from "lucide-react";
 import type { RefObject } from "react";
+import { ImportFileError } from "@/components/import/import-file-error";
 
 import { useI18n } from "@/locales/client";
 
@@ -9,12 +10,14 @@ interface ImportObjectsUploadStepProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   fileInputRef: RefObject<HTMLInputElement | null>;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  errors: string[];
 }
 
 export function ImportObjectsUploadStep({
   t,
   fileInputRef,
   onFileSelect,
+  errors,
 }: ImportObjectsUploadStepProps) {
   const tRoot = useI18n();
   return (
@@ -26,6 +29,8 @@ export function ImportObjectsUploadStep({
           {t("csvImport.description")}
         </p>
       </div>
+
+      <ImportFileError errors={errors} />
 
       <input
         ref={fileInputRef}

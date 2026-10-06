@@ -7,7 +7,10 @@ import { useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { ImportAccessionsStepPanels } from "./import-accessions-step-panels";
-import type { ImportState } from "./import-accessions-types";
+import {
+  EMPTY_IMPORT_STATE,
+  type ImportState,
+} from "./import-accessions-types";
 import { useImportAccessions } from "./use-import-accessions";
 
 export function ImportAccessionsPageClient() {
@@ -15,19 +18,10 @@ export function ImportAccessionsPageClient() {
   const t = useScopedI18n("accessions");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [state, setState] = useState<ImportState>({
-    step: "upload",
-    file: null,
-    rawData: [],
-    sourceFields: [],
-    fieldMappings: [],
-    rows: [],
-    validationErrors: [],
-    errors: [],
-    jobId: null,
-  });
+  const [state, setState] = useState<ImportState>(EMPTY_IMPORT_STATE);
 
   const {
+    run,
     handleFileSelect,
     handleSaveMappings,
     handleContinueAfterValidation,
@@ -74,6 +68,7 @@ export function ImportAccessionsPageClient() {
             <ImportAccessionsStepPanels
               state={state}
               t={t}
+              run={run}
               fileInputRef={fileInputRef}
               handleFileSelect={handleFileSelect}
               handleSaveMappings={handleSaveMappings}

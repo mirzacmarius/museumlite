@@ -1,21 +1,29 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { RefObject } from "react";
+import { ResumableImportJobNotice } from "@/components/import/resumable-import-notice";
+import { formatDateTimeUtc } from "@/lib/format-date";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import type { MediaImportState } from "./media-import-types";
-import { MediaImportCompleteStep } from "./steps/media-import-complete-step";
-import { MediaImportImportingStep } from "./steps/media-import-importing-step";
+import {
+  MediaImportOutcomeStep,
+  MediaImportProgressStep,
+} from "./steps/media-import-run-steps";
 import { MediaImportSelectMappingStep } from "./steps/media-import-select-mapping-step";
 import { MediaImportUploadStep } from "./steps/media-import-upload-step";
 
-interface MediaImportJob {
-  processedItems?: number;
-  successfulMappings?: number;
-  failedMappings?: number;
-}
+type MediaImportJobView = Parameters<
+  typeof MediaImportOutcomeStep
+>[0]["importJob"];
 
 export interface MediaImportStepPanelsProps {
   state: MediaImportState;
-  importJob: MediaImportJob | null | undefined;
+  importJob: MediaImportJobView;
+  unmappedFiles: number;
+  resumableJob:
+    | (NonNullable<MediaImportJobView> & { createdAt: number })
+    | null;
   t: (key: string) => string;
   common: (key: string) => string;
   mediaInputRef: RefObject<HTMLInputElement | null>;
@@ -24,7 +32,9 @@ export interface MediaImportStepPanelsProps {
   handleMediaSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleCsvSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   removeMediaFile: (index: number) => void;
-  startImport: () => void;
+  startImport: (resumeJobId?: Id<"importJobs">) => Promise<void>;
+  continueImport: () => Promise<void>;
+  cancel: () => Promise<void>;
   reset: () => void;
   clearCsvFile: () => void;
   clearMediaFiles: () => void;
@@ -34,6 +44,8 @@ export interface MediaImportStepPanelsProps {
 export function MediaImportStepPanels({
   state,
   importJob,
+  unmappedFiles,
+  resumableJob,
   t,
   common,
   mediaInputRef,
@@ -43,11 +55,16 @@ export function MediaImportStepPanels({
   handleCsvSelect,
   removeMediaFile,
   startImport,
+  continueImport,
+  cancel,
   reset,
   clearCsvFile,
   clearMediaFiles,
   goToReviewUnmapped,
 }: MediaImportStepPanelsProps) {
+  const collections = useScopedI18n("collections");
+  const locale = useCurrentLocale();
+
   if (state.step === "select-mapping") {
     return (
       <MediaImportSelectMappingStep
@@ -68,26 +85,48 @@ export function MediaImportStepPanels({
         onCsvSelect={handleCsvSelect}
         onMediaSelect={handleMediaSelect}
         onRemoveMediaFile={removeMediaFile}
-        onStartImport={startImport}
+        onStartImport={() => void startImport()}
         onReset={reset}
         onClearCsvFile={clearCsvFile}
         onClearMediaFiles={clearMediaFiles}
+        notice={
+          resumableJob ? (
+            <ResumableImportJobNotice
+              message={collections("mediaImport.resumeNotice", {
+                date: formatDateTimeUtc(resumableJob.createdAt, locale),
+                attempted: resumableJob.attemptedItems,
+                total: resumableJob.totalItems,
+                accepted: resumableJob.acceptedItems,
+                failed: resumableJob.failedItems,
+              })}
+              onResume={() => void startImport(resumableJob._id)}
+            />
+          ) : null
+        }
       />
     );
   }
 
   if (state.step === "importing") {
-    return <MediaImportImportingStep state={state} t={t} />;
+    return (
+      <MediaImportProgressStep
+        importJob={importJob}
+        fileCount={state.mediaFiles.length}
+        onCancel={cancel}
+      />
+    );
   }
 
   if (state.step === "complete") {
     return (
-      <MediaImportCompleteStep
-        state={state}
+      <MediaImportOutcomeStep
         importJob={importJob}
-        t={t}
+        unmappedFiles={unmappedFiles}
+        fileCount={state.mediaFiles.length}
+        errors={state.uploadErrors}
         onReset={reset}
-        onGoToReviewUnmapped={goToReviewUnmapped}
+        onContinue={continueImport}
+        onReviewUnmapped={goToReviewUnmapped}
       />
     );
   }

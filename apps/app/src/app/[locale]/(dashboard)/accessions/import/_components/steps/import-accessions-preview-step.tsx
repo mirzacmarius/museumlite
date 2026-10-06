@@ -1,5 +1,6 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import {
   Table,
@@ -10,25 +11,33 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
+import { ResumableImportNotice } from "@/components/import/resumable-import-notice";
+import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatAccessionMethodLabel } from "../../../[id]/_components/accession-detail-ui";
 import type { ImportState } from "../import-accessions-types";
 
 interface ImportAccessionsPreviewStepProps {
   state: ImportState;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Errors from a start attempt that never reached the server. */
+  runErrors: string[];
   onBackToValidation: () => void;
-  onStartImport: () => void;
+  onStartImport: (resumeJobId?: Id<"importJobs">) => void;
 }
 
 export function ImportAccessionsPreviewStep({
   state,
   t,
+  runErrors,
   onBackToValidation,
   onStartImport,
 }: ImportAccessionsPreviewStepProps) {
+  const { currentOrganizationId } = useOrganization();
   const tRoot = useI18n();
+  const tracked = useScopedI18n("trackedImport");
+  const errors = [...state.errors, ...runErrors];
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -44,11 +53,11 @@ export function ImportAccessionsPreviewStep({
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBackToValidation}>
             <ArrowLeft className="mr-2 size-4" />
-            {tRoot("untranslatedRecords.collections.import.backToValidation")}
+            {t("import.backToValidation")}
           </Button>
           <PermissionGate permission="collections.create">
             <Button
-              onClick={onStartImport}
+              onClick={() => onStartImport()}
               disabled={state.rows.length === 0}
               className="bg-primary hover:bg-primary/90"
             >
@@ -59,37 +68,43 @@ export function ImportAccessionsPreviewStep({
         </div>
       </div>
 
+      <PermissionGate permission="collections.create">
+        <ResumableImportNotice
+          organizationId={currentOrganizationId}
+          entityType="accessions"
+          fingerprint={state.fingerprint}
+          rowCount={state.rows.length}
+          onResume={(jobId) => onStartImport(jobId)}
+        />
+      </PermissionGate>
+
       {state.validationErrors.length > 0 ? (
         <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
           <div className="flex items-center gap-2 text-amber-600">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {state.validationErrors.length}{" "}
-              {tRoot("untranslatedRecords.collections.import.rowsSkipped")}
+              {tracked("rowsWillFail", {
+                count: state.validationErrors.length,
+              })}
             </span>
           </div>
         </div>
       ) : null}
 
-      {state.errors.length > 0 ? (
+      {errors.length > 0 ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="size-4" />
             <span className="font-medium">
-              {t("import.validationErrors", { count: state.errors.length })}
+              {tracked("issues", { count: errors.length })}
             </span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-destructive">
-            {state.errors.slice(0, 5).map((error) => (
+            {errors.slice(0, 5).map((error) => (
               <li key={error}>• {error}</li>
             ))}
-            {state.errors.length > 5 ? (
-              <li>
-                •{" "}
-                {tRoot("untranslatedRecords.collections.import.andMoreErrors", {
-                  count: state.errors.length - 5,
-                })}
-              </li>
+            {errors.length > 5 ? (
+              <li>• ... and {errors.length - 5} more</li>
             ) : null}
           </ul>
         </div>
@@ -111,12 +126,10 @@ export function ImportAccessionsPreviewStep({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {state.rows.slice(0, 20).map((row, rowIndex) => (
-              <TableRow
-                key={`${row.accessionNumber ?? rowIndex}-${row.dateReceived}-${row.source}`}
-              >
+            {state.rows.slice(0, 20).map((row) => (
+              <TableRow key={row.rowNumber}>
                 <TableCell className="text-muted-foreground">
-                  {rowIndex + 1}
+                  {row.rowNumber}
                 </TableCell>
                 <TableCell>
                   {row.accessionNumber || t("import.autoAccession")}

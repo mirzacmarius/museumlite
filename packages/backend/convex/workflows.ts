@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -6,8 +7,8 @@ import {
   internalMutation,
   internalQuery,
   mutation,
-  query,
   type QueryCtx,
+  query,
 } from "./_generated/server";
 import { requirePermission } from "./utils/permissions";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
@@ -470,11 +471,7 @@ export const getWorkflowHistoryForEntity = query({
 
     if (entityOrg.kind === "found") {
       try {
-        await requirePermission(
-          ctx,
-          entityOrg.organizationId,
-          permissionName,
-        );
+        await requirePermission(ctx, entityOrg.organizationId, permissionName);
       } catch (error) {
         if (
           error instanceof Error &&
@@ -685,13 +682,14 @@ export const recordStepApproval = internalMutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("workflowStepApprovals")
-      .withIndex("by_entity_and_step", (q) =>
+      .withIndex("by_entity_and_step_and_clearedAt_and_approvedBy", (q) =>
         q
           .eq("workflowType", args.workflowType)
           .eq("entityId", args.entityId)
-          .eq("stepNumber", args.stepNumber),
+          .eq("stepNumber", args.stepNumber)
+          .eq("clearedAt", undefined)
+          .eq("approvedBy", args.approvedBy),
       )
-      .filter((q) => q.eq(q.field("approvedBy"), args.approvedBy))
       .first();
 
     if (existing) {
@@ -720,11 +718,12 @@ export const getStepApprovalCount = internalQuery({
   handler: async (ctx, args) => {
     const approvals = await ctx.db
       .query("workflowStepApprovals")
-      .withIndex("by_entity_and_step", (q) =>
+      .withIndex("by_entity_and_step_and_clearedAt_and_approvedBy", (q) =>
         q
           .eq("workflowType", args.workflowType)
           .eq("entityId", args.entityId)
-          .eq("stepNumber", args.stepNumber),
+          .eq("stepNumber", args.stepNumber)
+          .eq("clearedAt", undefined),
       )
       .collect();
 
@@ -743,13 +742,14 @@ export const hasUserApprovedStep = internalQuery({
   handler: async (ctx, args) => {
     const approval = await ctx.db
       .query("workflowStepApprovals")
-      .withIndex("by_entity_and_step", (q) =>
+      .withIndex("by_entity_and_step_and_clearedAt_and_approvedBy", (q) =>
         q
           .eq("workflowType", args.workflowType)
           .eq("entityId", args.entityId)
-          .eq("stepNumber", args.stepNumber),
+          .eq("stepNumber", args.stepNumber)
+          .eq("clearedAt", undefined)
+          .eq("approvedBy", args.userId),
       )
-      .filter((q) => q.eq(q.field("approvedBy"), args.userId))
       .first();
 
     return approval !== null;
@@ -766,15 +766,20 @@ export const clearStepApprovals = internalMutation({
   handler: async (ctx, args) => {
     const approvals = await ctx.db
       .query("workflowStepApprovals")
-      .withIndex("by_entity_and_step", (q) =>
+      .withIndex("by_entity_and_step_and_clearedAt_and_approvedBy", (q) =>
         q
           .eq("workflowType", args.workflowType)
           .eq("entityId", args.entityId)
-          .eq("stepNumber", args.stepNumber),
+          .eq("stepNumber", args.stepNumber)
+          .eq("clearedAt", undefined),
       )
       .collect();
 
-    await Promise.all(approvals.map((approval) => ctx.db.delete(approval._id)));
+    await Promise.all(
+      approvals.map((approval) =>
+        ctx.db.patch(approval._id, { clearedAt: Date.now() }),
+      ),
+    );
 
     return null;
   },
@@ -1499,6 +1504,67 @@ export const checkStepApprovalStatus = internalQuery({
         userId: a.approvedBy,
         approvedAt: a.approvedAt,
       })),
+    };
+  },
+});
+
+export const listRetainedApprovals = query({
+  args: {
+    organizationId: v.id("organizations"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: v.object({
+    page: v.array(
+      v.object({
+        approvalId: v.id("workflowStepApprovals"),
+        workflowType: workflowTypeValidator,
+        entityId: v.string(),
+        stepNumber: v.number(),
+        approvedBy: v.id("users"),
+        approvedByName: v.union(v.string(), v.null()),
+        approvedAt: v.number(),
+        comment: v.union(v.string(), v.null()),
+        clearedAt: v.union(v.number(), v.null()),
+      }),
+    ),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+    const result = await ctx.db
+      .query("workflowStepApprovals")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .order("desc")
+      .paginate({
+        ...args.paginationOpts,
+        numItems: Math.min(args.paginationOpts.numItems, 100),
+      });
+    return {
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+      page: await Promise.all(
+        result.page.map(async (approval) => {
+          const actor = await ctx.db.get(approval.approvedBy);
+          return {
+            approvalId: approval._id,
+            workflowType: approval.workflowType,
+            entityId: approval.entityId,
+            stepNumber: approval.stepNumber,
+            approvedBy: approval.approvedBy,
+            approvedByName: actor?.name ?? actor?.username ?? null,
+            approvedAt: approval.approvedAt,
+            comment: approval.comment ?? null,
+            clearedAt: approval.clearedAt ?? null,
+          };
+        }),
+      ),
     };
   },
 });

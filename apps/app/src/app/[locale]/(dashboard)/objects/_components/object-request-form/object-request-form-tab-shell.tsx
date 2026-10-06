@@ -1,5 +1,6 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import type { RefObject } from "react";
 import { CollectionEditAccessionTab } from "../collection-edit-form/tabs/accession-tab";
@@ -36,7 +37,8 @@ interface ObjectRequestFormTabShellProps {
   formData: CollectionFormData;
   updateField: UpdateCollectionFormField;
   placeholders: (key: string) => string;
-  currentOrganizationId: string;
+  currentOrganizationId: Id<"organizations">;
+  identifierAccessionId?: Id<"accessions">;
   isLocationTrackingEnabled: boolean;
   enabledModules: ObjectRequestGeneralTabProps["enabledModules"];
   common: (key: string) => string;
@@ -60,6 +62,7 @@ export function ObjectRequestFormTabShell({
   updateField,
   placeholders,
   currentOrganizationId,
+  identifierAccessionId,
   isLocationTrackingEnabled,
   enabledModules,
   common,
@@ -105,12 +108,13 @@ export function ObjectRequestFormTabShell({
       <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div className="rounded-2xl border border-border/60 bg-background/70 px-5 py-6 shadow-sm sm:px-8 sm:py-8">
           {activeTab === "general" ? (
-            mode === "draft-edit" ? (
+            mode === "draft-edit" && !identifierAccessionId ? (
               <CollectionEditGeneralTab {...tabProps} />
             ) : (
               <ObjectRequestGeneralTab
                 {...tabProps}
                 enabledModules={enabledModules}
+                identifierAccessionId={identifierAccessionId}
               />
             )
           ) : null}

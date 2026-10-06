@@ -11,6 +11,10 @@ interface SubmitDeaccessionParams {
   reason: string;
   organizationId: Id<"organizations">;
   collectionId: Id<"collections">;
+  archiveCollection: (args: {
+    collectionId: Id<"collections">;
+    reason: string;
+  }) => Promise<null>;
   date: Date;
   method: "sale" | "donation" | "transfer" | "destruction";
   disposition: string;
@@ -45,6 +49,7 @@ export async function submitDeaccession({
   reason,
   organizationId,
   collectionId,
+  archiveCollection,
   date,
   method,
   disposition,
@@ -58,6 +63,7 @@ export async function submitDeaccession({
   createMoveRequest,
 }: SubmitDeaccessionParams): Promise<
   | { kind: "deaccession"; id: Id<"deaccessions"> }
+  | { kind: "archive" }
   | { kind: "move"; id: Id<"organizationMoveRequests"> }
 > {
   if (!reason.trim()) {
@@ -123,20 +129,14 @@ export async function submitDeaccession({
   }
 
   if (removalType === "archived") {
-    const deaccessionId = await createDeaccession({
-      ...basePayload,
-      method: "destruction",
-      targetCollectionStatus: "archived",
+    await archiveCollection({
+      collectionId,
+      reason: reason.trim(),
     });
-    return { kind: "deaccession", id: deaccessionId };
+    return { kind: "archive" };
   }
 
-  const deaccessionId = await createDeaccession({
-    ...basePayload,
-    method: "destruction",
-    targetCollectionStatus: "deleted",
-  });
-  return { kind: "deaccession", id: deaccessionId };
+  throw new Error("Unsupported object removal action");
 }
 
 export function getDeaccessionDialogCopy(
@@ -153,8 +153,6 @@ export function getDeaccessionDialogCopy(
       );
     if (removalType === "archived")
       return translate("untranslatedComponents.deaccession.archive");
-    if (removalType === "deleted")
-      return translate("untranslatedComponents.deaccession.delete");
     return translate("untranslatedComponents.deaccession.removeOrTransfer");
   })();
 
@@ -172,11 +170,6 @@ export function getDeaccessionDialogCopy(
     }
     if (removalType === "archived") {
       return translate("untranslatedComponents.deaccession.submitArchiveFor", {
-        title: collectionTitle,
-      });
-    }
-    if (removalType === "deleted") {
-      return translate("untranslatedComponents.deaccession.submitDeleteFor", {
         title: collectionTitle,
       });
     }

@@ -1,0 +1,9 @@
+{
+  "number": 45,
+  "batch": 6,
+  "id": "MUS-655",
+  "url": "https://linear.app/museumlite/issue/MUS-655/recover-accounts-without-existence-disclosure",
+  "title": "Recover accounts without existence disclosure",
+  "blockedBy": [],
+  "implementationApproved": false
+}

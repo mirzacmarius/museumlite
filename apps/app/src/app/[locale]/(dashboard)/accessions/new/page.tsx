@@ -30,6 +30,7 @@ import {
   DropzoneUploader,
   type UploadFile,
 } from "@/components/dropzone-uploader";
+import { IdentifierAvailabilityHint } from "@/components/identifier-availability-hint";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useI18n, useScopedI18n } from "@/locales/client";
@@ -45,6 +46,7 @@ type AccessionMethod =
 
 interface NewAccessionFormData {
   accessionNumber: string;
+  catalogIdentifier: string;
   dateReceived: Date;
   source: string;
   donorAccountId: string | undefined;
@@ -88,6 +90,7 @@ const initialNewAccessionPageState: NewAccessionPageState = {
   uploadedDocuments: [],
   formData: {
     accessionNumber: "",
+    catalogIdentifier: "",
     dateReceived: new Date(),
     source: "",
     donorAccountId: undefined,
@@ -178,6 +181,7 @@ function AccessionIdentityFields({
   };
   setFormData: SetFormData;
 }) {
+  const { currentOrganizationId } = useOrganization();
   return (
     <>
       <div className="space-y-2">
@@ -196,6 +200,37 @@ function AccessionIdentityFields({
         <p className="text-xs text-muted-foreground">
           {labels.accessionNumberHint}
         </p>
+        <IdentifierAvailabilityHint
+          organizationId={currentOrganizationId}
+          register="accession"
+          identifier={formData.accessionNumber}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="catalogIdentifier">
+          Catalog number on publication (optional)
+        </Label>
+        <Input
+          id="catalogIdentifier"
+          value={formData.catalogIdentifier}
+          onChange={(event) =>
+            setFormData((previous) => ({
+              ...previous,
+              catalogIdentifier: event.target.value,
+            }))
+          }
+        />
+        <p className="text-xs text-muted-foreground">
+          Defaults to the accession number. Select an unused catalog number if
+          the catalog already uses the accession number; each register preserves
+          its own permanent number.
+        </p>
+        <IdentifierAvailabilityHint
+          organizationId={currentOrganizationId}
+          register="catalog"
+          identifier={formData.catalogIdentifier || formData.accessionNumber}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -444,7 +479,7 @@ export default function NewAccessionPage() {
   const { push, back } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createAccession = useMutation(api.accessions.create);
-  const generateUploadUrl = useMutation(api.users.generateUploadUrl);
+  const generateUploadUrl = useMutation(api.accessions.generateDraftUploadUrl);
   const [state, dispatch] = useReducer(
     newAccessionPageReducer,
     initialNewAccessionPageState,
@@ -482,8 +517,11 @@ export default function NewAccessionPage() {
                 ),
             });
 
-            const uploadUrl = await generateUploadUrl({
+            const { uploadUrl } = await generateUploadUrl({
+              fileName: upload.file.name,
+              fileSize: upload.file.size,
               mimeType: upload.file.type || "application/octet-stream",
+              organizationId: currentOrganizationId as Id<"organizations">,
             });
 
             const response = await fetch(uploadUrl, {
@@ -543,7 +581,7 @@ export default function NewAccessionPage() {
         });
       }, 2000);
     },
-    [generateUploadUrl, t],
+    [generateUploadUrl, currentOrganizationId, t],
   );
 
   const handleRemoveDocument = useCallback((storageId: Id<"_storage">) => {
@@ -573,6 +611,7 @@ export default function NewAccessionPage() {
       await createAccession({
         organizationId: currentOrganizationId as Id<"organizations">,
         accessionNumber: state.formData.accessionNumber || undefined,
+        catalogIdentifier: state.formData.catalogIdentifier || undefined,
         dateReceived: state.formData.dateReceived.getTime(),
         source: state.formData.source || "See linked account",
         donorAccountId: state.formData.donorAccountId

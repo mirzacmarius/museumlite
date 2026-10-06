@@ -12,17 +12,12 @@ import {
   TableRow,
 } from "@v1/ui/table";
 import { useMutation, useQuery } from "convex/react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  FileImage,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, FileImage, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
-import { useI18n, useScopedI18n } from "@/locales/client";
+import { useScopedI18n } from "@/locales/client";
 
 interface MediaImportUnmappedReviewProps {
   jobId: Id<"importJobs">;
@@ -33,11 +28,10 @@ export function MediaImportUnmappedReview({
   jobId,
   onComplete,
 }: MediaImportUnmappedReviewProps) {
-  const tRoot = useI18n();
   const t = useScopedI18n("collections");
   const unmappedFiles = useQuery(api.mediaImports.getUnmappedFiles, { jobId });
   const mapFile = useMutation(api.mediaImports.mapFileToCollection);
-  const deleteFile = useMutation(api.mediaImports.deleteUnmappedFile);
+
   const { currentOrganizationId } = useOrganization();
 
   const [handledFiles, setHandledFiles] = useState<Set<string>>(new Set());
@@ -77,22 +71,9 @@ export function MediaImportUnmappedReview({
       });
       setHandledFiles((prev) => new Set(prev).add(storageId));
     } catch (err) {
-      console.error("Failed to map file", err);
-      alert(tRoot("untranslatedRecords.collections.media.failedMapFile"));
-    }
-  };
-
-  const handleDelete = async (storageId: Id<"_storage">) => {
-    if (
-      !confirm(tRoot("untranslatedRecords.collections.media.confirmDeleteFile"))
-    )
-      return;
-    try {
-      await deleteFile({ jobId, storageId });
-      setHandledFiles((prev) => new Set(prev).add(storageId));
-    } catch (err) {
-      console.error("Failed to delete file", err);
-      alert(tRoot("untranslatedRecords.collections.media.failedDeleteFile"));
+      toast.error(
+        err instanceof Error ? err.message : t("mediaImport.errorMapFailed"),
+      );
     }
   };
 
@@ -104,12 +85,13 @@ export function MediaImportUnmappedReview({
             {t("mediaImport.reviewTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {remainingFiles.length}{" "}
-            {tRoot("untranslatedRecords.collections.media.filesNeedAttention")}
+            {t("mediaImport.filesNeedAttention", {
+              count: remainingFiles.length,
+            })}
           </p>
         </div>
         <Button variant="outline" onClick={onComplete}>
-          {tRoot("collections.mediaImport.finishReview")}
+          {t("mediaImport.finishReview")}
         </Button>
       </div>
 
@@ -117,17 +99,10 @@ export function MediaImportUnmappedReview({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>
-                {tRoot("collections.mediaImport.tableHeaders.fileName")}
-              </TableHead>
-              <TableHead>
-                {tRoot("collections.mediaImport.tableHeaders.size")}
-              </TableHead>
+              <TableHead>{t("mediaImport.tableHeaders.fileName")}</TableHead>
+              <TableHead>{t("mediaImport.tableHeaders.size")}</TableHead>
               <TableHead className="w-[400px]">
-                {tRoot("collections.mediaImport.tableHeaders.mapToObject")}
-              </TableHead>
-              <TableHead className="w-[100px]">
-                {tRoot("collections.mediaImport.tableHeaders.actions")}
+                {t("mediaImport.tableHeaders.mapToObject")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -157,16 +132,6 @@ export function MediaImportUnmappedReview({
                       val && handleMap(file.storageId, val)
                     }
                   />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDelete(file.storageId)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
                 </TableCell>
               </TableRow>
             ))}

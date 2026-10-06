@@ -486,7 +486,7 @@ describe("Accounts CRUD", () => {
 
     await expect(
       authed.mutation(api.accounts.remove, { accountId }),
-    ).rejects.toThrow("Cannot delete account that is used in existing loans");
+    ).rejects.toThrow("Permanent evidence");
   });
 
   test("should create patron account with required fields", async () => {

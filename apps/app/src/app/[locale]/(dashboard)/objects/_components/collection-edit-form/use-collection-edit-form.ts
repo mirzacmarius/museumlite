@@ -310,7 +310,6 @@ export function useCollectionEditForm() {
     handleFileSelect: mediaState.handleFileSelect,
     handleDocumentSelect: mediaState.handleDocumentSelect,
     handleSetPrimary: mediaState.handleSetPrimary,
-    handleDeleteMedia: mediaState.handleDeleteMedia,
     handleSubmit: submitState.handleSubmit,
     handleNavigate: navigation.handleNavigate,
     handleDiscardAndNavigate: navigation.handleDiscardAndNavigate,

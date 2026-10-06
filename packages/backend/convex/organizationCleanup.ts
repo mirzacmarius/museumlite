@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
 import { ConvexError, type Infer, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
@@ -11,9 +12,14 @@ import {
   query,
 } from "./_generated/server";
 import {
+  isOrganizationEvidenceProtected,
+  rejectPermanentEvidenceDeletion,
+} from "./utils/evidenceRetention";
+import {
   createEmptyUsageCounter,
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
+import { requirePermission } from "./utils/permissions";
 
 const organizationTypeValidator = v.union(
   v.literal("museum"),
@@ -112,6 +118,7 @@ const organizationScopedTables = [
   "webhooks",
   "apiKeys",
   "importJobs",
+  "importRowResults",
   "importValidationReports",
   "importFieldMappings",
   "exportUsage",
@@ -151,6 +158,7 @@ type OrganizationScopedTableName = (typeof organizationScopedTables)[number];
 const storageIdFieldNames = new Set([
   "storageId",
   "thumbnailStorageId",
+  "renditionStorageId",
   "logoId",
   "imageId",
   "proceedsReceiptDocument",
@@ -743,6 +751,56 @@ export const purgeOrganizationsInternal = internalMutation({
             0,
           );
 
+          if (
+            !args.dryRun &&
+            ((await isOrganizationEvidenceProtected(ctx, organizationId)) ||
+              snapshot.tableCounts.some(
+                (entry) =>
+                  entry.count > 0 &&
+                  [
+                    "collections",
+                    "accessions",
+                    "deaccessions",
+                    "mediaFiles",
+                    "mediaVersions",
+                    "locationHistory",
+                    "appraisals",
+                    "conservationTreatments",
+                    "conservationAttachments",
+                    "loans",
+                    "loanItems",
+                    "loanDocuments",
+                    "conditionReports",
+                    "exhibitions",
+                    "exhibitionObjects",
+                    "exhibitionDocuments",
+                    "transitRecords",
+                    "transitItems",
+                    "transitStatusUpdates",
+                    "installationTasks",
+                    "installationTaskComments",
+                    "installationTaskChecklists",
+                    "fineArtDetails",
+                    "vehicleDetails",
+                    "wineDetails",
+                    "naturalHistoryDetails",
+                    "archiveDetails",
+                    "coinsStampsDetails",
+                    "insurancePolicies",
+                    "insuranceCoverages",
+                    "insuranceClaims",
+                    "accountDocuments",
+                    "accountRelationships",
+                    "objectComments",
+                    "workflowHistory",
+                    "workflowStepApprovals",
+                    "organizationMoveRequests",
+                  ].includes(entry.table),
+              ))
+          ) {
+            rejectPermanentEvidenceDeletion();
+          }
+
           if (!args.dryRun) {
             await Promise.all([
               Promise.all(
@@ -752,7 +810,10 @@ export const purgeOrganizationsInternal = internalMutation({
               ),
               deleteDocuments(ctx, snapshot.childDocuments.rolePermissions),
               deleteDocuments(ctx, snapshot.childDocuments.userSites),
-              deleteDocuments(ctx, snapshot.childDocuments.collectionGroupItems),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.collectionGroupItems,
+              ),
               deleteDocuments(ctx, snapshot.childDocuments.locationHistory),
               deleteDocuments(
                 ctx,
@@ -764,7 +825,10 @@ export const purgeOrganizationsInternal = internalMutation({
               deleteDocuments(ctx, snapshot.childDocuments.loanItems),
               deleteDocuments(ctx, snapshot.childDocuments.exhibitionDocuments),
               deleteDocuments(ctx, snapshot.childDocuments.transitItems),
-              deleteDocuments(ctx, snapshot.childDocuments.transitStatusUpdates),
+              deleteDocuments(
+                ctx,
+                snapshot.childDocuments.transitStatusUpdates,
+              ),
               deleteDocuments(
                 ctx,
                 snapshot.childDocuments.installationTaskComments,
@@ -797,10 +861,77 @@ export const purgeOrganizationsInternal = internalMutation({
           };
         }),
       )
-    ).filter(
-      (result): result is NonNullable<typeof result> => result !== null,
-    );
+    ).filter((result): result is NonNullable<typeof result> => result !== null);
 
     return results;
+  },
+});
+
+export const getRetentionPolicy = query({
+  args: { organizationId: v.id("organizations") },
+  returns: v.object({ canDeleteOrganization: v.boolean() }),
+  handler: async (ctx, args) => {
+    await requirePermission(
+      ctx,
+      args.organizationId,
+      "organization.manage_settings",
+    );
+    return {
+      canDeleteOrganization: !(await isOrganizationEvidenceProtected(
+        ctx,
+        args.organizationId,
+      )),
+    };
+  },
+});
+
+export const reviewRetainedCollections = query({
+  args: {
+    organizationId: v.id("organizations"),
+    status: v.union(v.literal("deleted"), v.literal("archived")),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: v.object({
+    page: v.array(
+      v.object({
+        collectionId: v.id("collections"),
+        title: v.string(),
+        accessionNumber: v.string(),
+        withdrawalReason: v.union(v.string(), v.null()),
+        requiresReview: v.boolean(),
+      }),
+    ),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const result = await ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", args.status),
+      )
+      .paginate({
+        ...args.paginationOpts,
+        numItems: Math.min(args.paginationOpts.numItems, 100),
+      });
+    return {
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+      page: result.page.map((collection) => {
+        const reason =
+          collection.archivedReason ?? collection.deletedReason ?? null;
+        return {
+          collectionId: collection._id,
+          title: collection.title,
+          accessionNumber: collection.accessionNumber,
+          withdrawalReason: reason,
+          requiresReview:
+            !reason?.trim() ||
+            !(collection.archivedAt ?? collection.deletedAt) ||
+            !(collection.archivedBy ?? collection.deletedBy),
+        };
+      }),
+    };
   },
 });

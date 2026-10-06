@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -9,12 +9,17 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { getNextCounterValue } from "./utils/accessionCounter";
-import { accessionParser } from "./utils/accessionNumberParser";
 import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublication";
 import { batchLookup } from "./utils/batchLookup";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { enforceMediaQuota } from "./utils/featureGates";
+import {
+  ensureIdentifierAvailable,
+  generateConfiguredIdentifier,
+  normalizeIdentifier,
+} from "./utils/identifiers";
+import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import {
@@ -28,6 +33,11 @@ import {
   hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+  validateOwnedUploadSize,
+} from "./utils/uploadOwnership";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -134,120 +144,22 @@ async function syncAccessionSearchDocument(
   }
 }
 
-async function deleteAccessionSearchDocument(
-  ctx: MutationCtx,
-  accessionId: Id<"accessions">,
-) {
-  const existing = await ctx.db
-    .query("accessionSearchDocuments")
-    .withIndex("by_accession", (q) => q.eq("accessionId", accessionId))
-    .first();
-
-  if (existing) {
-    await ctx.db.delete(existing._id);
-  }
-}
-
 async function ensureAccessionNumberAvailable(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
   accessionNumber: string,
   existingAccessionId?: Id<"accessions">,
 ) {
-  const existingAccession = await ctx.db
-    .query("accessions")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
-    .first();
-
-  if (existingAccession && existingAccession._id !== existingAccessionId) {
-    throw new Error("Accession number already exists");
+  if (existingAccessionId) {
+    const existing = await ctx.db.get(existingAccessionId);
+    if (existing?.accessionNumber === accessionNumber) return;
   }
-
-  const existingCollection = await ctx.db
-    .query("collections")
-    .withIndex("by_organization_and_accessionNumber", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("accessionNumber", accessionNumber),
-    )
-    .first();
-
-  if (existingCollection) {
-    throw new Error("Accession number already exists");
-  }
-}
-
-async function tryGeneratedAccessionNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  attempt: number,
-  lastGeneratedAccessionNumber: string | null,
-): Promise<string | null> {
-  if (attempt >= 5) {
-    return lastGeneratedAccessionNumber;
-  }
-
-  const nextAccessionNumber = await generateAccessionNumber(
+  await ensureIdentifierAvailable(
     ctx,
     organizationId,
-  );
-  try {
-    await ensureAccessionNumberAvailable(
-      ctx,
-      organizationId,
-      nextAccessionNumber,
-    );
-    return nextAccessionNumber;
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      error.message !== "Accession number already exists"
-    ) {
-      throw error;
-    }
-  }
-
-  return tryGeneratedAccessionNumber(
-    ctx,
-    organizationId,
-    attempt + 1,
-    nextAccessionNumber,
-  );
-}
-
-async function tryFallbackAccessionNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  fallbackBase: string,
-  suffixAttempt: number,
-): Promise<string> {
-  if (suffixAttempt > 20) {
-    throw new Error("Could not generate a unique accession number");
-  }
-
-  const fallbackAccessionNumber = `${fallbackBase}-${suffixAttempt}`;
-  try {
-    await ensureAccessionNumberAvailable(
-      ctx,
-      organizationId,
-      fallbackAccessionNumber,
-    );
-    return fallbackAccessionNumber;
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      error.message !== "Accession number already exists"
-    ) {
-      throw error;
-    }
-  }
-
-  return tryFallbackAccessionNumber(
-    ctx,
-    organizationId,
-    fallbackBase,
-    suffixAttempt + 1,
+    "accession",
+    accessionNumber,
+    existingAccessionId,
   );
 }
 
@@ -255,89 +167,7 @@ async function generateUniqueAccessionNumber(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
 ) {
-  const generated = await tryGeneratedAccessionNumber(
-    ctx,
-    organizationId,
-    0,
-    null,
-  );
-  if (generated) {
-    return generated;
-  }
-
-  const fallbackBase = `ACC-${new Date().getFullYear()}`;
-  return tryFallbackAccessionNumber(ctx, organizationId, fallbackBase, 1);
-}
-
-async function findReusablePendingDraftAccession(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-  accessionNumber: string,
-) {
-  const candidate = await ctx.db
-    .query("accessions")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) =>
-      q.and(
-        q.eq(q.field("accessionNumber"), accessionNumber),
-        q.eq(q.field("status"), "pending"),
-      ),
-    )
-    .first();
-
-  if (!candidate || candidate.collectionId) {
-    return null;
-  }
-
-  return candidate;
-}
-
-/**
- * Generate accession number based on organization format template
- */
-async function generateAccessionNumber(
-  ctx: MutationCtx,
-  organizationId: Id<"organizations">,
-): Promise<string> {
-  const org = await ctx.db.get(organizationId);
-  if (!org) {
-    throw new Error("Organization not found");
-  }
-
-  const template = org.settings?.accessionNumberFormat;
-  const autoGenerate = org.settings?.autoGenerateAccessionNumbers ?? false;
-
-  if (!autoGenerate || !template) {
-    throw new Error("Accession number generation not configured");
-  }
-
-  const now = new Date();
-
-  // Determine counter scope from settings or template
-  const counterScope =
-    org.settings?.accessionCounterScope ||
-    accessionParser.getCounterScopeFromTemplate(template);
-
-  // Get scope key for counter tracking
-  const scopeKey = accessionParser.getScopeKey(counterScope, now);
-
-  // Get next counter value (atomic operation)
-  const counterValue = await getNextCounterValue(
-    ctx,
-    organizationId,
-    counterScope,
-    scopeKey,
-  );
-
-  // Parse template and generate accession number
-  const accessionNumber = accessionParser.parse(template, {
-    organizationSlug: org.slug,
-    currentDate: now,
-    counterValue,
-    counterScope,
-  });
-
-  return accessionNumber;
+  return generateConfiguredIdentifier(ctx, organizationId, "accession");
 }
 
 /**
@@ -347,6 +177,7 @@ export const create = mutation({
   args: {
     organizationId: v.id("organizations"),
     accessionNumber: v.optional(v.string()),
+    catalogIdentifier: v.optional(v.string()),
     dateReceived: v.number(),
     source: v.string(),
     donorAccountId: v.optional(v.id("accounts")),
@@ -391,12 +222,20 @@ export const create = mutation({
       await requirePermission(ctx, args.organizationId, "collections.create");
     }
 
+    if (args.donorAccountId) {
+      const donor = await ctx.db.get(args.donorAccountId);
+      if (!donor || donor.organizationId !== args.organizationId)
+        throw new Error("Donor account not found in this organization");
+    }
     // Generate or use provided accession number
     let accessionNumber: string;
     if (args.accessionNumber) {
       accessionNumber = args.accessionNumber;
     } else {
-      accessionNumber = await generateAccessionNumber(ctx, args.organizationId);
+      accessionNumber = await generateUniqueAccessionNumber(
+        ctx,
+        args.organizationId,
+      );
     }
 
     // Get workflow config
@@ -424,9 +263,25 @@ export const create = mutation({
         ]
       : [];
 
+    await ensureAccessionNumberAvailable(
+      ctx,
+      args.organizationId,
+      accessionNumber,
+    );
+    if (args.catalogIdentifier !== undefined)
+      await ensureIdentifierAvailable(
+        ctx,
+        args.organizationId,
+        "catalog",
+        args.catalogIdentifier,
+      );
     const accessionId = await ctx.db.insert("accessions", {
       organizationId: args.organizationId,
       accessionNumber,
+      catalogIdentifier: args.catalogIdentifier,
+      approvedBy: workflowConfig ? undefined : userId,
+      approvedAt: workflowConfig ? undefined : Date.now(),
+      normalizedIdentifier: normalizeIdentifier(accessionNumber),
       dateReceived: args.dateReceived,
       source: args.source,
       donorAccountId: args.donorAccountId,
@@ -439,6 +294,14 @@ export const create = mutation({
       workflowHistory,
     });
 
+    for (const storageId of args.documents ?? [])
+      await claimStorageOwnership(ctx, {
+        storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        ownerType: "accessionDocument",
+        ownerId: accessionId,
+      });
     await Promise.all([
       syncAccessionSearchDocument(ctx, accessionId),
       ctx.runMutation(internal.audit.logAction, {
@@ -516,10 +379,15 @@ export const generateDraftUploadUrl = mutation({
       throw new Error(`Unsupported file type: ${args.mimeType}`);
     }
 
+    validateOwnedUploadSize(args.fileSize);
     await enforceMediaQuota(ctx, args.organizationId, args.fileSize);
 
     return {
-      uploadUrl: await ctx.storage.generateUploadUrl(),
+      uploadUrl: await createAuthorizedUploadUrl(
+        ctx,
+        userId,
+        args.organizationId,
+      ),
     };
   },
 });
@@ -547,6 +415,7 @@ export const upsertObjectDraft = mutation({
       ? await getWorkflowConfig(ctx, args.organizationId, "accession")
       : null;
 
+    await validateObjectReferences(ctx, args.organizationId, args.objectData);
     const normalizedObjectData = {
       ...args.objectData,
       title: args.objectData.title.trim(),
@@ -613,9 +482,14 @@ export const upsertObjectDraft = mutation({
           ? existing.workflowStep
           : nextWorkflowStep;
 
-      const accessionNumber =
-        normalizedObjectData.accessionNumber?.trim() ||
-        existing.accessionNumber;
+      const accessionNumber = normalizedObjectData.accessionNumber?.trim()
+        ? normalizedObjectData.accessionNumber
+        : existing.accessionNumber;
+      if (accessionNumber !== existing.accessionNumber) {
+        throw new ConvexError(
+          "An existing accession identifier is permanent. Keep the original number; record historical conflicts in Settings > Preferences instead of renumbering.",
+        );
+      }
 
       await ensureAccessionNumberAvailable(
         ctx,
@@ -624,10 +498,21 @@ export const upsertObjectDraft = mutation({
         existing._id,
       );
 
+      for (const media of args.draftMedia ?? [])
+        await claimStorageOwnership(ctx, {
+          storageId: media.storageId,
+          organizationId: args.organizationId,
+          uploadedBy: userId,
+          expectedFileSize: media.fileSize,
+          expectedMimeType: media.mimeType,
+          ownerType: "accessionDraft",
+          ownerId: existing._id,
+        });
       const submittedAt = Date.now();
       await Promise.all([
         ctx.db.patch(existing._id, {
           accessionNumber,
+          normalizedIdentifier: normalizeIdentifier(accessionNumber),
           source,
           notes: normalizedObjectData.description?.trim() || existing.notes,
           status: shouldAutoApproveSubmit ? "approved" : existing.status,
@@ -708,120 +593,14 @@ export const upsertObjectDraft = mutation({
 
     await requirePermission(ctx, args.organizationId, "collections.create");
 
-    let accessionNumber = normalizedObjectData.accessionNumber?.trim();
+    let accessionNumber = normalizedObjectData.accessionNumber?.trim()
+      ? normalizedObjectData.accessionNumber
+      : undefined;
     if (!accessionNumber) {
       accessionNumber = await generateUniqueAccessionNumber(
         ctx,
         args.organizationId,
       );
-    }
-
-    const reusableDraft = await findReusablePendingDraftAccession(
-      ctx,
-      args.organizationId,
-      accessionNumber,
-    );
-
-    if (reusableDraft) {
-      const submittedAt = Date.now();
-      await Promise.all([
-        ctx.db.patch(reusableDraft._id, {
-          source,
-          notes:
-            normalizedObjectData.description?.trim() || reusableDraft.notes,
-          status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
-          approvedBy: shouldAutoApproveSubmit
-            ? userId
-            : reusableDraft.approvedBy,
-          approvedAt: shouldAutoApproveSubmit
-            ? submittedAt
-            : reusableDraft.approvedAt,
-          workflowStep: shouldAutoApproveSubmit ? undefined : nextWorkflowStep,
-          draftObjectData: {
-            ...normalizedObjectData,
-            accessionNumber,
-          },
-          draftMedia: args.draftMedia ?? reusableDraft.draftMedia,
-        }),
-        syncAccessionSearchDocument(ctx, reusableDraft._id),
-        ctx.runMutation(internal.audit.logAction, {
-          organizationId: args.organizationId,
-          userId,
-          action:
-            args.saveMode === "submit"
-              ? "submitted_object_accession"
-              : "saved_object_draft",
-          entityType: "accession",
-          entityId: reusableDraft._id,
-          changes: {
-            accessionNumber,
-            saveMode: args.saveMode,
-            workflowStep: shouldAutoApproveSubmit
-              ? undefined
-              : nextWorkflowStep,
-            status: shouldAutoApproveSubmit ? "approved" : reusableDraft.status,
-            title: normalizedObjectData.title,
-            recoveredDraft: true,
-          },
-        }),
-      ] as const);
-
-      if (shouldAutoApproveSubmit) {
-        await ctx.runMutation(
-          internal.accessions.createCollectionFromAccession,
-          {
-            accessionId: reusableDraft._id,
-          },
-        );
-      }
-
-      if (args.saveMode === "submit" && workflowConfig) {
-        const usersToNotify = await getUsersToNotifyForWorkflowStep(
-          ctx,
-          args.organizationId,
-          "accession",
-          nextWorkflowStep,
-        );
-
-        await Promise.all(
-          Array.from(usersToNotify).map(async (approverId) => {
-            if (approverId !== userId) {
-              await ctx.runMutation(internal.audit.createNotificationInternal, {
-                organizationId: args.organizationId,
-                userId: approverId,
-                type: "workflow_pending",
-                title: "Object Request Requires Approval",
-                message: `Object request ${accessionNumber} is pending your approval.`,
-                relatedEntityType: "accession",
-                relatedEntityId: reusableDraft._id,
-              });
-            }
-          }),
-        );
-      }
-
-      return reusableDraft._id;
-    }
-
-    try {
-      await ensureAccessionNumberAvailable(
-        ctx,
-        args.organizationId,
-        accessionNumber,
-      );
-    } catch (error) {
-      if (
-        normalizedObjectData.accessionNumber?.trim() &&
-        error instanceof Error &&
-        error.message === "Accession number already exists"
-      ) {
-        accessionNumber = await generateUniqueAccessionNumber(
-          ctx,
-          args.organizationId,
-        );
-      } else {
-        throw error;
-      }
     }
 
     const now = Date.now();
@@ -837,9 +616,15 @@ export const upsertObjectDraft = mutation({
       },
     ];
 
+    await ensureAccessionNumberAvailable(
+      ctx,
+      args.organizationId,
+      accessionNumber,
+    );
     const accessionId = await ctx.db.insert("accessions", {
       organizationId: args.organizationId,
       accessionNumber,
+      normalizedIdentifier: normalizeIdentifier(accessionNumber),
       dateReceived: now,
       source,
       method: "other",
@@ -855,6 +640,16 @@ export const upsertObjectDraft = mutation({
       },
       draftMedia: args.draftMedia,
     });
+    for (const media of args.draftMedia ?? [])
+      await claimStorageOwnership(ctx, {
+        storageId: media.storageId,
+        organizationId: args.organizationId,
+        uploadedBy: userId,
+        expectedFileSize: media.fileSize,
+        expectedMimeType: media.mimeType,
+        ownerType: "accessionDraft",
+        ownerId: accessionId,
+      });
     await Promise.all([
       syncAccessionSearchDocument(ctx, accessionId),
       ctx.runMutation(internal.audit.logAction, {
@@ -1181,6 +976,7 @@ export const get = query({
       organizationId: v.id("organizations"),
       collectionId: v.optional(v.id("collections")),
       accessionNumber: v.string(),
+      catalogIdentifier: v.optional(v.string()),
       dateReceived: v.number(),
       source: v.string(),
       method: v.union(
@@ -1280,6 +1076,7 @@ export const get = query({
       organizationId: accession.organizationId,
       collectionId: accession.collectionId,
       accessionNumber: accession.accessionNumber,
+      catalogIdentifier: accession.catalogIdentifier,
       dateReceived: accession.dateReceived,
       source: accession.source,
       method: accession.method,
@@ -1364,9 +1161,26 @@ export const update = mutation({
     } = {};
 
     if (args.source !== undefined) updates.source = args.source;
-    if (args.donorAccountId !== undefined)
+    if (args.donorAccountId !== undefined) {
+      const donor = await ctx.db.get(args.donorAccountId);
+      if (!donor || donor.organizationId !== accession.organizationId)
+        throw new Error("Donor account not found in this organization");
       updates.donorAccountId = args.donorAccountId;
-    if (args.documents !== undefined) updates.documents = args.documents;
+    }
+    if (args.documents !== undefined) {
+      const existingDocuments = new Set(accession.documents);
+      for (const storageId of args.documents) {
+        if (!existingDocuments.has(storageId))
+          await claimStorageOwnership(ctx, {
+            storageId,
+            organizationId: accession.organizationId,
+            uploadedBy: userId,
+            ownerType: "accessionDocument",
+            ownerId: accession._id,
+          });
+      }
+      updates.documents = args.documents;
+    }
     if (args.method !== undefined) updates.method = args.method;
     if (args.cost !== undefined) updates.cost = args.cost;
     if (args.notes !== undefined) updates.notes = args.notes;
@@ -1832,51 +1646,7 @@ export const emptyRejected = mutation({
       throw new Error("Not authenticated");
     }
 
-    const rejectedAccessions = await ctx.db
-      .query("accessions")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .filter((q) => q.eq(q.field("status"), "rejected"))
-      .collect();
-
-    let deletedCount = 0;
-
-    await Promise.all(
-      Array.from(rejectedAccessions).map(async (accession) => {
-        if (accession.collectionId) {
-          return;
-        }
-
-        const storageIds = new Set<Id<"_storage">>();
-
-        for (const storageId of accession.documents || []) {
-          storageIds.add(storageId);
-        }
-
-        for (const mediaItem of accession.draftMedia || []) {
-          storageIds.add(mediaItem.storageId);
-        }
-
-        for (const checklistItem of accession.documentChecklist || []) {
-          if (checklistItem.storageId) {
-            storageIds.add(checklistItem.storageId);
-          }
-        }
-        await Promise.all([
-          Promise.all(
-            Array.from(storageIds).map(async (storageId) => {
-              await ctx.storage.delete(storageId);
-            }),
-          ),
-          ctx.db.delete(accession._id),
-          deleteAccessionSearchDocument(ctx, accession._id),
-        ] as const);
-        deletedCount += 1;
-      }),
-    );
-
-    return { deletedCount };
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -2424,6 +2194,13 @@ export const uploadChecklistDocument = mutation({
       accession.organizationId,
       "collections.update",
     );
+    await claimStorageOwnership(ctx, {
+      storageId: args.storageId,
+      organizationId: accession.organizationId,
+      uploadedBy: userId,
+      ownerType: "accessionDocument",
+      ownerId: `${args.accessionId}:${args.documentType}`,
+    });
 
     const checklist = accession.documentChecklist ?? [];
     const updatedChecklist = checklist.map((item) => {
@@ -2506,34 +2283,7 @@ export const removeChecklistDocument = mutation({
       "collections.update",
     );
 
-    const checklist = accession.documentChecklist ?? [];
-    const item = checklist.find((i) => i.documentType === args.documentType);
-
-    const updatedChecklist = checklist.map((i) => {
-      if (i.documentType === args.documentType) {
-        return {
-          ...i,
-          uploaded: false,
-          storageId: undefined,
-          uploadedAt: undefined,
-          uploadedBy: undefined,
-        };
-      }
-      return i;
-    });
-
-    // Remove from main documents array
-    const documents = accession.documents ?? [];
-    const filteredDocs = item?.storageId
-      ? documents.filter((d) => d !== item.storageId)
-      : documents;
-
-    await ctx.db.patch(args.accessionId, {
-      documentChecklist: updatedChecklist,
-      documents: filteredDocs,
-    });
-
-    return null;
+    return rejectPermanentEvidenceDeletion();
   },
 });
 
@@ -2810,6 +2560,7 @@ export const processBulkImport = mutation({
     items: v.array(
       v.object({
         accessionNumber: v.optional(v.string()),
+        catalogIdentifier: v.optional(v.string()),
         dateReceived: v.number(),
         source: v.string(),
         method: v.union(
@@ -2869,24 +2620,14 @@ export const processBulkImport = mutation({
       const item = args.items[index];
       if (item) {
         try {
-          let accessionNumber = item.accessionNumber?.trim();
+          let accessionNumber = item.accessionNumber?.trim()
+            ? item.accessionNumber
+            : undefined;
           if (!accessionNumber) {
-            accessionNumber = await generateAccessionNumber(
+            accessionNumber = await generateUniqueAccessionNumber(
               ctx,
               args.organizationId,
             );
-          }
-
-          const existing = await ctx.db
-            .query("accessions")
-            .withIndex("by_organization", (q) =>
-              q.eq("organizationId", args.organizationId),
-            )
-            .filter((q) => q.eq(q.field("accessionNumber"), accessionNumber))
-            .first();
-
-          if (existing) {
-            throw new Error(`Duplicate accession number: ${accessionNumber}`);
           }
 
           const workflowHistory = workflowConfig
@@ -2900,9 +2641,25 @@ export const processBulkImport = mutation({
               ]
             : [];
 
+          await ensureAccessionNumberAvailable(
+            ctx,
+            args.organizationId,
+            accessionNumber,
+          );
+          if (!workflowConfig || item.catalogIdentifier !== undefined)
+            await ensureIdentifierAvailable(
+              ctx,
+              args.organizationId,
+              "catalog",
+              item.catalogIdentifier ?? accessionNumber,
+            );
           const accessionId = await ctx.db.insert("accessions", {
             organizationId: args.organizationId,
             accessionNumber,
+            catalogIdentifier: item.catalogIdentifier,
+            approvedBy: workflowConfig ? undefined : importingUserId,
+            approvedAt: workflowConfig ? undefined : Date.now(),
+            normalizedIdentifier: normalizeIdentifier(accessionNumber),
             dateReceived: item.dateReceived,
             source: item.source,
             method: item.method,

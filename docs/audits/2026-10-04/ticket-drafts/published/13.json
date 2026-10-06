@@ -1,0 +1,12 @@
+{
+  "number": 13,
+  "batch": 2,
+  "id": "MUS-623",
+  "url": "https://linear.app/museumlite/issue/MUS-623/complete-draft-to-verified-accession-intake",
+  "title": "Complete draft-to-verified-accession intake",
+  "blockedBy": [
+    "MUS-616",
+    "MUS-619"
+  ],
+  "implementationApproved": false
+}

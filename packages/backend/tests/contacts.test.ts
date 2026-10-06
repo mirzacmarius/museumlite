@@ -231,7 +231,7 @@ describe("contacts", () => {
     expect(contact?.lastName).toBe("Doe");
   });
 
-  test("should delete contact", async () => {
+  test("retains museum contacts", async () => {
     const authed = t.withIdentity({
       subject: `${userId}|session-delete-contact`,
       issuer: "https://example.test",
@@ -246,10 +246,16 @@ describe("contacts", () => {
       isActive: true,
     });
 
-    await authed.mutation(api.contacts.remove, { contactId });
+    await expect(
+      authed.mutation(api.contacts.remove, { contactId }),
+    ).rejects.toThrow("Permanent evidence");
 
     const contact = await authed.query(api.contacts.get, { contactId });
-    expect(contact).toBeNull();
+    expect(contact).toMatchObject({
+      _id: contactId,
+      firstName: "John",
+      lastName: "Doe",
+    });
   });
 
   test("should enforce only one primary contact per account", async () => {

@@ -2,17 +2,20 @@
 
 import { FileSpreadsheet, Upload } from "lucide-react";
 import type { RefObject } from "react";
+import { ImportFileError } from "@/components/import/import-file-error";
 
 interface ImportAccessionsUploadStepProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   fileInputRef: RefObject<HTMLInputElement | null>;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  errors: string[];
 }
 
 export function ImportAccessionsUploadStep({
   t,
   fileInputRef,
   onFileSelect,
+  errors,
 }: ImportAccessionsUploadStepProps) {
   return (
     <div className="mx-auto max-w-2xl">
@@ -23,6 +26,8 @@ export function ImportAccessionsUploadStep({
           {t("import.description")}
         </p>
       </div>
+
+      <ImportFileError errors={errors} />
 
       <input
         ref={fileInputRef}

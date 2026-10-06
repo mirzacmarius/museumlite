@@ -4,8 +4,9 @@ import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { metadataRecord } from "./schema";
 import { requireAccountAdministration } from "./utils/accountAdministration";
-import { requireModuleEnabled } from "./utils/featureGates";
-import { requirePermission } from "./utils/permissions";
+import { hasModuleEnabled, requireModuleEnabled } from "./utils/featureGates";
+import { hasPermission, requirePermission } from "./utils/permissions";
+import { getRelatedEntityOrganization } from "./utils/relatedEntityIntegrity";
 
 const relatedEntityTypeValidator = v.union(
   v.literal("loan"),
@@ -56,7 +57,9 @@ export const list = query({
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .collect();
 
-    return relationships;
+    return relationships.filter(
+      (relationship) => relationship.organizationId === account.organizationId,
+    );
   },
 });
 
@@ -95,17 +98,26 @@ export const listByEntity = query({
       return [];
     }
 
-    const firstRelationship = relationships[0];
-    if (!firstRelationship) {
-      return [];
+    const authorizedOrganizations = new Set<string>();
+    for (const organizationId of new Set(
+      relationships.map((relationship) => relationship.organizationId),
+    )) {
+      if (
+        (await hasModuleEnabled(ctx, organizationId, "accounts")) &&
+        (await hasPermission(ctx, organizationId, "accounts.read"))
+      ) {
+        authorizedOrganizations.add(organizationId);
+      }
     }
 
-    await Promise.all([
-      requireModuleEnabled(ctx, firstRelationship.organizationId, "accounts"),
-      requirePermission(ctx, firstRelationship.organizationId, "accounts.read"),
-    ]);
-
-    return relationships;
+    const accounts = await Promise.all(
+      relationships.map((relationship) => ctx.db.get(relationship.accountId)),
+    );
+    return relationships.filter(
+      (relationship, index) =>
+        authorizedOrganizations.has(relationship.organizationId) &&
+        accounts[index]?.organizationId === relationship.organizationId,
+    );
   },
 });
 
@@ -157,6 +169,7 @@ export const timeline = query({
       .collect();
 
     for (const rel of relationships) {
+      if (rel.organizationId !== account.organizationId) continue;
       events.push({
         type: "relationship",
         timestamp: rel.createdAt,
@@ -244,6 +257,14 @@ export const create = mutation({
       requireModuleEnabled(ctx, account.organizationId, "accounts"),
       requirePermission(ctx, account.organizationId, "accounts.write"),
     ]);
+    if (
+      (await getRelatedEntityOrganization(
+        ctx,
+        args.relatedEntityType,
+        args.relatedEntityId,
+      )) !== account.organizationId
+    )
+      throw new Error("Related record not found in this organization");
     return await ctx.db
       .insert("accountRelationships", {
         organizationId: account.organizationId,

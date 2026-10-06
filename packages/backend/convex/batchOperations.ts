@@ -9,10 +9,12 @@ import {
   query,
 } from "./_generated/server";
 import { customFieldValue } from "./schema";
+import { replaceCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
-  replaceCollectionOptionUsages,
-  syncCollectionOptionUsages,
-} from "./utils/collectionOptionUsages";
+  assessCollectionMovement,
+  moveCollectionToLocation,
+  requireUsableLocation,
+} from "./utils/locationIntegrity";
 import { requirePermission } from "./utils/permissions";
 
 // ============================================
@@ -83,6 +85,19 @@ export const createBulkEditJob = mutation({
       args.organizationId,
       args.collectionIds,
     );
+    if (args.updates.currentLocationId) {
+      await requireUsableLocation(
+        ctx,
+        args.organizationId,
+        args.updates.currentLocationId,
+      );
+    }
+    if (args.updates.collectionGroupId) {
+      const group = await ctx.db.get(args.updates.collectionGroupId);
+      if (!group || group.organizationId !== args.organizationId) {
+        throw new Error("Collection group not found in this organization");
+      }
+    }
 
     const jobId = await ctx.db.insert("batchJobs", {
       organizationId: args.organizationId,
@@ -137,10 +152,7 @@ export const createBulkMoveJob = mutation({
     await requirePermission(ctx, args.organizationId, "locations.update");
 
     // Validate target location
-    const toLocation = await ctx.db.get(args.toLocationId);
-    if (!toLocation || toLocation.organizationId !== args.organizationId) {
-      throw new Error("Invalid target location");
-    }
+    await requireUsableLocation(ctx, args.organizationId, args.toLocationId);
 
     await assertCollectionsBelongToOrg(
       ctx,
@@ -513,6 +525,7 @@ export const processBatchJob = internalMutation({
               collection,
               job.editPayload,
               job.createdBy,
+              job._id,
             );
             return { success: true as const };
           }
@@ -522,6 +535,7 @@ export const processBatchJob = internalMutation({
               collection,
               job.movePayload,
               job.createdBy,
+              job._id,
             );
             if (moveResult.success) {
               return { success: true as const };
@@ -619,6 +633,7 @@ async function processBulkEdit(
     customFields?: CollectionCustomFields;
   },
   userId: Id<"users">,
+  batchJobId?: Id<"batchJobs">,
 ) {
   const updates: Partial<CollectionDoc> = {
     lastModifiedBy: userId,
@@ -626,10 +641,25 @@ async function processBulkEdit(
   };
 
   if (payload.collectionGroupId !== undefined) {
+    const group = await ctx.db.get(payload.collectionGroupId);
+    if (!group || group.organizationId !== collection.organizationId) {
+      throw new Error("Collection group not found in this organization");
+    }
     updates.collectionGroupId = payload.collectionGroupId;
   }
-  if (payload.currentLocationId !== undefined) {
-    updates.currentLocationId = payload.currentLocationId;
+  if (
+    payload.currentLocationId !== undefined &&
+    payload.currentLocationId !== collection.currentLocationId
+  ) {
+    // Refuse before patching so a failed item keeps all previous values.
+    const { issues } = await assessCollectionMovement(
+      ctx,
+      collection,
+      payload.currentLocationId,
+      { requireInstitutionalCustody: true },
+    );
+    const [blocking] = issues;
+    if (blocking) throw new Error(blocking.message);
   }
   if (payload.condition !== undefined) {
     updates.condition = payload.condition;
@@ -655,6 +685,16 @@ async function processBulkEdit(
   }
 
   await ctx.db.patch(collection._id, updates);
+  if (payload.currentLocationId !== undefined) {
+    await moveCollectionToLocation(
+      ctx,
+      collection,
+      payload.currentLocationId,
+      userId,
+      "Bulk edit location change",
+      { kind: "bulk_edit", batchJobId },
+    );
+  }
   if (payload.condition !== undefined) {
     const updated = await ctx.db.get(collection._id);
     if (updated) await replaceCollectionOptionUsages(ctx, updated);
@@ -671,59 +711,41 @@ async function processBulkMove(
     overrideStatus?: boolean;
   },
   userId: Id<"users">,
+  batchJobId: Id<"batchJobs">,
 ): Promise<{ success: boolean; error?: string }> {
-  const toLocation = await ctx.db.get(payload.toLocationId);
-  if (!toLocation) {
-    return { success: false, error: "Target location not found" };
+  if (collection.currentLocationId === payload.toLocationId) {
+    return { success: true };
+  }
+  // Job creation accepts only usable destinations, so a status override is
+  // never applied here; capacity override remains the requester's choice.
+  const { issues } = await assessCollectionMovement(
+    ctx,
+    collection,
+    payload.toLocationId,
+    {
+      checkCapacity: true,
+      capacityOverride: payload.overrideCapacity,
+      requireInstitutionalCustody: true,
+    },
+  );
+  const [blocking] = issues;
+  if (blocking) {
+    return { success: false, error: blocking.message };
   }
 
-  // Check location status
-  const locationStatus = toLocation.status ?? "active";
-  if (!toLocation.isActive || locationStatus === "closed") {
-    if (!payload.overrideStatus) {
-      return { success: false, error: "Target location is closed" };
-    }
-  }
-
-  if (locationStatus === "renovation" && !payload.overrideStatus) {
-    return { success: false, error: "Target location is under renovation" };
-  }
-
-  // Check capacity
-  if (toLocation.capacity && !payload.overrideCapacity) {
-    const objectsAtLocation = await ctx.db
-      .query("collections")
-      .withIndex("by_currentLocation", (q) =>
-        q.eq("currentLocationId", payload.toLocationId),
-      )
-      .collect();
-
-    if (objectsAtLocation.length >= toLocation.capacity) {
-      return {
-        success: false,
-        error: `Location at capacity (${objectsAtLocation.length}/${toLocation.capacity})`,
-      };
-    }
-  }
-
-  const fromLocationId = collection.currentLocationId;
-
-  // Create location history entry
-  await ctx.db.insert("locationHistory", {
-    collectionId: collection._id,
-    fromLocationId,
-    toLocationId: payload.toLocationId,
-    movedBy: userId,
-    movedAt: Date.now(),
-    reason: payload.reason ?? "Bulk move operation",
-  });
-
-  // Update collection location
-  await ctx.db.patch(collection._id, {
-    currentLocationId: payload.toLocationId,
-    lastModifiedBy: userId,
-    lastModifiedAt: Date.now(),
-  });
+  await moveCollectionToLocation(
+    ctx,
+    collection,
+    payload.toLocationId,
+    userId,
+    payload.reason?.trim() || "Bulk move operation",
+    {
+      kind: "bulk_move",
+      batchJobId,
+      checkCapacity: true,
+      capacityOverride: payload.overrideCapacity,
+    },
+  );
 
   return { success: true };
 }
@@ -818,46 +840,24 @@ export const quickBulkEdit = mutation({
       args.collectionIds,
     );
 
+    if (args.updates.currentLocationId)
+      await requireUsableLocation(
+        ctx,
+        args.organizationId,
+        args.updates.currentLocationId,
+      );
+    if (args.updates.collectionGroupId) {
+      const group = await ctx.db.get(args.updates.collectionGroupId);
+      if (!group || group.organizationId !== args.organizationId)
+        throw new Error("Collection group not found in this organization");
+    }
     const editResults = await Promise.all(
       args.collectionIds.map(async (collectionId) => {
-        try {
-          const updates: Partial<CollectionDoc> = {
-            lastModifiedBy: userId,
-            lastModifiedAt: Date.now(),
-          };
-
-          if (args.updates.collectionGroupId !== undefined) {
-            updates.collectionGroupId = args.updates.collectionGroupId;
-          }
-          if (args.updates.currentLocationId !== undefined) {
-            updates.currentLocationId = args.updates.currentLocationId;
-          }
-          if (args.updates.condition !== undefined) {
-            updates.condition = args.updates.condition;
-          }
-          if (args.updates.displayStatus !== undefined) {
-            updates.displayStatus = args.updates.displayStatus;
-          }
-          if (args.updates.isPubliclyVisible !== undefined) {
-            updates.isPubliclyVisible = args.updates.isPubliclyVisible;
-          }
-          if (args.updates.isSearchable !== undefined) {
-            updates.isSearchable = args.updates.isSearchable;
-          }
-          if (args.updates.tags !== undefined) {
-            updates.tags = args.updates.tags;
-          }
-
-          await ctx.db.patch(collectionId, updates);
-          if (args.updates.condition !== undefined) {
-            await syncCollectionOptionUsages(ctx, collectionId);
-          }
-          return { success: true as const };
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : "Unknown error";
-          return { itemId: collectionId, error: errorMessage };
-        }
+        const collection = await ctx.db.get(collectionId);
+        if (!collection)
+          return { itemId: collectionId, error: "Collection not found" };
+        await processBulkEdit(ctx, collection, args.updates, userId);
+        return { success: true as const };
       }),
     );
 

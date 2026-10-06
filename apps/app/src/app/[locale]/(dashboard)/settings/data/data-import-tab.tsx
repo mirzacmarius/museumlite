@@ -42,8 +42,13 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
     organizationId,
   });
 
-  const { importing, fileInputRef, downloadTemplate, handleFileSelect } =
-    useDataImport(organizationId, importType, template);
+  const {
+    importing,
+    fileInputRef,
+    downloadTemplate,
+    handleFileSelect,
+    uploadCorrection,
+  } = useDataImport(organizationId, importType, template);
 
   return (
     <div className="space-y-6 pt-4">
@@ -122,7 +127,12 @@ export function DataImportTab({ organizationId }: DataImportTabProps) {
         </CardContent>
       </Card>
 
-      {importJobs && <DataImportJobsCard importJobs={importJobs} />}
+      {importJobs && (
+        <DataImportJobsCard
+          importJobs={importJobs}
+          onUploadCorrection={uploadCorrection}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,12 @@
+{
+  "number": 28,
+  "batch": 4,
+  "id": "MUS-638",
+  "url": "https://linear.app/museumlite/issue/MUS-638/align-operational-metrics-and-drill-downs",
+  "title": "Align operational metrics and drill-downs",
+  "blockedBy": [
+    "MUS-630",
+    "MUS-631"
+  ],
+  "implementationApproved": false
+}

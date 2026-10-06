@@ -80,8 +80,10 @@ export function BulkMoveLocationDialog({
       onSuccess();
       onOpenChange(false);
       setLocationId("");
-    } catch (_error) {
-      toast.error(t("itemsMoveFailed"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("itemsMoveFailed"),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -109,8 +111,15 @@ export function BulkMoveLocationDialog({
               </SelectTrigger>
               <SelectContent>
                 {locations?.map((location) => (
-                  <SelectItem key={location._id} value={location._id}>
+                  <SelectItem
+                    key={location._id}
+                    value={location._id}
+                    disabled={location.status !== "active"}
+                  >
                     {location.path.map((p) => p.name).join(" > ")}
+                    {location.status !== "active"
+                      ? ` (${location.status})`
+                      : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

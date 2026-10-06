@@ -1,0 +1,11 @@
+{
+  "number": 40,
+  "batch": 6,
+  "id": "MUS-650",
+  "url": "https://linear.app/museumlite/issue/MUS-650/preserve-list-context-and-detail-recovery",
+  "title": "Preserve list context and detail recovery",
+  "blockedBy": [
+    "MUS-626"
+  ],
+  "implementationApproved": false
+}

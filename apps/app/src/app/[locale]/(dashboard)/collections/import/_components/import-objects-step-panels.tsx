@@ -1,21 +1,23 @@
 "use client";
 
-import { api } from "@v1/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { RefObject } from "react";
+import { MappedImportValidation } from "@/components/import/mapped-import-validation";
+import { TrackedImportOutcome } from "@/components/import/tracked-import-outcome";
+import { TrackedImportProgress } from "@/components/import/tracked-import-progress";
 import type { FieldMapping } from "@/components/import-field-mapper";
+import { ImportJobUnavailable } from "@/components/import-job-unavailable";
 import type { ImportState } from "./import-objects-types";
-import { ImportObjectsCompleteStep } from "./steps/import-objects-complete-step";
-import { ImportObjectsImportingStep } from "./steps/import-objects-importing-step";
 import { ImportObjectsMappingStep } from "./steps/import-objects-mapping-step";
 import { ImportObjectsPreviewStep } from "./steps/import-objects-preview-step";
 import { ImportObjectsUploadStep } from "./steps/import-objects-upload-step";
-import { ImportObjectsValidationStep } from "./steps/import-objects-validation-step";
+import type { useImportObjects } from "./use-import-objects";
 
 export interface ImportObjectsStepPanelsProps {
   state: ImportState;
   t: (key: string, params?: Record<string, string | number>) => string;
   common: (key: string) => string;
+  run: ReturnType<typeof useImportObjects>["run"];
   fileInputRef: RefObject<HTMLInputElement | null>;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleTemplateSelect: (templateId: string) => void;
@@ -23,7 +25,7 @@ export interface ImportObjectsStepPanelsProps {
   handleSaveMappings: (mappings: FieldMapping[]) => void;
   handleReset: () => void;
   handleContinueAfterValidation: () => void;
-  handleStartImport: () => void;
+  handleStartImport: (resumeJobId?: Id<"importJobs">) => void;
   onBackToMapping: () => void;
   onBackToValidation: () => void;
 }
@@ -32,6 +34,7 @@ export function ImportObjectsStepPanels({
   state,
   t,
   common,
+  run,
   fileInputRef,
   handleFileSelect,
   handleTemplateSelect,
@@ -43,10 +46,34 @@ export function ImportObjectsStepPanels({
   onBackToMapping,
   onBackToValidation,
 }: ImportObjectsStepPanelsProps) {
-  const importJob = useQuery(
-    api.imports.getImportJob,
-    state.jobId ? { jobId: state.jobId } : "skip",
-  );
+  if (run.jobUnavailable) {
+    return <ImportJobUnavailable onReset={handleReset} />;
+  }
+
+  if (run.phase === "importing") {
+    return (
+      <TrackedImportProgress
+        importJob={run.importJob}
+        fallbackTotal={state.rows.length}
+        onCancel={run.cancel}
+      />
+    );
+  }
+
+  if (run.phase === "complete") {
+    return (
+      <TrackedImportOutcome
+        importJob={run.importJob}
+        errors={run.errors}
+        fileName={state.file?.name}
+        viewHref="/collections"
+        viewLabel={t("csvImport.viewCollections")}
+        onReset={handleReset}
+        onRetryFailed={run.retryFailed}
+        onUploadCorrection={run.uploadCorrection}
+      />
+    );
+  }
 
   if (state.step === "upload") {
     return (
@@ -54,6 +81,7 @@ export function ImportObjectsStepPanels({
         t={t}
         fileInputRef={fileInputRef}
         onFileSelect={handleFileSelect}
+        errors={state.errors}
       />
     );
   }
@@ -73,41 +101,22 @@ export function ImportObjectsStepPanels({
 
   if (state.step === "validation") {
     return (
-      <ImportObjectsValidationStep
-        state={state}
+      <MappedImportValidation
+        rowCount={state.rows.length}
+        validationErrors={state.validationErrors}
         onBackToMapping={onBackToMapping}
-        onContinueAfterValidation={handleContinueAfterValidation}
+        onContinue={handleContinueAfterValidation}
       />
     );
   }
 
-  if (state.step === "preview") {
-    return (
-      <ImportObjectsPreviewStep
-        state={state}
-        t={t}
-        onBackToValidation={onBackToValidation}
-        onStartImport={handleStartImport}
-      />
-    );
-  }
-
-  if (state.step === "importing") {
-    return (
-      <ImportObjectsImportingStep state={state} importJob={importJob} t={t} />
-    );
-  }
-
-  if (state.step === "complete") {
-    return (
-      <ImportObjectsCompleteStep
-        state={state}
-        importJob={importJob}
-        t={t}
-        onReset={handleReset}
-      />
-    );
-  }
-
-  return null;
+  return (
+    <ImportObjectsPreviewStep
+      state={state}
+      t={t}
+      runErrors={run.errors}
+      onBackToValidation={onBackToValidation}
+      onStartImport={handleStartImport}
+    />
+  );
 }

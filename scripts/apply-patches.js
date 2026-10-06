@@ -56,6 +56,44 @@ function applyPatch(patchFile) {
   return true;
 }
 
+function ensureBackendPackageLink(packageName) {
+  const backendNodeModulesDir = path.join(
+    __dirname,
+    "..",
+    "packages",
+    "backend",
+    "node_modules",
+  );
+  const backendPackageDir = path.join(backendNodeModulesDir, packageName);
+  const rootPackageDir = path.join(nodeModulesDir, packageName);
+
+  if (fs.existsSync(backendPackageDir)) return true;
+  if (!fs.existsSync(rootPackageDir)) {
+    console.error(`Missing required backend dependency: ${packageName}`);
+    return false;
+  }
+
+  try {
+    if (fs.lstatSync(backendPackageDir).isSymbolicLink()) {
+      fs.unlinkSync(backendPackageDir);
+    } else {
+      return true;
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+
+  fs.mkdirSync(backendNodeModulesDir, { recursive: true });
+  const relativeTarget = path.relative(backendNodeModulesDir, rootPackageDir);
+  fs.symlinkSync(
+    relativeTarget,
+    backendPackageDir,
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  console.log(`Linked backend ${packageName} dependency`);
+  return true;
+}
+
 // Find and apply all patches
 if (fs.existsSync(patchesDir)) {
   const patches = fs
@@ -75,6 +113,10 @@ if (fs.existsSync(patchesDir)) {
       success = false;
     }
   });
+
+  for (const packageName of ["typescript", "sharp"]) {
+    success = ensureBackendPackageLink(packageName) && success;
+  }
 
   process.exit(success ? 0 : 1);
 } else {

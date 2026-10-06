@@ -1,20 +1,19 @@
-import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { ParsedRow, ParseError } from "../../import/import-csv";
 
 export interface ImportLocationsState {
-  step: "upload" | "preview" | "importing" | "complete";
+  /** File steps before the import runs; the run itself is tracked separately. */
+  step: "upload" | "preview";
   file: File | null;
+  /** SHA-256 of the source text; identifies a re-uploaded file. */
+  fingerprint: string | null;
   rows: ParsedRow[];
   parseErrors: ParseError[];
-  runtimeErrors: string[];
-  jobId: Id<"importJobs"> | null;
 }
 
 export const INITIAL_IMPORT_STATE: ImportLocationsState = {
   step: "upload",
   file: null,
+  fingerprint: null,
   rows: [],
   parseErrors: [],
-  runtimeErrors: [],
-  jobId: null,
 };

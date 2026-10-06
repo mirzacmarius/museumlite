@@ -1,0 +1,12 @@
+{
+  "number": 19,
+  "batch": 3,
+  "id": "MUS-629",
+  "url": "https://linear.app/museumlite/issue/MUS-629/complete-per-item-loan-dispatch-and-returns",
+  "title": "Complete per-item loan dispatch and returns",
+  "blockedBy": [
+    "MUS-627",
+    "MUS-628"
+  ],
+  "implementationApproved": false
+}

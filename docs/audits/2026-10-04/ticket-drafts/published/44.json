@@ -1,0 +1,15 @@
+{
+  "number": 44,
+  "batch": 6,
+  "id": "MUS-654",
+  "url": "https://linear.app/museumlite/issue/MUS-654/review-and-repair-documentation-quality-exceptions",
+  "title": "Review and repair documentation quality exceptions",
+  "blockedBy": [
+    "MUS-619",
+    "MUS-627",
+    "MUS-640",
+    "MUS-642",
+    "MUS-648"
+  ],
+  "implementationApproved": false
+}

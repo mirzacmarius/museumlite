@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@v1/ui/dropdown-menu";
 import { cn } from "@v1/ui/utils";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Archive,
   ArrowRightLeft,
@@ -23,12 +23,13 @@ import {
   Link2,
   MoreVertical,
   Printer,
-  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useReducer } from "react";
+import { toast } from "sonner";
 import {
   DeaccessionDialog,
   type RemovalType,
@@ -143,7 +144,11 @@ export function ObjectActionsMenu({
     initialObjectActionsMenuState,
   );
   const locale = useCurrentLocale();
-  const canDeaccession = item.status !== "deaccessioned";
+  const canDeaccession =
+    item.status !== "deaccessioned" &&
+    item.status !== "archived" &&
+    item.status !== "deleted";
+  const restoreCollection = useMutation(api.collections.restoreCollection);
   const objectDetail = useQuery(
     api.collections.getObjectDetail,
     state.isPrintModalOpen ? { collectionId: item._id } : "skip",
@@ -175,6 +180,17 @@ export function ObjectActionsMenu({
 
   const handleExportToPdf = () => {
     dispatch({ type: "openExportToPdf" });
+  };
+
+  const handleRestore = async () => {
+    try {
+      await restoreCollection({ collectionId: item._id });
+      toast.success("Object restored to the routine catalog.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to restore object.",
+      );
+    }
   };
 
   const handleOpenRemovalFlow = (removalType: RemovalType) => {
@@ -273,6 +289,8 @@ export function ObjectActionsMenu({
                   <ArrowRightLeft className="mr-2 size-4 text-blue-500" />
                   {tRoot("deaccessions.method.transfer")}
                 </DropdownMenuItem>
+              </PermissionGate>
+              <PermissionGate permission="collections.delete">
                 <DropdownMenuItem
                   className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
                   onClick={(event) => {
@@ -284,19 +302,24 @@ export function ObjectActionsMenu({
                   <Archive className="mr-2 size-4 text-amber-500" />
                   {tRoot("library.catalog.detail.archive")}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    handleOpenRemovalFlow("deleted");
-                  }}
-                >
-                  <Trash2 className="mr-2 size-4" />
-                  {tRoot("collections.delete.button")}
-                </DropdownMenuItem>
               </PermissionGate>
             </>
+          )}
+          {(item.status === "archived" || item.status === "deleted") && (
+            <PermissionGate permission="collections.update">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer focus:bg-accent focus:text-accent-foreground"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void handleRestore();
+                }}
+              >
+                <RotateCcw className="mr-2 size-4" />
+                Restore to catalog
+              </DropdownMenuItem>
+            </PermissionGate>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

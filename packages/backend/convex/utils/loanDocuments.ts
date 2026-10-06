@@ -1,8 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import { requireLoansAccess } from "./loanAccess";
 import { requirePermission } from "./permissions";
+import { claimStorageOwnership } from "./uploadOwnership";
 
 export async function uploadLoanDocumentHandler(
   ctx: MutationCtx,
@@ -34,6 +36,13 @@ export async function uploadLoanDocumentHandler(
     fileName: args.fileName,
     uploadedBy: userId,
     uploadedAt: Date.now(),
+  });
+  await claimStorageOwnership(ctx, {
+    storageId: args.storageId,
+    organizationId: loan.organizationId,
+    uploadedBy: userId,
+    ownerType: "loanDocument",
+    ownerId: documentId,
   });
 
   return documentId;
@@ -97,11 +106,6 @@ export async function deleteLoanDocumentHandler(
   if (!loan) {
     throw new Error("Loan not found");
   }
-  await Promise.all([
-    requirePermission(ctx, loan.organizationId, "loans.update"),
-    ctx.storage.delete(document.storageId),
-    ctx.db.delete(args.documentId),
-  ] as const);
-
-  return null;
+  await requirePermission(ctx, loan.organizationId, "loans.update");
+  return rejectPermanentEvidenceDeletion();
 }

@@ -87,6 +87,16 @@ test("collections.list hides deleted and deaccession workflow objects by default
       catalogedBy: userId,
       catalogedAt: Date.now(),
     });
+    await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "R-0001",
+      title: "Withdrawn item",
+      status: "archived",
+      archivedAt: Date.now(),
+      archivedReason: "Duplicate catalog record",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
 
     await ctx.db.insert("deaccessions", {
       organizationId,
@@ -137,6 +147,13 @@ test("collections.list hides deleted and deaccession workflow objects by default
     paginationOpts: { numItems: 50, cursor: null },
   });
   expect(onlyDeleted.page.map((c) => c.status)).toEqual(["deleted"]);
+
+  const archiveView = await asUser.query(api.collections.list, {
+    organizationId,
+    status: "archived",
+    paginationOpts: { numItems: 50, cursor: null },
+  });
+  expect(archiveView.page.map((c) => c.title)).toEqual(["Withdrawn item"]);
 
   const onlyActive = await asUser.query(api.collections.list, {
     organizationId,
@@ -306,142 +323,226 @@ test("collections.list paginates newest objects and enriches visible rows", asyn
   expect(typeFiltered.page.map((c) => c.title)).toEqual(["Middle item"]);
 });
 
-test("collections.emptyDeletedCollections permanently deletes deleted objects", async () => {
+test("collections archive retains register evidence and restore rejects conflicting active identity", async () => {
   const t = convexTest(schema, modules);
 
-  const { organizationId, userId, activeCollectionId, deletedCollectionId } =
-    await t.run(async (ctx) => {
-      const [userId, organizationId, readPermissionId, deletePermissionId] =
-        await Promise.all([
-          ctx.db.insert("users", { name: "Test User" }),
-          ctx.db.insert("organizations", {
-            name: "Test Org",
-            slug: "test-org-empty-trash",
-            type: "museum",
-          }),
-          ctx.db.insert("permissions", {
-            name: "collections.read",
-            category: "collections",
-            description: "Read collections",
-          }),
-          ctx.db.insert("permissions", {
-            name: "collections.delete",
-            category: "collections",
-            description: "Delete collections",
-          }),
-        ]);
-      const roleId = await ctx.db.insert("roles", {
+  const {
+    organizationId,
+    userId,
+    collectionId,
+    accessionId,
+    mediaId,
+    readPermissionId,
+  } = await t.run(async (ctx) => {
+    const [userId, organizationId, readPermissionId, deletePermissionId] =
+      await Promise.all([
+        ctx.db.insert("users", { name: "Test User" }),
+        ctx.db.insert("organizations", {
+          name: "Test Org",
+          slug: "test-org-archive",
+          type: "museum",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.read",
+          category: "collections",
+          description: "Read collections",
+        }),
+        ctx.db.insert("permissions", {
+          name: "collections.delete",
+          category: "collections",
+          description: "Withdraw collections",
+        }),
+      ]);
+    const updatePermissionId = await ctx.db.insert("permissions", {
+      name: "collections.update",
+      category: "collections",
+      description: "Restore collections",
+    });
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: "Collection Manager",
+      description: "Test role",
+      isSystemRole: false,
+    });
+    await Promise.all(
+      [readPermissionId, deletePermissionId, updatePermissionId].map(
+        (permissionId) =>
+          ctx.db.insert("rolePermissions", { roleId, permissionId }),
+      ),
+    );
+    await ctx.db.insert("userOrganizations", {
+      userId,
+      organizationId,
+      roleId,
+      joinedAt: Date.now(),
+    });
+
+    const collectionId = await ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0001",
+      title: "Withdrawn item",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    });
+    const accessionId = await ctx.db.insert("accessions", {
+      organizationId,
+      collectionId,
+      accessionNumber: "A-0001",
+      dateReceived: Date.now(),
+      source: "Historic register",
+      method: "gift",
+      status: "approved",
+    });
+    const storageId = await ctx.storage.store(
+      new Blob([new Uint8Array([0xff])], { type: "image/jpeg" }),
+    );
+    const mediaId = await ctx.db.insert("mediaFiles", {
+      organizationId,
+      collectionId,
+      storageId,
+      fileName: "register-photo.jpg",
+      fileType: "image/jpeg",
+      fileSize: 1,
+      mimeType: "image/jpeg",
+      mediaCategory: "image",
+      isPrimary: true,
+      uploadedBy: userId,
+      uploadedAt: Date.now(),
+      uploadStatus: "completed",
+    });
+    await ctx.db.insert("conservationTreatments", {
+      organizationId,
+      collectionId,
+      title: "Retained treatment record",
+      description: "Historic care evidence",
+      treatmentType: "assessment",
+      performedBy: userId,
+      performedAt: Date.now(),
+      status: "completed",
+      createdBy: userId,
+    });
+
+    return {
+      organizationId,
+      userId,
+      collectionId,
+      accessionId,
+      mediaId,
+      readPermissionId,
+    };
+  });
+
+  const asUser = t.withIdentity({ subject: userId });
+  const readOnlyUserId = await t.run(async (ctx) => {
+    const [readOnlyUserId, roleId] = await Promise.all([
+      ctx.db.insert("users", { name: "Read Only User" }),
+      ctx.db.insert("roles", {
         organizationId,
-        name: "Collection Manager",
-        description: "Test role",
+        name: "Reader",
+        description: "Read-only role",
         isSystemRole: false,
-      });
-      await ctx.db.insert("rolePermissions", {
+      }),
+    ]);
+    await Promise.all([
+      ctx.db.insert("rolePermissions", {
         roleId,
         permissionId: readPermissionId,
-      });
-      await ctx.db.insert("rolePermissions", {
-        roleId,
-        permissionId: deletePermissionId,
-      });
-      await ctx.db.insert("userOrganizations", {
-        userId,
+      }),
+      ctx.db.insert("userOrganizations", {
+        userId: readOnlyUserId,
         organizationId,
         roleId,
         joinedAt: Date.now(),
-      });
-
-      const [activeCollectionId, deletedCollectionId, groupId] =
-        await Promise.all([
-          ctx.db.insert("collections", {
-            organizationId,
-            accessionNumber: "A-0001",
-            title: "Active item",
-            status: "active",
-            catalogedBy: userId,
-            catalogedAt: Date.now(),
-          }),
-          ctx.db.insert("collections", {
-            organizationId,
-            accessionNumber: "D-0001",
-            title: "Deleted item",
-            status: "deleted",
-            catalogedBy: userId,
-            catalogedAt: Date.now(),
-          }),
-          ctx.db.insert("collectionGroups", {
-            organizationId,
-            name: "Trash test group",
-            createdBy: userId,
-            createdAt: Date.now(),
-          }),
-        ]);
-      await ctx.db.insert("collectionGroupItems", {
-        collectionGroupId: groupId,
-        collectionId: deletedCollectionId,
-        addedAt: Date.now(),
-        addedBy: userId,
-      });
-      await ctx.db.insert("objectComments", {
-        organizationId,
-        objectId: deletedCollectionId,
-        userId,
-        content: "Delete with object",
-        createdAt: Date.now(),
-      });
-      await ctx.db.insert("coinsStampsDetails", {
-        organizationId,
-        collectionId: deletedCollectionId,
-        itemCategory: "coin",
-        catalogNumber: "CS-TRASH-001",
-        createdAt: Date.now(),
-      });
-
-      return {
-        organizationId,
-        userId,
-        activeCollectionId,
-        deletedCollectionId,
-      };
-    });
-
-  const asUser = t.withIdentity({ subject: userId });
+      }),
+    ]);
+    return readOnlyUserId;
+  });
+  const readOnlyUser = t.withIdentity({ subject: readOnlyUserId });
 
   await expect(
-    asUser.query(api.collections.countDeletedCollections, { organizationId }),
-  ).resolves.toBe(1);
-
-  await expect(
-    asUser.mutation(api.collections.emptyDeletedCollections, {
-      organizationId,
+    readOnlyUser.mutation(api.collections.archiveCollection, {
+      collectionId,
+      reason: "Duplicate catalog record",
     }),
-  ).resolves.toEqual({ deletedCount: 1 });
+  ).rejects.toThrow("Permission denied");
+
+  await expect(
+    asUser.mutation(api.collections.archiveCollection, {
+      collectionId,
+      reason: "   ",
+    }),
+  ).rejects.toThrow("Reason is required");
+
+  await asUser.mutation(api.collections.archiveCollection, {
+    collectionId,
+    reason: "Duplicate catalog record",
+  });
+  await expect(
+    asUser.mutation(api.collections.archiveCollection, {
+      collectionId,
+      reason: "Duplicate catalog record",
+    }),
+  ).resolves.toBeNull();
+
+  const archiveRegister = await asUser.query(api.collections.getObjectDetail, {
+    collectionId,
+  });
+  expect(archiveRegister?.collection.archivedReason).toBe(
+    "Duplicate catalog record",
+  );
+  await expect(
+    readOnlyUser.mutation(api.collections.restoreCollection, { collectionId }),
+  ).rejects.toThrow("Permission denied");
 
   await t.run(async (ctx) => {
-    await expect(ctx.db.get(activeCollectionId)).resolves.not.toBeNull();
-    await expect(ctx.db.get(deletedCollectionId)).resolves.toBeNull();
+    const collection = await ctx.db.get(collectionId);
+    expect(collection?.status).toBe("archived");
+    expect(collection?.archivedReason).toBe("Duplicate catalog record");
+    await expect(ctx.db.get(accessionId)).resolves.not.toBeNull();
+    const treatments = await ctx.db
+      .query("conservationTreatments")
+      .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+      .collect();
+    expect(treatments).toHaveLength(1);
+    await expect(ctx.db.get(mediaId)).resolves.not.toBeNull();
+  });
 
-    const groupItems = await ctx.db
-      .query("collectionGroupItems")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", deletedCollectionId),
+  const competingCollectionId = await t.run((ctx) =>
+    ctx.db.insert("collections", {
+      organizationId,
+      accessionNumber: "A-0001",
+      title: "Conflicting active item",
+      status: "active",
+      catalogedBy: userId,
+      catalogedAt: Date.now(),
+    }),
+  );
+  await expect(
+    asUser.mutation(api.collections.restoreCollection, { collectionId }),
+  ).rejects.toThrow("An active object already uses this accession number");
+
+  await t.run((ctx) => ctx.db.delete(competingCollectionId));
+  await expect(
+    asUser.mutation(api.collections.restoreCollection, { collectionId }),
+  ).resolves.toBeNull();
+
+  await t.run(async (ctx) => {
+    const restoreLog = await ctx.db
+      .query("auditLog")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
       )
-      .collect();
-    expect(groupItems).toEqual([]);
-
-    const comments = await ctx.db
-      .query("objectComments")
-      .withIndex("by_object", (q) => q.eq("objectId", deletedCollectionId))
-      .collect();
-    expect(comments).toEqual([]);
-
-    const coinsStampsDetails = await ctx.db
-      .query("coinsStampsDetails")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", deletedCollectionId),
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("action"), "restored_collection"),
+          q.eq(q.field("entityId"), collectionId),
+        ),
       )
-      .collect();
-    expect(coinsStampsDetails).toEqual([]);
+      .first();
+    expect(restoreLog?.changes).toMatchObject({
+      withdrawalReason: "Duplicate catalog record",
+    });
   });
 });
 
@@ -511,7 +612,7 @@ test("collections.create rejects module collection types when module is disabled
 test("coins and stamps details require enabled module and surface in module details", async () => {
   const t = convexTest(schema, modules);
 
-  const { _organizationId, userId, collectionId } = await t.run(async (ctx) => {
+  const { userId, collectionId } = await t.run(async (ctx) => {
     const [
       userId,
       organizationId,

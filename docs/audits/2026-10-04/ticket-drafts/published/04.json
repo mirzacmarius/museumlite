@@ -1,0 +1,11 @@
+{
+  "number": 4,
+  "batch": 1,
+  "id": "MUS-614",
+  "url": "https://linear.app/museumlite/issue/MUS-614/publish-only-explicitly-approved-image-renditions",
+  "title": "Publish only explicitly approved image renditions",
+  "blockedBy": [
+    "MUS-612"
+  ],
+  "implementationApproved": false
+}

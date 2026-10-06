@@ -1,3 +1,4 @@
+import { convexImageConfig } from "../../scripts/convex-image-config.mjs";
 import { loadMonorepoEnv } from "../../scripts/load-monorepo-env.mjs";
 
 loadMonorepoEnv(import.meta.url);
@@ -11,12 +12,7 @@ const nextConfig = {
     qualities: [65, 70, 75],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [256, 384, 400, 512, 640, 800],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.convex.cloud",
-      },
-    ],
+    ...convexImageConfig(),
   },
   // Exclude server-only packages from client bundle
   // pino and thread-stream use worker threads which aren't bundler-compatible

@@ -1,0 +1,13 @@
+{
+  "number": 22,
+  "batch": 3,
+  "id": "MUS-632",
+  "url": "https://linear.app/museumlite/issue/MUS-632/confirm-exhibition-installation-and-physical-returns",
+  "title": "Confirm exhibition installation and physical returns",
+  "blockedBy": [
+    "MUS-627",
+    "MUS-628",
+    "MUS-630"
+  ],
+  "implementationApproved": false
+}

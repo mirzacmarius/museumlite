@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { NOTIFICATION_TYPES } from "./notifications";
+import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
 import { requirePermission } from "./utils/permissions";
 
 const mentionPattern = /@([a-zA-Z0-9._-]+)/g;
@@ -180,7 +181,9 @@ export const remove = mutation({
       throw new Error("Can only delete your own comments");
     }
 
-    await ctx.db.delete(args.commentId);
-    return null;
+    const object = await ctx.db.get(comment.objectId);
+    if (!object) throw new Error("Object not found");
+    await requirePermission(ctx, object.organizationId, "collections.read");
+    rejectPermanentEvidenceDeletion();
   },
 });

@@ -3,7 +3,7 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useReducer } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientNow } from "@/hooks/use-client-date-format";
@@ -18,7 +18,6 @@ import {
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
 
 interface ExhibitionDetailPageState {
-  isDeleting: boolean;
   isUploadDialogOpen: boolean;
   isUploading: boolean;
   uploadDocType: string;
@@ -26,7 +25,6 @@ interface ExhibitionDetailPageState {
 }
 
 type ExhibitionDetailPageAction =
-  | { type: "setDeleting"; value: boolean }
   | { type: "setUploadDialogOpen"; value: boolean }
   | { type: "setUploading"; value: boolean }
   | { type: "setUploadDocType"; value: string }
@@ -34,7 +32,6 @@ type ExhibitionDetailPageAction =
   | { type: "closeUploadDialog" };
 
 const initialExhibitionDetailPageState: ExhibitionDetailPageState = {
-  isDeleting: false,
   isUploadDialogOpen: false,
   isUploading: false,
   uploadDocType: "other",
@@ -46,8 +43,6 @@ function exhibitionDetailPageReducer(
   action: ExhibitionDetailPageAction,
 ): ExhibitionDetailPageState {
   switch (action.type) {
-    case "setDeleting":
-      return { ...state, isDeleting: action.value };
     case "setUploadDialogOpen":
       return { ...state, isUploadDialogOpen: action.value };
     case "setUploading":
@@ -68,13 +63,13 @@ function exhibitionDetailPageReducer(
 
 export function ExhibitionDetailPageClient() {
   const params = useParams();
-  const { push } = useRouter();
+
   const exhibitionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const locale = useCurrentLocale();
   const t = useScopedI18n("exhibitions");
   const now = useClientNow();
-  const deleteExhibition = useMutation(api.exhibitions.remove);
+
   const [state, dispatch] = useReducer(
     exhibitionDetailPageReducer,
     initialExhibitionDetailPageState,
@@ -97,19 +92,21 @@ export function ExhibitionDetailPageClient() {
 
   const generateUploadUrl = useMutation(api.exhibitions.generateUploadUrl);
   const uploadDocument = useMutation(api.exhibitions.uploadDocument);
-  const deleteDocument = useMutation(api.exhibitions.deleteDocument);
 
   const handleFileUpload = async () => {
     if (!state.selectedFile) return;
 
     dispatch({ type: "setUploading", value: true });
     try {
-      const uploadUrl = await generateUploadUrl();
+      const uploadUrl = await generateUploadUrl({
+        exhibitionId: exhibitionId as Id<"exhibitions">,
+      });
       const result = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": state.selectedFile.type },
         body: state.selectedFile,
       });
+      if (!result.ok) throw new Error(await result.text());
       const { storageId } = await result.json();
 
       await uploadDocument({
@@ -129,16 +126,6 @@ export function ExhibitionDetailPageClient() {
       console.error("Upload failed:", error);
     } finally {
       dispatch({ type: "setUploading", value: false });
-    }
-  };
-
-  const handleDeleteDocument = async (
-    documentId: Id<"exhibitionDocuments">,
-  ) => {
-    try {
-      await deleteDocument({ documentId });
-    } catch (error) {
-      console.error("Delete failed:", error);
     }
   };
 
@@ -166,17 +153,6 @@ export function ExhibitionDetailPageClient() {
     );
   }
 
-  const handleDelete = async () => {
-    dispatch({ type: "setDeleting", value: true });
-    try {
-      await deleteExhibition({ id: exhibitionId as Id<"exhibitions"> });
-      push("/exhibitions");
-    } catch (error) {
-      console.error("Failed to delete exhibition:", error);
-      dispatch({ type: "setDeleting", value: false });
-    }
-  };
-
   const viewProps: ExhibitionDetailViewProps = {
     exhibitionId,
     locale,
@@ -186,8 +162,6 @@ export function ExhibitionDetailPageClient() {
     duration: calculateDuration(exhibition, now, t),
     workflowHistory,
     documents,
-    isDeleting: state.isDeleting,
-    handleDelete,
     isUploadDialogOpen: state.isUploadDialogOpen,
     setIsUploadDialogOpen: (value) =>
       dispatch({ type: "setUploadDialogOpen", value }),
@@ -197,7 +171,6 @@ export function ExhibitionDetailPageClient() {
     selectedFile: state.selectedFile,
     setSelectedFile: (value) => dispatch({ type: "setSelectedFile", value }),
     handleFileUpload,
-    handleDeleteDocument,
   };
 
   return (

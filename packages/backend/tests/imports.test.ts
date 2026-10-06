@@ -44,7 +44,7 @@ test("should process import batch", async () => {
     ],
   });
 
-  expect(result).toEqual({ processed: 1, errors: [] });
+  expect(result).toMatchObject({ processed: 1, errors: [] });
 
   const accessions = await t.run(async (ctx) => {
     return await ctx.db
@@ -95,7 +95,7 @@ test("should handle import errors gracefully", async () => {
   expect(validation.errors).toContainEqual(
     expect.objectContaining({
       field: "dateReceived",
-      message: "Invalid date format",
+      message: "Invalid date format. Use YYYY-MM-DD",
       severity: "error",
     }),
   );
@@ -121,7 +121,7 @@ test("should handle import errors gracefully", async () => {
   });
 
   expect(result.processed).toBe(0);
-  expect(result.errors).toEqual(["Row 2: Invalid date format"]);
+  expect(result.errors).toEqual(["Row 2: Invalid date format. Use YYYY-MM-DD"]);
 
   const accessions = await t.run(async (ctx) => {
     return await ctx.db
@@ -189,7 +189,7 @@ test("should import warning-only accession rows with normalized values", async (
     ],
   });
 
-  expect(result).toEqual({ processed: 1, errors: [] });
+  expect(result).toMatchObject({ processed: 1, errors: [] });
 
   const accessions = await t.run(async (ctx) => {
     return await ctx.db
@@ -244,7 +244,7 @@ test("should track import progress", async () => {
   expect(job?.progress).toBeGreaterThan(0);
 });
 
-test("should rollback failed import", async () => {
+test("cancelling an import stops further rows", async () => {
   const t = createConvexTest();
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
@@ -266,7 +266,7 @@ test("should rollback failed import", async () => {
   await authed.mutation(api.imports.cancelImportJob, { jobId });
 
   const job = await authed.query(api.imports.getImportJob, { jobId });
-  expect(job?.status).toBe("failed");
+  expect(job?.status).toBe("cancelled");
 });
 
 test("getImportTemplate returns PastPerfect template", async () => {

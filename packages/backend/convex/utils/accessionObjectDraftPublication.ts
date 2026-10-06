@@ -1,11 +1,14 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { insertCompletedMediaAsset } from "./mediaAssets";
 import { syncCollectionOptionUsages } from "./collectionOptionUsages";
+import { ensureIdentifierAvailable } from "./identifiers";
+import { validateObjectReferences } from "./locationIntegrity";
+import { insertCompletedMediaAsset } from "./mediaAssets";
 import {
   applyUsageCounterDelta,
   ensureUsageCounter,
 } from "./organizationUsageCounters";
+import { transferStorageOwnership } from "./uploadOwnership";
 
 function serializeStringList(values?: string[]) {
   return values && values.length > 0 ? JSON.stringify(values) : undefined;
@@ -27,7 +30,21 @@ export async function publishAccessionObjectDraft(
     displayStatus?: string;
   },
 ) {
+  const catalogIdentifier =
+    accession.catalogIdentifier ?? accession.accessionNumber;
+  const normalizedIdentifier = await ensureIdentifierAvailable(
+    ctx,
+    accession.organizationId,
+    "catalog",
+    catalogIdentifier,
+  );
   const draftObjectData = accession.draftObjectData;
+  if (draftObjectData)
+    await validateObjectReferences(
+      ctx,
+      accession.organizationId,
+      draftObjectData,
+    );
   const collectionGroupIds =
     draftObjectData?.collectionGroupIds ??
     (draftObjectData?.collectionGroupId
@@ -38,7 +55,8 @@ export async function publishAccessionObjectDraft(
     ensureUsageCounter(ctx, accession.organizationId),
     ctx.db.insert("collections", {
       organizationId: accession.organizationId,
-      accessionNumber: accession.accessionNumber,
+      accessionNumber: catalogIdentifier,
+      normalizedIdentifier,
       collectionGroupId: collectionGroupIds[0],
       title:
         draftObjectData?.title?.trim() ||
@@ -112,8 +130,8 @@ export async function publishAccessionObjectDraft(
         }),
       ];
     }),
-    ...(accession.draftMedia ?? []).map((draftMediaItem) =>
-      insertCompletedMediaAsset(ctx, {
+    ...(accession.draftMedia ?? []).map(async (draftMediaItem) => {
+      const { mediaId } = await insertCompletedMediaAsset(ctx, {
         collectionId,
         organizationId: accession.organizationId,
         storageId: draftMediaItem.storageId,
@@ -124,8 +142,17 @@ export async function publishAccessionObjectDraft(
         isPrimary: draftMediaItem.isPrimary,
         uploadedBy: catalogedBy,
         uploadedAt: catalogedAt,
-      }),
-    ),
+      });
+      const ownership = await transferStorageOwnership(ctx, {
+        storageId: draftMediaItem.storageId,
+        organizationId: accession.organizationId,
+        fromOwnerType: "accessionDraft",
+        fromOwnerId: accession._id,
+        ownerType: "media",
+        ownerId: mediaId,
+      });
+      await ctx.db.patch(mediaId, ownership);
+    }),
   ]);
 
   await applyUsageCounterDelta(ctx, accession.organizationId, {

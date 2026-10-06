@@ -6,6 +6,10 @@ import {
   enabledModuleValidator,
 } from "./utils/moduleValidators";
 import {
+  movementKindValidator,
+  moveRequestConflictValidator,
+} from "./utils/movementValidators";
+import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
@@ -116,6 +120,8 @@ export default defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
 
+    // Account access is revoked while institutional actor identity is retained.
+    deactivatedAt: v.optional(v.number()),
     // custom fields
     username: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
@@ -441,6 +447,7 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     collectionGroupId: v.optional(v.id("collectionGroups")),
     accessionNumber: v.string(), // Primary accession number
+    normalizedIdentifier: v.optional(v.string()),
     alternateAccessionNumbers: v.optional(v.array(v.string())),
     accessionNumberHistory: v.optional(
       v.array(
@@ -556,6 +563,10 @@ export default defineSchema({
     verifiedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_normalizedIdentifier", [
+      "organizationId",
+      "normalizedIdentifier",
+    ])
     .index("by_accessionNumber", ["accessionNumber"])
     .index("by_organization_and_accessionNumber", [
       "organizationId",
@@ -694,6 +705,24 @@ export default defineSchema({
     completedAt: v.number(),
   }).index("by_organization", ["organizationId"]),
 
+  uploadIntents: defineTable({
+    token: v.string(),
+    uploadedBy: v.id("users"),
+    organizationId: v.optional(v.id("organizations")),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_token", ["token"]),
+
+  storageOwnership: defineTable({
+    storageId: v.id("_storage"),
+    uploadedBy: v.id("users"),
+    organizationId: v.optional(v.id("organizations")),
+    uploadedAt: v.number(),
+    ownerType: v.optional(v.string()),
+    ownerId: v.optional(v.string()),
+  }).index("by_storageId", ["storageId"]),
+
   // Media attachments for objects
   mediaFiles: defineTable({
     collectionId: v.id("collections"),
@@ -793,6 +822,22 @@ export default defineSchema({
     // Version Tracking
     currentVersionId: v.optional(v.id("mediaVersions")),
     versionCount: v.optional(v.number()),
+    publicApproval: v.optional(
+      v.object({
+        status: v.union(
+          v.literal("processing"),
+          v.literal("approved"),
+          v.literal("failed"),
+        ),
+        requestId: v.string(),
+        sourceStorageId: v.id("_storage"),
+        versionId: v.optional(v.id("mediaVersions")),
+        renditionStorageId: v.optional(v.id("_storage")),
+        approvedBy: v.id("users"),
+        approvedAt: v.number(),
+        allowOriginalDownload: v.boolean(),
+      }),
+    ),
   })
     .index("by_collection", ["collectionId"])
     .index("by_collection_and_fileType", ["collectionId", "fileType"])
@@ -1229,6 +1274,8 @@ export default defineSchema({
     organizationId: v.id("organizations"),
     collectionId: v.optional(v.id("collections")),
     accessionNumber: v.string(),
+    catalogIdentifier: v.optional(v.string()),
+    normalizedIdentifier: v.optional(v.string()),
     dateReceived: v.number(),
     source: v.string(),
     donorAccountId: v.optional(v.id("accounts")),
@@ -1285,6 +1332,10 @@ export default defineSchema({
     ),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_normalizedIdentifier", [
+      "organizationId",
+      "normalizedIdentifier",
+    ])
     .index("by_collection", ["collectionId"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
@@ -1303,6 +1354,21 @@ export default defineSchema({
       searchField: "accessionNumber",
       filterFields: ["organizationId", "status"],
     }),
+
+  identifierConflictReviews: defineTable({
+    organizationId: v.id("organizations"),
+    register: v.union(v.literal("catalog"), v.literal("accession")),
+    recordId: v.union(v.id("collections"), v.id("accessions")),
+    identifier: v.string(),
+    normalizedIdentifier: v.string(),
+    note: v.string(),
+    reviewedBy: v.id("users"),
+    reviewedAt: v.number(),
+  }).index("by_organization_and_register_and_record", [
+    "organizationId",
+    "register",
+    "recordId",
+  ]),
 
   accessionSearchDocuments: defineTable({
     organizationId: v.id("organizations"),
@@ -1536,8 +1602,14 @@ export default defineSchema({
     movedAt: v.number(),
     reason: v.optional(v.string()),
     notes: v.optional(v.string()),
+    // Guarded movement evidence (MUS-628). Legacy rows omit these fields.
+    movementKind: v.optional(movementKindValidator),
+    authorizedBy: v.optional(v.id("users")),
+    moveRequestId: v.optional(v.id("locationMoveRequests")),
+    batchJobId: v.optional(v.id("batchJobs")),
   })
     .index("by_collection", ["collectionId"])
+    .index("by_moveRequest", ["moveRequestId"])
     .index("by_toLocation", ["toLocationId"])
     .index("by_fromLocation", ["fromLocationId"])
     .index("by_movedAt", ["movedAt"])
@@ -1565,6 +1637,7 @@ export default defineSchema({
       v.literal("rejected"), // Rejected
       v.literal("executed"), // Move completed
       v.literal("cancelled"), // Request cancelled
+      v.literal("conflict"), // Execution refused; awaiting re-review
     ),
 
     // Approval tracking
@@ -1573,11 +1646,17 @@ export default defineSchema({
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     reviewNotes: v.optional(v.string()),
+    // Source observed when the request was (re-)approved; null means the
+    // object had no recorded location. Execution refuses a different source.
+    approvedFromLocationId: v.optional(v.union(v.id("locations"), v.null())),
 
     // Execution tracking
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
     executionNotes: v.optional(v.string()),
+    movementId: v.optional(v.id("locationHistory")),
+    // Append-only record of refused execution attempts
+    conflicts: v.optional(v.array(moveRequestConflictValidator)),
 
     // Override tracking (if capacity/status was overridden)
     capacityOverride: v.optional(v.boolean()),
@@ -1864,6 +1943,7 @@ export default defineSchema({
     useDetailedConditionReports: v.optional(v.boolean()),
   })
     .index("by_organization", ["organizationId"])
+    .index("by_organization_and_loanNumber", ["organizationId", "loanNumber"])
     .index("by_status", ["status"])
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_startDate", ["organizationId", "startDate"])
@@ -2123,6 +2203,11 @@ export default defineSchema({
     uvLevel: v.optional(v.number()), // UV index or µW/lumen
     // Metadata
     recordedAt: v.number(),
+    observedAt: v.optional(v.number()),
+    receivedAt: v.optional(v.number()),
+    sensorDeviceId: v.optional(v.id("environmentalDevices")),
+    sensorProbeId: v.optional(v.string()),
+    externalReadingId: v.optional(v.string()),
     recordedBy: v.optional(v.id("users")), // If manual entry
     source: v.union(
       v.literal("manual"),
@@ -2137,7 +2222,42 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_location", ["locationId"])
-    .index("by_location_and_time", ["locationId", "recordedAt"]),
+    .index("by_location_and_time", ["locationId", "recordedAt"])
+    .index("by_sensor_device_and_probe_and_external_reading", [
+      "sensorDeviceId",
+      "sensorProbeId",
+      "externalReadingId",
+    ]),
+
+  environmentalDevices: defineTable({
+    organizationId: v.id("organizations"),
+    name: v.string(),
+    credentialPrefix: v.string(),
+    credentialHash: v.string(),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    lastSeenAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    lastErrorAt: v.optional(v.number()),
+    rotatedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_credential_prefix", ["credentialPrefix"]),
+
+  environmentalProbes: defineTable({
+    organizationId: v.id("organizations"),
+    deviceId: v.id("environmentalDevices"),
+    probeId: v.string(),
+    locationId: v.id("locations"),
+    isActive: v.boolean(),
+    boundBy: v.id("users"),
+    boundAt: v.number(),
+  })
+    .index("by_device_and_probe", ["deviceId", "probeId"])
+    .index("by_organization_and_device", ["organizationId", "deviceId"])
+    .index("by_location", ["locationId"]),
 
   // Conservation treatment attachments (before/after photos, reports)
   conservationAttachments: defineTable({
@@ -2640,9 +2760,18 @@ export default defineSchema({
     approvedBy: v.id("users"),
     approvedAt: v.number(),
     comment: v.optional(v.string()),
+    clearedAt: v.optional(v.number()),
   })
     .index("by_entity_and_step", ["workflowType", "entityId", "stepNumber"])
-    .index("by_user", ["approvedBy"]),
+    .index("by_user", ["approvedBy"])
+    .index("by_organization", ["organizationId"])
+    .index("by_entity_and_step_and_clearedAt_and_approvedBy", [
+      "workflowType",
+      "entityId",
+      "stepNumber",
+      "clearedAt",
+      "approvedBy",
+    ]),
 
   // SLA configurations for workflow types (Task 5)
   workflowSlaConfigs: defineTable({
@@ -2703,17 +2832,57 @@ export default defineSchema({
       v.literal("pending"),
       v.literal("processing"),
       v.literal("completed"),
+      v.literal("completed_with_errors"),
+      v.literal("cancelled"),
       v.literal("failed"),
     ),
     progress: v.number(),
     totalItems: v.number(),
+    // Accepted rows. Kept for clients that predate attempted/failed counts.
     processedItems: v.number(),
     errors: v.optional(v.array(v.string())),
     createdBy: v.id("users"),
     createdAt: v.number(),
+    // Row-tracked imports (absent on legacy jobs)
+    entityType: v.optional(
+      v.union(
+        v.literal("objects"),
+        v.literal("accessions"),
+        v.literal("locations"),
+        v.literal("accounts"),
+        v.literal("loans"),
+      ),
+    ),
+    attemptedItems: v.optional(v.number()),
+    acceptedItems: v.optional(v.number()),
+    failedItems: v.optional(v.number()),
+    sourceName: v.optional(v.string()),
+    sourceFingerprint: v.optional(v.string()),
+    updatedAt: v.optional(v.number()),
+    finishedAt: v.optional(v.number()),
   })
     .index("by_organization", ["organizationId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_organization_and_sourceFingerprint", [
+      "organizationId",
+      "sourceFingerprint",
+    ]),
+
+  // One durable outcome per import job and source row; replays return it.
+  importRowResults: defineTable({
+    organizationId: v.id("organizations"),
+    jobId: v.id("importJobs"),
+    rowNumber: v.number(),
+    status: v.union(v.literal("accepted"), v.literal("failed")),
+    recordId: v.optional(v.string()),
+    identifier: v.optional(v.string()),
+    errors: v.array(v.string()),
+    attempts: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_job_and_rowNumber", ["jobId", "rowNumber"])
+    .index("by_job_and_status_and_rowNumber", ["jobId", "status", "rowNumber"]),
 
   // Import validation reports
   importValidationReports: defineTable({
@@ -2774,7 +2943,12 @@ export default defineSchema({
 
   mediaImportJobData: defineTable({
     jobId: v.id("importJobs"),
-    mappingType: v.union(v.literal("csv"), v.literal("filename")),
+    // Manual jobs created before MUS-622 have no row here.
+    mappingType: v.union(
+      v.literal("csv"),
+      v.literal("filename"),
+      v.literal("manual"),
+    ),
     mappingData: v.array(
       v.object({
         filename: v.string(),
@@ -2787,6 +2961,8 @@ export default defineSchema({
         storageId: v.id("_storage"),
         fileSize: v.number(),
         mimeType: v.string(),
+        // Source position on the job; matches importRowResults.rowNumber.
+        itemNumber: v.optional(v.number()),
         mapped: v.boolean(),
         collectionId: v.optional(v.id("collections")),
         mediaFileId: v.optional(v.id("mediaFiles")),
@@ -4199,6 +4375,7 @@ export default defineSchema({
         ),
         filters: v.optional(
           v.object({
+            siteIds: v.optional(v.array(v.id("sites"))),
             locationIds: v.optional(v.array(v.id("locations"))),
             collectionGroupIds: v.optional(v.array(v.id("collectionGroups"))),
             objectTypes: v.optional(v.array(v.string())),
@@ -4218,6 +4395,7 @@ export default defineSchema({
     scheduledDay: v.optional(v.number()), // Day of week (0-6) or day of month (1-31)
     scheduledTime: v.optional(v.string()), // HH:MM in 24hr format
     timezone: v.optional(v.string()),
+    scheduleRevision: v.optional(v.number()),
 
     // Email delivery
     emailRecipients: v.optional(v.array(v.string())),
@@ -4249,6 +4427,10 @@ export default defineSchema({
   reportRuns: defineTable({
     organizationId: v.id("organizations"),
     scheduledReportId: v.optional(v.id("scheduledReports")),
+    scheduledFor: v.optional(v.number()),
+    scheduleRevision: v.optional(v.number()),
+    attemptCount: v.optional(v.number()),
+    lastAttemptAt: v.optional(v.number()),
     reportType: v.string(),
     reportName: v.string(),
 
@@ -4265,6 +4447,15 @@ export default defineSchema({
 
     // Report data
     reportData: v.optional(v.any()), // JSON blob of report results
+    artifact: v.optional(
+      v.object({
+        schemaVersion: v.literal(1),
+        format: v.literal("json"),
+        content: v.string(),
+        generatedAt: v.number(),
+        storedAt: v.number(),
+      }),
+    ),
     storageId: v.optional(v.id("_storage")), // For PDF/Excel exports
 
     // Delivery
@@ -4277,6 +4468,11 @@ export default defineSchema({
   })
     .index("by_organization", ["organizationId"])
     .index("by_scheduled_report", ["scheduledReportId"])
+    .index("by_scheduledReportId_and_scheduleRevision_and_scheduledFor", [
+      "scheduledReportId",
+      "scheduleRevision",
+      "scheduledFor",
+    ])
     .index("by_status", ["organizationId", "status"]),
 
   // ============================================

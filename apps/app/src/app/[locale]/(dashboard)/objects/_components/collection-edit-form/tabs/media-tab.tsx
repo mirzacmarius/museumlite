@@ -3,7 +3,7 @@ import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import type { FunctionReturnType } from "convex/server";
-import { Edit, Star, Upload, X } from "lucide-react";
+import { Edit, Star, Upload } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { useI18n } from "@/locales/client";
@@ -25,7 +25,6 @@ export interface CollectionEditMediaTabProps extends CollectionFormTabProps {
   documentInputRef: React.RefObject<HTMLInputElement | null>;
   handleDocumentSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleSetPrimary: (mediaId: string) => void;
-  handleDeleteMedia: (mediaId: string) => void;
   setEditingImageId: (id: Id<"mediaFiles"> | null) => void;
   hasConditionChanged: boolean;
   requiresConditionChangeNote: boolean;
@@ -40,7 +39,6 @@ export function CollectionEditMediaTab({
   documentInputRef,
   handleDocumentSelect,
   handleSetPrimary,
-  handleDeleteMedia,
   setEditingImageId,
 }: CollectionEditMediaTabProps) {
   const tRoot = useI18n();
@@ -108,16 +106,6 @@ export function CollectionEditMediaTab({
                         <Star className="size-3.5" />
                       </Button>
                     ) : null}
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="size-8"
-                      onClick={() => handleDeleteMedia(file._id)}
-                      title={common("delete")}
-                    >
-                      <X className="size-3.5" />
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -174,15 +162,6 @@ export function CollectionEditMediaTab({
                     {tRoot("untranslatedRecords.objects.form.savedToObject")}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => handleDeleteMedia(document._id)}
-                  title={common("delete")}
-                >
-                  <X className="size-4" />
-                </Button>
               </div>
             ))}
           </div>

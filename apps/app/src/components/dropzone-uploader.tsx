@@ -40,7 +40,7 @@ interface DropzoneUploaderProps {
   sublabel?: string;
 }
 
-const DEFAULT_MAX_SIZE = 50 * 1024 * 1024;
+const DEFAULT_MAX_SIZE = 20 * 1024 * 1024;
 const DEFAULT_MAX_FILES = 20;
 const EMPTY_UPLOADING_FILES: UploadFile[] = [];
 

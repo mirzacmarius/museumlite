@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArrowRightLeft, DollarSign, Trash2 } from "lucide-react";
+import { Archive, ArrowRightLeft, DollarSign } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import type {
   DeaccessionWorkflowConfig,
@@ -88,36 +88,6 @@ export function DeaccessionTypePicker({
           <p className="mt-1 text-sm text-muted-foreground">
             {translate(
               "untranslatedComponents.labels.removeFromTheActiveCollectionButPreserveAllDataHistoryAndMediaTheObjectCanBeRestoredLater",
-            )}
-          </p>
-          <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-            {translate(
-              "untranslatedComponents.labels.submittedToDeaccessionApprovalBeforeTheObjectIsArchived",
-            )}
-          </p>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onSelect("deleted")}
-        className="flex items-start gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50"
-      >
-        <div className="rounded-full bg-red-500/10 p-2">
-          <Trash2 className="size-5 text-red-500" />
-        </div>
-        <div className="flex-1">
-          <h3 className="font-semibold">
-            {translate("untranslatedComponents.labels.deleteObject")}
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {translate(
-              "untranslatedComponents.labels.hideThisObjectFromTheMainCatalogUseThisIfItWasAddedIncorrectlyOrIsADuplicate",
-            )}
-          </p>
-          <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-            {translate(
-              "untranslatedComponents.labels.submittedToDeaccessionApprovalBeforeTheObjectIsDeleted",
             )}
           </p>
         </div>

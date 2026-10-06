@@ -14,10 +14,7 @@
         ]
       },
       {
-        "files": [
-          "apps/web/src/**/*.tsx",
-          "src/**/*.tsx"
-        ],
+        "files": ["apps/web/src/**/*.tsx", "src/**/*.tsx"],
         "rules": ["react-doctor/design-no-em-dash-in-jsx-text"]
       },
       {
@@ -26,6 +23,38 @@
           "src/app/(marketing)/contact/actions.ts"
         ],
         "rules": ["react-doctor/server-auth-actions"]
+      },
+      {
+        "files": [
+          "packages/backend/convex/accountRelationships.ts",
+          "packages/backend/convex/collections.ts",
+          "packages/backend/convex/mediaImports.ts",
+          "packages/backend/convex/reporting.ts",
+          "packages/backend/convex/utils/collectionDisposition.ts"
+        ],
+        "rules": ["react-doctor/async-defer-await"]
+      },
+      {
+        "files": [
+          "apps/app/src/hooks/use-tracked-import-runner.ts",
+          "apps/app/src/app/**/settings/data/use-data-import.ts",
+          "src/hooks/use-tracked-import-runner.ts",
+          "src/app/**/settings/data/use-data-import.ts",
+          "apps/app/src/app/**/collections/media-import/_components/use-media-import.ts",
+          "src/app/**/collections/media-import/_components/use-media-import.ts"
+        ],
+        "rules": ["react-doctor/async-await-in-loop"]
+      },
+      {
+        "files": [
+          "apps/app/src/app/**/media/media-publication-panel.tsx",
+          "src/app/**/media/media-publication-panel.tsx"
+        ],
+        "rules": ["react-doctor/no-pure-black-background"]
+      },
+      {
+        "files": ["packages/backend/convex/utils/reportSchedule.ts"],
+        "rules": ["react-doctor/js-hoist-intl"]
       }
     ]
   }

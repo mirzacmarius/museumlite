@@ -222,6 +222,7 @@ export function useObjectRequestForm({
     common,
     placeholders,
     currentOrganizationId,
+    activeDraftAccessionId,
     organizationPrompt,
     formData,
     activeTab,

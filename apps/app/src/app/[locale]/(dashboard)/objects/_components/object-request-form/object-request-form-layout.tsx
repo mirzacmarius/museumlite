@@ -86,6 +86,8 @@ export function ObjectRequestFormLayout({
     ),
   ];
 
+  if (!currentOrganizationId) return null;
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-background">
       <ObjectRequestFormHeader
@@ -143,7 +145,8 @@ export function ObjectRequestFormLayout({
             formData={formData}
             updateField={updateField}
             placeholders={placeholders}
-            currentOrganizationId={currentOrganizationId ?? ""}
+            currentOrganizationId={currentOrganizationId}
+            identifierAccessionId={form.activeDraftAccessionId ?? undefined}
             isLocationTrackingEnabled={isLocationTrackingEnabled}
             enabledModules={enabledModules}
             common={common}

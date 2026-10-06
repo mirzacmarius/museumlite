@@ -3,7 +3,6 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import {
   applyUsageCounterDelta,
-  getMediaStorageBytes,
   getMediaVersionStorageBytes,
   getStorageBytes,
 } from "./organizationUsageCounters";
@@ -215,58 +214,6 @@ export async function completeChunkedMediaAsset(
   }
 
   return existing._id;
-}
-
-export async function deleteMediaAsset(
-  ctx: MutationCtx,
-  {
-    deletedBy,
-    media,
-  }: {
-    media: {
-      _id: Id<"mediaFiles">;
-      collectionId: Id<"collections">;
-      fileName: string;
-      fileType: string;
-      organizationId: Id<"organizations">;
-      storageId: Id<"_storage">;
-      thumbnailStorageId?: Id<"_storage">;
-    };
-    deletedBy: Id<"users">;
-  },
-) {
-  const storageBytes = await getMediaStorageBytes(ctx, media);
-
-  await ctx.storage.delete(media.storageId);
-  if (media.thumbnailStorageId) {
-    await ctx.storage.delete(media.thumbnailStorageId);
-  }
-  await Promise.all([
-    ctx.db.delete(media._id),
-    applyUsageCounterDelta(ctx, media.organizationId, {
-      mediaFileCount: -1,
-      mediaTypeDeltas: [
-        {
-          type: media.fileType,
-          countDelta: -1,
-          bytesDelta: -storageBytes,
-        },
-      ],
-      storageBytes: -storageBytes,
-    }),
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: media.organizationId,
-      userId: deletedBy,
-      action: "deleted_media",
-      entityType: "media",
-      entityId: media._id,
-      changes: {
-        fileName: media.fileName,
-        fileType: media.fileType,
-        collectionId: media.collectionId,
-      },
-    }),
-  ] as const);
 }
 
 export async function recordMediaVersionUsage(

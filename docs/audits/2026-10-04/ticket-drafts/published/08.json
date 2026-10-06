@@ -1,0 +1,11 @@
+{
+  "number": 8,
+  "batch": 1,
+  "id": "MUS-618",
+  "url": "https://linear.app/museumlite/issue/MUS-618/verify-tuya-forwarding-and-safe-sender-cutover",
+  "title": "Verify Tuya forwarding and safe sender cutover",
+  "blockedBy": [
+    "MUS-617"
+  ],
+  "implementationApproved": false
+}

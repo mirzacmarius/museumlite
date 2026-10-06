@@ -1,3 +1,5 @@
+import { parseCsvRecords } from "@/lib/csv-parser";
+
 export type ImportType =
   | "objects"
   | "accessions"
@@ -5,27 +7,11 @@ export type ImportType =
   | "accounts"
   | "loans";
 
+/** Rows of trimmed cells, header first. */
 export function parseCSV(text: string): string[][] {
-  const lines = text.split("\n");
-  return lines.map((line) => {
-    const result: string[] = [];
-    let current = "";
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === "," && !inQuotes) {
-        result.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  });
+  return parseCsvRecords(text).map((record) =>
+    record.values.map((value) => value.trim()),
+  );
 }
 
 export function convertToCSV(
