@@ -6,6 +6,7 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { Boxes, MapPin } from "lucide-react";
 import Link from "next/link";
+import { ObjectMovementsSection } from "./movements/object-movements-section";
 import type { CollectionData, LocationPathItem } from "./types";
 
 interface PlacementRelationshipsTabProps {
@@ -87,6 +88,13 @@ export function PlacementRelationshipsTab({
           </div>
         </div>
       </div>
+
+      <ObjectMovementsSection
+        collectionId={collectionId}
+        organizationId={collection.organizationId}
+        currentLocationId={collection.currentLocationId}
+        currentLocationLabel={location}
+      />
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
