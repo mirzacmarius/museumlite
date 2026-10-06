@@ -11,6 +11,7 @@ import {
 import { customFieldValue } from "./schema";
 import { replaceCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
+  assessCollectionMovement,
   moveCollectionToLocation,
   requireUsableLocation,
 } from "./utils/locationIntegrity";
@@ -524,6 +525,7 @@ export const processBatchJob = internalMutation({
               collection,
               job.editPayload,
               job.createdBy,
+              job._id,
             );
             return { success: true as const };
           }
@@ -533,6 +535,7 @@ export const processBatchJob = internalMutation({
               collection,
               job.movePayload,
               job.createdBy,
+              job._id,
             );
             if (moveResult.success) {
               return { success: true as const };
@@ -630,6 +633,7 @@ async function processBulkEdit(
     customFields?: CollectionCustomFields;
   },
   userId: Id<"users">,
+  batchJobId?: Id<"batchJobs">,
 ) {
   const updates: Partial<CollectionDoc> = {
     lastModifiedBy: userId,
@@ -643,12 +647,19 @@ async function processBulkEdit(
     }
     updates.collectionGroupId = payload.collectionGroupId;
   }
-  if (payload.currentLocationId !== undefined) {
-    await requireUsableLocation(
+  if (
+    payload.currentLocationId !== undefined &&
+    payload.currentLocationId !== collection.currentLocationId
+  ) {
+    // Refuse before patching so a failed item keeps all previous values.
+    const { issues } = await assessCollectionMovement(
       ctx,
-      collection.organizationId,
+      collection,
       payload.currentLocationId,
+      { requireInstitutionalCustody: true },
     );
+    const [blocking] = issues;
+    if (blocking) throw new Error(blocking.message);
   }
   if (payload.condition !== undefined) {
     updates.condition = payload.condition;
@@ -681,6 +692,7 @@ async function processBulkEdit(
       payload.currentLocationId,
       userId,
       "Bulk edit location change",
+      { kind: "bulk_edit", batchJobId },
     );
   }
   if (payload.condition !== undefined) {
@@ -699,40 +711,26 @@ async function processBulkMove(
     overrideStatus?: boolean;
   },
   userId: Id<"users">,
+  batchJobId: Id<"batchJobs">,
 ): Promise<{ success: boolean; error?: string }> {
-  const toLocation = await requireUsableLocation(
+  if (collection.currentLocationId === payload.toLocationId) {
+    return { success: true };
+  }
+  // Job creation accepts only usable destinations, so a status override is
+  // never applied here; capacity override remains the requester's choice.
+  const { issues } = await assessCollectionMovement(
     ctx,
-    collection.organizationId,
+    collection,
     payload.toLocationId,
+    {
+      checkCapacity: true,
+      capacityOverride: payload.overrideCapacity,
+      requireInstitutionalCustody: true,
+    },
   );
-
-  // Check location status
-  const locationStatus = toLocation.status ?? "active";
-  if (!toLocation.isActive || locationStatus === "closed") {
-    if (!payload.overrideStatus) {
-      return { success: false, error: "Target location is closed" };
-    }
-  }
-
-  if (locationStatus === "renovation" && !payload.overrideStatus) {
-    return { success: false, error: "Target location is under renovation" };
-  }
-
-  // Check capacity
-  if (toLocation.capacity && !payload.overrideCapacity) {
-    const objectsAtLocation = await ctx.db
-      .query("collections")
-      .withIndex("by_currentLocation", (q) =>
-        q.eq("currentLocationId", payload.toLocationId),
-      )
-      .collect();
-
-    if (objectsAtLocation.length >= toLocation.capacity) {
-      return {
-        success: false,
-        error: `Location at capacity (${objectsAtLocation.length}/${toLocation.capacity})`,
-      };
-    }
+  const [blocking] = issues;
+  if (blocking) {
+    return { success: false, error: blocking.message };
   }
 
   await moveCollectionToLocation(
@@ -741,6 +739,12 @@ async function processBulkMove(
     payload.toLocationId,
     userId,
     payload.reason?.trim() || "Bulk move operation",
+    {
+      kind: "bulk_move",
+      batchJobId,
+      checkCapacity: true,
+      capacityOverride: payload.overrideCapacity,
+    },
   );
 
   return { success: true };
