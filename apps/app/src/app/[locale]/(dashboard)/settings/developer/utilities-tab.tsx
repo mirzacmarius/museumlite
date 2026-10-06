@@ -6,6 +6,37 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
+import { useCurrentLocale } from "@/locales/client";
+
+type AppLocale = ReturnType<typeof useCurrentLocale>;
+
+const approvalDateFormatters: Record<AppLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  es: new Intl.DateTimeFormat("es", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  fr: new Intl.DateTimeFormat("fr", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  no: new Intl.DateTimeFormat("nb-NO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  ro: new Intl.DateTimeFormat("ro", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+};
 
 export function UtilitiesTab({
   organizationId,
@@ -53,7 +84,7 @@ export function UtilitiesTab({
       </div>
       {review === undefined ? (
         <p className="text-sm text-muted-foreground">
-          Loading retained records...
+          Loading retained records…
         </p>
       ) : (
         <>
@@ -111,6 +142,7 @@ function ApprovalHistory({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
+  const locale = useCurrentLocale();
   const approvals = useQuery(
     api.workflows.listRetainedApprovals,
     isOpen
@@ -120,6 +152,13 @@ function ApprovalHistory({
         }
       : "skip",
   );
+  const formattedApprovals =
+    approvals?.page.map((vote) => ({
+      ...vote,
+      formattedApprovedAt: approvalDateFormatters[locale].format(
+        new Date(vote.approvedAt),
+      ),
+    })) ?? [];
   return (
     <section className="space-y-3">
       <Button
@@ -137,18 +176,16 @@ function ApprovalHistory({
             resets. Cleared votes no longer count toward an active step.
           </p>
           {approvals === undefined ? (
-            <p className="text-sm text-muted-foreground">
-              Loading approvals...
-            </p>
+            <p className="text-sm text-muted-foreground">Loading approvals…</p>
           ) : (
             <>
-              {approvals.page.length === 0 ? (
+              {formattedApprovals.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No approvals recorded.
                 </p>
               ) : (
                 <ul className="divide-y divide-white/10 rounded-lg border border-white/10">
-                  {approvals.page.map((vote) => (
+                  {formattedApprovals.map((vote) => (
                     <li
                       key={vote.approvalId}
                       className="space-y-1 break-words p-4"
@@ -164,7 +201,7 @@ function ApprovalHistory({
                         <p className="text-sm">{vote.comment}</p>
                       )}
                       <p className="text-right text-xs text-white/60">
-                        {new Date(vote.approvedAt).toLocaleString()} ·{" "}
+                        {vote.formattedApprovedAt} UTC ·{" "}
                         {vote.clearedAt === null
                           ? "Active vote"
                           : "Retained historical vote"}

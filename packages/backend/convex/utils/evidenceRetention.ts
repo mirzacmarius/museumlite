@@ -2,6 +2,16 @@ import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
+const organizationDeletionAuditActions = new Set([
+  "scheduled_organization_deletion",
+  "requested_organization_deletion_approval",
+  "cancelled_organization_deletion",
+  "transferred_organization_ownership",
+  "sent_organization_deletion_final_notice",
+  "completed_organization_deletion",
+  "confirmed_organization_plan",
+]);
+
 /** Permanent museum records have no supported destruction operation. */
 export function rejectPermanentEvidenceDeletion(): never {
   throw new ConvexError(
@@ -41,8 +51,11 @@ export async function isOrganizationEvidenceProtected(
         "transitRecords",
         "installationTasks",
         "insurancePolicies",
+        "insuranceClaims",
         "conditionDisputes",
         "mediaEditHistory",
+        "accountDocuments",
+        "objectComments",
         "workflowHistory",
         "workflowStepApprovals",
       ] as const
@@ -55,5 +68,30 @@ export async function isOrganizationEvidenceProtected(
         .first(),
     ),
   );
-  return evidence.some((record) => record !== null);
+  if (evidence.some((record) => record !== null)) return true;
+
+  const auditEntries = await ctx.db
+    .query("auditLog")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .take(101);
+  if (auditEntries.length > 100) return true;
+
+  for (const entry of auditEntries) {
+    if (
+      entry.entityType !== "organization" ||
+      !organizationDeletionAuditActions.has(entry.action)
+    ) {
+      return true;
+    }
+    if (entry.entityId === organizationId) continue;
+
+    const deletionId = ctx.db.normalizeId(
+      "organizationDeletions",
+      entry.entityId,
+    );
+    const deletion = deletionId ? await ctx.db.get(deletionId) : null;
+    if (deletion?.organizationId !== organizationId) return true;
+  }
+
+  return false;
 }

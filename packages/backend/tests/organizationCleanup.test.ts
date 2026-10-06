@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
@@ -228,5 +228,172 @@ describe("organizationCleanup", () => {
     );
     expect(footprints[0]?.objectCount).toBe(1);
     expect(footprints[0]?.storageBytes).toBe(4);
+  });
+
+  test("orphaned object commentary prevents organization purge", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Object Commentary Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+    });
+    const commentId = await t.run(async (ctx) => {
+      const collectionId = await ctx.db.insert("collections", {
+        organizationId,
+        accessionNumber: "ORPHAN-1",
+        title: "Legacy object",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: 99,
+      });
+      const commentId = await ctx.db.insert("objectComments", {
+        organizationId,
+        objectId: collectionId,
+        userId,
+        content: "Original condition note",
+        createdAt: 100,
+      });
+      await ctx.db.delete(collectionId);
+      return commentId;
+    });
+    const admin = authedForUser(t, userId);
+
+    await expect(
+      admin.mutation(api.organizationCleanup.purgeOrganizations, {
+        organizationIds: [organizationId],
+        dryRun: false,
+      }),
+    ).rejects.toThrow("Permanent evidence");
+    const [organization, comment] = await t.run(async (ctx) =>
+      Promise.all([ctx.db.get(organizationId), ctx.db.get(commentId)]),
+    );
+    expect(organization?._id).toBe(organizationId);
+    expect(comment?.content).toBe("Original condition note");
+  });
+
+  test("standalone workflow history prevents organization purge", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Workflow Evidence Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+    });
+    const workflowEntryId = await t.run(async (ctx) =>
+      ctx.db.insert("workflowHistory", {
+        organizationId,
+        workflowType: "accession",
+        entityId: "legacy-accession-id",
+        fromStep: 1,
+        toStep: 2,
+        action: "approved",
+        performedBy: userId,
+        performedAt: 101,
+        comment: "Original approval decision",
+      }),
+    );
+    const admin = authedForUser(t, userId);
+
+    await expect(
+      admin.mutation(api.organizationCleanup.purgeOrganizations, {
+        organizationIds: [organizationId],
+        dryRun: false,
+      }),
+    ).rejects.toThrow("Permanent evidence");
+    const [organization, workflowEntry] = await t.run(async (ctx) =>
+      Promise.all([ctx.db.get(organizationId), ctx.db.get(workflowEntryId)]),
+    );
+    expect(organization?._id).toBe(organizationId);
+    expect(workflowEntry?.comment).toBe("Original approval decision");
+  });
+
+  test("internal purge preserves standalone documentary files and their blobs", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Document Evidence Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+    });
+    const [documentId, storageId] = await t.run(async (ctx) => {
+      const accountId = await ctx.db.insert("accounts", {
+        organizationId,
+        accountNumber: "ACC-HIST-1",
+        accountType: "institution",
+        businessName: "Historical lender",
+        createdBy: userId,
+        createdAt: 99,
+      });
+      const storageId = await ctx.storage.store(
+        new Blob(["Original agreement"], { type: "application/pdf" }),
+      );
+      const documentId = await ctx.db.insert("accountDocuments", {
+        organizationId,
+        accountId,
+        storageId,
+        filename: "agreement.pdf",
+        mimeType: "application/pdf",
+        size: 18,
+        documentType: "agreement",
+        uploadedBy: userId,
+        uploadedAt: 99,
+      });
+      return [documentId, storageId] as const;
+    });
+
+    await expect(
+      t.mutation(internal.organizationCleanup.purgeOrganizationsInternal, {
+        organizationIds: [organizationId],
+        dryRun: false,
+      }),
+    ).rejects.toThrow("Permanent evidence");
+    const [organization, document, originalFile] = await t.run(async (ctx) =>
+      Promise.all([
+        ctx.db.get(organizationId),
+        ctx.db.get(documentId),
+        ctx.db.system.get(storageId),
+      ]),
+    );
+    expect(organization?._id).toBe(organizationId);
+    expect(document?._id).toBe(documentId);
+    expect(originalFile).not.toBeNull();
+  });
+
+  test("orphaned object audit history prevents organization purge", async () => {
+    const t = convexTest(schema, modules);
+    const { organizationId, userId } = await createAdminOrganization(
+      t,
+      "Cleanup Orphan Audit Org",
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(organizationId, { type: "library" });
+    });
+    const auditEntryId = await t.run(async (ctx) =>
+      ctx.db.insert("auditLog", {
+        organizationId,
+        userId,
+        action: "updated_collection",
+        entityType: "collection",
+        entityId: "missing-historical-collection",
+        timestamp: 100,
+      }),
+    );
+    const admin = authedForUser(t, userId);
+
+    await expect(
+      admin.mutation(api.organizationCleanup.purgeOrganizations, {
+        organizationIds: [organizationId],
+        dryRun: false,
+      }),
+    ).rejects.toThrow("Permanent evidence");
+    const [organization, auditEntry] = await t.run(async (ctx) =>
+      Promise.all([ctx.db.get(organizationId), ctx.db.get(auditEntryId)]),
+    );
+    expect(organization?._id).toBe(organizationId);
+    expect(auditEntry?.entityId).toBe("missing-historical-collection");
   });
 });
