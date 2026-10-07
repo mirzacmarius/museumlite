@@ -3,7 +3,8 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireExhibitionAccess } from "./exhibitionAccess";
-import {
+import { getExhibitionsForObject } from "./exhibitionParticipation";
+import { 
   requireExhibitionReadPermission,
   requireExhibitionUpdatePermission,
 } from "./exhibitionContext";
@@ -531,10 +532,7 @@ export async function checkScheduleConflictsHandler(
     end2: number,
   ) => start1 < end2 && start2 < end1;
 
-  const exhibitions = await ctx.db
-    .query("exhibitions")
-    .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
-    .collect();
+  const exhibitions = await getExhibitionsForObject(ctx, args.collectionId);
 
   for (const ex of exhibitions) {
     if (args.excludeExhibitionId && ex._id === args.excludeExhibitionId) {
@@ -587,6 +585,48 @@ export async function checkScheduleConflictsHandler(
       }
     }),
   );
+
+  return {
+    hasConflicts: conflicts.length > 0,
+    conflicts,
+  };
+}
+
+type ScheduleConflictEntry = {
+  type: "exhibition" | "loan";
+  id: string;
+  title: string;
+  startDate: number;
+  endDate?: number;
+  status: string;
+};
+
+export async function checkScheduleConflictsForParticipantsHandler(
+  ctx: QueryCtx,
+  args: {
+    collectionIds: Id<"collections">[];
+    startDate: number;
+    endDate?: number;
+    excludeExhibitionId?: Id<"exhibitions">;
+  },
+) {
+  const seen = new Set<string>();
+  const conflicts: ScheduleConflictEntry[] = [];
+
+  for (const collectionId of args.collectionIds) {
+    const result = await checkScheduleConflictsHandler(ctx, {
+      collectionId,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      excludeExhibitionId: args.excludeExhibitionId,
+    });
+    for (const conflict of result.conflicts) {
+      const key = `${conflict.type}:${conflict.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      conflicts.push(conflict);
+    }
+  }
 
   return {
     hasConflicts: conflicts.length > 0,

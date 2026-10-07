@@ -3175,8 +3175,29 @@ export default {
       scheduleConflictHint:
         "Poți crea expoziția în continuare, dar ia în considerare modificarea datelor pentru a evita suprapunerea.",
       relatedObjectLabel: "Obiect asociat",
+      participantsLabel: "Obiecte ale expoziției",
+      objectNumber: "Obiect",
+      addObject: "Adaugă obiect",
+      removeObject: "Elimină obiectul",
+      moveUp: "Mută obiectul în sus",
+      moveDown: "Mută obiectul în jos",
+      participantRole: "Participant",
+      featuredRole: "Obiect principal",
+      invalidParticipants:
+        "Selectează cel puțin un obiect, fără duplicate și cu cel mult un obiect principal.",
+      legacyReviewDescription:
+        "Această expoziție are o legătură istorică care trebuie revizuită înainte de a edita obiectele.",
+      legacyReviewReason: "Stare istorică",
+      anchor_only: "Există doar legătura istorică cu obiectul",
+      anchor_and_members: "Obiectul istoric este deja listat",
+      anchor_missing_from_members:
+        "Obiectul istoric lipsește din lista de participanți",
+      includeHistoricalAnchor: "Include obiectul istoric",
+      keepListedObjects: "Păstrează obiectele listate",
+      reconcileError:
+        "Participarea nu a putut fi reconciliată. Reîmprospătează și revizuiește obiectele.",
       displayStatusHint:
-        "Marcarea ca expoziție curentă va actualiza starea de expunere a obiectului.",
+        "Actualizează doar eticheta de program a expoziției. Nu instalează obiecte și nu înregistrează predarea fizică.",
       selectOrganization: "Selectează o organizație pentru a continua.",
       breadcrumbNew: "Expoziție nouă",
       updateError: "Actualizarea expoziției a eșuat. Încearcă din nou.",

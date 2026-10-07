@@ -1,11 +1,20 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import { Checkbox } from "@v1/ui/checkbox";
 import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@v1/ui/select";
 import { Textarea } from "@v1/ui/textarea";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { CollectionSelector } from "@/components/collection-selector";
 import { useScopedI18n } from "@/locales/client";
 import type { ExhibitionFormData } from "./exhibition-form-types";
@@ -16,16 +25,37 @@ interface ExhibitionFormSectionsProps {
     updater: (prev: ExhibitionFormData) => ExhibitionFormData,
   ) => void;
   organizationId: Id<"organizations">;
-  mode: "create" | "edit";
+}
+
+function participantRowKey(
+  participant: ExhibitionFormData["participants"][number],
+  index: number,
+) {
+  return participant.collectionId ?? `draft-participant-${index}`;
 }
 
 export function ExhibitionFormSections({
   formData,
   onFormDataChange,
   organizationId,
-  mode,
 }: ExhibitionFormSectionsProps) {
   const t = useScopedI18n("exhibitions");
+
+  const setParticipantRole = (
+    index: number,
+    role: "featured" | "participant",
+  ) => {
+    onFormDataChange((prev) => ({
+      ...prev,
+      participants: prev.participants.map((item, itemIndex) => {
+        if (itemIndex === index) return { ...item, role };
+        if (role === "featured" && item.role === "featured") {
+          return { ...item, role: "participant" };
+        }
+        return item;
+      }),
+    }));
+  };
 
   return (
     <>
@@ -50,30 +80,7 @@ export function ExhibitionFormSections({
             />
           </div>
 
-          <div
-            className={
-              mode === "create"
-                ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-                : "space-y-6"
-            }
-          >
-            {mode === "create" && (
-              <div className="space-y-2">
-                <CollectionSelector
-                  organizationId={organizationId}
-                  value={formData.collectionId}
-                  onValueChange={(value) =>
-                    onFormDataChange((prev) => ({
-                      ...prev,
-                      collectionId: value,
-                    }))
-                  }
-                  label={t("form.relatedObjectLabel")}
-                  required
-                />
-              </div>
-            )}
-
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="location" className="text-muted-foreground">
                 {t("form.locationLabel")}
@@ -91,6 +98,127 @@ export function ExhibitionFormSections({
                 className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-ring"
               />
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>{t("form.participantsLabel")}</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  onFormDataChange((prev) => ({
+                    ...prev,
+                    participants: [
+                      ...prev.participants,
+                      { role: "participant" },
+                    ],
+                  }))
+                }
+              >
+                <Plus className="mr-2 size-4" />
+                {t("form.addObject")}
+              </Button>
+            </div>
+            {formData.participants.map((participant, index) => (
+              <div
+                key={participantRowKey(participant, index)}
+                className="rounded-lg border border-white/10 p-3 space-y-3"
+              >
+                <CollectionSelector
+                  organizationId={organizationId}
+                  value={participant.collectionId}
+                  onValueChange={(value) =>
+                    onFormDataChange((prev) => ({
+                      ...prev,
+                      participants: prev.participants.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, collectionId: value }
+                          : item,
+                      ),
+                    }))
+                  }
+                  label={`${t("form.objectNumber")} ${index + 1}`}
+                  required
+                />
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={participant.role}
+                    onValueChange={(role: "featured" | "participant") =>
+                      setParticipantRole(index, role)
+                    }
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="participant">
+                        {t("form.participantRole")}
+                      </SelectItem>
+                      <SelectItem value="featured">
+                        {t("form.featuredRole")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={index === 0}
+                    aria-label={t("form.moveUp")}
+                    onClick={() =>
+                      onFormDataChange((prev) => {
+                        const participants = [...prev.participants];
+                        [participants[index - 1], participants[index]] = [
+                          participants[index]!,
+                          participants[index - 1]!,
+                        ];
+                        return { ...prev, participants };
+                      })
+                    }
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={index === formData.participants.length - 1}
+                    aria-label={t("form.moveDown")}
+                    onClick={() =>
+                      onFormDataChange((prev) => {
+                        const participants = [...prev.participants];
+                        [participants[index + 1], participants[index]] = [
+                          participants[index]!,
+                          participants[index + 1]!,
+                        ];
+                        return { ...prev, participants };
+                      })
+                    }
+                  >
+                    <ArrowDown className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={formData.participants.length === 1}
+                    aria-label={t("form.removeObject")}
+                    onClick={() =>
+                      onFormDataChange((prev) => ({
+                        ...prev,
+                        participants: prev.participants.filter(
+                          (_, itemIndex) => itemIndex !== index,
+                        ),
+                      }))
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

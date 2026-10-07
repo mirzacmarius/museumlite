@@ -13,18 +13,24 @@ import { PermissionGate } from "@/components/permission-gate";
 import { useScopedI18n } from "@/locales/client";
 import { ExhibitionFormSections } from "../../../_components/exhibition-form-sections";
 import type { ExhibitionFormData } from "../../../_components/exhibition-form-types";
+import { exhibitionParticipantSchema } from "../../../_components/exhibition-form-types";
 import { ExhibitionScheduleConflictsAlert } from "../../../_components/exhibition-schedule-conflicts-alert";
+import { useExhibitionParticipantScheduleConflicts } from "../../../_components/use-exhibition-participant-schedule-conflicts";
 
 export function EditExhibitionPageClient() {
-  const { push, back } = useRouter();
+  const { push, back, refresh } = useRouter();
   const params = useParams();
   const exhibitionId = params.id as string;
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("exhibitions");
   const updateExhibition = useMutation(api.exhibitions.update);
+  const reconcileParticipation = useMutation(api.exhibitions.reconcileLegacyParticipation);
 
   const exhibition = useQuery(api.exhibitions.get, {
     id: exhibitionId as Id<"exhibitions">,
+  });
+  const members = useQuery(api.exhibitions.listExhibitionObjects, {
+    exhibitionId: exhibitionId as Id<"exhibitions">,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,10 +45,11 @@ export function EditExhibitionPageClient() {
     isLoan: false,
     loanVenue: "",
     notes: "",
+    participants: [{ role: "participant" }],
   });
 
   useEffect(() => {
-    if (exhibition) {
+    if (exhibition && members) {
       setFormData({
         title: exhibition.title,
         location: exhibition.location || "",
@@ -52,20 +59,16 @@ export function EditExhibitionPageClient() {
         isLoan: exhibition.isLoan || false,
         loanVenue: exhibition.loanVenue || "",
         notes: exhibition.notes || "",
+        participants: members.map((member) => ({ collectionId: member.collectionId, role: member.role })),
       });
     }
-  }, [exhibition]);
+  }, [exhibition, members]);
 
-  const conflicts = useQuery(
-    api.exhibitions.checkScheduleConflicts,
-    exhibition?.collectionId
-      ? {
-          collectionId: exhibition.collectionId,
-          startDate: formData.startDate.getTime(),
-          endDate: formData.endDate?.getTime(),
-          excludeExhibitionId: exhibitionId as Id<"exhibitions">,
-        }
-      : "skip",
+  const conflicts = useExhibitionParticipantScheduleConflicts(
+    formData.participants,
+    formData.startDate,
+    formData.endDate,
+    exhibitionId as Id<"exhibitions">,
   );
 
   if (!currentOrganizationId) {
@@ -76,7 +79,7 @@ export function EditExhibitionPageClient() {
     );
   }
 
-  if (exhibition === undefined) {
+  if (exhibition === undefined || members === undefined) {
     return (
       <div className="flex size-full items-center justify-center bg-background">
         <p className="text-muted-foreground">{t("loading")}</p>
@@ -92,12 +95,34 @@ export function EditExhibitionPageClient() {
     );
   }
 
+  const reconcileLegacy = async (includeAnchor: boolean) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await reconcileParticipation({
+        exhibitionId: exhibitionId as Id<"exhibitions">,
+        includeAnchor,
+        expectedMemberCollectionIds: members.map((member) => member.collectionId),
+      });
+      refresh();
+      setIsSubmitting(false);
+    } catch {
+      setError(t("form.reconcileError"));
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!formData.title.trim()) {
       setError(t("form.titleRequired"));
+      return;
+    }
+    const parsedParticipants = exhibitionParticipantSchema.safeParse(formData.participants);
+    if (!parsedParticipants.success) {
+      setError(t("form.invalidParticipants"));
       return;
     }
 
@@ -113,6 +138,7 @@ export function EditExhibitionPageClient() {
         isLoan: formData.isLoan,
         loanVenue: formData.isLoan ? formData.loanVenue : undefined,
         notes: formData.notes || undefined,
+        participants: parsedParticipants.data.map((participant) => ({ collectionId: participant.collectionId as Id<"collections">, role: participant.role })),
       });
       push(`/exhibitions/${exhibitionId}`);
     } catch (err) {
@@ -156,6 +182,32 @@ export function EditExhibitionPageClient() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {exhibition.legacyParticipationReview && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
+                <p className="text-sm text-amber-200">{t("form.legacyReviewDescription")}</p>
+                <p className="text-xs text-white/60">{t("form.legacyReviewReason")}: {t(`form.${exhibition.legacyParticipationReview.reason}`)}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isSubmitting}
+                    onClick={() => reconcileLegacy(true)}
+                  >
+                    {t("form.includeHistoricalAnchor")}
+                  </Button>
+                  {members.length > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isSubmitting}
+                      onClick={() => reconcileLegacy(false)}
+                    >
+                      {t("form.keepListedObjects")}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            )}
             {error && (
               <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center gap-2">
                 <Info className="size-4" />
@@ -169,12 +221,13 @@ export function EditExhibitionPageClient() {
               />
             )}
 
-            <ExhibitionFormSections
-              formData={formData}
-              onFormDataChange={setFormData}
-              organizationId={currentOrganizationId}
-              mode="edit"
-            />
+            {!exhibition.legacyParticipationReview ? (
+              <ExhibitionFormSections
+                formData={formData}
+                onFormDataChange={setFormData}
+                organizationId={currentOrganizationId}
+              />
+            ) : null}
 
             <div className="flex justify-end gap-4">
               <Button
@@ -185,7 +238,7 @@ export function EditExhibitionPageClient() {
               >
                 {t("actions.cancel")}
               </Button>
-              <PermissionGate permission="collections.update">
+              {!exhibition.legacyParticipationReview && <PermissionGate permission="collections.update">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
@@ -194,7 +247,7 @@ export function EditExhibitionPageClient() {
                   <Save className="mr-2 size-4" />
                   {isSubmitting ? t("actions.saving") : t("actions.save")}
                 </Button>
-              </PermissionGate>
+              </PermissionGate>}
             </div>
           </form>
         </div>

@@ -3819,8 +3819,29 @@ export default {
       scheduleConflictHint:
         "Du kan fortsatt opprette utstillingen, men vurder å justere datoene for å unngå overlapping.",
       relatedObjectLabel: "Relatert Objekt",
+      participantsLabel: "Utstillingsobjekter",
+      objectNumber: "Objekt",
+      addObject: "Legg til objekt",
+      removeObject: "Fjern objekt",
+      moveUp: "Flytt objekt opp",
+      moveDown: "Flytt objekt ned",
+      participantRole: "Deltaker",
+      featuredRole: "Hovedobjekt",
+      invalidParticipants:
+        "Velg minst ett objekt, uten duplikater og med maks ett hovedobjekt.",
+      legacyReviewDescription:
+        "Denne utstillingen har en historisk objektlenke som må gjennomgås før objektene kan redigeres.",
+      legacyReviewReason: "Historisk tilstand",
+      anchor_only: "Kun den historiske objektlenken finnes",
+      anchor_and_members: "Historisk objekt er allerede listet",
+      anchor_missing_from_members:
+        "Historisk objekt mangler i deltakerlisten",
+      includeHistoricalAnchor: "Inkluder historisk objekt",
+      keepListedObjects: "Behold listede objekter",
+      reconcileError:
+        "Kunne ikke avstemme deltakelse. Oppdater siden og gjennomgå objektene på nytt.",
       displayStatusHint:
-        "Å merke som nåværende vil oppdatere objektets visningsstatus.",
+        "Oppdaterer bare utstillingens tidsplanmerking. Det installerer ikke objekter og registrerer ikke fysisk overlevering.",
       selectOrganization: "Vennligst velg en organisasjon for å fortsette.",
       breadcrumbNew: "Ny Utstilling",
       updateError: "Kunne ikke oppdatere utstilling. Vennligst prøv igjen.",
