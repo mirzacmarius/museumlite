@@ -567,6 +567,11 @@ export default defineSchema({
       "organizationId",
       "normalizedIdentifier",
     ])
+    .index("by_organization_and_status_and_normalizedIdentifier", [
+      "organizationId",
+      "status",
+      "normalizedIdentifier",
+    ])
     .index("by_accessionNumber", ["accessionNumber"])
     .index("by_organization_and_accessionNumber", [
       "organizationId",
@@ -1523,21 +1528,7 @@ export default defineSchema({
         recordedAt: v.number(),
       }),
     ),
-    supersededExitRecords: v.optional(
-      v.array(
-        v.object({
-          exitDate: v.number(),
-          recipient: v.string(),
-          reference: v.optional(v.string()),
-          notes: v.optional(v.string()),
-          recordedBy: v.id("users"),
-          recordedAt: v.number(),
-          correctionReason: v.string(),
-          correctedBy: v.id("users"),
-          correctedAt: v.number(),
-        }),
-      ),
-    ),
+    exitCorrectionCount: v.optional(v.number()),
     proceedsRecordedBy: v.optional(v.id("users")),
     proceedsRecordedAt: v.optional(v.number()),
     proceedsVerificationException: v.optional(

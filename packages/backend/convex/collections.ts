@@ -1291,6 +1291,7 @@ export const searchForSelection = query({
       args.organizationId,
       query,
       SELECTION_SEARCH_LIMIT + 1,
+      args.status,
     );
     const matching = rows.filter(
       (row) =>
@@ -1304,7 +1305,7 @@ export const searchForSelection = query({
         accessionNumber: row.accessionNumber,
         status: row.status,
       })),
-      hasMore: rows.length > SELECTION_SEARCH_LIMIT,
+      hasMore: matching.length > SELECTION_SEARCH_LIMIT,
     };
   },
 });

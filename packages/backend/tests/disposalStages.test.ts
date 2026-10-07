@@ -215,6 +215,33 @@ test("a stale valuation does not satisfy a sale decision", async () => {
   ).rejects.toThrow(/valuation/i);
 });
 
+test("a future valuation does not satisfy a sale decision", async () => {
+  const t = createConvexTest();
+  const { authed, organizationId, collectionId, userId } =
+    await createSingleStepWorkflowFixture(t);
+  const appraisalId = await insertAppraisal(t, {
+    organizationId,
+    collectionId,
+    userId,
+    ageDays: -30,
+  });
+  const deaccessionId = await authed.mutation(api.deaccessions.create, {
+    organizationId,
+    collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+    disposition: "Public auction",
+  });
+  await authed.mutation(api.deaccessions.linkAppraisal, {
+    deaccessionId,
+    appraisalId,
+  });
+  await expect(
+    authed.mutation(api.deaccessions.approve, { deaccessionId }),
+  ).rejects.toThrow(/valuation/i);
+});
+
 test("without an approval workflow, incomplete decisions wait for an approver instead of auto-approving", async () => {
   const t = createConvexTest();
   const { organizationId, userId, collectionId } =
@@ -368,9 +395,27 @@ test("physical exit is recorded after the decision and corrections keep the orig
   expect(stages?.exit.record?.exitDate).toBe(Date.UTC(2026, 5, 2));
   expect(stages?.exit.correctionCount).toBe(1);
   const stored = await t.run(async (ctx) => ctx.db.get(deaccessionId));
-  expect(stored?.supersededExitRecords?.[0]?.recipient).toBe(
-    "Hammer & Co. Auctioneers",
+  expect(stored?.exitCorrectionCount).toBe(1);
+  const corrections = await t.run(async (ctx) =>
+    ctx.db
+      .query("auditLog")
+      .withIndex("by_entity", (q) =>
+        q.eq("entityType", "deaccession").eq("entityId", deaccessionId),
+      )
+      .collect(),
   );
+  expect(
+    corrections.find((entry) => entry.action === "disposal_exit_corrected")
+      ?.changes,
+  ).toMatchObject({
+    correctionReason: "Wrong collection date on consignment note",
+    previousExitRecord: {
+      exitDate: Date.UTC(2026, 5, 1),
+      recipient: "Hammer & Co. Auctioneers",
+      reference: "Consignment 77",
+      recordedBy: fixture.userId,
+    },
+  });
 });
 
 test("exit cannot be recorded before the decision or for another organization's users", async () => {

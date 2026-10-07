@@ -80,6 +80,7 @@ export function hasCurrentValuation(
   return (
     deaccession.appraisalVerified === true &&
     deaccession.appraisalDate !== undefined &&
+    deaccession.appraisalDate <= now &&
     now - deaccession.appraisalDate <= VALUATION_MAX_AGE_MS
   );
 }

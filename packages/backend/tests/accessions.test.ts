@@ -1441,6 +1441,7 @@ test("an intake draft preserves every catalog field through publication to one o
     ],
     tags: ["Han dynasty", "Bronze"],
     creditLine: "Gift of the Lindqvist family, 2026",
+    condition: "Stable with minor patina",
     legalRestrictions: true,
   };
   await authed.mutation(api.accessions.upsertObjectDraft, {
@@ -1467,4 +1468,10 @@ test("an intake draft preserves every catalog field through publication to one o
   expect(accession?.collectionId).toBe(objects[0]?._id);
   const { accessionNumber: _number, ...catalogFields } = draftObjectData;
   expect(objects[0]).toMatchObject(catalogFields);
+  expect(objects[0]?.conditionHistory).toMatchObject([
+    {
+      condition: draftObjectData.condition,
+      changedBy: objects[0]?.catalogedBy,
+    },
+  ]);
 });

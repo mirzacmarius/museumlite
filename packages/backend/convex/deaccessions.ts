@@ -1839,7 +1839,8 @@ function requireSale(deaccession: Doc<"deaccessions">) {
 
 /**
  * Record the physical exit of a disposed object. An existing exit record is
- * only replaced with a correction reason; the superseded entry is retained.
+ * only replaced with a correction reason; the superseded entry is retained in
+ * the audit log.
  */
 export const recordExit = mutation({
   args: {
@@ -1894,18 +1895,8 @@ export const recordExit = mutation({
     await Promise.all([
       ctx.db.patch(args.deaccessionId, {
         exitRecord,
-        ...(previous && correctionReason
-          ? {
-              supersededExitRecords: [
-                ...(deaccession.supersededExitRecords ?? []),
-                {
-                  ...previous,
-                  correctionReason,
-                  correctedBy: userId,
-                  correctedAt: now,
-                },
-              ],
-            }
+        ...(previous
+          ? { exitCorrectionCount: (deaccession.exitCorrectionCount ?? 0) + 1 }
           : {}),
       }),
       ctx.runMutation(internal.audit.logAction, {
@@ -1919,6 +1910,7 @@ export const recordExit = mutation({
           recipient: exitRecord.recipient,
           reference: exitRecord.reference,
           correctionReason,
+          previousExitRecord: previous,
         },
       }),
     ] as const);
@@ -2561,7 +2553,7 @@ export const getDisposalStages = query({
               recordedAt: deaccession.exitRecord.recordedAt,
             }
           : undefined,
-        correctionCount: deaccession.supersededExitRecords?.length ?? 0,
+        correctionCount: deaccession.exitCorrectionCount ?? 0,
       },
       proceeds: {
         state: resolveProceedsState(deaccession),

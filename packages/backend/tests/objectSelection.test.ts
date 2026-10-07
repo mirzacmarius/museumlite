@@ -97,6 +97,48 @@ test("selection search applies the status filter and excludes withdrawn records"
   expect(active.items.map((item) => item.accessionNumber)).toEqual(["S-1"]);
 });
 
+test("selection status filter reaches matches past the combined search cap", async () => {
+  const t = createConvexTest();
+  const setup = await createOrgUserWithPermissions(t, ["collections.read"]);
+  await t.run(async (ctx) => {
+    for (let index = 0; index < 60; index += 1) {
+      await ctx.db.insert("collections", {
+        organizationId: setup.organizationId,
+        accessionNumber: `S-${String(index).padStart(2, "0")}`,
+        normalizedIdentifier: `s-${String(index).padStart(2, "0")}`,
+        title: "Sextant",
+        status: "archived",
+        catalogedBy: setup.userId,
+        catalogedAt: Date.now(),
+      });
+    }
+    await ctx.db.insert("collections", {
+      organizationId: setup.organizationId,
+      accessionNumber: "S-99",
+      normalizedIdentifier: "s-99",
+      title: "Sextant",
+      status: "active",
+      catalogedBy: setup.userId,
+      catalogedAt: Date.now(),
+    });
+  });
+  const result = await authedForUser(t, setup.userId).query(
+    api.collections.searchForSelection,
+    { organizationId: setup.organizationId, query: "s-", status: "active" },
+  );
+  expect(result.items.map((item) => item.accessionNumber)).toEqual(["S-99"]);
+  expect(result.hasMore).toBe(false);
+  const byTitle = await authedForUser(t, setup.userId).query(
+    api.collections.searchForSelection,
+    {
+      organizationId: setup.organizationId,
+      query: "Sextant",
+      status: "active",
+    },
+  );
+  expect(byTitle.items.map((item) => item.accessionNumber)).toEqual(["S-99"]);
+});
+
 test("selection search requires collections.read in the organization", async () => {
   const t = createConvexTest();
   const setup = await createOrgUserWithPermissions(t, ["collections.read"]);

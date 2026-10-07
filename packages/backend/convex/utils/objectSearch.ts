@@ -1,6 +1,9 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { searchIdentifierPrefix } from "./identifiers";
+import {
+  searchCatalogIdentifierPrefixByStatus,
+  searchIdentifierPrefix,
+} from "./identifiers";
 
 type ObjectSearchField =
   | "title"
@@ -26,14 +29,34 @@ export async function searchObjects(
   organizationId: Id<"organizations">,
   searchQuery: string,
   limit: number,
+  status?: Doc<"collections">["status"],
 ) {
   const [identifierMatches, ...textMatches] = await Promise.all([
-    searchIdentifierPrefix(ctx, organizationId, "catalog", searchQuery, limit),
+    status
+      ? searchCatalogIdentifierPrefixByStatus(
+          ctx,
+          organizationId,
+          status,
+          searchQuery,
+          limit,
+        )
+      : searchIdentifierPrefix(
+          ctx,
+          organizationId,
+          "catalog",
+          searchQuery,
+          limit,
+        ),
     ...OBJECT_SEARCH_INDEXES.map(({ field, index }) =>
       ctx.db
         .query("collections")
         .withSearchIndex(index, (q) =>
-          q.search(field, searchQuery).eq("organizationId", organizationId),
+          status
+            ? q
+                .search(field, searchQuery)
+                .eq("organizationId", organizationId)
+                .eq("status", status)
+            : q.search(field, searchQuery).eq("organizationId", organizationId),
         )
         .take(limit),
     ),

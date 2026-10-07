@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { buildConditionHistoryEntry } from "./catalogObjects";
 import { syncCollectionOptionUsages } from "./collectionOptionUsages";
 import { ensureIdentifierAvailable } from "./identifiers";
 import { validateObjectReferences } from "./locationIntegrity";
@@ -51,6 +52,10 @@ export async function publishAccessionObjectDraft(
       ? [draftObjectData.collectionGroupId]
       : []);
   const uniqueCollectionGroupIds = [...new Set(collectionGroupIds)];
+  const condition = draftObjectData?.condition?.trim() || undefined;
+  const conditionHistory = condition
+    ? [await buildConditionHistoryEntry(ctx, catalogedBy, condition, undefined)]
+    : undefined;
   const [, collectionId, collectionGroups] = await Promise.all([
     ensureUsageCounter(ctx, accession.organizationId),
     ctx.db.insert("collections", {
@@ -79,7 +84,8 @@ export async function publishAccessionObjectDraft(
       dimensionWeight: draftObjectData?.dimensionWeight,
       weightUnit: draftObjectData?.weightUnit,
       description: draftObjectData?.description,
-      condition: draftObjectData?.condition,
+      condition,
+      conditionHistory,
       inscriptions: draftObjectData?.inscriptions,
       inscriptionMarks: draftObjectData?.inscriptionMarks,
       tags: draftObjectData?.tags,

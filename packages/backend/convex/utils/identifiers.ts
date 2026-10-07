@@ -199,3 +199,46 @@ export async function searchIdentifierPrefix(
     incomplete: legacy.length > 100,
   };
 }
+
+export async function searchCatalogIdentifierPrefixByStatus(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  status: Doc<"collections">["status"],
+  value: string,
+  limit: number,
+): Promise<IdentifierPrefixResult<Doc<"collections">>> {
+  const key = normalizeIdentifier(value);
+  if (!key) return { rows: [], incomplete: false };
+  const [indexed, legacy] = await Promise.all([
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_status_and_normalizedIdentifier", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("status", status)
+          .gte("normalizedIdentifier", key)
+          .lt("normalizedIdentifier", `${key}\uffff`),
+      )
+      .take(limit),
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization_and_status_and_normalizedIdentifier", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("status", status)
+          .eq("normalizedIdentifier", undefined),
+      )
+      .take(101),
+  ]);
+  return {
+    rows: [
+      ...indexed,
+      ...legacy
+        .slice(0, 100)
+        .filter((row) =>
+          normalizeIdentifier(row.accessionNumber).startsWith(key),
+        ),
+    ].slice(0, limit),
+    incomplete: legacy.length > 100,
+  };
+}
