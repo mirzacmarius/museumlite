@@ -15,6 +15,7 @@ import { customFieldValue } from "./schema";
 import { batchGetByIds, createLookupMap } from "./utils/batchLookup";
 import {
   buildConditionHistoryEntry,
+  getCollectionGroupMembershipIds,
   syncCollectionGroupMemberships,
 } from "./utils/catalogObjects";
 import {
@@ -526,10 +527,12 @@ export const create = mutation({
         ]
       : undefined;
 
+    const primaryGroupId = args.collectionGroupId ?? args.collectionGroupIds?.[0];
+
     // Create collection object
     const collectionId = await ctx.db.insert("collections", {
       organizationId: args.organizationId,
-      collectionGroupId: args.collectionGroupId,
+      collectionGroupId: primaryGroupId,
       accessionNumber,
       normalizedIdentifier,
       title: args.title,
@@ -594,6 +597,7 @@ export const create = mutation({
         args.collectionGroupIds ??
           (args.collectionGroupId ? [args.collectionGroupId] : []),
         userId,
+        primaryGroupId,
       ),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: args.organizationId,
@@ -1701,10 +1705,18 @@ export const update = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.alternativeTitle !== undefined)
       updates.alternativeTitle = args.alternativeTitle;
-    if (args.collectionGroupIds !== undefined) {
-      updates.collectionGroupId = args.collectionGroupIds[0];
-    } else if (args.collectionGroupId !== undefined) {
-      updates.collectionGroupId = args.collectionGroupId;
+    const primaryGroupId =
+      args.collectionGroupId ??
+      (args.collectionGroupIds !== undefined
+        ? args.collectionGroupIds.includes(collection.collectionGroupId!)
+          ? collection.collectionGroupId
+          : args.collectionGroupIds[0]
+        : collection.collectionGroupId);
+    if (
+      args.collectionGroupId !== undefined ||
+      args.collectionGroupIds !== undefined
+    ) {
+      updates.collectionGroupId = primaryGroupId;
     }
     if (args.creator !== undefined) updates.creator = args.creator;
     if (args.objectType !== undefined) updates.objectType = args.objectType;
@@ -1826,17 +1838,25 @@ export const update = mutation({
         collection.organizationId,
         args.collectionGroupIds,
         userId,
+        primaryGroupId,
       );
     } else if (
       args.collectionGroupId !== undefined &&
       args.collectionGroupId !== collection.collectionGroupId
     ) {
+      const existingGroups = await ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", args.collectionId),
+        )
+        .collect();
       await syncCollectionGroupMemberships(
         ctx,
         args.collectionId,
         collection.organizationId,
-        args.collectionGroupId ? [args.collectionGroupId] : [],
+        existingGroups.map((membership) => membership.collectionGroupId),
         userId,
+        primaryGroupId,
       );
     }
 
@@ -2659,6 +2679,7 @@ export const bulkExport = query({
       status: v.string(),
       locationPath: v.optional(v.string()),
       collectionGroup: v.optional(v.string()),
+      collectionGroups: v.array(v.string()),
       catalogedAt: v.number(),
     }),
   ),
@@ -2684,22 +2705,25 @@ export const bulkExport = query({
       ),
     );
 
+    const memberships = await Promise.all(
+      collections.map((collection) =>
+        getCollectionGroupMembershipIds(ctx, collection),
+      ),
+    );
     const locationIds: Id<"locations">[] = [];
     const groupIds: Id<"collectionGroups">[] = [];
     for (const collection of collections) {
       if (collection.currentLocationId) {
         locationIds.push(collection.currentLocationId);
       }
-      if (collection.collectionGroupId) {
-        groupIds.push(collection.collectionGroupId);
-      }
     }
+    for (const membership of memberships) groupIds.push(...membership.groupIds);
     const locationPathMap = await getLocationPathStrings(ctx, locationIds);
     const groupMap = createLookupMap<"collectionGroups">(
       await batchGetByIds(ctx, groupIds, "collectionGroups"),
     );
 
-    return collections.map((collection) => ({
+    return collections.map((collection, index) => ({
       _id: collection._id,
       accessionNumber: collection.accessionNumber,
       title: collection.title,
@@ -2720,9 +2744,14 @@ export const bulkExport = query({
       locationPath: collection.currentLocationId
         ? locationPathMap.get(collection.currentLocationId)
         : undefined,
-      collectionGroup: collection.collectionGroupId
-        ? groupMap.get(collection.collectionGroupId)?.name
+      collectionGroup: memberships[index]?.primaryGroupId
+        ? groupMap.get(memberships[index].primaryGroupId)?.name
         : undefined,
+      collectionGroups:
+        memberships[index]?.groupIds.flatMap((id) => {
+          const name = groupMap.get(id)?.name;
+          return name ? [name] : [];
+        }) ?? [],
       catalogedAt: collection.catalogedAt,
     }));
   },

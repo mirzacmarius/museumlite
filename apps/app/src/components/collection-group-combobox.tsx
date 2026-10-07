@@ -20,6 +20,8 @@ interface CollectionGroupComboboxProps {
   organizationId?: string;
   value?: string[];
   onValueChange?: (value: string[]) => void;
+  primaryValue?: string;
+  onPrimaryChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -28,6 +30,8 @@ export function CollectionGroupCombobox({
   organizationId,
   value,
   onValueChange,
+  primaryValue,
+  onPrimaryChange,
   placeholder,
   disabled = false,
 }: CollectionGroupComboboxProps) {
@@ -70,19 +74,20 @@ export function CollectionGroupCombobox({
 
   const handleSelect = (selectedValue: string) => {
     if (selectedValues.includes(selectedValue)) {
-      onValueChange?.(
-        selectedValues.filter((valueItem) => valueItem !== selectedValue),
-      );
+      const remaining = selectedValues.filter((valueItem) => valueItem !== selectedValue);
+      onValueChange?.(remaining);
+      if (primaryValue === selectedValue) onPrimaryChange?.(remaining[0] ?? "");
     } else {
       onValueChange?.([...selectedValues, selectedValue]);
+      if (!primaryValue) onPrimaryChange?.(selectedValue);
     }
     setInputValue("");
   };
 
   const handleRemove = (selectedValue: string) => {
-    onValueChange?.(
-      selectedValues.filter((valueItem) => valueItem !== selectedValue),
-    );
+    const remaining = selectedValues.filter((valueItem) => valueItem !== selectedValue);
+    onValueChange?.(remaining);
+    if (primaryValue === selectedValue) onPrimaryChange?.(remaining[0] ?? "");
   };
 
   const formatGroupName = (name: string) => {
@@ -111,6 +116,7 @@ export function CollectionGroupCombobox({
     });
 
     onValueChange?.([...selectedValues, groupId]);
+    if (!primaryValue) onPrimaryChange?.(groupId);
     setInputValue("");
   };
 
@@ -138,6 +144,26 @@ export function CollectionGroupCombobox({
             >
               <FolderOpen className="size-3 text-muted-foreground" />
               <span>{group.name}</span>
+              {onPrimaryChange ? (
+                <button
+                  type="button"
+                  className={cn(
+                    "rounded px-1 text-[10px] uppercase tracking-wide",
+                    primaryValue === group._id
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPrimaryChange(group._id);
+                  }}
+                  aria-label={`${translate("untranslatedComponents.labels.primaryGroup")}: ${group.name}`}
+                >
+                  {primaryValue === group._id
+                    ? translate("untranslatedComponents.labels.primaryGroup")
+                    : translate("untranslatedComponents.labels.makePrimary")}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={(event) => {

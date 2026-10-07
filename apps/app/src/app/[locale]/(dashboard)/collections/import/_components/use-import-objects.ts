@@ -39,6 +39,7 @@ const OPTIONAL_FIELDS = [
   "provenance",
   "location",
   "collectionGroup",
+  "collectionGroups",
 ] as const;
 
 /**
@@ -191,9 +192,9 @@ export function useImportObjects({
 
   const downloadTemplate = useCallback(() => {
     const headers =
-      "title,accessionNumber,creator,objectType,culture,period,dateCreated,materials,dimensions,condition,location,collectionGroup";
+      "title,accessionNumber,creator,objectType,culture,period,dateCreated,materials,dimensions,condition,location,collectionGroup,collectionGroups";
     const example =
-      '"Portrait of a Lady","2024.001","Unknown Artist","painting","European","19th Century","c. 1850","Oil on canvas","24 x 18 inches","Good","Main Gallery","European Art"';
+      '"Portrait of a Lady","2024.001","Unknown Artist","painting","European","19th Century","c. 1850","Oil on canvas","24 x 18 inches","Good","Main Gallery","European Art","[""European Art""]"';
     const csv = `${headers}\n${example}`;
 
     const blob = new Blob([csv], { type: "text/csv" });

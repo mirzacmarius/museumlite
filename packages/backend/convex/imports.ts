@@ -10,7 +10,10 @@ import {
   buildAccountCreateDocument,
   validateAccountProfileForCreate,
 } from "./utils/accountProfile";
-import { createImportedCatalogObject } from "./utils/catalogObjects";
+import {
+  createImportedCatalogObject,
+  getCollectionGroupMembershipIds,
+} from "./utils/catalogObjects";
 import {
   collectionsToDublinCore,
   fromDublinCore,
@@ -790,6 +793,7 @@ export const exportObjects = mutation({
       provenance: v.optional(v.string()),
       location: v.optional(v.string()),
       collectionGroup: v.optional(v.string()),
+      collectionGroups: v.array(v.string()),
       status: v.optional(v.string()),
       createdAt: v.number(),
     }),
@@ -831,7 +835,9 @@ export const exportObjects = mutation({
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
 
-    const exportRows = filtered.map((o) => ({
+    const exportRows = await Promise.all(filtered.map(async (o) => {
+      const membership = await getCollectionGroupMembershipIds(ctx, o);
+      return {
       accessionNumber: o.accessionNumber,
       title: o.title,
       alternativeTitle: o.alternativeTitle,
@@ -850,11 +856,16 @@ export const exportObjects = mutation({
       location: o.currentLocationId
         ? locationMap.get(o.currentLocationId)
         : undefined,
-      collectionGroup: o.collectionGroupId
-        ? groupMap.get(o.collectionGroupId)
+      collectionGroup: membership.primaryGroupId
+        ? groupMap.get(membership.primaryGroupId)
         : undefined,
+      collectionGroups: membership.groupIds.flatMap((id) => {
+        const name = groupMap.get(id);
+        return name ? [name] : [];
+      }),
       status: o.status,
       createdAt: o._creationTime,
+      };
     }));
 
     await recordExportUsage(ctx, args.organizationId);
@@ -1203,6 +1214,7 @@ export const importObjectsBatch = mutation({
         provenance: v.optional(v.string()),
         location: v.optional(v.string()),
         collectionGroup: v.optional(v.string()),
+        collectionGroups: v.optional(v.string()),
       }),
     ),
     batchIndex: v.number(),
@@ -1256,7 +1268,36 @@ export const importObjectsBatch = mutation({
               "collection group",
             )._id
           : undefined;
-        const { location: _location, collectionGroup: _group, ...fields } = row;
+        let collectionGroupIds: Id<"collectionGroups">[] | undefined;
+        if (row.collectionGroups?.trim()) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(row.collectionGroups);
+          } catch {
+            throw new Error("Collection groups must be a JSON array of names");
+          }
+          if (
+            !Array.isArray(parsed) ||
+            !parsed.every((name) => typeof name === "string" && name.trim())
+          ) {
+            throw new Error("Collection groups must be a JSON array of names");
+          }
+          if (parsed.length > 0 && !collectionGroupId) {
+            throw new Error("A primary collection group is required when importing memberships");
+          }
+          collectionGroupIds = [...new Set(parsed.map((name: string) =>
+            resolveUniqueName(groupsByName, name, "collection group")._id,
+          ))];
+          if (collectionGroupId && !collectionGroupIds.includes(collectionGroupId)) {
+            throw new Error("The primary collection group must be included in collectionGroups");
+          }
+        }
+        const {
+          location: _location,
+          collectionGroup: _group,
+          collectionGroups: _groups,
+          ...fields
+        } = row;
         const created = await createImportedCatalogObject(ctx, {
           organizationId: args.organizationId,
           userId,
@@ -1264,6 +1305,7 @@ export const importObjectsBatch = mutation({
           fields,
           locationId,
           collectionGroupId,
+          collectionGroupIds,
           sourceLabel: `CSV import (job ${job._id}, row ${rowNumber})`,
         });
         return {
@@ -1647,7 +1689,9 @@ export const exportObjectsWithFormat = mutation({
       .collect();
     const groupMap = new Map(groups.map((g) => [g._id, g.name]));
 
-    const exportRows = filtered.map((o) => ({
+    const exportRows = await Promise.all(filtered.map(async (o) => {
+      const membership = await getCollectionGroupMembershipIds(ctx, o);
+      return {
       accessionNumber: o.accessionNumber,
       title: o.title,
       alternativeTitle: o.alternativeTitle,
@@ -1666,11 +1710,16 @@ export const exportObjectsWithFormat = mutation({
       location: o.currentLocationId
         ? locationMap.get(o.currentLocationId)
         : undefined,
-      collectionGroup: o.collectionGroupId
-        ? groupMap.get(o.collectionGroupId)
+      collectionGroup: membership.primaryGroupId
+        ? groupMap.get(membership.primaryGroupId)
         : undefined,
+      collectionGroups: membership.groupIds.flatMap((id) => {
+        const name = groupMap.get(id);
+        return name ? [name] : [];
+      }),
       status: o.status,
       createdAt: o._creationTime,
+      };
     }));
 
     await recordExportUsage(ctx, args.organizationId);
@@ -1725,6 +1774,7 @@ export const exportObjectsWithFormat = mutation({
       "provenance",
       "location",
       "collectionGroup",
+      "collectionGroups",
       "status",
       "createdAt",
     ];
@@ -1748,6 +1798,7 @@ export const exportObjectsWithFormat = mutation({
         row.provenance || "",
         row.location || "",
         row.collectionGroup || "",
+        JSON.stringify(row.collectionGroups),
         row.status || "",
         new Date(row.createdAt).toISOString(),
       ];

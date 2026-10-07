@@ -288,7 +288,10 @@ export function buildDraftMediaPayload(draftMedia: DraftMediaItem[]) {
 
 export function createInitialFormData(
   collection: CollectionDoc,
-  collectionGroups: Array<{ _id: Id<"collectionGroups"> }> = [],
+  collectionGroups: Array<{
+    _id: Id<"collectionGroups">;
+    role?: "primary" | "secondary";
+  }> = [],
 ): CollectionFormData {
   let objectTypeArray: string[] = [];
   if (collection.objectType) {
@@ -302,9 +305,18 @@ export function createInitialFormData(
     }
   }
 
+  const primaryGroupId =
+    (collectionGroups.find((group) => group.role === "primary")?._id as
+      | string
+      | undefined) ?? (collection.collectionGroupId as string | undefined);
   const collectionGroupIds =
     collectionGroups.length > 0
-      ? collectionGroups.map((group) => group._id as string)
+      ? [
+          ...new Set([
+            ...(primaryGroupId ? [primaryGroupId] : []),
+            ...collectionGroups.map((group) => group._id as string),
+          ]),
+        ]
       : collection.collectionGroupId
         ? [collection.collectionGroupId as string]
         : [];
@@ -350,7 +362,10 @@ export function createInitialFormData(
         : [{ localId: createLinkEntryLocalId(), url: "", label: "" }],
     parentObjectId: (collection.parentObjectId as string) || "",
     currentLocationId: (collection.currentLocationId as string) || "",
-    collectionGroupId: collectionGroupIds[0] || "",
+    collectionGroupId:
+      collectionGroups.find((group) => group.role === "primary")?._id ??
+      collection.collectionGroupId ??
+      "",
     collectionGroupIds,
     alternateAccessionNumbers: collection.alternateAccessionNumbers || [],
     ownershipHistory: withOwnershipEntryLocalIds(collection.ownershipHistory),

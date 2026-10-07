@@ -432,6 +432,7 @@ export default defineSchema({
   collectionGroupItems: defineTable({
     collectionGroupId: v.id("collectionGroups"),
     collectionId: v.id("collections"),
+    role: v.optional(v.union(v.literal("primary"), v.literal("secondary"))),
     addedAt: v.number(),
     addedBy: v.id("users"),
   })

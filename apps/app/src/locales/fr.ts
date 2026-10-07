@@ -5395,6 +5395,7 @@ export default {
           provenance: "Provenance",
           location: "Emplacement",
           collectionGroup: "Groupe de collection",
+          collectionGroups: "Tous les groupes de collection",
         },
         fieldDescriptions: {
           title: "Titre ou nom de l’objet",
@@ -5415,6 +5416,7 @@ export default {
           provenance: "Historique de propriété",
           location: "Emplacement actuel",
           collectionGroup: "Nom de la collection ou du groupe",
+          collectionGroups: "Tableau JSON des noms de groupes, y compris le groupe principal",
         },
         templates: {
           pastperfect: "PastPerfect",
@@ -7324,6 +7326,9 @@ export default {
       selectOrAddMaterials: "Sélectionner ou ajouter des matériaux",
       addNamedItem: "Ajouter {name}",
       selectCollection: "Sélectionner une collection",
+      primaryGroup: "Groupe principal",
+      secondaryGroup: "Groupe secondaire",
+      makePrimary: "Définir comme principal",
       cannotDeleteType: "Impossible de supprimer le type",
       deleteType: "Supprimer le type",
       selectALocation: "Sélectionner un emplacement",

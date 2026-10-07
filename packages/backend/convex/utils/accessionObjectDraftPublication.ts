@@ -62,7 +62,8 @@ export async function publishAccessionObjectDraft(
       organizationId: accession.organizationId,
       accessionNumber: catalogIdentifier,
       normalizedIdentifier,
-      collectionGroupId: collectionGroupIds[0],
+      collectionGroupId:
+        draftObjectData?.collectionGroupId ?? collectionGroupIds[0],
       title:
         draftObjectData?.title?.trim() ||
         `Accession ${accession.accessionNumber}`,
@@ -136,6 +137,11 @@ export async function publishAccessionObjectDraft(
         ctx.db.insert("collectionGroupItems", {
           collectionGroupId,
           collectionId,
+          role:
+            collectionGroupId ===
+            (draftObjectData?.collectionGroupId ?? collectionGroupIds[0])
+              ? "primary"
+              : "secondary",
           addedAt: catalogedAt,
           addedBy: catalogedBy,
         }),
