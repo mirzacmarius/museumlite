@@ -479,6 +479,8 @@ export default defineSchema({
     weightUnit: v.optional(v.string()), // "kg", "lb", etc.
     description: v.optional(v.string()),
     condition: v.optional(v.string()),
+    currentConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    legacyConditionSnapshot: v.optional(v.string()),
     conditionHistory: v.optional(
       v.array(
         v.object({
@@ -2063,6 +2065,31 @@ export default defineSchema({
     assessedBy: v.id("users"),
     assessedAt: v.number(),
   }).index("by_loanItem", ["loanItemId"]),
+
+  conditionAssessments: defineTable({
+    organizationId: v.id("organizations"),
+    collectionId: v.id("collections"),
+    assessedBy: v.id("users"),
+    assessedAt: v.number(),
+    recordedAt: v.number(),
+    condition: v.string(),
+    summary: v.string(),
+    observations: v.array(v.object({
+      area: v.string(),
+      description: v.string(),
+      severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("severe")),
+    })),
+    photos: v.array(v.object({
+      mediaId: v.id("mediaFiles"),
+      storageId: v.id("_storage"),
+      fileName: v.string(),
+    })),
+    status: v.union(v.literal("draft"), v.literal("accepted")),
+    acceptedBy: v.optional(v.id("users")),
+    acceptedAt: v.optional(v.number()),
+  })
+    .index("by_collection", ["collectionId"])
+    .index("by_organization", ["organizationId"]),
 
   // Documents attached to loans
   loanDocuments: defineTable({

@@ -1619,3 +1619,23 @@ export const backfillAccessionSearchDocuments = internalMutation({
     return { processed: page.page.length, isDone: page.isDone };
   },
 });
+
+/**
+ * Migration: grant collections.accept_condition on existing system roles.
+ *
+ * Run: bunx convex run migrations:grantConditionAssessmentReviewPermissions
+ */
+export const grantConditionAssessmentReviewPermissions = internalMutation({
+  args: {},
+  returns: v.object({ organizationsProcessed: v.number() }),
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query("organizations").collect();
+    for (const organization of organizations) {
+      await ctx.runMutation(
+        internal.conditionAssessmentMigration.grantReviewPermission,
+        { organizationId: organization._id },
+      );
+    }
+    return { organizationsProcessed: organizations.length };
+  },
+});
