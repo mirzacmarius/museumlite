@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { ConvexError, v } from "convex/values";
+import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -36,10 +36,7 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
-import {
-  assertCollectionNotOnLoan,
-  collectionHasOccupyingLoan,
-} from "./utils/loanOccupancy";
+import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
   moveCollectionToLocation,
   requireUsableLocation,
@@ -1798,38 +1795,6 @@ export const archiveCollection = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => archiveCollectionHandler(ctx, args),
-});
-
-/**
- * Museum records are retained permanently. Use archiveCollection to withdraw
- * a record from routine catalog views while keeping its register evidence.
- */
-export const deleteCollection = mutation({
-  args: {
-    collectionId: v.id("collections"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) throw new Error("Not authenticated");
-    if (!collection) throw new Error("Collection not found");
-    await assertCollectionNotOnLoan(
-      ctx,
-      args.collectionId,
-      "Cannot deaccession an object that is currently on loan",
-    );
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.delete",
-    );
-    throw new ConvexError(
-      "Deaccessioning requires an approved disposal decision. Create a deaccession request, or withdraw the record to archive it.",
-    );
-  },
 });
 
 /**

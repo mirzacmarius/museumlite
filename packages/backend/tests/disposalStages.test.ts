@@ -311,17 +311,14 @@ async function createApprovedSale(
     userId: fixture.userId,
     ageDays: 10,
   });
-  const deaccessionId = await fixture.authed.mutation(
-    api.deaccessions.create,
-    {
-      organizationId: fixture.organizationId,
-      collectionId: fixture.collectionId,
-      dateDeaccessioned: Date.now(),
-      reason: "Outside collecting policy",
-      method: "sale",
-      disposition: "Public auction",
-    },
-  );
+  const deaccessionId = await fixture.authed.mutation(api.deaccessions.create, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+    disposition: "Public auction",
+  });
   await fixture.authed.mutation(api.deaccessions.linkAppraisal, {
     deaccessionId,
     appraisalId,
@@ -594,19 +591,4 @@ test("decision readiness for a sale does not ask for a future sale receipt", asy
   expect(readiness.checks.map((check) => check.name)).not.toContain(
     "Proceeds Documentation",
   );
-});
-
-test("deleting a catalog record cannot bypass the disposal decision", async () => {
-  const t = createConvexTest();
-  const { authed, collectionId } = await createSingleStepWorkflowFixture(t, [
-    ...approverPermissions,
-    "collections.delete",
-  ]);
-
-  await expect(
-    authed.mutation(api.collections.deleteCollection, { collectionId }),
-  ).rejects.toThrow(/disposal decision/i);
-  expect(
-    (await authed.query(api.collections.get, { collectionId }))?.status,
-  ).toBe("active");
 });
