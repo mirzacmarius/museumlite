@@ -2070,9 +2070,44 @@ export default defineSchema({
     conditionIn: v.optional(v.string()),
     notes: v.optional(v.string()),
     conditionReportId: v.optional(v.id("conditionReports")),
+    custodyStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("dispatched"),
+        v.literal("returned"),
+      ),
+    ),
+    dispatchOriginLocationId: v.optional(v.id("locations")),
+    dispatchOriginUnknown: v.optional(v.boolean()),
+    dispatchedAt: v.optional(v.number()),
+    dispatchedBy: v.optional(v.id("users")),
+    returnDestinationLocationId: v.optional(v.id("locations")),
+    returnedAt: v.optional(v.number()),
+    returnedBy: v.optional(v.id("users")),
+    outgoingConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    incomingConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    lenderExitId: v.optional(v.id("loanCustodyExits")),
   })
     .index("by_loan", ["loanId"])
     .index("by_collection", ["collectionId"]),
+
+  // Incoming loan return-to-lender exits (not deaccessions)
+  loanCustodyExits: defineTable({
+    organizationId: v.id("organizations"),
+    loanId: v.id("loans"),
+    loanItemId: v.id("loanItems"),
+    collectionId: v.id("collections"),
+    exitType: v.literal("return_to_lender"),
+    recipientName: v.string(),
+    accountId: v.optional(v.id("accounts")),
+    recordedBy: v.id("users"),
+    recordedAt: v.number(),
+    notes: v.optional(v.string()),
+    legacySyntheticDeaccessionId: v.optional(v.id("deaccessions")),
+  })
+    .index("by_loan", ["loanId"])
+    .index("by_collection", ["collectionId"])
+    .index("by_loanItem", ["loanItemId"]),
 
   // Detailed condition reports (when enabled)
   conditionReports: defineTable({
