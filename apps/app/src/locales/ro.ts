@@ -1131,6 +1131,8 @@ export default {
     noResults: "Nu s-au găsit rezultate",
     toast: {
       exportSuccess: "Export reușit",
+      itemsAwaitingDecision:
+        "{count} cereri de scoatere din evidență așteaptă o decizie de aprobare",
       exportFailed: "Export eșuat",
 
       invalidEmail: "Formatul adresei de email nu este valid",
@@ -1885,6 +1887,10 @@ export default {
       dateReceivedCannotChange: "Data primirii nu poate fi schimbată",
     },
     approval: {
+      sourceExceptionLabel: "Sursă neverificată: motivul excepției",
+      sourceExceptionHint:
+        "Lipsește verificarea obligatorie a sursei. Aprobarea cu un motiv înregistrează o excepție autorizată, păstrată cu achiziția și auditată.",
+      sourceExceptionRecorded: "Excepție autorizată",
       title: "Acțiuni de aprobare",
       commentLabel: "Comentariu (opțional)",
       commentPlaceholder:
@@ -1926,6 +1932,11 @@ export default {
       sourceRequired: "Sursa este obligatorie",
     },
     kanban: {
+      loading: "Se încarcă…",
+      loadMore: "Încarcă mai multe",
+      shownOfTotal: "{loaded} din {total}",
+      matchesShown: "Potriviri afișate: {loaded}",
+      noMatches: "Nicio achiziție potrivită în {step}",
       noAccessions: "Nu există accesiuni la pasul {step}",
       unknownSource: "Sursă necunoscută",
     },
@@ -2368,6 +2379,12 @@ export default {
       overdue: "Restante",
     },
   },
+  objectPicker: {
+    loading: "Se încarcă…",
+    loadMore: "Încarcă mai multe",
+    refineSearch:
+      "Mai multe obiecte se potrivesc. Restrângeți căutarea pentru a reduce lista.",
+  },
   deaccessions: {
     title: "Dezaccesiuni",
     description: "Gestionează eliminările din colecție",
@@ -2478,6 +2495,104 @@ export default {
       created: "Creat",
       step: "Pasul {step} - aprobat",
       unknown: "Necunoscut",
+    },
+    stages: {
+      eyebrow: "Etapele scoaterii din evidență",
+      title: "Decizie, ieșire și încasări",
+      withdrawalNotice:
+        "Această cerere retrage înregistrarea din catalogul curent. Etapele scoaterii din evidență nu se aplică.",
+      awaitingDecision:
+        "Se înregistrează după aprobarea deciziei de scoatere din evidență.",
+      notApplicable: "Nu se aplică acestei cereri.",
+      recordedBy: "Înregistrat de {name}",
+      unknownUser: "Utilizator necunoscut",
+      notes: "Note",
+      saving: "Se salvează…",
+      cancel: "Anulează",
+      actionFailed: "Modificarea nu a putut fi salvată.",
+      decision: {
+        title: "Decizie",
+        pending: "În așteptarea deciziei",
+        rejected: "Respinsă",
+        policyChecked: "Decisă cu toate verificările obligatorii complete",
+        authorizedException: "Decisă cu o excepție autorizată",
+        legacy: "Decisă înainte de înregistrarea verificărilor pe etape",
+        legacyDescription:
+          "Pentru această decizie nu a fost înregistrată nicio listă de verificare. Este afișată așa cum a fost înregistrată, fără a presupune conformitatea.",
+        notRequired: "neobligatorie",
+        passed: "completă",
+        waived: "exceptată",
+        outstanding: "restantă",
+        checkedAt: "Verificată la",
+        exceptionBy: "Excepție autorizată de {name}",
+      },
+      checks: {
+        reason: "Motivul scoaterii din evidență",
+        disposition: "Destinatarul, destinația sau modalitatea prevăzută",
+        valuation: "Evaluare curentă (sub 2 ani)",
+        regulatoryApproval: "Aprobare de reglementare",
+      },
+      valuation: {
+        title: "Evaluare",
+        linked: "Evaluare asociată: {value} de {appraiser}",
+        none: "Nicio evaluare asociată",
+        notCurrent: "mai veche de 2 ani",
+        noAppraisals:
+          "Acest obiect nu are evaluări. Adăugați una din evaluările obiectului.",
+        select: "Selectați o evaluare",
+        ageDays: "veche de {days} zile",
+        link: "Asociază evaluarea",
+        linking: "Se asociază…",
+        linkedToast: "Evaluare asociată.",
+        tooOld:
+          "Asociată, dar evaluarea este mai veche de 2 ani și nu îndeplinește verificarea.",
+      },
+      exit: {
+        title: "Ieșire fizică",
+        exitDate: "Data ieșirii",
+        recipient: "Destinatar, destinație sau martor",
+        reference: "Referință",
+        corrections: "Înregistrări anterioare păstrate: {count}",
+        outstanding: "Ieșirea nu a fost încă înregistrată.",
+        correct: "Corectează ieșirea",
+        record: "Înregistrează ieșirea",
+        saved: "Ieșire înregistrată.",
+        correctionReason: "Motivul corectării",
+        correctionHint:
+          "Înregistrarea anterioară este păstrată cu acest motiv.",
+        save: "Salvează ieșirea",
+      },
+      proceeds: {
+        title: "Încasări din vânzare",
+        notApplicable: "Încasările se înregistrează doar pentru vânzări.",
+        amount: "Sumă",
+        paidBy: "Plătit de",
+        date: "Data încasării",
+        receiptAttached: "Chitanță atașată",
+        receiptMissing: "Nicio chitanță atașată",
+        verifiedOn: "Verificat la",
+        exceptionReason: "Motivul excepției (fără chitanță)",
+        outstanding: "Încasările nu au fost încă înregistrate.",
+        edit: "Editează încasările",
+        record: "Înregistrează încasările",
+        saved: "Încasări înregistrate.",
+        currency: "Monedă",
+        receipt: "Document chitanță",
+        receiptKept:
+          "Chitanța curentă se păstrează dacă nu alegeți un fișier nou.",
+        save: "Salvează încasările",
+        verifiedToast: "Încasări verificate.",
+        exceptionHint:
+          "Fără chitanță, verificarea necesită un motiv. Acesta este păstrat și auditat.",
+        verify: "Verifică încasările",
+      },
+      approval: {
+        outstanding: "Verificări de decizie restante",
+        exceptionReason: "Motivul excepției",
+        exceptionHint:
+          "La decizia finală, aprobarea cu verificări restante înregistrează acest motiv ca excepție autorizată.",
+        failed: "Decizia nu a putut fi salvată.",
+      },
     },
     form: {
       selectOrg: "Selectează o organizație pentru a crea dezafectări.",
@@ -7603,6 +7718,8 @@ export default {
       openCommandPalette: "Deschide paleta de comenzi",
       searchObjects: "Caută obiecte…",
       typeACommandOrSearch: "Tastează o comandă sau caută…",
+      identifierIndexIncomplete:
+        "Unii identificatori istorici nu sunt încă indexați, așa că potrivirile după identificator pot fi incomplete. Indexați-i în Setări, Preferințe.",
       noMatchesTryObjectsOrCollectionGroups:
         "Niciun rezultat. Încearcă obiecte sau grupuri de colecții.",
       objects: "Obiecte",

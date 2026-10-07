@@ -130,7 +130,8 @@ test("bulkDeaccession returns correct counts for mixed collection states", async
   });
 
   expect(result).toEqual({
-    deaccessioned: 2,
+    deaccessioned: 0,
+    awaitingDecision: 2,
     skipped: 1,
     failed: 2,
   });
@@ -153,8 +154,8 @@ test("bulkDeaccession returns correct counts for mixed collection states", async
       ] as const);
     });
 
-  expect(deaccessionedA?.status).toBe("deaccessioned");
-  expect(deaccessionedB?.status).toBe("deaccessioned");
+  expect(deaccessionedA?.status).toBe("active");
+  expect(deaccessionedB?.status).toBe("active");
   expect(skipped?.status).toBe("deaccessioned");
   expect(loaned?.status).toBe("loaned");
 
@@ -165,7 +166,7 @@ test("bulkDeaccession returns correct counts for mixed collection states", async
   for (const record of deaccessionRecords) {
     expect(record.method).toBe("destruction");
     expect(record.reason).toBe("Bulk catalog cleanup");
-    expect(record.status).toBe("approved");
+    expect(record.status).toBe("pending");
   }
 });
 
@@ -216,13 +217,17 @@ test("bulkDeaccession counts permission failures without throwing", async () => 
   });
 
   const readOnlyAuthed = authedForUser(t, readOnlyUserId);
-  const result = await readOnlyAuthed.mutation(api.collections.bulkDeaccession, {
-    collectionIds: [activeCollectionIdA, activeCollectionIdB],
-    reason: "Unauthorized attempt",
-  });
+  const result = await readOnlyAuthed.mutation(
+    api.collections.bulkDeaccession,
+    {
+      collectionIds: [activeCollectionIdA, activeCollectionIdB],
+      reason: "Unauthorized attempt",
+    },
+  );
 
   expect(result).toEqual({
     deaccessioned: 0,
+    awaitingDecision: 0,
     skipped: 0,
     failed: 2,
   });

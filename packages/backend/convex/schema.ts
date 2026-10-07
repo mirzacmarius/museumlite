@@ -567,6 +567,11 @@ export default defineSchema({
       "organizationId",
       "normalizedIdentifier",
     ])
+    .index("by_organization_and_status_and_normalizedIdentifier", [
+      "organizationId",
+      "status",
+      "normalizedIdentifier",
+    ])
     .index("by_accessionNumber", ["accessionNumber"])
     .index("by_organization_and_accessionNumber", [
       "organizationId",
@@ -592,6 +597,18 @@ export default defineSchema({
     .searchIndex("search_index", {
       searchField: "title",
       filterFields: ["organizationId", "status", "collectionType", "title"],
+    })
+    .searchIndex("search_alternativeTitle", {
+      searchField: "alternativeTitle",
+      filterFields: ["organizationId", "status"],
+    })
+    .searchIndex("search_creator", {
+      searchField: "creator",
+      filterFields: ["organizationId", "status"],
+    })
+    .searchIndex("search_objectName", {
+      searchField: "objectName",
+      filterFields: ["organizationId", "status"],
     }),
 
   // Accession number counter tracking
@@ -1317,6 +1334,15 @@ export default defineSchema({
     sourceVerifiedBy: v.optional(v.id("users")),
     sourceVerifiedAt: v.optional(v.number()),
     sourceVerificationNotes: v.optional(v.string()),
+    // Approval despite missing required source verification.
+    sourceVerificationException: v.optional(
+      v.object({
+        reason: v.string(),
+        authorizedBy: v.id("users"),
+        authorizedAt: v.number(),
+        stepNumber: v.number(),
+      }),
+    ),
     // Document checklist - tracks which required documents have been uploaded
     documentChecklist: v.optional(
       v.array(
@@ -1341,6 +1367,12 @@ export default defineSchema({
     .index("by_organization_and_status", ["organizationId", "status"])
     .index("by_organization_and_dateReceived", [
       "organizationId",
+      "dateReceived",
+    ])
+    .index("by_organization_and_status_and_workflowStep_and_dateReceived", [
+      "organizationId",
+      "status",
+      "workflowStep",
       "dateReceived",
     ])
     .index("by_organization_and_status_and_dateReceived", [
@@ -1463,6 +1495,49 @@ export default defineSchema({
     appraisalVerifiedAt: v.optional(v.number()),
     appraisalValue: v.optional(v.number()),
     appraisalDate: v.optional(v.number()),
+    // Stage-specific disposal evidence. Approved records without a
+    // decisionReview predate stage checks and are reported as legacy.
+    decisionReview: v.optional(
+      v.object({
+        policyVersion: v.number(),
+        checkedAt: v.number(),
+        checks: v.array(
+          v.object({
+            key: v.string(),
+            required: v.boolean(),
+            passed: v.boolean(),
+          }),
+        ),
+        exception: v.optional(
+          v.object({
+            reason: v.string(),
+            waivedCheckKeys: v.array(v.string()),
+            authorizedBy: v.id("users"),
+            authorizedAt: v.number(),
+          }),
+        ),
+      }),
+    ),
+    exitRecord: v.optional(
+      v.object({
+        exitDate: v.number(),
+        recipient: v.string(),
+        reference: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        recordedBy: v.id("users"),
+        recordedAt: v.number(),
+      }),
+    ),
+    exitCorrectionCount: v.optional(v.number()),
+    proceedsRecordedBy: v.optional(v.id("users")),
+    proceedsRecordedAt: v.optional(v.number()),
+    proceedsVerificationException: v.optional(
+      v.object({
+        reason: v.string(),
+        authorizedBy: v.id("users"),
+        authorizedAt: v.number(),
+      }),
+    ),
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])

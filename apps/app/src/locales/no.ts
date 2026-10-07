@@ -2612,6 +2612,8 @@ export default {
       itemsAddedToGroup: "{count} element lagt til gruppe",
       itemsAddToGroupFailed: "Kunne ikke legge til elementer i gruppe",
       selectDeaccessionReason: "Vennligst oppgi en årsak for fraregistrering",
+      itemsAwaitingDecision:
+        "{count} forespørsel(er) om fraregistrering venter på godkjenningsvedtak",
       itemsDeaccessioned: "{count} element fraregistrert",
       someItemsSkipped: "{count} element ble hoppet over (på aktivt utlån)",
       failedOnLoan: "{count} feilet (kan være på utlån)",
@@ -4488,6 +4490,10 @@ export default {
       dateReceivedCannotChange: "Mottatt dato kan ikke endres",
     },
     approval: {
+      sourceExceptionLabel: "Kilde ikke verifisert: begrunnelse for unntak",
+      sourceExceptionHint:
+        "Påkrevd kildeverifisering mangler. Godkjenning med begrunnelse registrerer et godkjent unntak, som beholdes med aksesjonen og revideres.",
+      sourceExceptionRecorded: "Unntak godkjent",
       title: "Godkjenningshandlinger",
       commentLabel: "Kommentar (valgfritt)",
       commentPlaceholder:
@@ -4528,6 +4534,11 @@ export default {
       sourceRequired: "Kilde er påkrevd",
     },
     kanban: {
+      loading: "Laster…",
+      loadMore: "Last inn flere",
+      shownOfTotal: "{loaded} av {total}",
+      matchesShown: "Treff vist: {loaded}",
+      noMatches: "Ingen samsvarende aksesjoner i {step}",
       noAccessions: "Ingen aksesjoner i {step}",
       unknownSource: "Ukjent kilde",
     },
@@ -4569,6 +4580,12 @@ export default {
     addObject: "Legg til objekt",
   },
 
+  objectPicker: {
+    loading: "Laster…",
+    loadMore: "Last inn flere",
+    refineSearch:
+      "Flere objekter samsvarer. Avgrens søket for å snevre inn listen.",
+  },
   deaccessions: {
     title: "Deaksesjonsposter",
     description: "Elementer permanent fjernet fra samlingen.",
@@ -4650,6 +4667,104 @@ export default {
       created: "Opprettet",
       step: "Trinn {step} - Godkjent",
       unknown: "Ukjent",
+    },
+    stages: {
+      eyebrow: "Avhendingstrinn",
+      title: "Beslutning, utførsel og inntekter",
+      withdrawalNotice:
+        "Denne forespørselen trekker posten ut av den ordinære katalogen. Avhendingstrinn gjelder ikke.",
+      awaitingDecision:
+        "Registreres etter at avhendingsbeslutningen er godkjent.",
+      notApplicable: "Gjelder ikke for denne forespørselen.",
+      recordedBy: "Registrert av {name}",
+      unknownUser: "Ukjent bruker",
+      notes: "Notater",
+      saving: "Lagrer…",
+      cancel: "Avbryt",
+      actionFailed: "Endringen kunne ikke lagres.",
+      decision: {
+        title: "Beslutning",
+        pending: "Venter på beslutning",
+        rejected: "Avvist",
+        policyChecked: "Besluttet med alle påkrevde kontroller fullført",
+        authorizedException: "Besluttet med et godkjent unntak",
+        legacy: "Besluttet før trinnkontroller ble registrert",
+        legacyDescription:
+          "Ingen sjekkliste ble registrert for denne beslutningen. Den vises slik den opprinnelig ble registrert, uten antatt samsvar.",
+        notRequired: "ikke påkrevd",
+        passed: "fullført",
+        waived: "fraveket ved unntak",
+        outstanding: "utestående",
+        checkedAt: "Kontrollert",
+        exceptionBy: "Unntak godkjent av {name}",
+      },
+      checks: {
+        reason: "Begrunnelse for avhending",
+        disposition: "Tiltenkt mottaker, destinasjon eller metode",
+        valuation: "Gjeldende verdivurdering (under 2 år)",
+        regulatoryApproval: "Myndighetsgodkjenning",
+      },
+      valuation: {
+        title: "Verdivurdering",
+        linked: "Koblet verdivurdering: {value} av {appraiser}",
+        none: "Ingen verdivurdering koblet",
+        notCurrent: "eldre enn 2 år",
+        noAppraisals:
+          "Dette objektet har ingen verdivurderinger. Legg til en fra objektets verdivurderinger.",
+        select: "Velg en verdivurdering",
+        ageDays: "{days} dager gammel",
+        link: "Koble verdivurdering",
+        linking: "Kobler…",
+        linkedToast: "Verdivurdering koblet.",
+        tooOld:
+          "Koblet, men verdivurderingen er eldre enn 2 år og oppfyller ikke kontrollen.",
+      },
+      exit: {
+        title: "Fysisk utførsel",
+        exitDate: "Utførselsdato",
+        recipient: "Mottaker, destinasjon eller vitne",
+        reference: "Referanse",
+        corrections: "Tidligere oppføringer beholdt: {count}",
+        outstanding: "Utførsel er ikke registrert ennå.",
+        correct: "Korriger utførsel",
+        record: "Registrer utførsel",
+        saved: "Utførsel registrert.",
+        correctionReason: "Begrunnelse for korrigering",
+        correctionHint:
+          "Den forrige oppføringen beholdes med denne begrunnelsen.",
+        save: "Lagre utførsel",
+      },
+      proceeds: {
+        title: "Salgsinntekter",
+        notApplicable: "Inntekter registreres bare for salg.",
+        amount: "Beløp",
+        paidBy: "Betalt av",
+        date: "Mottatt dato",
+        receiptAttached: "Kvittering vedlagt",
+        receiptMissing: "Ingen kvittering vedlagt",
+        verifiedOn: "Verifisert",
+        exceptionReason: "Begrunnelse for unntak (uten kvittering)",
+        outstanding: "Inntekter er ikke registrert ennå.",
+        edit: "Rediger inntekter",
+        record: "Registrer inntekter",
+        saved: "Inntekter registrert.",
+        currency: "Valuta",
+        receipt: "Kvitteringsdokument",
+        receiptKept:
+          "Gjeldende kvittering beholdes med mindre du velger en ny fil.",
+        save: "Lagre inntekter",
+        verifiedToast: "Inntekter verifisert.",
+        exceptionHint:
+          "Uten kvittering krever verifisering en begrunnelse. Den beholdes og revideres.",
+        verify: "Verifiser inntekter",
+      },
+      approval: {
+        outstanding: "Utestående beslutningskontroller",
+        exceptionReason: "Begrunnelse for unntak",
+        exceptionHint:
+          "Ved den endelige beslutningen registreres denne begrunnelsen som et godkjent unntak når kontroller er utestående.",
+        failed: "Beslutningen kunne ikke lagres.",
+      },
     },
     form: {
       selectOrg: "Vennligst velg en organisasjon for å opprette deaksesjoner.",
@@ -6794,6 +6909,8 @@ export default {
       openCommandPalette: "Åpne kommandopaletten",
       searchObjects: "Søk etter objekter…",
       typeACommandOrSearch: "Skriv en kommando eller søk…",
+      identifierIndexIncomplete:
+        "Noen historiske identifikatorer er ikke indeksert ennå, så treff på identifikator kan være ufullstendige. Indekser dem under Innstillinger, Preferanser.",
       noMatchesTryObjectsOrCollectionGroups:
         "Ingen treff. Prøv objekter eller samlingsgrupper.",
       objects: "Objekter",

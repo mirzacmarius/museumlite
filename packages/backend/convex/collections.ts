@@ -25,7 +25,6 @@ import {
   archiveCollectionHandler,
   restoreCollectionHandler,
 } from "./utils/collectionDisposition";
-import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import {
   filterCollectionListPage,
   getCollectionsWithOpenDeaccessions,
@@ -37,10 +36,7 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
-import {
-  assertCollectionNotOnLoan,
-  collectionHasOccupyingLoan,
-} from "./utils/loanOccupancy";
+import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
   moveCollectionToLocation,
   requireUsableLocation,
@@ -50,6 +46,7 @@ import {
   getCollectionTypeModuleRequirement,
 } from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
+import { searchObjects } from "./utils/objectSearch";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 import { getApprovedPublicMedia } from "./utils/publicMedia";
@@ -1255,6 +1252,67 @@ export const getWithModuleDetails = query({
 /**
  * List collections with pagination and filters
  */
+const SELECTION_SEARCH_LIMIT = 50;
+
+/**
+ * Search-on-demand for object pickers: indexed identifier and word matches,
+ * capped per request. `hasMore` tells the picker to ask for a narrower query
+ * instead of loading the organization.
+ */
+export const searchForSelection = query({
+  args: {
+    organizationId: v.id("organizations"),
+    query: v.string(),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+      ),
+    ),
+  },
+  returns: v.object({
+    items: v.array(
+      v.object({
+        _id: v.id("collections"),
+        title: v.string(),
+        accessionNumber: v.string(),
+        status: v.string(),
+      }),
+    ),
+    hasMore: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const query = args.query.trim();
+    if (!query) return { items: [], hasMore: false };
+    const statuses = args.status
+      ? [args.status]
+      : (["active", "loaned", "deaccessioned"] as const);
+    const searches = await Promise.all(
+      statuses.map((status) =>
+        searchObjects(
+          ctx,
+          args.organizationId,
+          query,
+          SELECTION_SEARCH_LIMIT + 1,
+          status,
+        ),
+      ),
+    );
+    const matching = searches.flatMap(({ rows }) => rows);
+    return {
+      items: matching.slice(0, SELECTION_SEARCH_LIMIT).map((row) => ({
+        _id: row._id,
+        title: row.title,
+        accessionNumber: row.accessionNumber,
+        status: row.status,
+      })),
+      hasMore: matching.length > SELECTION_SEARCH_LIMIT,
+    };
+  },
+});
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -1801,52 +1859,6 @@ export const archiveCollection = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => archiveCollectionHandler(ctx, args),
-});
-
-/**
- * Museum records are retained permanently. Use archiveCollection to withdraw
- * a record from routine catalog views while keeping its register evidence.
- */
-export const deleteCollection = mutation({
-  args: {
-    collectionId: v.id("collections"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const [userId, collection] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.collectionId),
-    ] as const);
-    if (!userId) throw new Error("Not authenticated");
-    if (!collection) throw new Error("Collection not found");
-    await assertCollectionNotOnLoan(
-      ctx,
-      args.collectionId,
-      "Cannot deaccession an object that is currently on loan",
-    );
-    await requirePermission(
-      ctx,
-      collection.organizationId,
-      "collections.delete",
-    );
-    await markCollectionDeaccessioned(ctx, {
-      collectionId: args.collectionId,
-      changedBy: userId,
-    });
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "deaccessioned_collection",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-        previousStatus: collection.status,
-      },
-    });
-    return null;
-  },
 });
 
 /**
@@ -2548,6 +2560,7 @@ export const bulkDeaccession = mutation({
   },
   returns: v.object({
     deaccessioned: v.number(),
+    awaitingDecision: v.number(),
     failed: v.number(),
     skipped: v.number(),
   }),
@@ -2558,6 +2571,7 @@ export const bulkDeaccession = mutation({
     }
 
     let deaccessioned = 0;
+    let awaitingDecision = 0;
     let failed = 0;
     let skipped = 0;
 
@@ -2588,7 +2602,7 @@ export const bulkDeaccession = mutation({
           "collections.delete",
         );
         // Bulk UI has no method picker yet; default to destruction.
-        await createDeaccessionRecord(
+        const deaccessionId = await createDeaccessionRecord(
           ctx,
           {
             organizationId: collection.organizationId,
@@ -2599,13 +2613,20 @@ export const bulkDeaccession = mutation({
           },
           userId,
         );
-        deaccessioned++;
+        // Bulk removal records no intended disposition, so the decision waits
+        // for an approver instead of being finalized without evidence.
+        const created = await ctx.db.get(deaccessionId);
+        if (created?.status === "approved") {
+          deaccessioned++;
+        } else {
+          awaitingDecision++;
+        }
       } catch {
         failed++;
       }
     }
 
-    return { deaccessioned, failed, skipped };
+    return { deaccessioned, awaitingDecision, failed, skipped };
   },
 });
 

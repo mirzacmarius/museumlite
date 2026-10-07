@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -15,14 +15,32 @@ import {
   canRestoreRejectedDisposition,
   markCollectionActive,
 } from "./utils/collectionLifecycle";
+import {
+  DISPOSAL_POLICY_VERSION,
+  type DisposalDecisionCheckKey,
+  describeBlockingDecisionChecks,
+  evaluateDisposalDecisionChecks,
+  getBlockingDecisionChecks,
+  hasCurrentValuation,
+  isDisposalDecision,
+  methodHasProceedsStage,
+  resolveDecisionBasis,
+  resolveExitState,
+  resolveProceedsState,
+} from "./utils/disposalPolicy";
 import { assertCollectionNotOnLoan } from "./utils/loanOccupancy";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
 import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+} from "./utils/uploadOwnership";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
@@ -145,6 +163,70 @@ async function applyApprovedCollectionStatus(
   });
 }
 
+/**
+ * Evaluate the decision-stage checks for a disposal about to be authorized.
+ * Outstanding required checks block the decision unless the authorizing
+ * approver records an exception reason, which is retained with the decision.
+ */
+function reviewDisposalDecision(
+  deaccession: Doc<"deaccessions">,
+  userId: Id<"users">,
+  exceptionReason: string | undefined,
+  now: number,
+): NonNullable<Doc<"deaccessions">["decisionReview"]> {
+  const checks = evaluateDisposalDecisionChecks(deaccession, now);
+  const blocking = getBlockingDecisionChecks(checks);
+  const trimmedExceptionReason = exceptionReason?.trim();
+
+  if (blocking.length === 0) {
+    if (trimmedExceptionReason) {
+      throw new ConvexError(
+        "No decision checks are outstanding; approve without an exception",
+      );
+    }
+    return { policyVersion: DISPOSAL_POLICY_VERSION, checkedAt: now, checks };
+  }
+
+  if (!trimmedExceptionReason) {
+    throw new ConvexError(
+      `Disposal decision is blocked. Outstanding: ${describeBlockingDecisionChecks(blocking)}. Complete the evidence or record an authorized exception reason.`,
+    );
+  }
+
+  return {
+    policyVersion: DISPOSAL_POLICY_VERSION,
+    checkedAt: now,
+    checks,
+    exception: {
+      reason: trimmedExceptionReason,
+      waivedCheckKeys: blocking.map((check) => check.key),
+      authorizedBy: userId,
+      authorizedAt: now,
+    },
+  };
+}
+
+async function logDecisionException(
+  ctx: MutationCtx,
+  deaccession: Doc<"deaccessions">,
+  userId: Id<"users">,
+  decisionReview: NonNullable<Doc<"deaccessions">["decisionReview"]>,
+) {
+  if (!decisionReview.exception) return;
+  await ctx.runMutation(internal.audit.logAction, {
+    organizationId: deaccession.organizationId,
+    userId,
+    action: "disposal_decision_exception_authorized",
+    entityType: "deaccession",
+    entityId: deaccession._id,
+    changes: {
+      reason: decisionReview.exception.reason,
+      waivedCheckKeys: decisionReview.exception.waivedCheckKeys,
+      policyVersion: decisionReview.policyVersion,
+    },
+  });
+}
+
 async function canInitiateDeaccessionWorkflowForUser(
   ctx: MutationCtx,
   organizationId: Id<"organizations">,
@@ -160,6 +242,14 @@ async function canInitiateDeaccessionWorkflowForUser(
 
   if (!userOrganization) {
     return false;
+  }
+
+  // Organization administrators may start any workflow, as they may approve
+  // any step (see canApproveAtStep).
+  if (
+    await hasPermission(ctx, organizationId, "organization.manage_settings")
+  ) {
+    return true;
   }
 
   const workflowConfig = workflowEnabled
@@ -262,6 +352,26 @@ export async function createDeaccessionRecord(
     throw new Error("Workflow has no approval steps configured");
   }
 
+  // Without an approval workflow the initiator's request becomes the decision
+  // only when every decision-stage check passes; otherwise it waits for an
+  // approver, who can complete the evidence or authorize an exception.
+  const now = Date.now();
+  const autoDecisionChecks = workflowConfig
+    ? []
+    : evaluateDisposalDecisionChecks(
+        {
+          method: args.method,
+          reason: args.reason,
+          disposition: args.disposition,
+          targetCollectionStatus: args.targetCollectionStatus,
+        },
+        now,
+      );
+  const isAutoApproved =
+    !workflowConfig &&
+    getBlockingDecisionChecks(autoDecisionChecks).length === 0;
+  const status = isAutoApproved ? "approved" : "pending";
+
   const workflowHistory = workflowConfig
     ? [
         {
@@ -282,7 +392,18 @@ export async function createDeaccessionRecord(
     method: args.method,
     disposition: args.disposition,
     notes: args.notes,
-    status: workflowConfig ? "pending" : "approved",
+    status,
+    ...(isAutoApproved
+      ? {
+          approvedBy: userId,
+          approvedAt: now,
+          decisionReview: {
+            policyVersion: DISPOSAL_POLICY_VERSION,
+            checkedAt: now,
+            checks: autoDecisionChecks,
+          },
+        }
+      : {}),
     targetCollectionStatus: args.targetCollectionStatus ?? "deaccessioned",
     workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
     workflowHistory,
@@ -302,7 +423,7 @@ export async function createDeaccessionRecord(
       entityId: deaccessionId,
       changes: {
         deaccessionNumber,
-        status: workflowConfig ? "pending" : "approved",
+        status,
       },
     }),
   ]);
@@ -332,7 +453,7 @@ export async function createDeaccessionRecord(
     );
   }
 
-  if (!workflowConfig) {
+  if (isAutoApproved) {
     const createdDeaccession = await ctx.db.get(deaccessionId);
     if (createdDeaccession) {
       await applyApprovedCollectionStatus(ctx, createdDeaccession, userId);
@@ -1063,6 +1184,7 @@ export const approve = mutation({
   args: {
     deaccessionId: v.id("deaccessions"),
     comment: v.optional(v.string()),
+    exceptionReason: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1087,11 +1209,12 @@ export const approve = mutation({
       "collections.approve_deaccession",
     );
 
-    const workflowConfig = await getWorkflowConfig(
+    const workflowConfig = (await isDeaccessionWorkflowEnabled(
       ctx,
       deaccession.organizationId,
-      "deaccession",
-    );
+    ))
+      ? await getWorkflowConfig(ctx, deaccession.organizationId, "deaccession")
+      : null;
 
     if (workflowConfig) {
       const workflowState = resolveWorkflowStepState(
@@ -1125,6 +1248,23 @@ export const approve = mutation({
         throw new Error("Current workflow step is not configured");
       }
 
+      // Check if this is the last step
+      const isLastStep =
+        workflowState.isPastLastStep || workflowState.isLastStep;
+      if (!isLastStep && args.exceptionReason?.trim()) {
+        throw new ConvexError(
+          "Exceptions can only be authorized at the final disposal decision",
+        );
+      }
+      const decisionReview = isLastStep
+        ? reviewDisposalDecision(
+            deaccession,
+            userId,
+            args.exceptionReason,
+            Date.now(),
+          )
+        : undefined;
+
       const { approvalDecision, approvalMode } =
         await recordWorkflowStepApproval(ctx, {
           organizationId: deaccession.organizationId,
@@ -1152,18 +1292,16 @@ export const approve = mutation({
         });
       }
 
-      // Check if this is the last step
-      const isLastStep =
-        workflowState.isPastLastStep || workflowState.isLastStep;
-
-      if (isLastStep) {
+      if (isLastStep && decisionReview) {
         await Promise.all([
           ctx.db.patch(args.deaccessionId, {
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
             workflowHistory: history,
+            decisionReview,
           }),
+          logDecisionException(ctx, deaccession, userId, decisionReview),
           syncDeaccessionSearchDocument(ctx, args.deaccessionId),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: deaccession.organizationId,
@@ -1225,13 +1363,21 @@ export const approve = mutation({
         });
       }
     } else {
+      const decisionReview = reviewDisposalDecision(
+        deaccession,
+        userId,
+        args.exceptionReason,
+        Date.now(),
+      );
       const [, userOrgs] = await Promise.all([
         Promise.all([
           ctx.db.patch(args.deaccessionId, {
             status: "approved",
             approvedBy: userId,
             approvedAt: Date.now(),
+            decisionReview,
           }),
+          logDecisionException(ctx, deaccession, userId, decisionReview),
           syncDeaccessionSearchDocument(ctx, args.deaccessionId),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: deaccession.organizationId,
@@ -1653,8 +1799,151 @@ export const listForExport = query({
 // Proceeds Accountability
 // ============================================
 
+async function requireApprovedDisposal(
+  ctx: MutationCtx,
+  deaccessionId: Id<"deaccessions">,
+) {
+  const [userId, deaccession] = await Promise.all([
+    getAuthUserId(ctx),
+    ctx.db.get(deaccessionId),
+  ] as const);
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+  if (!deaccession) {
+    throw new Error("Deaccession not found");
+  }
+  await requirePermission(
+    ctx,
+    deaccession.organizationId,
+    "collections.update",
+  );
+  if (!isDisposalDecision(deaccession)) {
+    throw new ConvexError(
+      "Exit and proceeds apply only to deaccession disposals, not withdrawals",
+    );
+  }
+  if (deaccession.status !== "approved") {
+    throw new ConvexError(
+      "Exit and proceeds can only be recorded after the disposal decision is approved",
+    );
+  }
+  return { userId, deaccession };
+}
+
+function requireSale(deaccession: Doc<"deaccessions">) {
+  if (!methodHasProceedsStage(deaccession.method)) {
+    throw new ConvexError("Proceeds are recorded only for sale disposals");
+  }
+}
+
 /**
- * Record sale proceeds with receipt
+ * Record the physical exit of a disposed object. An existing exit record is
+ * only replaced with a correction reason; the superseded entry is retained in
+ * the audit log.
+ */
+export const recordExit = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+    exitDate: v.number(),
+    recipient: v.string(),
+    reference: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    correctionReason: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { userId, deaccession } = await requireApprovedDisposal(
+      ctx,
+      args.deaccessionId,
+    );
+    const recipient = args.recipient.trim();
+    if (!recipient) {
+      throw new ConvexError("Recipient, destination or witness is required");
+    }
+    if (!Number.isFinite(args.exitDate) || args.exitDate <= 0) {
+      throw new ConvexError("Exit date is required");
+    }
+    const now = Date.now();
+    const exitRecord = {
+      exitDate: args.exitDate,
+      recipient,
+      reference: args.reference?.trim() || undefined,
+      notes: args.notes?.trim() || undefined,
+      recordedBy: userId,
+      recordedAt: now,
+    };
+    const previous = deaccession.exitRecord;
+    const correctionReason = args.correctionReason?.trim();
+
+    if (previous) {
+      if (
+        previous.exitDate === exitRecord.exitDate &&
+        previous.recipient === exitRecord.recipient &&
+        previous.reference === exitRecord.reference &&
+        previous.notes === exitRecord.notes
+      ) {
+        return null;
+      }
+      if (!correctionReason) {
+        throw new ConvexError(
+          "An exit is already recorded; provide a correction reason to replace it",
+        );
+      }
+    }
+
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
+        exitRecord,
+        ...(previous
+          ? { exitCorrectionCount: (deaccession.exitCorrectionCount ?? 0) + 1 }
+          : {}),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: previous ? "disposal_exit_corrected" : "disposal_exit_recorded",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: {
+          exitDate: exitRecord.exitDate,
+          recipient: exitRecord.recipient,
+          reference: exitRecord.reference,
+          correctionReason,
+          previousExitRecord: previous,
+        },
+      }),
+    ] as const);
+
+    return null;
+  },
+});
+
+/**
+ * Upload session for a sale proceeds receipt.
+ */
+export const generateReceiptUploadUrl = mutation({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const { userId, deaccession } = await requireApprovedDisposal(
+      ctx,
+      args.deaccessionId,
+    );
+    requireSale(deaccession);
+    return await createAuthorizedUploadUrl(
+      ctx,
+      userId,
+      deaccession.organizationId,
+    );
+  },
+});
+
+/**
+ * Record sale proceeds after the disposal decision. The receipt is optional
+ * at this point; it is required (or excepted) when proceeds are verified.
  */
 export const recordProceeds = mutation({
   args: {
@@ -1668,25 +1957,40 @@ export const recordProceeds = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, deaccession] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.deaccessionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
+    const { userId, deaccession } = await requireApprovedDisposal(
+      ctx,
+      args.deaccessionId,
+    );
+    requireSale(deaccession);
+    if (deaccession.proceedsVerified === true) {
+      throw new ConvexError("Verified proceeds cannot be changed");
     }
-    if (!deaccession) {
-      throw new Error("Deaccession not found");
+    if (!Number.isFinite(args.amount) || args.amount < 0) {
+      throw new ConvexError("Proceeds amount must be zero or more");
+    }
+    if (!args.currency.trim() || !args.recipient.trim()) {
+      throw new ConvexError("Currency and recipient are required");
+    }
+    if (args.receiptDocument) {
+      await claimStorageOwnership(ctx, {
+        storageId: args.receiptDocument,
+        organizationId: deaccession.organizationId,
+        uploadedBy: userId,
+        ownerType: "deaccessionProceedsReceipt",
+        ownerId: args.deaccessionId,
+      });
     }
     await Promise.all([
-      requirePermission(ctx, deaccession.organizationId, "collections.update"),
       ctx.db.patch(args.deaccessionId, {
         proceedsAmount: args.amount,
-        proceedsCurrency: args.currency,
-        proceedsRecipient: args.recipient,
+        proceedsCurrency: args.currency.trim(),
+        proceedsRecipient: args.recipient.trim(),
         proceedsDate: args.date,
-        proceedsNotes: args.notes,
-        proceedsReceiptDocument: args.receiptDocument,
+        proceedsNotes: args.notes?.trim() || deaccession.proceedsNotes,
+        proceedsReceiptDocument:
+          args.receiptDocument ?? deaccession.proceedsReceiptDocument,
+        proceedsRecordedBy: userId,
+        proceedsRecordedAt: Date.now(),
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: deaccession.organizationId,
@@ -1694,7 +1998,13 @@ export const recordProceeds = mutation({
         action: "proceeds_recorded",
         entityType: "deaccession",
         entityId: args.deaccessionId,
-        changes: { amount: args.amount, currency: args.currency },
+        changes: {
+          amount: args.amount,
+          currency: args.currency,
+          hasReceipt: Boolean(
+            args.receiptDocument ?? deaccession.proceedsReceiptDocument,
+          ),
+        },
       }),
     ] as const);
 
@@ -1703,59 +2013,69 @@ export const recordProceeds = mutation({
 });
 
 /**
- * Verify proceeds have been received and documented
+ * Verify that sale proceeds were received. A receipt is required unless the
+ * verifier records an exception reason, which is retained and audited.
  */
 export const verifyProceeds = mutation({
   args: {
     deaccessionId: v.id("deaccessions"),
     notes: v.optional(v.string()),
+    exceptionReason: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const [userId, deaccession] = await Promise.all([
-      getAuthUserId(ctx),
-      ctx.db.get(args.deaccessionId),
-    ] as const);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    if (!deaccession) {
-      throw new Error("Deaccession not found");
-    }
-
-    await requirePermission(
+    const { userId, deaccession } = await requireApprovedDisposal(
       ctx,
-      deaccession.organizationId,
-      "collections.update",
+      args.deaccessionId,
     );
-
-    // Verify required fields are present for sales
-    if (deaccession.method === "sale") {
-      if (!deaccession.proceedsAmount) {
-        throw new Error("Proceeds amount is required for sale deaccessions");
-      }
-      if (!deaccession.proceedsReceiptDocument) {
-        throw new Error("Receipt document is required for sale deaccessions");
-      }
+    requireSale(deaccession);
+    if (deaccession.proceedsVerified === true) {
+      return null;
     }
+    if (deaccession.proceedsAmount === undefined) {
+      throw new ConvexError("Record the proceeds before verifying them");
+    }
+    const exceptionReason = args.exceptionReason?.trim();
+    if (!deaccession.proceedsReceiptDocument && !exceptionReason) {
+      throw new ConvexError(
+        "A receipt document is required to verify sale proceeds, or record an exception reason",
+      );
+    }
+    const now = Date.now();
+    const useException = !deaccession.proceedsReceiptDocument;
 
-    await ctx.db.patch(args.deaccessionId, {
-      proceedsVerified: true,
-      proceedsVerifiedBy: userId,
-      proceedsVerifiedAt: Date.now(),
-      proceedsNotes: args.notes
-        ? `${deaccession.proceedsNotes || ""}\nVerification: ${args.notes}`.trim()
-        : deaccession.proceedsNotes,
-    });
-
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: deaccession.organizationId,
-      userId,
-      action: "proceeds_verified",
-      entityType: "deaccession",
-      entityId: args.deaccessionId,
-      changes: { verified: true },
-    });
+    await Promise.all([
+      ctx.db.patch(args.deaccessionId, {
+        proceedsVerified: true,
+        proceedsVerifiedBy: userId,
+        proceedsVerifiedAt: now,
+        proceedsNotes: args.notes
+          ? `${deaccession.proceedsNotes || ""}\nVerification: ${args.notes}`.trim()
+          : deaccession.proceedsNotes,
+        ...(useException && exceptionReason
+          ? {
+              proceedsVerificationException: {
+                reason: exceptionReason,
+                authorizedBy: userId,
+                authorizedAt: now,
+              },
+            }
+          : {}),
+      }),
+      ctx.runMutation(internal.audit.logAction, {
+        organizationId: deaccession.organizationId,
+        userId,
+        action: useException
+          ? "proceeds_verified_with_exception"
+          : "proceeds_verified",
+        entityType: "deaccession",
+        entityId: args.deaccessionId,
+        changes: {
+          verified: true,
+          exceptionReason: useException ? exceptionReason : undefined,
+        },
+      }),
+    ] as const);
 
     return null;
   },
@@ -1958,6 +2278,12 @@ export const linkAppraisal = mutation({
       "collections.update",
     );
 
+    if (deaccession.status !== "pending") {
+      throw new ConvexError(
+        "Valuation evidence is linked before the decision; decided records keep their original evidence",
+      );
+    }
+
     const appraisal = await ctx.db.get(args.appraisalId);
     if (!appraisal) {
       throw new Error("Appraisal not found");
@@ -2074,6 +2400,176 @@ export const getCurrentAppraisal = query({
   },
 });
 
+const disposalCheckValidator = v.object({
+  key: v.string(),
+  required: v.boolean(),
+  passed: v.boolean(),
+});
+
+/**
+ * Stage-by-stage disposal evidence: the decision checklist (live while
+ * pending, the retained snapshot once decided), the physical exit and, for
+ * sales, proceeds receipt. Legacy decisions are reported without checks.
+ */
+export const getDisposalStages = query({
+  args: {
+    deaccessionId: v.id("deaccessions"),
+  },
+  returns: v.union(
+    v.object({
+      appliesToDisposal: v.boolean(),
+      decision: v.object({
+        basis: v.union(
+          v.literal("pending"),
+          v.literal("rejected"),
+          v.literal("policy_checked"),
+          v.literal("authorized_exception"),
+          v.literal("legacy"),
+        ),
+        ready: v.boolean(),
+        checks: v.array(disposalCheckValidator),
+        checkedAt: v.optional(v.number()),
+        exception: v.optional(
+          v.object({
+            reason: v.string(),
+            waivedCheckKeys: v.array(v.string()),
+            authorizedBy: v.id("users"),
+            authorizedByName: v.optional(v.string()),
+            authorizedAt: v.number(),
+          }),
+        ),
+      }),
+      valuation: v.object({
+        linkedAppraisalId: v.optional(v.id("appraisals")),
+        value: v.optional(v.number()),
+        appraisalDate: v.optional(v.number()),
+        isCurrent: v.boolean(),
+      }),
+      exit: v.object({
+        state: v.union(
+          v.literal("not_applicable"),
+          v.literal("awaiting_decision"),
+          v.literal("outstanding"),
+          v.literal("recorded"),
+        ),
+        record: v.optional(
+          v.object({
+            exitDate: v.number(),
+            recipient: v.string(),
+            reference: v.optional(v.string()),
+            notes: v.optional(v.string()),
+            recordedByName: v.optional(v.string()),
+            recordedAt: v.number(),
+          }),
+        ),
+        correctionCount: v.number(),
+      }),
+      proceeds: v.object({
+        state: v.union(
+          v.literal("not_applicable"),
+          v.literal("awaiting_decision"),
+          v.literal("outstanding"),
+          v.literal("recorded"),
+          v.literal("verified"),
+        ),
+        amount: v.optional(v.number()),
+        currency: v.optional(v.string()),
+        recipient: v.optional(v.string()),
+        date: v.optional(v.number()),
+        hasReceipt: v.boolean(),
+        verifiedAt: v.optional(v.number()),
+        verificationExceptionReason: v.optional(v.string()),
+      }),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const deaccession = await ctx.db.get(args.deaccessionId);
+    if (!deaccession) {
+      return null;
+    }
+    await requirePermission(
+      ctx,
+      deaccession.organizationId,
+      "collections.read",
+    );
+
+    const now = Date.now();
+    const basis = resolveDecisionBasis(deaccession);
+    const review = deaccession.decisionReview;
+    const checks =
+      basis === "pending"
+        ? evaluateDisposalDecisionChecks(deaccession, now)
+        : (review?.checks ?? []);
+    const userName = async (userId: Id<"users">) => {
+      const user = await ctx.db.get(userId);
+      return user?.name || user?.username || undefined;
+    };
+    const [exceptionAuthorName, exitRecorderName] = await Promise.all([
+      review?.exception
+        ? userName(review.exception.authorizedBy)
+        : Promise.resolve(undefined),
+      deaccession.exitRecord
+        ? userName(deaccession.exitRecord.recordedBy)
+        : Promise.resolve(undefined),
+    ] as const);
+
+    return {
+      appliesToDisposal: isDisposalDecision(deaccession),
+      decision: {
+        basis,
+        ready:
+          basis === "pending"
+            ? checks.every((check) => !check.required || check.passed)
+            : basis !== "rejected",
+        checks: checks.map(({ key, required, passed }) => ({
+          key,
+          required,
+          passed,
+        })),
+        checkedAt: review?.checkedAt,
+        exception: review?.exception
+          ? {
+              ...review.exception,
+              authorizedByName: exceptionAuthorName,
+            }
+          : undefined,
+      },
+      valuation: {
+        linkedAppraisalId: deaccession.appraisalId,
+        value: deaccession.appraisalValue,
+        appraisalDate: deaccession.appraisalDate,
+        isCurrent: hasCurrentValuation(deaccession, now),
+      },
+      exit: {
+        state: resolveExitState(deaccession),
+        record: deaccession.exitRecord
+          ? {
+              exitDate: deaccession.exitRecord.exitDate,
+              recipient: deaccession.exitRecord.recipient,
+              reference: deaccession.exitRecord.reference,
+              notes: deaccession.exitRecord.notes,
+              recordedByName: exitRecorderName,
+              recordedAt: deaccession.exitRecord.recordedAt,
+            }
+          : undefined,
+        correctionCount: deaccession.exitCorrectionCount ?? 0,
+      },
+      proceeds: {
+        state: resolveProceedsState(deaccession),
+        amount: deaccession.proceedsAmount,
+        currency: deaccession.proceedsCurrency,
+        recipient: deaccession.proceedsRecipient,
+        date: deaccession.proceedsDate,
+        hasReceipt: deaccession.proceedsReceiptDocument !== undefined,
+        verifiedAt: deaccession.proceedsVerifiedAt,
+        verificationExceptionReason:
+          deaccession.proceedsVerificationException?.reason,
+      },
+    };
+  },
+});
+
 /**
  * Check deaccession readiness - validates all requirements are met
  */
@@ -2104,69 +2600,43 @@ export const checkReadiness = query({
       "collections.read",
     );
 
-    const checks: {
-      name: string;
-      passed: boolean;
-      message: string;
-      required: boolean;
-    }[] = [];
-
-    // Check 1: Appraisal verification (required)
-    const hasValidAppraisal = deaccession.appraisalVerified === true;
-    checks.push({
-      name: "Appraisal Verification",
-      passed: hasValidAppraisal,
-      message: hasValidAppraisal
-        ? "Valid appraisal linked"
-        : "Requires valid appraisal (less than 2 years old)",
-      required: true,
-    });
-
-    // Check 2: Proceeds documentation (required for sales)
-    const isSale = deaccession.method === "sale";
-    const hasProceedsDoc = isSale
-      ? deaccession.proceedsVerified === true ||
-        (deaccession.proceedsAmount != null &&
-          deaccession.proceedsReceiptDocument != null)
-      : true;
-    checks.push({
-      name: "Proceeds Documentation",
-      passed: hasProceedsDoc,
-      message: isSale
-        ? hasProceedsDoc
-          ? "Proceeds documented with receipt"
-          : "Sale requires proceeds amount and receipt document"
-        : "Not required (not a sale)",
-      required: isSale,
-    });
-
-    // Check 3: Regulatory approval (if required)
-    const needsRegulatory = deaccession.regulatoryApprovalRequired === true;
-    const hasRegulatory = needsRegulatory
-      ? deaccession.regulatoryApprovalStatus === "approved"
-      : true;
-    checks.push({
-      name: "Regulatory Approval",
-      passed: hasRegulatory,
-      message: needsRegulatory
-        ? hasRegulatory
-          ? "Regulatory approval received"
-          : "Awaiting regulatory approval"
-        : "Not required",
-      required: needsRegulatory,
-    });
-
-    // Check 4: Basic information
-    const hasBasicInfo =
-      deaccession.reason?.length > 0 && deaccession.disposition != null;
-    checks.push({
-      name: "Basic Information",
-      passed: hasBasicInfo,
-      message: hasBasicInfo
-        ? "All required fields completed"
-        : "Missing reason or disposition",
-      required: true,
-    });
+    // Decision-stage readiness only. Exit and proceeds evidence belong to
+    // later stages and are reported by getDisposalStages.
+    const checkCopy: Record<
+      DisposalDecisionCheckKey,
+      { name: string; passed: string; failed: string }
+    > = {
+      reason: {
+        name: "Reason",
+        passed: "Reason recorded",
+        failed: "Record the reason for disposal",
+      },
+      disposition: {
+        name: "Intended Disposition",
+        passed: "Intended recipient, destination or means recorded",
+        failed: "Record the intended recipient, destination or means",
+      },
+      valuation: {
+        name: "Valuation",
+        passed: "Current valuation linked",
+        failed: "Requires a valuation less than 2 years old",
+      },
+      regulatory_approval: {
+        name: "Regulatory Approval",
+        passed: "Regulatory approval received or not required",
+        failed: "Awaiting regulatory approval",
+      },
+    };
+    const checks = evaluateDisposalDecisionChecks(deaccession, Date.now()).map(
+      (check) => ({
+        name: checkCopy[check.key].name,
+        passed: check.passed,
+        message: check.passed
+          ? checkCopy[check.key].passed
+          : checkCopy[check.key].failed,
+        required: check.required,
+      }),
+    );
 
     const requiredChecks = checks.filter((c) => c.required);
     const passedRequired = requiredChecks.filter((c) => c.passed);

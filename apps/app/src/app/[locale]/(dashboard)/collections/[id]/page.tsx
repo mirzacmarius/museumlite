@@ -46,9 +46,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ObjectPickerResults } from "@/components/object-picker-results";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
-import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
+import {
+  type SelectableObject,
+  useObjectSearchSelection,
+} from "@/hooks/use-object-search-selection";
 import { formatNumber } from "@/lib/format-number";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 export default function CollectionGroupDetailPage() {
@@ -293,7 +297,8 @@ function CollectionObjectsList({
   const tRoot = useI18n();
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
-  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
+  // Selected objects keep their labels when a new search replaces the results.
+  const [selectedObjects, setSelectedObjects] = useState<SelectableObject[]>(
     [],
   );
   const [searchQuery, setSearchQuery] = useState("");
@@ -321,15 +326,17 @@ function CollectionObjectsList({
     );
   }, [groupItemImageUrls]);
 
-  const { items: collections, isComplete: isCollectionListComplete } =
-    useDrainedCollectionList(
-      organizationId && isAddDialogOpen
-        ? {
-            organizationId,
-            status: "active",
-            search: searchQuery || undefined,
-          }
-        : "skip",
+  const picker = useObjectSearchSelection({
+    organizationId,
+    query: searchQuery,
+    status: "active",
+    enabled: isAddDialogOpen,
+  });
+  const toggleSelection = (object: SelectableObject) =>
+    setSelectedObjects((current) =>
+      current.some((selected) => selected._id === object._id)
+        ? current.filter((selected) => selected._id !== object._id)
+        : [...current, object],
     );
 
   const addItems = useMutation(api.collectionGroups.addItems);
@@ -339,20 +346,20 @@ function CollectionObjectsList({
   const availableCollections = useMemo(() => {
     if (!groupItems) return [];
     const existingIds = new Set(groupItems.map((item) => item.collectionId));
-    return collections.filter((c) => !existingIds.has(c._id));
-  }, [collections, groupItems]);
+    return picker.items.filter((c) => !existingIds.has(c._id));
+  }, [picker.items, groupItems]);
 
   const handleDialogOpenChange = (open: boolean) => {
     onAddDialogOpenChange(open);
     if (!open) {
       setSearchQuery("");
-      setSelectedCollectionIds([]);
+      setSelectedObjects([]);
       setError(null);
     }
   };
 
   const handleAddItems = async () => {
-    if (selectedCollectionIds.length === 0) {
+    if (selectedObjects.length === 0) {
       setError(t("importDialog.errorSelectOne"));
       return;
     }
@@ -361,9 +368,9 @@ function CollectionObjectsList({
     try {
       await addItems({
         groupId,
-        collectionIds: selectedCollectionIds as Id<"collections">[],
+        collectionIds: selectedObjects.map((object) => object._id),
       });
-      setSelectedCollectionIds([]);
+      setSelectedObjects([]);
       onAddDialogOpenChange(false);
     } catch (err) {
       setError(
@@ -425,95 +432,48 @@ function CollectionObjectsList({
                   className="pl-9"
                 />
               </div>
-              {!isCollectionListComplete && collections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("importDialog.loadingObjects")}
-                </p>
-              ) : availableCollections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {searchQuery
+              <ObjectPickerResults
+                objects={availableCollections}
+                selectedIds={
+                  new Set(selectedObjects.map((object) => object._id))
+                }
+                onToggle={toggleSelection}
+                picker={picker}
+                loadingLabel={t("importDialog.loadingObjects")}
+                emptyLabel={
+                  searchQuery
                     ? t("importDialog.noMatches")
-                    : t("importDialog.noAvailable")}
-                </p>
-              ) : (
-                <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border/60 p-2">
-                  {availableCollections.map((collection) => {
-                    const isSelected = selectedCollectionIds.includes(
-                      collection._id,
-                    );
-                    return (
-                      <button
-                        key={collection._id}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedCollectionIds((prev) =>
-                              prev.filter((id) => id !== collection._id),
-                            );
-                          } else {
-                            setSelectedCollectionIds((prev) => [
-                              ...prev,
-                              collection._id,
-                            ]);
-                          }
-                        }}
-                        className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-accent"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium">
-                              {collection.accessionNumber}
-                            </span>
-                            <span className="ml-2 text-muted-foreground">
-                              {collection.title}
-                            </span>
-                          </div>
-                          {isSelected && <X className="size-4" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {selectedCollectionIds.length > 0 && (
+                    : t("importDialog.noAvailable")
+                }
+              />
+              {selectedObjects.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     {tRoot(
                       "untranslatedRecords.collections.detail.selectedCount",
                       {
-                        count: selectedCollectionIds.length,
+                        count: selectedObjects.length,
                       },
                     )}
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedCollectionIds.map((id) => {
-                      const collection = collections.find((c) => c._id === id);
-                      return (
-                        <div
-                          key={id}
-                          className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
+                    {selectedObjects.map((collection) => (
+                      <div
+                        key={collection._id}
+                        className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
+                      >
+                        <span>
+                          {collection.accessionNumber} - {collection.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleSelection(collection)}
+                          className="ml-1 hover:text-destructive"
                         >
-                          <span>
-                            {collection?.accessionNumber} - {collection?.title}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedCollectionIds(
-                                selectedCollectionIds.filter((i) => i !== id),
-                              )
-                            }
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <X className="size-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

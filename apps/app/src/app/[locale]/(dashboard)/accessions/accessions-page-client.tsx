@@ -3,7 +3,6 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
 import { FileUp, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
@@ -22,10 +21,6 @@ type AccessionsPageClientProps = {
   organizationId: Id<"organizations">;
 };
 
-type AccessionListItem = FunctionReturnType<
-  typeof api.accessions.list
->["page"][number];
-
 export function AccessionsPageClient({
   organizationId,
 }: AccessionsPageClientProps) {
@@ -34,10 +29,7 @@ export function AccessionsPageClient({
   const [searchQuery, setSearchQuery] = useState("");
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const accessions = useQuery(api.accessions.list, {
-    organizationId,
-    paginationOpts: { numItems: 100, cursor: null },
-  });
+  const counts = useQuery(api.accessions.getBoardCounts, { organizationId });
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const canReviewTransfers =
     !permissionsLoading && hasPermission("organization.manage_settings");
@@ -50,19 +42,11 @@ export function AccessionsPageClient({
     api.imports.exportAccessionsWithFormat,
   );
 
-  if (accessions === undefined) {
+  if (counts === undefined) {
     return <AccessionsPageSkeleton />;
   }
 
-  const pending = accessions.page.filter(
-    (item: AccessionListItem) => item.status === "pending",
-  ).length;
-  const approved = accessions.page.filter(
-    (item: AccessionListItem) => item.status === "approved",
-  ).length;
-  const rejected = accessions.page.filter(
-    (item: AccessionListItem) => item.status === "rejected",
-  ).length;
+  const { pending, approved, rejected } = counts;
   const pendingTransfers =
     transferRequests?.filter((request) => request.status === "pending")
       .length ?? "-";
@@ -152,9 +136,9 @@ export function AccessionsPageClient({
       />
 
       <AccessionKanban
-        accessions={accessions}
         organizationId={organizationId}
         searchQuery={deferredSearchQuery}
+        columnCounts={counts.columns}
       />
     </div>
   );

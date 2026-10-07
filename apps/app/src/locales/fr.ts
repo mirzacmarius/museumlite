@@ -2704,6 +2704,8 @@ export default {
       itemsAddToGroupFailed: "Échec de l'ajout d'éléments au groupe",
       selectDeaccessionReason:
         "Veuillez fournir une raison pour la désaccession",
+      itemsAwaitingDecision:
+        "{count} demande(s) de désaccessionnement en attente de décision d'approbation",
       itemsDeaccessioned: "{count} élément(s) désaccessionné(s) avec succès",
       someItemsSkipped: "{count} élément(s) ont été ignoré(s) (sur prêt actif)",
       failedOnLoan: "{count} échec(s) (peut-être en prêt)",
@@ -4505,6 +4507,10 @@ export default {
         "La date de réception ne peut pas être modifiée",
     },
     approval: {
+      sourceExceptionLabel: "Provenance non vérifiée : motif de l'exception",
+      sourceExceptionHint:
+        "La vérification de provenance requise manque. Approuver avec un motif enregistre une exception autorisée, conservée avec l'acquisition et auditée.",
+      sourceExceptionRecorded: "Exception autorisée",
       title: "Actions d'Approbation",
       commentLabel: "Commentaire (optionnel)",
       commentPlaceholder:
@@ -4548,6 +4554,11 @@ export default {
       sourceRequired: "La source est obligatoire",
     },
     kanban: {
+      loading: "Chargement…",
+      loadMore: "Charger plus",
+      shownOfTotal: "{loaded} sur {total}",
+      matchesShown: "Résultats affichés : {loaded}",
+      noMatches: "Aucune acquisition correspondante dans {step}",
       noAccessions: "Aucune acquisition en {step}",
       unknownSource: "Source inconnue",
     },
@@ -4587,6 +4598,12 @@ export default {
     },
   },
 
+  objectPicker: {
+    loading: "Chargement…",
+    loadMore: "Charger plus",
+    refineSearch:
+      "D'autres objets correspondent. Affinez la recherche pour réduire la liste.",
+  },
   deaccessions: {
     title: "Registres de Désaccession",
     description: "Éléments définitivement retirés de la collection.",
@@ -4668,6 +4685,104 @@ export default {
       created: "Créé",
       step: "Étape {step} - Approuvée",
       unknown: "Inconnu",
+    },
+    stages: {
+      eyebrow: "Étapes de cession",
+      title: "Décision, sortie et produit",
+      withdrawalNotice:
+        "Cette demande retire la fiche du catalogue courant. Les étapes de cession ne s'appliquent pas.",
+      awaitingDecision:
+        "Enregistré après l'approbation de la décision de cession.",
+      notApplicable: "Ne s'applique pas à cette demande.",
+      recordedBy: "Enregistré par {name}",
+      unknownUser: "Utilisateur inconnu",
+      notes: "Notes",
+      saving: "Enregistrement…",
+      cancel: "Annuler",
+      actionFailed: "La modification n'a pas pu être enregistrée.",
+      decision: {
+        title: "Décision",
+        pending: "En attente de décision",
+        rejected: "Refusée",
+        policyChecked:
+          "Décidée avec toutes les vérifications requises complètes",
+        authorizedException: "Décidée avec une exception autorisée",
+        legacy: "Décidée avant l'enregistrement des vérifications par étape",
+        legacyDescription:
+          "Aucune liste de vérification n'a été enregistrée pour cette décision. Elle est affichée telle qu'enregistrée, sans conformité présumée.",
+        notRequired: "non requise",
+        passed: "complète",
+        waived: "levée par exception",
+        outstanding: "en attente",
+        checkedAt: "Vérifiée le",
+        exceptionBy: "Exception autorisée par {name}",
+      },
+      checks: {
+        reason: "Motif de la cession",
+        disposition: "Destinataire, destination ou moyen prévu",
+        valuation: "Estimation actuelle (moins de 2 ans)",
+        regulatoryApproval: "Approbation réglementaire",
+      },
+      valuation: {
+        title: "Estimation",
+        linked: "Estimation liée : {value} par {appraiser}",
+        none: "Aucune estimation liée",
+        notCurrent: "de plus de 2 ans",
+        noAppraisals:
+          "Cet objet n'a aucune estimation. Ajoutez-en une depuis les estimations de l'objet.",
+        select: "Sélectionner une estimation",
+        ageDays: "{days} jours",
+        link: "Lier l'estimation",
+        linking: "Liaison…",
+        linkedToast: "Estimation liée.",
+        tooOld:
+          "Liée, mais l'estimation date de plus de 2 ans et ne satisfait pas la vérification.",
+      },
+      exit: {
+        title: "Sortie physique",
+        exitDate: "Date de sortie",
+        recipient: "Destinataire, destination ou témoin",
+        reference: "Référence",
+        corrections: "Entrées antérieures conservées : {count}",
+        outstanding: "Sortie pas encore enregistrée.",
+        correct: "Corriger la sortie",
+        record: "Enregistrer la sortie",
+        saved: "Sortie enregistrée.",
+        correctionReason: "Motif de la correction",
+        correctionHint: "L'entrée précédente est conservée avec ce motif.",
+        save: "Enregistrer la sortie",
+      },
+      proceeds: {
+        title: "Produit de la vente",
+        notApplicable: "Le produit n'est enregistré que pour les ventes.",
+        amount: "Montant",
+        paidBy: "Payé par",
+        date: "Date de réception",
+        receiptAttached: "Reçu joint",
+        receiptMissing: "Aucun reçu joint",
+        verifiedOn: "Vérifié le",
+        exceptionReason: "Motif de l'exception (sans reçu)",
+        outstanding: "Produit pas encore enregistré.",
+        edit: "Modifier le produit",
+        record: "Enregistrer le produit",
+        saved: "Produit enregistré.",
+        currency: "Devise",
+        receipt: "Reçu",
+        receiptKept:
+          "Le reçu actuel est conservé sauf si vous choisissez un nouveau fichier.",
+        save: "Enregistrer le produit",
+        verifiedToast: "Produit vérifié.",
+        exceptionHint:
+          "Sans reçu, la vérification exige un motif. Il est conservé et audité.",
+        verify: "Vérifier le produit",
+      },
+      approval: {
+        outstanding: "Vérifications de décision en attente",
+        exceptionReason: "Motif de l'exception",
+        exceptionHint:
+          "Lors de la décision finale, approuver avec des vérifications en attente enregistre ce motif comme exception autorisée.",
+        failed: "La décision n'a pas pu être enregistrée.",
+      },
     },
     form: {
       selectOrg:
@@ -6864,6 +6979,8 @@ export default {
       openCommandPalette: "Ouvrir la palette de commandes",
       searchObjects: "Rechercher des objets…",
       typeACommandOrSearch: "Saisir une commande ou rechercher…",
+      identifierIndexIncomplete:
+        "Certains identifiants historiques ne sont pas encore indexés ; les correspondances par identifiant peuvent donc être incomplètes. Indexez-les dans Paramètres, Préférences.",
       noMatchesTryObjectsOrCollectionGroups:
         "Aucun résultat. Essayez objets ou groupes de collections.",
       objects: "Objets",

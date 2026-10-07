@@ -23,9 +23,8 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     organizationId,
     search: deferredSearchQuery || undefined,
   });
-  const accessions = useQuery(api.accessions.list, {
+  const accessionCounts = useQuery(api.accessions.getBoardCounts, {
     organizationId,
-    paginationOpts: { numItems: 100, cursor: null },
   });
 
   const stats = useMemo(() => {
@@ -65,8 +64,7 @@ export function TransfersBoard({ organizationId }: TransfersBoardProps) {
     };
   }, [transferRequests]);
 
-  const pendingAccessions =
-    accessions?.page.filter((item) => item.status === "pending").length ?? "-";
+  const pendingAccessions = accessionCounts?.pending ?? "-";
 
   if (transferRequests === undefined) {
     return (

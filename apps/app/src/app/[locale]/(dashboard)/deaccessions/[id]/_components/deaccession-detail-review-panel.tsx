@@ -15,6 +15,8 @@ import Link from "next/link";
 import { PermissionGate } from "@/components/permission-gate";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
+import { DisposalDecisionException } from "./disposal-decision-exception";
+
 export function DeaccessionDetailReviewPanel({
   deaccession,
   collection,
@@ -23,6 +25,8 @@ export function DeaccessionDetailReviewPanel({
   actionLabel,
   comment,
   setComment,
+  exceptionReason,
+  setExceptionReason,
   isApproving,
   isRejecting,
   handleApprove,
@@ -36,6 +40,8 @@ export function DeaccessionDetailReviewPanel({
   | "actionLabel"
   | "comment"
   | "setComment"
+  | "exceptionReason"
+  | "setExceptionReason"
   | "isApproving"
   | "isRejecting"
   | "handleApprove"
@@ -151,6 +157,12 @@ export function DeaccessionDetailReviewPanel({
                     className="mt-2 resize-none border-border/70 bg-background/70"
                   />
                 </div>
+                <DisposalDecisionException
+                  deaccessionId={deaccession._id}
+                  exceptionReason={exceptionReason}
+                  setExceptionReason={setExceptionReason}
+                  disabled={isApproving || isRejecting}
+                />
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                   <Button
                     onClick={handleApprove}

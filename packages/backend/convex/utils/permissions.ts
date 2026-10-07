@@ -1,15 +1,15 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internalQuery } from "../_generated/server";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { internalQuery } from "../_generated/server";
 import { batchGetByIds } from "./batchLookup";
 import {
   type FeatureId,
   hasFeatureAccess,
+  type ModuleId,
   requireFeatureAccess,
   requireModuleEnabled,
-  type ModuleId,
 } from "./featureGates";
 
 /**
@@ -289,6 +289,14 @@ export async function canInitiateWorkflow(
     return false;
   }
 
+  // Organization administrators may start any workflow, as they may approve
+  // any step (see canApproveAtStep).
+  if (
+    await hasPermission(ctx, organizationId, "organization.manage_settings")
+  ) {
+    return true;
+  }
+
   const workflowConfig = await ctx.db
     .query("workflowConfigs")
     .withIndex("by_organization_and_workflowType", (q) =>
@@ -375,9 +383,7 @@ export const checkOrgMembership = internalQuery({
     const member = await ctx.db
       .query("userOrganizations")
       .withIndex("by_user_and_organization", (q) =>
-        q
-          .eq("userId", args.userId)
-          .eq("organizationId", args.organizationId),
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
       .first();
     return member !== null;
@@ -399,9 +405,7 @@ export const checkOrgPermission = internalQuery({
     const userOrg = await ctx.db
       .query("userOrganizations")
       .withIndex("by_user_and_organization", (q) =>
-        q
-          .eq("userId", args.userId)
-          .eq("organizationId", args.organizationId),
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
       .first();
     if (!userOrg) return false;
