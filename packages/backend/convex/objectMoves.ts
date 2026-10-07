@@ -15,6 +15,14 @@ import { batchGetByIds } from "./utils/batchLookup";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
 import { getExhibitionsForObject } from "./utils/exhibitionParticipation";
 import {
+  assertObservedSourceLocationMatches,
+  buildTransferScopeSnapshot,
+  moveConditionAssessmentRecords,
+  recordTargetTransferArrival,
+  recordTransferCustodyEvent,
+  requireTargetTransferLocation,
+} from "./utils/institutionTransferEvidence";
+import {
   getCurrentUserOrganization,
   hasPermission,
   requirePermission,
@@ -792,6 +800,7 @@ async function executeMove(
     moveMediaRecords(ctx, collection._id, targetOrganizationId),
     moveCollectionDetailRecords(ctx, collection._id, targetOrganizationId),
     moveConservationRecords(ctx, collection._id, targetOrganizationId),
+    moveConditionAssessmentRecords(ctx, collection._id, targetOrganizationId),
   ]);
   const [comments, appraisals] = await Promise.all([
     ctx.db
@@ -1499,6 +1508,22 @@ export const get = query({
       ? await ctx.db.get(request.executedBy)
       : null;
 
+    const custodyEvents = await ctx.db
+      .query("organizationTransferCustodyEvents")
+      .withIndex("by_moveRequest", (q) => q.eq("moveRequestId", request._id))
+      .collect();
+
+    const approvedSourceLocation =
+      request.approvedSourceLocationId === undefined
+        ? undefined
+        : request.approvedSourceLocationId === null
+          ? null
+          : await ctx.db.get(request.approvedSourceLocationId);
+
+    const acceptedTargetLocation = request.acceptedTargetLocationId
+      ? await ctx.db.get(request.acceptedTargetLocationId)
+      : null;
+
     return {
       ...request,
       status: normalizeRequestStatus(request.status),
@@ -1510,6 +1535,9 @@ export const get = query({
       sourceReviewedByUser,
       targetReviewedByUser,
       executedByUser,
+      custodyEvents,
+      approvedSourceLocation,
+      acceptedTargetLocation,
     };
   },
 });
@@ -1779,6 +1807,7 @@ export const approve = mutation({
         reviewedAt: now,
         reviewNotes: args.reviewNotes?.trim() || undefined,
         deaccessionId,
+        approvedSourceLocationId: collection.currentLocationId ?? null,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.sourceOrganizationId,
@@ -1811,6 +1840,7 @@ export const approve = mutation({
 export const accept = mutation({
   args: {
     requestId: v.id("organizationMoveRequests"),
+    targetLocationId: v.id("locations"),
     reviewNotes: v.optional(v.string()),
   },
   returns: v.null(),
@@ -1824,6 +1854,10 @@ export const accept = mutation({
     }
     if (!request) {
       throw new Error("Move request not found");
+    }
+
+    if (request.status === "executed") {
+      return null;
     }
 
     if (request.status !== "awaiting_acceptance") {
@@ -1841,10 +1875,27 @@ export const accept = mutation({
       throw new Error("Collection not found");
     }
 
+    if (collection.organizationId !== request.sourceOrganizationId) {
+      throw new Error(
+        "This transfer request no longer matches the object's organization.",
+      );
+    }
+
     await getTransferHierarchy(
       ctx,
       request.sourceOrganizationId,
       request.targetOrganizationId,
+    );
+
+    assertObservedSourceLocationMatches(
+      collection,
+      request.approvedSourceLocationId,
+    );
+
+    await requireTargetTransferLocation(
+      ctx,
+      request.targetOrganizationId,
+      args.targetLocationId,
     );
 
     const blockers = await buildEligibilityBlockers(
@@ -1860,6 +1911,21 @@ export const accept = mutation({
     if (blockers.length > 0) {
       throw new Error(blockers.map((blocker) => blocker.message).join(" "));
     }
+
+    const transferScopeSnapshot = await buildTransferScopeSnapshot(
+      ctx,
+      collection,
+    );
+
+    await recordTransferCustodyEvent(ctx, {
+      moveRequestId: request._id,
+      collectionId: collection._id,
+      organizationId: request.sourceOrganizationId,
+      phase: "source_departure",
+      observedLocationId: collection.currentLocationId ?? null,
+      actorId: userId,
+      notes: args.reviewNotes?.trim() || undefined,
+    });
 
     let finalAccessionNumber = request.sourceAccessionNumber;
     if (request.accessionMode === "manual") {
@@ -1895,6 +1961,24 @@ export const accept = mutation({
       userId,
     );
 
+    const arrivalMovementId = await recordTargetTransferArrival(ctx, {
+      collectionId: collection._id,
+      targetOrganizationId: request.targetOrganizationId,
+      targetLocationId: args.targetLocationId,
+      userId,
+      moveRequestId: request._id,
+      reason: request.reason,
+    });
+
+    await recordTransferCustodyEvent(ctx, {
+      moveRequestId: request._id,
+      collectionId: collection._id,
+      organizationId: request.targetOrganizationId,
+      phase: "target_arrival",
+      observedLocationId: args.targetLocationId,
+      actorId: userId,
+    });
+
     const now = Date.now();
     await Promise.all([
       ctx.db.patch(args.requestId, {
@@ -1905,6 +1989,9 @@ export const accept = mutation({
         targetReviewNotes: args.reviewNotes?.trim() || undefined,
         executedBy: userId,
         executedAt: now,
+        acceptedTargetLocationId: args.targetLocationId,
+        targetArrivalMovementId: arrivalMovementId,
+        transferScopeSnapshot,
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.sourceOrganizationId,

@@ -1,8 +1,10 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
+import { LocationSelector } from "@/components/location-selector";
 import { Loader2 } from "lucide-react";
 import { createContext, type ReactNode, use, useMemo } from "react";
 import { useI18n } from "@/locales/client";
@@ -17,6 +19,9 @@ interface MoveRequestActionsPanelAvailability {
 interface MoveRequestActionsPanelContextValue {
   reviewNotes: string;
   onReviewNotesChange: (value: string) => void;
+  targetLocationId: string;
+  onTargetLocationChange: (value: string) => void;
+  targetOrganizationId?: Id<"organizations">;
   submittingAction: MoveRequestSubmitAction;
   availableActions: MoveRequestActionsPanelAvailability;
   onApprove: () => void;
@@ -41,6 +46,9 @@ function useMoveRequestActionsPanel() {
 interface MoveRequestActionsPanelProps {
   reviewNotes: string;
   onReviewNotesChange: (value: string) => void;
+  targetLocationId: string;
+  onTargetLocationChange: (value: string) => void;
+  targetOrganizationId?: Id<"organizations">;
   submittingAction: MoveRequestSubmitAction;
   availableActions: MoveRequestActionsPanelAvailability;
   onApprove: () => void;
@@ -53,6 +61,9 @@ interface MoveRequestActionsPanelProps {
 function MoveRequestActionsPanelProvider({
   reviewNotes,
   onReviewNotesChange,
+  targetLocationId,
+  onTargetLocationChange,
+  targetOrganizationId,
   submittingAction,
   availableActions,
   onApprove,
@@ -66,6 +77,9 @@ function MoveRequestActionsPanelProvider({
     () => ({
       reviewNotes,
       onReviewNotesChange,
+      targetLocationId,
+      onTargetLocationChange,
+      targetOrganizationId,
       submittingAction,
       availableActions,
       onApprove,
@@ -76,6 +90,9 @@ function MoveRequestActionsPanelProvider({
     [
       reviewNotes,
       onReviewNotesChange,
+      targetLocationId,
+      onTargetLocationChange,
+      targetOrganizationId,
       submittingAction,
       availableActions,
       onApprove,
@@ -169,19 +186,43 @@ function MoveRequestActionsPanelSourceActions() {
 
 function MoveRequestActionsPanelTargetActions() {
   const tRoot = useI18n();
-  const { submittingAction, availableActions, onAccept } =
-    useMoveRequestActionsPanel();
+  const {
+    submittingAction,
+    availableActions,
+    onAccept,
+    targetLocationId,
+    onTargetLocationChange,
+    targetOrganizationId,
+  } = useMoveRequestActionsPanel();
   const { targetReview } = availableActions;
 
   if (!targetReview) return null;
 
   return (
+    <>
+      {targetOrganizationId ? (
+        <div className="w-full space-y-2">
+          <Label>
+            {tRoot("untranslatedRecords.objects.transfer.receivingLocation")}
+          </Label>
+          <LocationSelector
+            organizationId={targetOrganizationId}
+            value={targetLocationId}
+            onValueChange={onTargetLocationChange}
+            allowNone={false}
+            placeholder={tRoot(
+              "untranslatedRecords.objects.transfer.receivingLocationPlaceholder",
+            )}
+          />
+        </div>
+      ) : null}
     <Button onClick={onAccept} disabled={submittingAction !== null}>
       {submittingAction === "accept" && (
         <Loader2 className="mr-2 size-4 animate-spin" />
       )}
       {tRoot("untranslatedRecords.objects.move.accept")}
     </Button>
+    </>
   );
 }
 

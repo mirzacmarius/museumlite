@@ -30,6 +30,7 @@ export function useMoveRequestDetail() {
   const requestId = params.id as string;
 
   const [reviewNotes, setReviewNotes] = useState("");
+  const [targetLocationId, setTargetLocationId] = useState("");
   const [isSubmitting, setIsSubmitting] =
     useState<MoveRequestSubmitAction>(null);
 
@@ -111,10 +112,18 @@ export function useMoveRequestDetail() {
   };
 
   const handleAccept = async (moveRequest: MoveRequestDetail) => {
+    if (!targetLocationId || targetLocationId === "__none__") {
+      toast.error(
+        tRoot("untranslatedRecords.objects.transfer.targetLocationRequired"),
+      );
+      return;
+    }
+
     setIsSubmitting("accept");
     try {
       await accept({
         requestId: moveRequest._id,
+        targetLocationId: targetLocationId as Id<"locations">,
         reviewNotes: reviewNotes.trim() || undefined,
       });
       setReviewNotes("");
@@ -169,6 +178,8 @@ export function useMoveRequestDetail() {
     currentUser,
     reviewNotes,
     setReviewNotes,
+    targetLocationId,
+    setTargetLocationId,
     isSubmitting,
     accessionSummary,
     permissions,
