@@ -20,6 +20,8 @@ export interface DeaccessionDetailViewProps {
   workflowEntryCount: number;
   comment: string;
   setComment: (value: string) => void;
+  exceptionReason: string;
+  setExceptionReason: (value: string) => void;
   isApproving: boolean;
   isRejecting: boolean;
   handleApprove: () => Promise<void>;

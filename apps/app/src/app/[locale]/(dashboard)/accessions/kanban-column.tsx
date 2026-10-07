@@ -1,7 +1,10 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import { ScrollArea } from "@v1/ui/scroll-area";
+import { usePaginatedQuery } from "convex/react";
 import {
   CheckCircle,
   Clock,
@@ -13,25 +16,17 @@ import Link from "next/link";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatAccessionMethodLabel } from "./[id]/_components/accession-detail-ui";
 
-type AccessionItem = {
-  _id: Id<"accessions">;
-  accessionNumber: string;
-  source: string;
-  draftTitle?: string;
-  method: string;
-  status: "pending" | "approved" | "rejected";
-  workflowStep?: number;
-  assignedTo?: Id<"users">;
-  assigneeName?: string;
-};
-
 type KanbanColumnProps = {
+  organizationId: Id<"organizations">;
   stepNumber: number;
   stepName: string;
   roleName?: string;
   searchQuery: string;
-  accessions: { page: AccessionItem[] } | null;
+  /** Exact column total; undefined while counts load. */
+  total?: number;
 };
+
+const PAGE_SIZE = 25;
 
 const stepDotStyles: Record<number, string> = {
   0: "bg-zinc-500 shadow-[0_0_8px_rgba(100,116,139,0.5)]",
@@ -72,36 +67,37 @@ function getInitials(name: string): string {
 }
 
 export function KanbanColumn({
+  organizationId,
   stepNumber,
   stepName,
   roleName,
   searchQuery,
-  accessions,
+  total,
 }: KanbanColumnProps) {
   const tRoot = useI18n();
   const t = useScopedI18n("accessions");
 
   const dotStyle = getStepDotStyle(stepNumber);
   const icon = getStepIcon(stepNumber);
-
-  const filteredAccessions =
-    accessions?.page?.filter((a: AccessionItem) => {
-      const currentStep = a.workflowStep ?? 0;
-
-      const matchesStep =
+  const search = searchQuery.trim();
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.accessions.listBoardColumn,
+    {
+      organizationId,
+      column:
         stepNumber === -1
-          ? a.status === "approved"
-          : a.status === "pending" && currentStep === stepNumber;
-
-      const matchesSearch = searchQuery
-        ? a.accessionNumber
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          a.source?.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
-
-      return matchesStep && matchesSearch;
-    }) ?? [];
+          ? { kind: "approved" }
+          : { kind: "step", step: stepNumber },
+      search: search || undefined,
+    },
+    { initialNumItems: PAGE_SIZE },
+  );
+  const isLoadingFirstPage = status === "LoadingFirstPage";
+  const countLabel = search
+    ? t("kanban.matchesShown", { loaded: results.length })
+    : total === undefined
+      ? String(results.length)
+      : t("kanban.shownOfTotal", { loaded: results.length, total });
 
   return (
     <div className="flex w-72 flex-shrink-0 flex-col">
@@ -113,22 +109,30 @@ export function KanbanColumn({
           )}
         </span>
         <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          {filteredAccessions.length}
+          {countLabel}
         </span>
       </div>
 
       <div className="flex-1 rounded-xl border border-border/60 bg-card">
         <ScrollArea className="h-full max-h-[calc(100vh-280px)]">
           <div className="flex flex-col gap-2 p-2">
-            {filteredAccessions.length === 0 ? (
+            {isLoadingFirstPage ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">
+                {t("kanban.loading")}
+              </p>
+            ) : results.length === 0 && status === "Exhausted" ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="text-muted-foreground">{icon}</div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {t("kanban.noAccessions", { step: stepName.toLowerCase() })}
+                  {search
+                    ? t("kanban.noMatches", { step: stepName.toLowerCase() })
+                    : t("kanban.noAccessions", {
+                        step: stepName.toLowerCase(),
+                      })}
                 </p>
               </div>
             ) : (
-              filteredAccessions.map((accession: AccessionItem) => (
+              results.map((accession) => (
                 <Link
                   key={accession._id}
                   href={`/accessions/${accession._id}`}
@@ -163,6 +167,19 @@ export function KanbanColumn({
                 </Link>
               ))
             )}
+            {status === "CanLoadMore" || status === "LoadingMore" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs"
+                disabled={status === "LoadingMore"}
+                onClick={() => loadMore(PAGE_SIZE)}
+              >
+                {status === "LoadingMore"
+                  ? t("kanban.loading")
+                  : t("kanban.loadMore")}
+              </Button>
+            ) : null}
           </div>
         </ScrollArea>
       </div>

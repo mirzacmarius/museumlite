@@ -58,6 +58,11 @@ export function BulkDeaccessionDialog({
       if (result.deaccessioned > 0) {
         messages.push(t("itemsDeaccessioned", { count: result.deaccessioned }));
       }
+      if (result.awaitingDecision > 0) {
+        messages.push(
+          t("itemsAwaitingDecision", { count: result.awaitingDecision }),
+        );
+      }
       if (result.skipped > 0) {
         messages.push(t("someItemsSkipped", { count: result.skipped }));
       }
@@ -65,7 +70,7 @@ export function BulkDeaccessionDialog({
         messages.push(t("failedOnLoan", { count: result.failed }));
       }
 
-      if (result.deaccessioned > 0) {
+      if (result.deaccessioned > 0 || result.awaitingDecision > 0) {
         toast.success(messages.join(", "));
       } else {
         toast.warning(messages.join(", "));

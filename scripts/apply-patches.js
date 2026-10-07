@@ -94,6 +94,53 @@ function ensureBackendPackageLink(packageName) {
   return true;
 }
 
+/**
+ * Source replacements for dependency defects that have no released fix.
+ * Each `find` must match exactly once unless `replace` is already present.
+ */
+const SOURCE_REPLACEMENTS = [
+  {
+    // convex-test search crashed on documents without the searched field;
+    // Convex leaves such documents out of the search index.
+    packageName: "convex-test",
+    file: "convex-test/dist/index.js",
+    find: `            const documentWords = result
+                .split(/\\s+/)`,
+    replace: `            if (typeof result !== "string") {
+                return false;
+            }
+            const documentWords = result
+                .split(/\\s+/)`,
+  },
+];
+
+function applySourceReplacement({ packageName, file, find, replace }) {
+  const targetFile = path.join(nodeModulesDir, file);
+  if (!fs.existsSync(targetFile)) {
+    console.error(`Failed to patch ${packageName}: ${file} not found`);
+    return false;
+  }
+  const content = fs.readFileSync(targetFile, "utf-8");
+  if (content.includes(replace)) {
+    console.log(`ℹ Patch already applied: ${packageName}`);
+    return true;
+  }
+  if (content.split(find).length !== 2) {
+    console.error(
+      `Failed to patch ${packageName}: expected source not found once in ${file}. Update or remove the replacement.`,
+    );
+    return false;
+  }
+  fs.writeFileSync(targetFile, content.replace(find, replace), "utf-8");
+  console.log(`✓ Applied patch: ${packageName}`);
+  return true;
+}
+
+const sourceReplacementsApplied = SOURCE_REPLACEMENTS.map(
+  applySourceReplacement,
+).every(Boolean);
+if (!sourceReplacementsApplied) process.exitCode = 1;
+
 // Find and apply all patches
 if (fs.existsSync(patchesDir)) {
   const patches = fs
@@ -118,7 +165,7 @@ if (fs.existsSync(patchesDir)) {
     success = ensureBackendPackageLink(packageName) && success;
   }
 
-  process.exit(success ? 0 : 1);
+  process.exit(success && sourceReplacementsApplied ? 0 : 1);
 } else {
   console.log("No patches directory found");
   process.exit(0);

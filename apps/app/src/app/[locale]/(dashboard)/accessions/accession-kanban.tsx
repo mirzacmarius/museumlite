@@ -15,15 +15,17 @@ type WorkflowStep = {
 };
 
 type AccessionKanbanProps = {
-  accessions: FunctionReturnType<typeof api.accessions.list>;
   organizationId: Id<"organizations">;
   searchQuery: string;
+  columnCounts?: FunctionReturnType<
+    typeof api.accessions.getBoardCounts
+  >["columns"];
 };
 
 export function AccessionKanban({
-  accessions,
   organizationId,
   searchQuery,
+  columnCounts,
 }: AccessionKanbanProps) {
   const workflowSteps = useQuery(api.accessions.getWorkflowSteps, {
     organizationId,
@@ -50,11 +52,16 @@ export function AccessionKanban({
             fallback={<KanbanColumnSkeleton />}
           >
             <KanbanColumn
+              organizationId={organizationId}
               stepNumber={step.stepNumber}
               stepName={step.name}
               roleName={step.roleName}
               searchQuery={searchQuery}
-              accessions={accessions}
+              total={
+                columnCounts?.find(
+                  (column) => column.stepNumber === step.stepNumber,
+                )?.count
+              }
             />
           </Suspense>
         ))}

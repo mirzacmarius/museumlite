@@ -28,6 +28,7 @@
         "files": [
           "packages/backend/convex/accountRelationships.ts",
           "packages/backend/convex/collections.ts",
+          "packages/backend/convex/deaccessions.ts",
           "packages/backend/convex/mediaImports.ts",
           "packages/backend/convex/reporting.ts",
           "packages/backend/convex/utils/collectionDisposition.ts"

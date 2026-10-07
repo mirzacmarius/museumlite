@@ -13,7 +13,8 @@ const ALLOWED_LOOPERS = [
   "app/[locale]/(dashboard)/objects/_components/use-collection-catalog-list.ts",
   "components/collection-multi-select-combobox.tsx",
 ];
-const DRAIN_HELPER = "hooks/use-drained-collection-list.ts";
+// Pages one browse page per user request; queries use searchForSelection.
+const ON_DEMAND_PICKER = "hooks/use-object-search-selection.ts";
 const EXISTENCE_PROBE = "app/[locale]/onboarding/onboarding-page-client.tsx";
 
 const MIGRATED_CALLERS = [
@@ -52,7 +53,7 @@ function hasRuntimeListReference(source: string): boolean {
 }
 
 describe("collections.list app importers", () => {
-  test("only the two looping callers plus the drain helper import api.collections.list", () => {
+  test("only the looping callers and the on-demand picker import api.collections.list", () => {
     const importers = walkTsFiles(APP_SRC)
       .flatMap((path) =>
         hasRuntimeListReference(readFileSync(path, "utf8"))
@@ -62,7 +63,7 @@ describe("collections.list app importers", () => {
       .sort();
 
     expect(importers).toEqual(
-      [...ALLOWED_LOOPERS, DRAIN_HELPER, EXISTENCE_PROBE].sort(),
+      [...ALLOWED_LOOPERS, ON_DEMAND_PICKER, EXISTENCE_PROBE].sort(),
     );
   });
 

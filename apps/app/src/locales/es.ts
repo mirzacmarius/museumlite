@@ -2656,6 +2656,8 @@ export default {
       itemsAddToGroupFailed: "Error al agregar elementos al grupo",
       selectDeaccessionReason:
         "Por favor proporciona una razón para la desaccesión",
+      itemsAwaitingDecision:
+        "{count} solicitud(es) de desaccesión pendientes de decisión de aprobación",
       itemsDeaccessioned: "{count} elemento(s) desaccesionado(s) exitosamente",
       someItemsSkipped:
         "{count} elemento(s) fueron omitidos (en préstamo activo)",
@@ -4557,6 +4559,10 @@ export default {
       dateReceivedCannotChange: "La fecha de recepción no se puede cambiar",
     },
     approval: {
+      sourceExceptionLabel: "Origen no verificado: motivo de la excepción",
+      sourceExceptionHint:
+        "Falta la verificación de origen requerida. Aprobar con un motivo registra una excepción autorizada, que se conserva con el ingreso y se audita.",
+      sourceExceptionRecorded: "Excepción autorizada",
       title: "Acciones de Aprobación",
       commentLabel: "Comentario (opcional)",
       commentPlaceholder:
@@ -4599,6 +4605,11 @@ export default {
       sourceRequired: "La fuente es obligatoria",
     },
     kanban: {
+      loading: "Cargando…",
+      loadMore: "Cargar más",
+      shownOfTotal: "{loaded} de {total}",
+      matchesShown: "Coincidencias mostradas: {loaded}",
+      noMatches: "No hay ingresos coincidentes en {step}",
       noAccessions: "Sin adquisiciones en {step}",
       unknownSource: "Fuente desconocida",
     },
@@ -4638,6 +4649,12 @@ export default {
     },
   },
 
+  objectPicker: {
+    loading: "Cargando…",
+    loadMore: "Cargar más",
+    refineSearch:
+      "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
+  },
   deaccessions: {
     title: "Registros de Desaccesión",
     description: "Elementos permanentemente removidos de la colección.",
@@ -4720,6 +4737,103 @@ export default {
       created: "Creado",
       step: "Paso {step} - Aprobado",
       unknown: "Desconocido",
+    },
+    stages: {
+      eyebrow: "Etapas de baja",
+      title: "Decisión, salida e ingresos",
+      withdrawalNotice:
+        "Esta solicitud retira el registro del catálogo habitual. Las etapas de baja no se aplican.",
+      awaitingDecision: "Se registra después de aprobar la decisión de baja.",
+      notApplicable: "No se aplica a esta solicitud.",
+      recordedBy: "Registrado por {name}",
+      unknownUser: "Usuario desconocido",
+      notes: "Notas",
+      saving: "Guardando…",
+      cancel: "Cancelar",
+      actionFailed: "No se pudo guardar el cambio.",
+      decision: {
+        title: "Decisión",
+        pending: "Pendiente de decisión",
+        rejected: "Rechazada",
+        policyChecked:
+          "Decidida con todas las comprobaciones requeridas completas",
+        authorizedException: "Decidida con una excepción autorizada",
+        legacy: "Decidida antes de registrar comprobaciones por etapa",
+        legacyDescription:
+          "No se registró ninguna lista de comprobación para esta decisión. Se muestra tal como se registró, sin suponer su cumplimiento.",
+        notRequired: "no requerida",
+        passed: "completa",
+        waived: "dispensada por excepción",
+        outstanding: "pendiente",
+        checkedAt: "Comprobada",
+        exceptionBy: "Excepción autorizada por {name}",
+      },
+      checks: {
+        reason: "Motivo de la baja",
+        disposition: "Destinatario, destino o medio previsto",
+        valuation: "Tasación vigente (menos de 2 años)",
+        regulatoryApproval: "Aprobación reglamentaria",
+      },
+      valuation: {
+        title: "Tasación",
+        linked: "Tasación vinculada: {value} por {appraiser}",
+        none: "No hay tasación vinculada",
+        notCurrent: "de más de 2 años",
+        noAppraisals:
+          "Este objeto no tiene tasaciones. Añada una desde los registros de tasación del objeto.",
+        select: "Seleccione una tasación",
+        ageDays: "{days} días de antigüedad",
+        link: "Vincular tasación",
+        linking: "Vinculando…",
+        linkedToast: "Tasación vinculada.",
+        tooOld:
+          "Vinculada, pero la tasación tiene más de 2 años y no cumple la comprobación de tasación.",
+      },
+      exit: {
+        title: "Salida física",
+        exitDate: "Fecha de salida",
+        recipient: "Destinatario, destino o testigo",
+        reference: "Referencia",
+        corrections: "Entradas anteriores conservadas: {count}",
+        outstanding: "La salida aún no se ha registrado.",
+        correct: "Corregir salida",
+        record: "Registrar salida",
+        saved: "Salida registrada.",
+        correctionReason: "Motivo de la corrección",
+        correctionHint: "La entrada anterior se conserva con este motivo.",
+        save: "Guardar salida",
+      },
+      proceeds: {
+        title: "Ingresos de la venta",
+        notApplicable: "Los ingresos solo se registran en las ventas.",
+        amount: "Importe",
+        paidBy: "Pagado por",
+        date: "Fecha de recepción",
+        receiptAttached: "Recibo adjunto",
+        receiptMissing: "No hay recibo adjunto",
+        verifiedOn: "Verificado",
+        exceptionReason: "Motivo de la excepción (sin recibo)",
+        outstanding: "Los ingresos aún no se han registrado.",
+        edit: "Editar ingresos",
+        record: "Registrar ingresos",
+        saved: "Ingresos registrados.",
+        currency: "Moneda",
+        receipt: "Documento de recibo",
+        receiptKept:
+          "Se conserva el recibo actual a menos que elija un archivo nuevo.",
+        save: "Guardar ingresos",
+        verifiedToast: "Ingresos verificados.",
+        exceptionHint:
+          "Sin recibo, la verificación requiere un motivo. Se conserva y se audita.",
+        verify: "Verificar ingresos",
+      },
+      approval: {
+        outstanding: "Comprobaciones de decisión pendientes",
+        exceptionReason: "Motivo de la excepción",
+        exceptionHint:
+          "En la decisión final, aprobar con comprobaciones pendientes registra este motivo como una excepción autorizada.",
+        failed: "No se pudo guardar la decisión.",
+      },
     },
     form: {
       selectOrg:
@@ -6902,6 +7016,8 @@ export default {
       openCommandPalette: "Abrir la paleta de comandos",
       searchObjects: "Buscar objetos…",
       typeACommandOrSearch: "Escribe un comando o busca…",
+      identifierIndexIncomplete:
+        "Algunos identificadores históricos aún no están indexados, por lo que las coincidencias por identificador pueden estar incompletas. Indéxelos en Configuración, Preferencias.",
       noMatchesTryObjectsOrCollectionGroups:
         "No hay resultados. Prueba con objetos o grupos de colecciones.",
       objects: "Objetos",

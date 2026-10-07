@@ -76,10 +76,12 @@ export function AccessionDetailPageClient() {
     (step: WorkflowStepInfo) => step.stepNumber === accession.workflowStep,
   );
   const requiresSourceVerification =
-    !accession.draftObjectData &&
     accession.status === "pending" &&
     (workflowSteps?.requireSourceVerification ?? false);
-  const isSourceVerified = accession.sourceVerified ?? false;
+  // An authorized exception satisfies the requirement; it is shown as such.
+  const isSourceVerified =
+    (accession.sourceVerified ?? false) ||
+    accession.sourceVerificationException !== undefined;
   const isObjectDraft = Boolean(accession.draftObjectData);
   const canEditObjectDraft = accession.status === "pending" && isObjectDraft;
   const draftEditHref = isObjectDraft
@@ -127,9 +129,11 @@ export function AccessionDetailPageClient() {
           ? "Rejected"
           : tRoot("untranslatedRecords.accessions.detail.unknown");
   const heroSourceVerificationState = requiresSourceVerification
-    ? isSourceVerified
-      ? tRoot("untranslatedRecords.accessions.source.verifiedShort")
-      : tRoot("untranslatedRecords.accessions.status.sourceRequired")
+    ? accession.sourceVerificationException && !accession.sourceVerified
+      ? tRoot("accessions.approval.sourceExceptionRecorded")
+      : isSourceVerified
+        ? tRoot("untranslatedRecords.accessions.source.verifiedShort")
+        : tRoot("untranslatedRecords.accessions.status.sourceRequired")
     : tRoot("untranslatedRecords.accessions.status.notNeeded");
   const reviewRailTitle =
     currentWorkflowStep?.name ||
