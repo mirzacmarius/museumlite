@@ -151,6 +151,52 @@ export function MoveRequestDetailCard({
         </div>
       </div>
 
+      {(request.approvedSourceLocation !== undefined ||
+        request.acceptedTargetLocation ||
+        (request.transferScopeSnapshot &&
+          request.transferScopeSnapshot.collectionGroupIds.length > 0)) && (
+        <div className="mt-6 rounded-md border border-white/10 bg-black/40 p-4 space-y-3">
+          <p className="text-sm font-medium">
+            {tRoot("untranslatedRecords.objects.transfer.custodyEvidence")}
+          </p>
+          {request.approvedSourceLocation !== undefined && (
+            <div>
+              <Label className="text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.transfer.observedSource")}
+              </Label>
+              <p className="mt-1">
+                {request.approvedSourceLocation === null
+                  ? tRoot("untranslatedRecords.objects.transfer.noRecordedLocation")
+                  : (request.approvedSourceLocation?.name ??
+                    tRoot(
+                      "untranslatedRecords.objects.moveRequest.unknownOrganization",
+                    ))}
+              </p>
+            </div>
+          )}
+          {request.acceptedTargetLocation && (
+            <div>
+              <Label className="text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.transfer.receivingLocation")}
+              </Label>
+              <p className="mt-1">{request.acceptedTargetLocation.name}</p>
+            </div>
+          )}
+          {request.transferScopeSnapshot &&
+            request.transferScopeSnapshot.collectionGroupIds.length > 0 && (
+              <div>
+                <Label className="text-muted-foreground">
+                  {tRoot("untranslatedRecords.objects.transfer.priorGroupLinks")}
+                </Label>
+                <p className="mt-1 text-sm text-white/60">
+                  {request.transferScopeSnapshot.collectionGroupIds.length}{" "}
+                  {tRoot("untranslatedRecords.objects.transfer.priorGroupLinksCount")}
+                </p>
+              </div>
+            )}
+        </div>
+      )}
+
       <div className="mt-6 space-y-4">
         <div>
           <Label className="text-muted-foreground">
