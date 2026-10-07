@@ -30,6 +30,8 @@ import type * as batchOperations from "../batchOperations.js";
 import type * as coinsStampsDetails from "../coinsStampsDetails.js";
 import type * as collectionGroups from "../collectionGroups.js";
 import type * as collections from "../collections.js";
+import type * as conditionAssessmentMigration from "../conditionAssessmentMigration.js";
+import type * as conditionAssessments from "../conditionAssessments.js";
 import type * as conditionOptions from "../conditionOptions.js";
 import type * as conservationTreatments from "../conservationTreatments.js";
 import type * as contacts from "../contacts.js";
@@ -229,6 +231,8 @@ declare const fullApi: ApiFromModules<{
   coinsStampsDetails: typeof coinsStampsDetails;
   collectionGroups: typeof collectionGroups;
   collections: typeof collections;
+  conditionAssessmentMigration: typeof conditionAssessmentMigration;
+  conditionAssessments: typeof conditionAssessments;
   conditionOptions: typeof conditionOptions;
   conservationTreatments: typeof conservationTreatments;
   contacts: typeof contacts;
