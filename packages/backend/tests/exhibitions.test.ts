@@ -197,6 +197,15 @@ test("participant editing rejects duplicate objects and preserves installed evid
     organizationId, title: "Invalid", startDate: Date.now(), isCurrent: false,
     participants: [{ collectionId, role: "featured" }, { collectionId, role: "participant" }],
   })).rejects.toThrow("only once");
+  const galleryLocationId = await t.run(async (ctx) =>
+    ctx.db.insert("locations", {
+      organizationId,
+      name: "Install gallery",
+      type: "gallery",
+      sortOrder: 0,
+      isActive: true,
+    }),
+  );
   const exhibitionId = await authed.mutation(api.exhibitions.create, {
     organizationId, title: "Editable", startDate: Date.now(), isCurrent: false,
     participants: [{ collectionId, role: "participant" }, { collectionId: secondCollectionId, role: "featured" }],
@@ -207,7 +216,11 @@ test("participant editing rejects duplicate objects and preserves installed evid
   });
   const ordered = await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId });
   expect(ordered.map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
-  await authed.mutation(api.exhibitions.installObject, { exhibitionObjectId: ordered[0]!._id });
+  await authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId: ordered[0]!._id,
+    observedFromLocationId: null,
+    exhibitionLocationId: galleryLocationId,
+  });
   await expect(authed.mutation(api.exhibitions.update, {
     id: exhibitionId, participants: [{ collectionId, role: "participant" }],
   })).rejects.toThrow("installation or return evidence");

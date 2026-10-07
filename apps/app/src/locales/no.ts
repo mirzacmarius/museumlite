@@ -3836,6 +3836,31 @@ export default {
     card: {
       ongoing: "(Pågående)",
     },
+    handoffs: {
+      title: "Fysiske overleveringer",
+      loading: "Laster deltakeroverleveringer…",
+      outstanding: "{count} av {total} utfall står utestående",
+      readyToClose: "Alle utfall er løst",
+      observedFrom: "Observert kildeplassering",
+      install: "Registrer installasjon",
+      deinstall: "Registrer demontering",
+      confirmReturn: "Bekreft fysisk retur",
+      exceptionReason: "Dokumentert unntak",
+      exceptionPlaceholder:
+        "Hvorfor retur ikke registreres (minst 10 tegn)",
+      authorizeException: "Autoriser unntak",
+      viewObject: "Vis objekt",
+      exceptionRecorded: "Returunntak registrert",
+      installMovementRecorded: "Installasjonsbevegelse registrert",
+      returnMovementRecorded: "Returbevegelse registrert",
+      actionFailed: "Overlevering mislyktes",
+      status: {
+        pending: "Venter installasjon",
+        installed: "Installert",
+        deinstalled: "Demontert",
+        returned: "Returnert",
+      },
+    },
     detail: {
       overview: "Oversikt",
       location: "Sted",

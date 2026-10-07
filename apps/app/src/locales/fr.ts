@@ -3845,6 +3845,31 @@ export default {
     card: {
       ongoing: "(En cours)",
     },
+    handoffs: {
+      title: "Remises physiques",
+      loading: "Chargement des remises des participants…",
+      outstanding: "{count} sur {total} résultats en attente",
+      readyToClose: "Tous les résultats sont résolus",
+      observedFrom: "Emplacement source observé",
+      install: "Enregistrer l'installation",
+      deinstall: "Enregistrer la désinstallation",
+      confirmReturn: "Confirmer le retour physique",
+      exceptionReason: "Exception documentée",
+      exceptionPlaceholder:
+        "Pourquoi le retour n'est pas enregistré (10 caractères min.)",
+      authorizeException: "Autoriser l'exception",
+      viewObject: "Voir l'objet",
+      exceptionRecorded: "Exception de retour enregistrée",
+      installMovementRecorded: "Mouvement d'installation enregistré",
+      returnMovementRecorded: "Mouvement de retour enregistré",
+      actionFailed: "Échec de la remise",
+      status: {
+        pending: "Installation en attente",
+        installed: "Installé",
+        deinstalled: "Désinstallé",
+        returned: "Retourné",
+      },
+    },
     detail: {
       overview: "Aperçu",
       location: "Lieu",

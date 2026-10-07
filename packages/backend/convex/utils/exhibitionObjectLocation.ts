@@ -10,7 +10,10 @@ import {
 import { assertCollectionNotOnLoan } from "./loanOccupancy";
 import { getExhibitionParticipants } from "./exhibitionParticipation";
 import {
-  moveCollectionToLocation,
+  executeExhibitionMovement,
+  requireAcceptedConditionAssessment,
+} from "./exhibitionPhysicalHandoff";
+import {
   requireCollectionInOrganization,
   requireUsableLocation,
 } from "./locationIntegrity";
@@ -146,8 +149,10 @@ export async function installObjectHandler(
   ctx: MutationCtx,
   args: {
     exhibitionObjectId: Id<"exhibitionObjects">;
+    observedFromLocationId: Id<"locations"> | null;
     conditionNotes?: string;
     exhibitionLocationId?: Id<"locations">;
+    installationConditionAssessmentId?: Id<"conditionAssessments">;
   },
 ) {
   const { userId, exhibitionObject, exhibition } =
@@ -168,28 +173,45 @@ export async function installObjectHandler(
     "Cannot install an object that is currently on loan",
   );
 
-  const newLocationId =
+  const destinationId =
     args.exhibitionLocationId ??
     exhibitionObject.exhibitionLocationId ??
     exhibition.locationId;
+  if (!destinationId) {
+    throw new Error("Exhibition installation requires a destination location");
+  }
+  await requireUsableLocation(ctx, exhibition.organizationId, destinationId);
 
+  const installationConditionAssessmentId =
+    await requireAcceptedConditionAssessment(
+      ctx,
+      args.installationConditionAssessmentId,
+      exhibitionObject.collectionId,
+    );
+
+  const movementId = await executeExhibitionMovement(
+    ctx,
+    collection,
+    destinationId,
+    userId,
+    {
+      kind: "exhibition_install",
+      observedFromLocationId: args.observedFromLocationId,
+      exhibitionObjectId: args.exhibitionObjectId,
+      reason: "Exhibition installation",
+    },
+  );
+
+  const installedAt = Date.now();
   await ctx.db.patch(args.exhibitionObjectId, {
     status: "installed",
-    installedAt: Date.now(),
+    installedAt,
     installedBy: userId,
     conditionAtInstallation: args.conditionNotes,
-    exhibitionLocationId: newLocationId,
+    exhibitionLocationId: destinationId,
+    installationMovementId: movementId,
+    installationConditionAssessmentId,
   });
-
-  if (newLocationId) {
-    await moveCollectionToLocation(
-      ctx,
-      collection,
-      newLocationId,
-      userId,
-      "Exhibition installation",
-    );
-  }
 
   await ctx.runMutation(internal.audit.logAction, {
     organizationId: exhibition.organizationId,
@@ -199,7 +221,9 @@ export async function installObjectHandler(
     entityId: exhibitionObject.exhibitionId,
     changes: {
       collectionId: exhibitionObject.collectionId,
-      currentLocationId: newLocationId,
+      currentLocationId: destinationId,
+      movementId,
+      installationConditionAssessmentId,
     },
   });
 
@@ -211,6 +235,7 @@ export async function deinstallObjectHandler(
   args: {
     exhibitionObjectId: Id<"exhibitionObjects">;
     conditionNotes?: string;
+    deinstallationConditionAssessmentId?: Id<"conditionAssessments">;
   },
 ) {
   const { userId, exhibitionObject, exhibition } =
@@ -220,12 +245,20 @@ export async function deinstallObjectHandler(
     throw new Error("Object is not installed");
   }
 
+  const deinstallationConditionAssessmentId =
+    await requireAcceptedConditionAssessment(
+      ctx,
+      args.deinstallationConditionAssessmentId,
+      exhibitionObject.collectionId,
+    );
+
   await Promise.all([
     ctx.db.patch(args.exhibitionObjectId, {
       status: "deinstalled",
       deinstalledAt: Date.now(),
       deinstalledBy: userId,
       conditionAtDeinstallation: args.conditionNotes,
+      deinstallationConditionAssessmentId,
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
@@ -247,42 +280,58 @@ export async function returnObjectToOriginalLocationHandler(
   ctx: MutationCtx,
   args: {
     exhibitionObjectId: Id<"exhibitionObjects">;
+    observedFromLocationId: Id<"locations"> | null;
     overrideLocationId?: Id<"locations">;
+    returnConditionAssessmentId?: Id<"conditionAssessments">;
   },
 ) {
   const { userId, exhibitionObject, exhibition } =
     await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
 
-  if (
-    exhibitionObject.status !== "deinstalled" &&
-    exhibitionObject.status !== "installed"
-  ) {
-    throw new Error("Object must be installed or deinstalled before returning");
+  if (exhibitionObject.status !== "deinstalled") {
+    throw new Error("Object must be deinstalled before physical return");
   }
 
   const returnLocation =
     args.overrideLocationId ?? exhibitionObject.originalLocationId;
+  if (!returnLocation) {
+    throw new Error("Return requires a confirmed destination location");
+  }
+  await requireUsableLocation(ctx, exhibition.organizationId, returnLocation);
 
   const collection = await requireCollectionInOrganization(
     ctx,
     exhibitionObject.collectionId,
     exhibition.organizationId,
   );
-  if (returnLocation) {
-    await moveCollectionToLocation(
-      ctx,
-      collection,
-      returnLocation,
-      userId,
-      "Exhibition return",
-    );
-  }
 
+  const returnConditionAssessmentId = await requireAcceptedConditionAssessment(
+    ctx,
+    args.returnConditionAssessmentId,
+    exhibitionObject.collectionId,
+  );
+
+  const movementId = await executeExhibitionMovement(
+    ctx,
+    collection,
+    returnLocation,
+    userId,
+    {
+      kind: "exhibition_return",
+      observedFromLocationId: args.observedFromLocationId,
+      exhibitionObjectId: args.exhibitionObjectId,
+      reason: "Exhibition return",
+    },
+  );
+
+  const returnedAt = Date.now();
   await Promise.all([
     ctx.db.patch(args.exhibitionObjectId, {
       status: "returned",
       returnedToOriginalLocation: true,
-      returnedAt: Date.now(),
+      returnedAt,
+      returnMovementId: movementId,
+      returnConditionAssessmentId,
     }),
     ctx.runMutation(internal.audit.logAction, {
       organizationId: exhibition.organizationId,
@@ -293,6 +342,61 @@ export async function returnObjectToOriginalLocationHandler(
       changes: {
         collectionId: exhibitionObject.collectionId,
         returnedToLocationId: returnLocation,
+        movementId,
+        returnConditionAssessmentId,
+      },
+    }),
+  ]);
+
+  return null;
+}
+
+export async function authorizeReturnExceptionHandler(
+  ctx: MutationCtx,
+  args: {
+    exhibitionObjectId: Id<"exhibitionObjects">;
+    reason: string;
+  },
+) {
+  const { userId, exhibitionObject, exhibition } =
+    await loadExhibitionObjectMutationContext(ctx, args.exhibitionObjectId);
+
+  if (
+    exhibitionObject.status !== "installed" &&
+    exhibitionObject.status !== "deinstalled"
+  ) {
+    throw new Error("Return exceptions apply only after deinstallation begins");
+  }
+  if (exhibitionObject.returnException) {
+    throw new Error("Return exception is already recorded");
+  }
+  if (exhibitionObject.status === "returned") {
+    throw new Error("Object is already returned");
+  }
+
+  const reason = args.reason.trim();
+  if (reason.length < 10) {
+    throw new Error("Return exception reason must be at least 10 characters");
+  }
+
+  const authorizedAt = Date.now();
+  await Promise.all([
+    ctx.db.patch(args.exhibitionObjectId, {
+      returnException: {
+        reason,
+        authorizedBy: userId,
+        authorizedAt,
+      },
+    }),
+    ctx.runMutation(internal.audit.logAction, {
+      organizationId: exhibition.organizationId,
+      userId,
+      action: "authorized_exhibition_return_exception",
+      entityType: "exhibition",
+      entityId: exhibitionObject.exhibitionId,
+      changes: {
+        collectionId: exhibitionObject.collectionId,
+        reason,
       },
     }),
   ]);
@@ -361,126 +465,30 @@ export async function listExhibitionObjectsHandler(
           deinstaller?.name ?? deinstaller?.username ?? undefined,
         conditionAtDeinstallation: obj.conditionAtDeinstallation,
         returnedAt: obj.returnedAt,
+        installationConditionAssessmentId: obj.installationConditionAssessmentId,
+        deinstallationConditionAssessmentId:
+          obj.deinstallationConditionAssessmentId,
+        returnConditionAssessmentId: obj.returnConditionAssessmentId,
+        returnExceptionReason: obj.returnException?.reason,
       };
     }),
   );
 }
 
 export async function bulkInstallObjectsHandler(
-  ctx: MutationCtx,
-  args: { exhibitionId: Id<"exhibitions"> },
+  _ctx: MutationCtx,
+  _args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const [{ userId, exhibition }, pendingObjects] = await Promise.all([
-    loadExhibitionMutationContext(ctx, args.exhibitionId),
-    ctx.db
-      .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) =>
-        q.eq("exhibitionId", args.exhibitionId),
-      )
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect(),
-  ] as const);
-
-  await Promise.all([
-    ...pendingObjects.map(async (obj) => {
-      if (obj.organizationId !== exhibition.organizationId)
-        throw new Error(
-          "Exhibition object belongs to a different organization",
-        );
-      const collection = await requireCollectionInOrganization(
-        ctx,
-        obj.collectionId,
-        exhibition.organizationId,
-      );
-      await assertCollectionNotOnLoan(
-        ctx,
-        obj.collectionId,
-        "Cannot install an object that is currently on loan",
-      );
-      const newLocationId = obj.exhibitionLocationId ?? exhibition.locationId;
-
-      return Promise.all([
-        ctx.db.patch(obj._id, {
-          status: "installed",
-          installedAt: Date.now(),
-          installedBy: userId,
-        }),
-        newLocationId
-          ? moveCollectionToLocation(
-              ctx,
-              collection,
-              newLocationId,
-              userId,
-              "Exhibition installation",
-            )
-          : Promise.resolve(),
-      ]);
-    }),
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "bulk_installed_exhibition_objects",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { count: pendingObjects.length },
-    }),
-  ]);
-
-  return { installedCount: pendingObjects.length };
+  throw new Error(
+    "Record each exhibition object installation with observed source and movement evidence",
+  );
 }
 
 export async function bulkReturnObjectsHandler(
-  ctx: MutationCtx,
-  args: { exhibitionId: Id<"exhibitions"> },
+  _ctx: MutationCtx,
+  _args: { exhibitionId: Id<"exhibitions"> },
 ) {
-  const [{ userId, exhibition }, deinstalledObjects] = await Promise.all([
-    loadExhibitionMutationContext(ctx, args.exhibitionId),
-    ctx.db
-      .query("exhibitionObjects")
-      .withIndex("by_exhibition", (q) =>
-        q.eq("exhibitionId", args.exhibitionId),
-      )
-      .filter((q) => q.eq(q.field("status"), "deinstalled"))
-      .collect(),
-  ] as const);
-
-  await Promise.all([
-    ...deinstalledObjects.map(async (obj) => {
-      if (obj.organizationId !== exhibition.organizationId)
-        throw new Error(
-          "Exhibition object belongs to a different organization",
-        );
-      const collection = await requireCollectionInOrganization(
-        ctx,
-        obj.collectionId,
-        exhibition.organizationId,
-      );
-      return Promise.all([
-        obj.originalLocationId
-          ? moveCollectionToLocation(
-              ctx,
-              collection,
-              obj.originalLocationId,
-              userId,
-              "Exhibition return",
-            )
-          : Promise.resolve(),
-        ctx.db.patch(obj._id, {
-          status: "returned",
-          returnedToOriginalLocation: true,
-          returnedAt: Date.now(),
-        }),
-      ]);
-    }),
-    ctx.runMutation(internal.audit.logAction, {
-      organizationId: exhibition.organizationId,
-      userId,
-      action: "bulk_returned_exhibition_objects",
-      entityType: "exhibition",
-      entityId: args.exhibitionId,
-      changes: { count: deinstalledObjects.length },
-    }),
-  ]);
-
-  return { returnedCount: deinstalledObjects.length };
+  throw new Error(
+    "Record each exhibition object return with observed source and movement evidence",
+  );
 }

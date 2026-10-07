@@ -2,6 +2,7 @@
 
 import { ExhibitionDetailDocumentsPanel } from "./exhibition-detail-documents-panel";
 import { ExhibitionDetailOverviewPanel } from "./exhibition-detail-overview-panel";
+import { ExhibitionPhysicalHandoffsPanel } from "./exhibition-physical-handoffs-panel";
 import { ExhibitionDetailSidebar } from "./exhibition-detail-sidebar";
 import { ExhibitionDetailStats } from "./exhibition-detail-stats";
 import type { ExhibitionDetailViewProps } from "./exhibition-detail-view-props";
@@ -14,6 +15,10 @@ export function ExhibitionDetailBody(props: ExhibitionDetailViewProps) {
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="space-y-6 md:col-span-2">
             <ExhibitionDetailOverviewPanel {...props} />
+            <ExhibitionPhysicalHandoffsPanel
+              exhibitionId={props.exhibitionId}
+              organizationId={props.exhibition.organizationId}
+            />
             <ExhibitionDetailDocumentsPanel {...props} />
           </div>
           <ExhibitionDetailSidebar {...props} />
