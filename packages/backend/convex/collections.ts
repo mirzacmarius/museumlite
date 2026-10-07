@@ -1746,6 +1746,10 @@ export const update = mutation({
       const nextCondition = normalizeOptionalString(args.condition);
       const conditionChanged = previousCondition !== nextCondition;
 
+      if (collection.currentConditionAssessmentId && conditionChanged) {
+        throw new Error("Current condition is based on an accepted assessment. Record another assessment to change it.");
+      }
+
       updates.condition = nextCondition;
 
       if (conditionChanged) {
