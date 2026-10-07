@@ -111,6 +111,140 @@ test("should add objects to exhibition", async () => {
   );
 });
 
+test("many-object creation makes every participant visible to object reads and ordered detail", async () => {
+  const t = createConvexTest();
+  const { organizationId, collectionId, secondCollectionId, authed } =
+    await setupExhibitionFixture(t);
+
+  const exhibitionId = await authed.mutation(api.exhibitions.create, {
+    organizationId,
+    title: "Two Objects",
+    startDate: Date.now(),
+    isCurrent: false,
+    participants: [
+      { collectionId: secondCollectionId, role: "featured" },
+      { collectionId, role: "participant" },
+    ],
+  });
+
+  const members = await authed.query(api.exhibitions.listExhibitionObjects, {
+    exhibitionId,
+  });
+  expect(members.map((member) => [member.collectionId, member.role, member.order])).toEqual([
+    [secondCollectionId, "featured", 0],
+    [collectionId, "participant", 1],
+  ]);
+  const objectExhibitions = await authed.query(api.exhibitions.list, { collectionId });
+  expect(objectExhibitions.map((exhibition) => exhibition._id)).toContain(exhibitionId);
+  const filtered = await authed.query(api.exhibitions.listByOrganization, { organizationId, collectionId });
+  expect(filtered.map((exhibition) => [exhibition._id, exhibition.participantCount])).toEqual([[exhibitionId, 2]]);
+});
+
+test("legacy anchor disagreement is reported and requires an explicit reconciliation choice", async () => {
+  const t = createConvexTest();
+  const { organizationId, collectionId, secondCollectionId, authed } =
+    await setupExhibitionFixture(t);
+  const exhibitionId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("exhibitions", {
+      organizationId,
+      collectionId,
+      title: "Legacy Show",
+      startDate: Date.now(),
+      isCurrent: false,
+    });
+    await ctx.db.insert("exhibitionObjects", {
+      exhibitionId: id,
+      organizationId,
+      collectionId: secondCollectionId,
+      status: "pending",
+    });
+    return id;
+  });
+
+  const review = await authed.query(api.exhibitions.reviewLegacyParticipation, { organizationId });
+  expect(review).toEqual([{ exhibitionId, anchorCollectionId: collectionId, reason: "anchor_missing_from_members", memberCount: 1 }]);
+  await expect(authed.mutation(api.exhibitions.update, { id: exhibitionId, participants: [{ collectionId: secondCollectionId, role: "participant" }] })).rejects.toThrow("Review legacy");
+  await authed.mutation(api.exhibitions.reconcileLegacyParticipation, {
+    exhibitionId,
+    includeAnchor: true,
+    expectedMemberCollectionIds: [secondCollectionId],
+  });
+  const members = await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId });
+  expect(members.map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
+  expect((await authed.query(api.exhibitions.get, { id: exhibitionId }))?.legacyParticipationReview).toBeUndefined();
+});
+
+test("safe legacy backfill adds the anchor once and leaves conflicting memberships for review", async () => {
+  const t = createConvexTest();
+  const { organizationId, collectionId, secondCollectionId, authed } = await setupExhibitionFixture(t);
+  const singletonId = await t.run((ctx) => ctx.db.insert("exhibitions", { organizationId, collectionId, title: "Anchor only", startDate: Date.now(), isCurrent: false }));
+  const ambiguousId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("exhibitions", { organizationId, collectionId, title: "Disagreement", startDate: Date.now(), isCurrent: false });
+    await ctx.db.insert("exhibitionObjects", { exhibitionId: id, organizationId, collectionId: secondCollectionId, status: "pending" });
+    return id;
+  });
+
+  expect(await authed.mutation(api.exhibitions.backfillUnambiguousParticipation, { organizationId })).toEqual({ migrated: 1, requiresReview: 1, remaining: 0 });
+  expect(await authed.mutation(api.exhibitions.backfillUnambiguousParticipation, { organizationId })).toEqual({ migrated: 0, requiresReview: 1, remaining: 0 });
+  expect((await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId: singletonId })).map((member) => member.collectionId)).toEqual([collectionId]);
+  expect((await authed.query(api.exhibitions.reviewLegacyParticipation, { organizationId })).map((entry) => entry.exhibitionId)).toEqual([ambiguousId]);
+});
+
+test("participant editing rejects duplicate objects and preserves installed evidence", async () => {
+  const t = createConvexTest();
+  const { organizationId, collectionId, secondCollectionId, authed } = await setupExhibitionFixture(t);
+  await expect(authed.mutation(api.exhibitions.create, {
+    organizationId, title: "Invalid", startDate: Date.now(), isCurrent: false,
+    participants: [{ collectionId, role: "featured" }, { collectionId, role: "participant" }],
+  })).rejects.toThrow("only once");
+  const exhibitionId = await authed.mutation(api.exhibitions.create, {
+    organizationId, title: "Editable", startDate: Date.now(), isCurrent: false,
+    participants: [{ collectionId, role: "participant" }, { collectionId: secondCollectionId, role: "featured" }],
+  });
+  await authed.mutation(api.exhibitions.update, {
+    id: exhibitionId,
+    participants: [{ collectionId: secondCollectionId, role: "featured" }, { collectionId, role: "participant" }],
+  });
+  const ordered = await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId });
+  expect(ordered.map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
+  await authed.mutation(api.exhibitions.installObject, { exhibitionObjectId: ordered[0]!._id });
+  await expect(authed.mutation(api.exhibitions.update, {
+    id: exhibitionId, participants: [{ collectionId, role: "participant" }],
+  })).rejects.toThrow("installation or return evidence");
+  expect((await authed.query(api.exhibitions.listExhibitionObjects, { exhibitionId })).map((member) => member.collectionId)).toEqual([secondCollectionId, collectionId]);
+});
+
+test("schedule conflict checks union every selected participant", async () => {
+  const t = createConvexTest();
+  const { collectionId, secondCollectionId, authed } =
+    await setupExhibitionFixture(t);
+
+  const startDate = Date.now();
+  const endDate = startDate + 30 * 24 * 60 * 60 * 1000;
+
+  await authed.mutation(api.exhibitions.create, {
+    collectionId: secondCollectionId,
+    title: "Second object show",
+    startDate,
+    endDate,
+    isCurrent: false,
+  });
+
+  const conflicts = await authed.query(
+    api.exhibitions.checkScheduleConflictsForParticipants,
+    {
+      collectionIds: [collectionId, secondCollectionId],
+      startDate: startDate + 7 * 24 * 60 * 60 * 1000,
+      endDate: endDate - 7 * 24 * 60 * 60 * 1000,
+    },
+  );
+
+  expect(conflicts.hasConflicts).toBe(true);
+  expect(conflicts.conflicts.some((conflict) => conflict.title === "Second object show")).toBe(
+    true,
+  );
+});
+
 test("should detect venue conflicts", async () => {
   const t = createConvexTest();
   const { collectionId, authed } = await setupExhibitionFixture(t);
@@ -208,8 +342,7 @@ test("should calculate exhibition KPIs", async () => {
     exhibitionId,
   });
 
-  expect(objects.length).toBe(1);
-  expect(objects[0]?.collectionId).toBe(secondCollectionId);
+  expect(objects.map((object) => object.collectionId)).toEqual([collectionId, secondCollectionId]);
 });
 
 test("should manage exhibition documents", async () => {

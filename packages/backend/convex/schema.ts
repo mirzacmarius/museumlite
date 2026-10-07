@@ -2496,7 +2496,8 @@ export default defineSchema({
 
   // Exhibition records for objects
   exhibitions: defineTable({
-    collectionId: v.id("collections"),
+    collectionId: v.optional(v.id("collections")), // Historical anchor; new writes use exhibitionObjects
+    participationVersion: v.optional(v.literal("members")),
     organizationId: v.id("organizations"),
     title: v.string(),
     location: v.optional(v.string()),
@@ -2582,6 +2583,8 @@ export default defineSchema({
     exhibitionId: v.id("exhibitions"),
     organizationId: v.id("organizations"),
     collectionId: v.id("collections"), // The object being exhibited
+    role: v.optional(v.union(v.literal("featured"), v.literal("participant"))),
+    order: v.optional(v.number()),
     originalLocationId: v.optional(v.id("locations")), // Where the object was before
     exhibitionLocationId: v.optional(v.id("locations")), // Where it is in the exhibition
     // Installation tracking
