@@ -73,7 +73,7 @@ export function TransitPhysicalHandoffsPanel({
 
   async function runAction(
     transitItemId: Id<"transitItems">,
-    action: () => Promise<void>,
+    action: () => Promise<unknown>,
   ) {
     setError("");
     setBusyItemId(transitItemId);
@@ -172,10 +172,9 @@ export function TransitPhysicalHandoffsPanel({
                     </Button>
                   ) : null}
 
-                  {(item.status === "arrived" ||
-                    item.status === "in_transit" ||
-                    item.status === "delivered") &&
-                  item.status !== "received" ? (
+                  {item.status === "arrived" ||
+                  item.status === "in_transit" ||
+                  item.status === "delivered" ? (
                     <div className="space-y-3">
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">

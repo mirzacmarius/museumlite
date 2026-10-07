@@ -70,7 +70,7 @@ export function ExhibitionPhysicalHandoffsPanel({
 
   async function runHandoff(
     exhibitionObjectId: Id<"exhibitionObjects">,
-    action: () => Promise<void>,
+    action: () => Promise<unknown>,
   ) {
     setError("");
     setBusyObjectId(exhibitionObjectId);

@@ -370,9 +370,6 @@ export async function authorizeReturnExceptionHandler(
   if (exhibitionObject.returnException) {
     throw new Error("Return exception is already recorded");
   }
-  if (exhibitionObject.status === "returned") {
-    throw new Error("Object is already returned");
-  }
 
   const reason = args.reason.trim();
   if (reason.length < 10) {
@@ -478,7 +475,7 @@ export async function listExhibitionObjectsHandler(
 export async function bulkInstallObjectsHandler(
   _ctx: MutationCtx,
   _args: { exhibitionId: Id<"exhibitions"> },
-) {
+): Promise<{ installedCount: number }> {
   throw new Error(
     "Record each exhibition object installation with observed source and movement evidence",
   );
@@ -487,7 +484,7 @@ export async function bulkInstallObjectsHandler(
 export async function bulkReturnObjectsHandler(
   _ctx: MutationCtx,
   _args: { exhibitionId: Id<"exhibitions"> },
-) {
+): Promise<{ returnedCount: number }> {
   throw new Error(
     "Record each exhibition object return with observed source and movement evidence",
   );
