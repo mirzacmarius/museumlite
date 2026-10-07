@@ -4530,6 +4530,11 @@ export default {
       sourceRequired: "Kilde er påkrevd",
     },
     kanban: {
+      loading: "Laster…",
+      loadMore: "Last inn flere",
+      shownOfTotal: "{loaded} av {total}",
+      matchesShown: "Treff vist: {loaded}",
+      noMatches: "Ingen samsvarende aksesjoner i {step}",
       noAccessions: "Ingen aksesjoner i {step}",
       unknownSource: "Ukjent kilde",
     },
@@ -4571,6 +4576,12 @@ export default {
     addObject: "Legg til objekt",
   },
 
+  objectPicker: {
+    loading: "Laster…",
+    loadMore: "Last inn flere",
+    refineSearch:
+      "Flere objekter samsvarer. Avgrens søket for å snevre inn listen.",
+  },
   deaccessions: {
     title: "Deaksesjonsposter",
     description: "Elementer permanent fjernet fra samlingen.",

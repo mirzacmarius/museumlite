@@ -17,7 +17,7 @@ import { useQuery } from "convex/react";
 import { Box, Check, ChevronsUpDown, Search } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
-import { useI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface CollectionMultiSelectComboboxProps {
   organizationId: Id<"organizations">;
@@ -31,7 +31,7 @@ interface CollectionListItem {
   _id: Id<"collections">;
   title: string;
   accessionNumber: string;
-  status: "active" | "loaned" | "deaccessioned" | "archived" | "deleted";
+  status: string;
 }
 
 interface CollectionMultiSelectState {
@@ -104,6 +104,7 @@ export function CollectionMultiSelectCombobox({
   disabled = false,
 }: CollectionMultiSelectComboboxProps) {
   const translate = useI18n();
+  const tPicker = useScopedI18n("objectPicker");
   const [state, dispatch] = React.useReducer(
     collectionMultiSelectReducer,
     initialCollectionMultiSelectState,
@@ -111,17 +112,31 @@ export function CollectionMultiSelectCombobox({
   const listId = React.useId();
   const listRef = React.useRef<HTMLDivElement>(null);
 
+  // Browsing pages through recent objects; a query asks the server for
+  // indexed matches instead of scanning pages until the list fills.
+  const search = React.useDeferredValue(state.searchQuery.trim());
   const collectionsResult = useQuery(
     api.collections.list,
-    organizationId
+    organizationId && !search
       ? {
           organizationId,
           paginationOpts: { numItems: 50, cursor: state.cursor },
           status: "active",
-          search: state.searchQuery || undefined,
         }
       : "skip",
   );
+  const searchResult = useQuery(
+    api.collections.searchForSelection,
+    organizationId && search
+      ? { organizationId, query: search, status: "active" }
+      : "skip",
+  );
+  const visibleCollections: CollectionListItem[] = search
+    ? (searchResult?.items ?? [])
+    : state.allCollections;
+  const isLoadingResults = search
+    ? searchResult === undefined
+    : collectionsResult === undefined || !collectionsResult.isDone;
 
   React.useEffect(() => {
     dispatch({ type: "resetSearch" });
@@ -145,8 +160,8 @@ export function CollectionMultiSelectCombobox({
   }, [collectionsResult, state.cursor]);
 
   const collectionIds = React.useMemo(
-    () => state.allCollections.map((collection) => collection._id),
-    [state.allCollections],
+    () => visibleCollections.map((collection) => collection._id),
+    [visibleCollections],
   );
 
   const batchImageUrls = useQuery(
@@ -272,7 +287,7 @@ export function CollectionMultiSelectCombobox({
           >
             <CommandEmpty>
               <div className="p-4 text-sm text-center text-muted-foreground">
-                {collectionsResult === undefined || !collectionsResult.isDone
+                {isLoadingResults
                   ? translate("untranslatedComponents.labels.loading")
                   : translate(
                       "untranslatedComponents.labels.noCollectionsFound",
@@ -280,9 +295,9 @@ export function CollectionMultiSelectCombobox({
               </div>
             </CommandEmpty>
 
-            {state.allCollections.length > 0 && (
+            {visibleCollections.length > 0 && (
               <CommandGroup>
-                {state.allCollections.map((collection) => {
+                {visibleCollections.map((collection) => {
                   const isSelected = selectedIds.includes(collection._id);
                   return (
                     <CollectionItem
@@ -300,6 +315,11 @@ export function CollectionMultiSelectCombobox({
             {collectionsResult && !collectionsResult.isDone && (
               <div className="p-2 text-center text-xs text-muted-foreground">
                 {translate("untranslatedComponents.labels.scrollForMore")}
+              </div>
+            )}
+            {searchResult?.hasMore && (
+              <div className="p-2 text-center text-xs text-muted-foreground">
+                {tPicker("refineSearch")}
               </div>
             )}
           </CommandList>

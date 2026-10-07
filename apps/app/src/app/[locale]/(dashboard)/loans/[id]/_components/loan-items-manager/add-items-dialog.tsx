@@ -13,6 +13,7 @@ import {
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Plus, Search, X } from "lucide-react";
+import { ObjectPickerResults } from "@/components/object-picker-results";
 import { PermissionGate } from "@/components/permission-gate";
 import { useI18n, useScopedI18n } from "@/locales/client";
 import type { useLoanItemsManager } from "./use-loan-items-manager";
@@ -65,98 +66,48 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
                   className="pl-9"
                 />
               </div>
-              {!manager.isCollectionListComplete &&
-              manager.collections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {tRoot("untranslatedRecords.loans.items.loadingCollections")}
-                </p>
-              ) : manager.availableCollections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {manager.searchQuery
+              <ObjectPickerResults
+                objects={manager.availableCollections}
+                selectedIds={
+                  new Set(manager.selectedObjects.map((object) => object._id))
+                }
+                onToggle={manager.toggleSelection}
+                picker={manager.picker}
+                loadingLabel={tRoot(
+                  "untranslatedRecords.loans.items.loadingCollections",
+                )}
+                emptyLabel={
+                  manager.searchQuery
                     ? tActions("noCollectionsFound")
-                    : tActions("noAvailableCollections")}
-                </p>
-              ) : (
-                <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border border-border p-2">
-                  {manager.availableCollections.map((collection) => {
-                    const isSelected = manager.selectedCollectionIds.includes(
-                      collection._id,
-                    );
-                    return (
-                      <button
-                        key={collection._id}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            manager.setSelectedCollectionIds((prev) =>
-                              prev.filter((id) => id !== collection._id),
-                            );
-                          } else {
-                            manager.setSelectedCollectionIds((prev) => [
-                              ...prev,
-                              collection._id,
-                            ]);
-                          }
-                        }}
-                        className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-accent"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium">
-                              {collection.accessionNumber}
-                            </span>
-                            <span className="ml-2 text-muted-foreground">
-                              {collection.title}
-                            </span>
-                          </div>
-                          {isSelected && <X className="size-4" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {manager.selectedCollectionIds.length > 0 && (
+                    : tActions("noAvailableCollections")
+                }
+              />
+              {manager.selectedObjects.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     {tRoot("loans.actions.selectedCount", {
-                      count: manager.selectedCollectionIds.length,
+                      count: manager.selectedObjects.length,
                     })}
                     :
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                    {manager.selectedCollectionIds.map((id) => {
-                      const collection = manager.collections.find(
-                        (c) => c._id === id,
-                      );
-                      return (
-                        <div
-                          key={id}
-                          className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
+                    {manager.selectedObjects.map((collection) => (
+                      <div
+                        key={collection._id}
+                        className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm"
+                      >
+                        <span>
+                          {collection.accessionNumber} - {collection.title}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => manager.toggleSelection(collection)}
+                          className="ml-1 hover:text-destructive"
                         >
-                          <span>
-                            {collection?.accessionNumber} - {collection?.title}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              manager.setSelectedCollectionIds(
-                                manager.selectedCollectionIds.filter(
-                                  (i) => i !== id,
-                                ),
-                              )
-                            }
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <X className="size-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

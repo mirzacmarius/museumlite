@@ -4,7 +4,10 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useMemo, useState } from "react";
-import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
+import {
+  type SelectableObject,
+  useObjectSearchSelection,
+} from "@/hooks/use-object-search-selection";
 import { useScopedI18n } from "@/locales/client";
 import type { ItemToReturn, ManagedLoanItem } from "./types";
 
@@ -28,22 +31,31 @@ export function useLoanItemsManager({
     useState<ItemToReturn | null>(null);
   const [conditionIn, setConditionIn] = useState("");
   const [returnNotes, setReturnNotes] = useState("");
-  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
+  // Selected objects keep their labels when a new search replaces the results.
+  const [selectedObjects, setSelectedObjects] = useState<SelectableObject[]>(
     [],
   );
   const [conditionOut, setConditionOut] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { items: collections, isComplete: isCollectionListComplete } =
-    useDrainedCollectionList(
-      organizationId && isAddDialogOpen
-        ? {
-            organizationId: organizationId as Id<"organizations">,
-            status: "active",
-            search: searchQuery || undefined,
-          }
-        : "skip",
+  const picker = useObjectSearchSelection({
+    organizationId: organizationId
+      ? (organizationId as Id<"organizations">)
+      : undefined,
+    query: searchQuery,
+    status: "active",
+    enabled: isAddDialogOpen,
+  });
+  const selectedCollectionIds = useMemo(
+    () => selectedObjects.map((object) => object._id),
+    [selectedObjects],
+  );
+  const toggleSelection = (object: SelectableObject) =>
+    setSelectedObjects((current) =>
+      current.some((selected) => selected._id === object._id)
+        ? current.filter((selected) => selected._id !== object._id)
+        : [...current, object],
     );
 
   const addItems = useMutation(api.loans.addItems);
@@ -51,16 +63,16 @@ export function useLoanItemsManager({
   const returnItem = useMutation(api.loans.returnItem);
 
   const availableCollections = useMemo(() => {
-    return collections.filter((collection) => {
+    return picker.items.filter((collection) => {
       return !loanItems.some((item) => item.collectionId === collection._id);
     });
-  }, [collections, loanItems]);
+  }, [picker.items, loanItems]);
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsAddDialogOpen(open);
     if (!open) {
       setSearchQuery("");
-      setSelectedCollectionIds([]);
+      setSelectedObjects([]);
       setConditionOut("");
       setError(null);
     }
@@ -80,10 +92,10 @@ export function useLoanItemsManager({
     try {
       await addItems({
         loanId: loanId as Id<"loans">,
-        collectionIds: selectedCollectionIds as Id<"collections">[],
+        collectionIds: selectedCollectionIds,
         conditionOut: conditionOut || undefined,
       });
-      setSelectedCollectionIds([]);
+      setSelectedObjects([]);
       setConditionOut("");
       setIsAddDialogOpen(false);
     } catch (err) {
@@ -146,13 +158,12 @@ export function useLoanItemsManager({
     canAddItems,
     canRemoveItems,
     canReturnItems,
-    collections,
-    isCollectionListComplete,
+    picker,
     availableCollections,
     searchQuery,
     setSearchQuery,
-    selectedCollectionIds,
-    setSelectedCollectionIds,
+    selectedObjects,
+    toggleSelection,
     conditionOut,
     setConditionOut,
     handleAddItems,

@@ -1928,6 +1928,11 @@ export default {
       sourceRequired: "Sursa este obligatorie",
     },
     kanban: {
+      loading: "Se încarcă…",
+      loadMore: "Încarcă mai multe",
+      shownOfTotal: "{loaded} din {total}",
+      matchesShown: "Potriviri afișate: {loaded}",
+      noMatches: "Nicio achiziție potrivită în {step}",
       noAccessions: "Nu există accesiuni la pasul {step}",
       unknownSource: "Sursă necunoscută",
     },
@@ -2369,6 +2374,12 @@ export default {
       inTransit: "În tranzit",
       overdue: "Restante",
     },
+  },
+  objectPicker: {
+    loading: "Se încarcă…",
+    loadMore: "Încarcă mai multe",
+    refineSearch:
+      "Mai multe obiecte se potrivesc. Restrângeți căutarea pentru a reduce lista.",
   },
   deaccessions: {
     title: "Dezaccesiuni",

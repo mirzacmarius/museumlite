@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
+import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { requireAccountAdministration } from "./utils/accountAdministration";
 import {
   buildAccountCreateDocument,
@@ -478,6 +479,7 @@ export const importAccessionsBatch = mutation({
             },
           ],
         });
+        await syncAccessionSearchDocument(ctx, accessionId);
         return { recordId: accessionId, identifier: accessionNumber };
       },
     );

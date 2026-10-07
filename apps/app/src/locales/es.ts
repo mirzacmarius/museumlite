@@ -4601,6 +4601,11 @@ export default {
       sourceRequired: "La fuente es obligatoria",
     },
     kanban: {
+      loading: "Cargando…",
+      loadMore: "Cargar más",
+      shownOfTotal: "{loaded} de {total}",
+      matchesShown: "Coincidencias mostradas: {loaded}",
+      noMatches: "No hay ingresos coincidentes en {step}",
       noAccessions: "Sin adquisiciones en {step}",
       unknownSource: "Fuente desconocida",
     },
@@ -4640,6 +4645,12 @@ export default {
     },
   },
 
+  objectPicker: {
+    loading: "Cargando…",
+    loadMore: "Cargar más",
+    refineSearch:
+      "Hay más objetos que coinciden. Afine la búsqueda para acotar la lista.",
+  },
   deaccessions: {
     title: "Registros de Desaccesión",
     description: "Elementos permanentemente removidos de la colección.",

@@ -46,6 +46,7 @@ import {
   getCollectionTypeModuleRequirement,
 } from "./utils/moduleCatalog";
 import { collectionTypeValidator } from "./utils/moduleValidators";
+import { searchObjects } from "./utils/objectSearch";
 import { applyUsageCounterDelta } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
 import { getApprovedPublicMedia } from "./utils/publicMedia";
@@ -1249,6 +1250,63 @@ export const getWithModuleDetails = query({
 /**
  * List collections with pagination and filters
  */
+const SELECTION_SEARCH_LIMIT = 50;
+
+/**
+ * Search-on-demand for object pickers: indexed identifier and word matches,
+ * capped per request. `hasMore` tells the picker to ask for a narrower query
+ * instead of loading the organization.
+ */
+export const searchForSelection = query({
+  args: {
+    organizationId: v.id("organizations"),
+    query: v.string(),
+    status: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("loaned"),
+        v.literal("deaccessioned"),
+      ),
+    ),
+  },
+  returns: v.object({
+    items: v.array(
+      v.object({
+        _id: v.id("collections"),
+        title: v.string(),
+        accessionNumber: v.string(),
+        status: v.string(),
+      }),
+    ),
+    hasMore: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const query = args.query.trim();
+    if (!query) return { items: [], hasMore: false };
+    const { rows } = await searchObjects(
+      ctx,
+      args.organizationId,
+      query,
+      SELECTION_SEARCH_LIMIT + 1,
+    );
+    const matching = rows.filter(
+      (row) =>
+        row.status !== "archived" &&
+        (args.status ? row.status === args.status : true),
+    );
+    return {
+      items: matching.slice(0, SELECTION_SEARCH_LIMIT).map((row) => ({
+        _id: row._id,
+        title: row.title,
+        accessionNumber: row.accessionNumber,
+        status: row.status,
+      })),
+      hasMore: rows.length > SELECTION_SEARCH_LIMIT,
+    };
+  },
+});
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),

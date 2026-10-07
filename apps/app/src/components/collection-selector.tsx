@@ -1,6 +1,8 @@
 "use client";
 
+import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import {
@@ -10,10 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@v1/ui/select";
+import { useQuery } from "convex/react";
 import { Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
-import { useI18n } from "@/locales/client";
+import { useState } from "react";
+import { useObjectSearchSelection } from "@/hooks/use-object-search-selection";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface CollectionSelectorProps {
   organizationId: string;
@@ -40,55 +43,28 @@ export function CollectionSelector({
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
-  const { items: collections, isComplete } = useDrainedCollectionList(
-    organizationId
-      ? {
-          organizationId: organizationId as Id<"organizations">,
-          search: searchQuery || undefined,
-          status:
-            filterStatus !== "all"
-              ? filterStatus
-              : excludeDeaccessioned
-                ? "active"
-                : undefined,
-        }
-      : "skip",
+  const tPicker = useScopedI18n("objectPicker");
+  const picker = useObjectSearchSelection({
+    organizationId: organizationId
+      ? (organizationId as Id<"organizations">)
+      : undefined,
+    query: searchQuery,
+    status:
+      filterStatus !== "all"
+        ? filterStatus
+        : excludeDeaccessioned
+          ? "active"
+          : undefined,
+    enabled: isOpen,
+  });
+  // The selected object may not be among the current results.
+  const selectedCollection = useQuery(
+    api.collections.get,
+    value ? { collectionId: value as Id<"collections"> } : "skip",
   );
-
-  const filteredCollections = useMemo(() => {
-    let filtered = [...collections];
-
-    if (excludeDeaccessioned && filterStatus === "all") {
-      filtered = filtered.filter((c) => c.status !== "deaccessioned");
-    }
-
-    return filtered.sort((a, b) =>
-      a.accessionNumber.localeCompare(b.accessionNumber),
-    );
-  }, [collections, excludeDeaccessioned, filterStatus]);
-
-  const selectedCollection = filteredCollections.find((c) => c._id === value);
-
-  if (!isComplete && collections.length === 0) {
-    return (
-      <div className="space-y-2">
-        {label && (
-          <Label>
-            {label} {required && <span className="text-red-500">*</span>}
-          </Label>
-        )}
-        <Select value={value} onValueChange={onValueChange} disabled>
-          <SelectTrigger>
-            <SelectValue
-              placeholder={translate(
-                "untranslatedComponents.labels.loadingCollections",
-              )}
-            />
-          </SelectTrigger>
-        </Select>
-      </div>
-    );
-  }
+  const filteredCollections = picker.items.toSorted((a, b) =>
+    a.accessionNumber.localeCompare(b.accessionNumber),
+  );
 
   return (
     <div className="space-y-2">
@@ -147,7 +123,11 @@ export function CollectionSelector({
 
           {/* Collection list */}
           <div className="max-h-[250px] overflow-y-auto">
-            {filteredCollections.length === 0 ? (
+            {picker.isLoading ? (
+              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                {translate("untranslatedComponents.labels.loadingCollections")}
+              </div>
+            ) : filteredCollections.length === 0 ? (
               <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                 {searchQuery
                   ? translate(
@@ -171,6 +151,28 @@ export function CollectionSelector({
                 </SelectItem>
               ))
             )}
+            {picker.canLoadMore ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                disabled={picker.isLoadingMore}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  picker.loadMore();
+                }}
+              >
+                {picker.isLoadingMore
+                  ? tPicker("loading")
+                  : tPicker("loadMore")}
+              </Button>
+            ) : null}
+            {picker.hasMoreMatches ? (
+              <p className="p-2 text-xs text-muted-foreground">
+                {tPicker("refineSearch")}
+              </p>
+            ) : null}
           </div>
         </SelectContent>
       </Select>

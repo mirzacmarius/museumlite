@@ -4378,6 +4378,11 @@ export default {
       sourceRequired: "Source is required",
     },
     kanban: {
+      loading: "Loading…",
+      loadMore: "Load more",
+      shownOfTotal: "{loaded} of {total}",
+      matchesShown: "Matches shown: {loaded}",
+      noMatches: "No matching accessions in {step}",
       noAccessions: "No accessions in {step}",
       unknownSource: "Unknown source",
     },
@@ -4417,6 +4422,11 @@ export default {
     },
   },
 
+  objectPicker: {
+    loading: "Loading…",
+    loadMore: "Load more",
+    refineSearch: "More objects match. Refine the search to narrow the list.",
+  },
   deaccessions: {
     title: "Deaccession Records",
     description: "Items permanently removed from collection.",

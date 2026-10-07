@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
+import { upsertAccessionSearchDocument } from "./utils/accessionSearch";
 import { processOptionUsageBackfillPage } from "./utils/collectionOptionUsages";
 import {
   assignCustomerNumberIfMissing,
@@ -1582,5 +1583,39 @@ export const recoverStrandedMediaUploads = internalMutation({
     }
     console.log(`Recovered ${recovered} stranded media uploads`);
     return { recovered, isDone: page.isDone };
+  },
+});
+
+/**
+ * Migration: create or refresh the search document of every accession, in
+ * bounded pages. Rerunnable; each page schedules the next.
+ * Run: bunx convex run migrations:backfillAccessionSearchDocuments '{"cursor":null}'
+ */
+export const backfillAccessionSearchDocuments = internalMutation({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+  },
+  returns: v.object({
+    processed: v.number(),
+    isDone: v.boolean(),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ processed: number; isDone: boolean }> => {
+    const page = await ctx.db
+      .query("accessions")
+      .paginate({ cursor: args.cursor, numItems: 100 });
+    for (const accession of page.page) {
+      await upsertAccessionSearchDocument(ctx, accession);
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.backfillAccessionSearchDocuments,
+        { cursor: page.continueCursor },
+      );
+    }
+    return { processed: page.page.length, isDone: page.isDone };
   },
 });

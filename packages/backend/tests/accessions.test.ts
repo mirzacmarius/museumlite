@@ -1259,6 +1259,11 @@ test("should batch lookup collections and assignees for list query", async () =>
     );
   });
 
+  // Accessions inserted directly need their search documents built.
+  await t.mutation(internal.migrations.backfillAccessionSearchDocuments, {
+    cursor: null,
+  });
+
   // Query the first page (25 items)
   const authed = authedForUser(t, userId);
   const result = await authed.query(api.accessions.list, {

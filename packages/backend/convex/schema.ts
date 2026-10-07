@@ -1355,6 +1355,12 @@ export default defineSchema({
       "organizationId",
       "dateReceived",
     ])
+    .index("by_organization_and_status_and_workflowStep_and_dateReceived", [
+      "organizationId",
+      "status",
+      "workflowStep",
+      "dateReceived",
+    ])
     .index("by_organization_and_status_and_dateReceived", [
       "organizationId",
       "status",

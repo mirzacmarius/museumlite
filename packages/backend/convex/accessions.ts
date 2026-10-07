@@ -7,9 +7,15 @@ import {
   internalMutation,
   type MutationCtx,
   mutation,
+  type QueryCtx,
   query,
 } from "./_generated/server";
+import {
+  accessionListItemValidator,
+  toAccessionListItems,
+} from "./utils/accessionListItems";
 import { publishAccessionObjectDraft } from "./utils/accessionObjectDraftPublication";
+import { syncAccessionSearchDocument } from "./utils/accessionSearch";
 import { batchLookup } from "./utils/batchLookup";
 import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import { rejectPermanentEvidenceDeletion } from "./utils/evidenceRetention";
@@ -19,6 +25,7 @@ import {
   generateConfiguredIdentifier,
   normalizeIdentifier,
 } from "./utils/identifiers";
+import { countIndexedQuery } from "./utils/indexedCounts";
 import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
@@ -78,70 +85,6 @@ async function isAccessionWorkflowEnabled(
 ) {
   const organization = await ctx.db.get(organizationId);
   return organization?.settings?.accessionWorkflowEnabled ?? true;
-}
-
-function buildSearchText(values: Array<string | null | undefined>) {
-  return values
-    .flatMap((value) => {
-      const trimmedValue = value?.trim();
-      return trimmedValue ? [trimmedValue] : [];
-    })
-    .join(" ");
-}
-
-async function buildAccessionSearchText(
-  ctx: MutationCtx,
-  accession: Doc<"accessions">,
-) {
-  const collection = accession.collectionId
-    ? await ctx.db.get(accession.collectionId)
-    : null;
-
-  return buildSearchText([
-    accession.accessionNumber,
-    accession.draftObjectData?.title,
-    accession.source,
-    accession.notes,
-    collection?.title,
-    accession.method,
-  ]);
-}
-
-async function upsertAccessionSearchDocument(
-  ctx: MutationCtx,
-  accession: Doc<"accessions">,
-) {
-  const [searchText, existing] = await Promise.all([
-    buildAccessionSearchText(ctx, accession),
-    ctx.db
-      .query("accessionSearchDocuments")
-      .withIndex("by_accession", (q) => q.eq("accessionId", accession._id))
-      .first(),
-  ] as const);
-  const fields = {
-    organizationId: accession.organizationId,
-    accessionId: accession._id,
-    status: accession.status,
-    searchText,
-    dateReceived: accession.dateReceived,
-  };
-
-  if (existing) {
-    await ctx.db.patch(existing._id, fields);
-    return;
-  }
-
-  await ctx.db.insert("accessionSearchDocuments", fields);
-}
-
-async function syncAccessionSearchDocument(
-  ctx: MutationCtx,
-  accessionId: Id<"accessions">,
-) {
-  const accession = await ctx.db.get(accessionId);
-  if (accession) {
-    await upsertAccessionSearchDocument(ctx, accession);
-  }
 }
 
 async function ensureAccessionNumberAvailable(
@@ -709,6 +652,12 @@ export const upsertObjectDraft = mutation({
 /**
  * List accessions with filters
  */
+const accessionPageValidator = v.object({
+  page: v.array(accessionListItemValidator),
+  isDone: v.boolean(),
+  continueCursor: v.string(),
+});
+
 export const list = query({
   args: {
     organizationId: v.id("organizations"),
@@ -722,243 +671,263 @@ export const list = query({
     ),
     search: v.optional(v.string()),
   },
-  returns: v.object({
-    page: v.array(
-      v.object({
-        _id: v.id("accessions"),
-        accessionNumber: v.string(),
-        dateReceived: v.number(),
-        source: v.string(),
-        draftTitle: v.optional(v.string()),
-        method: v.union(
-          v.literal("purchase"),
-          v.literal("gift"),
-          v.literal("loan"),
-          v.literal("transfer"),
-          v.literal("donation"),
-          v.literal("other"),
-          v.literal("bequest"),
-        ),
-        status: v.union(
-          v.literal("pending"),
-          v.literal("approved"),
-          v.literal("rejected"),
-        ),
-        workflowStep: v.optional(v.number()),
-        assignedTo: v.optional(v.id("users")),
-        assigneeName: v.optional(v.string()),
-      }),
-    ),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: accessionPageValidator,
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
-
     const search = args.search?.trim();
+    const status = args.status;
 
-    const addAssigneeNames = async (page: Doc<"accessions">[]) => {
-      const assigneeIds = page.flatMap((item) =>
-        item.assignedTo ? [item.assignedTo] : [],
-      );
-      const usersMap = await batchLookup(ctx, assigneeIds, "users");
+    if (search) {
+      const result = await ctx.db
+        .query("accessionSearchDocuments")
+        .withSearchIndex("search_text", (q) => {
+          const scoped = q
+            .search("searchText", search)
+            .eq("organizationId", args.organizationId);
+          return status ? scoped.eq("status", status) : scoped;
+        })
+        .paginate(args.paginationOpts);
+      return {
+        page: await toAccessionListItems(
+          ctx,
+          await loadSearchedAccessions(ctx, result.page),
+        ),
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
 
-      return page.map((item) => {
-        let assigneeName: string | undefined;
-        if (item.assignedTo) {
-          const user = usersMap.get(item.assignedTo);
-          assigneeName = user?.name || user?.email || undefined;
-        }
-
-        return {
-          _id: item._id,
-          accessionNumber: item.accessionNumber,
-          dateReceived: item.dateReceived,
-          source: item.source,
-          draftTitle: item.draftObjectData?.title,
-          method: item.method,
-          status: item.status,
-          workflowStep: item.workflowStep,
-          assignedTo: item.assignedTo,
-          assigneeName,
-        };
-      });
-    };
-
-    if (!search) {
-      if (args.status) {
-        const status = args.status;
-        const paginationResult = await ctx.db
+    const result = status
+      ? await ctx.db
           .query("accessions")
           .withIndex("by_organization_and_status_and_dateReceived", (q) =>
             q.eq("organizationId", args.organizationId).eq("status", status),
           )
           .order("desc")
+          .paginate(args.paginationOpts)
+      : await ctx.db
+          .query("accessions")
+          .withIndex("by_organization_and_dateReceived", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+          .order("desc")
           .paginate(args.paginationOpts);
-
-        return {
-          page: await addAssigneeNames(paginationResult.page),
-          isDone: paginationResult.isDone,
-          continueCursor: paginationResult.continueCursor,
-        };
-      }
-
-      const paginationResult = await ctx.db
-        .query("accessions")
-        .withIndex("by_organization_and_dateReceived", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .order("desc")
-        .paginate(args.paginationOpts);
-
-      return {
-        page: await addAssigneeNames(paginationResult.page),
-        isDone: paginationResult.isDone,
-        continueCursor: paginationResult.continueCursor,
-      };
-    }
-
-    const hasSearchDocuments = await ctx.db
-      .query("accessionSearchDocuments")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    if (hasSearchDocuments) {
-      const paginationResult = args.status
-        ? await (() => {
-            const status = args.status;
-            return ctx.db
-              .query("accessionSearchDocuments")
-              .withSearchIndex("search_text", (q) =>
-                q
-                  .search("searchText", search)
-                  .eq("organizationId", args.organizationId)
-                  .eq("status", status),
-              )
-              .paginate(args.paginationOpts);
-          })()
-        : await ctx.db
-            .query("accessionSearchDocuments")
-            .withSearchIndex("search_text", (q) =>
-              q
-                .search("searchText", search)
-                .eq("organizationId", args.organizationId),
-            )
-            .paginate(args.paginationOpts);
-
-      const accessionsMap = await batchLookup(
-        ctx,
-        paginationResult.page.map(
-          (searchDocument) => searchDocument.accessionId,
-        ),
-        "accessions",
-      );
-      const page = paginationResult.page.flatMap((searchDocument) => {
-        const accession = accessionsMap.get(searchDocument.accessionId);
-        return accession ? [accession] : [];
-      });
-
-      return {
-        page: await addAssigneeNames(page),
-        isDone: paginationResult.isDone,
-        continueCursor: paginationResult.continueCursor,
-      };
-    }
-
-    let allResults: Doc<"accessions">[];
-    if (args.status) {
-      const status = args.status;
-      allResults = await ctx.db
-        .query("accessions")
-        .withIndex("by_organization_and_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", status),
-        )
-        .collect();
-    } else {
-      allResults = await ctx.db
-        .query("accessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect();
-    }
-
-    const searchLower = search.toLowerCase();
-    // Batch fetch collections to avoid N+1 queries
-    const collectionIds = allResults.flatMap((accession) =>
-      accession.collectionId ? [accession.collectionId] : [],
-    );
-    const collectionMap = await batchLookup(ctx, collectionIds, "collections");
-
-    // Get collection titles for accessions to include in search
-    const accessionsWithCollectionInfo = allResults.map((accession) => {
-      const collectionTitle = accession.collectionId
-        ? collectionMap.get(accession.collectionId)?.title || ""
-        : "";
-      return { ...accession, collectionTitle };
-    });
-
-    allResults = accessionsWithCollectionInfo.flatMap(
-      ({ collectionTitle, ...accession }) =>
-        accession.accessionNumber?.toLowerCase().includes(searchLower) ||
-        accession.draftObjectData?.title?.toLowerCase().includes(searchLower) ||
-        accession.source?.toLowerCase().includes(searchLower) ||
-        accession.notes?.toLowerCase().includes(searchLower) ||
-        collectionTitle?.toLowerCase().includes(searchLower) ||
-        accession.method?.toLowerCase().includes(searchLower)
-          ? [accession]
-          : [],
-    );
-
-    // Sort by date received (newest first)
-    allResults.sort((a, b) => b.dateReceived - a.dateReceived);
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      allResults.length,
-    );
-    const page = allResults.slice(startIndex, endIndex);
-
     return {
-      page: await addAssigneeNames(page),
-      isDone: endIndex >= allResults.length,
-      continueCursor: endIndex.toString(),
+      page: await toAccessionListItems(ctx, result.page),
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
     };
   },
 });
 
-export const backfillSearchDocuments = mutation({
+async function loadSearchedAccessions(
+  ctx: QueryCtx,
+  documents: Doc<"accessionSearchDocuments">[],
+) {
+  const accessionsById = await batchLookup(
+    ctx,
+    documents.map((document) => document.accessionId),
+    "accessions",
+  );
+  return documents.flatMap((document) => {
+    const accession = accessionsById.get(document.accessionId);
+    return accession ? [accession] : [];
+  });
+}
+
+/** Configured approval steps; Draft is 0 and Approved is -1. */
+async function getLastAccessionStep(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+) {
+  const config = await getWorkflowConfig(ctx, organizationId, "accession");
+  return Math.max(0, ...(config?.steps.map((step) => step.stepNumber) ?? []));
+}
+
+/**
+ * Pending accessions in one board column. Draft also holds legacy rows
+ * without a step, and the last step holds rows left beyond a shortened
+ * workflow, so every pending accession appears in exactly one column.
+ */
+function pendingColumnQuery(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  step: number,
+  lastStep: number,
+) {
+  const index = "by_organization_and_status_and_workflowStep_and_dateReceived";
+  if (lastStep === 0) {
+    return ctx.db
+      .query("accessions")
+      .withIndex(index, (q) =>
+        q.eq("organizationId", organizationId).eq("status", "pending"),
+      );
+  }
+  if (step <= 0) {
+    return ctx.db
+      .query("accessions")
+      .withIndex(index, (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("status", "pending")
+          .lte("workflowStep", 0),
+      );
+  }
+  if (step >= lastStep) {
+    return ctx.db
+      .query("accessions")
+      .withIndex(index, (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("status", "pending")
+          .gte("workflowStep", lastStep),
+      );
+  }
+  return ctx.db
+    .query("accessions")
+    .withIndex(index, (q) =>
+      q
+        .eq("organizationId", organizationId)
+        .eq("status", "pending")
+        .eq("workflowStep", step),
+    );
+}
+
+function isInPendingColumn(
+  accession: Doc<"accessions">,
+  step: number,
+  lastStep: number,
+) {
+  if (accession.status !== "pending") return false;
+  const current = accession.workflowStep ?? 0;
+  if (lastStep === 0) return true;
+  if (step <= 0) return current <= 0;
+  if (step >= lastStep) return current >= lastStep;
+  return current === step;
+}
+
+const boardColumnValidator = v.union(
+  v.object({ kind: v.literal("approved") }),
+  v.object({ kind: v.literal("step"), step: v.number() }),
+);
+
+/**
+ * One accession board column, paginated on the server. With a search, rows
+ * come from the indexed search documents; a page can hold fewer rows than
+ * requested while more remain.
+ */
+export const listBoardColumn = query({
+  args: {
+    organizationId: v.id("organizations"),
+    column: boardColumnValidator,
+    search: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: accessionPageValidator,
+  handler: async (ctx, args) => {
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const search = args.search?.trim();
+    const column = args.column;
+    const lastStep = await getLastAccessionStep(ctx, args.organizationId);
+
+    if (search) {
+      const status = column.kind === "approved" ? "approved" : "pending";
+      const result = await ctx.db
+        .query("accessionSearchDocuments")
+        .withSearchIndex("search_text", (q) =>
+          q
+            .search("searchText", search)
+            .eq("organizationId", args.organizationId)
+            .eq("status", status),
+        )
+        .paginate(args.paginationOpts);
+      const accessions = await loadSearchedAccessions(ctx, result.page);
+      return {
+        page: await toAccessionListItems(
+          ctx,
+          column.kind === "approved"
+            ? accessions.filter((row) => row.status === "approved")
+            : accessions.filter((row) =>
+                isInPendingColumn(row, column.step, lastStep),
+              ),
+        ),
+        isDone: result.isDone,
+        continueCursor: result.continueCursor,
+      };
+    }
+
+    const result =
+      column.kind === "approved"
+        ? await ctx.db
+            .query("accessions")
+            .withIndex("by_organization_and_status_and_dateReceived", (q) =>
+              q
+                .eq("organizationId", args.organizationId)
+                .eq("status", "approved"),
+            )
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : await pendingColumnQuery(
+            ctx,
+            args.organizationId,
+            column.step,
+            lastStep,
+          )
+            .order("desc")
+            .paginate(args.paginationOpts);
+    return {
+      page: await toAccessionListItems(ctx, result.page),
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    };
+  },
+});
+
+/** Exact board totals, independent of which rows a client has loaded. */
+export const getBoardCounts = query({
   args: {
     organizationId: v.id("organizations"),
   },
   returns: v.object({
-    updatedCount: v.number(),
+    pending: v.number(),
+    approved: v.number(),
+    rejected: v.number(),
+    columns: v.array(v.object({ stepNumber: v.number(), count: v.number() })),
   }),
   handler: async (ctx, args) => {
-    const [, accessions] = await Promise.all([
-      requirePermission(ctx, args.organizationId, "collections.read"),
-      ctx.db
-        .query("accessions")
-        .withIndex("by_organization", (q) =>
-          q.eq("organizationId", args.organizationId),
-        )
-        .collect(),
-    ] as const);
-
-    await Promise.all(
-      Array.from(accessions).map(async (accession) => {
-        await upsertAccessionSearchDocument(ctx, accession);
-      }),
-    );
-
-    return { updatedCount: accessions.length };
+    await requirePermission(ctx, args.organizationId, "collections.read");
+    const lastStep = await getLastAccessionStep(ctx, args.organizationId);
+    const countStatus = (status: "pending" | "approved" | "rejected") =>
+      countIndexedQuery(
+        ctx.db
+          .query("accessions")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          ),
+      );
+    const steps = Array.from({ length: lastStep + 1 }, (_, step) => step);
+    const [pending, approved, rejected, ...stepCounts] = await Promise.all([
+      countStatus("pending"),
+      countStatus("approved"),
+      countStatus("rejected"),
+      ...steps.map((step) =>
+        countIndexedQuery(
+          pendingColumnQuery(ctx, args.organizationId, step, lastStep),
+        ),
+      ),
+    ]);
+    return {
+      pending,
+      approved,
+      rejected,
+      columns: [
+        ...steps.map((stepNumber, index) => ({
+          stepNumber,
+          count: stepCounts[index] ?? 0,
+        })),
+        { stepNumber: -1, count: approved },
+      ],
+    };
   },
 });
 

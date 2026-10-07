@@ -4550,6 +4550,11 @@ export default {
       sourceRequired: "La source est obligatoire",
     },
     kanban: {
+      loading: "Chargement…",
+      loadMore: "Charger plus",
+      shownOfTotal: "{loaded} sur {total}",
+      matchesShown: "Résultats affichés : {loaded}",
+      noMatches: "Aucune acquisition correspondante dans {step}",
       noAccessions: "Aucune acquisition en {step}",
       unknownSource: "Source inconnue",
     },
@@ -4589,6 +4594,12 @@ export default {
     },
   },
 
+  objectPicker: {
+    loading: "Chargement…",
+    loadMore: "Charger plus",
+    refineSearch:
+      "D'autres objets correspondent. Affinez la recherche pour réduire la liste.",
+  },
   deaccessions: {
     title: "Registres de Désaccession",
     description: "Éléments définitivement retirés de la collection.",
