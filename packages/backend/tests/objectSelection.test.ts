@@ -139,6 +139,52 @@ test("selection status filter reaches matches past the combined search cap", asy
   expect(byTitle.items.map((item) => item.accessionNumber)).toEqual(["S-99"]);
 });
 
+test("selection without a status finds eligible objects beyond archived matches", async () => {
+  const t = createConvexTest();
+  const setup = await createOrgUserWithPermissions(t, ["collections.read"]);
+  await t.run(async (ctx) => {
+    for (let index = 0; index < 60; index += 1) {
+      await ctx.db.insert("collections", {
+        organizationId: setup.organizationId,
+        accessionNumber: `ARC-${String(index).padStart(2, "0")}`,
+        normalizedIdentifier: `arc-${String(index).padStart(2, "0")}`,
+        title: "Compass",
+        status: "archived",
+        catalogedBy: setup.userId,
+        catalogedAt: Date.now(),
+      });
+    }
+    for (const [accessionNumber, status] of [
+      ["ARC-90", "active"],
+      ["ARC-91", "loaned"],
+      ["ARC-92", "deaccessioned"],
+    ] as const) {
+      await ctx.db.insert("collections", {
+        organizationId: setup.organizationId,
+        accessionNumber,
+        normalizedIdentifier: accessionNumber.toLowerCase(),
+        title: "Compass",
+        status,
+        catalogedBy: setup.userId,
+        catalogedAt: Date.now(),
+      });
+    }
+  });
+  const user = authedForUser(t, setup.userId);
+  for (const query of ["arc-", "compass"]) {
+    const result = await user.query(api.collections.searchForSelection, {
+      organizationId: setup.organizationId,
+      query,
+    });
+    expect(result.items.map((item) => item.accessionNumber)).toEqual([
+      "ARC-90",
+      "ARC-91",
+      "ARC-92",
+    ]);
+    expect(result.hasMore).toBe(false);
+  }
+});
+
 test("selection search requires collections.read in the organization", async () => {
   const t = createConvexTest();
   const setup = await createOrgUserWithPermissions(t, ["collections.read"]);

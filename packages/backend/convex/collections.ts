@@ -1286,18 +1286,21 @@ export const searchForSelection = query({
     await requirePermission(ctx, args.organizationId, "collections.read");
     const query = args.query.trim();
     if (!query) return { items: [], hasMore: false };
-    const { rows } = await searchObjects(
-      ctx,
-      args.organizationId,
-      query,
-      SELECTION_SEARCH_LIMIT + 1,
-      args.status,
+    const statuses = args.status
+      ? [args.status]
+      : (["active", "loaned", "deaccessioned"] as const);
+    const searches = await Promise.all(
+      statuses.map((status) =>
+        searchObjects(
+          ctx,
+          args.organizationId,
+          query,
+          SELECTION_SEARCH_LIMIT + 1,
+          status,
+        ),
+      ),
     );
-    const matching = rows.filter(
-      (row) =>
-        row.status !== "archived" &&
-        (args.status ? row.status === args.status : true),
-    );
+    const matching = searches.flatMap(({ rows }) => rows);
     return {
       items: matching.slice(0, SELECTION_SEARCH_LIMIT).map((row) => ({
         _id: row._id,
