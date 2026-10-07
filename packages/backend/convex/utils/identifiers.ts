@@ -1,5 +1,5 @@
 import { ConvexError } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getNextCounterValue } from "./accessionCounter";
 import { accessionParser } from "./accessionNumberParser";
@@ -134,35 +134,68 @@ export async function generateConfiguredIdentifier(
   );
 }
 
-export async function searchCatalogIdentifiers(
+/**
+ * Identifier prefix search within one register. Indexed identifiers use a true
+ * prefix boundary. Unindexed historical rows are checked in one bounded batch;
+ * `incomplete` reports when more remain, so callers can disclose it.
+ */
+interface IdentifierPrefixResult<Row> {
+  rows: Row[];
+  incomplete: boolean;
+}
+
+export async function searchIdentifierPrefix(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
+  register: "catalog",
   value: string,
   limit: number,
-) {
+): Promise<IdentifierPrefixResult<Doc<"collections">>>;
+export async function searchIdentifierPrefix(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  register: "accession",
+  value: string,
+  limit: number,
+): Promise<IdentifierPrefixResult<Doc<"accessions">>>;
+export async function searchIdentifierPrefix(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  register: IdentifierRegister,
+  value: string,
+  limit: number,
+): Promise<IdentifierPrefixResult<Doc<"collections"> | Doc<"accessions">>> {
   const key = normalizeIdentifier(value);
-  if (!key) return [];
-  const indexed = await ctx.db
-    .query("collections")
-    .withIndex("by_organization_and_normalizedIdentifier", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .gte("normalizedIdentifier", key)
-        .lt("normalizedIdentifier", `${key}\uffff`),
-    )
-    .take(limit);
-  const legacy = await ctx.db
-    .query("collections")
-    .withIndex("by_organization_and_normalizedIdentifier", (q) =>
-      q
-        .eq("organizationId", organizationId)
-        .eq("normalizedIdentifier", undefined),
-    )
-    .take(100);
-  return [
-    ...indexed,
-    ...legacy.filter((row) =>
-      normalizeIdentifier(row.accessionNumber).startsWith(key),
-    ),
-  ].slice(0, limit);
+  if (!key) return { rows: [], incomplete: false };
+  const table = register === "catalog" ? "collections" : "accessions";
+  const [indexed, legacy] = await Promise.all([
+    ctx.db
+      .query(table)
+      .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .gte("normalizedIdentifier", key)
+          .lt("normalizedIdentifier", `${key}\uffff`),
+      )
+      .take(limit),
+    ctx.db
+      .query(table)
+      .withIndex("by_organization_and_normalizedIdentifier", (q) =>
+        q
+          .eq("organizationId", organizationId)
+          .eq("normalizedIdentifier", undefined),
+      )
+      .take(101),
+  ] as const);
+  return {
+    rows: [
+      ...indexed,
+      ...legacy
+        .slice(0, 100)
+        .filter((row) =>
+          normalizeIdentifier(row.accessionNumber).startsWith(key),
+        ),
+    ].slice(0, limit),
+    incomplete: legacy.length > 100,
+  };
 }

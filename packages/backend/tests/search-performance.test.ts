@@ -254,38 +254,6 @@ describe("Search Performance with Large Dataset", () => {
     expect(Array.isArray(result.objects)).toBe(true);
   }, 30000); // 30s timeout for large dataset creation
 
-  test("paginatedSearchCollections handles large result sets efficiently", async () => {
-    // #given - org with 500 collections
-    const t = convexTest(schema, modules);
-    const { organizationId, userId } = await createTestOrg(t, [
-      "collections.read",
-    ]);
-
-    await seedLargeDataset(t, organizationId, userId, 500);
-
-    // #when - paginated search
-    const authed = t.withIdentity({
-      subject: `${userId}|paginated-session`,
-      issuer: "https://example.test",
-    });
-
-    const startTime = Date.now();
-    const result = await authed.query(api.search.paginatedSearchCollections, {
-      organizationId,
-      query: "by",
-      paginationOpts: { cursor: null, numItems: 20 },
-    });
-    const duration = Date.now() - startTime;
-
-    // #then - verify performance and structure
-    expect(duration).toBeLessThan(500);
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty("page");
-    expect(result).toHaveProperty("isDone");
-    expect(result).toHaveProperty("continueCursor");
-    expect(Array.isArray(result.page)).toBe(true);
-  }, 20000);
-
   test("collections list with multiple filters performs under 500ms", async () => {
     // #given - org with 800 collections
     const t = convexTest(schema, modules);

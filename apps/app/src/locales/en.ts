@@ -6722,6 +6722,8 @@ export default {
       openCommandPalette: "Open command palette",
       searchObjects: "Search objects…",
       typeACommandOrSearch: "Type a command or search…",
+      identifierIndexIncomplete:
+        "Some historical identifiers are not indexed yet, so identifier matches may be incomplete. Index them in Settings, Preferences.",
       noMatchesTryObjectsOrCollectionGroups:
         "No matches. Try objects or collection groups.",
       objects: "Objects",

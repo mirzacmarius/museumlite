@@ -6894,6 +6894,8 @@ export default {
       openCommandPalette: "Åpne kommandopaletten",
       searchObjects: "Søk etter objekter…",
       typeACommandOrSearch: "Skriv en kommando eller søk…",
+      identifierIndexIncomplete:
+        "Noen historiske identifikatorer er ikke indeksert ennå, så treff på identifikator kan være ufullstendige. Indekser dem under Innstillinger, Preferanser.",
       noMatchesTryObjectsOrCollectionGroups:
         "Ingen treff. Prøv objekter eller samlingsgrupper.",
       objects: "Objekter",

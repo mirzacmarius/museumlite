@@ -6964,6 +6964,8 @@ export default {
       openCommandPalette: "Ouvrir la palette de commandes",
       searchObjects: "Rechercher des objets…",
       typeACommandOrSearch: "Saisir une commande ou rechercher…",
+      identifierIndexIncomplete:
+        "Certains identifiants historiques ne sont pas encore indexés ; les correspondances par identifiant peuvent donc être incomplètes. Indexez-les dans Paramètres, Préférences.",
       noMatchesTryObjectsOrCollectionGroups:
         "Aucun résultat. Essayez objets ou groupes de collections.",
       objects: "Objets",

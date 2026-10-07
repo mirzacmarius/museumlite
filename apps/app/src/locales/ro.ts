@@ -7703,6 +7703,8 @@ export default {
       openCommandPalette: "Deschide paleta de comenzi",
       searchObjects: "Caută obiecte…",
       typeACommandOrSearch: "Tastează o comandă sau caută…",
+      identifierIndexIncomplete:
+        "Unii identificatori istorici nu sunt încă indexați, așa că potrivirile după identificator pot fi incomplete. Indexați-i în Setări, Preferințe.",
       noMatchesTryObjectsOrCollectionGroups:
         "Niciun rezultat. Încearcă obiecte sau grupuri de colecții.",
       objects: "Obiecte",

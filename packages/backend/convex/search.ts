@@ -1,11 +1,7 @@
-import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type QueryCtx, query } from "./_generated/server";
-import {
-  normalizeIdentifier,
-  searchCatalogIdentifiers,
-} from "./utils/identifiers";
+import { searchIdentifierPrefix } from "./utils/identifiers";
 import { hasPermission } from "./utils/permissions";
 
 /**
@@ -56,112 +52,53 @@ export const logSearchPerformance = internalMutation({
   },
 });
 
+type ObjectSearchField =
+  | "title"
+  | "alternativeTitle"
+  | "creator"
+  | "objectName";
+
+const OBJECT_SEARCH_INDEXES = [
+  { field: "title", index: "search_index" },
+  { field: "alternativeTitle", index: "search_alternativeTitle" },
+  { field: "creator", index: "search_creator" },
+  { field: "objectName", index: "search_objectName" },
+] as const satisfies ReadonlyArray<{ field: ObjectSearchField; index: string }>;
+
 /**
- * Multi-field search helper for collections
- * Searches across title, accessionNumber, creator, alternativeTitle, and objectName fields
- * Combines results from multiple search strategies and deduplicates
+ * Object search with an explicit scope: identifier prefix matches first, then
+ * indexed word matches on title, alternative title, creator and object name.
+ * Deleted legacy records are excluded; archived and deaccessioned records stay
+ * findable with their status.
  */
-async function multiFieldSearch(
+async function searchObjects(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   searchQuery: string,
   limit: number,
-): Promise<Array<Doc<"collections">>> {
-  const lowerQuery = searchQuery.toLowerCase();
-
-  // Search using the search index on title (primary search)
-  const [titleResults, accessionResults, metadataResults] = await Promise.all([
-    ctx.db
-      .query("collections")
-      .withSearchIndex("search_index", (q) =>
-        q.search("title", searchQuery).eq("organizationId", organizationId),
-      )
-      .take(limit),
-    searchCatalogIdentifiers(ctx, organizationId, searchQuery, limit),
-    ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
-      .filter((q) =>
-        q.or(
-          // Search in creator field (case-insensitive prefix match)
-          q.and(
-            q.neq(q.field("creator"), undefined),
-            q.or(
-              q.gte(q.field("creator"), searchQuery),
-              q.gte(q.field("creator"), lowerQuery),
-              q.gte(
-                q.field("creator"),
-                searchQuery.charAt(0).toUpperCase() + searchQuery.slice(1),
-              ),
-            ),
-          ),
-          // Search in alternative title
-          q.and(
-            q.neq(q.field("alternativeTitle"), undefined),
-            q.or(
-              q.gte(q.field("alternativeTitle"), searchQuery),
-              q.gte(q.field("alternativeTitle"), lowerQuery),
-            ),
-          ),
-          // Search in object name
-          q.and(
-            q.neq(q.field("objectName"), undefined),
-            q.or(
-              q.gte(q.field("objectName"), searchQuery),
-              q.gte(q.field("objectName"), lowerQuery),
-            ),
-          ),
-          // Search in object type
-          q.and(
-            q.neq(q.field("objectType"), undefined),
-            q.or(
-              q.gte(q.field("objectType"), searchQuery),
-              q.gte(q.field("objectType"), lowerQuery),
-            ),
-          ),
-          // Search in culture
-          q.and(
-            q.neq(q.field("culture"), undefined),
-            q.or(
-              q.gte(q.field("culture"), searchQuery),
-              q.gte(q.field("culture"), lowerQuery),
-            ),
-          ),
-        ),
-      )
-      .take(limit),
-  ]);
-
-  // Search accessionNumber using index - exact match and prefix match
-  // Search other metadata fields using organization index with filters
-  // This searches: creator, alternativeTitle, objectName, objectType, culture
-  // Combine and deduplicate results using the same pattern as accounts search
-  const seen = new Set<string>();
-  const allResults = [
-    ...titleResults,
-    ...accessionResults,
-    ...metadataResults.filter((row) =>
-      [
-        row.creator,
-        row.alternativeTitle,
-        row.objectName,
-        row.objectType,
-        row.culture,
-      ].some(
-        (value) =>
-          value &&
-          normalizeIdentifier(value).includes(normalizeIdentifier(searchQuery)),
-      ),
+) {
+  const [identifierMatches, ...textMatches] = await Promise.all([
+    searchIdentifierPrefix(ctx, organizationId, "catalog", searchQuery, limit),
+    ...OBJECT_SEARCH_INDEXES.map(({ field, index }) =>
+      ctx.db
+        .query("collections")
+        .withSearchIndex(index, (q) =>
+          q.search(field, searchQuery).eq("organizationId", organizationId),
+        )
+        .take(limit),
     ),
-  ].filter((obj) => {
-    if (seen.has(obj._id)) return false;
-    seen.add(obj._id);
-    return true;
-  });
-
-  return allResults.slice(0, limit);
+  ]);
+  const seen = new Set<Id<"collections">>();
+  const rows: Doc<"collections">[] = [];
+  for (const row of [...identifierMatches.rows, ...textMatches.flat()]) {
+    if (row.status === "deleted" || seen.has(row._id)) continue;
+    seen.add(row._id);
+    rows.push(row);
+  }
+  return {
+    rows: rows.slice(0, limit),
+    identifierIndexIncomplete: identifierMatches.incomplete,
+  };
 }
 
 export const globalSearch = query({
@@ -225,9 +162,10 @@ export const globalSearch = query({
         status: v.optional(v.string()),
       }),
     ),
+    /** Unindexed historical identifiers may hold further matches. */
+    identifierIndexIncomplete: v.boolean(),
   }),
   handler: async (ctx, args) => {
-    const _startTime = Date.now();
     const searchLimit = args.limit ?? 5;
     const searchQuery = args.query.trim();
 
@@ -272,6 +210,7 @@ export const globalSearch = query({
         title: string;
         status?: string;
       }>,
+      identifierIndexIncomplete: false,
     };
 
     if (searchQuery.length < 2) {
@@ -295,15 +234,16 @@ export const globalSearch = query({
     ]);
 
     if (canReadCollections) {
-      // Use multi-field search for collections to search across all metadata fields
-      const objectResults = await multiFieldSearch(
+      const objectResults = await searchObjects(
         ctx,
         args.organizationId,
         searchQuery,
         searchLimit,
       );
+      results.identifierIndexIncomplete =
+        objectResults.identifierIndexIncomplete;
 
-      results.objects = objectResults.map((obj) => ({
+      results.objects = objectResults.rows.map((obj) => ({
         _id: obj._id,
         title: obj.title,
         accessionNumber: obj.accessionNumber,
@@ -382,16 +322,16 @@ export const globalSearch = query({
     }
 
     if (canReadAccessions) {
-      const accessionResults = await ctx.db
-        .query("accessions")
-        .withSearchIndex("search_accessions", (q) =>
-          q
-            .search("accessionNumber", searchQuery)
-            .eq("organizationId", args.organizationId),
-        )
-        .take(searchLimit);
+      const accessionResults = await searchIdentifierPrefix(
+        ctx,
+        args.organizationId,
+        "accession",
+        searchQuery,
+        searchLimit,
+      );
+      results.identifierIndexIncomplete ||= accessionResults.incomplete;
 
-      results.accessions = accessionResults.map((acc) => ({
+      results.accessions = accessionResults.rows.map((acc) => ({
         _id: acc._id,
         accessionNumber: acc.accessionNumber,
         method: acc.method,
@@ -421,98 +361,6 @@ export const globalSearch = query({
 });
 
 /**
- * Paginated search for collections with large result sets
- * Uses cursor-based pagination to efficiently handle many results
- */
-export const paginatedSearchCollections = query({
-  args: {
-    organizationId: v.id("organizations"),
-    query: v.string(),
-    paginationOpts: paginationOptsValidator,
-  },
-  returns: v.object({
-    page: v.array(
-      v.object({
-        _id: v.id("collections"),
-        title: v.string(),
-        accessionNumber: v.string(),
-        status: v.string(),
-        creator: v.optional(v.string()),
-        objectType: v.optional(v.string()),
-        objectName: v.optional(v.string()),
-        culture: v.optional(v.string()),
-        _creationTime: v.number(),
-      }),
-    ),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
-  handler: async (ctx, args) => {
-    const _startTime = Date.now();
-    const searchQuery = args.query.trim();
-
-    if (searchQuery.length < 2) {
-      return {
-        page: [],
-        isDone: true,
-        continueCursor: "0",
-      };
-    }
-
-    // Check permission
-    const canReadCollections = await hasPermission(
-      ctx,
-      args.organizationId,
-      "collections.read",
-    );
-
-    if (!canReadCollections) {
-      return {
-        page: [],
-        isDone: true,
-        continueCursor: "0",
-      };
-    }
-
-    // Use multi-field search to get all matching collections
-    // We request more than needed to ensure we have enough for pagination
-    const searchResults = await multiFieldSearch(
-      ctx,
-      args.organizationId,
-      searchQuery,
-      1000, // Fetch larger batch for pagination
-    );
-
-    // Handle pagination manually
-    const cursor = args.paginationOpts.cursor
-      ? Number.parseInt(args.paginationOpts.cursor, 10)
-      : 0;
-    const startIndex = cursor;
-    const endIndex = Math.min(
-      startIndex + args.paginationOpts.numItems,
-      searchResults.length,
-    );
-    const page = searchResults.slice(startIndex, endIndex);
-
-    return {
-      page: page.map((obj) => ({
-        _id: obj._id,
-        title: obj.title,
-        accessionNumber: obj.accessionNumber,
-        status: obj.status,
-        creator: obj.creator,
-        objectType: obj.objectType,
-        objectName: obj.objectName,
-        culture: obj.culture,
-        _creationTime: obj._creationTime,
-      })),
-      isDone: endIndex >= searchResults.length,
-      continueCursor: String(endIndex),
-    };
-  },
-});
-
-/**
  * Search suggestions for auto-complete
  * Returns common search terms based on existing data
  * Pulls from titles, creators, object names, object types, cultures, and other searchable fields
@@ -525,7 +373,6 @@ export const searchSuggestions = query({
   },
   returns: v.array(v.string()),
   handler: async (ctx, args) => {
-    const _startTime = Date.now();
     const limit = args.limit ?? 10;
     const queryPrefix = args.query?.trim().toLowerCase() ?? "";
     const suggestions = new Set<string>();
@@ -546,49 +393,25 @@ export const searchSuggestions = query({
       return [];
     }
 
-    // Get collections to extract suggestions from various fields
-    const collections = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .take(100); // Sample from recent items
-
-    for (const item of collections) {
-      // Add title suggestions
-      if (item.title?.toLowerCase().includes(queryPrefix)) {
-        suggestions.add(item.title);
-      }
-
-      // Add creator suggestions
-      if (item.creator?.toLowerCase().includes(queryPrefix)) {
-        suggestions.add(item.creator);
-      }
-
-      // Add object name suggestions
-      if (item.objectName?.toLowerCase().includes(queryPrefix)) {
-        suggestions.add(item.objectName);
-      }
-
-      // Add object type suggestions
-      if (item.objectType?.toLowerCase().includes(queryPrefix)) {
-        suggestions.add(item.objectType);
-      }
-
-      // Add culture suggestions
-      if (item.culture?.toLowerCase().includes(queryPrefix)) {
-        suggestions.add(item.culture);
-      }
-
-      // Add alternative title suggestions
-      if (item.alternativeTitle?.toLowerCase().includes(queryPrefix)) {
-        suggestions.add(item.alternativeTitle);
-      }
-
-      // Stop if we have enough suggestions
-      if (suggestions.size >= limit * 2) {
-        break;
-      }
+    // Field values come from the same indexed word search as object search,
+    // so every suggestion leads to at least one matching record.
+    const matches = await Promise.all(
+      OBJECT_SEARCH_INDEXES.map(async ({ field, index }) => {
+        const rows = await ctx.db
+          .query("collections")
+          .withSearchIndex(index, (q) =>
+            q
+              .search(field, queryPrefix)
+              .eq("organizationId", args.organizationId),
+          )
+          .take(limit);
+        return rows.flatMap((row) =>
+          row.status === "deleted" || !row[field] ? [] : [row[field]],
+        );
+      }),
+    );
+    for (const value of matches.flat()) {
+      if (value.toLowerCase().includes(queryPrefix)) suggestions.add(value);
     }
 
     // Convert to array, sort by relevance (prefix matches first), and limit

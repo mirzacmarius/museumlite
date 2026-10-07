@@ -592,6 +592,18 @@ export default defineSchema({
     .searchIndex("search_index", {
       searchField: "title",
       filterFields: ["organizationId", "status", "collectionType", "title"],
+    })
+    .searchIndex("search_alternativeTitle", {
+      searchField: "alternativeTitle",
+      filterFields: ["organizationId", "status"],
+    })
+    .searchIndex("search_creator", {
+      searchField: "creator",
+      filterFields: ["organizationId", "status"],
+    })
+    .searchIndex("search_objectName", {
+      searchField: "objectName",
+      filterFields: ["organizationId", "status"],
     }),
 
   // Accession number counter tracking
