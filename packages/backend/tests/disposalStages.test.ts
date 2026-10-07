@@ -300,3 +300,313 @@ test("approved decisions without a stage review are reported as legacy and stay 
   const stored = await t.run(async (ctx) => ctx.db.get(legacyId));
   expect(stored?.decisionReview).toBeUndefined();
 });
+
+async function createApprovedSale(
+  t: ConvexTest,
+  fixture: Awaited<ReturnType<typeof createSingleStepWorkflowFixture>>,
+) {
+  const appraisalId = await insertAppraisal(t, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    userId: fixture.userId,
+    ageDays: 10,
+  });
+  const deaccessionId = await fixture.authed.mutation(
+    api.deaccessions.create,
+    {
+      organizationId: fixture.organizationId,
+      collectionId: fixture.collectionId,
+      dateDeaccessioned: Date.now(),
+      reason: "Outside collecting policy",
+      method: "sale",
+      disposition: "Public auction",
+    },
+  );
+  await fixture.authed.mutation(api.deaccessions.linkAppraisal, {
+    deaccessionId,
+    appraisalId,
+  });
+  await fixture.authed.mutation(api.deaccessions.approve, { deaccessionId });
+  return deaccessionId;
+}
+
+test("physical exit is recorded after the decision and corrections keep the original", async () => {
+  const t = createConvexTest();
+  const fixture = await createSingleStepWorkflowFixture(t);
+  const { authed } = fixture;
+  const deaccessionId = await createApprovedSale(t, fixture);
+
+  await authed.mutation(api.deaccessions.recordExit, {
+    deaccessionId,
+    exitDate: Date.UTC(2026, 5, 1),
+    recipient: "Hammer & Co. Auctioneers",
+    reference: "Consignment 77",
+  });
+  let stages = await authed.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+  expect(stages?.exit.state).toBe("recorded");
+  expect(stages?.exit.record?.recipient).toBe("Hammer & Co. Auctioneers");
+
+  await expect(
+    authed.mutation(api.deaccessions.recordExit, {
+      deaccessionId,
+      exitDate: Date.UTC(2026, 5, 2),
+      recipient: "Hammer & Co.",
+    }),
+  ).rejects.toThrow(/correction reason/i);
+
+  await authed.mutation(api.deaccessions.recordExit, {
+    deaccessionId,
+    exitDate: Date.UTC(2026, 5, 2),
+    recipient: "Hammer & Co.",
+    correctionReason: "Wrong collection date on consignment note",
+  });
+  stages = await authed.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+  expect(stages?.exit.record?.exitDate).toBe(Date.UTC(2026, 5, 2));
+  expect(stages?.exit.correctionCount).toBe(1);
+  const stored = await t.run(async (ctx) => ctx.db.get(deaccessionId));
+  expect(stored?.supersededExitRecords?.[0]?.recipient).toBe(
+    "Hammer & Co. Auctioneers",
+  );
+});
+
+test("exit cannot be recorded before the decision or for another organization's users", async () => {
+  const t = createConvexTest();
+  const fixture = await createSingleStepWorkflowFixture(t);
+  const pendingId = await fixture.authed.mutation(api.deaccessions.create, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+  });
+  await expect(
+    fixture.authed.mutation(api.deaccessions.recordExit, {
+      deaccessionId: pendingId,
+      exitDate: Date.now(),
+      recipient: "Buyer",
+    }),
+  ).rejects.toThrow(/approved/i);
+
+  const approvedId = await createApprovedSaleFor(t, fixture);
+  const outsider = await createOrgUserCollectionWithPermissions(
+    t,
+    approverPermissions,
+  );
+  await expect(
+    authedForUser(t, outsider.userId).mutation(api.deaccessions.recordExit, {
+      deaccessionId: approvedId,
+      exitDate: Date.now(),
+      recipient: "Buyer",
+    }),
+  ).rejects.toThrow();
+});
+
+async function createApprovedSaleFor(
+  t: ConvexTest,
+  fixture: Awaited<ReturnType<typeof createSingleStepWorkflowFixture>>,
+) {
+  await t.run(async (ctx) => {
+    const pending = await ctx.db
+      .query("deaccessions")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", fixture.collectionId),
+      )
+      .first();
+    if (pending) await ctx.db.delete(pending._id);
+  });
+  return await createApprovedSale(t, fixture);
+}
+
+test("sale proceeds are recorded after the decision; verification needs a receipt or an audited exception", async () => {
+  const t = createConvexTest();
+  const fixture = await createSingleStepWorkflowFixture(t);
+  const { authed } = fixture;
+  const deaccessionId = await createApprovedSale(t, fixture);
+
+  await authed.mutation(api.deaccessions.recordProceeds, {
+    deaccessionId,
+    amount: 15_500,
+    currency: "EUR",
+    recipient: "Acquisitions fund",
+    date: Date.UTC(2026, 6, 1),
+  });
+  let stages = await authed.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+  expect(stages?.proceeds.state).toBe("recorded");
+
+  await expect(
+    authed.mutation(api.deaccessions.verifyProceeds, { deaccessionId }),
+  ).rejects.toThrow(/receipt/i);
+
+  await authed.mutation(api.deaccessions.verifyProceeds, {
+    deaccessionId,
+    exceptionReason: "Bank statement filed with finance; receipt not issued",
+  });
+  stages = await authed.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+  expect(stages?.proceeds.state).toBe("verified");
+  const stored = await t.run(async (ctx) => ctx.db.get(deaccessionId));
+  expect(stored?.proceedsVerificationException?.reason).toContain(
+    "Bank statement",
+  );
+});
+
+test("proceeds are refused for non-sale methods and before the decision", async () => {
+  const t = createConvexTest();
+  const fixture = await createSingleStepWorkflowFixture(t);
+  const pendingId = await fixture.authed.mutation(api.deaccessions.create, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+  });
+  await expect(
+    fixture.authed.mutation(api.deaccessions.recordProceeds, {
+      deaccessionId: pendingId,
+      amount: 1,
+      currency: "EUR",
+      recipient: "Fund",
+      date: Date.now(),
+    }),
+  ).rejects.toThrow(/approved/i);
+
+  const donation = await createOrgUserCollectionWithPermissions(
+    t,
+    approverPermissions,
+  );
+  const donationAuthed = authedForUser(t, donation.userId);
+  const donationId = await donationAuthed.mutation(api.deaccessions.create, {
+    organizationId: donation.organizationId,
+    collectionId: donation.collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Gift to partner",
+    method: "donation",
+    disposition: "Donated to Regional Museum",
+  });
+  await expect(
+    donationAuthed.mutation(api.deaccessions.recordProceeds, {
+      deaccessionId: donationId,
+      amount: 1,
+      currency: "EUR",
+      recipient: "Fund",
+      date: Date.now(),
+    }),
+  ).rejects.toThrow(/sale/i);
+});
+
+test("a proceeds receipt must come from an authorized upload session", async () => {
+  const t = createConvexTest();
+  const fixture = await createSingleStepWorkflowFixture(t);
+  const { authed } = fixture;
+  const deaccessionId = await createApprovedSale(t, fixture);
+
+  const uploadUrl = new URL(
+    await authed.mutation(api.deaccessions.generateReceiptUploadUrl, {
+      deaccessionId,
+    }),
+  );
+  const response = await t.fetch(uploadUrl.pathname + uploadUrl.search, {
+    method: "POST",
+    headers: { "Content-Type": "application/pdf" },
+    body: new Blob([new Uint8Array(512)], { type: "application/pdf" }),
+  });
+  const { storageId }: { storageId: Id<"_storage"> } = await response.json();
+
+  await authed.mutation(api.deaccessions.recordProceeds, {
+    deaccessionId,
+    amount: 9000,
+    currency: "EUR",
+    recipient: "Acquisitions fund",
+    date: Date.now(),
+    receiptDocument: storageId,
+  });
+  await authed.mutation(api.deaccessions.verifyProceeds, { deaccessionId });
+  const stages = await authed.query(api.deaccessions.getDisposalStages, {
+    deaccessionId,
+  });
+  expect(stages?.proceeds.state).toBe("verified");
+  expect(stages?.proceeds.hasReceipt).toBe(true);
+
+  const other = await createApprovedSaleForSecondObject(t, fixture);
+  await expect(
+    authed.mutation(api.deaccessions.recordProceeds, {
+      deaccessionId: other,
+      amount: 1,
+      currency: "EUR",
+      recipient: "Fund",
+      date: Date.now(),
+      receiptDocument: storageId,
+    }),
+  ).rejects.toThrow(/another record/i);
+});
+
+async function createApprovedSaleForSecondObject(
+  t: ConvexTest,
+  fixture: Awaited<ReturnType<typeof createSingleStepWorkflowFixture>>,
+) {
+  const collectionId = await t.run(async (ctx) =>
+    ctx.db.insert("collections", {
+      organizationId: fixture.organizationId,
+      accessionNumber: "OBJ-SECOND",
+      title: "Second object",
+      status: "active",
+      catalogedBy: fixture.userId,
+      catalogedAt: Date.now(),
+    }),
+  );
+  return await createApprovedSale(t, { ...fixture, collectionId });
+}
+
+test("decision readiness for a sale does not ask for a future sale receipt", async () => {
+  const t = createConvexTest();
+  const fixture = await createSingleStepWorkflowFixture(t);
+  const appraisalId = await insertAppraisal(t, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    userId: fixture.userId,
+    ageDays: 5,
+  });
+  const deaccessionId = await fixture.authed.mutation(api.deaccessions.create, {
+    organizationId: fixture.organizationId,
+    collectionId: fixture.collectionId,
+    dateDeaccessioned: Date.now(),
+    reason: "Outside collecting policy",
+    method: "sale",
+    disposition: "Public auction",
+  });
+  await fixture.authed.mutation(api.deaccessions.linkAppraisal, {
+    deaccessionId,
+    appraisalId,
+  });
+
+  const readiness = await fixture.authed.query(
+    api.deaccessions.checkReadiness,
+    { deaccessionId },
+  );
+  expect(readiness.ready).toBe(true);
+  expect(readiness.checks.map((check) => check.name)).not.toContain(
+    "Proceeds Documentation",
+  );
+});
+
+test("deleting a catalog record cannot bypass the disposal decision", async () => {
+  const t = createConvexTest();
+  const { authed, collectionId } = await createSingleStepWorkflowFixture(t, [
+    ...approverPermissions,
+    "collections.delete",
+  ]);
+
+  await expect(
+    authed.mutation(api.collections.deleteCollection, { collectionId }),
+  ).rejects.toThrow(/disposal decision/i);
+  expect(
+    (await authed.query(api.collections.get, { collectionId }))?.status,
+  ).toBe("active");
+});

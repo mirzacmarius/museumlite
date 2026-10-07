@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -25,7 +25,6 @@ import {
   archiveCollectionHandler,
   restoreCollectionHandler,
 } from "./utils/collectionDisposition";
-import { markCollectionDeaccessioned } from "./utils/collectionLifecycle";
 import {
   filterCollectionListPage,
   getCollectionsWithOpenDeaccessions,
@@ -1827,23 +1826,9 @@ export const deleteCollection = mutation({
       collection.organizationId,
       "collections.delete",
     );
-    await markCollectionDeaccessioned(ctx, {
-      collectionId: args.collectionId,
-      changedBy: userId,
-    });
-    await ctx.runMutation(internal.audit.logAction, {
-      organizationId: collection.organizationId,
-      userId,
-      action: "deaccessioned_collection",
-      entityType: "collection",
-      entityId: args.collectionId,
-      changes: {
-        accessionNumber: collection.accessionNumber,
-        title: collection.title,
-        previousStatus: collection.status,
-      },
-    });
-    return null;
+    throw new ConvexError(
+      "Deaccessioning requires an approved disposal decision. Create a deaccession request, or withdraw the record to archive it.",
+    );
   },
 });
 

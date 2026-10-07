@@ -1513,6 +1513,13 @@ export default defineSchema({
     ),
     proceedsRecordedBy: v.optional(v.id("users")),
     proceedsRecordedAt: v.optional(v.number()),
+    proceedsVerificationException: v.optional(
+      v.object({
+        reason: v.string(),
+        authorizedBy: v.id("users"),
+        authorizedAt: v.number(),
+      }),
+    ),
   })
     .index("by_organization", ["organizationId"])
     .index("by_collection", ["collectionId"])
