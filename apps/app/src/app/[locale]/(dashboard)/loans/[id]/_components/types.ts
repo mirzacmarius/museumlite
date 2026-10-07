@@ -13,6 +13,10 @@ export interface LoanItem {
   title: string;
   conditionOut?: string;
   conditionIn?: string;
+  custodyStatus?: "pending" | "dispatched" | "returned";
+  dispatchOriginLocationId?: Id<"locations">;
+  dispatchOriginUnknown?: boolean;
+  returnDestinationLocationId?: Id<"locations">;
 }
 
 export interface WorkflowHistoryEntry {
