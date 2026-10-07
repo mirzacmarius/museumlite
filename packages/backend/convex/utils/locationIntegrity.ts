@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { isLoanItemDispatched, isLoanItemReturned } from "./loanItemState";
 import type { MovementIssue, MovementKind } from "./movementValidators";
 
 export async function requireUsableLocation(
@@ -62,9 +63,14 @@ export async function isCollectionInExternalCustody(
     .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
     .collect();
   for (const item of loanItems) {
-    if (item.conditionIn?.trim()) continue;
+    if (isLoanItemReturned(item)) continue;
     const loan = await ctx.db.get(item.loanId);
-    if (loan?.type === "outgoing" && loan.status === "dispatched") return true;
+    if (
+      loan?.type === "outgoing" &&
+      isLoanItemDispatched(item, loan.status)
+    ) {
+      return true;
+    }
   }
   return false;
 }

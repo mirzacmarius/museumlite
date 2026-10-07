@@ -769,6 +769,23 @@ export const get = query({
           conditionIn: v.optional(v.string()),
           notes: v.optional(v.string()),
           conditionReportId: v.optional(v.id("conditionReports")),
+          custodyStatus: v.optional(
+            v.union(
+              v.literal("pending"),
+              v.literal("dispatched"),
+              v.literal("returned"),
+            ),
+          ),
+          dispatchOriginLocationId: v.optional(v.id("locations")),
+          dispatchOriginUnknown: v.optional(v.boolean()),
+          returnDestinationLocationId: v.optional(v.id("locations")),
+          outgoingConditionAssessmentId: v.optional(
+            v.id("conditionAssessments"),
+          ),
+          incomingConditionAssessmentId: v.optional(
+            v.id("conditionAssessments"),
+          ),
+          lenderExitId: v.optional(v.id("loanCustodyExits")),
         }),
       ),
     }),
@@ -843,6 +860,13 @@ export const get = query({
           conditionIn: item.conditionIn,
           notes: item.notes,
           conditionReportId: item.conditionReportId,
+          custodyStatus: item.custodyStatus,
+          dispatchOriginLocationId: item.dispatchOriginLocationId,
+          dispatchOriginUnknown: item.dispatchOriginUnknown,
+          returnDestinationLocationId: item.returnDestinationLocationId,
+          outgoingConditionAssessmentId: item.outgoingConditionAssessmentId,
+          incomingConditionAssessmentId: item.incomingConditionAssessmentId,
+          lenderExitId: item.lenderExitId,
         };
       }),
     );
@@ -994,11 +1018,21 @@ export const reject = mutation({
   handler: async (ctx, args) => rejectLoanHandler(ctx, args),
 });
 
+const receiveLoanItemArgsValidator = v.object({
+  loanItemId: v.id("loanItems"),
+  destinationLocationId: v.optional(v.id("locations")),
+  confirmReturnToOrigin: v.optional(v.boolean()),
+  incomingConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+  conditionIn: v.optional(v.string()),
+  notes: v.optional(v.string()),
+});
+
 export const returnLoan = mutation({
   args: {
     loanId: v.id("loans"),
     conditionIn: v.optional(v.string()),
     loanItemIds: v.optional(v.array(v.id("loanItems"))),
+    receipts: v.optional(v.array(receiveLoanItemArgsValidator)),
   },
   returns: v.null(),
   handler: async (ctx, args) => returnLoanHandler(ctx, args),
@@ -1007,9 +1041,33 @@ export const returnLoan = mutation({
 export const dispatch = mutation({
   args: {
     loanId: v.id("loans"),
+    loanItemIds: v.optional(v.array(v.id("loanItems"))),
+    itemAssessments: v.optional(
+      v.array(
+        v.object({
+          loanItemId: v.id("loanItems"),
+          outgoingConditionAssessmentId: v.id("conditionAssessments"),
+        }),
+      ),
+    ),
   },
   returns: v.null(),
-  handler: async (ctx, args) => dispatchLoanHandler(ctx, args),
+  handler: async (ctx, args) => {
+    const itemAssessments = args.itemAssessments
+      ? Object.fromEntries(
+          args.itemAssessments.map((entry) => [
+            entry.loanItemId,
+            entry.outgoingConditionAssessmentId,
+          ]),
+        )
+      : undefined;
+    await dispatchLoanHandler(ctx, {
+      loanId: args.loanId,
+      loanItemIds: args.loanItemIds,
+      itemAssessments,
+    });
+    return null;
+  },
 });
 
 export const cancel = mutation({
@@ -1026,6 +1084,9 @@ export const returnItem = mutation({
     collectionId: v.id("collections"),
     conditionIn: v.optional(v.string()),
     notes: v.optional(v.string()),
+    destinationLocationId: v.optional(v.id("locations")),
+    confirmReturnToOrigin: v.optional(v.boolean()),
+    incomingConditionAssessmentId: v.optional(v.id("conditionAssessments")),
   },
   returns: v.null(),
   handler: async (ctx, args) => returnLoanItemHandler(ctx, args),
