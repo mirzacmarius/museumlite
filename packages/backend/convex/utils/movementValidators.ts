@@ -10,6 +10,8 @@ export const movementKindValidator = v.union(
   v.literal("catalog_edit"),
   v.literal("loan_dispatch"),
   v.literal("loan_return"),
+  v.literal("exhibition_install"),
+  v.literal("exhibition_return"),
 );
 export type MovementKind = Infer<typeof movementKindValidator>;
 

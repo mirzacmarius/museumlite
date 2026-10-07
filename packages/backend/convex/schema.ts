@@ -1685,8 +1685,10 @@ export default defineSchema({
     authorizedBy: v.optional(v.id("users")),
     moveRequestId: v.optional(v.id("locationMoveRequests")),
     batchJobId: v.optional(v.id("batchJobs")),
+    exhibitionObjectId: v.optional(v.id("exhibitionObjects")),
   })
     .index("by_collection", ["collectionId"])
+    .index("by_exhibition_object", ["exhibitionObjectId"])
     .index("by_moveRequest", ["moveRequestId"])
     .index("by_toLocation", ["toLocationId"])
     .index("by_fromLocation", ["fromLocationId"])
@@ -2666,13 +2668,25 @@ export default defineSchema({
     installedBy: v.optional(v.id("users")),
     installationNotes: v.optional(v.string()),
     conditionAtInstallation: v.optional(v.string()),
+    installationMovementId: v.optional(v.id("locationHistory")),
+    installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     // Deinstallation tracking
     deinstalledAt: v.optional(v.number()),
     deinstalledBy: v.optional(v.id("users")),
     deinstallationNotes: v.optional(v.string()),
     conditionAtDeinstallation: v.optional(v.string()),
+    deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
     returnedToOriginalLocation: v.optional(v.boolean()),
     returnedAt: v.optional(v.number()),
+    returnMovementId: v.optional(v.id("locationHistory")),
+    returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    returnException: v.optional(
+      v.object({
+        reason: v.string(),
+        authorizedBy: v.id("users"),
+        authorizedAt: v.number(),
+      }),
+    ),
     // Status
     status: v.union(
       v.literal("pending"),

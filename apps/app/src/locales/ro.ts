@@ -3156,6 +3156,31 @@ export default {
     card: {
       ongoing: "(În desfășurare)",
     },
+    handoffs: {
+      title: "Predări fizice",
+      loading: "Se încarcă predările participanților…",
+      outstanding: "{count} din {total} rezultate restante",
+      readyToClose: "Toate rezultatele sunt rezolvate",
+      observedFrom: "Locația sursă observată",
+      install: "Înregistrează instalarea",
+      deinstall: "Înregistrează dezinstalarea",
+      confirmReturn: "Confirmă returnarea fizică",
+      exceptionReason: "Excepție documentată",
+      exceptionPlaceholder:
+        "De ce returnarea nu este înregistrată (min. 10 caractere)",
+      authorizeException: "Autorizează excepția",
+      viewObject: "Vezi obiectul",
+      exceptionRecorded: "Excepție de returnare înregistrată",
+      installMovementRecorded: "Mișcare de instalare înregistrată",
+      returnMovementRecorded: "Mișcare de returnare înregistrată",
+      actionFailed: "Predarea a eșuat",
+      status: {
+        pending: "Instalare în așteptare",
+        installed: "Instalat",
+        deinstalled: "Dezinstalat",
+        returned: "Returnat",
+      },
+    },
     detail: {
       overview: "Prezentare generală",
       location: "Locație",

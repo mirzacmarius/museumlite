@@ -3897,6 +3897,31 @@ export default {
     card: {
       ongoing: "(En curso)",
     },
+    handoffs: {
+      title: "Entregas físicas",
+      loading: "Cargando entregas de participantes…",
+      outstanding: "{count} de {total} resultados pendientes",
+      readyToClose: "Todos los resultados resueltos",
+      observedFrom: "Ubicación de origen observada",
+      install: "Registrar instalación",
+      deinstall: "Registrar desinstalación",
+      confirmReturn: "Confirmar devolución física",
+      exceptionReason: "Excepción documentada",
+      exceptionPlaceholder:
+        "Por qué no se registra la devolución (mín. 10 caracteres)",
+      authorizeException: "Autorizar excepción",
+      viewObject: "Ver objeto",
+      exceptionRecorded: "Excepción de devolución registrada",
+      installMovementRecorded: "Movimiento de instalación registrado",
+      returnMovementRecorded: "Movimiento de devolución registrado",
+      actionFailed: "Error en la entrega",
+      status: {
+        pending: "Instalación pendiente",
+        installed: "Instalado",
+        deinstalled: "Desinstalado",
+        returned: "Devuelto",
+      },
+    },
     detail: {
       overview: "Resumen",
       location: "Ubicación",

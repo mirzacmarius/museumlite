@@ -31,8 +31,10 @@ import {
   startInstallationHandler,
   uncompleteInstallationTaskHandler,
 } from "./utils/exhibitionInstallation";
+import { getExhibitionPhysicalHandoffSummary } from "./utils/exhibitionPhysicalHandoff";
 import {
   addExhibitionObjectHandler,
+  authorizeReturnExceptionHandler,
   bulkInstallObjectsHandler,
   bulkReturnObjectsHandler,
   deinstallObjectHandler,
@@ -51,6 +53,8 @@ import {
   rejectExhibitionHandler,
 } from "./utils/exhibitionWorkflow";
 import { createAuthorizedUploadUrl } from "./utils/uploadOwnership";
+
+const observedLocationValidator = v.union(v.id("locations"), v.null());
 
 export const listByOrganization = query({
   args: {
@@ -682,8 +686,10 @@ export const removeExhibitionObject = mutation({
 export const installObject = mutation({
   args: {
     exhibitionObjectId: v.id("exhibitionObjects"),
+    observedFromLocationId: observedLocationValidator,
     conditionNotes: v.optional(v.string()),
     exhibitionLocationId: v.optional(v.id("locations")),
+    installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
   },
   returns: v.null(),
   handler: async (ctx, args) => installObjectHandler(ctx, args),
@@ -696,6 +702,7 @@ export const deinstallObject = mutation({
   args: {
     exhibitionObjectId: v.id("exhibitionObjects"),
     conditionNotes: v.optional(v.string()),
+    deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
   },
   returns: v.null(),
   handler: async (ctx, args) => deinstallObjectHandler(ctx, args),
@@ -707,11 +714,88 @@ export const deinstallObject = mutation({
 export const returnObjectToOriginalLocation = mutation({
   args: {
     exhibitionObjectId: v.id("exhibitionObjects"),
+    observedFromLocationId: observedLocationValidator,
     overrideLocationId: v.optional(v.id("locations")),
+    returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
   },
   returns: v.null(),
   handler: async (ctx, args) =>
     returnObjectToOriginalLocationHandler(ctx, args),
+});
+
+export const authorizeReturnException = mutation({
+  args: {
+    exhibitionObjectId: v.id("exhibitionObjects"),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => authorizeReturnExceptionHandler(ctx, args),
+});
+
+export const getPhysicalHandoffSummary = query({
+  args: { exhibitionId: v.id("exhibitions") },
+  returns: v.object({
+    participantCount: v.number(),
+    outstandingCount: v.number(),
+    canClose: v.boolean(),
+    participants: v.array(
+      v.object({
+        exhibitionObjectId: v.id("exhibitionObjects"),
+        collectionId: v.id("collections"),
+        collectionTitle: v.optional(v.string()),
+        collectionAccessionNumber: v.optional(v.string()),
+        status: v.union(
+          v.literal("pending"),
+          v.literal("installed"),
+          v.literal("deinstalled"),
+          v.literal("returned"),
+        ),
+        role: v.union(v.literal("featured"), v.literal("participant")),
+        order: v.number(),
+        hasReturnException: v.boolean(),
+        installationMovementId: v.optional(v.id("locationHistory")),
+        returnMovementId: v.optional(v.id("locationHistory")),
+        installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        installedAt: v.optional(v.number()),
+        deinstalledAt: v.optional(v.number()),
+        returnedAt: v.optional(v.number()),
+      }),
+    ),
+    outstanding: v.array(
+      v.object({
+        exhibitionObjectId: v.id("exhibitionObjects"),
+        collectionId: v.id("collections"),
+        collectionTitle: v.optional(v.string()),
+        collectionAccessionNumber: v.optional(v.string()),
+        status: v.union(
+          v.literal("pending"),
+          v.literal("installed"),
+          v.literal("deinstalled"),
+          v.literal("returned"),
+        ),
+        role: v.union(v.literal("featured"), v.literal("participant")),
+        order: v.number(),
+        hasReturnException: v.boolean(),
+        installationMovementId: v.optional(v.id("locationHistory")),
+        returnMovementId: v.optional(v.id("locationHistory")),
+        installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+        installedAt: v.optional(v.number()),
+        deinstalledAt: v.optional(v.number()),
+        returnedAt: v.optional(v.number()),
+      }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const exhibition = await ctx.db.get(args.exhibitionId);
+    if (!exhibition) throw new Error("Exhibition not found");
+    await requireExhibitionAccess(ctx, exhibition.organizationId);
+    await requirePermission(ctx, exhibition.organizationId, "collections.read");
+    return await getExhibitionPhysicalHandoffSummary(ctx, args.exhibitionId);
+  },
 });
 
 /**
@@ -746,6 +830,10 @@ export const listExhibitionObjects = query({
       deinstalledByName: v.optional(v.string()),
       conditionAtDeinstallation: v.optional(v.string()),
       returnedAt: v.optional(v.number()),
+      installationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+      deinstallationConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+      returnConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+      returnExceptionReason: v.optional(v.string()),
     }),
   ),
   handler: async (ctx, args) => listExhibitionObjectsHandler(ctx, args),
