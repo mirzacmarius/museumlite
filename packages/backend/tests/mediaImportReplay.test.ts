@@ -550,6 +550,48 @@ test("foreign and already-used files are refused as failed items without changin
   );
 });
 
+test("an unsupported file type is refused without binding the upload to the import", async () => {
+  const { t, own, user } = await setup();
+  const jobId = await startJob(user, own.organizationId, 1);
+  // The upload session accepts any bytes; the recorded type is what matters.
+  const file = new Blob(["plain text"], { type: "text/plain" });
+  const { uploadUrl } = await user.mutation(
+    api.mediaImports.generateBulkUploadUrl,
+    {
+      organizationId: own.organizationId,
+      jobId,
+      fileName: "notes.jpg",
+      fileSize: file.size,
+      mimeType: "image/jpeg",
+    },
+  );
+  const url = new URL(uploadUrl);
+  const response = await t.fetch(url.pathname + url.search, {
+    method: "POST",
+    body: file,
+  });
+  const { storageId }: { storageId: Id<"_storage"> } = await response.json();
+
+  const refused = await user.mutation(api.mediaImports.recordUploadedFile, {
+    organizationId: own.organizationId,
+    jobId,
+    itemNumber: 1,
+    storageId,
+    fileName: "notes.txt",
+    fileSize: file.size,
+    mimeType: file.type,
+  });
+
+  expect(refused).toMatchObject({
+    mapped: false,
+    error: "File refused: Unsupported file type: text/plain",
+  });
+  expect((await ownerOf(t, storageId))?.ownerType).toBeUndefined();
+  expect(
+    await user.query(api.mediaImports.getUnmappedFiles, { jobId }),
+  ).toEqual([]);
+});
+
 test("media import jobs and items are refused without credentials, permission or ownership", async () => {
   const { t, own, user } = await setup();
   const outsider = await createOrgUserWithPermissions(t, MEDIA_PERMISSIONS);
