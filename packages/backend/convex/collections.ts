@@ -130,6 +130,7 @@ const objectDetailCollectionValidator = v.object({
   organizationId: v.id("organizations"),
   collectionGroupId: v.optional(v.id("collectionGroups")),
   accessionNumber: v.string(),
+  normalizedIdentifier: v.optional(v.string()),
   alternateAccessionNumbers: v.optional(v.array(v.string())),
   accessionNumberHistory: v.optional(
     v.array(
@@ -693,6 +694,7 @@ export const get = query({
       organizationId: v.id("organizations"),
       collectionGroupId: v.optional(v.id("collectionGroups")),
       accessionNumber: v.string(),
+      normalizedIdentifier: v.optional(v.string()),
       alternateAccessionNumbers: v.optional(v.array(v.string())),
       accessionNumberHistory: v.optional(
         v.array(
