@@ -1,5 +1,6 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { env } from "../env";
+import { withCodeRequestLimit } from "../passwordRecovery/codeRequestLimit";
 import { generateVerificationCode } from "../utils/verificationCode";
 
 export const ResendOTPPasswordReset = Email({
@@ -9,7 +10,7 @@ export const ResendOTPPasswordReset = Email({
   async generateVerificationToken() {
     return generateVerificationCode();
   },
-  async sendVerificationRequest({ identifier: email, provider, token }) {
+  sendVerificationRequest: withCodeRequestLimit(async ({ identifier: email, provider, token }) => {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -30,5 +31,5 @@ export const ResendOTPPasswordReset = Email({
         `Failed to send password reset email: ${response.status} ${body}`,
       );
     }
-  },
+  }),
 });

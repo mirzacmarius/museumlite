@@ -1,10 +1,11 @@
 import Google from "@auth/core/providers/google";
 import Resend from "@auth/core/providers/resend";
 import { Email } from "@convex-dev/auth/providers/Email";
-import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { env } from "./env";
 import { ResendOTP } from "./otp/ResendOTP";
+import { withCodeRequestLimit } from "./passwordRecovery/codeRequestLimit";
+import { NeutralPassword } from "./passwordRecovery/NeutralPassword";
 import { ResendOTPPasswordReset } from "./passwordReset/ResendOTPPasswordReset";
 
 const normalizedEmailProfile = (params: Record<string, unknown>) => {
@@ -17,9 +18,15 @@ const normalizedEmailProfile = (params: Record<string, unknown>) => {
   };
 };
 
+const resendLinkSender = Resend({
+  apiKey: env.RESEND_API_KEY,
+  from: env.RESEND_SENDER_EMAIL_AUTH,
+}).sendVerificationRequest;
+
 const verifyProvider = Resend({
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
+  sendVerificationRequest: withCodeRequestLimit(resendLinkSender),
 });
 
 const magicLinkEmail = Email({
@@ -27,28 +34,29 @@ const magicLinkEmail = Email({
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
   authorize: undefined,
-  sendVerificationRequest: verifyProvider.sendVerificationRequest,
+  sendVerificationRequest: withCodeRequestLimit(resendLinkSender),
 });
 
-const passwordBasic = Password({
+const passwordBasic = NeutralPassword({
+  id: "password",
   profile: normalizedEmailProfile,
 });
 
-const passwordWithReset = Password({
+const passwordWithReset = NeutralPassword({
   id: "password-with-reset",
   profile: normalizedEmailProfile,
   reset: ResendOTPPasswordReset,
   verify: ResendOTP,
 });
 
-const passwordWithCode = Password({
+const passwordWithCode = NeutralPassword({
   id: "password-code",
   profile: normalizedEmailProfile,
   reset: ResendOTPPasswordReset,
   verify: ResendOTP,
 });
 
-const passwordWithEmailLinkVerification = Password({
+const passwordWithEmailLinkVerification = NeutralPassword({
   id: "password-link",
   profile: normalizedEmailProfile,
   verify: verifyProvider,

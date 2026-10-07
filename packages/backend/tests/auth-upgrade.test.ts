@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "../convex/_generated/api";
-import { createConvexTest } from "./testHarness";
+import { createConvexTestWithRateLimiter } from "./testHarness";
 
 vi.mock("../convex/env", () => ({
   env: {
@@ -76,7 +76,7 @@ function latestCode(email: string): string {
 
 describe("stable Convex Auth upgrade", () => {
   test("password sign-up normalizes email and preserves password sign-in", async () => {
-    const t = createConvexTest();
+    const t = createConvexTestWithRateLimiter();
     const params = {
       email: " Reader@Example.Test ",
       password: "correct-password-123",
@@ -106,7 +106,7 @@ describe("stable Convex Auth upgrade", () => {
   });
 
   test("rejected OTP does not consume the rightful user's code", async () => {
-    const t = createConvexTest();
+    const t = createConvexTestWithRateLimiter();
     const email = "reader@example.test";
     await t.action(api.auth.signIn, {
       provider: "resend-otp",
@@ -133,7 +133,7 @@ describe("stable Convex Auth upgrade", () => {
   });
 
   test("reset codes cannot change another user's password, and valid reset still works", async () => {
-    const t = createConvexTest();
+    const t = createConvexTestWithRateLimiter();
     const provider = "password-with-reset";
     const password = "original-password-123";
     for (const email of ["owner@example.test", "other@example.test"]) {
@@ -196,7 +196,7 @@ describe("stable Convex Auth upgrade", () => {
   });
 
   test("magic-link code signs in once and invalid code-only sign-in returns null tokens", async () => {
-    const t = createConvexTest();
+    const t = createConvexTestWithRateLimiter();
     await t.action(api.auth.signIn, {
       provider: "magic-link",
       params: { email: "reader@example.test" },
