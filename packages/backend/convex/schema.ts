@@ -1786,6 +1786,20 @@ export default defineSchema({
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
     deaccessionId: v.optional(v.id("deaccessions")),
+    approvedSourceLocationId: v.optional(
+      v.union(v.id("locations"), v.null()),
+    ),
+    acceptedTargetLocationId: v.optional(v.id("locations")),
+    targetArrivalMovementId: v.optional(v.id("locationHistory")),
+    transferScopeSnapshot: v.optional(
+      v.object({
+        sourceOrganizationId: v.id("organizations"),
+        observedSourceLocationId: v.union(v.id("locations"), v.null()),
+        legacyCollectionGroupId: v.optional(v.id("collectionGroups")),
+        collectionGroupIds: v.array(v.id("collectionGroups")),
+        accessionNumberAtTransfer: v.string(),
+      }),
+    ),
   })
     .index("by_source_organization", ["sourceOrganizationId"])
     .index("by_target_organization", ["targetOrganizationId"])
@@ -1798,6 +1812,19 @@ export default defineSchema({
       "targetOrganizationId",
       "status",
     ]),
+
+  organizationTransferCustodyEvents: defineTable({
+    moveRequestId: v.id("organizationMoveRequests"),
+    collectionId: v.id("collections"),
+    organizationId: v.id("organizations"),
+    phase: v.union(v.literal("source_departure"), v.literal("target_arrival")),
+    observedLocationId: v.optional(v.id("locations")),
+    actorId: v.id("users"),
+    recordedAt: v.number(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_moveRequest", ["moveRequestId"])
+    .index("by_collection", ["collectionId"]),
 
   // Unified accounts (museum lenders/borrowers + library patrons)
   accounts: defineTable({

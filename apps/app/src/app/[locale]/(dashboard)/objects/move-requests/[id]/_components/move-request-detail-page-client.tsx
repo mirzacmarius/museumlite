@@ -17,6 +17,8 @@ export function MoveRequestDetailPageClient() {
     currentUser,
     reviewNotes,
     setReviewNotes,
+    targetLocationId,
+    setTargetLocationId,
     isSubmitting,
     accessionSummary,
     permissions,
@@ -78,6 +80,9 @@ export function MoveRequestDetailPageClient() {
           <MoveRequestActionsPanel
             reviewNotes={reviewNotes}
             onReviewNotesChange={setReviewNotes}
+            targetLocationId={targetLocationId}
+            onTargetLocationChange={setTargetLocationId}
+            targetOrganizationId={request.targetOrganizationId}
             submittingAction={isSubmitting}
             availableActions={{
               sourceReview: permissions.canSourceApproveOrReject,
