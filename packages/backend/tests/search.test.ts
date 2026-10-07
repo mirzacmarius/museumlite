@@ -3,6 +3,8 @@ import { describe, expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
+import * as search from "../convex/search";
+import { expectMatchesReturns } from "./returnsValidation";
 import { modules } from "./testSetup";
 
 type TestSetup = {
@@ -380,6 +382,7 @@ describe("Search: scoped identifier and descriptive matches (MUS-625)", () => {
       query: "2024.001",
     });
 
+    expectMatchesReturns(search.globalSearch, result);
     expect(result.objects.map((object) => object.accessionNumber)).toEqual([
       "2024.001.001",
     ]);

@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import * as deaccessions from "../convex/deaccessions";
+import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
   type ConvexTest,
@@ -118,6 +120,7 @@ test("an approver can authorize an audited exception for outstanding decision ch
   const stages = await authed.query(api.deaccessions.getDisposalStages, {
     deaccessionId,
   });
+  expectMatchesReturns(deaccessions.getDisposalStages, stages);
   expect(stages?.decision.basis).toBe("authorized_exception");
   expect(stages?.decision.exception).toMatchObject({
     reason: "Board minute 2026-14 accepts auction estimate",

@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
+import * as collections from "../convex/collections";
+import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
   createConvexTest,
@@ -47,6 +49,7 @@ test("selection search reaches objects beyond the old five-thousand cap", async 
     query: "bulk",
   });
 
+  expectMatchesReturns(collections.searchForSelection, byIdentifier);
   expect(byIdentifier.items.map((item) => item.accessionNumber)).toEqual([
     "LATE-1",
   ]);

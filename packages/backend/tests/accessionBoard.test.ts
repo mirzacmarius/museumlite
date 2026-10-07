@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import * as accessions from "../convex/accessions";
+import { expectMatchesReturns } from "./returnsValidation";
 import {
   authedForUser,
   type ConvexTest,
@@ -75,6 +77,8 @@ test("a column paginates beyond the first hundred and counts match the whole org
     organizationId: setup.organizationId,
   });
 
+  expectMatchesReturns(accessions.listBoardColumn, first);
+  expectMatchesReturns(accessions.getBoardCounts, counts);
   expect(first.page).toHaveLength(100);
   expect(first.isDone).toBe(false);
   expect(second.page).toHaveLength(30);
