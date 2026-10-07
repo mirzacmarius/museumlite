@@ -108,6 +108,7 @@ export function ApprovalWorkflow({
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
   const [comment, setComment] = useState("");
+  const [exceptionReason, setExceptionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<ApprovalErrorMessage | null>(null);
 
@@ -136,6 +137,11 @@ export function ApprovalWorkflow({
       (step: WorkflowStepInfo) => step.stepNumber === accession.workflowStep,
     ) ?? null;
 
+  const sourceVerificationMissing =
+    (workflowSteps?.requireSourceVerification ?? false) &&
+    !accession.sourceVerified &&
+    !accession.sourceVerificationException;
+
   const handleApprove = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -143,8 +149,12 @@ export function ApprovalWorkflow({
       await approveAccession({
         accessionId: accessionId as Id<"accessions">,
         comment: comment || undefined,
+        sourceVerificationExceptionReason: sourceVerificationMissing
+          ? exceptionReason.trim() || undefined
+          : undefined,
       });
       setComment("");
+      setExceptionReason("");
     } catch (err) {
       setError(getApprovalErrorMessage(err, t));
     } finally {
@@ -216,6 +226,22 @@ export function ApprovalWorkflow({
             {tRoot("untranslatedRecords.accessions.approval.optionalNoteHint")}
           </p>
         </div>
+        {sourceVerificationMissing ? (
+          <div className="space-y-2 rounded-xl border border-border/60 p-3">
+            <Label htmlFor="source-exception-reason">
+              {t("approval.sourceExceptionLabel")}
+            </Label>
+            <Textarea
+              id="source-exception-reason"
+              value={exceptionReason}
+              onChange={(e) => setExceptionReason(e.target.value)}
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("approval.sourceExceptionHint")}
+            </p>
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={handleApprove}

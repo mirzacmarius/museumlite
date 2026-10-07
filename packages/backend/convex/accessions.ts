@@ -960,6 +960,9 @@ export const get = query({
       cost: v.optional(v.number()),
       sourceVerified: v.optional(v.boolean()),
       sourceVerificationNotes: v.optional(v.string()),
+      sourceVerificationException: v.optional(
+        v.object({ reason: v.string(), authorizedAt: v.number() }),
+      ),
       canCurrentUserApprove: v.boolean(),
       approvedBy: v.optional(v.id("users")),
       approvedAt: v.optional(v.number()),
@@ -1052,6 +1055,10 @@ export const get = query({
       cost: accession.cost,
       sourceVerified: accession.sourceVerified,
       sourceVerificationNotes: accession.sourceVerificationNotes,
+      sourceVerificationException: accession.sourceVerificationException && {
+        reason: accession.sourceVerificationException.reason,
+        authorizedAt: accession.sourceVerificationException.authorizedAt,
+      },
       canCurrentUserApprove,
       approvedBy: accession.approvedBy,
       approvedAt: accession.approvedAt,
@@ -1263,6 +1270,8 @@ export const approve = mutation({
   args: {
     accessionId: v.id("accessions"),
     comment: v.optional(v.string()),
+    /** Approve despite missing required source verification, with a reason. */
+    sourceVerificationExceptionReason: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1318,12 +1327,40 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
-      if (
-        workflowConfig.requireSourceVerification &&
-        !accession.draftObjectData &&
-        !accession.sourceVerified
-      ) {
+      // Drafts and existing-object accessions follow the same source rule.
+      // A recorded exception satisfies it for the remaining steps.
+      const sourceVerificationMissing =
+        workflowConfig.requireSourceVerification === true &&
+        !accession.sourceVerified &&
+        !accession.sourceVerificationException;
+      const exceptionReason = args.sourceVerificationExceptionReason?.trim();
+      if (sourceVerificationMissing && !exceptionReason) {
         throw new Error("Source verification is required before approval");
+      }
+      if (!sourceVerificationMissing && exceptionReason) {
+        throw new ConvexError(
+          "Source verification is complete or not required; approve without an exception",
+        );
+      }
+      if (sourceVerificationMissing && exceptionReason) {
+        await Promise.all([
+          ctx.db.patch(args.accessionId, {
+            sourceVerificationException: {
+              reason: exceptionReason,
+              authorizedBy: userId,
+              authorizedAt: Date.now(),
+              stepNumber: currentStep,
+            },
+          }),
+          ctx.runMutation(internal.audit.logAction, {
+            organizationId: accession.organizationId,
+            userId,
+            action: "source_verification_exception_authorized",
+            entityType: "accession",
+            entityId: args.accessionId,
+            changes: { reason: exceptionReason, step: currentStep },
+          }),
+        ] as const);
       }
 
       const currentStepConfig = workflowConfig.steps.find(

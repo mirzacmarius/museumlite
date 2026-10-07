@@ -4490,6 +4490,10 @@ export default {
       dateReceivedCannotChange: "Mottatt dato kan ikke endres",
     },
     approval: {
+      sourceExceptionLabel: "Kilde ikke verifisert: begrunnelse for unntak",
+      sourceExceptionHint:
+        "Påkrevd kildeverifisering mangler. Godkjenning med begrunnelse registrerer et godkjent unntak, som beholdes med aksesjonen og revideres.",
+      sourceExceptionRecorded: "Unntak godkjent",
       title: "Godkjenningshandlinger",
       commentLabel: "Kommentar (valgfritt)",
       commentPlaceholder:

@@ -1887,6 +1887,10 @@ export default {
       dateReceivedCannotChange: "Data primirii nu poate fi schimbată",
     },
     approval: {
+      sourceExceptionLabel: "Sursă neverificată: motivul excepției",
+      sourceExceptionHint:
+        "Lipsește verificarea obligatorie a sursei. Aprobarea cu un motiv înregistrează o excepție autorizată, păstrată cu achiziția și auditată.",
+      sourceExceptionRecorded: "Excepție autorizată",
       title: "Acțiuni de aprobare",
       commentLabel: "Comentariu (opțional)",
       commentPlaceholder:

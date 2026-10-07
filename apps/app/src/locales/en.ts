@@ -4340,6 +4340,10 @@ export default {
       dateReceivedCannotChange: "Date received cannot be changed",
     },
     approval: {
+      sourceExceptionLabel: "Source not verified: exception reason",
+      sourceExceptionHint:
+        "Required source verification is missing. Approving with a reason records an authorized exception, which is kept with the accession and audited.",
+      sourceExceptionRecorded: "Exception authorized",
       title: "Approval Actions",
       commentLabel: "Comment (optional)",
       commentPlaceholder: "Add a comment or reason for approval/rejection...",

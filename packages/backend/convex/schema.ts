@@ -1329,6 +1329,15 @@ export default defineSchema({
     sourceVerifiedBy: v.optional(v.id("users")),
     sourceVerifiedAt: v.optional(v.number()),
     sourceVerificationNotes: v.optional(v.string()),
+    // Approval despite missing required source verification.
+    sourceVerificationException: v.optional(
+      v.object({
+        reason: v.string(),
+        authorizedBy: v.id("users"),
+        authorizedAt: v.number(),
+        stepNumber: v.number(),
+      }),
+    ),
     // Document checklist - tracks which required documents have been uploaded
     documentChecklist: v.optional(
       v.array(

@@ -4559,6 +4559,10 @@ export default {
       dateReceivedCannotChange: "La fecha de recepción no se puede cambiar",
     },
     approval: {
+      sourceExceptionLabel: "Origen no verificado: motivo de la excepción",
+      sourceExceptionHint:
+        "Falta la verificación de origen requerida. Aprobar con un motivo registra una excepción autorizada, que se conserva con el ingreso y se audita.",
+      sourceExceptionRecorded: "Excepción autorizada",
       title: "Acciones de Aprobación",
       commentLabel: "Comentario (opcional)",
       commentPlaceholder:

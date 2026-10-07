@@ -4507,6 +4507,10 @@ export default {
         "La date de réception ne peut pas être modifiée",
     },
     approval: {
+      sourceExceptionLabel: "Provenance non vérifiée : motif de l'exception",
+      sourceExceptionHint:
+        "La vérification de provenance requise manque. Approuver avec un motif enregistre une exception autorisée, conservée avec l'acquisition et auditée.",
+      sourceExceptionRecorded: "Exception autorisée",
       title: "Actions d'Approbation",
       commentLabel: "Commentaire (optionnel)",
       commentPlaceholder:

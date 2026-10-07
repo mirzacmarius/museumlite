@@ -357,51 +357,111 @@ test("accession approval still requires the configured step role for non-admin u
   ).rejects.toThrow("Permission denied: cannot approve at this step");
 });
 
-test("object draft approvals bypass source verification requirements", async () => {
-  const t = createConvexTest();
-  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
-    t,
-    [
-      "collections.create",
-      "collections.read",
-      "collections.update",
-      "collections.approve_accession",
-    ],
-  );
-
-  await t.run(async (ctx) => {
-    await ctx.db.insert("workflowConfigs", {
-      organizationId,
+async function createSourceVerifiedWorkflowDraft(
+  t: ReturnType<typeof createConvexTest>,
+  steps = 1,
+) {
+  const setup = await createOrgUserWithPermissions(t, [
+    "collections.create",
+    "collections.read",
+    "collections.update",
+    "collections.approve_accession",
+  ]);
+  await t.run((ctx) =>
+    ctx.db.insert("workflowConfigs", {
+      organizationId: setup.organizationId,
       workflowType: "accession",
-      steps: [{ stepNumber: 1, roleId, name: "Approve" }],
-      canInitiateRoles: [roleId],
+      steps: Array.from({ length: steps }, (_, index) => ({
+        stepNumber: index + 1,
+        roleId: setup.roleId,
+        name: `Step ${index + 1}`,
+      })),
+      canInitiateRoles: [setup.roleId],
       requireSourceVerification: true,
-    });
-  });
-
-  const authed = authedForUser(t, userId);
+    }),
+  );
+  const authed = authedForUser(t, setup.userId);
   const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
-    organizationId,
+    organizationId: setup.organizationId,
     saveMode: "submit",
     objectData: {
       accessionNumber: "OBJ-SOURCE-001",
-      title: "Object Draft Without Source Verification",
+      title: "Object draft awaiting source review",
       description: "Draft-based object intake",
     },
   });
+  return { ...setup, authed, accessionId };
+}
+
+test("object draft approvals require configured source verification", async () => {
+  const t = createConvexTest();
+  const { authed, accessionId } = await createSourceVerifiedWorkflowDraft(t);
+
+  await expect(
+    authed.mutation(api.accessions.approve, { accessionId }),
+  ).rejects.toThrow("Source verification is required before approval");
+
+  await authed.mutation(api.accessions.verifySource, {
+    accessionId,
+    verificationNotes: "Deed of gift reviewed",
+  });
+  await authed.mutation(api.accessions.approve, { accessionId });
+
+  const accession = await authed.query(api.accessions.get, { accessionId });
+  expect(accession?.status).toBe("approved");
+  expect(accession?.sourceVerified).toBe(true);
+});
+
+test("an authorized source verification exception is retained, audited and carries through later steps", async () => {
+  const t = createConvexTest();
+  const { authed, accessionId, organizationId } =
+    await createSourceVerifiedWorkflowDraft(t, 2);
 
   await authed.mutation(api.accessions.approve, {
     accessionId,
-    comment: "Approved without source verification",
+    sourceVerificationExceptionReason:
+      "Field collection under permit; no donor documents exist",
   });
-
-  const accession = await authed.query(api.accessions.get, {
+  const afterFirstStep = await authed.query(api.accessions.get, {
     accessionId,
   });
+  expect(afterFirstStep?.status).toBe("pending");
+  expect(afterFirstStep?.sourceVerificationException?.reason).toContain(
+    "Field collection",
+  );
 
-  expect(accession).not.toBeNull();
-  expect(accession?.status).toBe("approved");
-  expect(accession?.sourceVerified).toBeUndefined();
+  // The recorded exception satisfies the rule at the final step.
+  await authed.mutation(api.accessions.approve, { accessionId });
+  const approved = await authed.query(api.accessions.get, { accessionId });
+  expect(approved?.status).toBe("approved");
+  expect(approved?.sourceVerified).toBeUndefined();
+
+  const audit = await t.run((ctx) =>
+    ctx.db
+      .query("auditLog")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  );
+  expect(
+    audit.filter(
+      (entry) => entry.action === "source_verification_exception_authorized",
+    ),
+  ).toHaveLength(1);
+});
+
+test("a source verification exception is refused when verification is not missing", async () => {
+  const t = createConvexTest();
+  const { authed, accessionId } = await createSourceVerifiedWorkflowDraft(t);
+  await authed.mutation(api.accessions.verifySource, { accessionId });
+
+  await expect(
+    authed.mutation(api.accessions.approve, {
+      accessionId,
+      sourceVerificationExceptionReason: "Not needed",
+    }),
+  ).rejects.toThrow(/approve without an exception/);
 });
 
 test("standard accessions still require source verification when configured", async () => {
@@ -1361,4 +1421,50 @@ test("generateDraftUploadUrl accepts supported MIME types", async () => {
 
   expect(result.uploadUrl).toBeDefined();
   expect(typeof result.uploadUrl).toBe("string");
+});
+
+test("an intake draft preserves every catalog field through publication to one object", async () => {
+  const t = createConvexTest();
+  const { authed, accessionId } = await createSourceVerifiedWorkflowDraft(t);
+  const draftObjectData = {
+    accessionNumber: "OBJ-SOURCE-001",
+    title: "Bronze mirror",
+    alternativeTitle: "Mirror with dragon boss",
+    creator: "Unknown workshop",
+    technique: "Cast, polished",
+    dimensionHeight: 2.5,
+    dimensionWidth: 18,
+    dimensionDepth: 18,
+    dimensionUnit: "cm",
+    inscriptionMarks: [
+      { label: "Rim", description: "Four-character blessing" },
+    ],
+    tags: ["Han dynasty", "Bronze"],
+    creditLine: "Gift of the Lindqvist family, 2026",
+    legalRestrictions: true,
+  };
+  await authed.mutation(api.accessions.upsertObjectDraft, {
+    organizationId: (await authed.query(api.accessions.get, { accessionId }))!
+      .organizationId,
+    accessionId,
+    saveMode: "submit",
+    objectData: draftObjectData,
+  });
+  await authed.mutation(api.accessions.verifySource, { accessionId });
+  await authed.mutation(api.accessions.approve, { accessionId });
+
+  const accession = await authed.query(api.accessions.get, { accessionId });
+  expect(accession?.status).toBe("approved");
+  const objects = await t.run((ctx) =>
+    ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", accession!.organizationId),
+      )
+      .collect(),
+  );
+  expect(objects).toHaveLength(1);
+  expect(accession?.collectionId).toBe(objects[0]?._id);
+  const { accessionNumber: _number, ...catalogFields } = draftObjectData;
+  expect(objects[0]).toMatchObject(catalogFields);
 });
