@@ -430,7 +430,19 @@ test("sale proceeds are recorded after the decision; verification needs a receip
     currency: "EUR",
     recipient: "Acquisitions fund",
     date: Date.UTC(2026, 6, 1),
+    notes: "Lot 42",
   });
+  // Correcting the amount without new notes keeps the recorded notes.
+  await authed.mutation(api.deaccessions.recordProceeds, {
+    deaccessionId,
+    amount: 15_500,
+    currency: "EUR",
+    recipient: "Acquisitions fund",
+    date: Date.UTC(2026, 6, 1),
+  });
+  expect(
+    (await t.run(async (ctx) => ctx.db.get(deaccessionId)))?.proceedsNotes,
+  ).toBe("Lot 42");
   let stages = await authed.query(api.deaccessions.getDisposalStages, {
     deaccessionId,
   });
@@ -448,6 +460,9 @@ test("sale proceeds are recorded after the decision; verification needs a receip
     deaccessionId,
   });
   expect(stages?.proceeds.state).toBe("verified");
+  expect(stages?.proceeds.verificationExceptionReason).toContain(
+    "Bank statement",
+  );
   const stored = await t.run(async (ctx) => ctx.db.get(deaccessionId));
   expect(stored?.proceedsVerificationException?.reason).toContain(
     "Bank statement",

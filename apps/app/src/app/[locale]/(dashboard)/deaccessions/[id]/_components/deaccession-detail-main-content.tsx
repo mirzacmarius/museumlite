@@ -5,6 +5,7 @@ import { DeaccessionDetailReviewPanel } from "./deaccession-detail-review-panel"
 import { DeaccessionDetailToolbar } from "./deaccession-detail-toolbar";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 import { DeaccessionDetailWorkflowHistory } from "./deaccession-detail-workflow-history";
+import { DisposalStagesSection } from "./disposal-stages-section";
 
 export function DeaccessionDetailMainContent(
   props: DeaccessionDetailViewProps,
@@ -19,6 +20,10 @@ export function DeaccessionDetailMainContent(
               <DeaccessionDetailHeroSection {...props} />
               <DeaccessionDetailReviewPanel {...props} />
             </section>
+            <DisposalStagesSection
+              deaccession={props.deaccession}
+              locale={props.locale}
+            />
             <DeaccessionDetailWorkflowHistory {...props} />
           </div>
         </div>

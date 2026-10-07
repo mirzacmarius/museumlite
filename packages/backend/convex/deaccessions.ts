@@ -36,16 +36,16 @@ import {
   getUsersToNotifyForWorkflowStep,
   requirePermission,
 } from "./utils/permissions";
+import {
+  claimStorageOwnership,
+  createAuthorizedUploadUrl,
+} from "./utils/uploadOwnership";
 import { getWorkflowConfig } from "./utils/workflowConfigs";
 import {
   prepareWorkflowStepAdvance,
   recordWorkflowStepAdvance,
   recordWorkflowStepApproval,
 } from "./utils/workflowExecution";
-import {
-  claimStorageOwnership,
-  createAuthorizedUploadUrl,
-} from "./utils/uploadOwnership";
 import { resolveWorkflowStepState } from "./utils/workflowSteps";
 
 const targetCollectionStatusValidator = v.union(
@@ -1804,7 +1804,11 @@ async function requireApprovedDisposal(
   if (!deaccession) {
     throw new Error("Deaccession not found");
   }
-  await requirePermission(ctx, deaccession.organizationId, "collections.update");
+  await requirePermission(
+    ctx,
+    deaccession.organizationId,
+    "collections.update",
+  );
   if (!isDisposalDecision(deaccession)) {
     throw new ConvexError(
       "Exit and proceeds apply only to deaccession disposals, not withdrawals",
@@ -1981,7 +1985,7 @@ export const recordProceeds = mutation({
         proceedsCurrency: args.currency.trim(),
         proceedsRecipient: args.recipient.trim(),
         proceedsDate: args.date,
-        proceedsNotes: args.notes,
+        proceedsNotes: args.notes?.trim() || deaccession.proceedsNotes,
         proceedsReceiptDocument:
           args.receiptDocument ?? deaccession.proceedsReceiptDocument,
         proceedsRecordedBy: userId,
@@ -2473,6 +2477,7 @@ export const getDisposalStages = query({
         date: v.optional(v.number()),
         hasReceipt: v.boolean(),
         verifiedAt: v.optional(v.number()),
+        verificationExceptionReason: v.optional(v.string()),
       }),
     }),
     v.null(),
@@ -2557,6 +2562,8 @@ export const getDisposalStages = query({
         date: deaccession.proceedsDate,
         hasReceipt: deaccession.proceedsReceiptDocument !== undefined,
         verifiedAt: deaccession.proceedsVerifiedAt,
+        verificationExceptionReason:
+          deaccession.proceedsVerificationException?.reason,
       },
     };
   },

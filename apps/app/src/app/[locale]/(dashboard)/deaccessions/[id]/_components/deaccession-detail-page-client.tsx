@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { DeaccessionDetailBoardReportDialog } from "./deaccession-detail-board-report-dialog";
@@ -13,6 +14,7 @@ import {
   formatDeaccessionStatusLabel,
   getDeaccessionActionLabel,
 } from "./deaccession-detail-types";
+import { disposalStageErrorMessage } from "./disposal-stage-error";
 
 export function DeaccessionDetailPageClient() {
   const params = useParams();
@@ -60,7 +62,16 @@ function DeaccessionDetailPageInner({
       : "skip",
   );
 
-  const [comment, setComment] = useState("");
+  // Both inputs are sent with the approval or rejection decision.
+  const [decisionInput, setDecisionInput] = useState({
+    comment: "",
+    exceptionReason: "",
+  });
+  const { comment, exceptionReason } = decisionInput;
+  const setComment = (value: string) =>
+    setDecisionInput((current) => ({ ...current, comment: value }));
+  const setExceptionReason = (value: string) =>
+    setDecisionInput((current) => ({ ...current, exceptionReason: value }));
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -106,10 +117,13 @@ function DeaccessionDetailPageInner({
       await approve({
         deaccessionId: deaccessionId as Id<"deaccessions">,
         comment: comment || undefined,
+        exceptionReason: exceptionReason.trim() || undefined,
       });
-      setComment("");
+      setDecisionInput({ comment: "", exceptionReason: "" });
     } catch (error) {
-      console.error("Failed to approve:", error);
+      toast.error(
+        disposalStageErrorMessage(error, t("stages.approval.failed")),
+      );
     } finally {
       setIsApproving(false);
     }
@@ -124,7 +138,9 @@ function DeaccessionDetailPageInner({
       });
       setComment("");
     } catch (error) {
-      console.error("Failed to reject:", error);
+      toast.error(
+        disposalStageErrorMessage(error, t("stages.approval.failed")),
+      );
     } finally {
       setIsRejecting(false);
     }
@@ -154,6 +170,8 @@ function DeaccessionDetailPageInner({
     workflowEntryCount,
     comment,
     setComment,
+    exceptionReason,
+    setExceptionReason,
     isApproving,
     isRejecting,
     handleApprove,
