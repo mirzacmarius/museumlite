@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { getUserRole, requirePermission } from "./utils/permissions";
 
 async function checkGroupAccessControl(
@@ -30,6 +30,58 @@ async function checkGroupAccessControl(
       "You do not have the required role to manage this collection group",
     );
   }
+}
+
+async function getEffectiveGroupItems(
+  ctx: QueryCtx,
+  group: Doc<"collectionGroups">,
+) {
+  const [memberships, legacyPrimaryObjects] = await Promise.all([
+    ctx.db
+      .query("collectionGroupItems")
+      .withIndex("by_collectionGroup", (q) =>
+        q.eq("collectionGroupId", group._id),
+      )
+      .collect(),
+    ctx.db
+      .query("collections")
+      .withIndex("by_collectionGroup", (q) =>
+        q.eq("collectionGroupId", group._id),
+      )
+      .collect(),
+  ]);
+  const byObject = new Map<
+    Id<"collections">,
+    {
+      membershipId?: Id<"collectionGroupItems">;
+      collection: Doc<"collections">;
+      addedAt: number;
+      role: "primary" | "secondary";
+    }
+  >();
+  for (const membership of memberships) {
+    const collection = await ctx.db.get(membership.collectionId);
+    if (!collection || collection.organizationId !== group.organizationId) continue;
+    byObject.set(collection._id, {
+      membershipId: membership._id,
+      collection,
+      addedAt: membership.addedAt,
+      role:
+        membership.role ??
+        (collection.collectionGroupId === group._id ? "primary" : "secondary"),
+    });
+  }
+  for (const collection of legacyPrimaryObjects) {
+    if (collection.organizationId !== group.organizationId) continue;
+    if (!byObject.has(collection._id)) {
+      byObject.set(collection._id, {
+        collection,
+        addedAt: collection.catalogedAt,
+        role: "primary",
+      });
+    }
+  }
+  return [...byObject.values()];
 }
 
 /**
@@ -246,7 +298,7 @@ export const list = query({
           managedByRoleId: g.managedByRoleId,
           managedByRoleName,
           imageUrl,
-          itemsCount: g.itemsCount,
+          itemsCount: (await getEffectiveGroupItems(ctx, g)).length,
           createdAt: g.createdAt,
           _creationTime: g._creationTime,
         };
@@ -320,6 +372,7 @@ export const get = query({
 
     return {
       ...group,
+      itemsCount: (await getEffectiveGroupItems(ctx, group)).length,
       curatorName,
       managedByRoleName,
       imageUrl,
@@ -409,36 +462,15 @@ export const deleteGroup = mutation({
     if (!group) {
       throw new Error("Group not found");
     }
-    const [, groupItems] = await Promise.all([
-      Promise.all([
-        requirePermission(ctx, group.organizationId, "collections.delete"),
-        checkGroupAccessControl(ctx, group, userId),
-      ]),
-      ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collectionGroup", (q) =>
-          q.eq("collectionGroupId", args.groupId),
-        )
-        .collect(),
-    ] as const);
-
-    const [, items] = await Promise.all([
-      Promise.all(
-        Array.from(groupItems).map((item) => ctx.db.delete(item._id)),
-      ),
-      ctx.db
-        .query("collections")
-        .withIndex("by_collectionGroup", (q) =>
-          q.eq("collectionGroupId", args.groupId),
-        )
-        .collect(),
-    ] as const);
     await Promise.all([
-      Promise.all(
-        Array.from(items).map(async (item) => {
-          await ctx.db.patch(item._id, { collectionGroupId: undefined });
-        }),
-      ),
+      requirePermission(ctx, group.organizationId, "collections.delete"),
+      checkGroupAccessControl(ctx, group, userId),
+    ]);
+    const items = await getEffectiveGroupItems(ctx, group);
+    if (items.length > 0) {
+      throw new Error("Move or remove all object memberships before deleting this collection group");
+    }
+    await Promise.all([
       ctx.db.delete(args.groupId),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: group.organizationId,
@@ -448,8 +480,8 @@ export const deleteGroup = mutation({
         entityId: args.groupId,
         changes: {
           name: group.name,
-          itemsRemoved: groupItems.length,
-          collectionsUnlinked: items.length,
+          itemsRemoved: 0,
+          collectionsUnlinked: 0,
         },
       }),
     ] as const);
@@ -480,7 +512,7 @@ export const addItems = mutation({
     await checkGroupAccessControl(ctx, group, userId);
 
     const addResults = await Promise.all(
-      Array.from(args.collectionIds).map(async (collectionId) => {
+      Array.from(new Set(args.collectionIds)).map(async (collectionId) => {
         // Check if collection exists and belongs to same organization
         const collection = await ctx.db.get(collectionId);
         if (!collection) {
@@ -504,6 +536,10 @@ export const addItems = mutation({
           await ctx.db.insert("collectionGroupItems", {
             collectionGroupId: args.groupId,
             collectionId,
+            role:
+              collection.collectionGroupId === args.groupId
+                ? "primary"
+                : "secondary",
             addedAt: Date.now(),
             addedBy: userId,
           });
@@ -564,7 +600,14 @@ export const removeItems = mutation({
     await checkGroupAccessControl(ctx, group, userId);
 
     const removeResults = await Promise.all(
-      Array.from(args.collectionIds).map(async (collectionId) => {
+      Array.from(new Set(args.collectionIds)).map(async (collectionId) => {
+        const collection = await ctx.db.get(collectionId);
+        if (!collection || collection.organizationId !== group.organizationId) {
+          throw new Error("Object not found in this organization");
+        }
+        if (collection.collectionGroupId === args.groupId) {
+          throw new Error("Change the primary group on the object before removing this membership");
+        }
         const item = await ctx.db
           .query("collectionGroupItems")
           .withIndex("by_collectionGroup_and_collection", (q) =>
@@ -621,8 +664,9 @@ export const listItems = query({
   },
   returns: v.array(
     v.object({
-      _id: v.id("collectionGroupItems"),
+      _id: v.optional(v.id("collectionGroupItems")),
       collectionId: v.id("collections"),
+      role: v.union(v.literal("primary"), v.literal("secondary")),
       accessionNumber: v.string(),
       title: v.string(),
       description: v.optional(v.string()),
@@ -643,19 +687,13 @@ export const listItems = query({
       return [];
     }
 
-    const [, groupItems] = await Promise.all([
-      requirePermission(ctx, group.organizationId, "collections.read"),
-      ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collectionGroup", (q) =>
-          q.eq("collectionGroupId", args.groupId),
-        )
-        .collect(),
-    ] as const);
+    await requirePermission(ctx, group.organizationId, "collections.read");
+    const groupItems = await getEffectiveGroupItems(ctx, group);
 
     const items: Array<{
-      _id: Id<"collectionGroupItems">;
+      _id?: Id<"collectionGroupItems">;
       collectionId: Id<"collections">;
+      role: "primary" | "secondary";
       accessionNumber: string;
       title: string;
       description?: string;
@@ -666,11 +704,12 @@ export const listItems = query({
 
     await Promise.all(
       Array.from(groupItems).map(async (groupItem) => {
-        const collection = await ctx.db.get(groupItem.collectionId);
+        const collection = groupItem.collection;
         if (collection) {
           items.push({
-            _id: groupItem._id,
+            _id: groupItem.membershipId,
             collectionId: collection._id,
+            role: groupItem.role,
             accessionNumber: collection.accessionNumber,
             title: collection.title,
             description: collection.description,
@@ -702,6 +741,7 @@ export const getGroupsForCollection = query({
       name: v.string(),
       description: v.optional(v.string()),
       itemsCount: v.optional(v.number()),
+      role: v.union(v.literal("primary"), v.literal("secondary")),
     }),
   ),
   handler: async (ctx, args) => {
@@ -725,19 +765,21 @@ export const getGroupsForCollection = query({
       name: string;
       description?: string;
       itemsCount?: number;
+      role: "primary" | "secondary";
     }> = [];
     const groupIds = new Set<Id<"collectionGroups">>();
 
     await Promise.all(
       Array.from(groupItems).map(async (groupItem) => {
         const group = await ctx.db.get(groupItem.collectionGroupId);
-        if (group) {
+        if (group?.organizationId === collection.organizationId) {
           groupIds.add(group._id);
           groups.push({
             _id: group._id,
             name: group.name,
             description: group.description,
             itemsCount: group.itemsCount,
+            role: groupItem.role ?? (collection.collectionGroupId === group._id ? "primary" : "secondary"),
           });
         }
       }),
@@ -748,17 +790,133 @@ export const getGroupsForCollection = query({
       !groupIds.has(collection.collectionGroupId)
     ) {
       const group = await ctx.db.get(collection.collectionGroupId);
-      if (group) {
+      if (group?.organizationId === collection.organizationId) {
         groups.push({
           _id: group._id,
           name: group.name,
           description: group.description,
           itemsCount: group.itemsCount,
+          role: "primary",
         });
       }
     }
 
-    return groups;
+    return groups.sort((a, b) =>
+      a.role === b.role ? a.name.localeCompare(b.name) : a.role === "primary" ? -1 : 1,
+    );
+  },
+});
+
+export const backfillMemberships = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    cursor: v.union(v.string(), v.null()),
+    limit: v.number(),
+  },
+  returns: v.object({
+    examined: v.number(),
+    added: v.number(),
+    updated: v.number(),
+    conflicts: v.array(
+      v.object({
+        collectionId: v.id("collections"),
+        code: v.union(
+          v.literal("conflicting_primary"),
+          v.literal("invalid_group"),
+          v.literal("duplicate_membership"),
+        ),
+      }),
+    ),
+    cursor: v.string(),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    if (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 50) {
+      throw new Error("Backfill page size must be between 1 and 50");
+    }
+    const page = await ctx.db
+      .query("collections")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", args.organizationId),
+      )
+      .paginate({ numItems: args.limit, cursor: args.cursor });
+    let added = 0;
+    let updated = 0;
+    const conflicts: Array<{
+      collectionId: Id<"collections">;
+      code: "conflicting_primary" | "invalid_group" | "duplicate_membership";
+    }> = [];
+    for (const collection of page.page) {
+      const memberships = await ctx.db
+        .query("collectionGroupItems")
+        .withIndex("by_collection", (q) =>
+          q.eq("collectionId", collection._id),
+        )
+        .collect();
+      const seen = new Set<Id<"collectionGroups">>();
+      for (const membership of memberships) {
+        if (seen.has(membership.collectionGroupId)) {
+          conflicts.push({
+            collectionId: collection._id,
+            code: "duplicate_membership",
+          });
+        }
+        seen.add(membership.collectionGroupId);
+        const group = await ctx.db.get(membership.collectionGroupId);
+        if (!group || group.organizationId !== args.organizationId) {
+          conflicts.push({ collectionId: collection._id, code: "invalid_group" });
+        }
+      }
+      const explicitPrimaries = memberships.filter(
+        (membership) => membership.role === "primary",
+      );
+      if (
+        explicitPrimaries.length > 1 ||
+        (collection.collectionGroupId &&
+          explicitPrimaries.some(
+            (membership) =>
+              membership.collectionGroupId !== collection.collectionGroupId,
+          ))
+      ) {
+        conflicts.push({
+          collectionId: collection._id,
+          code: "conflicting_primary",
+        });
+      }
+      if (collection.collectionGroupId) {
+        const primaryGroup = await ctx.db.get(collection.collectionGroupId);
+        if (!primaryGroup || primaryGroup.organizationId !== args.organizationId) {
+          conflicts.push({ collectionId: collection._id, code: "invalid_group" });
+        } else if (!seen.has(primaryGroup._id)) {
+          await ctx.db.insert("collectionGroupItems", {
+            collectionGroupId: primaryGroup._id,
+            collectionId: collection._id,
+            role: "primary",
+            addedAt: collection.catalogedAt,
+            addedBy: collection.catalogedBy,
+          });
+          added++;
+        }
+      }
+      for (const membership of memberships) {
+        if (membership.role) continue;
+        await ctx.db.patch(membership._id, {
+          role:
+            membership.collectionGroupId === collection.collectionGroupId
+              ? "primary"
+              : "secondary",
+        });
+        updated++;
+      }
+    }
+    return {
+      examined: page.page.length,
+      added,
+      updated,
+      conflicts,
+      cursor: page.continueCursor,
+      isDone: page.isDone,
+    };
   },
 });
 
@@ -781,23 +939,14 @@ export const getStats = query({
       return null;
     }
 
-    const [, groupItems] = await Promise.all([
-      requirePermission(ctx, group.organizationId, "collections.read"),
-      ctx.db
-        .query("collectionGroupItems")
-        .withIndex("by_collectionGroup", (q) =>
-          q.eq("collectionGroupId", args.groupId),
-        )
-        .collect(),
-    ] as const);
+    await requirePermission(ctx, group.organizationId, "collections.read");
+    const groupItems = await getEffectiveGroupItems(ctx, group);
 
     let active = 0;
     let loaned = 0;
     let deaccessioned = 0;
 
-    const collections = await Promise.all(
-      groupItems.map((groupItem) => ctx.db.get(groupItem.collectionId)),
-    );
+    const collections = groupItems.map((item) => item.collection);
 
     for (const collection of collections) {
       if (collection) {

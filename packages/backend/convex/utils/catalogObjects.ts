@@ -1,5 +1,5 @@
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { syncCollectionOptionUsages } from "./collectionOptionUsages";
 import { enforceObjectQuota } from "./featureGates";
@@ -31,74 +31,124 @@ export async function buildConditionHistoryEntry(
   };
 }
 
+export async function getCollectionGroupMembershipIds(
+  ctx: QueryCtx | MutationCtx,
+  collection: Doc<"collections">,
+) {
+  const memberships = await ctx.db
+    .query("collectionGroupItems")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
+    .collect();
+  const valid = (
+    await Promise.all(
+      memberships.map(async (membership) => {
+        const group = await ctx.db.get(membership.collectionGroupId);
+        return group?.organizationId === collection.organizationId
+          ? membership
+          : null;
+      }),
+    )
+  ).filter((membership) => membership !== null);
+  const ids = [...new Set(valid.map((membership) => membership.collectionGroupId))];
+  const pointerGroup = collection.collectionGroupId
+    ? await ctx.db.get(collection.collectionGroupId)
+    : null;
+  const primaryGroupId =
+    pointerGroup?.organizationId === collection.organizationId
+      ? pointerGroup._id
+      : valid.find((membership) => membership.role === "primary")
+          ?.collectionGroupId;
+  const orderedIds = primaryGroupId
+    ? [primaryGroupId, ...ids.filter((id) => id !== primaryGroupId)]
+    : ids;
+  return {
+    primaryGroupId,
+    groupIds: orderedIds,
+    hasConflict:
+      valid.filter((membership) => membership.role === "primary").length > 1 ||
+      valid.some(
+        (membership) =>
+          membership.role === "primary" &&
+          primaryGroupId !== membership.collectionGroupId,
+      ),
+  };
+}
+
 export async function syncCollectionGroupMemberships(
   ctx: MutationCtx,
   collectionId: Id<"collections">,
   organizationId: Id<"organizations">,
   groupIds: Id<"collectionGroups">[],
   userId: Id<"users">,
+  primaryGroupId?: Id<"collectionGroups">,
 ) {
   const uniqueGroupIds = [...new Set(groupIds)];
+  if (primaryGroupId && !uniqueGroupIds.includes(primaryGroupId)) {
+    uniqueGroupIds.unshift(primaryGroupId);
+  }
   const existingMemberships = await ctx.db
     .query("collectionGroupItems")
     .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
     .collect();
-  const existingGroupIds = new Set(
-    existingMemberships.map((membership) => membership.collectionGroupId),
-  );
   const nextGroupIds = new Set(uniqueGroupIds);
-  await Promise.all([
-    Promise.all(
-      Array.from(uniqueGroupIds).map(async (groupId) => {
-        const group = await ctx.db.get(groupId);
-        if (!group) {
-          throw new Error("Collection group not found");
-        }
-        if (group.organizationId !== organizationId) {
-          throw new Error(
-            "Collection group belongs to a different organization",
-          );
-        }
-      }),
-    ),
-    Promise.all(
-      Array.from(uniqueGroupIds).map(async (groupId) => {
-        if (existingGroupIds.has(groupId)) {
-          return;
-        }
-        const group = await ctx.db.get(groupId);
-        await ctx.db.insert("collectionGroupItems", {
-          collectionGroupId: groupId,
-          collectionId,
-          addedAt: Date.now(),
-          addedBy: userId,
-        });
-        if (group) {
-          await ctx.db.patch(groupId, {
-            itemsCount: (group.itemsCount || 0) + 1,
-            lastModifiedAt: Date.now(),
-            lastModifiedBy: userId,
-          });
-        }
-      }),
-    ),
-    Promise.all(
-      Array.from(existingMemberships).map(async (membership) => {
-        if (nextGroupIds.has(membership.collectionGroupId)) {
-          return;
-        }
-        const group = await ctx.db.get(membership.collectionGroupId);
-        await ctx.db.delete(membership._id);
-        if (group) {
-          await ctx.db.patch(membership.collectionGroupId, {
-            itemsCount: Math.max(0, (group.itemsCount || 0) - 1),
-            lastModifiedAt: Date.now(),
-            lastModifiedBy: userId,
-          });
-        }
-      }),
-    ),
-  ] as const);
+  const groups = await Promise.all(uniqueGroupIds.map((id) => ctx.db.get(id)));
+  for (const group of groups) {
+    if (!group) throw new Error("Collection group not found");
+    if (group.organizationId !== organizationId) {
+      throw new Error("Collection group belongs to a different organization");
+    }
+  }
+
+  for (const groupId of uniqueGroupIds) {
+    const existing = existingMemberships.filter(
+      (membership) => membership.collectionGroupId === groupId,
+    );
+    const role = groupId === primaryGroupId ? "primary" : "secondary";
+    if (existing.length === 0) {
+      await ctx.db.insert("collectionGroupItems", {
+        collectionGroupId: groupId,
+        collectionId,
+        role,
+        addedAt: Date.now(),
+        addedBy: userId,
+      });
+    } else {
+      for (const membership of existing) {
+        if (membership.role !== role) await ctx.db.patch(membership._id, { role });
+      }
+    }
+  }
+  for (const membership of existingMemberships) {
+    if (!nextGroupIds.has(membership.collectionGroupId)) {
+      await ctx.db.delete(membership._id);
+    }
+  }
+  for (const group of groups) {
+    if (!group) continue;
+    const wasMember = existingMemberships.some(
+      (membership) => membership.collectionGroupId === group._id,
+    );
+    if (!wasMember) {
+      await ctx.db.patch(group._id, {
+        itemsCount: (group.itemsCount ?? 0) + 1,
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: userId,
+      });
+    }
+  }
+  for (const groupId of new Set(
+    existingMemberships.map((membership) => membership.collectionGroupId),
+  )) {
+    if (nextGroupIds.has(groupId)) continue;
+    const group = await ctx.db.get(groupId);
+    if (group) {
+      await ctx.db.patch(groupId, {
+        itemsCount: Math.max(0, (group.itemsCount ?? 0) - 1),
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: userId,
+      });
+    }
+  }
 }
 
 export interface ImportedObjectFields {
@@ -137,6 +187,7 @@ export async function createImportedCatalogObject(
     fields: ImportedObjectFields;
     locationId?: Id<"locations">;
     collectionGroupId?: Id<"collectionGroups">;
+    collectionGroupIds?: Id<"collectionGroups">[];
     sourceLabel: string;
   },
 ) {
@@ -198,8 +249,9 @@ export async function createImportedCatalogObject(
     ctx,
     collectionId,
     organizationId,
-    args.collectionGroupId ? [args.collectionGroupId] : [],
+    args.collectionGroupIds ?? (args.collectionGroupId ? [args.collectionGroupId] : []),
     userId,
+    args.collectionGroupId,
   );
   if (args.locationId) {
     const created = await ctx.db.get(collectionId);

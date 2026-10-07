@@ -5304,6 +5304,7 @@ export default {
           provenance: "Proveniens",
           location: "Plassering",
           collectionGroup: "Samlingsgruppe",
+          collectionGroups: "Alle samlingsgrupper",
         },
         fieldDescriptions: {
           title: "Objektets tittel eller navn",
@@ -5324,6 +5325,8 @@ export default {
           provenance: "Eierskapshistorikk",
           location: "Nåværende plassering",
           collectionGroup: "Navn på samling eller gruppe",
+          collectionGroups:
+            "JSON-liste med gruppenavn; inkluder hovedgruppen",
         },
         templates: {
           pastperfect: "PastPerfect",
@@ -7188,6 +7191,9 @@ export default {
       selectOrAddMaterials: "Velg eller legg til materialer",
       addNamedItem: "Legg til {name}",
       selectCollection: "Velg samling",
+      primaryGroup: "Hovedgruppe",
+      secondaryGroup: "Sekundær gruppe",
+      makePrimary: "Gjør til hovedgruppe",
       cannotDeleteType: "Kan ikke slette typen",
       deleteType: "Slett type",
       selectALocation: "Velg plassering",

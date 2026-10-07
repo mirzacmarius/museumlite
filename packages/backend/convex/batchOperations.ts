@@ -9,6 +9,7 @@ import {
   query,
 } from "./_generated/server";
 import { customFieldValue } from "./schema";
+import { syncCollectionGroupMemberships } from "./utils/catalogObjects";
 import { replaceCollectionOptionUsages } from "./utils/collectionOptionUsages";
 import {
   assessCollectionMovement,
@@ -685,6 +686,26 @@ async function processBulkEdit(
   }
 
   await ctx.db.patch(collection._id, updates);
+  if (payload.collectionGroupId !== undefined) {
+    const existingMemberships = await ctx.db
+      .query("collectionGroupItems")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", collection._id),
+      )
+      .collect();
+    await syncCollectionGroupMemberships(
+      ctx,
+      collection._id,
+      collection.organizationId,
+      [
+        ...existingMemberships.map((membership) => membership.collectionGroupId),
+        ...(collection.collectionGroupId ? [collection.collectionGroupId] : []),
+        payload.collectionGroupId,
+      ],
+      userId,
+      payload.collectionGroupId,
+    );
+  }
   if (payload.currentLocationId !== undefined) {
     await moveCollectionToLocation(
       ctx,

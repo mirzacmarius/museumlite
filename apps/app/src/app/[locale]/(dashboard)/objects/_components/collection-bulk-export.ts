@@ -33,6 +33,7 @@ export function exportCollectionsToCsv(
       item.status,
       item.locationPath ?? "",
       item.collectionGroup ?? "",
+      JSON.stringify(item.collectionGroups),
       catalogedDate,
     ];
   });

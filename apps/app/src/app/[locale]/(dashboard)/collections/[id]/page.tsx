@@ -517,11 +517,15 @@ function CollectionObjectsList({
         <div className="space-y-4">
           {groupItems.map((item) => (
             <CollectionListItem
-              key={item._id}
+              key={item.collectionId}
               item={item}
               imageUrl={groupItemImageUrlMap.get(item.collectionId)}
               organizationId={organizationId}
-              onRemove={() => handleRemoveItem(item.collectionId)}
+              onRemove={
+                item.role === "secondary"
+                  ? () => handleRemoveItem(item.collectionId)
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -575,6 +579,11 @@ function CollectionListItem({
             <h3 className="font-medium">{item.title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {item.accessionNumber}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {item.role === "primary"
+                ? tRoot("untranslatedComponents.labels.primaryGroup")
+                : tRoot("untranslatedComponents.labels.secondaryGroup")}
             </p>
             {item.description && (
               <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

@@ -99,8 +99,8 @@ export function useCollectionEditFormSubmit({
           formData.currentLocationId !== "__none__"
             ? (formData.currentLocationId as Id<"locations">)
             : undefined,
-        collectionGroupId: formData.collectionGroupIds?.[0]
-          ? (formData.collectionGroupIds[0] as Id<"collectionGroups">)
+        collectionGroupId: formData.collectionGroupId
+          ? (formData.collectionGroupId as Id<"collectionGroups">)
           : undefined,
         collectionGroupIds: formData.collectionGroupIds?.flatMap(
           (collectionGroupId) =>

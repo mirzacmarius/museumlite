@@ -196,10 +196,9 @@ export function ObjectRequestGeneralTab({
             <CollectionGroupCombobox
               organizationId={currentOrganizationId}
               value={formData.collectionGroupIds}
-              onValueChange={(value) => {
-                updateField("collectionGroupIds", value);
-                updateField("collectionGroupId", value[0] || "");
-              }}
+              onValueChange={(value) => updateField("collectionGroupIds", value)}
+              primaryValue={formData.collectionGroupId}
+              onPrimaryChange={(value) => updateField("collectionGroupId", value)}
               placeholder={placeholders("collection")}
             />
           </div>

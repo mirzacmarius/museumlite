@@ -6088,6 +6088,7 @@ export default {
           provenance: "Proveniență",
           location: "Locație",
           collectionGroup: "Grup de colecții",
+          collectionGroups: "Toate grupurile de colecții",
         },
         fieldDescriptions: {
           title: "Titlul sau numele obiectului",
@@ -6107,6 +6108,8 @@ export default {
           provenance: "Istoric de proprietate",
           location: "Locația actuală",
           collectionGroup: "Numele colecției sau grupului",
+          collectionGroups:
+            "Listă JSON de nume de grupuri; include grupul principal",
         },
         templates: {
           pastperfect: "PastPerfect",
@@ -8000,6 +8003,9 @@ export default {
       selectOrAddMaterials: "Selectează sau adaugă materiale",
       addNamedItem: "Adaugă {name}",
       selectCollection: "Selectează colecția",
+      primaryGroup: "Grup principal",
+      secondaryGroup: "Grup secundar",
+      makePrimary: "Setează ca principal",
       cannotDeleteType: "Tipul nu poate fi șters",
       deleteType: "Șterge tipul",
       selectALocation: "Selectează o locație",
