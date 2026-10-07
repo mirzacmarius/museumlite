@@ -34,6 +34,7 @@ import { generateNextDeaccessionNumber } from "./utils/numberGenerator";
 import {
   canApproveAtStep,
   getUsersToNotifyForWorkflowStep,
+  hasPermission,
   requirePermission,
 } from "./utils/permissions";
 import {
@@ -241,6 +242,14 @@ async function canInitiateDeaccessionWorkflowForUser(
 
   if (!userOrganization) {
     return false;
+  }
+
+  // Organization administrators may start any workflow, as they may approve
+  // any step (see canApproveAtStep).
+  if (
+    await hasPermission(ctx, organizationId, "organization.manage_settings")
+  ) {
+    return true;
   }
 
   const workflowConfig = workflowEnabled
