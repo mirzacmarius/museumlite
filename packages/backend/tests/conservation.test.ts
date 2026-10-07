@@ -13,7 +13,32 @@ const conservationPermissions = [
   "collections.update",
   "collections.create",
   "collections.approve_conservation",
+  "collections.accept_condition",
 ] as const;
+
+async function linkAcceptedOutcome(
+  authed: ReturnType<typeof authedForUser>,
+  collectionId: Id<"collections">,
+  treatmentId: Id<"conservationTreatments">,
+) {
+  const outcomeId = await authed.mutation(api.conditionAssessments.create, {
+    collectionId,
+    assessedAt: Date.UTC(2026, 9, 1),
+    condition: "Good",
+    summary: "Post-treatment check",
+    observations: [
+      { area: "Surface", description: "Improved", severity: "minor" },
+    ],
+    photos: [],
+  });
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: outcomeId,
+  });
+  await authed.mutation(api.conservationTreatments.linkOutcomeAssessment, {
+    treatmentId,
+    assessmentId: outcomeId,
+  });
+}
 
 async function setupConservationWorkflow(t: ConvexTest) {
   const setup = await createOrgUserCollectionWithPermissions(
@@ -75,6 +100,20 @@ describe("Conservation treatment lifecycle", () => {
     const { collectionId, userId } = await setupConservationWorkflow(t);
     const authed = authedForUser(t, userId);
 
+    const baselineId = await authed.mutation(api.conditionAssessments.create, {
+      collectionId,
+      assessedAt: Date.UTC(2026, 8, 1),
+      condition: "Fair",
+      summary: "Pre-treatment baseline",
+      observations: [
+        { area: "Frame", description: "Wear noted", severity: "minor" },
+      ],
+      photos: [],
+    });
+    await authed.mutation(api.conditionAssessments.accept, {
+      assessmentId: baselineId,
+    });
+
     const treatmentId = await authed.mutation(api.conservationTreatments.create, {
       collectionId,
       treatmentType: "cleaning",
@@ -91,6 +130,8 @@ describe("Conservation treatment lifecycle", () => {
       treatmentId,
     });
     expect(await getTreatmentStatus(t, treatmentId)).toBe("in_progress");
+
+    await linkAcceptedOutcome(authed, collectionId, treatmentId);
 
     await authed.mutation(api.conservationTreatments.complete, {
       treatmentId,
