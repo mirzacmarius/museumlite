@@ -1686,9 +1686,11 @@ export default defineSchema({
     moveRequestId: v.optional(v.id("locationMoveRequests")),
     batchJobId: v.optional(v.id("batchJobs")),
     exhibitionObjectId: v.optional(v.id("exhibitionObjects")),
+    transitItemId: v.optional(v.id("transitItems")),
   })
     .index("by_collection", ["collectionId"])
     .index("by_exhibition_object", ["exhibitionObjectId"])
+    .index("by_transit_item", ["transitItemId"])
     .index("by_moveRequest", ["moveRequestId"])
     .index("by_toLocation", ["toLocationId"])
     .index("by_fromLocation", ["fromLocationId"])
@@ -4201,10 +4203,24 @@ export default defineSchema({
     status: v.union(
       v.literal("pending"), // Not yet picked up
       v.literal("in_transit"), // Being transported
-      v.literal("delivered"), // Successfully delivered
+      v.literal("delivered"), // Legacy carrier flag; prefer arrived
+      v.literal("arrived"), // Carrier delivery recorded, not yet accepted
+      v.literal("received"), // Accountable receipt recorded
       v.literal("damaged"), // Damaged during transit
       v.literal("missing"), // Missing/lost
     ),
+
+    carrierArrivedAt: v.optional(v.number()),
+    carrierArrivedBy: v.optional(v.id("users")),
+    receiptMovementId: v.optional(v.id("locationHistory")),
+    receiptDestinationLocationId: v.optional(v.id("locations")),
+    receiptConditionAssessmentId: v.optional(v.id("conditionAssessments")),
+    receivedAt: v.optional(v.number()),
+    receivedBy: v.optional(v.id("users")),
+    installationMovementId: v.optional(v.id("locationHistory")),
+    installedAt: v.optional(v.number()),
+    installedBy: v.optional(v.id("users")),
+    linkedExhibitionObjectId: v.optional(v.id("exhibitionObjects")),
 
     notes: v.optional(v.string()),
     createdAt: v.number(),

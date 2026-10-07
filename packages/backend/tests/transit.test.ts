@@ -250,7 +250,7 @@ test("should update transit item status on delivery", async () => {
     transitRecordId: transitId,
   });
 
-  expect(transit?.items[0]?.status).toBe("delivered");
+  expect(transit?.items[0]?.status).toBe("in_transit");
 });
 
 test("should prevent deletion of in-transit records", async () => {

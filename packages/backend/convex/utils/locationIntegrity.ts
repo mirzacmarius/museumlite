@@ -47,6 +47,7 @@ export interface CollectionMovementOptions extends MovementGuardOptions {
   moveRequestId?: Id<"locationMoveRequests">;
   batchJobId?: Id<"batchJobs">;
   exhibitionObjectId?: Id<"exhibitionObjects">;
+  transitItemId?: Id<"transitItems">;
 }
 
 /**
@@ -237,6 +238,7 @@ export async function moveCollectionToLocation(
     moveRequestId: options.moveRequestId,
     batchJobId: options.batchJobId,
     exhibitionObjectId: options.exhibitionObjectId,
+    transitItemId: options.transitItemId,
   });
   await ctx.db.patch(collection._id, {
     currentLocationId: toLocationId,
