@@ -13,6 +13,7 @@ import { getNextCounterValue } from "./utils/accessionCounter";
 import { accessionParser } from "./utils/accessionNumberParser";
 import { batchGetByIds } from "./utils/batchLookup";
 import { moveCollectionDetailRecords } from "./utils/collectionDetailLifecycle";
+import { getExhibitionsForObject } from "./utils/exhibitionParticipation";
 import {
   getCurrentUserOrganization,
   hasPermission,
@@ -551,10 +552,7 @@ async function buildEligibilityBlockers(
     });
   }
 
-  const exhibitions = await ctx.db
-    .query("exhibitions")
-    .withIndex("by_collection", (q) => q.eq("collectionId", collection._id))
-    .collect();
+  const exhibitions = await getExhibitionsForObject(ctx, collection._id);
 
   if (
     exhibitions.some((exhibition) =>

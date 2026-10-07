@@ -2133,27 +2133,34 @@ export const createExhibition = internalMutation({
   },
   returns: v.id("exhibitions"),
   handler: async (ctx, args) => {
-    // Check if already exists by title and collection (idempotent)
-    const existing = await ctx.db
+    const object = await ctx.db.get(args.collectionId);
+    if (!object || object.organizationId !== args.organizationId) {
+      throw new Error("Exhibition object does not belong to the organization");
+    }
+    const candidates = await ctx.db
       .query("exhibitions")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId),
       )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("title"), args.title),
-          q.eq(q.field("collectionId"), args.collectionId),
-        ),
-      )
-      .first();
+      .filter((q) => q.eq(q.field("title"), args.title))
+      .collect();
+    let existing = candidates.find((candidate) => candidate.collectionId === args.collectionId);
+    if (!existing) {
+      for (const candidate of candidates) {
+        const member = await ctx.db.query("exhibitionObjects")
+          .withIndex("by_exhibition", (q) => q.eq("exhibitionId", candidate._id))
+          .filter((q) => q.eq(q.field("collectionId"), args.collectionId)).first();
+        if (member) { existing = candidate; break; }
+      }
+    }
 
     if (existing) {
       return existing._id;
     }
 
-    return await ctx.db.insert("exhibitions", {
+    const exhibitionId = await ctx.db.insert("exhibitions", {
       organizationId: args.organizationId,
-      collectionId: args.collectionId,
+      participationVersion: "members",
       title: args.title,
       location: args.location,
       locationId: args.locationId,
@@ -2169,6 +2176,15 @@ export const createExhibition = internalMutation({
       approvedAt: args.approvedAt,
       createdBy: args.createdBy,
     });
+    await ctx.db.insert("exhibitionObjects", {
+      exhibitionId,
+      organizationId: args.organizationId,
+      collectionId: args.collectionId,
+      role: "participant",
+      order: 0,
+      status: "pending",
+    });
+    return exhibitionId;
   },
 });
 
@@ -2210,6 +2226,22 @@ export const createExhibitionObject = internalMutation({
       .first();
 
     if (existing) {
+      if (existing.status === "pending" && args.status !== "pending") {
+        await ctx.db.patch(existing._id, {
+          originalLocationId: args.originalLocationId,
+          exhibitionLocationId: args.exhibitionLocationId,
+          installedAt: args.installedAt,
+          installedBy: args.installedBy,
+          installationNotes: args.installationNotes,
+          conditionAtInstallation: args.conditionAtInstallation,
+          deinstalledAt: args.deinstalledAt,
+          deinstalledBy: args.deinstalledBy,
+          conditionAtDeinstallation: args.conditionAtDeinstallation,
+          returnedToOriginalLocation: args.returnedToOriginalLocation,
+          returnedAt: args.returnedAt,
+          status: args.status,
+        });
+      }
       return existing._id;
     }
 
@@ -2217,6 +2249,8 @@ export const createExhibitionObject = internalMutation({
       exhibitionId: args.exhibitionId,
       organizationId: args.organizationId,
       collectionId: args.collectionId,
+      role: "participant",
+      order: (await ctx.db.query("exhibitionObjects").withIndex("by_exhibition", (q) => q.eq("exhibitionId", args.exhibitionId)).collect()).length,
       originalLocationId: args.originalLocationId,
       exhibitionLocationId: args.exhibitionLocationId,
       installedAt: args.installedAt,
