@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp, Filter, X } from "lucide-react";
 import * as React from "react";
+import { formatUiMessage, useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 
@@ -18,7 +19,7 @@ interface FiltersPanelProps {
 
 export function FiltersPanel({
   children,
-  title = "Filters",
+  title,
   isOpen: controlledOpen,
   onOpenChange,
   hasActiveFilters = false,
@@ -26,6 +27,7 @@ export function FiltersPanel({
   onClear,
   className,
 }: FiltersPanelProps) {
+  const { messages } = useUiLocale();
   const [internalOpen, setInternalOpen] = React.useState(false);
 
   const isOpen = controlledOpen ?? internalOpen;
@@ -42,7 +44,7 @@ export function FiltersPanel({
           className="gap-2"
         >
           <Filter className="size-4" />
-          {title}
+          {title ?? messages.filters.title}
           {hasActiveFilters &&
             activeFilterCount !== undefined &&
             activeFilterCount > 0 && (
@@ -66,7 +68,7 @@ export function FiltersPanel({
             className="gap-1 text-muted-foreground hover:text-foreground"
           >
             <X className="size-3" />
-            Clear all
+            {messages.filters.clearAll}
           </Button>
         )}
       </div>
@@ -119,6 +121,7 @@ export function ActiveFilterChip({
   value,
   onRemove,
 }: ActiveFilterChipProps) {
+  const { messages } = useUiLocale();
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs">
       <span className="text-muted-foreground">{label}:</span>
@@ -127,7 +130,7 @@ export function ActiveFilterChip({
         type="button"
         onClick={onRemove}
         className="ml-1 rounded-full p-0.5 hover:bg-primary/20"
-        aria-label={`Remove ${label} filter`}
+        aria-label={formatUiMessage(messages.filters.removeFilter, { label })}
       >
         <X className="size-3" />
       </button>

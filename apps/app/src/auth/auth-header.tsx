@@ -1,4 +1,5 @@
 import type { AuthMode, AuthStep } from "@/auth/types";
+import { useI18n } from "@/locales/client";
 
 interface AuthHeaderProps {
   mode: AuthMode;
@@ -8,39 +9,44 @@ interface AuthHeaderProps {
 function getAuthHeaderDescription({
   mode,
   step,
+  translate,
 }: {
   mode: AuthMode;
   step: AuthStep;
+  translate: ReturnType<typeof useI18n>;
 }): string {
   if (step === "uniqueCode") {
-    return "Check your email for the code to continue.";
+    return translate("untranslatedComponents.auth.checkEmailForCode");
   }
 
   if (mode === "signUp") {
     if (step === "password") {
-      return "Set a password to finish account setup. If this is not your email, clear it and enter another.";
+      return translate("untranslatedComponents.auth.setPasswordToFinishSetup");
     }
 
-    return "Already registered? Enter your email and we will guide you back to sign in.";
+    return translate("untranslatedComponents.auth.alreadyRegisteredEnterEmail");
   }
 
   if (step === "password") {
-    return "Enter your password or use a unique code to continue.";
+    return translate("untranslatedComponents.auth.enterPasswordOrCode");
   }
 
-  return "Use your email or Google account. New users will continue directly to account setup.";
+  return translate("untranslatedComponents.auth.useEmailOrGoogle");
 }
 
 export function AuthHeader({ mode, step }: AuthHeaderProps) {
+  const translate = useI18n();
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[20px] font-semibold text-foreground">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         {mode === "signIn"
-          ? "Sign in or create your account."
-          : "Create your account."}
-      </span>
+          ? translate("loginPage.heading")
+          : translate("registerPage.heading")}
+      </h1>
       <span className="text-sm text-muted-foreground">
-        {getAuthHeaderDescription({ mode, step })}
+        {mode === "signIn" && step === "email"
+          ? translate("loginPage.description")
+          : getAuthHeaderDescription({ mode, step, translate })}
       </span>
     </div>
   );

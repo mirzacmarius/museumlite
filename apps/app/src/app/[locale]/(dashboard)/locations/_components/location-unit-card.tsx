@@ -1,6 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@v1/ui/tooltip";
 import { cn } from "@v1/ui/utils";
 import { Package } from "lucide-react";
+import { useScopedI18n } from "@/locales/client";
 import Image from "next/image";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
@@ -20,6 +21,8 @@ export function LocationUnitCard({
   isActive = true,
   objects,
 }: LocationUnitCardProps) {
+  const t = useScopedI18n("untranslatedDashboard.locations");
+  const tStatus = useScopedI18n("common.filters");
   const objectsById = new Map(objects.map((object) => [object._id, object]));
   const cards = locationUnitCards(objects.map((object) => object._id));
 
@@ -34,7 +37,7 @@ export function LocationUnitCard({
         const countLabel =
           unitCount === null
             ? null
-            : `${unitCount} object${unitCount === 1 ? "" : "s"} inside ${name}`;
+            : t("objectCountInside", { count: unitCount, name });
 
         return (
           <article
@@ -44,7 +47,7 @@ export function LocationUnitCard({
             {object === null ? (
               <div className="flex aspect-square flex-col items-center justify-center gap-2 bg-muted/30 text-muted-foreground dark:bg-zinc-950/60">
                 <Package className="size-7" strokeWidth={1.5} />
-                <span className="text-xs">No assigned objects</span>
+                <span className="text-xs">{t("noAssignedObjects")}</span>
               </div>
             ) : (
               <Link
@@ -70,7 +73,7 @@ export function LocationUnitCard({
                   )}
                   {object.status ? (
                     <span className="absolute end-2 top-2 rounded border border-white/10 bg-black/60 px-1.5 py-0.5 text-[9px] capitalize text-white backdrop-blur-sm">
-                      {object.status.replaceAll("_", " ")}
+                      {tStatus(object.status)}
                     </span>
                   ) : null}
                 </div>
@@ -90,7 +93,7 @@ export function LocationUnitCard({
                   className="min-w-0 truncate font-mono text-[10px] text-muted-foreground"
                   title={object.accessionNumber}
                 >
-                  {object.accessionNumber ?? "No accession"}
+                  {object.accessionNumber ?? t("noAccession")}
                 </p>
               ) : null}
               {locationIndicator}

@@ -140,8 +140,15 @@ const IMPORT_PERMISSIONS: Record<ImportEntityType, string[]> = {
   loans: ["loans.create"],
 };
 
-function importPermissions(entityType: ImportEntityType | undefined) {
-  // Legacy and media jobs predate entity types and stay collection-scoped.
+type ImportJobType = "csv" | "media";
+
+function importPermissions(
+  entityType: ImportEntityType | undefined,
+  type: ImportJobType,
+) {
+  // Media imports attach files to objects; they are run by media uploaders.
+  if (type === "media") return ["media.upload"];
+  // Legacy jobs predate entity types and stay collection-scoped.
   return entityType ? IMPORT_PERMISSIONS[entityType] : ["collections.create"];
 }
 
@@ -149,9 +156,10 @@ async function canManageImport(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   entityType: ImportEntityType | undefined,
+  type: ImportJobType,
 ) {
   const checks = await Promise.all(
-    importPermissions(entityType).map((permission) =>
+    importPermissions(entityType, type).map((permission) =>
       hasPermission(ctx, organizationId, permission),
     ),
   );
@@ -162,8 +170,9 @@ async function requireImportPermission(
   ctx: QueryCtx,
   organizationId: Id<"organizations">,
   entityType: ImportEntityType | undefined,
+  type: ImportJobType,
 ) {
-  for (const permission of importPermissions(entityType)) {
+  for (const permission of importPermissions(entityType, type)) {
     await requirePermission(ctx, organizationId, permission);
   }
 }
@@ -194,7 +203,12 @@ export const createImportJob = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    await requireImportPermission(ctx, args.organizationId, args.entityType);
+    await requireImportPermission(
+      ctx,
+      args.organizationId,
+      args.entityType,
+      args.type,
+    );
     validateImportJobTotal(args.totalItems);
     if (
       args.sourceFingerprint !== undefined &&
@@ -238,7 +252,14 @@ export const getImportJob = query({
 
     const job = await ctx.db.get(args.jobId);
     if (!job) return null;
-    if (!(await canManageImport(ctx, job.organizationId, job.entityType))) {
+    if (
+      !(await canManageImport(
+        ctx,
+        job.organizationId,
+        job.entityType,
+        job.type,
+      ))
+    ) {
       return null;
     }
 
@@ -262,16 +283,22 @@ export const listImportJobs = query({
       )
       .order("desc")
       .take(20);
-    const allowed = new Map<ImportEntityType | undefined, boolean>();
+    const allowed = new Map<string, boolean>();
     const visible: ReturnType<typeof toImportJobView>[] = [];
     for (const job of jobs) {
-      if (!allowed.has(job.entityType)) {
+      const key = `${job.type}:${job.entityType ?? ""}`;
+      if (!allowed.has(key)) {
         allowed.set(
-          job.entityType,
-          await canManageImport(ctx, args.organizationId, job.entityType),
+          key,
+          await canManageImport(
+            ctx,
+            args.organizationId,
+            job.entityType,
+            job.type,
+          ),
         );
       }
-      if (allowed.get(job.entityType)) visible.push(toImportJobView(job));
+      if (allowed.get(key)) visible.push(toImportJobView(job));
     }
     return visible;
   },
@@ -286,7 +313,12 @@ export const findResumableImportJob = query({
   },
   returns: v.union(v.object(importJobViewFields), v.null()),
   handler: async (ctx, args) => {
-    await requireImportPermission(ctx, args.organizationId, args.entityType);
+    await requireImportPermission(
+      ctx,
+      args.organizationId,
+      args.entityType,
+      "csv",
+    );
     const jobs = await ctx.db
       .query("importJobs")
       .withIndex("by_organization_and_sourceFingerprint", (q) =>
@@ -330,7 +362,12 @@ export const listImportRowResults = query({
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
     if (!job) throw new Error("Import job not found");
-    await requireImportPermission(ctx, job.organizationId, job.entityType);
+    await requireImportPermission(
+      ctx,
+      job.organizationId,
+      job.entityType,
+      job.type,
+    );
     const paginationOpts = {
       ...args.paginationOpts,
       numItems: Math.min(Math.max(args.paginationOpts.numItems, 1), 200),
@@ -464,7 +501,12 @@ export const cancelImportJob = mutation({
       throw new Error("Import job not found");
     }
 
-    await requireImportPermission(ctx, job.organizationId, job.entityType);
+    await requireImportPermission(
+      ctx,
+      job.organizationId,
+      job.entityType,
+      job.type,
+    );
 
     if (
       job.status === "pending" ||

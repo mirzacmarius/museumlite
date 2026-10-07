@@ -12,8 +12,8 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Loader2 } from "lucide-react";
 import type { Dispatch } from "react";
-import type { HoldsPageAction, HoldsPageState } from "./holds-page-state";
 import type { Translate } from "./holds-page-parts";
+import type { HoldsPageAction, HoldsPageState } from "./holds-page-state";
 
 interface LibraryItemOption {
   _id: Id<"libraryItems">;
@@ -51,12 +51,16 @@ export function PlaceHoldDialog({
   return (
     <Dialog
       open={state.isPlaceHoldDialogOpen}
-      onOpenChange={(open) => !open && dispatch({ type: "closePlaceHoldDialog" })}
+      onOpenChange={(open) =>
+        !open && dispatch({ type: "closePlaceHoldDialog" })
+      }
     >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{tHolds("placeDialog.title")}</DialogTitle>
-          <DialogDescription>{tHolds("placeDialog.description")}</DialogDescription>
+          <DialogDescription>
+            {tHolds("placeDialog.description")}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

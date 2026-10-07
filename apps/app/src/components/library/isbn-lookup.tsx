@@ -9,6 +9,7 @@ import { useAction } from "convex/react";
 import { Loader2, Search } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 
 export interface IsbnLookupData {
   title?: string;
@@ -36,6 +37,7 @@ interface IsbnLookupProps {
 }
 
 export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
+  const translate = useI18n();
   const [isbn, setIsbn] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -107,16 +109,22 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
   return (
     <div className="space-y-4 rounded-lg border border-border bg-card p-4">
       <div>
-        <Label htmlFor="isbn-lookup">ISBN Lookup</Label>
+        <Label htmlFor="isbn-lookup">
+          {translate("untranslatedComponents.labels.iSBNLookup")}
+        </Label>
         <p className="text-sm text-muted-foreground">
-          Enter an ISBN to automatically fill in book details from Open Library
+          {translate(
+            "untranslatedComponents.labels.enterAnISBNToAutomaticallyFillInBookDetailsFromOpenLibrary",
+          )}
         </p>
       </div>
 
       <div className="flex gap-2">
         <Input
           id="isbn-lookup"
-          placeholder="Enter ISBN-10 or ISBN-13..."
+          placeholder={translate(
+            "untranslatedComponents.labels.enterISBN10OrISBN13",
+          )}
           value={isbn}
           onChange={(e) => {
             setIsbn(e.target.value);
@@ -135,7 +143,7 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
           ) : (
             <>
               <Search className="mr-2 size-4" />
-              Lookup
+              {translate("untranslatedComponents.labels.lookup")}
             </>
           )}
         </Button>
@@ -144,7 +152,9 @@ export function IsbnLookup({ onDataFound, onIsbnChange }: IsbnLookupProps) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <p className="text-xs text-muted-foreground">
-        Powered by Open Library. Data may not always be available or accurate.
+        {translate(
+          "untranslatedComponents.labels.poweredByOpenLibraryDataMayNotAlwaysBeAvailableOrAccurate",
+        )}
       </p>
     </div>
   );

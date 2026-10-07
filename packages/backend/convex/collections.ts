@@ -1750,6 +1750,7 @@ export const update = mutation({
         args.currentLocationId,
         userId,
         "Catalog location change",
+        { kind: "catalog_edit" },
       );
     }
     await syncCollectionOptionUsages(ctx, args.collectionId);
@@ -2531,6 +2532,7 @@ export const bulkUpdateLocation = mutation({
           args.locationId,
           userId,
           "Bulk catalog location change",
+          { kind: "bulk_edit" },
         );
     }
     return { updated: uniqueIds.length, failed: 0 };

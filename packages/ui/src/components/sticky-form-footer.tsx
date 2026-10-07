@@ -2,6 +2,7 @@
 
 import { Loader2, Save, X } from "lucide-react";
 import type * as React from "react";
+import { useUiLocale } from "../locale";
 import { cn } from "../utils";
 import { Button } from "./button";
 
@@ -26,14 +27,15 @@ export function StickyFormFooter({
   onSaveAndNew,
   isSaving = false,
   isDirty = true,
-  saveLabel = "Save",
-  cancelLabel = "Cancel",
-  saveAndNewLabel = "Save & Add Another",
+  saveLabel,
+  cancelLabel,
+  saveAndNewLabel,
   showSaveAndNew = false,
   disabled = false,
   className,
   saveButtonProps,
 }: StickyFormFooterProps) {
+  const { messages } = useUiLocale();
   return (
     <div
       className={cn(
@@ -51,7 +53,7 @@ export function StickyFormFooter({
               disabled={isSaving}
             >
               <X className="mr-1 size-4" />
-              {cancelLabel}
+              {cancelLabel ?? messages.status.cancel}
             </Button>
           )}
         </div>
@@ -69,7 +71,7 @@ export function StickyFormFooter({
               ) : (
                 <Save className="mr-2 size-4" />
               )}
-              {saveAndNewLabel}
+              {saveAndNewLabel ?? messages.status.saveAndNew}
             </Button>
           )}
 
@@ -84,7 +86,9 @@ export function StickyFormFooter({
             ) : (
               <Save className="mr-2 size-4" />
             )}
-            {isSaving ? "Saving…" : saveLabel}
+            {isSaving
+              ? messages.status.saving
+              : (saveLabel ?? messages.status.save)}
           </Button>
         </div>
       </div>

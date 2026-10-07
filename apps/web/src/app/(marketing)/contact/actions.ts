@@ -29,13 +29,10 @@ export async function submitTourRequest(
       message: input.message,
     });
     return { ok: true };
-  } catch (submitError) {
+  } catch {
     return {
       ok: false,
-      error:
-        submitError instanceof Error
-          ? submitError.message
-          : "Something went wrong. Please try again.",
+      error: "submission_failed",
     };
   }
 }

@@ -17,6 +17,7 @@ interface InventoryValuationCardProps {
 }
 
 export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const t = useI18n();
   const formatCurrency = (value: number) =>
@@ -52,11 +53,11 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
             {formatCurrency(data.totalValue)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Total appraised value across{" "}
+            {t("untranslatedDashboard.analytics.appraisedValueAcross")} {" "}
             {data.fineArt.itemCount +
               data.wine.itemCount +
               data.vehicles.itemCount}{" "}
-            items
+            {t("untranslatedDashboard.analytics.items")}
           </p>
         </div>
       </CardHeader>
@@ -71,10 +72,10 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">
-                  Fine Art
+                  {tRoot("untranslatedRecords.objects.enums.fineArt")}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {data.fineArt.itemCount} items
+                  {data.fineArt.itemCount} {t("untranslatedDashboard.analytics.items")}
                 </div>
               </div>
             </div>
@@ -99,9 +100,9 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
                 <Wine className="size-4" />
               </div>
               <div>
-                <div className="text-sm font-medium text-foreground">Wine</div>
+                <div className="text-sm font-medium text-foreground">{tRoot("untranslatedRecords.objects.enums.wine")}</div>
                 <div className="text-[10px] text-muted-foreground">
-                  {data.wine.itemCount} items
+                  {data.wine.itemCount} {t("untranslatedDashboard.analytics.items")}
                 </div>
               </div>
             </div>
@@ -127,10 +128,10 @@ export function InventoryValuationCard({ data }: InventoryValuationCardProps) {
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">
-                  Vehicles
+                  {t("analytics.inventory.vehicles")}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {data.vehicles.itemCount} items
+                  {data.vehicles.itemCount} {t("untranslatedDashboard.analytics.items")}
                 </div>
               </div>
             </div>

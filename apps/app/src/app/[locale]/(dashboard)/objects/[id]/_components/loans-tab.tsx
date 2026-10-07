@@ -8,6 +8,8 @@ import { useQuery } from "convex/react";
 import { Send } from "lucide-react";
 import Link from "next/link";
 import { ClientDate } from "@/components/client-date";
+import { getLoanStatusLabel, getLoanTypeLabel } from "@/lib/record-enum-labels";
+import { useI18n } from "@/locales/client";
 import type { LoanForCollection } from "./types";
 
 interface LoansTabProps {
@@ -17,6 +19,7 @@ interface LoansTabProps {
 }
 
 export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
+  const tRoot = useI18n();
   const loans = useQuery(
     api.loans.getLoansForCollection,
     hasAccess && collectionId
@@ -41,11 +44,13 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
         <Send className="size-4 text-blue-500" />
-        Loan History
+        {tRoot("untranslatedRecords.loans.items.loanHistory")}
       </h3>
 
       {loans === undefined ? (
-        <p className="text-muted-foreground">Loading loans…</p>
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.objects.loading.loans")}
+        </p>
       ) : loans.length > 0 ? (
         <div className="space-y-4">
           {loans.map((loan: LoanForCollection) => (
@@ -68,7 +73,7 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
                           : "border border-blue-500/20 bg-blue-500/10 text-blue-400",
                       )}
                     >
-                      {loan.type}
+                      {getLoanTypeLabel(loan.type, tRoot)}
                     </span>
                     <span
                       className={cn(
@@ -82,7 +87,7 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
                               : "badge-neutral",
                       )}
                     >
-                      {loan.status}
+                      {getLoanStatusLabel(loan.status, tRoot)}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-foreground">
@@ -107,7 +112,7 @@ export function LoansTab({ collectionId, locale, hasAccess }: LoansTabProps) {
       ) : (
         <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
           <p className="text-sm text-muted-foreground">
-            No loan history for this object
+            {tRoot("untranslatedRecords.loans.items.noLoanHistory")}
           </p>
         </div>
       )}

@@ -169,7 +169,6 @@ export function CollectionEditFormTabShell({
           {activeTab === "physical" ? (
             <CollectionEditPhysicalTab
               {...tabProps}
-              collection={collection}
               typedCollectionId={typedCollectionId}
               hasConditionChanged={hasConditionChanged}
               requiresConditionChangeNote={requiresConditionChangeNote}

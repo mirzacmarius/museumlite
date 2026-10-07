@@ -35,7 +35,7 @@ import { DashboardListPageSkeleton } from "@/components/dashboard-list-page-skel
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 type TransitStatus =
   | "all"
@@ -52,24 +52,24 @@ type TransitStatus =
 type TransitType = "all" | "incoming" | "outgoing" | "internal" | "return";
 
 const statusOptions: Array<{ label: string; value: TransitStatus }> = [
-  { label: "All statuses", value: "all" },
-  { label: "Draft", value: "draft" },
-  { label: "Scheduled", value: "scheduled" },
-  { label: "In transit", value: "in_transit" },
-  { label: "Out for delivery", value: "out_for_delivery" },
-  { label: "Delivered", value: "delivered" },
-  { label: "Delayed", value: "delayed" },
-  { label: "Held", value: "held" },
-  { label: "Returned", value: "returned" },
-  { label: "Cancelled", value: "cancelled" },
+  { label: "all", value: "all" },
+  { label: "draft", value: "draft" },
+  { label: "scheduled", value: "scheduled" },
+  { label: "inTransit", value: "in_transit" },
+  { label: "outForDelivery", value: "out_for_delivery" },
+  { label: "delivered", value: "delivered" },
+  { label: "delayed", value: "delayed" },
+  { label: "held", value: "held" },
+  { label: "returned", value: "returned" },
+  { label: "cancelled", value: "cancelled" },
 ];
 
 const typeOptions: Array<{ label: string; value: TransitType }> = [
-  { label: "All types", value: "all" },
-  { label: "Incoming", value: "incoming" },
-  { label: "Outgoing", value: "outgoing" },
-  { label: "Internal", value: "internal" },
-  { label: "Return", value: "return" },
+  { label: "allTypes", value: "all" },
+  { label: "incoming", value: "incoming" },
+  { label: "outgoing", value: "outgoing" },
+  { label: "internal", value: "internal" },
+  { label: "return", value: "return" },
 ];
 
 const statusColor: Record<string, string> = {
@@ -85,6 +85,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function TransitPageClient() {
+  const t = useScopedI18n("untranslatedDashboard.transit");
   const locale = useCurrentLocale();
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
@@ -124,15 +125,15 @@ export function TransitPageClient() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">No Organization Selected</h3>
+          <h3 className="text-lg font-semibold">{t("noOrganizationSelected")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select or create an organization to view transit logs.
+              {t("selectOrganizationDescription")}
             </p>
           </div>
           <Button asChild>
             <Link href="/organizations/new">
               <Plus className="mr-2 size-4" />
-              Create Organization
+              {t("createOrganization")}
             </Link>
           </Button>
         </div>
@@ -142,7 +143,7 @@ export function TransitPageClient() {
 
   return (
     <FeatureGuard
-      featureName="Transit Log"
+      featureName={t("title")}
       isLocked={!hasFeature("loans")}
       tierNeeded="pro"
     >
@@ -150,9 +151,9 @@ export function TransitPageClient() {
         <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-8 sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-2">
-              <h2 className="page-title">Transit Log</h2>
+              <h2 className="page-title">{t("title")}</h2>
               <p className="page-description">
-                Track object movements and shipments
+                {t("description")}
               </p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
@@ -161,15 +162,14 @@ export function TransitPageClient() {
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 size-4" />
-                      Log Transit
+                      {t("logTransit")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[520px]">
                     <DialogHeader>
-                      <DialogTitle>New Transit Record</DialogTitle>
+                      <DialogTitle>{t("newRecord")}</DialogTitle>
                       <DialogDescription className="sr-only">
-                        Log a new transit record for an object movement or
-                        shipment.
+                        {t("newRecordDescription")}
                       </DialogDescription>
                     </DialogHeader>
                     <TransitForm
@@ -179,13 +179,13 @@ export function TransitPageClient() {
                       onSubmit={async (payload) => {
                         try {
                           await createTransit(payload);
-                          toast.success("Transit record created");
+                          toast.success(t("recordCreated"));
                           setDialogOpen(false);
                         } catch (err) {
                           toast.error(
                             err instanceof Error
                               ? err.message
-                              : "Failed to create transit record",
+                              : t("recordCreateFailed"),
                           );
                         }
                       }}
@@ -201,7 +201,7 @@ export function TransitPageClient() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search transit records..."
+                  placeholder={t("searchPlaceholder")}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   className="rounded-lg border-border/60 bg-card pl-9 text-xs transition-all focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
@@ -215,12 +215,12 @@ export function TransitPageClient() {
                   }
                 >
                   <SelectTrigger className="w-[180px] border-border/60 bg-card text-xs">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t("status")} />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(`statusOptions.${option.label}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -230,12 +230,12 @@ export function TransitPageClient() {
                   onValueChange={(value) => setTypeFilter(value as TransitType)}
                 >
                   <SelectTrigger className="w-[180px] border-border/60 bg-card text-xs">
-                    <SelectValue placeholder="Type" />
+                    <SelectValue placeholder={t("type")} />
                   </SelectTrigger>
                   <SelectContent>
                     {typeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        {t(`typeOptions.${option.label}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -249,7 +249,7 @@ export function TransitPageClient() {
               columns={[
                 {
                   key: "transitNumber",
-                  label: "Transit #",
+                  label: t("transitNumber"),
                   className: "min-w-0 flex-[1.25]",
                   render: (record) => (
                     <span className="truncate font-semibold text-foreground">
@@ -259,15 +259,17 @@ export function TransitPageClient() {
                 },
                 {
                   key: "transitType",
-                  label: "Type",
+                  label: t("type"),
                   className: "w-24 flex-none",
                   render: (record) => (
-                    <span className="capitalize">{record.transitType}</span>
+                    <span className="capitalize">
+                      {t(`typeOptions.${record.transitType}`)}
+                    </span>
                   ),
                 },
                 {
                   key: "destinationName",
-                  label: "Origin → Destination",
+                  label: t("originToDestination"),
                   className: "min-w-0 flex-[1.8]",
                   render: (record) => (
                     <div className="flex min-w-0 flex-col">
@@ -282,7 +284,7 @@ export function TransitPageClient() {
                 },
                 {
                   key: "carrier",
-                  label: "Carrier",
+                  label: t("carrier"),
                   className: "min-w-0 flex-[1.5]",
                   render: (record) => (
                     <div className="flex min-w-0 flex-col">
@@ -299,7 +301,7 @@ export function TransitPageClient() {
                 },
                 {
                   key: "scheduledPickupDate",
-                  label: "Pickup",
+                  label: t("pickup"),
                   className: "w-28 flex-none",
                   render: (record) =>
                     record.scheduledPickupDate ? (
@@ -313,7 +315,7 @@ export function TransitPageClient() {
                 },
                 {
                   key: "estimatedDeliveryDate",
-                  label: "ETA",
+                  label: t("estimatedArrival"),
                   className: "w-28 flex-none",
                   render: (record) =>
                     record.estimatedDeliveryDate ? (
@@ -327,12 +329,12 @@ export function TransitPageClient() {
                 },
                 {
                   key: "itemCount",
-                  label: "Items",
+                  label: t("items"),
                   className: "w-20 flex-none justify-end text-right",
                 },
                 {
                   key: "status",
-                  label: "Status",
+                  label: t("status"),
                   className: "w-32 flex-none",
                   render: (record) => (
                     <Badge
@@ -342,15 +344,15 @@ export function TransitPageClient() {
                         "border-border text-muted-foreground"
                       }
                     >
-                      {record.status.replace("_", " ")}
+                      {t(`statusOptions.${record.status}`)}
                     </Badge>
                   ),
                 },
               ]}
               emptyState={
                 <EmptyState
-                  title="No transit records yet"
-                  description="Log a shipment or movement to start tracking transit activity."
+                  title={t("noRecordsYet")}
+                  description={t("noRecordsDescription")}
                   icon={Container}
                 />
               }
@@ -378,6 +380,7 @@ function TransitForm({
     trackingNumber?: string;
   }) => Promise<void>;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.transit");
   const [form, setForm] = useState({
     transitType: "incoming" as "incoming" | "outgoing" | "internal" | "return",
     originName: "",
@@ -392,7 +395,7 @@ function TransitForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.originName || !form.destinationName || !form.carrier) {
-      toast.error("Please fill all required fields.");
+      toast.error(t("requiredFieldsError"));
       return;
     }
 
@@ -407,7 +410,7 @@ function TransitForm({
       (form.scheduledPickupDate && Number.isNaN(scheduledPickupDate)) ||
       (form.estimatedDeliveryDate && Number.isNaN(estimatedDeliveryDate))
     ) {
-      toast.error("Please provide valid dates.");
+      toast.error(t("validDatesError"));
       return;
     }
 
@@ -440,7 +443,7 @@ function TransitForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
-        <Label>Transit Type *</Label>
+        <Label>{t("transitTypeRequired")}</Label>
         <Select
           value={form.transitType}
           onValueChange={(value) =>
@@ -454,29 +457,29 @@ function TransitForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="incoming">Incoming</SelectItem>
-            <SelectItem value="outgoing">Outgoing</SelectItem>
-            <SelectItem value="internal">Internal</SelectItem>
-            <SelectItem value="return">Return</SelectItem>
+            <SelectItem value="incoming">{t("typeOptions.incoming")}</SelectItem>
+            <SelectItem value="outgoing">{t("typeOptions.outgoing")}</SelectItem>
+            <SelectItem value="internal">{t("typeOptions.internal")}</SelectItem>
+            <SelectItem value="return">{t("typeOptions.return")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="originName">Origin *</Label>
+          <Label htmlFor="originName">{t("originRequired")}</Label>
           <Input
             id="originName"
             value={form.originName}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, originName: event.target.value }))
             }
-            placeholder="Main Museum"
+            placeholder={t("originPlaceholder")}
             required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="destinationName">Destination *</Label>
+          <Label htmlFor="destinationName">{t("destinationRequired")}</Label>
           <Input
             id="destinationName"
             value={form.destinationName}
@@ -486,28 +489,28 @@ function TransitForm({
                 destinationName: event.target.value,
               }))
             }
-            placeholder="Storage Facility"
+            placeholder={t("destinationPlaceholder")}
             required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="carrier">Carrier *</Label>
+        <Label htmlFor="carrier">{t("carrierRequired")}</Label>
         <Input
           id="carrier"
           value={form.carrier}
           onChange={(event) =>
             setForm((prev) => ({ ...prev, carrier: event.target.value }))
           }
-          placeholder="FedEx, DHL, Internal Courier"
+          placeholder={t("carrierPlaceholder")}
           required
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <DatePickerInput
-          label="Scheduled Pickup"
+          label={t("scheduledPickup")}
           id="scheduledPickupDate"
           value={form.scheduledPickupDate}
           onChange={(value) =>
@@ -518,7 +521,7 @@ function TransitForm({
           }
         />
         <DatePickerInput
-          label="Estimated Delivery"
+          label={t("estimatedDelivery")}
           id="estimatedDeliveryDate"
           value={form.estimatedDeliveryDate}
           onChange={(value) =>
@@ -531,7 +534,7 @@ function TransitForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="trackingNumber">Tracking Number</Label>
+        <Label htmlFor="trackingNumber">{t("trackingNumber")}</Label>
         <Input
           id="trackingNumber"
           value={form.trackingNumber}
@@ -544,7 +547,7 @@ function TransitForm({
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create Transit Record"}
+          {isSubmitting ? t("creating") : t("createRecord")}
         </Button>
       </div>
     </form>

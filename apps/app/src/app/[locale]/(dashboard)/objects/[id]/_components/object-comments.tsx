@@ -13,7 +13,7 @@ import { AtSign, Loader2, MessageSquare, Send } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientRelativeTime } from "@/components/client-date";
-import { useCurrentLocale } from "@/locales/client";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 type CommentItem = {
   _id: Id<"objectComments">;
@@ -74,6 +74,7 @@ export function ObjectComments({
   objectId,
   organizationId,
 }: ObjectCommentsProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [content, setContent] = useState("");
@@ -148,7 +149,7 @@ export function ObjectComments({
       setMentionState(null);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to add comment");
+      toast.error(tRoot("untranslatedRecords.objects.comments.failedAdd"));
     } finally {
       setIsSubmitting(false);
     }
@@ -161,7 +162,7 @@ export function ObjectComments({
       <div className="flex items-center gap-2">
         <MessageSquare className="size-4 text-accent" />
         <h3 className="text-xs font-medium uppercase tracking-widest text-foreground">
-          Comments
+          {tRoot("untranslatedRecords.objects.comments.title")}
         </h3>
       </div>
 
@@ -174,8 +175,10 @@ export function ObjectComments({
         ) : comments.length === 0 ? (
           <EmptyState
             icon={MessageSquare}
-            title="No comments yet"
-            description="Start the conversation with a note or update."
+            title={tRoot("untranslatedRecords.objects.comments.emptyTitle")}
+            description={tRoot(
+              "untranslatedRecords.objects.comments.emptyDescription",
+            )}
             size="sm"
           />
         ) : (
@@ -202,7 +205,8 @@ export function ObjectComments({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground">
-                        {comment.userName ?? "Unknown"}
+                        {comment.userName ??
+                          tRoot("untranslatedRecords.objects.comments.unknown")}
                       </p>
                       <span className="text-xs text-muted-foreground">
                         <ClientRelativeTime
@@ -229,7 +233,9 @@ export function ObjectComments({
             ref={textareaRef}
             value={content}
             onChange={(event) => handleContentChange(event.target.value)}
-            placeholder="Add a comment..."
+            placeholder={tRoot(
+              "untranslatedRecords.objects.comments.placeholder",
+            )}
             rows={3}
             className="pr-12"
             onKeyDown={(event) => {
@@ -252,7 +258,7 @@ export function ObjectComments({
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <AtSign className="size-3" />
-          Type @ to mention a teammate
+          {tRoot("untranslatedRecords.objects.comments.mentionHint")}
         </div>
 
         {mentionState && mentionSuggestions.length > 0 && (
@@ -275,7 +281,9 @@ export function ObjectComments({
                   </Avatar>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium">
-                      {user.name ?? user.email ?? "User"}
+                      {user.name ??
+                        user.email ??
+                        tRoot("untranslatedRecords.objects.comments.user")}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       @{user.handle}

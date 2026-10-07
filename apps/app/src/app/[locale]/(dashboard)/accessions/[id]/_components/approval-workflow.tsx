@@ -20,7 +20,7 @@ import { useMutation, useQuery } from "convex/react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface ApprovalWorkflowProps {
   accessionId: string;
@@ -103,6 +103,7 @@ export function ApprovalWorkflow({
   accessionId,
   compact = false,
 }: ApprovalWorkflowProps) {
+  const tRoot = useI18n();
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
@@ -173,8 +174,7 @@ export function ApprovalWorkflow({
         <div className="space-y-1">
           <h3 className="text-lg font-medium">{t("approval.title")}</h3>
           <p className="text-sm leading-6 text-muted-foreground">
-            Record a short decision note if the next reviewer or future audit
-            trail would benefit from extra context.
+            {tRoot("untranslatedRecords.accessions.approval.noteGuidance")}
           </p>
         </div>
       )}
@@ -190,7 +190,7 @@ export function ApprovalWorkflow({
         {currentStep && !compact ? (
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Current step
+              {tRoot("untranslatedRecords.accessions.detail.currentStep")}
             </p>
             <p className="mt-2 text-sm font-medium text-foreground">
               {currentStep.name}
@@ -213,7 +213,7 @@ export function ApprovalWorkflow({
                 : "text-xs text-muted-foreground"
             }
           >
-            Optional. This note is stored with the approval or rejection event.
+            {tRoot("untranslatedRecords.accessions.approval.optionalNoteHint")}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -224,7 +224,10 @@ export function ApprovalWorkflow({
           >
             <CheckCircle className="mr-2 size-4" />
             {currentStep
-              ? `Approve ${currentStep.name}`
+              ? tRoot(
+                  "untranslatedRecords.accessions.approval.approveStepNamed",
+                  { step: currentStep.name },
+                )
               : accession.workflowStep
                 ? t("approval.approveStep", { step: accession.workflowStep })
                 : t("approval.approve")}

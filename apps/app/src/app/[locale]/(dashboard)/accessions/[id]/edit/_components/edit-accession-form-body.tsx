@@ -13,9 +13,8 @@ import {
 import { Textarea } from "@v1/ui/textarea";
 import { Save } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { EditSection } from "./edit-accession-ui";
-
 export interface EditAccessionFormData {
   source: string;
   method:
@@ -51,6 +50,7 @@ export function EditAccessionFormBody({
   onSubmit,
   onCancel,
 }: EditAccessionFormBodyProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("accessions");
   const tCommon = useScopedI18n("common");
 
@@ -68,8 +68,12 @@ export function EditAccessionFormBody({
 
       <div className="space-y-8">
         <EditSection
-          title="Locked intake details"
-          description="These identifiers are set when the accession is created and stay read-only during pending review."
+          title={tRoot(
+            "untranslatedRecords.accessions.edit.lockedIntakeDetails",
+          )}
+          description={tRoot(
+            "untranslatedRecords.accessions.edit.lockedDetailsDescription",
+          )}
         >
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
@@ -91,8 +95,12 @@ export function EditAccessionFormBody({
         </EditSection>
 
         <EditSection
-          title="Accession information"
-          description="Edit source, acquisition method, valuation context, and any staff notes before approval."
+          title={tRoot(
+            "untranslatedRecords.accessions.edit.accessionInformation",
+          )}
+          description={tRoot(
+            "untranslatedRecords.accessions.edit.accessionDescription",
+          )}
         >
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
@@ -112,8 +120,9 @@ export function EditAccessionFormBody({
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Use the person, estate, dealer, institution, or source reference
-                the approver will recognize.
+                {tRoot(
+                  "untranslatedRecords.accessions.edit.sourceNameGuidance",
+                )}
               </p>
             </div>
 
@@ -158,8 +167,9 @@ export function EditAccessionFormBody({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                This affects how the accession will be interpreted in review and
-                reporting.
+                {tRoot(
+                  "untranslatedRecords.accessions.edit.methodInterpretation",
+                )}
               </p>
             </div>
 
@@ -176,7 +186,7 @@ export function EditAccessionFormBody({
                 placeholder={t("form.costPlaceholder")}
               />
               <p className="text-xs text-muted-foreground">
-                Leave blank when no acquisition cost applies.
+                {tRoot("untranslatedRecords.accessions.edit.noCostHint")}
               </p>
             </div>
 
@@ -192,8 +202,7 @@ export function EditAccessionFormBody({
                 rows={4}
               />
               <p className="text-xs text-muted-foreground">
-                Add review context, provenance caveats, or handling notes that
-                should travel with the approval decision.
+                {tRoot("untranslatedRecords.accessions.edit.notesGuidanceLong")}
               </p>
             </div>
           </div>

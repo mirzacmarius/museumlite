@@ -86,7 +86,7 @@ export function MediaDetailModal({
             {t("mediaPage.details.title")}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            View media metadata, file details, and available versions.
+            {t("untranslatedDashboard.media.metadataDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -181,7 +181,7 @@ export function MediaDetailModal({
                   >
                     <a href={item.url} download>
                       <Download className="mr-1 size-3" />
-                      Download
+                      {t("untranslatedDashboard.media.download")}
                     </a>
                   </Button>
                 )}
@@ -190,7 +190,9 @@ export function MediaDetailModal({
               <MediaPublicationPanel mediaId={mediaId} item={item} />
 
               <div className="space-y-2 border-t border-zinc-800 pt-4">
-                <p className="text-sm font-medium text-zinc-200">Versions</p>
+                <p className="text-sm font-medium text-zinc-200">
+                  {t("untranslatedDashboard.media.versions")}
+                </p>
                 <ScrollArea className="h-48 rounded-lg border border-zinc-800 bg-zinc-950">
                   <div className="space-y-2 p-3">
                     {versions === undefined && (
@@ -213,7 +215,7 @@ export function MediaDetailModal({
                               </span>
                               {isCurrentVersion && (
                                 <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
-                                  Current
+                                  {t("untranslatedDashboard.media.current")}
                                 </span>
                               )}
                             </div>
@@ -230,10 +232,19 @@ export function MediaDetailModal({
                                 <span className="text-xs text-zinc-500">
                                   {version.editType === "crop" &&
                                     isCropMetadata(version.editMetadata) &&
-                                    `Cropped to ${Math.round(version.editMetadata.crop.width)}×${Math.round(version.editMetadata.crop.height)}`}
+                                    t("untranslatedDashboard.media.croppedTo", {
+                                      width: Math.round(
+                                        version.editMetadata.crop.width,
+                                      ),
+                                      height: Math.round(
+                                        version.editMetadata.crop.height,
+                                      ),
+                                    })}
                                   {version.editType === "rotate" &&
                                     isRotateMetadata(version.editMetadata) &&
-                                    `Rotated ${version.editMetadata.rotation}°`}
+                                    t("untranslatedDashboard.media.rotated", {
+                                      degrees: version.editMetadata.rotation,
+                                    })}
                                   {version.editType === "adjust" &&
                                     isAdjustMetadata(version.editMetadata) &&
                                     (version.editMetadata.brightness !==

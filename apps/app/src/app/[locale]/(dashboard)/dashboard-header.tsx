@@ -6,31 +6,57 @@ import { Building2 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { useScopedI18n } from "@/locales/client";
+
+const pageTitleKeys: Record<string, string> = {
+  accounts: "accounts",
+  activity: "activity",
+  analytics: "analytics",
+  assignments: "assignments",
+  conservation: "conservation",
+  exhibitions: "exhibitions",
+  insurance: "insurance",
+  installations: "installations",
+  locations: "locations",
+  media: "media",
+  notifications: "notifications",
+  organizations: "organizations",
+  portal: "portal",
+  scan: "scan",
+  settings: "settings",
+  transit: "transit",
+  transfers: "transfers",
+};
 
 export function DashboardHeader({ children }: { children: ReactNode }) {
   const { currentOrganization } = useOrganization();
   const pathname = usePathname();
   const params = useParams();
   const locale = params?.locale as string;
+  const t = useScopedI18n("untranslatedDashboard.dashboardHeader");
 
   const getPageTitle = (path: string) => {
     const cleanPath = path.replace(`/${locale}`, "") || "/";
 
-    if (cleanPath === "/" || cleanPath === "") return "Collections Overview";
-    if (cleanPath === "/objects/new") return "New Object";
-    if (/^\/objects\/[^/]+\/edit$/.test(cleanPath)) return "Edit Object";
-    if (/^\/objects\/[^/]+$/.test(cleanPath)) return "Object Details";
-    if (cleanPath.startsWith("/objects")) return "Object Catalog";
-    if (cleanPath === "/exhibitions/new") return "New Exhibition";
+    if (cleanPath === "/" || cleanPath === "") return t("overview");
+    if (cleanPath === "/objects/new") return t("newObject");
+    if (/^\/objects\/[^/]+\/edit$/.test(cleanPath)) return t("editObject");
+    if (/^\/objects\/[^/]+$/.test(cleanPath)) return t("objectDetails");
+    if (cleanPath.startsWith("/objects")) return t("objectCatalog");
+    if (cleanPath === "/exhibitions/new") return t("newExhibition");
     if (/^\/exhibitions\/[^/]+\/edit$/.test(cleanPath))
-      return "Edit Exhibition";
-    if (/^\/exhibitions\/[^/]+$/.test(cleanPath)) return "Exhibition Details";
-    if (cleanPath.startsWith("/exhibitions")) return "Exhibition Management";
+      return t("editExhibition");
+    if (/^\/exhibitions\/[^/]+$/.test(cleanPath))
+      return t("exhibitionDetails");
+    if (cleanPath.startsWith("/exhibitions")) return t("exhibitions");
 
     const segment = cleanPath.split("/").pop();
+    if (segment && pageTitleKeys[segment]) {
+      return t(`pageTitles.${pageTitleKeys[segment]}`);
+    }
     return segment
       ? segment.charAt(0).toUpperCase() + segment.slice(1)
-      : "Overview";
+      : t("overview");
   };
 
   return (

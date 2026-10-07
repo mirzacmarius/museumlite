@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useWebI18n } from "@/locales/provider";
 
 function subscribeNoop() {
   return () => {};
@@ -27,13 +28,15 @@ interface ClientDateProps {
 }
 
 export function ClientDate({ timestamp, locale, options }: ClientDateProps) {
+  const { locale: preferredLocale } = useWebI18n();
+  const dateLocale = locale ?? preferredLocale;
   return useClientSnapshot(
     () => {
       if (timestamp === null || timestamp === undefined) {
         return "";
       }
 
-      return new Date(timestamp).toLocaleDateString(locale, options);
+      return new Date(timestamp).toLocaleDateString(dateLocale, options);
     },
     () => "",
   );

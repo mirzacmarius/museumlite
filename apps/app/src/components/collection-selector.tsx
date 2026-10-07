@@ -13,6 +13,7 @@ import {
 import { Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDrainedCollectionList } from "@/hooks/use-drained-collection-list";
+import { useI18n } from "@/locales/client";
 
 interface CollectionSelectorProps {
   organizationId: string;
@@ -29,12 +30,13 @@ export function CollectionSelector({
   organizationId,
   value,
   onValueChange,
-  placeholder = "Select a collection object",
+  placeholder,
   label,
   required = false,
   filterStatus = "all",
   excludeDeaccessioned = true,
 }: CollectionSelectorProps) {
+  const translate = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -77,7 +79,11 @@ export function CollectionSelector({
         )}
         <Select value={value} onValueChange={onValueChange} disabled>
           <SelectTrigger>
-            <SelectValue placeholder="Loading collections..." />
+            <SelectValue
+              placeholder={translate(
+                "untranslatedComponents.labels.loadingCollections",
+              )}
+            />
           </SelectTrigger>
         </Select>
       </div>
@@ -98,7 +104,12 @@ export function CollectionSelector({
         onOpenChange={setIsOpen}
       >
         <SelectTrigger>
-          <SelectValue placeholder={placeholder}>
+          <SelectValue
+            placeholder={
+              placeholder ??
+              translate("untranslatedComponents.labels.selectACollectionObject")
+            }
+          >
             {selectedCollection
               ? `${selectedCollection.accessionNumber} - ${selectedCollection.title}`
               : placeholder}
@@ -110,7 +121,9 @@ export function CollectionSelector({
             <div className="relative">
               <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by accession number or title..."
+                placeholder={translate(
+                  "untranslatedComponents.labels.searchByAccessionNumberOrTitle",
+                )}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8 pl-8 pr-8"
@@ -137,8 +150,12 @@ export function CollectionSelector({
             {filteredCollections.length === 0 ? (
               <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                 {searchQuery
-                  ? "No collections found matching your search"
-                  : "No collections available"}
+                  ? translate(
+                      "untranslatedComponents.labels.noCollectionsFoundMatchingYourSearch",
+                    )
+                  : translate(
+                      "untranslatedComponents.labels.noCollectionsAvailable",
+                    )}
               </div>
             ) : (
               filteredCollections.map((collection) => (

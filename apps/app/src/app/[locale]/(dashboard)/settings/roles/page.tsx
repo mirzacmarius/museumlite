@@ -3,11 +3,13 @@
 import { Button } from "@v1/ui/button";
 import { Plus } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { RoleFormDialog } from "./role-form-dialog";
 import { RolesList } from "./roles-list";
 import { useRolesSettings } from "./use-roles-settings";
 
 export default function RolesSettingsPage() {
+  const tDashboard = useScopedI18n("untranslatedDashboard.settings");
   const {
     t,
     currentOrganizationId,
@@ -34,7 +36,7 @@ export default function RolesSettingsPage() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Please select an organization to manage roles.
+          {tDashboard("selectOrganizationRoles")}
         </p>
       </div>
     );
@@ -50,7 +52,9 @@ export default function RolesSettingsPage() {
         <div>
           <h3 className="text-lg font-medium">{t("rolesLabel")}</h3>
           <p className="text-sm text-muted-foreground">
-            {roles?.length || 0} role{roles?.length !== 1 ? "s" : ""} defined
+            {roles?.length === 1
+              ? tDashboard("oneRoleDefined", { count: roles.length })
+              : tDashboard("rolesDefined", { count: roles?.length ?? 0 })}
           </p>
         </div>
         <PermissionGate permission="users.manage_roles">

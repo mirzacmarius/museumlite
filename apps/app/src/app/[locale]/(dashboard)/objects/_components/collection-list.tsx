@@ -12,7 +12,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { ClientDate } from "@/components/client-date";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { getCollectionStatusLabel } from "@/lib/record-enum-labels";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { ObjectCatalogTableSkeleton } from "../loading";
 import { OBJECTS_SCROLL_PRELOAD_MARGIN } from "./collection-catalog-constants";
 import {
@@ -66,6 +67,7 @@ export function CollectionList({
   activeCollectionGroup?: { _id: Id<"collectionGroups">; name: string } | null;
   onAddToCollection?: () => void;
 }) {
+  const tRoot = useI18n();
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -222,11 +224,13 @@ export function CollectionList({
                 </th>
                 {isColumnVisible(columns, "image") ? (
                   <th className="w-16 border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                    Image
+                    {tRoot("objects.columnConfig.image")}
                   </th>
                 ) : null}
                 <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                  Object ID & Description
+                  {tRoot(
+                    "untranslatedRecords.objects.detail.objectIdDescription",
+                  )}
                 </th>
                 {isColumnVisible(columns, "objectType") ? (
                   <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
@@ -235,15 +239,15 @@ export function CollectionList({
                 ) : null}
                 {isColumnVisible(columns, "location") ? (
                   <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                    Location
+                    {tRoot("objects.filters.location")}
                   </th>
                 ) : null}
                 <th className="border-b border-border px-4 py-3 font-medium text-muted-foreground">
-                  Date Acquired
+                  {tRoot("untranslatedRecords.objects.detail.dateAcquired")}
                 </th>
                 {isColumnVisible(columns, "status") ? (
                   <th className="border-b border-border px-4 py-3 text-right font-medium text-muted-foreground">
-                    Status
+                    {tRoot("objects.filters.status")}
                   </th>
                 ) : null}
                 <th className="w-10 border-b border-border px-4 py-3 font-medium text-muted-foreground" />
@@ -300,31 +304,32 @@ function CollectionTableRow({
   onSelect: (selected: boolean) => void;
   shouldEagerLoad?: boolean;
 }) {
+  const tRoot = useI18n();
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
       case "verified":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-md border border-status-success/20 bg-status-success/10 px-2 py-0.5 font-medium text-status-success-foreground capitalize">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
       case "loaned":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-md border border-status-info/20 bg-status-info/10 px-2 py-0.5 font-medium text-status-info-foreground capitalize">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
       case "deaccessioned":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-md border border-status-error/20 bg-status-error/10 px-2 py-0.5 font-medium text-status-error-foreground capitalize">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 rounded-md border border-status-warning/20 bg-status-warning/10 px-2 py-0.5 font-medium text-status-warning-foreground capitalize">
-            {status}
+            {getCollectionStatusLabel(status, tRoot)}
           </span>
         );
     }

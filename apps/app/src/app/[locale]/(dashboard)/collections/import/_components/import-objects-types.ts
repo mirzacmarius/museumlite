@@ -77,112 +77,128 @@ export const ALL_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 export const TARGET_FIELDS = [
   {
     id: "title",
-    label: "Title",
+    label: "untranslatedRecords.collections.import.fields.title",
     required: true,
-    description: "Object title or name",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.title",
   },
   {
     id: "accessionNumber",
-    label: "Accession Number",
+    label: "untranslatedRecords.collections.import.fields.accessionNumber",
     required: false,
-    description: "Unique identifier (auto-generated if empty)",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.accessionNumber",
   },
   {
     id: "alternativeTitle",
-    label: "Alternative Title",
+    label: "untranslatedRecords.collections.import.fields.alternativeTitle",
     required: false,
-    description: "Secondary or alternative name",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.alternativeTitle",
   },
   {
     id: "creator",
-    label: "Creator",
+    label: "untranslatedRecords.collections.import.fields.creator",
     required: false,
-    description: "Artist, maker, or creator",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.creator",
   },
   {
     id: "objectType",
-    label: "Object Type",
+    label: "untranslatedRecords.collections.import.fields.objectType",
     required: false,
-    description: "Type or category of object",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.objectType",
   },
   {
     id: "objectName",
-    label: "Object Name",
+    label: "untranslatedRecords.collections.import.fields.objectName",
     required: false,
-    description: "Specific name of the object",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.objectName",
   },
   {
     id: "culture",
-    label: "Culture",
+    label: "untranslatedRecords.collections.import.fields.culture",
     required: false,
-    description: "Cultural origin",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.culture",
   },
   {
     id: "period",
-    label: "Period",
+    label: "untranslatedRecords.collections.import.fields.period",
     required: false,
-    description: "Historical period",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.period",
   },
   {
     id: "dateCreated",
-    label: "Date Created",
+    label: "untranslatedRecords.collections.import.fields.dateCreated",
     required: false,
-    description: "Creation date or period",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.dateCreated",
   },
   {
     id: "materials",
-    label: "Materials",
+    label: "untranslatedRecords.collections.import.fields.materials",
     required: false,
-    description: "Materials used",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.materials",
   },
   {
     id: "technique",
-    label: "Technique",
+    label: "untranslatedRecords.collections.import.fields.technique",
     required: false,
-    description: "Production technique",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.technique",
   },
   {
     id: "dimensions",
-    label: "Dimensions",
+    label: "untranslatedRecords.collections.import.fields.dimensions",
     required: false,
-    description: "Physical dimensions",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.dimensions",
   },
   {
     id: "description",
-    label: "Description",
+    label: "untranslatedRecords.collections.import.fields.description",
     required: false,
-    description: "Detailed description",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.description",
   },
   {
     id: "condition",
-    label: "Condition",
+    label: "untranslatedRecords.collections.import.fields.condition",
     required: false,
-    description: "Current condition",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.condition",
   },
   {
     id: "provenance",
-    label: "Provenance",
+    label: "untranslatedRecords.collections.import.fields.provenance",
     required: false,
-    description: "Ownership history",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.provenance",
   },
   {
     id: "location",
-    label: "Location",
+    label: "untranslatedRecords.collections.import.fields.location",
     required: false,
-    description: "Current location",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.location",
   },
   {
     id: "collectionGroup",
-    label: "Collection Group",
+    label: "untranslatedRecords.collections.import.fields.collectionGroup",
     required: false,
-    description: "Collection or group name",
+    description:
+      "untranslatedRecords.collections.import.fieldDescriptions.collectionGroup",
   },
 ];
 
 export interface ImportTemplate {
   id: string;
   name: string;
-  description: string;
   mappings: Record<string, string>;
 }
 
@@ -190,7 +206,6 @@ export const IMPORT_TEMPLATES: ImportTemplate[] = [
   {
     id: "pastperfect",
     name: "PastPerfect",
-    description: "Import from PastPerfect Museum Software",
     mappings: {
       "Object Name": "title",
       "Cat. No": "accessionNumber",
@@ -213,7 +228,6 @@ export const IMPORT_TEMPLATES: ImportTemplate[] = [
   {
     id: "tms",
     name: "TMS (The Museum System)",
-    description: "Import from The Museum System (TMS)",
     mappings: {
       Title: "title",
       ObjectNumber: "accessionNumber",

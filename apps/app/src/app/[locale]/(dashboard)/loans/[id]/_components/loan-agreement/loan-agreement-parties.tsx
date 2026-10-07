@@ -1,3 +1,4 @@
+import { useI18n } from "@/locales/client";
 import type { LoanAgreementLoan } from "./types";
 
 interface LoanAgreementPartiesProps {
@@ -9,15 +10,18 @@ export function LoanAgreementParties({
   loan,
   organizationName,
 }: LoanAgreementPartiesProps) {
+  const tRoot = useI18n();
   return (
     <div className="mb-6">
       <h2 className="text-lg font-semibold border-b border-black pb-1 mb-3">
-        1. PARTIES
+        {tRoot("untranslatedRecords.loans.agreement.parties")}
       </h2>
       <div className="grid grid-cols-2 gap-8">
         <div>
           <p className="font-bold">
-            {loan.type === "incoming" ? "LENDER:" : "MUSEUM/INSTITUTION:"}
+            {loan.type === "incoming"
+              ? tRoot("untranslatedRecords.loans.items.lenderUpper")
+              : tRoot("untranslatedRecords.loans.items.museumUpper")}
           </p>
           {loan.type === "incoming" ? (
             <>
@@ -33,10 +37,23 @@ export function LoanAgreementParties({
                   )}
                   {loan.account.country && <p>{loan.account.country}</p>}
                   {loan.account.contactPerson && (
-                    <p>Contact: {loan.account.contactPerson}</p>
+                    <p>
+                      {tRoot("accounts.list.contact")}{" "}
+                      {loan.account.contactPerson}
+                    </p>
                   )}
-                  {loan.account.email && <p>Email: {loan.account.email}</p>}
-                  {loan.account.phone && <p>Phone: {loan.account.phone}</p>}
+                  {loan.account.email && (
+                    <p>
+                      {tRoot("untranslatedRecords.loans.agreement.email")}{" "}
+                      {loan.account.email}
+                    </p>
+                  )}
+                  {loan.account.phone && (
+                    <p>
+                      {tRoot("untranslatedRecords.loans.agreement.phone")}{" "}
+                      {loan.account.phone}
+                    </p>
+                  )}
                 </>
               )}
               {!loan.account && loan.lenderBorrowerContact && (
@@ -48,7 +65,9 @@ export function LoanAgreementParties({
           )}
         </div>
         <div>
-          <p className="font-bold">BORROWER:</p>
+          <p className="font-bold">
+            {tRoot("untranslatedRecords.loans.agreement.borrower")}
+          </p>
           {loan.type === "incoming" ? (
             <p>{organizationName}</p>
           ) : (
@@ -65,10 +84,23 @@ export function LoanAgreementParties({
                   )}
                   {loan.account.country && <p>{loan.account.country}</p>}
                   {loan.account.contactPerson && (
-                    <p>Contact: {loan.account.contactPerson}</p>
+                    <p>
+                      {tRoot("accounts.list.contact")}{" "}
+                      {loan.account.contactPerson}
+                    </p>
                   )}
-                  {loan.account.email && <p>Email: {loan.account.email}</p>}
-                  {loan.account.phone && <p>Phone: {loan.account.phone}</p>}
+                  {loan.account.email && (
+                    <p>
+                      {tRoot("untranslatedRecords.loans.agreement.email")}{" "}
+                      {loan.account.email}
+                    </p>
+                  )}
+                  {loan.account.phone && (
+                    <p>
+                      {tRoot("untranslatedRecords.loans.agreement.phone")}{" "}
+                      {loan.account.phone}
+                    </p>
+                  )}
                 </>
               )}
               {!loan.account && loan.lenderBorrowerContact && (

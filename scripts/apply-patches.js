@@ -56,7 +56,7 @@ function applyPatch(patchFile) {
   return true;
 }
 
-function ensureBackendTypescriptLink() {
+function ensureBackendPackageLink(packageName) {
   const backendNodeModulesDir = path.join(
     __dirname,
     "..",
@@ -64,15 +64,18 @@ function ensureBackendTypescriptLink() {
     "backend",
     "node_modules",
   );
-  const backendTypescriptDir = path.join(backendNodeModulesDir, "typescript");
-  const rootTypescriptDir = path.join(nodeModulesDir, "typescript");
+  const backendPackageDir = path.join(backendNodeModulesDir, packageName);
+  const rootPackageDir = path.join(nodeModulesDir, packageName);
 
-  if (!fs.existsSync(rootTypescriptDir)) return true;
-  if (fs.existsSync(backendTypescriptDir)) return true;
+  if (fs.existsSync(backendPackageDir)) return true;
+  if (!fs.existsSync(rootPackageDir)) {
+    console.error(`Missing required backend dependency: ${packageName}`);
+    return false;
+  }
 
   try {
-    if (fs.lstatSync(backendTypescriptDir).isSymbolicLink()) {
-      fs.unlinkSync(backendTypescriptDir);
+    if (fs.lstatSync(backendPackageDir).isSymbolicLink()) {
+      fs.unlinkSync(backendPackageDir);
     } else {
       return true;
     }
@@ -81,16 +84,13 @@ function ensureBackendTypescriptLink() {
   }
 
   fs.mkdirSync(backendNodeModulesDir, { recursive: true });
-  const relativeTarget = path.relative(
-    backendNodeModulesDir,
-    rootTypescriptDir,
-  );
+  const relativeTarget = path.relative(backendNodeModulesDir, rootPackageDir);
   fs.symlinkSync(
     relativeTarget,
-    backendTypescriptDir,
+    backendPackageDir,
     process.platform === "win32" ? "junction" : "dir",
   );
-  console.log("Linked backend TypeScript compiler");
+  console.log(`Linked backend ${packageName} dependency`);
   return true;
 }
 
@@ -114,7 +114,9 @@ if (fs.existsSync(patchesDir)) {
     }
   });
 
-  success = ensureBackendTypescriptLink() && success;
+  for (const packageName of ["typescript", "sharp"]) {
+    success = ensureBackendPackageLink(packageName) && success;
+  }
 
   process.exit(success ? 0 : 1);
 } else {

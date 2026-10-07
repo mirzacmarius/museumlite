@@ -6,6 +6,10 @@ import {
   enabledModuleValidator,
 } from "./utils/moduleValidators";
 import {
+  movementKindValidator,
+  moveRequestConflictValidator,
+} from "./utils/movementValidators";
+import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
@@ -1598,8 +1602,14 @@ export default defineSchema({
     movedAt: v.number(),
     reason: v.optional(v.string()),
     notes: v.optional(v.string()),
+    // Guarded movement evidence (MUS-628). Legacy rows omit these fields.
+    movementKind: v.optional(movementKindValidator),
+    authorizedBy: v.optional(v.id("users")),
+    moveRequestId: v.optional(v.id("locationMoveRequests")),
+    batchJobId: v.optional(v.id("batchJobs")),
   })
     .index("by_collection", ["collectionId"])
+    .index("by_moveRequest", ["moveRequestId"])
     .index("by_toLocation", ["toLocationId"])
     .index("by_fromLocation", ["fromLocationId"])
     .index("by_movedAt", ["movedAt"])
@@ -1627,6 +1637,7 @@ export default defineSchema({
       v.literal("rejected"), // Rejected
       v.literal("executed"), // Move completed
       v.literal("cancelled"), // Request cancelled
+      v.literal("conflict"), // Execution refused; awaiting re-review
     ),
 
     // Approval tracking
@@ -1635,11 +1646,17 @@ export default defineSchema({
     reviewedBy: v.optional(v.id("users")),
     reviewedAt: v.optional(v.number()),
     reviewNotes: v.optional(v.string()),
+    // Source observed when the request was (re-)approved; null means the
+    // object had no recorded location. Execution refuses a different source.
+    approvedFromLocationId: v.optional(v.union(v.id("locations"), v.null())),
 
     // Execution tracking
     executedBy: v.optional(v.id("users")),
     executedAt: v.optional(v.number()),
     executionNotes: v.optional(v.string()),
+    movementId: v.optional(v.id("locationHistory")),
+    // Append-only record of refused execution attempts
+    conflicts: v.optional(v.array(moveRequestConflictValidator)),
 
     // Override tracking (if capacity/status was overridden)
     capacityOverride: v.optional(v.boolean()),
@@ -2926,7 +2943,12 @@ export default defineSchema({
 
   mediaImportJobData: defineTable({
     jobId: v.id("importJobs"),
-    mappingType: v.union(v.literal("csv"), v.literal("filename")),
+    // Manual jobs created before MUS-622 have no row here.
+    mappingType: v.union(
+      v.literal("csv"),
+      v.literal("filename"),
+      v.literal("manual"),
+    ),
     mappingData: v.array(
       v.object({
         filename: v.string(),
@@ -2939,6 +2961,8 @@ export default defineSchema({
         storageId: v.id("_storage"),
         fileSize: v.number(),
         mimeType: v.string(),
+        // Source position on the job; matches importRowResults.rowNumber.
+        itemNumber: v.optional(v.number()),
         mapped: v.boolean(),
         collectionId: v.optional(v.id("collections")),
         mediaFileId: v.optional(v.id("mediaFiles")),

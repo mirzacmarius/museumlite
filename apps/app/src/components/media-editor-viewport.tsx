@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { RefObject } from "react";
 import { useEffect, useState } from "react";
 import ReactCrop, { type Crop } from "react-image-crop";
+import { useI18n } from "@/locales/client";
 import "react-image-crop/dist/ReactCrop.css";
 import type {
   WatermarkPosition,
@@ -38,6 +39,7 @@ export function MediaEditorViewport({
   imageRef,
   onCropChange,
 }: MediaEditorViewportProps) {
+  const translate = useI18n();
   const [imageDimensions, setImageDimensions] = useState({
     width: 1200,
     height: 800,
@@ -61,7 +63,7 @@ export function MediaEditorViewport({
           <Image
             ref={imageRef}
             src={imageUrl}
-            alt={imageTitle || "Image"}
+            alt={imageTitle || translate("untranslatedComponents.labels.image")}
             width={imageDimensions.width}
             height={imageDimensions.height}
             sizes="90vw"

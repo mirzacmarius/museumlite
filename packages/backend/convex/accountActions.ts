@@ -11,6 +11,7 @@ import {
   expectedAccountError,
 } from "./accountErrors";
 import { sendEmail } from "./email";
+import { buildAuthCodeEmail, getEmailTranslations } from "./email/translations";
 import { env } from "./env";
 import { generateVerificationCode } from "./utils/verificationCode";
 
@@ -40,9 +41,14 @@ export const requestEmailChange = action({
     ctx,
     { newEmail },
   ): Promise<{ status: "sent" } | AccountErrorResult> => {
-    if (!(await getAuthUserId(ctx))) {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
       return { status: "error", code: "UNAUTHENTICATED" };
     }
+    const locale = await ctx.runQuery(
+      internal.userPreferences.getEmailLocaleByUserId,
+      { userId },
+    );
     const email = newEmail.trim().toLowerCase();
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { status: "error", code: "INVALID_EMAIL" };
@@ -60,12 +66,14 @@ export const requestEmailChange = action({
       throw error;
     }
     try {
-      await sendEmail({
-        to: email,
-        subject: "Verify your Museumlite email address",
-        html: `<p>Your email change verification code is <strong>${code}</strong>.</p><p>This code expires in 20 minutes.</p>`,
-        text: `Your email change verification code is ${code}. It expires in 20 minutes.`,
+      const emailCopy = buildAuthCodeEmail({
+        locale,
+        subject: getEmailTranslations(locale).auth.emailChangeSubject,
+        body: getEmailTranslations(locale).auth.emailChangeBody,
+        token: code,
+        additionalMessage: getEmailTranslations(locale).auth.expires,
       });
+      await sendEmail({ to: email, ...emailCopy });
     } catch (error) {
       await ctx.runMutation(internal.accountMutations.cancelFailedEmailSend, {
         codeHash,

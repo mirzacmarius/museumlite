@@ -86,7 +86,9 @@ export function useDonorCreate({
 
       if (existingByEmail) {
         toast.error(
-          `A donor with this email already exists: ${existingByEmail.label}`,
+          t("untranslatedComponents.donorCreate.duplicateEmail", {
+            donor: existingByEmail.label,
+          }),
         );
         return;
       }

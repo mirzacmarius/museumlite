@@ -7,7 +7,10 @@ import { useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
 import { MediaImportStepPanels } from "./media-import-step-panels";
-import type { MediaImportState } from "./media-import-types";
+import {
+  initialMediaImportState,
+  type MediaImportState,
+} from "./media-import-types";
 import { MediaImportUnmappedReview } from "./media-import-unmapped-review";
 import { useMediaImport } from "./use-media-import";
 
@@ -15,26 +18,22 @@ export function MediaImportPageClient() {
   const t = useScopedI18n("collections");
   const common = useScopedI18n("common");
   const { currentOrganizationId } = useOrganization();
-  const [state, setState] = useState<MediaImportState>({
-    step: "select-mapping",
-    mappingType: "manual",
-    mediaFiles: [],
-    csvFile: null,
-    jobId: null,
-    currentFileIndex: 0,
-    uploadErrors: [],
-  });
+  const [state, setState] = useState<MediaImportState>(initialMediaImportState);
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
 
   const {
     importJob,
+    mediaJob,
+    resumableJob,
     handleMappingSelect,
     handleMediaSelect,
     handleCsvSelect,
     removeMediaFile,
     startImport,
+    continueImport,
+    cancel,
     reset,
     goToReviewUnmapped,
     goToComplete,
@@ -84,6 +83,8 @@ export function MediaImportPageClient() {
               <MediaImportStepPanels
                 state={state}
                 importJob={importJob}
+                unmappedFiles={mediaJob?.failedMappings ?? 0}
+                resumableJob={resumableJob}
                 t={t}
                 common={common}
                 mediaInputRef={mediaInputRef}
@@ -93,6 +94,8 @@ export function MediaImportPageClient() {
                 handleCsvSelect={handleCsvSelect}
                 removeMediaFile={removeMediaFile}
                 startImport={startImport}
+                continueImport={continueImport}
+                cancel={cancel}
                 reset={reset}
                 clearCsvFile={clearCsvFile}
                 clearMediaFiles={clearMediaFiles}

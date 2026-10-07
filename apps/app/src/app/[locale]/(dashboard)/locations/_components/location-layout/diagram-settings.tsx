@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { SlidersHorizontal } from "lucide-react";
 import { parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useEffect } from "react";
+import { useScopedI18n } from "@/locales/client";
 import { readDiagramState, saveDiagramState } from "./diagram-storage";
 
 export function useDiagramSettings(storageKey: string) {
@@ -150,6 +151,7 @@ export function DiagramSettingsPopover({
 }: {
   settings: ReturnType<typeof useDiagramSettings>;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.locations");
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -159,7 +161,7 @@ export function DiagramSettingsPopover({
           className="h-8 gap-2 border-border/60 bg-card/95 text-xs shadow-md backdrop-blur-sm hover:bg-accent"
         >
           <SlidersHorizontal className="size-3.5" />
-          Diagram settings
+          {t("diagramSettings")}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -167,49 +169,49 @@ export function DiagramSettingsPopover({
         className="w-80 max-w-[calc(100vw-2rem)] space-y-3 p-4"
       >
         <Choice
-          label="Direction"
+          label={t("direction")}
           value={settings.direction}
           onChange={settings.setDirection}
           options={[
-            { value: "horizontal", label: "Horizontal" },
-            { value: "vertical", label: "Vertical" },
+            { value: "horizontal", label: t("horizontal") },
+            { value: "vertical", label: t("vertical") },
           ]}
         />
         <Choice
-          label="Objects"
+          label={t("objects")}
           value={settings.items}
           onChange={settings.setItems}
           options={[
-            { value: "list", label: "List" },
-            { value: "grid", label: "Grid" },
+            { value: "list", label: t("list") },
+            { value: "grid", label: t("grid") },
           ]}
         />
         <Choice
-          label="Thumbnails"
+          label={t("thumbnails")}
           value={settings.size}
           onChange={settings.setSize}
           options={[
-            { value: "small", label: "Small" },
-            { value: "large", label: "Large" },
+            { value: "small", label: t("small") },
+            { value: "large", label: t("large") },
           ]}
         />
         <Choice
-          label="Spacing"
+          label={t("spacing")}
           value={settings.spacing}
           onChange={settings.setSpacing}
           options={[
-            { value: "compact", label: "Compact" },
-            { value: "comfortable", label: "Relaxed" },
+            { value: "compact", label: t("compact") },
+            { value: "comfortable", label: t("relaxed") },
           ]}
         />
         <Choice
-          label="Lines"
+          label={t("lines")}
           value={settings.lines}
           onChange={settings.setLines}
           options={[
-            { value: "smoothstep", label: "Elbow" },
-            { value: "default", label: "Curve" },
-            { value: "straight", label: "Straight" },
+            { value: "smoothstep", label: t("elbow") },
+            { value: "default", label: t("curve") },
+            { value: "straight", label: t("straight") },
           ]}
         />
       </PopoverContent>

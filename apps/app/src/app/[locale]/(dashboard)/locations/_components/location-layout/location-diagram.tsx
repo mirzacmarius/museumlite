@@ -33,6 +33,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useScopedI18n } from "@/locales/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   isExhibitionLocation,
@@ -107,8 +108,10 @@ function getLocationAccent(type: string) {
   return LOCATION_ACCENT.default;
 }
 
-function formatLocationType(type: string) {
-  return type.replaceAll("_", " ");
+function formatLocationType(type: string, translate: (key: string) => string) {
+  return ["building", "room", "gallery", "storage", "cabinet", "shelf", "vault", "other"].includes(type)
+    ? translate(`form.locationTypes.${type}`)
+    : type;
 }
 
 function getObjectRowHeight(settings: DiagramSettings) {
@@ -188,6 +191,8 @@ function collectValidIds(
 }
 
 function LocationNode({ data }: NodeProps<LocationFlowNode>) {
+  const t = useScopedI18n("untranslatedDashboard.locations");
+  const tLocations = useScopedI18n("locations");
   const {
     location,
     objects,
@@ -253,7 +258,7 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
           </p>
           <p className="mt-1 truncate text-[10px] text-muted-foreground">
             <span className="capitalize">
-              {formatLocationType(location.type)}
+              {formatLocationType(location.type, tLocations)}
             </span>
             {location.locationCode ? (
               <>
@@ -275,7 +280,7 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
       {hasChildren && (
         <div className="border-t border-border/60">
           <div className="flex h-6 items-center px-3 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Locations
+            {t("locations")}
           </div>
           <div>
             {children.map((child) => (
@@ -297,7 +302,7 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
                     {child.name}
                   </span>
                   <span className="shrink-0 capitalize text-muted-foreground">
-                    {formatLocationType(child.type)}
+                    {formatLocationType(child.type, tLocations)}
                   </span>
                 </button>
                 {horizontal && expanded ? (
@@ -322,24 +327,24 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
 
       <div className="flex h-10 items-center justify-between border-t border-border/60 px-3 text-[10px] text-muted-foreground">
         <span>
-          {objects.length} object{objects.length === 1 ? "" : "s"} here
+          {t("objectsHere", { count: objects.length })}
         </span>
         {hasChildren ? (
           <button
             type="button"
-            aria-label={`${expanded ? "Collapse" : "Expand"} ${location.name}`}
+            aria-label={t(expanded ? "collapseLocation" : "expandLocation", { name: location.name })}
             aria-expanded={expanded}
             onClick={() => toggle(location._id)}
             className="nodrag nopan flex items-center gap-1 rounded p-1 hover:bg-muted hover:text-foreground"
           >
-            {expanded ? "Hide tree" : "Show tree"}{" "}
+            {expanded ? t("hideTree") : t("showTree")}{" "}
             <ChevronRight
               className={expanded ? "size-3 rotate-90" : "size-3"}
             />
           </button>
         ) : (
           <span className="capitalize">
-            {formatLocationType(location.type)}
+            {formatLocationType(location.type, tLocations)}
           </span>
         )}
       </div>
@@ -347,7 +352,7 @@ function LocationNode({ data }: NodeProps<LocationFlowNode>) {
       {objects.length > 0 && (
         <div className="border-t border-border/60">
           <div className="flex h-6 items-center px-3 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Objects
+            {t("objects")}
           </div>
           <div
             className={`nodrag nopan nowheel overflow-y-auto ${grid ? "grid grid-cols-2" : ""}`}
@@ -453,8 +458,8 @@ const FIT_AXIS_CONTROLS: {
   label: string;
   Icon: LucideIcon;
 }[] = [
-  { axis: "width", label: "Fit Width", Icon: UnfoldHorizontal },
-  { axis: "height", label: "Fit Height", Icon: UnfoldVertical },
+  { axis: "width", label: "fitWidth", Icon: UnfoldHorizontal },
+  { axis: "height", label: "fitHeight", Icon: UnfoldVertical },
 ];
 
 function DiagramToolbar({
@@ -480,6 +485,7 @@ function DiagramControls({
   fitOnMount: boolean;
   onAutoArrange: () => void;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.locations");
   const { getNodes, getNodesBounds, setViewport } = useReactFlow();
   const paneWidth = useStore((state) => state.width);
   const paneHeight = useStore((state) => state.height);
@@ -525,8 +531,8 @@ function DiagramControls({
     >
       <ControlButton
         type="button"
-        title="Fit View"
-        aria-label="Fit View"
+        title={t("fitView")}
+        aria-label={t("fitView")}
         className="react-flow__controls-fitview"
         onClick={() => fitDiagram("both")}
       >
@@ -536,8 +542,8 @@ function DiagramControls({
         <ControlButton
           key={axis}
           type="button"
-          title={label}
-          aria-label={label}
+          title={t(label)}
+          aria-label={t(label)}
           onClick={() => fitDiagram(axis)}
         >
           <Icon className="!size-3.5" />
@@ -545,8 +551,8 @@ function DiagramControls({
       ))}
       <ControlButton
         type="button"
-        title="Auto arrange"
-        aria-label="Auto arrange"
+        title={t("autoArrange")}
+        aria-label={t("autoArrange")}
         onClick={onAutoArrange}
       >
         <Sparkles className="!size-3.5" />
@@ -561,6 +567,7 @@ export function LocationDiagram({
   objectsById,
   onSelectLocation,
 }: LocationDiagramProps) {
+  const tViews = useScopedI18n("untranslatedDashboard.locationViews");
   const rootId = currentLocation._id;
   const storageKey = `museumlite:diagram:${rootId}`;
   const settings = useDiagramSettings(storageKey);
@@ -823,7 +830,7 @@ export function LocationDiagram({
               position="bottom-center"
               className="rounded-md border border-border/60 bg-card/90 px-3 py-1.5 text-[11px] text-muted-foreground"
             >
-              Drag to explore · Scroll to zoom
+              {tViews("dragToExplore")}
             </Panel>
             <Background
               gap={24}

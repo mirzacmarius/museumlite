@@ -3,6 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { ExternalLink, Globe } from "lucide-react";
 import { getPublicPortalBaseUrl } from "@/lib/portal-url";
+import { useScopedI18n } from "@/locales/client";
 
 interface PortalPreviewProps {
   isEnabled: boolean;
@@ -15,6 +16,7 @@ export function PortalPreview({
   orgSlug,
   portalSlug,
 }: PortalPreviewProps) {
+  const t = useScopedI18n("untranslatedDashboard.portal");
   const webUrl = getPublicPortalBaseUrl();
   const portalUrl = `${webUrl}/${orgSlug}/${portalSlug}`;
 
@@ -33,7 +35,7 @@ export function PortalPreview({
           <Button asChild size="sm" variant="ghost" className="shrink-0">
             <a href={portalUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 size-4" />
-              Open
+              {t("open")}
             </a>
           </Button>
         ) : null}
@@ -44,17 +46,16 @@ export function PortalPreview({
           <iframe
             src={portalUrl}
             className="size-full border-0"
-            title="Portal Preview"
+            title={t("previewTitle")}
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center p-8 text-center">
             <Globe className="mb-4 size-12 text-muted-foreground/40" />
             <p className="section-title mb-2 text-muted-foreground">
-              Enable portal to preview
+              {t("enablePortalToPreview")}
             </p>
             <p className="caption max-w-md text-muted-foreground/70">
-              Toggle "Portal Enabled" in the settings to see a live preview of
-              your public collection portal.
+              {t("portalPreviewDescription")}
             </p>
           </div>
         )}

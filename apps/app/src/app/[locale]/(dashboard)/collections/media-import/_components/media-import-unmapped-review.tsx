@@ -14,6 +14,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { AlertCircle, CheckCircle2, FileImage, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { ObjectCombobox } from "@/components/object-combobox";
 import { useOrganization } from "@/components/organization-provider";
 import { useScopedI18n } from "@/locales/client";
@@ -70,8 +71,9 @@ export function MediaImportUnmappedReview({
       });
       setHandledFiles((prev) => new Set(prev).add(storageId));
     } catch (err) {
-      console.error("Failed to map file", err);
-      alert("Failed to map file");
+      toast.error(
+        err instanceof Error ? err.message : t("mediaImport.errorMapFailed"),
+      );
     }
   };
 
@@ -83,11 +85,13 @@ export function MediaImportUnmappedReview({
             {t("mediaImport.reviewTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {remainingFiles.length} files need attention
+            {t("mediaImport.filesNeedAttention", {
+              count: remainingFiles.length,
+            })}
           </p>
         </div>
         <Button variant="outline" onClick={onComplete}>
-          Finish Review
+          {t("mediaImport.finishReview")}
         </Button>
       </div>
 
@@ -95,9 +99,11 @@ export function MediaImportUnmappedReview({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>File Name</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead className="w-[400px]">Map to Object</TableHead>
+              <TableHead>{t("mediaImport.tableHeaders.fileName")}</TableHead>
+              <TableHead>{t("mediaImport.tableHeaders.size")}</TableHead>
+              <TableHead className="w-[400px]">
+                {t("mediaImport.tableHeaders.mapToObject")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

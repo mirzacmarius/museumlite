@@ -9,6 +9,7 @@ import {
 } from "@v1/ui/dialog";
 import { Printer } from "lucide-react";
 import { ClientCurrentDate } from "@/components/client-date";
+import { useI18n } from "@/locales/client";
 import type { Loan } from "../types";
 
 interface LoanPrintManifestDialogProps {
@@ -24,6 +25,7 @@ export function LoanPrintManifestDialog({
   open,
   onOpenChange,
 }: LoanPrintManifestDialogProps) {
+  const tRoot = useI18n();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* [PRINT-EXEMPT] Light zinc colors intentionally used for PDF/print output */}
@@ -32,11 +34,13 @@ export function LoanPrintManifestDialog({
         className="max-w-[210mm] w-full h-[90vh] p-0 gap-0 overflow-hidden bg-zinc-50 dark:bg-background flex flex-col"
       >
         <DialogHeader className="px-6 py-4 border-b border-border bg-background flex-shrink-0 flex-row items-center justify-between space-y-0">
-          <DialogTitle>Print Dispatch Manifest</DialogTitle>
+          <DialogTitle>
+            {tRoot("loans.actions.printDispatchManifest")}
+          </DialogTitle>
           <div className="flex items-center gap-3">
             <Button onClick={() => window.print()} className="h-8 text-xs">
               <Printer className="mr-2 size-4" />
-              Print
+              {tRoot("loans.actions.print")}
             </Button>
           </div>
         </DialogHeader>
@@ -57,30 +61,36 @@ export function LoanPrintManifestDialog({
                   </span>
                 </div>
                 <h1 className="text-2xl font-serif text-zinc-900 font-semibold tracking-tight leading-none">
-                  Outgoing Loan Manifest
+                  {tRoot("loans.actions.outgoingLoanManifest")}
                 </h1>
                 <p className="text-muted-foreground mt-2 font-mono text-sm">
-                  Ref: {loan.loanNumber}
+                  {tRoot("loans.actions.ref")} {loan.loanNumber}
                 </p>
               </div>
               <div className="text-right text-xs text-muted-foreground">
                 <p>
-                  Date: <ClientCurrentDate locale={locale} />
+                  {tRoot("loans.actions.date")}{" "}
+                  <ClientCurrentDate locale={locale} />
                 </p>
-                <p>Page 1 of 4</p>
+                <p>
+                  {tRoot("untranslatedRecords.objects.pagination.pageOf", {
+                    page: 1,
+                    total: 4,
+                  })}
+                </p>
               </div>
             </div>
 
             <div className="bg-zinc-50 border border-zinc-100 p-4 rounded text-sm grid grid-cols-2 gap-8">
               <div>
                 <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
-                  Lender
+                  {tRoot("loans.actions.lender")}
                 </h4>
                 <p>National Museum</p>
               </div>
               <div>
                 <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-1">
-                  Borrower (Consignee)
+                  {tRoot("loans.actions.borrowerConsignee")}
                 </h4>
                 <p>{loan.lenderBorrowerName}</p>
                 {loan.lenderBorrowerContact && (
@@ -93,14 +103,18 @@ export function LoanPrintManifestDialog({
 
             <div>
               <h4 className="font-semibold text-zinc-900 uppercase text-[10px] tracking-wide mb-4 border-b border-zinc-100 pb-1">
-                Loan Items
+                {tRoot("loans.actions.loanItemsTable")}
               </h4>
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b border-zinc-200">
-                    <th className="py-2">Acc. No</th>
-                    <th className="py-2">Object Title</th>
-                    <th className="py-2 text-right">Condition</th>
+                    <th className="py-2">{tRoot("loans.actions.accNo")}</th>
+                    <th className="py-2">
+                      {tRoot("loans.actions.objectTitle")}
+                    </th>
+                    <th className="py-2 text-right">
+                      {tRoot("loans.actions.condition")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -121,13 +135,13 @@ export function LoanPrintManifestDialog({
               <div>
                 <div className="h-12 w-48 border-b border-zinc-300 mb-1" />
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest">
-                  Released By (Registrar)
+                  {tRoot("loans.actions.releasedByRegistrar")}
                 </div>
               </div>
               <div>
                 <div className="h-12 w-48 border-b border-zinc-300 mb-1" />
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest">
-                  Received By (Shipper)
+                  {tRoot("loans.actions.receivedByShipper")}
                 </div>
               </div>
             </div>

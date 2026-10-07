@@ -17,6 +17,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useI18n } from "@/locales/client";
 
 export interface UploadFile {
   id: string;
@@ -70,9 +71,10 @@ export function DropzoneUploader({
   uploadingFiles = EMPTY_UPLOADING_FILES,
   disabled = false,
   className,
-  label = "Drop files here or click to upload",
+  label,
   sublabel,
 }: DropzoneUploaderProps) {
+  const translate = useI18n();
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -271,11 +273,19 @@ export function DropzoneUploader({
               isDragOver ? "text-primary" : "text-foreground",
             )}
           >
-            {hasActiveUploads ? "Uploading..." : label}
+            {hasActiveUploads
+              ? translate("untranslatedComponents.labels.uploading")
+              : (label ??
+                translate(
+                  "untranslatedComponents.labels.dropFilesHereOrClickToUpload",
+                ))}
           </p>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            {sublabel || `Up to ${formatFileSize(maxSizeBytes)} per file`}
+            {sublabel ||
+              translate("untranslatedComponents.labels.upToSizePerFile", {
+                size: formatFileSize(maxSizeBytes),
+              })}
           </p>
         </button>
       </div>
@@ -339,7 +349,9 @@ export function DropzoneUploader({
               )}
 
               {upload.status === "complete" && (
-                <span className="text-xs text-green-500">Done</span>
+                <span className="text-xs text-green-500">
+                  {translate("untranslatedComponents.labels.done")}
+                </span>
               )}
             </div>
           ))}

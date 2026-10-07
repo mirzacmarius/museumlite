@@ -125,6 +125,7 @@ export function CollectionEditFormLayout({
             collectionSummary={collectionSummary}
             getStatusBadgeClass={getStatusBadgeClass}
             onTitleChange={(value) => updateField("title", value)}
+            onDescriptionChange={(value) => updateField("description", value)}
             onTabSelect={setActiveTab}
             fileInputRef={fileInputRef}
             cameraInputRef={cameraInputRef}

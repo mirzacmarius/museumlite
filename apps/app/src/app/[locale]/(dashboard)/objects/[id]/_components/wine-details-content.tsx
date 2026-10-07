@@ -13,7 +13,7 @@ import {
   Wine,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 type DetailsDoc = NonNullable<FunctionReturnType<typeof api.wineDetails.get>>;
 
@@ -28,7 +28,7 @@ export function WineDetailsContent({
   isInPeakWindow,
   isPastPeak,
 }: WineDetailsContentProps) {
-  const locale = useCurrentLocale();
+  const tRoot = useI18n();
   const t = useScopedI18n("modules.wine");
   const common = useScopedI18n("modules.common");
   return (
@@ -182,8 +182,29 @@ export function WineDetailsContent({
                         : "text-foreground",
                   )}
                 >
-                  {details.fillLevel?.replace(/_/g, " ") ||
-                    common("notChecked")}
+                  {details.fillLevel === "into_neck"
+                    ? tRoot("untranslatedRecords.objects.enums.fillIntoNeck")
+                    : details.fillLevel === "top_shoulder"
+                      ? tRoot(
+                          "untranslatedRecords.objects.enums.fillTopShoulder",
+                        )
+                      : details.fillLevel === "high_shoulder"
+                        ? tRoot(
+                            "untranslatedRecords.objects.enums.fillHighShoulder",
+                          )
+                        : details.fillLevel === "mid_shoulder"
+                          ? tRoot(
+                              "untranslatedRecords.objects.enums.fillMidShoulder",
+                            )
+                          : details.fillLevel === "low_shoulder"
+                            ? tRoot(
+                                "untranslatedRecords.objects.enums.fillLowShoulder",
+                              )
+                            : details.fillLevel === "below_shoulder"
+                              ? tRoot(
+                                  "untranslatedRecords.objects.enums.fillBelowShoulder",
+                                )
+                              : (details.fillLevel ?? common("notChecked"))}
                 </p>
               </div>
               <div>
@@ -214,36 +235,7 @@ export function WineDetailsContent({
           </div>
         </div>
 
-        <div>
-          <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-            <DollarSign className="size-4 text-emerald-500" />
-            {t("valuation")}
-          </h3>
-          <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  {t("purchasePrice")}
-                </span>
-                <p className="mt-1 text-lg font-light text-foreground">
-                  {details.purchasePrice
-                    ? formatCurrency(details.purchasePrice, locale, "USD")
-                    : "—"}
-                </p>
-              </div>
-              <div>
-                <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                  {t("currentValue")}
-                </span>
-                <p className="mt-1 text-lg font-light text-emerald-500">
-                  {details.currentValue
-                    ? formatCurrency(details.currentValue, locale, "USD")
-                    : "—"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <WineValuationSection details={details} />
       </div>
 
       <div>
@@ -301,6 +293,44 @@ export function WineDetailsContent({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function WineValuationSection({ details }: { details: DetailsDoc }) {
+  const locale = useCurrentLocale();
+  const t = useScopedI18n("modules.wine");
+
+  return (
+    <div>
+      <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
+        <DollarSign className="size-4 text-emerald-500" />
+        {t("valuation")}
+      </h3>
+      <div className="rounded-xl border border-border/60 bg-secondary/20 p-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              {t("purchasePrice")}
+            </span>
+            <p className="mt-1 text-lg font-light text-foreground">
+              {details.purchasePrice
+                ? formatCurrency(details.purchasePrice, locale, "USD")
+                : "—"}
+            </p>
+          </div>
+          <div>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              {t("currentValue")}
+            </span>
+            <p className="mt-1 text-lg font-light text-emerald-500">
+              {details.currentValue
+                ? formatCurrency(details.currentValue, locale, "USD")
+                : "—"}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

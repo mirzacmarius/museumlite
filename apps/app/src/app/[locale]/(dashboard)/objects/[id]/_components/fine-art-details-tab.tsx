@@ -6,6 +6,7 @@ import { Button } from "@v1/ui/button";
 import { FeatureGuard } from "@v1/ui/feature-guard";
 import { cn } from "@v1/ui/utils";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import {
   DollarSign,
   FileCheck,
@@ -17,7 +18,7 @@ import {
 import { ClientDateFns } from "@/components/client-date";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 
 interface FineArtDetailsTabProps {
@@ -25,8 +26,13 @@ interface FineArtDetailsTabProps {
   organizationId: Id<"organizations">;
 }
 
+type FineArtDetails = NonNullable<
+  FunctionReturnType<typeof api.fineArtDetails.get>
+>;
+
 export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
   const locale = useCurrentLocale();
+  const tRoot = useI18n();
   const t = useScopedI18n("modules.fineArt");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
@@ -144,7 +150,13 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
                     : "bg-secondary text-muted-foreground",
             )}
           >
-            {details.displayStatus?.replace(/_/g, " ") || common("unknown")}
+            {details.displayStatus === "on_display"
+              ? tRoot("objects.filters.onDisplay")
+              : details.displayStatus === "loaned_out"
+                ? tRoot("objects.filters.loaned")
+                : details.displayStatus === "in_transit"
+                  ? tRoot("loans.kpis.inTransit")
+                  : details.displayStatus || common("unknown")}
           </span>
         </div>
       </div>
@@ -165,104 +177,7 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
         </div>
       )}
 
-      <div>
-        <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
-          <History className="size-4 text-purple-500" />
-          {t("provenanceChain")}
-        </h3>
-
-        {details.provenanceChain && details.provenanceChain.length > 0 ? (
-          <div className="relative space-y-4 border-l border-border pl-8">
-            {details.provenanceChain.map((entry, index) => (
-              <div
-                key={`${entry.owner}-${entry.eventType}-${entry.startYear ?? ""}-${entry.endYear ?? ""}`}
-                className="relative"
-              >
-                <div
-                  className={cn(
-                    "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",
-                    index === 0
-                      ? "border-2 border-accent"
-                      : "border-2 border-muted-foreground/50",
-                  )}
-                >
-                  {index === 0 && (
-                    <div className="size-1.5 rounded-full bg-accent" />
-                  )}
-                </div>
-                <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase",
-                          entry.eventType === "sale"
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : entry.eventType === "auction"
-                              ? "bg-amber-500/10 text-amber-500"
-                              : entry.eventType === "inheritance"
-                                ? "bg-purple-500/10 text-purple-500"
-                                : "bg-secondary text-muted-foreground",
-                        )}
-                      >
-                        {entry.eventType}
-                      </span>
-                      <h4 className="text-sm font-semibold text-foreground">
-                        {entry.owner}
-                      </h4>
-                    </div>
-                    {formatOwnershipDateRange(entry, {
-                      presentLabel: "Present",
-                      separator: " – ",
-                    }) ? (
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {formatOwnershipDateRange(entry, {
-                          presentLabel: "Present",
-                          separator: " – ",
-                        })}
-                      </span>
-                    ) : null}
-                  </div>
-                  {entry.location && (
-                    <p className="text-xs text-muted-foreground">
-                      {entry.location}
-                    </p>
-                  )}
-                  {entry.salePrice && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {t("salePrice")}:{" "}
-                      {formatCurrency(
-                        entry.salePrice,
-                        locale,
-                        entry.currency || "USD",
-                      )}
-                      {entry.auctionHouse &&
-                        ` ${t("at")} ${entry.auctionHouse}`}
-                    </p>
-                  )}
-                  {entry.notes && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {entry.notes}
-                    </p>
-                  )}
-                  {entry.verified && (
-                    <div className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500">
-                      <FileCheck className="size-3" />
-                      {t("verified")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
-            <p className="text-sm text-muted-foreground">
-              {t("noProvenanceRecorded")}
-            </p>
-          </div>
-        )}
-      </div>
+      <FineArtProvenanceSection details={details} />
 
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
@@ -319,6 +234,111 @@ export function FineArtDetailsTab({ collectionId }: FineArtDetailsTabProps) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function FineArtProvenanceSection({ details }: { details: FineArtDetails }) {
+  const locale = useCurrentLocale();
+  const t = useScopedI18n("modules.fineArt");
+
+  return (
+    <div>
+      <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
+        <History className="size-4 text-purple-500" />
+        {t("provenanceChain")}
+      </h3>
+
+      {details.provenanceChain && details.provenanceChain.length > 0 ? (
+        <div className="relative space-y-4 border-l border-border pl-8">
+          {details.provenanceChain.map((entry, index) => (
+            <div
+              key={`${entry.owner}-${entry.eventType}-${entry.startYear ?? ""}-${entry.endYear ?? ""}`}
+              className="relative"
+            >
+              <div
+                className={cn(
+                  "absolute -left-[39px] top-1.5 flex size-4 items-center justify-center rounded-full bg-background",
+                  index === 0
+                    ? "border-2 border-accent"
+                    : "border-2 border-muted-foreground/50",
+                )}
+              >
+                {index === 0 && (
+                  <div className="size-1.5 rounded-full bg-accent" />
+                )}
+              </div>
+              <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase",
+                        entry.eventType === "sale"
+                          ? "bg-emerald-500/10 text-emerald-500"
+                          : entry.eventType === "auction"
+                            ? "bg-amber-500/10 text-amber-500"
+                            : entry.eventType === "inheritance"
+                              ? "bg-purple-500/10 text-purple-500"
+                              : "bg-secondary text-muted-foreground",
+                      )}
+                    >
+                      {entry.eventType}
+                    </span>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      {entry.owner}
+                    </h4>
+                  </div>
+                  {formatOwnershipDateRange(entry, {
+                    presentLabel: "Present",
+                    separator: " – ",
+                  }) ? (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {formatOwnershipDateRange(entry, {
+                        presentLabel: "Present",
+                        separator: " – ",
+                      })}
+                    </span>
+                  ) : null}
+                </div>
+                {entry.location && (
+                  <p className="text-xs text-muted-foreground">
+                    {entry.location}
+                  </p>
+                )}
+                {entry.salePrice && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("salePrice")}:{" "}
+                    {formatCurrency(
+                      entry.salePrice,
+                      locale,
+                      entry.currency || "USD",
+                    )}
+                    {entry.auctionHouse && ` ${t("at")} ${entry.auctionHouse}`}
+                  </p>
+                )}
+                {entry.notes && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {entry.notes}
+                  </p>
+                )}
+                {entry.verified && (
+                  <div className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500">
+                    <FileCheck className="size-3" />
+                    {t("verified")}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border">
+          <p className="text-sm text-muted-foreground">
+            {t("noProvenanceRecorded")}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "@v1/ui/select";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useScopedI18n } from "@/locales/client";
 
 export function PolicyForm({
   organizationId,
@@ -32,6 +33,7 @@ export function PolicyForm({
     premiumAmount?: number;
   }) => Promise<void>;
 }) {
+  const t = useScopedI18n("untranslatedDashboard.insurance");
   const [form, setForm] = useState({
     policyNumber: "",
     carrier: "",
@@ -58,14 +60,14 @@ export function PolicyForm({
       !form.effectiveDate ||
       !form.expirationDate
     ) {
-      toast.error("Please fill all required fields.");
+      toast.error(t("requiredFieldsError"));
       return;
     }
 
     const effectiveDate = Date.parse(form.effectiveDate);
     const expirationDate = Date.parse(form.expirationDate);
     if (Number.isNaN(effectiveDate) || Number.isNaN(expirationDate)) {
-      toast.error("Please provide valid dates.");
+      toast.error(t("validDatesError"));
       return;
     }
 
@@ -105,32 +107,32 @@ export function PolicyForm({
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="policyNumber">Policy Number *</Label>
+          <Label htmlFor="policyNumber">{t("policyNumberRequiredLabel")}</Label>
           <Input
             id="policyNumber"
             value={form.policyNumber}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, policyNumber: event.target.value }))
             }
-            placeholder="POL-2024-001"
+            placeholder={t("policyNumberPlaceholder")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="carrier">Carrier *</Label>
+          <Label htmlFor="carrier">{t("carrierRequiredLabel")}</Label>
           <Input
             id="carrier"
             value={form.carrier}
             onChange={(event) =>
               setForm((prev) => ({ ...prev, carrier: event.target.value }))
             }
-            placeholder="Chubb Insurance"
+            placeholder={t("carrierPlaceholder")}
           />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Policy Type *</Label>
+          <Label>{t("policyTypeRequiredLabel")}</Label>
           <Select
             value={form.policyType}
             onValueChange={(value) =>
@@ -144,16 +146,16 @@ export function PolicyForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="blanket">Blanket</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="exhibition">Exhibition</SelectItem>
-              <SelectItem value="transit">Transit</SelectItem>
-              <SelectItem value="loan">Loan</SelectItem>
+              <SelectItem value="blanket">{t("policyTypeBlanket")}</SelectItem>
+              <SelectItem value="scheduled">{t("policyTypeScheduled")}</SelectItem>
+              <SelectItem value="exhibition">{t("policyTypeExhibition")}</SelectItem>
+              <SelectItem value="transit">{t("policyTypeTransit")}</SelectItem>
+              <SelectItem value="loan">{t("policyTypeLoan")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="coverageAmount">Coverage Amount *</Label>
+          <Label htmlFor="coverageAmount">{t("coverageAmountRequiredLabel")}</Label>
           <Input
             id="coverageAmount"
             type="number"
@@ -173,7 +175,7 @@ export function PolicyForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <DatePickerInput
-          label="Effective Date *"
+          label={t("effectiveDateRequiredLabel")}
           id="effectiveDate"
           value={form.effectiveDate}
           onChange={(value) =>
@@ -184,7 +186,7 @@ export function PolicyForm({
           }
         />
         <DatePickerInput
-          label="Expiration Date *"
+          label={t("expirationDateRequiredLabel")}
           id="expirationDate"
           value={form.expirationDate}
           onChange={(value) =>
@@ -198,7 +200,7 @@ export function PolicyForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="deductible">Deductible</Label>
+          <Label htmlFor="deductible">{t("deductible")}</Label>
           <Input
             id="deductible"
             type="number"
@@ -211,7 +213,7 @@ export function PolicyForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="premiumAmount">Premium Amount</Label>
+          <Label htmlFor="premiumAmount">{t("premiumAmount")}</Label>
           <Input
             id="premiumAmount"
             type="number"
@@ -230,7 +232,7 @@ export function PolicyForm({
 
       <div className="flex justify-end gap-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create Policy"}
+          {isSubmitting ? t("creating") : t("createPolicy")}
         </Button>
       </div>
     </form>

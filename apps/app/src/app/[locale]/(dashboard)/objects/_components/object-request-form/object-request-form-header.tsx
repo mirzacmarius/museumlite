@@ -6,6 +6,13 @@ import { Archive, ArrowLeft, Save } from "lucide-react";
 interface ObjectRequestFormHeaderProps {
   t: (key: string) => string;
   common: (key: string) => string;
+  labels: {
+    savingDraft: string;
+    saveDraft: string;
+    submitting: string;
+    submittingWithUploads: string;
+    submitForApproval: string;
+  };
   pageTitle: string;
   resolvedBackHref: string;
   isSubmitting: boolean;
@@ -19,6 +26,7 @@ interface ObjectRequestFormHeaderProps {
 export function ObjectRequestFormHeader({
   t,
   common,
+  labels,
   pageTitle,
   resolvedBackHref,
   isSubmitting,
@@ -56,7 +64,7 @@ export function ObjectRequestFormHeader({
           disabled={isSavingDraft || isSubmitting}
         >
           <Archive className="mr-2 size-4" />
-          {isSavingDraft ? "Saving draft..." : "Save Draft"}
+          {isSavingDraft ? labels.savingDraft : labels.saveDraft}
         </Button>
         <Button
           type="button"
@@ -75,9 +83,9 @@ export function ObjectRequestFormHeader({
           <Save className="mr-2 size-4" />
           {isSubmitting
             ? hasUploads
-              ? "Submitting and uploading"
-              : "Submitting"
-            : "Submit for Approval"}
+              ? labels.submittingWithUploads
+              : labels.submitting
+            : labels.submitForApproval}
         </Button>
       </div>
     </header>

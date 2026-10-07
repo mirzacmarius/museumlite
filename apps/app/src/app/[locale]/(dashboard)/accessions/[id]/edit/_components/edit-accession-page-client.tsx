@@ -12,7 +12,9 @@ import { ClientDate } from "@/components/client-date";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientDate } from "@/hooks/use-client-date-format";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { getAccessionStatusLabel } from "@/lib/record-enum-labels";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
+import { formatAccessionMethodLabel } from "../../_components/accession-detail-ui";
 import { EditAccessionEditSidebar } from "./edit-accession-edit-sidebar";
 import {
   EditAccessionFormBody,
@@ -20,6 +22,7 @@ import {
 } from "./edit-accession-form-body";
 
 export function EditAccessionPageClient() {
+  const tRoot = useI18n();
   const params = useParams();
   const { push, back } = useRouter();
   const t = useScopedI18n("accessions");
@@ -138,7 +141,9 @@ export function EditAccessionPageClient() {
               <ArrowLeft className="size-4 text-muted-foreground" />
             </Link>
           </Button>
-          <span className="text-muted-foreground">Accessions</span>
+          <span className="text-muted-foreground">
+            {tRoot("accessions.title")}
+          </span>
           <span className="text-muted-foreground/50">/</span>
           <span className="font-medium text-foreground">
             {accession.accessionNumber}
@@ -164,7 +169,7 @@ export function EditAccessionPageClient() {
               <Save className="size-10 text-muted-foreground" />
               <div className="mt-4 space-y-1 px-6">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Pending accession
+                  {tRoot("untranslatedRecords.accessions.pendingAccession")}
                 </p>
                 <p className="text-sm font-medium text-foreground">
                   {accession.accessionNumber}
@@ -175,7 +180,7 @@ export function EditAccessionPageClient() {
             <div className="flex-1 space-y-4">
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="rounded bg-yellow-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">
-                  {accession.status}
+                  {getAccessionStatusLabel(accession.status, tRoot)}
                 </div>
                 <div className="rounded bg-background/80 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                   {accession.accessionNumber}
@@ -183,20 +188,20 @@ export function EditAccessionPageClient() {
               </div>
 
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Edit accession
+                {tRoot("untranslatedRecords.accessions.editAccession")}
               </h1>
 
               <p className="max-w-3xl text-sm text-muted-foreground">
-                Update the intake record while it is still pending. Once
-                approved, the accession should be treated as a finalized
-                workflow record.
+                {tRoot(
+                  "untranslatedRecords.accessions.updateIntakeDescription",
+                )}
               </p>
 
               <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="size-4" />
                   <span>
-                    Received{" "}
+                    {tRoot("library.acquisitions.stats.received")}{" "}
                     <ClientDate
                       timestamp={accession.dateReceived}
                       locale={locale}
@@ -205,11 +210,16 @@ export function EditAccessionPageClient() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Info className="size-4" />
-                  <span>{accession.source || "No source yet"}</span>
+                  <span>
+                    {accession.source ||
+                      tRoot("untranslatedRecords.accessions.edit.noSourceYet")}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Package className="size-4" />
-                  <span className="capitalize">{accession.method}</span>
+                  <span>
+                    {formatAccessionMethodLabel(accession.method, tRoot)}
+                  </span>
                 </div>
               </div>
             </div>

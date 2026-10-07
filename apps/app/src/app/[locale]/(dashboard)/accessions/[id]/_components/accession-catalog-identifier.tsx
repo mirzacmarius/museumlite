@@ -28,6 +28,29 @@ export function AccessionCatalogIdentifier({
   const [error, setError] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
   const identifier = draft ?? catalogIdentifier ?? accessionNumber;
+
+  async function handleAssign() {
+    setError(null);
+    setIsWorking(true);
+    try {
+      await assign({ accessionId, identifier });
+      setDraft(null);
+      setMessage(
+        "Catalog number selected. The permanent accession number is unchanged.",
+      );
+    } catch (err) {
+      setError(
+        err instanceof ConvexError && typeof err.data === "string"
+          ? err.data
+          : err instanceof Error
+            ? err.message
+            : "Unable to select catalog number.",
+      );
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
   return (
     <section className="mx-6 my-4 space-y-3 rounded-lg border border-white/10 p-4">
       <h2 className="font-medium">Catalog number on publication</h2>
@@ -38,31 +61,7 @@ export function AccessionCatalogIdentifier({
         object. Availability is checked again when the object is published.
       </p>
       <PermissionGate permission="collections.update">
-        <form
-          className="space-y-2"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setError(null);
-            setIsWorking(true);
-            try {
-              await assign({ accessionId, identifier });
-              setDraft(null);
-              setMessage(
-                "Catalog number selected. The permanent accession number is unchanged.",
-              );
-            } catch (err) {
-              setError(
-                err instanceof ConvexError && typeof err.data === "string"
-                  ? err.data
-                  : err instanceof Error
-                    ? err.message
-                    : "Unable to select catalog number.",
-              );
-            } finally {
-              setIsWorking(false);
-            }
-          }}
-        >
+        <form action={handleAssign} className="space-y-2">
           <Label htmlFor="planned-catalog-identifier">
             Catalog identifier for the new object
           </Label>

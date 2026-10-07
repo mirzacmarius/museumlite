@@ -5,6 +5,36 @@ import { Download, Tag } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { ClientDate } from "@/components/client-date";
+import type { WebLocale } from "@/locales/messages";
+import { useWebI18n } from "@/locales/provider";
+
+const valuationFormatters: Record<WebLocale, Intl.NumberFormat> = {
+  en: new Intl.NumberFormat("en", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }),
+  fr: new Intl.NumberFormat("fr", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }),
+  es: new Intl.NumberFormat("es", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }),
+  no: new Intl.NumberFormat("no", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }),
+  ro: new Intl.NumberFormat("ro", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }),
+};
 
 interface PublicObjectImage {
   _id: string;
@@ -51,6 +81,7 @@ interface PublicObjectDetailProps {
 }
 
 function PublicObjectGallery({ object }: PublicObjectDetailProps) {
+  const { t } = useWebI18n();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const sortedImages = [
     ...object.images.filter((image) => image.isPrimary),
@@ -73,7 +104,7 @@ function PublicObjectGallery({ object }: PublicObjectDetailProps) {
         </div>
       ) : (
         <div className="flex aspect-square items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/20">
-          No Image Available
+          {t("common.noImageAvailable")}
         </div>
       )}
 
@@ -92,7 +123,10 @@ function PublicObjectGallery({ object }: PublicObjectDetailProps) {
             >
               <Image
                 src={image.url}
-                alt={`${object.title} - Image ${index + 1}`}
+                alt={t("public.imageAlt", {
+                  title: object.title,
+                  index: index + 1,
+                })}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover"
@@ -111,7 +145,7 @@ function PublicObjectGallery({ object }: PublicObjectDetailProps) {
             rel="noopener noreferrer"
           >
             <Download className="mr-2 size-4" />
-            Download High Resolution
+            {t("common.downloadHighResolution")}
           </a>
         </Button>
       ) : null}
@@ -156,16 +190,17 @@ function MetadataField({
 }
 
 function PublicObjectMetadata({ object }: PublicObjectDetailProps) {
+  const { t } = useWebI18n();
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-      <MetadataField label="Object Type" value={object.objectType} />
-      <MetadataField label="Object Name" value={object.objectName} />
-      <MetadataField label="Culture" value={object.culture} />
-      <MetadataField label="Period" value={object.period} />
-      <MetadataField label="Date" value={object.dateCreated} />
-      <MetadataField label="Materials" value={object.materials} />
-      <MetadataField label="Technique" value={object.technique} />
-      <MetadataField label="Dimensions" value={object.dimensions} />
+      <MetadataField label={t("common.objectType")} value={object.objectType} />
+      <MetadataField label={t("common.objectName")} value={object.objectName} />
+      <MetadataField label={t("common.culture")} value={object.culture} />
+      <MetadataField label={t("common.period")} value={object.period} />
+      <MetadataField label={t("common.date")} value={object.dateCreated} />
+      <MetadataField label={t("common.materials")} value={object.materials} />
+      <MetadataField label={t("common.technique")} value={object.technique} />
+      <MetadataField label={t("common.dimensions")} value={object.dimensions} />
     </div>
   );
 }
@@ -194,6 +229,8 @@ function TextSection({
 }
 
 function PublicObjectValuation({ object }: PublicObjectDetailProps) {
+  const { locale, t } = useWebI18n();
+  const currencyFormatter = valuationFormatters[locale];
   if (!object.valuation) {
     return null;
   }
@@ -203,34 +240,42 @@ function PublicObjectValuation({ object }: PublicObjectDetailProps) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-4">
       <h2 className="mb-3 text-xs uppercase tracking-wider text-white/40">
-        Valuation
+        {t("common.valuation")}
       </h2>
       <div className="grid grid-cols-2 gap-4">
         {valuation.appraisedValue ? (
           <div>
-            <dt className="mb-1 text-xs text-white/40">Appraised Value</dt>
+            <dt className="mb-1 text-xs text-white/40">
+              {t("common.appraisedValue")}
+            </dt>
             <dd className="font-medium text-white">
-              ${valuation.appraisedValue.toLocaleString()}
+              {currencyFormatter.format(valuation.appraisedValue)}
             </dd>
           </div>
         ) : null}
         {valuation.replacementValue ? (
           <div>
-            <dt className="mb-1 text-xs text-white/40">Replacement Value</dt>
+            <dt className="mb-1 text-xs text-white/40">
+              {t("common.replacementValue")}
+            </dt>
             <dd className="font-medium text-white">
-              ${valuation.replacementValue.toLocaleString()}
+              {currencyFormatter.format(valuation.replacementValue)}
             </dd>
           </div>
         ) : null}
         {valuation.appraiser ? (
           <div>
-            <dt className="mb-1 text-xs text-white/40">Appraiser</dt>
+            <dt className="mb-1 text-xs text-white/40">
+              {t("common.appraiser")}
+            </dt>
             <dd className="text-white">{valuation.appraiser}</dd>
           </div>
         ) : null}
         {valuation.lastAppraisalDate ? (
           <div>
-            <dt className="mb-1 text-xs text-white/40">Last Appraisal</dt>
+            <dt className="mb-1 text-xs text-white/40">
+              {t("common.lastAppraisal")}
+            </dt>
             <dd className="text-white">
               <ClientDate timestamp={valuation.lastAppraisalDate} />
             </dd>
@@ -262,15 +307,19 @@ function PublicObjectTags({ tags }: { tags?: string[] | null }) {
 }
 
 function PublicObjectInformation({ object }: PublicObjectDetailProps) {
+  const { t } = useWebI18n();
   return (
     <div className="space-y-8">
       <PublicObjectHeading object={object} />
       <PublicObjectMetadata object={object} />
-      <TextSection title="Description" value={object.description} />
-      <TextSection title="Inscriptions" value={object.inscriptions} />
-      <TextSection title="Provenance" value={object.provenance} />
+      <TextSection title={t("common.description")} value={object.description} />
       <TextSection
-        title="Exhibition History"
+        title={t("common.inscriptions")}
+        value={object.inscriptions}
+      />
+      <TextSection title={t("common.provenance")} value={object.provenance} />
+      <TextSection
+        title={t("common.exhibitionHistory")}
         value={object.exhibitionHistory}
       />
       <PublicObjectValuation object={object} />
@@ -282,7 +331,7 @@ function PublicObjectInformation({ object }: PublicObjectDetailProps) {
       <PublicObjectTags tags={object.tags} />
       <div className="border-white/10 border-t pt-4">
         <p className="text-sm text-white/40">
-          From the collection of {object.organizationName}
+          {t("public.fromCollectionOf", { name: object.organizationName })}
         </p>
       </div>
     </div>

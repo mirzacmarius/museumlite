@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 type ExportData = NonNullable<DeaccessionDetailViewProps["exportData"]>;
@@ -12,6 +13,16 @@ interface DeaccessionBoardReportHeaderProps {
 export function DeaccessionBoardReportHeader({
   exportData,
 }: DeaccessionBoardReportHeaderProps) {
+  const tRoot = useI18n();
+  const status = exportData.deaccession.status;
+  const statusLabel =
+    status === "approved"
+      ? tRoot("deaccessions.status.approved")
+      : status === "rejected"
+        ? tRoot("deaccessions.status.rejected")
+        : status === "pending"
+          ? tRoot("deaccessions.status.pending")
+          : status;
   return (
     <div className="flex items-start gap-4 border-b border-zinc-200 pb-4 print:gap-3 print:pb-3">
       {exportData.collection?.primaryImageUrl ? (
@@ -28,7 +39,7 @@ export function DeaccessionBoardReportHeader({
           {exportData.organization.name}
         </p>
         <h1 className="text-xl font-semibold text-black print:text-lg">
-          Deaccession Report
+          {tRoot("untranslatedRecords.deaccessions.detail.reportTitle")}
         </h1>
         <p className="text-sm text-zinc-600 print:text-xs">
           {exportData.deaccession.deaccessionNumber}
@@ -44,8 +55,7 @@ export function DeaccessionBoardReportHeader({
                 : "bg-amber-100 text-amber-800"
           }`}
         >
-          {exportData.deaccession.status.charAt(0).toUpperCase() +
-            exportData.deaccession.status.slice(1)}
+          {statusLabel}
         </span>
       </div>
     </div>

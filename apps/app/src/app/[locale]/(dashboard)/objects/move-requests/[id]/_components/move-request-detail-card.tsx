@@ -3,6 +3,7 @@
 import { Label } from "@v1/ui/label";
 import { ArrowRightLeft } from "lucide-react";
 import { ClientDateFns } from "@/components/client-date";
+import { useI18n } from "@/locales/client";
 import {
   formatMoveRequestAccessionMode,
   MoveRequestStatusBadge,
@@ -20,16 +21,18 @@ export function MoveRequestDetailCard({
   locale,
   accessionSummary,
 }: MoveRequestDetailCardProps) {
+  const tRoot = useI18n();
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <ArrowRightLeft className="size-4" />
-            Object move request
+            {tRoot("untranslatedRecords.objects.move.requestTitle")}
           </div>
           <h1 className="text-2xl font-semibold">
-            {request.collection?.title ?? "Unknown object"}
+            {request.collection?.title ??
+              tRoot("untranslatedRecords.objects.moveRequest.unknownObject")}
           </h1>
           <p className="text-sm text-muted-foreground">
             {request.sourceAccessionNumber}
@@ -41,26 +44,40 @@ export function MoveRequestDetailCard({
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <div>
-            <Label className="text-muted-foreground">From</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("untranslatedRecords.objects.actions.from")}
+            </Label>
             <p className="mt-1">
-              {request.sourceOrganization?.name ?? "Unknown organization"}
+              {request.sourceOrganization?.name ??
+                tRoot(
+                  "untranslatedRecords.objects.moveRequest.unknownOrganization",
+                )}
             </p>
           </div>
           <div>
-            <Label className="text-muted-foreground">To</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("objects.form.to")}
+            </Label>
             <p className="mt-1">
-              {request.targetOrganization?.name ?? "Unknown organization"}
+              {request.targetOrganization?.name ??
+                tRoot(
+                  "untranslatedRecords.objects.moveRequest.unknownOrganization",
+                )}
             </p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Accession handling</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("untranslatedRecords.accessions.transfer.handling")}
+            </Label>
             <p className="mt-1">
               {formatMoveRequestAccessionMode(request.accessionMode)}
             </p>
           </div>
           <div>
             <Label className="text-muted-foreground">
-              Resulting accession number
+              {tRoot(
+                "untranslatedRecords.objects.move.resultingAccessionNumber",
+              )}
             </Label>
             <p className="mt-1 font-mono text-sm">{accessionSummary}</p>
           </div>
@@ -68,15 +85,19 @@ export function MoveRequestDetailCard({
 
         <div className="space-y-4">
           <div>
-            <Label className="text-muted-foreground">Requested by</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("library.acquisitions.labels.requestedBy")}
+            </Label>
             <p className="mt-1">
               {request.requestedByUser?.name ??
                 request.requestedByUser?.username ??
-                "Unknown user"}
+                tRoot("untranslatedRecords.objects.moveRequest.unknownUser")}
             </p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Requested at</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("untranslatedRecords.objects.move.requestedAt")}
+            </Label>
             <p className="mt-1">
               <ClientDateFns
                 timestamp={request.requestedAt}
@@ -88,7 +109,7 @@ export function MoveRequestDetailCard({
           {request.sourceReviewedAt && (
             <div>
               <Label className="text-muted-foreground">
-                Source approved at
+                {tRoot("untranslatedRecords.objects.move.sourceApprovedAt")}
               </Label>
               <p className="mt-1">
                 <ClientDateFns
@@ -102,7 +123,7 @@ export function MoveRequestDetailCard({
           {request.targetReviewedAt && (
             <div>
               <Label className="text-muted-foreground">
-                Target reviewed at
+                {tRoot("untranslatedRecords.objects.move.targetReviewedAt")}
               </Label>
               <p className="mt-1">
                 <ClientDateFns
@@ -115,7 +136,9 @@ export function MoveRequestDetailCard({
           )}
           {request.executedAt && (
             <div>
-              <Label className="text-muted-foreground">Executed at</Label>
+              <Label className="text-muted-foreground">
+                {tRoot("untranslatedRecords.objects.move.executedAt")}
+              </Label>
               <p className="mt-1">
                 <ClientDateFns
                   timestamp={request.executedAt}
@@ -130,20 +153,26 @@ export function MoveRequestDetailCard({
 
       <div className="mt-6 space-y-4">
         <div>
-          <Label className="text-muted-foreground">Reason for move</Label>
+          <Label className="text-muted-foreground">
+            {tRoot("untranslatedRecords.objects.move.reason")}
+          </Label>
           <p className="mt-1 whitespace-pre-wrap">{request.reason}</p>
         </div>
 
         {request.notes && (
           <div>
-            <Label className="text-muted-foreground">Additional notes</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("untranslatedRecords.objects.detail.additionalNotes")}
+            </Label>
             <p className="mt-1 whitespace-pre-wrap">{request.notes}</p>
           </div>
         )}
 
         {(request.sourceReviewNotes || request.targetReviewNotes) && (
           <div>
-            <Label className="text-muted-foreground">Review notes</Label>
+            <Label className="text-muted-foreground">
+              {tRoot("untranslatedRecords.accessions.transfer.reviewNotes")}
+            </Label>
             <p className="mt-1 whitespace-pre-wrap">
               {request.targetReviewNotes ?? request.sourceReviewNotes}
             </p>

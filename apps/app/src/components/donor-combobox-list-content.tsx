@@ -9,6 +9,7 @@ import {
 } from "@v1/ui/command";
 import { cn } from "@v1/ui/utils";
 import { Check } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import {
   type DonorOption,
   formatDonorName,
@@ -36,22 +37,23 @@ export function DonorComboboxListContent({
   onSelect,
   onCreateDonorClick,
 }: DonorComboboxListContentProps) {
+  const translate = useI18n();
   return (
     <CommandList id={listId} className="max-h-[300px]">
       <CommandEmpty>
         {inputValue ? (
           <div className="p-4 text-sm text-center">
             <p className="text-muted-foreground mb-2">
-              No matching donors found.
+              {translate("untranslatedComponents.labels.noMatchingDonorsFound")}
             </p>
             {organizationId && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Press{" "}
+                  {translate("untranslatedComponents.labels.press")}{" "}
                   <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">
                     Enter
                   </kbd>{" "}
-                  to add{" "}
+                  {translate("untranslatedComponents.labels.toAdd")}{" "}
                   <span className="font-medium text-foreground">
                     "{formatDonorName(inputValue)}"
                   </span>
@@ -63,20 +65,22 @@ export function DonorComboboxListContent({
                   onClick={onCreateDonorClick}
                   className="w-full"
                 >
-                  Add Donor
+                  {translate("untranslatedComponents.labels.addDonor")}
                 </Button>
               </div>
             )}
           </div>
         ) : (
           <div className="p-4 text-sm text-muted-foreground text-center">
-            Type to search donors
+            {translate("untranslatedComponents.labels.typeToSearchDonors")}
           </div>
         )}
       </CommandEmpty>
 
       {specialDonorOptions.length > 0 && (
-        <CommandGroup heading="Special options">
+        <CommandGroup
+          heading={translate("untranslatedComponents.labels.specialOptions")}
+        >
           {specialDonorOptions.map((donor) => (
             <DonorListItem
               key={donor.value}
@@ -89,7 +93,11 @@ export function DonorComboboxListContent({
       )}
 
       {organizationDonorOptions.length > 0 && (
-        <CommandGroup heading="Organization Donors">
+        <CommandGroup
+          heading={translate(
+            "untranslatedComponents.labels.organizationDonors",
+          )}
+        >
           {organizationDonorOptions.map((donor) => (
             <DonorListItem
               key={donor.value}

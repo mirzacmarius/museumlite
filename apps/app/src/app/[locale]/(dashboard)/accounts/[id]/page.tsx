@@ -63,13 +63,14 @@ import {
   accountHolderFields,
   formatDateInputValue,
 } from "@/lib/account-holder";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 export default function AccountDetailPage() {
   const _locale = useCurrentLocale();
   const t = useScopedI18n("accounts");
   const tCommon = useScopedI18n("common");
-  const _tToast = useScopedI18n("accounts.detail.toasts");
+  const tToast = useScopedI18n("accounts.detail.toasts");
+  const tRoot = useI18n();
   const params = useParams();
   const { push } = useRouter();
   const accountId = params.id as Id<"accounts">;
@@ -130,8 +131,8 @@ export default function AccountDetailPage() {
     try {
       await deleteAccount({ accountId });
       push("/accounts");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete account");
+    } catch {
+      setError(tToast("accountDeleteFailed"));
       setIsDeleting(false);
     }
   };
@@ -156,7 +157,8 @@ export default function AccountDetailPage() {
                 </h1>
               </div>
               <p className="font-mono text-sm text-muted-foreground">
-                Account: {account.accountNumber}
+                {tRoot("untranslatedDashboard.accounts.accountNumberLabel")}{" "}
+                {account.accountNumber}
               </p>
             </div>
           </div>
@@ -1174,6 +1176,12 @@ function RelationshipsTab({
 function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
   const locale = useCurrentLocale();
   const t = useScopedI18n("accounts.detail");
+  const untranslated = useScopedI18n("untranslatedDashboard.accounts");
+  const activityTypeLabels: Record<TimelineEvent["type"], string> = {
+    relationship: untranslated("activityTypeRelationship"),
+    document: untranslated("activityTypeDocument"),
+    note: untranslated("activityTypeNote"),
+  };
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <h2 className="mb-6 text-lg font-medium">{t("activityTimeline")}</h2>
@@ -1198,7 +1206,7 @@ function ActivityTab({ timeline }: { timeline: TimelineEvent[] | undefined }) {
                 )}
               </div>
               <div className="flex-1 pb-8">
-                <p className="font-medium">{event.type}</p>
+                <p className="font-medium">{activityTypeLabels[event.type]}</p>
                 <p className="text-sm text-muted-foreground">
                   <ClientDate timestamp={event.timestamp} locale={locale} />
                 </p>

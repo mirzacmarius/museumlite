@@ -19,27 +19,46 @@ import {
 } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import { formatCurrency } from "@/lib/format-number";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 
 interface CoinsStampsDetailsTabProps {
   collectionId: string;
   organizationId: Id<"organizations">;
 }
 
-function formatCategory(category?: "coin" | "stamp") {
-  if (category === "coin") return "Coin";
-  if (category === "stamp") return "Stamp";
-  return "Unspecified";
+function formatCategory(
+  category: "coin" | "stamp" | undefined,
+  t: (key: string) => string,
+) {
+  if (category === "coin") return t("untranslatedRecords.objects.enums.coin");
+  if (category === "stamp") return t("untranslatedRecords.objects.enums.stamp");
+  return t("untranslatedRecords.objects.enums.unspecified");
 }
 
-function formatRarity(rarity?: string) {
-  return rarity?.replace(/_/g, " ") ?? "Not specified";
+function formatRarity(rarity: string | undefined, t: (key: string) => string) {
+  switch (rarity) {
+    case "common":
+      return t("untranslatedRecords.objects.enums.rarityCommon");
+    case "scarce":
+      return t("untranslatedRecords.objects.enums.rarityScarce");
+    case "rare":
+      return t("untranslatedRecords.objects.enums.rarityRare");
+    case "very_rare":
+      return t("untranslatedRecords.objects.enums.rarityVeryRare");
+    case "unique":
+      return t("untranslatedRecords.objects.enums.rarityUnique");
+    case undefined:
+      return t("untranslatedRecords.objects.enums.notSpecified");
+    default:
+      return rarity;
+  }
 }
 
 export function CoinsStampsDetailsTab({
   collectionId,
 }: CoinsStampsDetailsTabProps) {
   const locale = useCurrentLocale();
+  const tRoot = useI18n();
   const t = useScopedI18n("modules.coins_stamps");
   const common = useScopedI18n("modules.common");
   const { hasModule } = useFeatureAccess();
@@ -105,7 +124,7 @@ export function CoinsStampsDetailsTab({
             </span>
           </div>
           <span className="text-sm font-medium text-foreground">
-            {formatCategory(details.itemCategory)}
+            {formatCategory(details.itemCategory, tRoot)}
           </span>
           {details.series ? (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -200,7 +219,7 @@ export function CoinsStampsDetailsTab({
               <dt className="text-xs text-muted-foreground">{t("rarity")}</dt>
               <dd>
                 <Badge variant="secondary" className="capitalize">
-                  {formatRarity(details.rarity)}
+                  {formatRarity(details.rarity, tRoot)}
                 </Badge>
               </dd>
             </div>

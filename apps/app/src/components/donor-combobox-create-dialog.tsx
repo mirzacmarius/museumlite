@@ -13,6 +13,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "@/locales/client";
 import {
   initialDonorForm,
   type NewDonorForm,
@@ -42,6 +43,7 @@ export function DonorComboboxCreateDialog({
   onConfirm,
   onReset,
 }: DonorComboboxCreateDialogProps) {
+  const translate = useI18n();
   return (
     <Dialog
       open={open}
@@ -54,14 +56,20 @@ export function DonorComboboxCreateDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Donor</DialogTitle>
+          <DialogTitle>
+            {translate("untranslatedComponents.labels.addNewDonor")}
+          </DialogTitle>
           <DialogDescription>
-            Create a donor profile with notes and optional contact details.
+            {translate(
+              "untranslatedComponents.labels.createADonorProfileWithNotesAndOptionalContactDetails",
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="donor-name">Donor Name *</Label>
+            <Label htmlFor="donor-name">
+              {translate("untranslatedComponents.labels.donorName")}
+            </Label>
             <Input
               id="donor-name"
               value={newDonorForm.name}
@@ -71,11 +79,15 @@ export function DonorComboboxCreateDialog({
                   name: e.target.value,
                 }))
               }
-              placeholder="Enter donor name"
+              placeholder={translate(
+                "untranslatedComponents.labels.enterDonorName",
+              )}
             />
           </div>
           <div>
-            <Label htmlFor="donor-notes">Information / Notice</Label>
+            <Label htmlFor="donor-notes">
+              {translate("untranslatedComponents.labels.informationNotice")}
+            </Label>
             <Textarea
               id="donor-notes"
               value={newDonorForm.notes}
@@ -85,14 +97,18 @@ export function DonorComboboxCreateDialog({
                   notes: e.target.value,
                 }));
               }}
-              placeholder="Add provenance context, donor notes, or handling instructions"
+              placeholder={translate(
+                "untranslatedComponents.labels.addProvenanceContextDonorNotesOrHandlingInstructions",
+              )}
               rows={4}
               autoResize
             />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label htmlFor="donor-phone">Phone</Label>
+              <Label htmlFor="donor-phone">
+                {translate("untranslatedComponents.labels.phone")}
+              </Label>
               <Input
                 id="donor-phone"
                 value={newDonorForm.phone}
@@ -106,7 +122,9 @@ export function DonorComboboxCreateDialog({
               />
             </div>
             <div>
-              <Label htmlFor="donor-email">Contact Email</Label>
+              <Label htmlFor="donor-email">
+                {translate("untranslatedComponents.labels.contactEmail")}
+              </Label>
               <Input
                 id="donor-email"
                 type="email"
@@ -136,7 +154,9 @@ export function DonorComboboxCreateDialog({
             </div>
           </div>
           <div>
-            <Label htmlFor="donor-address">Address</Label>
+            <Label htmlFor="donor-address">
+              {translate("untranslatedComponents.labels.address")}
+            </Label>
             <Textarea
               id="donor-address"
               value={newDonorForm.address}
@@ -146,7 +166,9 @@ export function DonorComboboxCreateDialog({
                   address: e.target.value,
                 }))
               }
-              placeholder="Postal or institutional address"
+              placeholder={translate(
+                "untranslatedComponents.labels.postalOrInstitutionalAddress",
+              )}
               rows={3}
               autoResize
             />
@@ -161,7 +183,7 @@ export function DonorComboboxCreateDialog({
               onReset();
             }}
           >
-            Cancel
+            {translate("untranslatedComponents.labels.cancel")}
           </Button>
           <Button
             type="button"
@@ -171,7 +193,9 @@ export function DonorComboboxCreateDialog({
             }}
             disabled={!newDonorForm.name.trim() || isSubmitting}
           >
-            {isSubmitting ? "Adding..." : "Add Donor"}
+            {isSubmitting
+              ? translate("untranslatedComponents.labels.adding")
+              : translate("untranslatedComponents.labels.addDonor")}
           </Button>
         </DialogFooter>
       </DialogContent>

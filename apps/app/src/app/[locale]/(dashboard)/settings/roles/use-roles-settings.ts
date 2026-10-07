@@ -98,7 +98,7 @@ export function useRolesSettings() {
       setCreateDialogOpen(false);
     } catch (err) {
       console.error("Error creating role:", err);
-      setError(err instanceof Error ? err.message : t("createFailed"));
+      setError(t("createFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -162,7 +162,7 @@ export function useRolesSettings() {
       setEditDialogOpen(false);
     } catch (err) {
       console.error("Error updating role:", err);
-      setError(err instanceof Error ? err.message : t("updateFailed"));
+      setError(t("updateFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -177,7 +177,7 @@ export function useRolesSettings() {
       await deleteRole({ roleId });
     } catch (err) {
       console.error("Error deleting role:", err);
-      alert(err instanceof Error ? err.message : t("deleteFailed"));
+      alert(t("deleteFailed"));
     }
   };
 

@@ -15,6 +15,7 @@ import {
 import { Button } from "@v1/ui/button";
 import { Check, Loader2, Send, Trash2, X } from "lucide-react";
 
+import { useI18n } from "@/locales/client";
 export interface WebhookItem {
   _id: Id<"webhooks">;
   name: string;
@@ -46,6 +47,7 @@ export function WebhooksList({
   onDelete,
   t,
 }: WebhooksListProps) {
+  const tRoot = useI18n();
   return (
     <div className="rounded-lg border border-border">
       {!webhooks ? (
@@ -138,7 +140,7 @@ export function WebhooksList({
                 ))}
                 {webhook.events.length > 5 && (
                   <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    +{webhook.events.length - 5} more
+                    +{webhook.events.length - 5} {tRoot("untranslatedDashboard.settings.more")}
                   </span>
                 )}
               </div>

@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { cn } from "@v1/ui/utils";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 export interface LocationTreeFilterOption {
   _id: Id<"locations">;
@@ -43,9 +43,11 @@ function buildLocationTree(
 
   for (const location of sorted) {
     const pathIds = location.path.map(
-      (part, index) => part._id ?? (index === location.path.length - 1
-        ? location._id
-        : `${location._id}:${index}`),
+      (part, index) =>
+        part._id ??
+        (index === location.path.length - 1
+          ? location._id
+          : `${location._id}:${index}`),
     );
     if (pathIds.length === 0) continue;
 
@@ -107,6 +109,7 @@ function LocationTreeRows({
   onToggleExpand: (id: string) => void;
   onToggleSelect: (id: string) => void;
 }) {
+  const tRoot = useI18n();
   return (
     <>
       {nodes.map((node) => {
@@ -127,7 +130,17 @@ function LocationTreeRows({
               {hasChildren ? (
                 <button
                   type="button"
-                  aria-label={isExpanded ? "Collapse" : "Expand"}
+                  aria-label={
+                    isExpanded
+                      ? tRoot(
+                          "untranslatedRecords.objects.location.collapseNode",
+                          { name: node.name },
+                        )
+                      : tRoot(
+                          "untranslatedRecords.objects.location.expandNode",
+                          { name: node.name },
+                        )
+                  }
                   aria-expanded={isExpanded}
                   className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
                   onClick={() => onToggleExpand(node.id)}
@@ -144,7 +157,10 @@ function LocationTreeRows({
               <Checkbox
                 checked={isSelected}
                 onCheckedChange={() => onToggleSelect(node.id)}
-                aria-label={`Select ${node.name}`}
+                aria-label={tRoot(
+                  "untranslatedRecords.objects.location.selectNode",
+                  { name: node.name },
+                )}
                 className="size-3.5"
               />
               <button

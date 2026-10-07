@@ -788,6 +788,13 @@ export const purgeOrganizationsInternal = internalMutation({
                     "coinsStampsDetails",
                     "insurancePolicies",
                     "insuranceCoverages",
+                    "insuranceClaims",
+                    "accountDocuments",
+                    "accountRelationships",
+                    "objectComments",
+                    "workflowHistory",
+                    "workflowStepApprovals",
+                    "organizationMoveRequests",
                   ].includes(entry.table),
               ))
           ) {

@@ -1,4 +1,9 @@
 import { Email } from "@convex-dev/auth/providers/Email";
+import {
+  buildAuthCodeEmail,
+  getEmailLocaleFromAuthUrl,
+  getEmailTranslations,
+} from "../email/translations";
 import { env } from "../env";
 import { withCodeRequestLimit } from "../passwordRecovery/codeRequestLimit";
 import { generateVerificationCode } from "../utils/verificationCode";
@@ -10,26 +15,37 @@ export const ResendOTPPasswordReset = Email({
   async generateVerificationToken() {
     return generateVerificationCode();
   },
-  sendVerificationRequest: withCodeRequestLimit(async ({ identifier: email, provider, token }) => {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${provider.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: provider.from,
-        to: [email],
-        subject: "Reset your Museumlite password",
-        html: `<p>Your password reset code is <strong>${token}</strong>.</p>`,
-      }),
-    });
+  sendVerificationRequest: withCodeRequestLimit(
+    async ({ identifier: email, provider, token, url }) => {
+      const locale = getEmailLocaleFromAuthUrl(url);
+      const messages = getEmailTranslations(locale).auth;
+      const emailCopy = buildAuthCodeEmail({
+        locale,
+        subject: messages.passwordSubject,
+        body: messages.passwordBody,
+        token,
+      });
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: provider.from,
+          to: [email],
+          subject: emailCopy.subject,
+          html: emailCopy.html,
+          text: emailCopy.text,
+        }),
+      });
 
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(
-        `Failed to send password reset email: ${response.status} ${body}`,
-      );
-    }
-  }),
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+          `Failed to send password reset email: ${response.status} ${body}`,
+        );
+      }
+    },
+  ),
 });

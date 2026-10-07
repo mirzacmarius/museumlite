@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@v1/ui/tabs";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { ActivityTab } from "../activity-tab";
 import { FacilityTab } from "../facility-tab";
 import { LogisticsTab } from "../logistics-tab";
@@ -22,6 +22,7 @@ export function LoanDetailTabs({
   activeTab,
   onTabChange,
 }: LoanDetailTabsProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
 
   return (
@@ -33,7 +34,7 @@ export function LoanDetailTabs({
               value="overview"
               className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
-              Overview &{" "}
+              {tRoot("untranslatedRecords.loans.detail.overviewFor")}{" "}
               {loan.type === "outgoing"
                 ? tActions("borrower")
                 : tActions("lenderLabel")}
@@ -42,7 +43,9 @@ export function LoanDetailTabs({
               value="objects"
               className="rounded-none border-b-2 border-transparent py-3 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=active]:border-cyan-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
-              Objects ({loan.items.length})
+              {tRoot("loans.actions.objectsTab", {
+                count: loan.items.length,
+              })}
             </TabsTrigger>
             <TabsTrigger
               value="facility"

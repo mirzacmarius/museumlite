@@ -3,7 +3,7 @@
 import { Button } from "@v1/ui/button";
 import { Info, Save } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 interface NewLoanFormActionsProps {
   error: string | null;
@@ -16,6 +16,7 @@ export function NewLoanFormActions({
   isSubmitting,
   onCancel,
 }: NewLoanFormActionsProps) {
+  const tRoot = useI18n();
   const tActions = useScopedI18n("loans.actions");
 
   return (
@@ -34,7 +35,7 @@ export function NewLoanFormActions({
           onClick={onCancel}
           className="w-24"
         >
-          Cancel
+          {tRoot("loans.actions.cancel")}
         </Button>
         <PermissionGate permission="loans.create">
           <Button

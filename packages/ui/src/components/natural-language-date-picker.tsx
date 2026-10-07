@@ -1,19 +1,28 @@
 "use client";
 
-import { parseDate } from "chrono-node";
-import { format, parseISO } from "date-fns";
+import {
+  addDays,
+  format,
+  isValid,
+  parse,
+  parseISO,
+  startOfDay,
+} from "date-fns";
+import { enUS, es, fr, nb, ro } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
+import { type UiLocale, useUiLocale } from "../locale";
 import { Button } from "./button";
 import { Calendar } from "./calendar";
 import { Input } from "./input";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
-function formatDate(date: Date | undefined) {
+export function formatLocalizedDate(date: Date | undefined, locale: UiLocale) {
   if (!date) {
     return "";
   }
-  return format(date, "MMMM dd, yyyy");
+  const localeMap = { en: enUS, fr, es, no: nb, ro };
+  return format(date, "PPP", { locale: localeMap[locale] });
 }
 
 function isValidDate(date: Date | undefined) {
@@ -21,6 +30,32 @@ function isValidDate(date: Date | undefined) {
     return false;
   }
   return !Number.isNaN(date.getTime());
+}
+
+export function parseLocalizedDate(
+  value: string,
+  locale: UiLocale,
+  referenceDate = new Date(),
+): Date | null {
+  const normalizedValue = value.trim().toLocaleLowerCase(locale);
+  const relativeDays: Record<UiLocale, Record<string, number>> = {
+    en: { today: 0, tomorrow: 1, yesterday: -1 },
+    fr: { "aujourd’hui": 0, "aujourd'hui": 0, demain: 1, hier: -1 },
+    es: { hoy: 0, mañana: 1, ayer: -1 },
+    no: { "i dag": 0, idag: 0, "i morgen": 1, "i går": -1, igår: -1 },
+    ro: { astăzi: 0, azi: 0, mâine: 1, ieri: -1 },
+  };
+  const relativeDay = relativeDays[locale][normalizedValue];
+  if (relativeDay !== undefined) {
+    return addDays(startOfDay(referenceDate), relativeDay);
+  }
+  const isoDate = parseISO(value);
+  if (isValid(isoDate)) return isoDate;
+  for (const numericFormat of ["d.M.yyyy", "d/M/yyyy", "d-M-yyyy"]) {
+    const numericDate = parse(value, numericFormat, referenceDate);
+    if (isValid(numericDate)) return numericDate;
+  }
+  return null;
 }
 
 function parseStoredDate(value: string | undefined) {
@@ -38,12 +73,13 @@ function toDateString(date: Date) {
 function getInitialPickerState(
   value: string | undefined,
   defaultDate: Date | undefined,
+  locale: UiLocale,
 ) {
   const parsedDate = parseStoredDate(value);
   if (parsedDate) {
     return {
       open: false,
-      inputValue: formatDate(parsedDate),
+      inputValue: formatLocalizedDate(parsedDate, locale),
       date: parsedDate,
       month: parsedDate,
     };
@@ -52,7 +88,7 @@ function getInitialPickerState(
   if (defaultDate) {
     return {
       open: false,
-      inputValue: formatDate(defaultDate),
+      inputValue: formatLocalizedDate(defaultDate, locale),
       date: defaultDate,
       month: defaultDate,
     };
@@ -89,8 +125,8 @@ type PickerAction =
   | { type: "setInputValue"; value: string }
   | { type: "setDate"; value: Date | undefined }
   | { type: "setMonth"; value: Date | undefined }
-  | { type: "applyParsedInput"; value: string }
-  | { type: "selectCalendarDate"; value: Date };
+  | { type: "applyParsedInput"; value: string; locale: UiLocale }
+  | { type: "selectCalendarDate"; value: Date; locale: UiLocale };
 
 function pickerReducer(state: PickerState, action: PickerAction): PickerState {
   switch (action.type) {
@@ -107,7 +143,7 @@ function pickerReducer(state: PickerState, action: PickerAction): PickerState {
       if (!newValue.trim()) {
         return { ...state, inputValue: newValue, date: undefined };
       }
-      const parsedDate = parseDate(newValue);
+      const parsedDate = parseLocalizedDate(newValue, action.locale);
       if (parsedDate && isValidDate(parsedDate)) {
         return {
           ...state,
@@ -123,7 +159,7 @@ function pickerReducer(state: PickerState, action: PickerAction): PickerState {
         ...state,
         date: action.value,
         month: action.value,
-        inputValue: formatDate(action.value),
+        inputValue: formatLocalizedDate(action.value, action.locale),
         open: false,
       };
   }
@@ -132,16 +168,17 @@ function pickerReducer(state: PickerState, action: PickerAction): PickerState {
 export function NaturalLanguageDatePicker({
   value,
   onChange,
-  placeholder = "today",
+  placeholder,
   disabled,
   className,
   id,
   required = false,
   defaultDate,
 }: NaturalLanguageDatePickerProps) {
+  const { locale } = useUiLocale();
   return (
     <NaturalLanguageDatePickerInner
-      key={`${value ?? ""}:${defaultDate?.getTime() ?? ""}`}
+      key={`${value ?? ""}:${defaultDate?.getTime() ?? ""}:${locale}`}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
@@ -157,30 +194,31 @@ export function NaturalLanguageDatePicker({
 function NaturalLanguageDatePickerInner({
   value: _value,
   onChange,
-  placeholder = "today",
+  placeholder,
   disabled,
   className,
   id,
   required = false,
   defaultDate,
 }: NaturalLanguageDatePickerProps) {
+  const { locale, messages } = useUiLocale();
   const [state, dispatch] = React.useReducer(
     pickerReducer,
-    { value: _value, defaultDate },
-    ({ value, defaultDate: fallbackDate }) =>
-      getInitialPickerState(value, fallbackDate),
+    { value: _value, defaultDate, locale },
+    ({ value, defaultDate: fallbackDate, locale: currentLocale }) =>
+      getInitialPickerState(value, fallbackDate, currentLocale),
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    dispatch({ type: "applyParsedInput", value: newValue });
+    dispatch({ type: "applyParsedInput", value: newValue, locale });
 
     if (!newValue.trim()) {
       onChange?.("");
       return;
     }
 
-    const parsedDate = parseDate(newValue);
+    const parsedDate = parseLocalizedDate(newValue, locale);
     if (parsedDate && isValidDate(parsedDate)) {
       onChange?.(toDateString(parsedDate));
     }
@@ -188,7 +226,7 @@ function NaturalLanguageDatePickerInner({
 
   const handleCalendarSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
-      dispatch({ type: "selectCalendarDate", value: selectedDate });
+      dispatch({ type: "selectCalendarDate", value: selectedDate, locale });
       onChange?.(toDateString(selectedDate));
     }
   };
@@ -198,7 +236,8 @@ function NaturalLanguageDatePickerInner({
       <Input
         id={id}
         value={state.inputValue}
-        placeholder={placeholder}
+        placeholder={placeholder ?? messages.datePicker.today}
+        title={messages.datePicker.naturalLanguageHint}
         className={`bg-background pr-10 ${className || ""}`}
         onChange={handleInputChange}
         onKeyDown={(e) => {
@@ -225,7 +264,7 @@ function NaturalLanguageDatePickerInner({
             disabled={disabled}
           >
             <CalendarIcon className="size-3.5" />
-            <span className="sr-only">Select date</span>
+            <span className="sr-only">{messages.calendar.selectDate}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent

@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
   getMediaDisplayKind,
-  getSketchfabEmbedUrl,
   getSketchfabEmbedsFromLinks,
+  getSketchfabEmbedUrl,
   getSketchfabModelId,
   isPdfFile,
 } from "./media-gallery-utils";

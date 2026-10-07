@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 
 interface PartialDateFieldProps {
   id?: string;
@@ -53,6 +54,7 @@ export function PartialDateField({
   onChange,
   disabled = false,
 }: PartialDateFieldProps) {
+  const translate = useI18n();
   const [precision, setPrecision] = React.useState<Precision>(() =>
     getPrecision(value),
   );
@@ -80,7 +82,7 @@ export function PartialDateField({
           id={id}
           date={dateIsPreciseEnough ? anchorDate : undefined}
           defaultMonth={anchorDate}
-          placeholder="Pick a date"
+          placeholder={translate("untranslatedComponents.labels.pickADate")}
           disabled={disabled}
           displayFormat={
             precision === "year"
@@ -98,7 +100,7 @@ export function PartialDateField({
             htmlFor={id ? `${id}-precision` : undefined}
             className="text-xs text-muted-foreground"
           >
-            Precision
+            {translate("untranslatedComponents.labels.precision")}
           </Label>
           <Select
             value={precision}
@@ -118,17 +120,24 @@ export function PartialDateField({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="year">Year</SelectItem>
-              <SelectItem value="month">Month</SelectItem>
-              <SelectItem value="day">Day</SelectItem>
+              <SelectItem value="year">
+                {translate("untranslatedComponents.labels.year")}
+              </SelectItem>
+              <SelectItem value="month">
+                {translate("untranslatedComponents.labels.month")}
+              </SelectItem>
+              <SelectItem value="day">
+                {translate("untranslatedComponents.labels.day")}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
       {!dateIsPreciseEnough && value && (
         <p className="text-xs text-muted-foreground">
-          Choose a date to add the selected precision; the current value stays
-          unchanged until then.
+          {translate(
+            "untranslatedComponents.labels.chooseADateToAddTheSelectedPrecisionTheCurrentValueStaysUnchangedUntilThen",
+          )}
         </p>
       )}
     </div>

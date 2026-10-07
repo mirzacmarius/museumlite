@@ -1,7 +1,7 @@
 "use client";
 
 import { ClientDate, ClientTime } from "@/components/client-date";
-import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import type { WorkflowHistoryEntry } from "./types";
 
 interface ActivityTabProps {
@@ -9,6 +9,7 @@ interface ActivityTabProps {
 }
 
 export function ActivityTab({ workflowHistory }: ActivityTabProps) {
+  const tRoot = useI18n();
   const locale = useCurrentLocale();
   const t = useScopedI18n("loans.actions");
 
@@ -70,7 +71,7 @@ export function ActivityTab({ workflowHistory }: ActivityTabProps) {
             {entry.approvedByName && (
               <span className="text-muted-foreground">
                 {" "}
-                by {entry.approvedByName}
+                {tRoot("library.catalog.labels.by")} {entry.approvedByName}
               </span>
             )}
           </p>

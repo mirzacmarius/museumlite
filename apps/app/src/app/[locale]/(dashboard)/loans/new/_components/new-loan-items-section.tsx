@@ -4,7 +4,7 @@ import type { Doc, Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { CollectionMultiSelectCombobox } from "@/components/collection-multi-select-combobox";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { SelectedCollectionItem } from "./selected-collection-item";
 
 interface CollectionInActiveLoan {
@@ -42,6 +42,7 @@ export function NewLoanItemsSection({
   onRemoveCollection,
   onClearAll,
 }: NewLoanItemsSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans");
 
   return (
@@ -50,12 +51,12 @@ export function NewLoanItemsSection({
         <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] text-foreground">
           3
         </span>
-        Loan Items
+        {tRoot("loans.actions.loanItemsTable")}
       </h2>
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label>Select Collections</Label>
+          <Label>{tRoot("loans.actions.selectCollections")}</Label>
           <CollectionMultiSelectCombobox
             organizationId={organizationId as Id<"organizations">}
             selectedIds={selectedCollectionIds}
@@ -68,7 +69,9 @@ export function NewLoanItemsSection({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
-                Selected ({selectedCollectionIds.length})
+                {tRoot("loans.actions.selectedCount", {
+                  count: selectedCollectionIds.length,
+                })}
               </Label>
               <Button
                 type="button"
@@ -77,7 +80,7 @@ export function NewLoanItemsSection({
                 className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
                 onClick={onClearAll}
               >
-                Clear all
+                {tRoot("loans.actions.clearAll")}
               </Button>
             </div>
 

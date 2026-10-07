@@ -5,12 +5,15 @@ import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { useI18n } from "@/locales/client";
+
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
 export default function DashboardError({ error, reset }: ErrorProps) {
+  const tRoot = useI18n();
   useEffect(() => {
     console.error("Dashboard error:", error);
   }, [error]);
@@ -24,17 +27,16 @@ export default function DashboardError({ error, reset }: ErrorProps) {
 
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-2">
-            Something went wrong
+            {tRoot("untranslatedDashboard.errors.dashboardSomethingWentWrong")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            We encountered an unexpected error while loading this page. Please
-            try again or contact support if the problem persists.
+            {tRoot("untranslatedDashboard.errors.dashboardLoadError")}
           </p>
         </div>
 
         {error.digest && (
           <p className="text-xs text-muted-foreground/60 font-mono">
-            Error ID: {error.digest}
+            {tRoot("untranslatedRecords.common.errorId")} {error.digest}
           </p>
         )}
 
@@ -42,12 +44,12 @@ export default function DashboardError({ error, reset }: ErrorProps) {
           <Button variant="outline" asChild>
             <Link href="/">
               <ArrowLeft className="mr-2 size-4" />
-              Go back
+              {tRoot("untranslatedDashboard.errors.dashboardGoBack")}
             </Link>
           </Button>
           <Button onClick={reset}>
             <RefreshCw className="mr-2 size-4" />
-            Try again
+            {tRoot("untranslatedRecords.common.tryAgain")}
           </Button>
         </div>
       </div>

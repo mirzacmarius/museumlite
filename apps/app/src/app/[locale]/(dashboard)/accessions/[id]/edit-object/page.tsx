@@ -5,10 +5,10 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { redirect, useParams } from "next/navigation";
 import { Suspense } from "react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { ObjectRequestFormPage } from "../../../objects/_components/object-request-form/object-request-form-page";
-
 export default function EditAccessionObjectPage() {
+  const tRoot = useI18n();
   const params = useParams();
   const accessionId = params.id as string;
   const tCommon = useScopedI18n("common");
@@ -29,7 +29,9 @@ export default function EditAccessionObjectPage() {
   if (accession === null) {
     return (
       <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">Accession not found.</p>
+        <p className="text-muted-foreground">
+          {tRoot("untranslatedRecords.accessions.notFoundWithPeriod")}
+        </p>
       </div>
     );
   }
@@ -49,7 +51,7 @@ export default function EditAccessionObjectPage() {
     return (
       <div className="flex size-full items-center justify-center">
         <p className="text-muted-foreground">
-          Only pending accession object drafts can be edited from this screen.
+          {tRoot("untranslatedRecords.accessions.pendingDraftOnly")}
         </p>
       </div>
     );

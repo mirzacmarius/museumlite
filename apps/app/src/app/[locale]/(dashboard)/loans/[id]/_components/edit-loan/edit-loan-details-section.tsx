@@ -3,7 +3,7 @@
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { FileText } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { EditLoanFormData } from "./types";
 
 interface EditLoanDetailsSectionProps {
@@ -15,18 +15,21 @@ export function EditLoanDetailsSection({
   formData,
   onChange,
 }: EditLoanDetailsSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans.placeholders");
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
         <FileText className="size-4" />
-        Details
+        {tRoot("loans.actions.details")}
       </h2>
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="terms">Terms & Conditions</Label>
+          <Label htmlFor="terms">
+            {tRoot("loans.actions.termsConditions")}
+          </Label>
           <Textarea
             id="terms"
             value={formData.terms}
@@ -38,7 +41,7 @@ export function EditLoanDetailsSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="notes">Internal Notes</Label>
+          <Label htmlFor="notes">{tRoot("loans.actions.internalNotes")}</Label>
           <Textarea
             id="notes"
             value={formData.notes}

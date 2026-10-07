@@ -3,6 +3,7 @@
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import dynamic from "next/dynamic";
+import { useI18n } from "@/locales/client";
 import type {
   ObjectTabDefinition,
   ObjectTabId as TabId,
@@ -121,6 +122,7 @@ export function ObjectDetailTabPanel({
   hasExhibitionsFeature,
   hasLoansFeature,
 }: ObjectDetailTabPanelProps) {
+  const tRoot = useI18n();
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
       <div className="w-full">
@@ -133,7 +135,7 @@ export function ObjectDetailTabPanel({
               className="px-2"
               onClick={() => onActiveTabChange(tab.id)}
             >
-              {tab.label}
+              {tRoot(tab.label)}
             </Button>
           ))}
         </div>

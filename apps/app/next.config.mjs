@@ -15,6 +15,7 @@ const skipTypeCheck =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: process.env.LOCAL_QA === "1" ? ".next/local-qa" : ".next",
   turbopack: {},
   images: convexImageConfig(),
   // Skip TypeScript checking during build to prevent OOM

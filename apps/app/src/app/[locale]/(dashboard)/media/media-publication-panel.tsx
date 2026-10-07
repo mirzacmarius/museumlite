@@ -48,6 +48,16 @@ interface MediaPublicationPanelProps {
   >;
 }
 
+interface MediaPublicationPanelState {
+  rightsStatus: RightsStatus;
+  licenseType: LicenseType | "";
+  licenseExpiry: string;
+  usageRestrictions: string;
+  requiresAcknowledgment: boolean;
+  isSaving: boolean;
+  error: string | null;
+}
+
 export function MediaPublicationPanel({
   mediaId,
   item,
@@ -60,62 +70,62 @@ export function MediaPublicationPanel({
   const setOriginalDownload = useMutation(
     api.mediaPublications.setOriginalDownload,
   );
-  const [rightsStatus, setRightsStatus] = useState<RightsStatus>(
-    item.rightsStatus ?? "unknown",
-  );
-  const [licenseType, setLicenseType] = useState<LicenseType | "">(
-    item.licenseType ?? "",
-  );
-  const [licenseExpiry, setLicenseExpiry] = useState(
-    item.licenseExpiry
+  const [state, setState] = useState<MediaPublicationPanelState>(() => ({
+    rightsStatus: item.rightsStatus ?? "unknown",
+    licenseType: item.licenseType ?? "",
+    licenseExpiry: item.licenseExpiry
       ? new Date(item.licenseExpiry).toISOString().slice(0, 10)
       : "",
-  );
-  const [usageRestrictions, setUsageRestrictions] = useState(
-    item.usageRestrictions ?? "",
-  );
-  const [requiresAcknowledgment, setRequiresAcknowledgment] = useState(
-    item.requiresAcknowledgment ?? false,
-  );
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    usageRestrictions: item.usageRestrictions ?? "",
+    requiresAcknowledgment: item.requiresAcknowledgment ?? false,
+    isSaving: false,
+    error: null,
+  }));
+
+  function updateState<Key extends keyof MediaPublicationPanelState>(
+    key: Key,
+    value: MediaPublicationPanelState[Key],
+  ) {
+    setState((current) => ({ ...current, [key]: value }));
+  }
 
   async function run(operation: () => Promise<unknown>) {
-    setError(null);
-    setIsSaving(true);
+    updateState("error", null);
+    updateState("isSaving", true);
     try {
       await operation();
     } catch (cause) {
-      setError(
+      updateState(
+        "error",
         cause instanceof Error
           ? cause.message
           : t("mediaPage.publication.failed"),
       );
     } finally {
-      setIsSaving(false);
+      updateState("isSaving", false);
     }
   }
 
   function saveRights() {
-    const parsed = expirySchema.safeParse(licenseExpiry);
+    const parsed = expirySchema.safeParse(state.licenseExpiry);
     if (
       !parsed.success ||
-      (licenseExpiry &&
-        Number.isNaN(Date.parse(`${licenseExpiry}T23:59:59.999Z`)))
+      (state.licenseExpiry &&
+        Number.isNaN(Date.parse(`${state.licenseExpiry}T23:59:59.999Z`)))
     ) {
-      setError(t("mediaPage.publication.invalidExpiry"));
+      updateState("error", t("mediaPage.publication.invalidExpiry"));
       return;
     }
     void run(() =>
       updateRights({
         mediaId,
-        rightsStatus,
-        licenseType: licenseType || null,
-        licenseExpiry: licenseExpiry
-          ? Date.parse(`${licenseExpiry}T23:59:59.999Z`)
+        rightsStatus: state.rightsStatus,
+        licenseType: state.licenseType || null,
+        licenseExpiry: state.licenseExpiry
+          ? Date.parse(`${state.licenseExpiry}T23:59:59.999Z`)
           : null,
-        usageRestrictions: usageRestrictions.trim() || null,
-        requiresAcknowledgment,
+        usageRestrictions: state.usageRestrictions.trim() || null,
+        requiresAcknowledgment: state.requiresAcknowledgment,
       }),
     );
   }
@@ -160,9 +170,10 @@ export function MediaPublicationPanel({
                 <label className="space-y-1 text-xs text-zinc-300">
                   <span>{t("mediaPage.publication.rightsStatus")}</span>
                   <select
-                    value={rightsStatus}
+                    value={state.rightsStatus}
                     onChange={(event) =>
-                      setRightsStatus(
+                      updateState(
+                        "rightsStatus",
                         rightsStatuses.find(
                           (status) => status === event.target.value,
                         ) ?? "unknown",
@@ -180,9 +191,10 @@ export function MediaPublicationPanel({
                 <label className="space-y-1 text-xs text-zinc-300">
                   <span>{t("mediaPage.publication.licenseType")}</span>
                   <select
-                    value={licenseType}
+                    value={state.licenseType}
                     onChange={(event) =>
-                      setLicenseType(
+                      updateState(
+                        "licenseType",
                         licenseTypes.find(
                           (license) => license === event.target.value,
                         ) ?? "",
@@ -204,8 +216,10 @@ export function MediaPublicationPanel({
                   <span>{t("mediaPage.publication.expiry")}</span>
                   <input
                     type="date"
-                    value={licenseExpiry}
-                    onChange={(event) => setLicenseExpiry(event.target.value)}
+                    value={state.licenseExpiry}
+                    onChange={(event) =>
+                      updateState("licenseExpiry", event.target.value)
+                    }
                     className="w-full rounded border border-white/10 bg-zinc-950 p-2"
                   />
                 </label>
@@ -213,9 +227,9 @@ export function MediaPublicationPanel({
                   <span>{t("mediaPage.publication.restrictions")}</span>
                   <input
                     type="text"
-                    value={usageRestrictions}
+                    value={state.usageRestrictions}
                     onChange={(event) =>
-                      setUsageRestrictions(event.target.value)
+                      updateState("usageRestrictions", event.target.value)
                     }
                     className="w-full rounded border border-white/10 bg-zinc-950 p-2"
                   />
@@ -224,9 +238,9 @@ export function MediaPublicationPanel({
               <label className="flex items-center gap-2 text-xs text-zinc-300">
                 <input
                   type="checkbox"
-                  checked={requiresAcknowledgment}
+                  checked={state.requiresAcknowledgment}
                   onChange={(event) =>
-                    setRequiresAcknowledgment(event.target.checked)
+                    updateState("requiresAcknowledgment", event.target.checked)
                   }
                 />
                 {t("mediaPage.publication.acknowledgment")}
@@ -235,7 +249,7 @@ export function MediaPublicationPanel({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={isSaving}
+                disabled={state.isSaving}
                 onClick={saveRights}
               >
                 {t("mediaPage.publication.saveRights")}
@@ -246,7 +260,7 @@ export function MediaPublicationPanel({
                     type="button"
                     size="sm"
                     disabled={
-                      isSaving ||
+                      state.isSaving ||
                       !!review.blocker ||
                       review.status === "processing"
                     }
@@ -262,7 +276,7 @@ export function MediaPublicationPanel({
                     type="button"
                     size="sm"
                     variant="outline"
-                    disabled={isSaving}
+                    disabled={state.isSaving}
                     onClick={() => void run(() => unpublish({ mediaId }))}
                   >
                     {t("mediaPage.publication.unpublish")}
@@ -274,7 +288,7 @@ export function MediaPublicationPanel({
                   <input
                     type="checkbox"
                     checked={review.originalDownloadAllowed}
-                    disabled={isSaving}
+                    disabled={state.isSaving}
                     onChange={(event) =>
                       void run(() =>
                         setOriginalDownload({
@@ -289,9 +303,9 @@ export function MediaPublicationPanel({
               )}
             </div>
           )}
-          {error && (
+          {state.error && (
             <p role="alert" className="text-xs text-red-300">
-              {error}
+              {state.error}
             </p>
           )}
         </>

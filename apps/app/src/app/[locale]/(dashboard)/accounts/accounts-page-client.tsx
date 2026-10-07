@@ -33,7 +33,7 @@ import { type ReactNode, Suspense, useCallback, useState } from "react";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import {
   AccountsListSkeleton,
   AccountsPageSkeleton,
@@ -506,6 +506,7 @@ function AccountList({
   accountType?: AccountType;
 }) {
   const t = useScopedI18n("accounts");
+  const tRoot = useI18n();
   const accountsResult = useQuery(api.accounts.list, {
     organizationId,
     paginationOpts: { numItems: 50, cursor: null },
@@ -538,7 +539,9 @@ function AccountList({
     <div className="overflow-hidden rounded-xl border border-border/60 dark:border-white/10 dark:bg-zinc-900/40">
       <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-background/90 px-4 py-2.5 dark:border-white/10 dark:bg-zinc-950/80">
         <h3 className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-          {isPatronView ? "Members" : "Accounts"}
+          {isPatronView
+            ? tRoot("untranslatedDashboard.accounts.members")
+            : tRoot("untranslatedDashboard.accounts.accounts")}
         </h3>
         <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
           {accounts.length}
@@ -587,6 +590,7 @@ function AccountRow({
   displayName: string;
   typeLabel: string;
 }) {
+  const t = useI18n();
   const isPatron = account.accountType === "patron";
   const identifier = isPatron ? account.cardNumber : account.accountNumber;
   const Icon = isPatron ? User : Users;
@@ -640,7 +644,19 @@ function AccountRow({
       {isPatronView ? (
         <ToneBadge tone={statusTone} className="gap-1.5 capitalize">
           <span className="size-1 rounded-full bg-current" />
-          {account.status ?? "unknown"}
+          {account.status === "active"
+            ? t("untranslatedDashboard.accounts.activeStatus")
+            : account.status === "inactive"
+              ? t("untranslatedDashboard.accounts.inactiveStatus")
+              : account.status === "expired"
+                ? t("untranslatedDashboard.accounts.expiredStatus")
+                : account.status === "suspended"
+                  ? t("untranslatedDashboard.accounts.suspendedStatus")
+                  : account.status === "blocked"
+                    ? t("untranslatedDashboard.accounts.blockedStatus")
+                    : account.status === "pending"
+                      ? t("untranslatedDashboard.accounts.pendingStatus")
+                      : account.status ?? t("untranslatedDashboard.accounts.unknownStatus")}
         </ToneBadge>
       ) : (
         <ToneBadge

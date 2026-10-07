@@ -5,6 +5,7 @@ import { Command } from "@v1/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@v1/ui/popover";
 import { ChevronsUpDown } from "lucide-react";
 import * as React from "react";
+import { useI18n } from "@/locales/client";
 import { TemplateComboboxFormatModifier } from "./template-combobox-format-modifier";
 import { TemplateComboboxPopoverContent } from "./template-combobox-popover-content";
 import type { TemplateComboboxProps } from "./template-combobox-types";
@@ -19,13 +20,14 @@ export function TemplateCombobox({
   customTemplates,
   value,
   onValueChange,
-  placeholder = "Select template...",
+  placeholder,
   disabled = false,
   validation,
   onSaveTemplate,
   onEditTemplate,
   onDeleteTemplate,
 }: TemplateComboboxProps) {
+  const translate = useI18n();
   const [open, setOpen] = React.useState(false);
   const listId = React.useId();
   const [inputValue, setInputValue] = React.useState("");
@@ -93,7 +95,10 @@ export function TemplateCombobox({
           disabled={disabled}
         >
           <span className="truncate text-left flex-1 text-sm">
-            {selectedOption?.label || value || placeholder}
+            {selectedOption?.label ||
+              value ||
+              placeholder ||
+              translate("untranslatedComponents.labels.selectTemplate")}
           </span>
           <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>

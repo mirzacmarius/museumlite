@@ -4,36 +4,39 @@ import Link from "next/link";
 import { useState } from "react";
 import { getAppRegisterUrl } from "@/lib/app-login-url";
 import {
+  type BillingInterval,
   formatPlanPrice,
   getPricingPlans,
-  type BillingInterval,
 } from "@/lib/pricing-plans";
+import { useWebI18n } from "@/locales/provider";
 
 export function PricingPlans() {
+  const { locale, t } = useWebI18n();
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("month");
-  const plans = getPricingPlans(billingInterval);
-  const registerUrl = getAppRegisterUrl();
+  const plans = getPricingPlans(billingInterval, t);
+  const registerUrl = getAppRegisterUrl(locale);
 
   return (
     <div className="mx-auto max-w-7xl px-6 lg:px-10">
       <div className="mb-10 flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
         <p className="max-w-xl text-sm text-muted-foreground leading-relaxed">
-          Start on Free — no credit card. Upgrade to Pro or Enterprise anytime
-          from Settings → Billing in the app.
+          {t("marketing.pricing.startFreeNote")}
         </p>
         <fieldset
           className="m-0 inline-flex min-w-0 items-center gap-3 rounded-full border border-border px-4 py-2 text-xs uppercase tracking-[0.2em]"
-          aria-label="Billing interval"
+          aria-label={t("marketing.pricing.billingInterval")}
         >
           <button
             type="button"
             onClick={() => setBillingInterval("month")}
             className={`transition-colors ${
-              billingInterval === "month" ? "text-gold" : "text-muted-foreground"
+              billingInterval === "month"
+                ? "text-gold"
+                : "text-muted-foreground"
             }`}
           >
-            Monthly
+            {t("marketing.pricing.monthly")}
           </button>
           <span className="text-border" aria-hidden>
             |
@@ -45,14 +48,21 @@ export function PricingPlans() {
               billingInterval === "year" ? "text-gold" : "text-muted-foreground"
             }`}
           >
-            Yearly
+            {t("marketing.pricing.yearly")}
           </button>
         </fieldset>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         {plans.map((plan) => {
-          const { price, sub } = formatPlanPrice(plan.priceAmount, plan.interval);
+          const { price } = formatPlanPrice(plan.priceAmount);
+          const sub = plan.interval
+            ? t(
+                plan.interval === "year"
+                  ? "marketing.pricing.perYear"
+                  : "marketing.pricing.perMonth",
+              )
+            : "";
 
           return (
             <div
@@ -65,14 +75,16 @@ export function PricingPlans() {
             >
               {plan.featured ? (
                 <span className="btn-marketing absolute -top-3 left-8 bg-gold text-ink text-[10px] uppercase tracking-[0.2em] px-3 py-1">
-                  Popular
+                  {t("marketing.pricing.popular")}
                 </span>
               ) : null}
               <div className="text-xs font-medium uppercase tracking-[0.2em] text-gold mb-3">
                 {plan.name}
               </div>
               <div className="flex items-baseline gap-2 mb-3">
-                <span className="font-display text-5xl text-ivory">{price}</span>
+                <span className="font-display text-5xl text-ivory">
+                  {price}
+                </span>
                 {sub ? (
                   <span className="text-sm text-muted-foreground">{sub}</span>
                 ) : null}
@@ -104,9 +116,12 @@ export function PricingPlans() {
       </div>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        Prefer a walkthrough first?{" "}
-        <Link href="/contact" className="text-gold hover:text-ivory transition-colors">
-          Request a private tour
+        {t("marketing.pricing.walkthroughPrompt")}{" "}
+        <Link
+          href="/contact"
+          className="text-gold hover:text-ivory transition-colors"
+        >
+          {t("marketing.pricing.privateTour")}
         </Link>
       </p>
     </div>

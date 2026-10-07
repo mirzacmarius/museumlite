@@ -2,7 +2,7 @@
 
 import { CheckCircle } from "lucide-react";
 import { ClientCurrentDateFns, ClientDateFns } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { DeaccessionDetailViewProps } from "./deaccession-detail-view-props";
 
 type BoardReportExportData = NonNullable<
@@ -18,6 +18,7 @@ export function BoardReportApprovalSection({
   exportData,
   locale,
 }: BoardReportApprovalSectionProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("deaccessions");
 
   return (
@@ -25,7 +26,7 @@ export function BoardReportApprovalSection({
       {exportData.workflowHistory.length > 0 ? (
         <div className="print:break-inside-avoid">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 print:text-[10px]">
-            Approval History
+            {tRoot("deaccessions.report.approvalHistory")}
           </h2>
           <div className="space-y-2">
             {exportData.workflowHistory.map((entry) => (
@@ -67,7 +68,7 @@ export function BoardReportApprovalSection({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-zinc-500 print:text-[10px]">
-                Final Approval
+                {tRoot("deaccessions.report.finalApproval")}
               </p>
               <p className="text-sm font-medium text-black">
                 {exportData.approverName}
@@ -87,7 +88,7 @@ export function BoardReportApprovalSection({
 
       <div className="border-t border-zinc-200 pt-3 text-[10px] text-zinc-400 print:pt-2 print:text-[9px]">
         <p>
-          Generated on{" "}
+          {tRoot("deaccessions.report.generatedOn")}{" "}
           <ClientCurrentDateFns
             format="MMMM d, yyyy 'at' h:mm a"
             locale={locale}

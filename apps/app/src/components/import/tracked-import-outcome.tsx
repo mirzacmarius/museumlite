@@ -11,7 +11,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDownloadImportFailures } from "@/hooks/use-download-import-failures";
 import { useScopedI18n } from "@/locales/client";
@@ -34,8 +34,23 @@ interface TrackedImportOutcomeProps {
   viewLabel: string;
   onReset: () => void;
   onRetryFailed: () => Promise<void>;
-  onUploadCorrection: (file: File) => Promise<void>;
+  /** Omit when the import has no corrected-file workflow (e.g. media files). */
+  onUploadCorrection?: (file: File) => Promise<void>;
+  /** Continues an interrupted import in place; shown only when unfinished. */
+  onResume?: () => Promise<void>;
+  /** Overrides for row-oriented copy, e.g. when items are files. */
+  copy?: Partial<{
+    outcome: string;
+    resumeHint: string;
+    correctionHint: string;
+    downloadFailedRows: string;
+    retryFailedRows: string;
+  }>;
+  /** Extra actions shown before the standard ones. */
+  children?: ReactNode;
 }
+
+const EMPTY_COPY: NonNullable<TrackedImportOutcomeProps["copy"]> = {};
 
 export function TrackedImportOutcome({
   importJob,
@@ -46,6 +61,9 @@ export function TrackedImportOutcome({
   onReset,
   onRetryFailed,
   onUploadCorrection,
+  onResume,
+  copy = EMPTY_COPY,
+  children,
 }: TrackedImportOutcomeProps) {
   const t = useScopedI18n("trackedImport");
   const downloadFailures = useDownloadImportFailures();
@@ -88,15 +106,18 @@ export function TrackedImportOutcome({
             : t("completeTitle")}
       </h2>
       <p className="mt-2 text-muted-foreground">
-        {t("outcome", {
-          accepted: importJob?.acceptedItems ?? 0,
-          failed,
-          attempted: importJob?.attemptedItems ?? 0,
-          total: importJob?.totalItems ?? 0,
-        })}
+        {copy.outcome ??
+          t("outcome", {
+            accepted: importJob?.acceptedItems ?? 0,
+            failed,
+            attempted: importJob?.attemptedItems ?? 0,
+            total: importJob?.totalItems ?? 0,
+          })}
       </p>
       {unfinished && !cancelled ? (
-        <p className="mt-2 text-sm text-muted-foreground">{t("resumeHint")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {copy.resumeHint ?? t("resumeHint")}
+        </p>
       ) : null}
 
       {errors.length > 0 ? (
@@ -117,11 +138,21 @@ export function TrackedImportOutcome({
 
       {failed > 0 && !cancelled ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          {t("correctionHint")}
+          {copy.correctionHint ?? t("correctionHint")}
         </p>
       ) : null}
 
       <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {children}
+        {unfinished && !cancelled && onResume ? (
+          <Button
+            disabled={busy}
+            onClick={() => run(onResume, t("importFailed"))}
+          >
+            <RotateCcw className="mr-2 size-4" />
+            {t("resumeImport")}
+          </Button>
+        ) : null}
         {failed > 0 && importJob ? (
           <Button
             variant="outline"
@@ -138,10 +169,10 @@ export function TrackedImportOutcome({
             }
           >
             <Download className="mr-2 size-4" />
-            {t("downloadFailedRows")}
+            {copy.downloadFailedRows ?? t("downloadFailedRows")}
           </Button>
         ) : null}
-        {failed > 0 && !cancelled ? (
+        {failed > 0 && !cancelled && onUploadCorrection ? (
           <>
             <input
               ref={correctionInputRef}
@@ -167,15 +198,17 @@ export function TrackedImportOutcome({
               <FileUp className="mr-2 size-4" />
               {t("uploadCorrectedFile")}
             </Button>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => run(onRetryFailed, t("retryFailed"))}
-            >
-              <RotateCcw className="mr-2 size-4" />
-              {t("retryFailedRows")}
-            </Button>
           </>
+        ) : null}
+        {failed > 0 && !cancelled ? (
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => run(onRetryFailed, t("retryFailed"))}
+          >
+            <RotateCcw className="mr-2 size-4" />
+            {copy.retryFailedRows ?? t("retryFailedRows")}
+          </Button>
         ) : null}
         <Button variant="outline" onClick={onReset}>
           {t("importMore")}

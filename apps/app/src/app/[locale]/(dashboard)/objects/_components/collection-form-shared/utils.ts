@@ -1,7 +1,7 @@
 import type { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
-import { parseStringListField } from "@/lib/string-list-field";
+import { parseStringListField } from "../../../../../../lib/string-list-field";
 import type {
   CollectionFormData,
   DraftMediaItem,
@@ -186,11 +186,14 @@ export function createFormDataFromDraftObject(
     collectionGroupId:
       draftObjectData?.collectionGroupId || prefilledCollectionGroupId || "",
     alternateAccessionNumbers: draftObjectData?.alternateAccessionNumbers || [],
-    ownershipHistory: draftObjectData?.ownershipHistory || [],
-    links:
+    ownershipHistory: withOwnershipEntryLocalIds(
+      draftObjectData?.ownershipHistory,
+    ),
+    links: withLinkEntryLocalIds(
       draftObjectData?.links && draftObjectData.links.length > 0
         ? draftObjectData.links
         : [{ url: "", label: "" }],
+    ),
     dimensionWeight:
       typeof draftObjectData?.dimensionWeight === "number"
         ? formatWeightValue(
@@ -247,7 +250,9 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     acquisitionMethod: formData.acquisitionMethod?.trim() || undefined,
     previous_owners: formData.previous_owners?.filter(Boolean) || [],
     links:
-      formData.links?.filter((link) => link.url.trim().length > 0) || undefined,
+      formData.links?.flatMap(({ localId: _localId, ...link }) =>
+        link.url.trim().length > 0 ? [link] : [],
+      ) || undefined,
     parentObjectId: formData.parentObjectId
       ? (formData.parentObjectId as Id<"collections">)
       : undefined,
@@ -264,8 +269,8 @@ export function buildObjectDraftPayload(formData: CollectionFormData) {
     alternateAccessionNumbers:
       formData.alternateAccessionNumbers?.filter(Boolean) || [],
     ownershipHistory:
-      formData.ownershipHistory?.filter(
-        (entry) => entry.owner.trim().length > 0,
+      formData.ownershipHistory?.flatMap(({ localId: _localId, ...entry }) =>
+        entry.owner.trim().length > 0 ? [entry] : [],
       ) || [],
     collectionType: formData.collectionType,
     displayStatus: formData.displayStatus,

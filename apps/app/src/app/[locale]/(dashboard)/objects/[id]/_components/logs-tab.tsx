@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@v1/ui/avatar";
 import { useQuery } from "convex/react";
 import { ScrollText } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 
 /**
  * Get the badge color classes based on the action string
@@ -53,6 +53,7 @@ function getActionBadgeClasses(action: string): {
  */
 function formatChanges(
   changes: Record<string, unknown> | undefined,
+  tRoot: ReturnType<typeof useI18n>,
 ): React.ReactNode {
   if (!changes || typeof changes !== "object") {
     return null;
@@ -76,7 +77,8 @@ function formatChanges(
   if ("fileName" in changes) {
     return (
       <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-        File: {String(changes.fileName)}
+        {tRoot("untranslatedRecords.objects.attributes.file")}{" "}
+        {String(changes.fileName)}
       </p>
     );
   }
@@ -87,7 +89,9 @@ function formatChanges(
     if (!previousLocation) return null;
     return (
       <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-        Previous: {String(previousLocation)}
+        {tRoot("untranslatedRecords.objects.logs.previousLocation", {
+          location: String(previousLocation),
+        })}
       </p>
     );
   }
@@ -96,10 +100,17 @@ function formatChanges(
   if ("field" in changes) {
     return (
       <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-        Changed &quot;{String(changes.field)}&quot;
-        {changes.previous !== undefined &&
-          ` from "${String(changes.previous)}"`}
-        {changes.new !== undefined && ` to "${String(changes.new)}"`}
+        {tRoot("untranslatedRecords.objects.logs.fieldChanged", {
+          field: String(changes.field),
+          previous:
+            changes.previous !== undefined
+              ? ` ${tRoot("untranslatedRecords.objects.logs.fromValue", { value: String(changes.previous) })}`
+              : "",
+          next:
+            changes.new !== undefined
+              ? ` ${tRoot("untranslatedRecords.objects.logs.toValue", { value: String(changes.new) })}`
+              : "",
+        })}
       </p>
     );
   }
@@ -128,6 +139,7 @@ export function LogsTab({
   organizationId,
   locale,
 }: LogsTabProps) {
+  const tRoot = useI18n();
   const tCommon = useScopedI18n("modules.common");
   const auditLogs = useQuery(api.auditLog.getByEntity, {
     organizationId,
@@ -140,7 +152,7 @@ export function LogsTab({
     <div className="space-y-6">
       <h3 className="flex items-center gap-2 text-xs font-medium text-foreground">
         <ScrollText className="size-4 text-orange-500" />
-        Audit Log
+        {tRoot("untranslatedRecords.objects.detail.auditLog")}
       </h3>
 
       <div className="overflow-hidden rounded-xl border border-border/60 bg-secondary/20">
@@ -148,13 +160,13 @@ export function LogsTab({
           <thead className="border-b border-border/60 bg-secondary/50">
             <tr>
               <th className="w-32 px-4 py-3 text-[10px] font-semibold uppercase text-muted-foreground">
-                Date
+                {tRoot("deaccessions.report.date")}
               </th>
               <th className="w-48 px-4 py-3 text-[10px] font-semibold uppercase text-muted-foreground">
-                User
+                {tRoot("untranslatedRecords.objects.detail.user")}
               </th>
               <th className="px-4 py-3 text-[10px] font-semibold uppercase text-muted-foreground">
-                Action Details
+                {tRoot("untranslatedRecords.objects.detail.actionDetails")}
               </th>
             </tr>
           </thead>
@@ -165,7 +177,7 @@ export function LogsTab({
                   colSpan={3}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
-                  Loading logs…
+                  {tRoot("untranslatedRecords.objects.loading.logs")}
                 </td>
               </tr>
             ) : auditLogs.length > 0 ? (
@@ -193,7 +205,10 @@ export function LogsTab({
                       <Avatar className="size-5 border border-border/60">
                         <AvatarImage
                           src={log.userImage ?? undefined}
-                          alt={log.userName ?? "User"}
+                          alt={
+                            log.userName ??
+                            tRoot("untranslatedRecords.objects.comments.user")
+                          }
                         />
                         <AvatarFallback className="bg-secondary text-[9px] text-muted-foreground">
                           {log.userName?.charAt(0) || "?"}
@@ -214,6 +229,7 @@ export function LogsTab({
                     </p>
                     {formatChanges(
                       log.changes as Record<string, unknown> | undefined,
+                      tRoot,
                     )}
                   </td>
                 </tr>
@@ -224,7 +240,7 @@ export function LogsTab({
                   colSpan={3}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
-                  No audit logs found
+                  {tRoot("untranslatedRecords.objects.detail.noAuditLogs")}
                 </td>
               </tr>
             )}
@@ -236,7 +252,7 @@ export function LogsTab({
               type="button"
               className="text-xs text-muted-foreground transition-colors hover:text-muted-foreground"
             >
-              Load older logs…
+              {tRoot("untranslatedRecords.objects.detail.loadOlderLogs")}
             </button>
           </div>
         )}

@@ -12,7 +12,8 @@ import {
 } from "@v1/ui/table";
 import { cn } from "@v1/ui/utils";
 import { ArrowDownLeft, ArrowUpRight, CalendarClock } from "lucide-react";
-import { useI18n } from "@/locales/client";
+import { getRelativeTimeFormatter } from "@/lib/relative-time-formatters";
+import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface LoanCalendarCardProps {
   data: {
@@ -34,6 +35,8 @@ interface LoanCalendarCardProps {
 
 export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
   const t = useI18n();
+  const locale = useCurrentLocale();
+  const relativeTime = getRelativeTimeFormatter(locale, "short");
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm h-full flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
       <CardHeader>
@@ -83,13 +86,13 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
             <TableHeader>
               <TableRow className="hover:bg-transparent border-border bg-muted/30">
                 <TableHead className="h-8 text-[10px] uppercase font-semibold">
-                  Loan #
+                  {t("untranslatedDashboard.analytics.loanNumber")}
                 </TableHead>
                 <TableHead className="h-8 text-[10px] uppercase font-semibold">
-                  Partner
+                  {t("untranslatedDashboard.analytics.partner")}
                 </TableHead>
                 <TableHead className="h-8 text-[10px] uppercase font-semibold text-right">
-                  Days
+                  {t("untranslatedDashboard.analytics.days")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -138,10 +141,10 @@ export function LoanCalendarCard({ data }: LoanCalendarCardProps) {
                         )}
                       >
                         {loan.daysRemaining < 0
-                          ? `${Math.abs(loan.daysRemaining)}d ago`
+                          ? relativeTime.format(loan.daysRemaining, "day")
                           : loan.daysRemaining === 0
                             ? t("analytics.loanCalendar.today")
-                            : `${loan.daysRemaining}d`}
+                            : relativeTime.format(loan.daysRemaining, "day")}
                       </Badge>
                     </TableCell>
                   </TableRow>

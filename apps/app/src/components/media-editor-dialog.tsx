@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useOrganization } from "@/components/organization-provider";
+import { useI18n } from "@/locales/client";
 import {
   type EditMetadata,
   MediaEditor,
@@ -27,6 +28,7 @@ export function MediaEditorDialog({
   onClose,
   onSaved,
 }: MediaEditorDialogProps) {
+  const translate = useI18n();
   const { currentOrganizationId } = useOrganization();
   const isSavingRef = useRef(false);
 
@@ -50,7 +52,9 @@ export function MediaEditorDialog({
   const handleSave = useCallback(
     async (editedBlob: Blob, editMetadata: EditMetadata) => {
       if (!mediaId || !currentOrganizationId || !mediaFile) {
-        toast.error("Missing required data to save");
+        toast.error(
+          translate("untranslatedComponents.mediaEditor.missingSaveData"),
+        );
         return;
       }
 
@@ -74,7 +78,9 @@ export function MediaEditorDialog({
         });
 
         if (!response.ok) {
-          throw new Error("Failed to upload edited image");
+          throw new Error(
+            translate("untranslatedComponents.mediaEditor.uploadFailed"),
+          );
         }
 
         const { storageId } = await response.json();
@@ -140,14 +146,18 @@ export function MediaEditorDialog({
           });
         }
 
-        toast.success("Media edited successfully");
+        toast.success(
+          translate("untranslatedComponents.mediaEditor.mediaEdited"),
+        );
         onSaved?.();
         onClose();
       } catch (error) {
         toast.error(
           error instanceof Error
             ? error.message
-            : "Failed to save edited media",
+            : translate(
+                "untranslatedComponents.mediaEditor.failedToSaveEditedMedia",
+              ),
         );
       } finally {
         isSavingRef.current = false;
@@ -176,7 +186,7 @@ export function MediaEditorDialog({
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="size-5 animate-spin" />
-          <span>Loading media…</span>
+          <span>{translate("untranslatedComponents.labels.loadingMedia")}</span>
         </div>
       </div>
     );

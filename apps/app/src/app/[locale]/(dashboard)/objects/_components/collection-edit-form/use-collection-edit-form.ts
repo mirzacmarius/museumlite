@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useBeforeUnload } from "@/hooks/use-before-unload";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type {
   CollectionFormData,
   OwnershipEntry,
@@ -31,6 +31,7 @@ import { useCollectionEditFormMedia } from "./use-collection-edit-form-media";
 import { useCollectionEditFormSubmit } from "./use-collection-edit-form-submit";
 
 export function useCollectionEditForm() {
+  const tRoot = useI18n();
   const t = useScopedI18n("objects");
   const common = useScopedI18n("common");
   const placeholders = useScopedI18n("objects.form.placeholders");
@@ -248,13 +249,14 @@ export function useCollectionEditForm() {
 
   const locationSummary =
     currentLocationPath?.map((location) => location.name).join(" / ") ||
-    "No location assigned";
+    tRoot("untranslatedRecords.objects.location.noneAssigned");
   const collectionSummary =
     collectionGroups
       ?.flatMap((group) =>
         formData.collectionGroupIds?.includes(group._id) ? [group.name] : [],
       )
-      .join(", ") || "Not assigned to a collection";
+      .join(", ") ||
+    tRoot("untranslatedRecords.objects.collection.noneAssigned");
 
   return {
     t,

@@ -1168,8 +1168,9 @@ export const update = mutation({
       updates.donorAccountId = args.donorAccountId;
     }
     if (args.documents !== undefined) {
+      const existingDocuments = new Set(accession.documents);
       for (const storageId of args.documents) {
-        if (!accession.documents?.includes(storageId))
+        if (!existingDocuments.has(storageId))
           await claimStorageOwnership(ctx, {
             storageId,
             organizationId: accession.organizationId,

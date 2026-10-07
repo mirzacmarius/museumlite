@@ -7,7 +7,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import { KEYBOARD_SHORTCUTS } from "@/hooks/use-keyboard-shortcuts";
+import {
+  getKeyboardShortcuts,
+  type KeyboardShortcut,
+} from "@/hooks/use-keyboard-shortcuts";
+import { useI18n } from "@/locales/client";
 
 interface KeyboardShortcutsDialogProps {
   open: boolean;
@@ -18,22 +22,28 @@ export function KeyboardShortcutsDialog({
   open,
   onOpenChange,
 }: KeyboardShortcutsDialogProps) {
+  const translate = useI18n();
+  const shortcuts = getKeyboardShortcuts(translate);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogTitle>
+            {translate("untranslatedComponents.labels.keyboardShortcuts")}
+          </DialogTitle>
           <DialogDescription className="sr-only">
-            Review available navigation, action, and help keyboard shortcuts.
+            {translate(
+              "untranslatedComponents.labels.reviewAvailableNavigationActionAndHelpKeyboardShortcuts",
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Navigation
+              {translate("untranslatedComponents.labels.navigation")}
             </h4>
             <div className="space-y-1">
-              {KEYBOARD_SHORTCUTS.flatMap((shortcut) =>
+              {shortcuts.flatMap((shortcut) =>
                 ["dashboard", "objects", "loans", "search"].includes(
                   shortcut.key,
                 )
@@ -45,10 +55,10 @@ export function KeyboardShortcutsDialog({
 
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Actions
+              {translate("untranslatedComponents.labels.actions")}
             </h4>
             <div className="space-y-1">
-              {KEYBOARD_SHORTCUTS.flatMap((shortcut) =>
+              {shortcuts.flatMap((shortcut) =>
                 ["new-object", "new-loan"].includes(shortcut.key)
                   ? [<ShortcutRow key={shortcut.key} shortcut={shortcut} />]
                   : [],
@@ -58,10 +68,10 @@ export function KeyboardShortcutsDialog({
 
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Help
+              {translate("untranslatedComponents.labels.help")}
             </h4>
             <div className="space-y-1">
-              {KEYBOARD_SHORTCUTS.flatMap((shortcut) =>
+              {shortcuts.flatMap((shortcut) =>
                 shortcut.key === "help"
                   ? [<ShortcutRow key={shortcut.key} shortcut={shortcut} />]
                   : [],
@@ -74,11 +84,7 @@ export function KeyboardShortcutsDialog({
   );
 }
 
-function ShortcutRow({
-  shortcut,
-}: {
-  shortcut: (typeof KEYBOARD_SHORTCUTS)[number];
-}) {
+function ShortcutRow({ shortcut }: { shortcut: KeyboardShortcut }) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className="text-sm text-foreground/80">{shortcut.description}</span>

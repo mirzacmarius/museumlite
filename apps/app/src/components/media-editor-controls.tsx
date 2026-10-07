@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/locales/client";
 import type { WatermarkPosition } from "./media-editor-types";
 
 interface MediaEditorControlsProps {
@@ -25,12 +26,14 @@ export function MediaEditorControls({
   onWatermarkEnabledChange,
   onWatermarkPositionChange,
 }: MediaEditorControlsProps) {
+  const translate = useI18n();
   return (
     <div className="absolute bottom-0 left-0 right-0 z-10 bg-card/40 border-t border-border/60 backdrop-blur-xl p-4">
       <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
         <div className="flex flex-col gap-2">
           <label htmlFor="brightness" className="text-xs text-muted-foreground">
-            Brightness: {brightness}%
+            {translate("untranslatedComponents.labels.brightness")} {brightness}
+            %
           </label>
           <input
             id="brightness"
@@ -45,7 +48,7 @@ export function MediaEditorControls({
         </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="contrast" className="text-xs text-muted-foreground">
-            Contrast: {contrast}%
+            {translate("untranslatedComponents.labels.contrast")} {contrast}%
           </label>
           <input
             id="contrast"
@@ -65,7 +68,7 @@ export function MediaEditorControls({
                 htmlFor="watermark-toggle"
                 className="text-xs text-muted-foreground"
               >
-                Watermark
+                {translate("untranslatedComponents.labels.watermark")}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -85,7 +88,7 @@ export function MediaEditorControls({
                   htmlFor="watermark-position"
                   className="text-xs text-muted-foreground"
                 >
-                  Position
+                  {translate("untranslatedComponents.labels.position")}
                 </label>
                 <select
                   id="watermark-position"
@@ -98,11 +101,21 @@ export function MediaEditorControls({
                   onMouseDown={(e) => e.stopPropagation()}
                   className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
                 >
-                  <option value="center">Center</option>
-                  <option value="top-left">Top Left</option>
-                  <option value="top-right">Top Right</option>
-                  <option value="bottom-left">Bottom Left</option>
-                  <option value="bottom-right">Bottom Right</option>
+                  <option value="center">
+                    {translate("untranslatedComponents.labels.center")}
+                  </option>
+                  <option value="top-left">
+                    {translate("untranslatedComponents.labels.topLeft")}
+                  </option>
+                  <option value="top-right">
+                    {translate("untranslatedComponents.labels.topRight")}
+                  </option>
+                  <option value="bottom-left">
+                    {translate("untranslatedComponents.labels.bottomLeft")}
+                  </option>
+                  <option value="bottom-right">
+                    {translate("untranslatedComponents.labels.bottomRight")}
+                  </option>
                 </select>
               </div>
             )}

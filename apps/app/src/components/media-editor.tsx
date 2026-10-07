@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Crop, PixelCrop } from "react-image-crop";
 import { toast } from "sonner";
+import { useI18n } from "@/locales/client";
 import { applyMediaEditsToCanvas } from "./media-editor-canvas-utils";
 import { MediaEditorControls } from "./media-editor-controls";
 import { MediaEditorToolbar } from "./media-editor-toolbar";
@@ -122,6 +123,7 @@ export function MediaEditor({
   onSave,
   watermarkSettings,
 }: MediaEditorProps) {
+  const translate = useI18n();
   const [state, dispatch] = useReducer(mediaEditorReducer, undefined, () =>
     createInitialMediaEditorState({
       watermarkEnabled: watermarkSettings?.isEnabled ?? false,
@@ -206,7 +208,14 @@ export function MediaEditor({
         canvasRef.current?.toBlob(
           (b) => {
             if (b) resolve(b);
-            else reject(new Error("Failed to create blob"));
+            else
+              reject(
+                new Error(
+                  translate(
+                    "untranslatedComponents.mediaEditor.failedToCreateBlob",
+                  ),
+                ),
+              );
           },
           "image/png",
           0.95,
@@ -229,11 +238,13 @@ export function MediaEditor({
 
       await onSave(blob, editMetadata);
 
-      toast.success("Image saved successfully");
+      toast.success(translate("untranslatedComponents.mediaEditor.imageSaved"));
       onClose();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to save edited image",
+        error instanceof Error
+          ? error.message
+          : translate("untranslatedComponents.mediaEditor.saveFailed"),
       );
     } finally {
       dispatch({ type: "setIsSaving", value: false });

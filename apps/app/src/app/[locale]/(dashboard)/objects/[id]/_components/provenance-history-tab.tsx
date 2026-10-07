@@ -2,7 +2,7 @@
 
 import { cn } from "@v1/ui/utils";
 import { FileCheck, History, Link as LinkIcon } from "lucide-react";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import { formatOwnershipDateRange } from "./format-ownership-date-range";
 import type { CollectionData } from "./types";
 
@@ -13,6 +13,7 @@ interface ProvenanceHistoryTabProps {
 export function ProvenanceHistoryTab({
   collection,
 }: ProvenanceHistoryTabProps) {
+  const tRoot = useI18n();
   const tObjects = useScopedI18n("objects.printView");
   const hasHistoricalContext =
     Boolean(collection.provenance) ||
@@ -27,7 +28,7 @@ export function ProvenanceHistoryTab({
       <div>
         <h3 className="mb-6 flex items-center gap-2 text-xs font-medium text-foreground">
           <History className="size-4 text-purple-500" />
-          Provenance and History
+          {tRoot("untranslatedRecords.objects.detail.provenanceHistory")}
         </h3>
 
         {hasHistoricalContext ? (
@@ -37,7 +38,7 @@ export function ProvenanceHistoryTab({
                 {collection.provenance && (
                   <div className="grid gap-2">
                     <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Provenance
+                      {tRoot("objects.tabs.provenance")}
                     </div>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                       {collection.provenance}
@@ -48,7 +49,7 @@ export function ProvenanceHistoryTab({
                 {collection.exhibitionHistory && (
                   <div className="grid gap-2">
                     <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Exhibition History
+                      {tRoot("objects.form.exhibitionHistory")}
                     </div>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                       {collection.exhibitionHistory}
@@ -61,7 +62,7 @@ export function ProvenanceHistoryTab({
             {collection.links && collection.links.length > 0 ? (
               <div className="space-y-3 rounded-xl border border-border/60 bg-secondary/20 p-6">
                 <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Links
+                  {tRoot("objects.form.links")}
                 </div>
                 <div className="space-y-1">
                   {collection.links.map((link) => (
@@ -85,7 +86,7 @@ export function ProvenanceHistoryTab({
               <div>
                 <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground">
                   <History className="size-4 text-accent" />
-                  Ownership History
+                  {tRoot("objects.printView.ownershipHistory")}
                 </h3>
                 <div className="relative space-y-8 border-l border-border pl-8">
                   {collection.ownershipHistory.map((entry, index) => (
@@ -128,7 +129,10 @@ export function ProvenanceHistoryTab({
                         {entry.verified && entry.verificationSource && (
                           <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                             <FileCheck className="size-3" />
-                            Verified by {entry.verificationSource}
+                            {tRoot(
+                              "untranslatedRecords.objects.detail.verifiedBy",
+                            )}{" "}
+                            {entry.verificationSource}
                           </div>
                         )}
                       </div>
@@ -141,7 +145,7 @@ export function ProvenanceHistoryTab({
         ) : (
           <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border">
             <p className="text-sm text-muted-foreground">
-              No provenance or exhibition history recorded.
+              {tRoot("untranslatedRecords.objects.detail.noProvenance")}
             </p>
           </div>
         )}

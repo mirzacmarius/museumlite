@@ -10,13 +10,13 @@ import {
   SelectValue,
 } from "@v1/ui/select";
 import { DonationDetailsField } from "@/components/donation-details-field";
+import { useI18n } from "@/locales/client";
 import { ACQUISITION_METHODS } from "../../collection-form-shared/constants";
 import { EditSection } from "../../collection-form-shared/edit-section";
 import type { CollectionFormTabProps } from "../../collection-form-shared/types";
-
 export interface CollectionEditAccessionTabProps
   extends CollectionFormTabProps {
-  typedCollectionId: Id<"collections">;
+  typedCollectionId?: Id<"collections">;
 }
 
 export function CollectionEditAccessionTab({
@@ -26,21 +26,30 @@ export function CollectionEditAccessionTab({
   currentOrganizationId,
   typedCollectionId,
 }: CollectionEditAccessionTabProps) {
+  const tRoot = useI18n();
   return (
     <div className="space-y-8">
       <EditSection
-        title="Acquisition information"
-        description="Record how the object entered the collection and who it came from."
+        title={tRoot(
+          "untranslatedRecords.objects.detail.acquisitionInformation",
+        )}
+        description={tRoot("untranslatedRecords.objects.form.recordHowEntered")}
       >
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="acquisitionMethod">Acquisition Type</Label>
+            <Label htmlFor="acquisitionMethod">
+              {tRoot("untranslatedRecords.objects.detail.acquisitionType")}
+            </Label>
             <Select
               value={formData.acquisitionMethod || undefined}
               onValueChange={(value) => updateField("acquisitionMethod", value)}
             >
               <SelectTrigger id="acquisitionMethod">
-                <SelectValue placeholder="Select acquisition type" />
+                <SelectValue
+                  placeholder={tRoot(
+                    "untranslatedRecords.objects.form.selectAcquisitionType",
+                  )}
+                />
               </SelectTrigger>
               <SelectContent>
                 {ACQUISITION_METHODS.map((method) => (

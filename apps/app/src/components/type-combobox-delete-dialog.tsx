@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@v1/ui/alert-dialog";
+import { useI18n } from "@/locales/client";
 
 interface OptionUsage {
   isUsed: boolean;
@@ -30,6 +31,7 @@ export function TypeComboboxDeleteDialog({
   onOpenChange,
   onConfirm,
 }: TypeComboboxDeleteDialogProps) {
+  const translate = useI18n();
   return (
     <AlertDialog
       open={!!typeToDelete}
@@ -38,30 +40,41 @@ export function TypeComboboxDeleteDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {typeUsage?.isUsed ? "Cannot Delete Type" : "Delete Type"}
+            {typeUsage?.isUsed
+              ? translate("untranslatedComponents.labels.cannotDeleteType")
+              : translate("untranslatedComponents.labels.deleteType")}
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             {typeUsage?.isUsed ? (
               <div className="space-y-2">
                 <div>
-                  The type{" "}
+                  {translate("untranslatedComponents.labels.theType")}{" "}
                   <span className="font-semibold text-foreground">
                     "{typeToDelete?.name}"
                   </span>{" "}
-                  cannot be deleted because it is currently being used by{" "}
+                  {translate(
+                    "untranslatedComponents.labels.cannotBeDeletedBecauseItIsCurrentlyBeingUsedBy",
+                  )}{" "}
                   {typeUsage.usageCount}{" "}
-                  {typeUsage.usageCount === 1 ? "collection" : "collections"}.
+                  {typeUsage.usageCount === 1
+                    ? translate("untranslatedComponents.labels.collection")
+                    : translate("untranslatedComponents.labels.collections")}
+                  .
                 </div>
                 {typeUsage.collectionNames.length > 0 && (
                   <div className="mt-2">
-                    <div className="text-xs font-medium mb-1">Used in:</div>
+                    <div className="text-xs font-medium mb-1">
+                      {translate("untranslatedComponents.labels.usedIn")}
+                    </div>
                     <ul className="text-xs list-disc pl-4 space-y-0.5">
                       {typeUsage.collectionNames.slice(0, 5).map((name) => (
                         <li key={name}>{name}</li>
                       ))}
                       {typeUsage.collectionNames.length > 5 && (
                         <li className="italic">
-                          ...and {typeUsage.collectionNames.length - 5} more
+                          {translate("untranslatedComponents.labels.and")}{" "}
+                          {typeUsage.collectionNames.length - 5}{" "}
+                          {translate("untranslatedComponents.labels.more")}
                         </li>
                       )}
                     </ul>
@@ -70,26 +83,34 @@ export function TypeComboboxDeleteDialog({
               </div>
             ) : (
               <div>
-                Are you sure you want to delete{" "}
+                {translate(
+                  "untranslatedComponents.labels.areYouSureYouWantToDelete",
+                )}{" "}
                 <span className="font-semibold text-foreground">
                   "{typeToDelete?.name}"
                 </span>
-                ? This action cannot be undone.
+                {translate(
+                  "untranslatedComponents.labels.thisActionCannotBeUndone",
+                )}
               </div>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           {typeUsage?.isUsed ? (
-            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogCancel>
+              {translate("untranslatedComponents.labels.close")}
+            </AlertDialogCancel>
           ) : (
             <>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>
+                {translate("untranslatedComponents.labels.cancel")}
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={onConfirm}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete
+                {translate("untranslatedComponents.labels.delete")}
               </AlertDialogAction>
             </>
           )}

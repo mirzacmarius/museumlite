@@ -6,6 +6,7 @@ import Image from "next/image";
 import type React from "react";
 import type { RefObject } from "react";
 
+import { useI18n } from "@/locales/client";
 export interface ObjectImageGalleryItem {
   id: string;
   src: string;
@@ -27,6 +28,7 @@ export function ObjectImageGallery({
   cameraInputRef,
   onFileSelect,
 }: ObjectImageGalleryProps) {
+  const tRoot = useI18n();
   const primaryImage = images.find((image) => image.isPrimary);
   const activeImage = primaryImage ?? images[0];
 
@@ -75,7 +77,7 @@ export function ObjectImageGallery({
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="size-3.5 shrink-0" />
-            Upload
+            {tRoot("accounts.detail.upload")}
           </Button>
           <Button
             type="button"
@@ -85,7 +87,7 @@ export function ObjectImageGallery({
             onClick={() => cameraInputRef.current?.click()}
           >
             <Camera className="size-3.5 shrink-0" />
-            Take Photo
+            {tRoot("untranslatedRecords.objects.form.takePhoto")}
           </Button>
         </div>
       </div>

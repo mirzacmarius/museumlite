@@ -16,6 +16,7 @@ import { PortalPageSkeleton } from "./portal-page-skeleton";
 
 export default function PublicPortalPage() {
   const common = useScopedI18n("common");
+  const t = useScopedI18n("untranslatedDashboard.portal");
   const { currentOrganizationId, organizations, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const isPortalLocked = !hasFeature("public_portal");
@@ -37,10 +38,9 @@ export default function PublicPortalPage() {
         <div className="flex flex-col items-center gap-4 rounded-lg border border-border/60 bg-card p-8">
           <Building2 className="size-12 text-muted-foreground" />
           <div className="text-center">
-            <h3 className="section-title">No Organization Selected</h3>
+            <h3 className="section-title">{t("noOrganizationSelected")}</h3>
             <p className="caption mt-2 text-muted-foreground">
-              Please select or create an organization to manage your public
-              portal.
+              {t("selectOrganizationPortal")}
             </p>
           </div>
           <Button asChild>
@@ -56,7 +56,7 @@ export default function PublicPortalPage() {
 
   if (isPortalLocked) {
     return (
-      <FeatureGuard featureName="Public Portal" isLocked tierNeeded="pro">
+      <FeatureGuard featureName={t("publicPortal")} isLocked tierNeeded="pro">
         <div className="min-h-[400px]" />
       </FeatureGuard>
     );
@@ -67,12 +67,12 @@ export default function PublicPortalPage() {
   }
 
   return (
-    <FeatureGuard featureName="Public Portal" isLocked={false} tierNeeded="pro">
+    <FeatureGuard featureName={t("publicPortal")} isLocked={false} tierNeeded="pro">
       <div className="flex size-full flex-col overflow-hidden bg-background">
         <div className="shrink-0 border-b border-border px-6 py-4">
-          <h1 className="page-title">Public Portal</h1>
+          <h1 className="page-title">{t("publicPortal")}</h1>
           <p className="page-description mt-1">
-            Configure and preview your public-facing collection portal
+            {t("configureAndPreview")}
           </p>
         </div>
 

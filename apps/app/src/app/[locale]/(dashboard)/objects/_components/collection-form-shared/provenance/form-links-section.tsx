@@ -4,6 +4,7 @@ import { Button } from "@v1/ui/button";
 import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Plus, X } from "lucide-react";
+import { useI18n } from "@/locales/client";
 import { EditSection } from "../edit-section";
 import type { CollectionFormTabProps, LinkEntry } from "../types";
 import { createLinkEntryLocalId } from "../utils";
@@ -22,6 +23,7 @@ export function FormLinksSection({
   placeholders,
   useLocalIds = false,
 }: FormLinksSectionProps) {
+  const tRoot = useI18n();
   function linkKey(link: LinkEntry, index: number) {
     if (useLocalIds && link.localId) return link.localId;
     return `link-${index}-${link.url}`;
@@ -29,8 +31,10 @@ export function FormLinksSection({
 
   return (
     <EditSection
-      title="Links"
-      description="Reference external resources, catalog entries, or supporting material."
+      title={tRoot("objects.form.links")}
+      description={tRoot(
+        "untranslatedRecords.objects.form.externalReferencesDescription",
+      )}
     >
       <div className="space-y-3">
         {(formData.links || []).map((link, index) => (
@@ -39,7 +43,9 @@ export function FormLinksSection({
             className="grid gap-3 rounded-xl border border-border/50 p-4 md:grid-cols-[1fr_1fr_auto]"
           >
             <div className="space-y-2">
-              <Label htmlFor={`link-url-${index}`}>URL</Label>
+              <Label htmlFor={`link-url-${index}`}>
+                {tRoot("objects.form.url")}
+              </Label>
               <Input
                 id={`link-url-${index}`}
                 type="url"
@@ -63,11 +69,13 @@ export function FormLinksSection({
                     updateField("links", nextLinks);
                   }
                 }}
-                placeholder="https://example.com"
+                placeholder={tRoot("objects.form.placeholders.url")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`link-label-${index}`}>Label</Label>
+              <Label htmlFor={`link-label-${index}`}>
+                {tRoot("objects.form.label")}
+              </Label>
               <Input
                 id={`link-label-${index}`}
                 value={link.label || ""}
@@ -113,7 +121,7 @@ export function FormLinksSection({
           }}
         >
           <Plus className="mr-2 size-4" />
-          Add Link
+          {tRoot("objects.form.actions.addLink")}
         </Button>
       </div>
     </EditSection>

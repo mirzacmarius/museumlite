@@ -29,6 +29,17 @@ export function LocationTreeInner({
   const { push } = useRouter();
   const t = useScopedI18n("locations.tree");
   const tCommon = useScopedI18n("common");
+  const tLocationTypes = useScopedI18n("locations.form.locationTypes");
+  const locationTypeLabels: Record<string, string> = {
+    building: tLocationTypes("building"),
+    room: tLocationTypes("room"),
+    gallery: tLocationTypes("gallery"),
+    storage: tLocationTypes("storage"),
+    cabinet: tLocationTypes("cabinet"),
+    shelf: tLocationTypes("shelf"),
+    vault: tLocationTypes("vault"),
+    other: tLocationTypes("other"),
+  };
   const { hasPermission } = usePermissions();
   const canManageLocations = hasPermission("organization.manage_settings");
 
@@ -144,7 +155,7 @@ export function LocationTreeInner({
                   />
                   <span>{item.getItemName()}</span>
                   <span className="ml-auto text-xs capitalize text-muted-foreground">
-                    {itemData.type}
+                    {locationTypeLabels[itemData.type] ?? itemData.type}
                   </span>
                 </TreeItemLabel>
               </TreeItem>

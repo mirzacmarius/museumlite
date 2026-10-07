@@ -7,6 +7,7 @@ import { cn } from "@v1/ui/utils";
 import { AlertTriangle, Box, X } from "lucide-react";
 import Image from "next/image";
 
+import { useI18n } from "@/locales/client";
 export interface SelectedCollectionItemProps {
   collection: Pick<Doc<"collections">, "_id" | "accessionNumber" | "title"> & {
     primaryImageUrl?: string;
@@ -28,6 +29,7 @@ export function SelectedCollectionItem({
   issueMessage,
   conditionPlaceholder,
 }: SelectedCollectionItemProps) {
+  const tRoot = useI18n();
   return (
     <div
       className={cn(
@@ -77,7 +79,7 @@ export function SelectedCollectionItem({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor={`condition-${collection._id}`} className="text-xs">
-          Condition Out
+          {tRoot("loans.actions.conditionOut")}
         </Label>
         <Input
           id={`condition-${collection._id}`}

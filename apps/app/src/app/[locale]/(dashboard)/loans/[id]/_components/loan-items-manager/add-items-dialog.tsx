@@ -14,7 +14,7 @@ import { Input } from "@v1/ui/input";
 import { Label } from "@v1/ui/label";
 import { Plus, Search, X } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useI18n, useScopedI18n } from "@/locales/client";
 import type { useLoanItemsManager } from "./use-loan-items-manager";
 
 type LoanItemsManagerState = ReturnType<typeof useLoanItemsManager>;
@@ -24,6 +24,7 @@ interface AddItemsDialogProps {
 }
 
 export function AddItemsDialog({ manager }: AddItemsDialogProps) {
+  const tRoot = useI18n();
   const t = useScopedI18n("loans.placeholders");
   const tActions = useScopedI18n("loans.actions");
 
@@ -40,19 +41,21 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
         <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="mr-2 size-4" />
-            Add Items
+            {tRoot("loans.actions.addItems")}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add Items to Loan</DialogTitle>
+            <DialogTitle>{tRoot("loans.actions.addItemsToLoan")}</DialogTitle>
             <DialogDescription>
-              Search and select collections to add to this loan
+              {tRoot("loans.actions.searchSelectCollections")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Search and Select Collections *</Label>
+              <Label>
+                {tRoot("untranslatedRecords.loans.items.searchCollections")}
+              </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -65,7 +68,7 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
               {!manager.isCollectionListComplete &&
               manager.collections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Loading collections…
+                  {tRoot("untranslatedRecords.loans.items.loadingCollections")}
                 </p>
               ) : manager.availableCollections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -120,7 +123,10 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
               {manager.selectedCollectionIds.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    Selected ({manager.selectedCollectionIds.length}):
+                    {tRoot("loans.actions.selectedCount", {
+                      count: manager.selectedCollectionIds.length,
+                    })}
+                    :
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {manager.selectedCollectionIds.map((id) => {
@@ -156,7 +162,9 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="conditionOut">Condition Out (Optional)</Label>
+              <Label htmlFor="conditionOut">
+                {tRoot("untranslatedRecords.loans.items.conditionOutOptional")}
+              </Label>
               <Input
                 id="conditionOut"
                 value={manager.conditionOut}
@@ -164,7 +172,7 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
                 placeholder={t("conditionOut")}
               />
               <p className="text-xs text-muted-foreground">
-                This condition will be applied to all selected items
+                {tRoot("untranslatedRecords.loans.items.conditionHint")}
               </p>
             </div>
           </div>
@@ -173,9 +181,11 @@ export function AddItemsDialog({ manager }: AddItemsDialogProps) {
               variant="outline"
               onClick={() => manager.handleDialogOpenChange(false)}
             >
-              Cancel
+              {tRoot("loans.actions.cancel")}
             </Button>
-            <Button onClick={manager.handleAddItems}>Add Items</Button>
+            <Button onClick={manager.handleAddItems}>
+              {tRoot("loans.actions.addItems")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

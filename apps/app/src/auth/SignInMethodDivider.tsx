@@ -1,4 +1,9 @@
+"use client";
+
+import { useI18n } from "@/locales/client";
+
 export function SignInMethodDivider() {
+  const translate = useI18n();
   return (
     <div className="relative">
       <div className="absolute inset-0 flex items-center">
@@ -6,7 +11,7 @@ export function SignInMethodDivider() {
       </div>
       <div className="relative flex justify-center text-[11px] font-medium uppercase tracking-[0.06em]">
         <span className="bg-background px-2 text-muted-foreground">
-          Or continue with email
+          {translate("untranslatedComponents.labels.orContinueWithGoogle")}
         </span>
       </div>
     </div>

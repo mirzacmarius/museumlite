@@ -2,23 +2,92 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
+
+type AppLocale = ReturnType<typeof useCurrentLocale>;
+
+const approvalDateFormatters: Record<AppLocale, Intl.DateTimeFormat> = {
+  en: new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  es: new Intl.DateTimeFormat("es", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  fr: new Intl.DateTimeFormat("fr", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  no: new Intl.DateTimeFormat("nb-NO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+  ro: new Intl.DateTimeFormat("ro", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }),
+};
 
 export function UtilitiesTab({
   organizationId,
 }: {
   organizationId: Id<"organizations">;
 }) {
+  const t = useScopedI18n("settings.developer");
+  const untranslated = useScopedI18n(
+    "untranslatedDashboard.settings.developer",
+  );
+  const common = useScopedI18n("common");
   const [status, setStatus] = useState<"deleted" | "archived">("deleted");
   const [cursor, setCursor] = useState<string | null>(null);
+  const [isDeletingLoans, setIsDeletingLoans] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<{
+    deletedLoans: number;
+    deletedLoanItems: number;
+    updatedCollections: number;
+  } | null>(null);
   const review = useQuery(api.organizationCleanup.reviewRetainedCollections, {
     organizationId,
     status,
     paginationOpts: { numItems: 25, cursor },
   });
+  const deleteAllLoans = useMutation(api.loans.deleteAllLoans);
+
+  const handleDeleteAllLoans = async () => {
+    setIsDeletingLoans(true);
+    setDeleteResult(null);
+    try {
+      const result = await deleteAllLoans({ organizationId });
+      setDeleteResult(result);
+    } catch {
+      alert(untranslated("failedToDeleteLoans"));
+    } finally {
+      setIsDeletingLoans(false);
+    }
+  };
 
   return (
     <div className="min-w-0 space-y-6">
@@ -35,6 +104,84 @@ export function UtilitiesTab({
         </Button>
       </div>
       <ApprovalHistory organizationId={organizationId} />
+      <section className="space-y-3 rounded-lg border border-destructive/50 bg-destructive/5 p-6">
+        <div className="flex items-start gap-4">
+          <div className="rounded-full bg-destructive/10 p-2">
+            <Trash2 className="size-5 text-destructive" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <div>
+              <h3 className="text-lg font-semibold">{t("deleteAllLoans")}</h3>
+              <p className="text-sm text-muted-foreground">
+                {t("deleteLoansDesc")}
+              </p>
+            </div>
+            {deleteResult && (
+              <div className="space-y-1 rounded-md bg-muted p-4">
+                <p className="text-sm font-medium">{t("operationCompleted")}</p>
+                <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                  <li>
+                    {t("deletedLoans", {
+                      count: deleteResult.deletedLoans,
+                      plural: deleteResult.deletedLoans === 1 ? "" : "s",
+                    })}
+                  </li>
+                  <li>
+                    {t("deletedLoanItems", {
+                      count: deleteResult.deletedLoanItems,
+                      plural: deleteResult.deletedLoanItems === 1 ? "" : "s",
+                    })}
+                  </li>
+                  <li>
+                    {t("updatedCollections", {
+                      count: deleteResult.updatedCollections,
+                      plural: deleteResult.updatedCollections === 1 ? "" : "s",
+                    })}
+                  </li>
+                </ul>
+              </div>
+            )}
+            <PermissionGate permission="loans.update">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={isDeletingLoans}>
+                    <Trash2 className="mr-2 size-4" />
+                    {isDeletingLoans ? common("deleting") : t("deleteAllLoans")}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="size-5 text-destructive" />
+                      {t("deleteLoansDialog")}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <p className="font-medium">{t("willDelete")}</p>
+                      <ul className="list-inside list-disc space-y-1 text-sm">
+                        <li>{t("allLoans")}</li>
+                        <li>{t("allLoanItems")}</li>
+                        <li>{t("restoreActive")}</li>
+                      </ul>
+                      <p className="pt-2 font-semibold text-destructive">
+                        {t("cannotUndo")}
+                      </p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAllLoans}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {t("confirmDelete")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </PermissionGate>
+          </div>
+        </div>
+      </section>
       <div className="flex flex-wrap gap-2">
         {(["deleted", "archived"] as const).map((value) => (
           <Button
@@ -53,7 +200,7 @@ export function UtilitiesTab({
       </div>
       {review === undefined ? (
         <p className="text-sm text-muted-foreground">
-          Loading retained records...
+          Loading retained records…
         </p>
       ) : (
         <>
@@ -111,6 +258,7 @@ function ApprovalHistory({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
+  const locale = useCurrentLocale();
   const approvals = useQuery(
     api.workflows.listRetainedApprovals,
     isOpen
@@ -120,6 +268,13 @@ function ApprovalHistory({
         }
       : "skip",
   );
+  const formattedApprovals =
+    approvals?.page.map((vote) => ({
+      ...vote,
+      formattedApprovedAt: approvalDateFormatters[locale].format(
+        new Date(vote.approvedAt),
+      ),
+    })) ?? [];
   return (
     <section className="space-y-3">
       <Button
@@ -137,18 +292,16 @@ function ApprovalHistory({
             resets. Cleared votes no longer count toward an active step.
           </p>
           {approvals === undefined ? (
-            <p className="text-sm text-muted-foreground">
-              Loading approvals...
-            </p>
+            <p className="text-sm text-muted-foreground">Loading approvals…</p>
           ) : (
             <>
-              {approvals.page.length === 0 ? (
+              {formattedApprovals.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No approvals recorded.
                 </p>
               ) : (
                 <ul className="divide-y divide-white/10 rounded-lg border border-white/10">
-                  {approvals.page.map((vote) => (
+                  {formattedApprovals.map((vote) => (
                     <li
                       key={vote.approvalId}
                       className="space-y-1 break-words p-4"
@@ -164,7 +317,7 @@ function ApprovalHistory({
                         <p className="text-sm">{vote.comment}</p>
                       )}
                       <p className="text-right text-xs text-white/60">
-                        {new Date(vote.approvedAt).toLocaleString()} ·{" "}
+                        {vote.formattedApprovedAt} UTC ·{" "}
                         {vote.clearedAt === null
                           ? "Active vote"
                           : "Retained historical vote"}

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { useI18n } from "@/locales/client";
 
 export interface KeyboardShortcut {
   key: string;
@@ -10,43 +11,55 @@ export interface KeyboardShortcut {
   action?: () => void;
 }
 
-export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
-  {
-    key: "search",
-    description: "Open search / command palette",
-    keys: ["⌘", "K"],
-  },
-  {
-    key: "new-object",
-    description: "Create new object",
-    keys: ["⌘", "⇧", "O"],
-  },
-  {
-    key: "new-loan",
-    description: "Create new loan",
-    keys: ["⌘", "⇧", "L"],
-  },
-  {
-    key: "help",
-    description: "Show keyboard shortcuts",
-    keys: ["?"],
-  },
-  {
-    key: "dashboard",
-    description: "Go to dashboard",
-    keys: ["G", "D"],
-  },
-  {
-    key: "objects",
-    description: "Go to objects",
-    keys: ["G", "O"],
-  },
-  {
-    key: "loans",
-    description: "Go to loans",
-    keys: ["G", "L"],
-  },
-];
+export function getKeyboardShortcuts(
+  translate: (key: string) => string,
+): KeyboardShortcut[] {
+  return [
+    {
+      key: "search",
+      description: translate("untranslatedComponents.keyboardShortcuts.search"),
+      keys: ["⌘", "K"],
+    },
+    {
+      key: "new-object",
+      description: translate(
+        "untranslatedComponents.keyboardShortcuts.newObject",
+      ),
+      keys: ["⌘", "⇧", "O"],
+    },
+    {
+      key: "new-loan",
+      description: translate(
+        "untranslatedComponents.keyboardShortcuts.newLoan",
+      ),
+      keys: ["⌘", "⇧", "L"],
+    },
+    {
+      key: "help",
+      description: translate("untranslatedComponents.keyboardShortcuts.help"),
+      keys: ["?"],
+    },
+    {
+      key: "dashboard",
+      description: translate(
+        "untranslatedComponents.keyboardShortcuts.dashboard",
+      ),
+      keys: ["G", "D"],
+    },
+    {
+      key: "objects",
+      description: translate(
+        "untranslatedComponents.keyboardShortcuts.objects",
+      ),
+      keys: ["G", "O"],
+    },
+    {
+      key: "loans",
+      description: translate("untranslatedComponents.keyboardShortcuts.loans"),
+      keys: ["G", "L"],
+    },
+  ];
+}
 
 interface UseKeyboardShortcutsOptions {
   onShowHelp?: () => void;
@@ -55,6 +68,7 @@ interface UseKeyboardShortcutsOptions {
 export function useKeyboardShortcuts({
   onShowHelp,
 }: UseKeyboardShortcutsOptions = {}) {
+  const translate = useI18n();
   const router = useRouter();
   const goKeyPressedRef = useRef(false);
   const onShowHelpRef = useRef(onShowHelp);
@@ -125,5 +139,5 @@ export function useKeyboardShortcuts({
     return () => document.removeEventListener("keydown", listener);
   }, []);
 
-  return { shortcuts: KEYBOARD_SHORTCUTS };
+  return { shortcuts: getKeyboardShortcuts(translate) };
 }

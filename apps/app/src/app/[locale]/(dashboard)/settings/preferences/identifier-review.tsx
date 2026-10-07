@@ -8,8 +8,49 @@ import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import Link from "next/link";
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import { PermissionGate, usePermissions } from "@/components/permission-gate";
+
+interface ReviewState {
+  cursor: string | null;
+  notes: Record<string, string>;
+  message: string | null;
+  error: string | null;
+  isWorking: boolean;
+}
+
+type ReviewAction =
+  | { type: "set-cursor"; cursor: string | null }
+  | { type: "set-note"; recordId: string; note: string }
+  | { type: "set-message"; message: string | null }
+  | { type: "set-error"; error: string | null }
+  | { type: "set-working"; isWorking: boolean };
+
+const INITIAL_REVIEW_STATE: ReviewState = {
+  cursor: null,
+  notes: {},
+  message: null,
+  error: null,
+  isWorking: false,
+};
+
+function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
+  switch (action.type) {
+    case "set-cursor":
+      return { ...state, cursor: action.cursor };
+    case "set-note":
+      return {
+        ...state,
+        notes: { ...state.notes, [action.recordId]: action.note },
+      };
+    case "set-message":
+      return { ...state, message: action.message };
+    case "set-error":
+      return { ...state, error: action.error };
+    case "set-working":
+      return { ...state, isWorking: action.isWorking };
+  }
+}
 
 export function IdentifierReview({
   organizationId,
@@ -61,33 +102,31 @@ function IdentifierRegisterReview({
   register: "catalog" | "accession";
 }) {
   const { hasPermission } = usePermissions();
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isWorking, setIsWorking] = useState(false);
+  const [state, dispatch] = useReducer(reviewReducer, INITIAL_REVIEW_STATE);
   const result = useQuery(api.identifiers.listConflicts, {
     organizationId,
     register,
-    paginationOpts: { numItems: 10, cursor },
+    paginationOpts: { numItems: 10, cursor: state.cursor },
   });
   const indexLegacyBatch = useMutation(api.identifiers.indexLegacyBatch);
   const reviewConflict = useMutation(api.identifiers.reviewConflict);
   async function run(operation: () => Promise<void>) {
-    setIsWorking(true);
-    setError(null);
+    dispatch({ type: "set-working", isWorking: true });
+    dispatch({ type: "set-error", error: null });
     try {
       await operation();
     } catch (err) {
-      setError(
-        err instanceof ConvexError && typeof err.data === "string"
-          ? err.data
-          : err instanceof Error
-            ? err.message
-            : "Identifier review failed. Retry the operation.",
-      );
+      dispatch({
+        type: "set-error",
+        error:
+          err instanceof ConvexError && typeof err.data === "string"
+            ? err.data
+            : err instanceof Error
+              ? err.message
+              : "Identifier review failed. Retry the operation.",
+      });
     } finally {
-      setIsWorking(false);
+      dispatch({ type: "set-working", isWorking: false });
     }
   }
   return (
@@ -101,17 +140,19 @@ function IdentifierRegisterReview({
           </p>
           {hasPermission("collections.update") ? (
             <Button
-              disabled={isWorking}
+              type="button"
+              disabled={state.isWorking}
               onClick={() =>
                 run(async () => {
                   const batch = await indexLegacyBatch({
                     organizationId,
                     register,
                   });
-                  setCursor(null);
-                  setMessage(
-                    `Indexed ${batch.processed} records. ${batch.hasMore ? "Continue with the next batch." : "Indexing complete."}`,
-                  );
+                  dispatch({ type: "set-cursor", cursor: null });
+                  dispatch({
+                    type: "set-message",
+                    message: `Indexed ${batch.processed} records. ${batch.hasMore ? "Continue with the next batch." : "Indexing complete."}`,
+                  });
                 })
               }
             >
@@ -124,18 +165,18 @@ function IdentifierRegisterReview({
           )}
         </div>
       ) : null}
-      {message ? (
+      {state.message ? (
         <p role="status" className="text-sm">
-          {message}
+          {state.message}
         </p>
       ) : null}
-      {error ? (
+      {state.error ? (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {state.error}
         </p>
       ) : null}
       {result === undefined ? (
-        <p>Loading identifier conflicts...</p>
+        <p>Loading identifier conflicts…</p>
       ) : result.page.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No conflicts on this scanned page.
@@ -182,42 +223,50 @@ function IdentifierRegisterReview({
             ) : null}
             {hasPermission("collections.update") ? (
               <form
-                className="space-y-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void run(async () => {
+                action={async () => {
+                  await run(async () => {
                     await reviewConflict({
                       organizationId,
                       register,
                       recordId: row._id,
-                      note: notes[row._id] ?? "",
+                      note: state.notes[row._id] ?? "",
                     });
-                    setNotes((current) => ({ ...current, [row._id]: "" }));
-                    setMessage(
-                      "Review saved. All historical identifiers remain unchanged.",
-                    );
+                    dispatch({
+                      type: "set-note",
+                      recordId: row._id,
+                      note: "",
+                    });
+                    dispatch({
+                      type: "set-message",
+                      message:
+                        "Review saved. All historical identifiers remain unchanged.",
+                    });
                   });
                 }}
+                className="space-y-2"
               >
                 <Label htmlFor={`note-${row._id}`}>
                   Historical evidence and review note
                 </Label>
                 <Textarea
                   id={`note-${row._id}`}
-                  value={notes[row._id] ?? ""}
+                  value={state.notes[row._id] ?? ""}
                   maxLength={2000}
                   required
                   onChange={(event) =>
-                    setNotes((current) => ({
-                      ...current,
-                      [row._id]: event.target.value,
-                    }))
+                    dispatch({
+                      type: "set-note",
+                      recordId: row._id,
+                      note: event.target.value,
+                    })
                   }
                 />
                 <Button
                   type="submit"
                   disabled={
-                    isWorking || !notes[row._id]?.trim() || result.needsBackfill
+                    state.isWorking ||
+                    !state.notes[row._id]?.trim() ||
+                    result.needsBackfill
                   }
                 >
                   Record review acknowledgement
@@ -229,16 +278,21 @@ function IdentifierRegisterReview({
       )}
       <div className="flex gap-2">
         <Button
+          type="button"
           variant="outline"
-          disabled={cursor === null || isWorking}
-          onClick={() => setCursor(null)}
+          disabled={state.cursor === null || state.isWorking}
+          onClick={() => dispatch({ type: "set-cursor", cursor: null })}
         >
           Start of register
         </Button>
         <Button
+          type="button"
           variant="outline"
-          disabled={!result || result.isDone || isWorking}
-          onClick={() => result && setCursor(result.continueCursor)}
+          disabled={!result || result.isDone || state.isWorking}
+          onClick={() =>
+            result &&
+            dispatch({ type: "set-cursor", cursor: result.continueCursor })
+          }
         >
           Scan next page
         </Button>
