@@ -30,6 +30,22 @@ const failedCredentialReasons = new Set([
   "TooManyFailedAttempts",
 ]);
 
+/**
+ * Precomputed Scrypt work so an unknown email takes about as long as a
+ * wrong password. The hash is not a real account secret.
+ */
+const unknownPasswordPad = new Scrypt().hash(
+  "museumlite-neutral-password-timing-pad",
+);
+
+async function padUnknownPassword(password: string) {
+  try {
+    await new Scrypt().verify(await unknownPasswordPad, password);
+  } catch {
+    // The public result stays InvalidCredentials even if the pad fails.
+  }
+}
+
 function isLibraryFailure(error: unknown, reasons: Set<string>) {
   return error instanceof Error && reasons.has(error.message);
 }
@@ -48,7 +64,7 @@ async function findPasswordAccount(
   email: string,
 ): Promise<Doc<"authAccounts"> | null> {
   try {
-    const { account } = await retrieveAccount(ctx, {
+    const { account } = await retrieveAccount<DataModel>(ctx, {
       provider,
       account: { id: email },
     });
@@ -88,7 +104,11 @@ async function verifyCode<T>(check: () => Promise<T | null>): Promise<T> {
 export function NeutralPassword(config: NeutralPasswordConfig) {
   const { id: provider, reset, verify } = config;
 
-  async function sendVerification(ctx: Ctx, account: Doc<"authAccounts">, params: Params) {
+  async function sendVerification(
+    ctx: Ctx,
+    account: Doc<"authAccounts">,
+    params: Params,
+  ) {
     if (!verify) return { userId: account.userId };
     return await signInViaProvider(ctx, verify, {
       accountId: account._id,
@@ -101,12 +121,14 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     const secret = requirePasswordParam(params, "password");
     const existing = await findPasswordAccount(ctx, provider, email);
     if (existing) {
+      // Hash and discard so this path does the same password work as creation.
+      await new Scrypt().hash(secret);
       await sendVerification(ctx, existing, { email });
       return null;
     }
     let created: Doc<"authAccounts">;
     try {
-      ({ account: created } = await createAccount(ctx, {
+      ({ account: created } = await createAccount<DataModel>(ctx, {
         provider,
         account: { id: email, secret },
         profile: { email },
@@ -119,32 +141,37 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       await sendVerification(ctx, raced, { email });
       return null;
     }
-    return await sendVerification(ctx, created, params);
+    return await sendVerification(ctx, created, { ...params, email });
   }
 
   async function signIn(ctx: Ctx, params: Params, email: string) {
     const secret = params.password;
-    if (typeof secret !== "string") throw authRecoveryError("InvalidCredentials");
+    if (typeof secret !== "string")
+      throw authRecoveryError("InvalidCredentials");
     let account: Doc<"authAccounts">;
     try {
-      ({ account } = await retrieveAccount(ctx, {
+      ({ account } = await retrieveAccount<DataModel>(ctx, {
         provider,
         account: { id: email, secret },
       }));
     } catch (error) {
       if (isLibraryFailure(error, failedCredentialReasons)) {
+        if (error instanceof Error && error.message === "InvalidAccountId") {
+          await padUnknownPassword(secret);
+        }
         throw authRecoveryError("InvalidCredentials");
       }
       throw error;
     }
     if (verify && !account.emailVerified) {
-      return await sendVerification(ctx, account, params);
+      return await sendVerification(ctx, account, { ...params, email });
     }
     return { userId: account.userId };
   }
 
   async function requestReset(ctx: Ctx, email: string) {
-    if (!reset) throw new Error(`Password reset is not enabled for ${provider}`);
+    if (!reset)
+      throw new Error(`Password reset is not enabled for ${provider}`);
     const account = await findPasswordAccount(ctx, provider, email);
     if (!account) {
       await enforceCodeRequestLimit(ctx, email);
@@ -157,7 +184,8 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
   }
 
   async function completeReset(ctx: Ctx, params: Params, email: string) {
-    if (!reset) throw new Error(`Password reset is not enabled for ${provider}`);
+    if (!reset)
+      throw new Error(`Password reset is not enabled for ${provider}`);
     const newPassword = requirePasswordParam(params, "newPassword");
     const account = await findPasswordAccount(ctx, provider, email);
     if (!account || typeof params.code !== "string") {

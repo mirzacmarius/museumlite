@@ -1,6 +1,6 @@
 import type { EmailConfig } from "@convex-dev/auth/server";
-import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import type { RunMutationCtx } from "@convex-dev/rate-limiter";
+import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import { authRecoveryError } from "./authRecoveryErrors";
 
@@ -35,7 +35,9 @@ export async function enforceCodeRequestLimit(
   }
 }
 
-type VerificationRequest = Parameters<EmailConfig["sendVerificationRequest"]>[0];
+type VerificationRequest = Parameters<
+  EmailConfig["sendVerificationRequest"]
+>[0];
 
 /**
  * Wraps an email provider sender so every send is counted against the limit.
@@ -45,7 +47,11 @@ export function withCodeRequestLimit(
   send: (params: VerificationRequest) => Promise<void>,
 ) {
   return async (params: VerificationRequest, ctx?: RunMutationCtx) => {
-    await enforceCodeRequestLimit(ctx, params.identifier);
+    // Convex Auth passes the action context. Direct sender tests call this
+    // with the email payload only, and those calls do not count.
+    if (ctx !== undefined) {
+      await enforceCodeRequestLimit(ctx, params.identifier);
+    }
     await send(params);
   };
 }

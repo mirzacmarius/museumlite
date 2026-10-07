@@ -68,7 +68,10 @@ afterEach(() => {
 });
 
 function latestCode(email: string): string {
-  const message = sentEmails.findLast((entry) => entry.to.includes(email));
+  const normalized = email.trim().toLowerCase();
+  const message = sentEmails.findLast((entry) =>
+    entry.to.some((value) => value.trim().toLowerCase() === normalized),
+  );
   const code = message?.html.match(/<strong>(\d{8})<\/strong>/)?.[1];
   if (!code) throw new Error(`No OTP sent to ${email}`);
   return code;
@@ -77,20 +80,29 @@ function latestCode(email: string): string {
 describe("stable Convex Auth upgrade", () => {
   test("password sign-up normalizes email and preserves password sign-in", async () => {
     const t = createConvexTestWithRateLimiter();
+    const provider = "password-with-reset";
     const params = {
       email: " Reader@Example.Test ",
       password: "correct-password-123",
     };
     const signup = await t.action(api.auth.signIn, {
-      provider: "password",
+      provider,
       params: { ...params, flow: "signUp" },
     });
-    expect(signup.tokens?.token).toEqual(expect.any(String));
+    expect(signup).toEqual({ tokens: null });
+    await t.action(api.auth.signIn, {
+      provider,
+      params: {
+        email: "reader@example.test",
+        code: latestCode("reader@example.test"),
+        flow: "email-verification",
+      },
+    });
     const users = await t.run((ctx) => ctx.db.query("users").collect());
     expect(users.map((user) => user.email)).toEqual(["reader@example.test"]);
     await expect(
       t.action(api.auth.signIn, {
-        provider: "password",
+        provider,
         params: {
           email: "reader@example.test",
           password: "wrong-password",
@@ -99,8 +111,12 @@ describe("stable Convex Auth upgrade", () => {
       }),
     ).rejects.toThrow();
     const signin = await t.action(api.auth.signIn, {
-      provider: "password",
-      params: { ...params, flow: "signIn" },
+      provider,
+      params: {
+        email: "reader@example.test",
+        password: params.password,
+        flow: "signIn",
+      },
     });
     expect(signin.tokens?.token).toEqual(expect.any(String));
   });

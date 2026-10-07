@@ -7110,7 +7110,7 @@ export default {
       enterCode: "Saisir le code",
       orContinueWithGoogle: "Ou continuer avec Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
-        "Saisissez votre adresse e-mail. Si vous n’avez pas encore de compte, nous vous aiderons à en créer un.",
+        "Saisissez votre adresse e-mail pour continuer.",
       clearEmail: "Effacer l’adresse e-mail",
       enterAValidEmailAddress: "Saisissez une adresse e-mail valide.",
       continueWithGoogle: "Continuer avec Google",
@@ -7187,11 +7187,10 @@ export default {
       createOne: "En créer un",
       signIn: "Se connecter",
       passwordLoginRequiredFirst:
-        "Aucune connexion par mot de passe n’existe encore pour cette adresse e-mail. Commencez par en créer une.",
+        "Impossible de se connecter avec ce mot de passe.",
       verificationCodeSent:
         "Saisissez le code de vérification envoyé à votre adresse e-mail.",
-      accountCreationFailed:
-        "Impossible de créer un compte avec cette adresse e-mail.",
+      accountCreationFailed: "Impossible de créer le compte. Réessayez.",
       passwordSignInFailed: "Impossible de se connecter avec ce mot de passe.",
       setPassword: "Définir un mot de passe",
       password: "Mot de passe",
@@ -7205,7 +7204,7 @@ export default {
       setPasswordToFinishSetup:
         "Définissez un mot de passe pour terminer la configuration du compte. Si cette adresse e-mail n’est pas la vôtre, effacez-la et saisissez-en une autre.",
       alreadyRegisteredEnterEmail:
-        "Déjà inscrit ? Saisissez votre adresse e-mail et nous vous aiderons à vous reconnecter.",
+        "Saisissez votre adresse e-mail, puis choisissez un mot de passe.",
       enterPasswordOrCode:
         "Saisissez votre mot de passe ou utilisez un code unique pour continuer.",
       useEmailOrGoogle:
@@ -7222,29 +7221,29 @@ export default {
       resend: "Renvoyer",
       resetPassword: "Réinitialiser le mot de passe",
       passwordAccountMissingSetup:
-        "Aucun compte n’existe encore pour {email}. Créez un mot de passe pour configurer votre compte, puis continuez.",
+        "Créez un mot de passe pour {email} afin de terminer la configuration de votre compte.",
       createPasswordForAccount:
         "Créez un mot de passe pour {email} afin de terminer la configuration de votre compte.",
       existingAccountPassword:
-        "Nous avons trouvé un compte existant pour {email}. Saisissez votre mot de passe pour continuer.",
+        "Saisissez votre mot de passe pour {email} afin de continuer.",
       enterPasswordForEmail:
         "Saisissez votre mot de passe pour {email} afin de continuer.",
       emailVerificationFailed:
-        "Nous ne pouvons pas vérifier cette adresse e-mail pour le moment. Réessayez.",
-      accountStatusFailed:
-        "Impossible de vérifier l’état du compte. Réessayez.",
+        "Impossible de continuer pour le moment. Réessayez.",
+      accountStatusFailed: "Impossible de continuer pour le moment. Réessayez.",
       uniqueCodeSendFailed: "Impossible d’envoyer un code unique.",
       verificationCodeSendFailed:
         "Impossible d’envoyer un code de vérification.",
       passwordLoginRequiredForReset:
-        "Aucune connexion par mot de passe n’existe encore pour cette adresse e-mail. Commencez par en créer une, puis vous pourrez réinitialiser le mot de passe.",
+        "Impossible d’envoyer un code de réinitialisation du mot de passe.",
       passwordLoginRequired:
-        "Aucune connexion par mot de passe n’existe encore pour cette adresse e-mail.",
+        "Impossible d’envoyer un code de réinitialisation du mot de passe.",
       passwordResetCodeSendFailed:
         "Impossible d’envoyer un code de réinitialisation du mot de passe.",
       googleSignInFailed:
         "Impossible de lancer la connexion avec Google. Réessayez.",
       checking: "Vérification en cours…",
+      tooManyAttempts: "Trop de tentatives. Réessayez plus tard.",
     },
     validation: {
       invalidValue: "Valeur invalide",

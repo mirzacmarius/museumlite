@@ -176,7 +176,11 @@ describe("account recovery without existence disclosure", () => {
       await publicErrorCode(
         t.action(api.auth.signIn, {
           provider,
-          params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
+          params: {
+            email: ownerEmail,
+            password: ownerPassword,
+            flow: "signIn",
+          },
         }),
       ),
     ).toEqual({ code: "InvalidCredentials" });

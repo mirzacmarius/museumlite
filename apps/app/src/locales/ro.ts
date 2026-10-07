@@ -7848,7 +7848,7 @@ export default {
       enterCode: "Introdu codul",
       orContinueWithGoogle: "Sau continuă cu Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
-        "Introdu adresa de e-mail. Dacă nu ai încă un cont, te vom ajuta să creezi unul.",
+        "Introdu adresa de e-mail pentru a continua.",
       clearEmail: "Șterge adresa de e-mail",
       enterAValidEmailAddress: "Introdu o adresă de e-mail validă.",
       continueWithGoogle: "Continuă cu Google",
@@ -7924,12 +7924,10 @@ export default {
       alreadyHaveAccount: "Ai deja un cont?",
       createOne: "Creează unul",
       signIn: "Conectare",
-      passwordLoginRequiredFirst:
-        "Nu există încă o autentificare cu parolă pentru această adresă de e-mail. Creează una mai întâi.",
+      passwordLoginRequiredFirst: "Nu te-ai putut conecta cu acea parolă.",
       verificationCodeSent:
         "Introdu codul de verificare trimis la adresa ta de e-mail.",
-      accountCreationFailed:
-        "Nu s-a putut crea un cont cu această adresă de e-mail.",
+      accountCreationFailed: "Nu s-a putut crea contul. Încearcă din nou.",
       passwordSignInFailed: "Nu te-ai putut conecta cu acea parolă.",
       setPassword: "Setează parola",
       password: "Parolă",
@@ -7942,7 +7940,7 @@ export default {
       setPasswordToFinishSetup:
         "Setează o parolă pentru a finaliza configurarea contului. Dacă această adresă de e-mail nu este a ta, șterge-o și introdu alta.",
       alreadyRegisteredEnterEmail:
-        "Ești deja înregistrat? Introdu adresa de e-mail și te vom ajuta să te conectezi din nou.",
+        "Introdu adresa de e-mail, apoi alege o parolă.",
       enterPasswordOrCode:
         "Introdu parola sau folosește un cod unic pentru a continua.",
       useEmailOrGoogle:
@@ -7958,27 +7956,26 @@ export default {
       resend: "Retrimite",
       resetPassword: "Resetează parola",
       passwordAccountMissingSetup:
-        "Nu există încă niciun cont pentru {email}. Creează o parolă pentru a-ți configura contul, apoi continuă.",
+        "Creează o parolă pentru {email} pentru a finaliza configurarea contului.",
       createPasswordForAccount:
         "Creează o parolă pentru {email} pentru a finaliza configurarea contului.",
       existingAccountPassword:
-        "Am găsit un cont existent pentru {email}. Introdu parola pentru a continua.",
+        "Introdu parola pentru {email} pentru a continua.",
       enterPasswordForEmail: "Introdu parola pentru {email} pentru a continua.",
-      emailVerificationFailed:
-        "Nu putem verifica această adresă de e-mail acum. Încearcă din nou.",
-      accountStatusFailed:
-        "Nu s-a putut verifica starea contului. Încearcă din nou.",
+      emailVerificationFailed: "Nu putem continua acum. Încearcă din nou.",
+      accountStatusFailed: "Nu putem continua acum. Încearcă din nou.",
       uniqueCodeSendFailed: "Nu s-a putut trimite un cod unic.",
       verificationCodeSendFailed: "Nu s-a putut trimite un cod de verificare.",
       passwordLoginRequiredForReset:
-        "Nu există încă o autentificare cu parolă pentru această adresă de e-mail. Creează una mai întâi, apoi vei putea reseta parola.",
+        "Nu s-a putut trimite un cod de resetare a parolei.",
       passwordLoginRequired:
-        "Nu există încă o autentificare cu parolă pentru această adresă de e-mail.",
+        "Nu s-a putut trimite un cod de resetare a parolei.",
       passwordResetCodeSendFailed:
         "Nu s-a putut trimite un cod de resetare a parolei.",
       googleSignInFailed:
         "Nu s-a putut începe conectarea cu Google. Încearcă din nou.",
       checking: "Se verifică…",
+      tooManyAttempts: "Prea multe încercări. Încearcă din nou mai târziu.",
     },
     validation: {
       invalidValue: "Valoare nevalidă",

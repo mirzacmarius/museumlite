@@ -1,12 +1,13 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { api } from "@v1/backend/convex/_generated/api";
-import { useConvex } from "convex/react";
-import { useState } from "react";
 import { toast } from "sonner";
 import { AuthEmailForm } from "@/auth/email";
 import { AuthPasswordForm } from "@/auth/password";
+import {
+  authFailureMessageKey,
+  passwordStepMessageKey,
+} from "@/auth/recovery-messages";
 import type {
   AuthErrorInfo,
   AuthMode,
@@ -35,60 +36,18 @@ interface AuthFormRootProps {
   onSignedIn: () => void;
 }
 
-function getPasswordStepHelpText({
-  email,
-  mode,
-  passwordAccountExists,
-  translate,
-}: {
-  email: string;
-  mode: AuthMode;
-  passwordAccountExists: boolean | null;
-  translate: Translate;
-}) {
-  if (mode === "signUp") {
-    if (passwordAccountExists === false) {
-      return translate(
-        "untranslatedComponents.auth.passwordAccountMissingSetup",
-        { email },
-      );
-    }
-
-    return translate("untranslatedComponents.auth.createPasswordForAccount", {
-      email,
-    });
-  }
-
-  if (passwordAccountExists) {
-    return translate("untranslatedComponents.auth.existingAccountPassword", {
-      email,
-    });
-  }
-
-  return translate("untranslatedComponents.auth.enterPasswordForEmail", {
-    email,
-  });
-}
-
 function AuthPasswordStepNotice({
   email,
   mode,
-  passwordAccountExists,
   translate,
 }: {
   email: string;
   mode: AuthMode;
-  passwordAccountExists: boolean | null;
   translate: Translate;
 }) {
   return (
     <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-      {getPasswordStepHelpText({
-        email,
-        mode,
-        passwordAccountExists,
-        translate,
-      })}
+      {translate(passwordStepMessageKey(mode), { email })}
     </div>
   );
 }
@@ -109,58 +68,17 @@ export function AuthFormRoot({
   const translate = useI18n();
   const locale = useCurrentLocale();
   const { signIn } = useAuthActions();
-  const convex = useConvex();
-  const [passwordAccountExists, setPasswordAccountExists] = useState<
-    boolean | null
-  >(null);
-
-  const getErrorMessage = (error: unknown) => {
-    if (error instanceof Error && error.message) {
-      return error.message;
-    }
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof error.message === "string"
-    ) {
-      return error.message;
-    }
-    return "";
-  };
 
   const handleEmailVerification = async (nextEmail: string) => {
-    const normalizedEmail = nextEmail.trim().toLowerCase();
-    setEmail(normalizedEmail);
+    setEmail(nextEmail.trim().toLowerCase());
     setErrorInfo(undefined);
-
-    try {
-      const result = await convex.query(
-        api.authLookup.hasPasswordAccountForEmail,
-        {
-          email: normalizedEmail,
-        },
-      );
-
-      setPasswordAccountExists(result.hasPasswordAccount);
-      setMode(result.hasPasswordAccount ? "signIn" : "signUp");
-      setStep("password");
-    } catch {
-      setPasswordAccountExists(null);
-      setErrorInfo({
-        message: translate(
-          "untranslatedComponents.auth.emailVerificationFailed",
-        ),
-      });
-      toast.error(translate("untranslatedComponents.auth.accountStatusFailed"));
-    }
+    setStep("password");
   };
 
   const handleEmailClear = () => {
     setMode(currentAuthMode);
     setErrorInfo(undefined);
     setEmail("");
-    setPasswordAccountExists(null);
     setStep("email");
   };
 
@@ -174,10 +92,8 @@ export function AuthFormRoot({
         onSignedIn();
       }
       return true;
-    } catch {
-      toast.error(
-        translate("untranslatedComponents.auth.uniqueCodeSendFailed"),
-      );
+    } catch (error) {
+      toast.error(translate(authFailureMessageKey(error, "otp")));
       return false;
     }
   };
@@ -193,30 +109,13 @@ export function AuthFormRoot({
         onSignedIn();
       }
       return true;
-    } catch {
-      toast.error(
-        translate("untranslatedComponents.auth.verificationCodeSendFailed"),
-      );
+    } catch (error) {
+      toast.error(translate(authFailureMessageKey(error, "verify")));
       return false;
     }
   };
 
   const requestResetCode = async () => {
-    if (passwordAccountExists === false) {
-      setCodeFlow("otp");
-      setStep("password");
-      setMode("signUp");
-      setErrorInfo({
-        message: translate(
-          "untranslatedComponents.auth.passwordLoginRequiredForReset",
-        ),
-      });
-      toast.error(
-        translate("untranslatedComponents.auth.passwordLoginRequired"),
-      );
-      return false;
-    }
-
     try {
       const result = await signIn("password-with-reset", {
         email,
@@ -228,25 +127,7 @@ export function AuthFormRoot({
       }
       return true;
     } catch (error) {
-      const message = getErrorMessage(error);
-      if (message.includes("InvalidAccountId")) {
-        setCodeFlow("otp");
-        setStep("password");
-        setMode("signUp");
-        setPasswordAccountExists(false);
-        setErrorInfo({
-          message: translate(
-            "untranslatedComponents.auth.passwordLoginRequiredForReset",
-          ),
-        });
-        toast.error(
-          translate("untranslatedComponents.auth.passwordLoginRequired"),
-        );
-        return false;
-      }
-      toast.error(
-        translate("untranslatedComponents.auth.passwordResetCodeSendFailed"),
-      );
+      toast.error(translate(authFailureMessageKey(error, "reset")));
       return false;
     }
   };
@@ -304,16 +185,13 @@ export function AuthFormRoot({
         <AuthPasswordStepNotice
           email={email}
           mode={mode}
-          passwordAccountExists={passwordAccountExists}
           translate={translate}
         />
         <AuthPasswordForm
-          canSignInWithPassword={passwordAccountExists !== false}
           email={email}
           mode={mode}
           onEmailClear={handleEmailClear}
           onForgotPassword={openResetFlow}
-          onModeChange={setMode}
           onPasswordVerificationRequired={openPasswordVerificationFlow}
           onSignedIn={onSignedIn}
           onUniqueCodeRequest={openOtpFlow}

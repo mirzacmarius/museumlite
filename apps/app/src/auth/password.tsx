@@ -7,14 +7,13 @@ import { Eye, EyeOff, XCircle } from "lucide-react";
 import type { FormEvent } from "react";
 import { useMemo, useReducer } from "react";
 import { toast } from "sonner";
+import { authFailureMessageKey } from "@/auth/recovery-messages";
 import type { AuthMode } from "@/auth/types";
 import { useCurrentLocale, useI18n } from "@/locales/client";
 
 interface AuthPasswordFormProps {
-  canSignInWithPassword: boolean;
   email: string;
   mode: AuthMode;
-  onModeChange: (mode: AuthMode) => void;
   onEmailClear: () => void;
   onUniqueCodeRequest: () => Promise<void>;
   onForgotPassword: () => Promise<void>;
@@ -64,10 +63,8 @@ function passwordFormReducer(
 }
 
 export function AuthPasswordForm({
-  canSignInWithPassword,
   email,
   mode,
-  onModeChange,
   onEmailClear,
   onUniqueCodeRequest,
   onForgotPassword,
@@ -99,31 +96,8 @@ export function AuthPasswordForm({
     );
   }, [isSignUp, state.confirmPassword, state.isSubmitting, state.password]);
 
-  const getErrorMessage = (error: unknown) => {
-    if (error instanceof Error && error.message) {
-      return error.message;
-    }
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof error.message === "string"
-    ) {
-      return error.message;
-    }
-    return "";
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (mode === "signIn" && !canSignInWithPassword) {
-      onModeChange("signUp");
-      toast.error(
-        translate("untranslatedComponents.auth.passwordLoginRequiredFirst"),
-      );
-      return;
-    }
 
     dispatch({ type: "setIsSubmitting", value: true });
 
@@ -145,19 +119,9 @@ export function AuthPasswordForm({
         translate("untranslatedComponents.auth.verificationCodeSent"),
       );
     } catch (error) {
-      const message = getErrorMessage(error);
-      if (message.includes("InvalidAccountId") && !isSignUp) {
-        onModeChange("signUp");
-        toast.error(
-          translate("untranslatedComponents.auth.passwordLoginRequiredFirst"),
-        );
-      } else {
-        toast.error(
-          isSignUp
-            ? translate("untranslatedComponents.auth.accountCreationFailed")
-            : translate("untranslatedComponents.auth.passwordSignInFailed"),
-        );
-      }
+      toast.error(
+        translate(authFailureMessageKey(error, isSignUp ? "signUp" : "signIn")),
+      );
     } finally {
       dispatch({ type: "setIsSubmitting", value: false });
     }
