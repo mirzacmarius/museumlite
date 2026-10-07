@@ -31,6 +31,48 @@ const treatmentTypeValidator = v.union(
   v.literal("other"),
 );
 
+const treatmentStatusValidator = v.union(
+  v.literal("proposed"),
+  v.literal("approved"),
+  v.literal("in_progress"),
+  v.literal("completed"),
+  v.literal("rejected"),
+);
+
+const followUpStatusValidator = v.union(
+  v.literal("none"),
+  v.literal("pending"),
+  v.literal("completed"),
+);
+
+const assessmentEvidenceSummary = v.object({
+  assessmentId: v.id("conditionAssessments"),
+  condition: v.string(),
+  summary: v.string(),
+  assessedAt: v.number(),
+  status: v.union(v.literal("draft"), v.literal("accepted")),
+});
+
+async function loadTreatmentAssessment(
+  ctx: QueryCtx | MutationCtx,
+  treatment: { collectionId: Id<"collections">; organizationId: Id<"organizations"> },
+  assessmentId: Id<"conditionAssessments">,
+  options: { requireAccepted?: boolean } = {},
+) {
+  const assessment = await ctx.db.get(assessmentId);
+  if (
+    !assessment ||
+    assessment.collectionId !== treatment.collectionId ||
+    assessment.organizationId !== treatment.organizationId
+  ) {
+    throw new Error("Assessment must belong to this treatment object");
+  }
+  if (options.requireAccepted && assessment.status !== "accepted") {
+    throw new Error("Outcome assessment must be accepted before completion");
+  }
+  return assessment;
+}
+
 async function requireConservationAccess(
   ctx: QueryCtx | MutationCtx,
   organizationId: Id<"organizations">,
@@ -113,6 +155,7 @@ export const get = query({
       collectionId: v.id("collections"),
       organizationId: v.id("organizations"),
       collectionTitle: v.optional(v.string()),
+      status: v.optional(treatmentStatusValidator),
     }),
     v.null(),
   ),
@@ -144,7 +187,196 @@ export const get = query({
       collectionId: treatment.collectionId,
       organizationId: treatment.organizationId,
       collectionTitle: collection?.title,
+      status: treatment.status,
     };
+  },
+});
+
+export const getTreatmentEvidence = query({
+  args: { treatmentId: v.id("conservationTreatments") },
+  returns: v.object({
+    treatmentId: v.id("conservationTreatments"),
+    collectionId: v.id("collections"),
+    status: v.optional(treatmentStatusValidator),
+    baseline: v.union(assessmentEvidenceSummary, v.null()),
+    outcome: v.union(assessmentEvidenceSummary, v.null()),
+    comparison: v.object({
+      baselineCondition: v.union(v.string(), v.null()),
+      outcomeCondition: v.union(v.string(), v.null()),
+    }),
+    followUp: v.object({
+      status: followUpStatusValidator,
+      notes: v.optional(v.string()),
+      dueAt: v.optional(v.number()),
+    }),
+    attachmentCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const treatment = await ctx.db.get(args.treatmentId);
+    if (!treatment) {
+      throw new Error("Conservation treatment not found");
+    }
+
+    await Promise.all([
+      requireConservationAccess(ctx, treatment.organizationId),
+      requirePermission(ctx, treatment.organizationId, "collections.read"),
+    ]);
+
+    const summarize = async (assessmentId?: Id<"conditionAssessments">) => {
+      if (!assessmentId) {
+        return null;
+      }
+      const assessment = await ctx.db.get(assessmentId);
+      if (!assessment || assessment.collectionId !== treatment.collectionId) {
+        return null;
+      }
+      return {
+        assessmentId: assessment._id,
+        condition: assessment.condition,
+        summary: assessment.summary,
+        assessedAt: assessment.assessedAt,
+        status: assessment.status,
+      };
+    };
+
+    const [baseline, outcome, attachments] = await Promise.all([
+      summarize(treatment.baselineAssessmentId),
+      summarize(treatment.outcomeAssessmentId),
+      ctx.db
+        .query("conservationAttachments")
+        .withIndex("by_treatment", (q) => q.eq("treatmentId", args.treatmentId))
+        .collect(),
+    ] as const);
+
+    return {
+      treatmentId: treatment._id,
+      collectionId: treatment.collectionId,
+      status: treatment.status,
+      baseline,
+      outcome,
+      comparison: {
+        baselineCondition: baseline?.condition ?? null,
+        outcomeCondition: outcome?.condition ?? null,
+      },
+      followUp: {
+        status: treatment.followUpStatus ?? "none",
+        notes: treatment.followUpNotes,
+        dueAt: treatment.followUpDueAt,
+      },
+      attachmentCount: attachments.length,
+    };
+  },
+});
+
+export const linkBaselineAssessment = mutation({
+  args: {
+    treatmentId: v.id("conservationTreatments"),
+    assessmentId: v.id("conditionAssessments"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!treatment) {
+      throw new Error("Conservation treatment not found");
+    }
+    if (treatment.status === "completed" || treatment.status === "rejected") {
+      throw new Error("Cannot change baseline on a closed treatment");
+    }
+
+    await requirePermission(
+      ctx,
+      treatment.organizationId,
+      "collections.update",
+    );
+    await loadTreatmentAssessment(ctx, treatment, args.assessmentId);
+
+    await ctx.db.patch(args.treatmentId, {
+      baselineAssessmentId: args.assessmentId,
+    });
+    return null;
+  },
+});
+
+export const linkOutcomeAssessment = mutation({
+  args: {
+    treatmentId: v.id("conservationTreatments"),
+    assessmentId: v.id("conditionAssessments"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!treatment) {
+      throw new Error("Conservation treatment not found");
+    }
+    if (treatment.status === "completed" || treatment.status === "rejected") {
+      throw new Error("Cannot change outcome on a closed treatment");
+    }
+
+    await requirePermission(
+      ctx,
+      treatment.organizationId,
+      "collections.update",
+    );
+    await loadTreatmentAssessment(ctx, treatment, args.assessmentId);
+
+    await ctx.db.patch(args.treatmentId, {
+      outcomeAssessmentId: args.assessmentId,
+    });
+    return null;
+  },
+});
+
+export const setFollowUp = mutation({
+  args: {
+    treatmentId: v.id("conservationTreatments"),
+    status: followUpStatusValidator,
+    notes: v.optional(v.string()),
+    dueAt: v.optional(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [userId, treatment] = await Promise.all([
+      getAuthUserId(ctx),
+      ctx.db.get(args.treatmentId),
+    ] as const);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    if (!treatment) {
+      throw new Error("Conservation treatment not found");
+    }
+
+    await requirePermission(
+      ctx,
+      treatment.organizationId,
+      "collections.update",
+    );
+
+    if (args.status !== "none" && treatment.status !== "completed") {
+      throw new Error("Follow-up can only be scheduled after treatment completion");
+    }
+    if (args.dueAt !== undefined && !Number.isFinite(args.dueAt)) {
+      throw new Error("Follow-up due date must be valid");
+    }
+
+    await ctx.db.patch(args.treatmentId, {
+      followUpStatus: args.status,
+      followUpNotes: args.notes?.trim() || undefined,
+      followUpDueAt: args.dueAt,
+    });
+    return null;
   },
 });
 
@@ -382,6 +614,17 @@ export const create = mutation({
         ]
       : [];
 
+    let baselineAssessmentId: Id<"conditionAssessments"> | undefined;
+    if (collection.currentConditionAssessmentId) {
+      const baseline = await ctx.db.get(collection.currentConditionAssessmentId);
+      if (
+        baseline?.status === "accepted" &&
+        baseline.collectionId === args.collectionId
+      ) {
+        baselineAssessmentId = baseline._id;
+      }
+    }
+
     const treatmentId = await ctx.db.insert("conservationTreatments", {
       collectionId: args.collectionId,
       organizationId: collection.organizationId,
@@ -392,10 +635,12 @@ export const create = mutation({
       performedByName: user?.name || user?.email || undefined,
       performedAt: args.performedAt ?? Date.now(),
       notes: args.notes,
-      status: workflowConfig ? "proposed" : "completed",
+      status: workflowConfig ? "proposed" : "approved",
       workflowStep: workflowConfig ? (workflowState.firstStep ?? 1) : undefined,
       workflowHistory: workflowHistory.length > 0 ? workflowHistory : undefined,
       createdBy: userId,
+      baselineAssessmentId,
+      followUpStatus: "none",
     });
 
     await ctx.runMutation(internal.audit.logAction, {
@@ -406,7 +651,7 @@ export const create = mutation({
       entityId: treatmentId,
       changes: {
         title: args.title,
-        status: workflowConfig ? "proposed" : "completed",
+        status: workflowConfig ? "proposed" : "approved",
       },
     });
 
@@ -460,6 +705,17 @@ export const approve = mutation({
     if (treatment.status !== "proposed") {
       throw new Error("Treatment is not pending approval");
     }
+
+    if (!treatment.baselineAssessmentId) {
+      throw new Error(
+        "Baseline condition assessment is required before approval",
+      );
+    }
+    await loadTreatmentAssessment(
+      ctx,
+      treatment,
+      treatment.baselineAssessmentId,
+    );
 
     const workflowConfig = await getWorkflowConfig(
       ctx,
@@ -758,6 +1014,21 @@ export const complete = mutation({
       treatment.organizationId,
       "collections.update",
     );
+
+    if (!treatment.outcomeAssessmentId) {
+      throw new Error(
+        "Outcome condition assessment is required before completion",
+      );
+    }
+    await loadTreatmentAssessment(ctx, treatment, treatment.outcomeAssessmentId, {
+      requireAccepted: true,
+    });
+    if (!treatment.baselineAssessmentId) {
+      throw new Error(
+        "Baseline condition assessment is required before completion",
+      );
+    }
+    await loadTreatmentAssessment(ctx, treatment, treatment.baselineAssessmentId);
 
     const updates: {
       status: "completed";

@@ -2317,6 +2317,17 @@ export default defineSchema({
     currency: v.optional(v.string()),
     estimatedCost: v.optional(v.number()), // Initial estimate for budgeting
     costNotes: v.optional(v.string()),
+    baselineAssessmentId: v.optional(v.id("conditionAssessments")),
+    outcomeAssessmentId: v.optional(v.id("conditionAssessments")),
+    followUpStatus: v.optional(
+      v.union(
+        v.literal("none"),
+        v.literal("pending"),
+        v.literal("completed"),
+      ),
+    ),
+    followUpNotes: v.optional(v.string()),
+    followUpDueAt: v.optional(v.number()),
   })
     .index("by_collection", ["collectionId"])
     .index("by_organization", ["organizationId"])
