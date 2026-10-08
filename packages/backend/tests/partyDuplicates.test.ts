@@ -116,12 +116,12 @@ test("a scan suggests parties that share a normalized name, email or phone and n
   });
 
   // Both parties and the donor link are untouched.
-  expect(await staff.query(api.parties.get, { accountId: smithA })).toMatchObject(
-    { displayName: "Smith, Jane", archived: false },
-  );
-  expect(await staff.query(api.parties.get, { accountId: smithB })).toMatchObject(
-    { displayName: "JANE SMITH", archived: false },
-  );
+  expect(
+    await staff.query(api.parties.get, { accountId: smithA }),
+  ).toMatchObject({ displayName: "Smith, Jane", archived: false });
+  expect(
+    await staff.query(api.parties.get, { accountId: smithB }),
+  ).toMatchObject({ displayName: "JANE SMITH", archived: false });
   expect(
     await staff.query(api.partyLinks.listForTarget, {
       target: { type: "accession", id: accessionId },

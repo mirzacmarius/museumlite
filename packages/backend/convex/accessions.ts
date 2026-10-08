@@ -29,15 +29,12 @@ import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
-import { requireLinkableParty } from "./utils/parties";
-import {
-  accessionSourceAssertion,
-  recordPartyLink,
-} from "./utils/partyLinks";
 import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
+import { requireLinkableParty } from "./utils/parties";
+import { accessionSourceAssertion, recordPartyLink } from "./utils/partyLinks";
 import {
   canApproveAtStep,
   canInitiateWorkflow,

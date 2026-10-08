@@ -129,10 +129,7 @@ export async function requireLinkableParty(
   await requirePermission(ctx, organizationId, "accounts.read");
   const account = await ctx.db.get(accountId);
   if (!account || account.organizationId !== organizationId) {
-    throw partyError(
-      "PARTY_NOT_FOUND",
-      "Party not found in this organization",
-    );
+    throw partyError("PARTY_NOT_FOUND", "Party not found in this organization");
   }
   if (account.status === "archived") {
     throw partyError("PARTY_ARCHIVED", "Archived parties cannot be linked");

@@ -5,6 +5,7 @@ import { CheckCircle, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AuditCaseHistory } from "@/components/audit-case-history";
 import { PermissionGate } from "@/components/permission-gate";
+import { TargetPartyLinks } from "@/components/target-party-links";
 import { useI18n } from "@/locales/client";
 import { AccessionDetailReviewPanel } from "./accession-detail-review-panel";
 import type { WorkflowStepInfo } from "./accession-detail-types";
@@ -38,6 +39,14 @@ export function AccessionDetailMainContent(props: AccessionDetailViewProps) {
 
       <div className="space-y-6">
         <AccessionDetailReviewPanel {...props} />
+
+        <TargetPartyLinks
+          target={{ type: "accession", id: accession._id }}
+          organizationId={accession.organizationId}
+          roles={["donor", "owner"]}
+          writePermission="collections.update"
+          assertedName={accession.source}
+        />
 
         {configuredWorkflowSteps.length > 0 &&
         !(accession.status === "pending" && !isDraft) ? (

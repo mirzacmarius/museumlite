@@ -2,6 +2,7 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { partyErrorFromError } from "@v1/backend/convex/utils/partyErrors";
 import { Button } from "@v1/ui/button";
 import { DatePicker } from "@v1/ui/date-picker";
 import { Input } from "@v1/ui/input";
@@ -12,7 +13,9 @@ import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ClientDateFns } from "@/components/client-date";
+import { PartyPicker, usePartyPickerAccess } from "@/components/party-picker";
 import { usePermissions } from "@/components/permission-gate";
+import { usePartyErrorMessage } from "@/hooks/use-party-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { disposalStageErrorMessage } from "./disposal-stage-error";
 
@@ -22,10 +25,12 @@ type ExitStage = NonNullable<
 
 export function DisposalExitStage({
   deaccessionId,
+  organizationId,
   exit,
   locale,
 }: {
   deaccessionId: Id<"deaccessions">;
+  organizationId: Id<"organizations">;
   exit: ExitStage;
   locale: string;
 }) {
@@ -102,6 +107,7 @@ export function DisposalExitStage({
       {canRecord && isEditing ? (
         <ExitForm
           deaccessionId={deaccessionId}
+          organizationId={organizationId}
           existing={exit.record}
           onDone={() => setIsEditing(false)}
         />
@@ -121,29 +127,43 @@ export function DisposalExitStage({
 
 function ExitForm({
   deaccessionId,
+  organizationId,
   existing,
   onDone,
 }: {
   deaccessionId: Id<"deaccessions">;
+  organizationId: Id<"organizations">;
   existing: ExitStage["record"];
   onDone: () => void;
 }) {
   const t = useScopedI18n("deaccessions.stages");
+  const tParties = useScopedI18n("parties");
+  const { canPick } = usePartyPickerAccess();
+  const partyErrorMessage = usePartyErrorMessage();
   const recordExit = useMutation(api.deaccessions.recordExit);
   const [form, setForm] = useState<{
     exitDate: Date | undefined;
     recipient: string;
+    recipientAccountId: Id<"accounts"> | undefined;
     reference: string;
     notes: string;
     correctionReason: string;
   }>({
     exitDate: existing ? new Date(existing.exitDate) : undefined,
     recipient: existing?.recipient ?? "",
+    recipientAccountId: undefined,
     reference: existing?.reference ?? "",
     notes: existing?.notes ?? "",
     correctionReason: "",
   });
-  const { exitDate, recipient, reference, notes, correctionReason } = form;
+  const {
+    exitDate,
+    recipient,
+    recipientAccountId,
+    reference,
+    notes,
+    correctionReason,
+  } = form;
   const update = <Field extends keyof typeof form>(
     field: Field,
     value: (typeof form)[Field],
@@ -164,6 +184,7 @@ function ExitForm({
         deaccessionId,
         exitDate: exitDate.getTime(),
         recipient,
+        recipientAccountId,
         reference: reference || undefined,
         notes: notes || undefined,
         correctionReason: existing ? correctionReason : undefined,
@@ -171,7 +192,11 @@ function ExitForm({
       toast.success(t("exit.saved"));
       onDone();
     } catch (error) {
-      toast.error(disposalStageErrorMessage(error, t("actionFailed")));
+      toast.error(
+        partyErrorFromError(error)
+          ? partyErrorMessage(error)
+          : disposalStageErrorMessage(error, t("actionFailed")),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -186,6 +211,29 @@ function ExitForm({
         onSelect={(value) => update("exitDate", value)}
         disabled={isSaving}
       />
+      {canPick ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="disposal-exit-party">
+            {tParties("roles.recipient")}
+          </Label>
+          <PartyPicker
+            id="disposal-exit-party"
+            organizationId={organizationId}
+            value={recipientAccountId}
+            onChange={(party) =>
+              setForm((current) => ({
+                ...current,
+                recipientAccountId: party?._id,
+                recipient:
+                  party && !current.recipient.trim()
+                    ? party.displayName
+                    : current.recipient,
+              }))
+            }
+            disabled={isSaving}
+          />
+        </div>
+      ) : null}
       <div className="space-y-1.5">
         <Label htmlFor="disposal-exit-recipient">{t("exit.recipient")}</Label>
         <Input

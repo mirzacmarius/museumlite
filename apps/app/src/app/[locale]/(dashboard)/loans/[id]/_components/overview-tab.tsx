@@ -2,6 +2,7 @@
 
 import { Check, FileText, Shield, Upload } from "lucide-react";
 import { ClientDate } from "@/components/client-date";
+import { TargetPartyLinks } from "@/components/target-party-links";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import { LoanApprovalWorkflow } from "./loan-approval-workflow/loan-approval-workflow";
 import type { Loan, LoanDocument } from "./types";
@@ -25,6 +26,13 @@ export function OverviewTab({ loan, documents }: OverviewTabProps) {
           key={loan._id}
           loanId={loan._id}
           loanStatus={loan.status}
+        />
+        <TargetPartyLinks
+          target={{ type: "loan", id: loan._id }}
+          organizationId={loan.organizationId}
+          roles={loan.type === "incoming" ? ["lender", "owner"] : ["borrower"]}
+          writePermission="loans.update"
+          assertedName={loan.lenderBorrowerName}
         />
         {/* Status Flow */}
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">

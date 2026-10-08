@@ -523,9 +523,9 @@ test("linking requires the record's own write permission and accounts.read", asy
   await expect(
     noAccounts.client.mutation(api.partyLinks.link, accessionLink),
   ).rejects.toThrow("Permission denied: accounts.read");
-  await expect(
-    t.mutation(api.partyLinks.link, accessionLink),
-  ).rejects.toThrow("Not authenticated");
+  await expect(t.mutation(api.partyLinks.link, accessionLink)).rejects.toThrow(
+    "Not authenticated",
+  );
 
   const outsider = await createMuseum(t);
   await expect(

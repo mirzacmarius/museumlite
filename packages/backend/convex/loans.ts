@@ -95,14 +95,14 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const party = args.accountId
-      ? await requireLinkableParty(ctx, args.organizationId, args.accountId)
-      : null;
-
     // Validate date ordering
     if (args.endDate !== undefined && args.endDate < args.startDate) {
       throw new Error("Loan end date cannot be before start date");
     }
+
+    const party = args.accountId
+      ? await requireLinkableParty(ctx, args.organizationId, args.accountId)
+      : null;
 
     // Generate or use provided loan number
     let loanNumber: string;

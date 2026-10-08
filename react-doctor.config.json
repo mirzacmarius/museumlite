@@ -38,7 +38,9 @@
           "packages/backend/convex/utils/exhibitionWorkflow.ts",
           "packages/backend/convex/utils/transitPhysicalHandoff.ts",
           "packages/backend/convex/exports.ts",
-          "packages/backend/convex/utils/exhibitionCrud.ts"
+          "packages/backend/convex/utils/exhibitionCrud.ts",
+          "packages/backend/convex/partyLinks.ts",
+          "packages/backend/convex/partyDuplicates.ts"
         ],
         "rules": ["react-doctor/async-defer-await"]
       },

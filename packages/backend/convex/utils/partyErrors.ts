@@ -58,8 +58,6 @@ export function partyErrorFromError(error: unknown): PartyErrorData | null {
   const code = PARTY_ERROR_CODES.find((candidate) => candidate === data.code);
   if (!code) return null;
   const message =
-    "message" in data && typeof data.message === "string"
-      ? data.message
-      : code;
+    "message" in data && typeof data.message === "string" ? data.message : code;
   return { code, message };
 }

@@ -137,15 +137,14 @@ test("the legacy review lists name-only and unlinked records and drops each once
   expect(accessions.items).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
-        targetType: "accession",
-        targetId: seeded.nameOnlyAccessionId,
+        target: { type: "accession", id: seeded.nameOnlyAccessionId },
         label: "1987.4",
         assertedName: "Mrs. Edith Holm",
         suggestedRole: "donor",
         existingParty: null,
       }),
       expect.objectContaining({
-        targetId: seeded.idOnlyAccessionId,
+        target: { type: "accession", id: seeded.idOnlyAccessionId },
         assertedName: "Holm family",
         existingParty: expect.objectContaining({ _id: seeded.partyId }),
       }),
@@ -161,14 +160,14 @@ test("the legacy review lists name-only and unlinked records and drops each once
   expect(loans.items).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
-        targetId: seeded.nameOnlyLoanId,
+        target: { type: "loan", id: seeded.nameOnlyLoanId },
         assertedName: "Old Lender Ltd",
         contact: "old@lender.example",
         suggestedRole: "lender",
         existingParty: null,
       }),
       expect.objectContaining({
-        targetId: seeded.idOnlyLoanId,
+        target: { type: "loan", id: seeded.idOnlyLoanId },
         existingParty: expect.objectContaining({ _id: seeded.partyId }),
       }),
     ]),
@@ -181,7 +180,7 @@ test("the legacy review lists name-only and unlinked records and drops each once
   });
   expect(deaccessions.items).toMatchObject([
     {
-      targetId: seeded.deaccessionId,
+      target: { type: "deaccession", id: seeded.deaccessionId },
       label: "D-2012-2",
       assertedName: "Antique Dealer AS",
       suggestedRole: "recipient",
@@ -200,7 +199,7 @@ test("the legacy review lists name-only and unlinked records and drops each once
     kind: "accession",
     paginationOpts: page,
   });
-  expect(after.items.map((item) => item.targetId)).toEqual([
+  expect(after.items.map((item) => item.target.id)).toEqual([
     seeded.idOnlyAccessionId,
   ]);
   expect(
@@ -324,7 +323,7 @@ test("the owner-approved backfill links existing account references once and lea
     kind: "accession",
     paginationOpts: page,
   });
-  expect(remaining.items.map((item) => item.targetId)).toEqual([
+  expect(remaining.items.map((item) => item.target.id)).toEqual([
     seeded.nameOnlyAccessionId,
   ]);
 });

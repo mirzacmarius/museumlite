@@ -2,12 +2,12 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireLoansAccess } from "./loanAccess";
-import { partyError } from "./partyErrors";
 import {
   normalizePartyName,
   partyContactSnapshot,
   partyDisplayName,
 } from "./parties";
+import { partyError } from "./partyErrors";
 import type { PartyRole, PartyTarget } from "./partyValidators";
 import { hasPermission, requirePermission } from "./permissions";
 
@@ -289,10 +289,7 @@ export async function recordPartyLink(
 ): Promise<{ linkId: Id<"partyLinks">; created: boolean }> {
   assertPartyRoleAllowed(input.role, input.allowedRoles);
   if (input.account.organizationId !== input.organizationId) {
-    throw partyError(
-      "PARTY_NOT_FOUND",
-      "Party not found in this organization",
-    );
+    throw partyError("PARTY_NOT_FOUND", "Party not found in this organization");
   }
   if (
     input.effectiveTo !== undefined &&

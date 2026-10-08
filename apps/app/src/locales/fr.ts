@@ -5128,6 +5128,161 @@ export default {
       addNotes: "Notes supplémentaires sur cette désaccession...",
     },
   },
+  parties: {
+    roles: {
+      donor: "Donateur / provenance",
+      lender: "Prêteur",
+      borrower: "Emprunteur",
+      owner: "Propriétaire",
+      appraiser: "Expert",
+      recipient: "Destinataire",
+    },
+    holderTypes: {
+      privatePerson: "Personne",
+      organization: "Institution",
+    },
+    reasons: {
+      name: "Même nom",
+      email: "Même e-mail",
+      phone: "Même téléphone",
+    },
+    targetTypes: {
+      accession: "Acquisition",
+      loan: "Prêt",
+      deaccession: "Désaccession",
+      appraisal: "Estimation",
+      collection: "Objet",
+    },
+    picker: {
+      placeholder: "Sélectionner ou créer une personne ou une institution",
+      searchPlaceholder: "Rechercher des personnes et des institutions",
+      heading: "Parties",
+      empty: "Aucune personne ni institution correspondante",
+      searching: "Recherche…",
+      create: "Créer une nouvelle partie",
+      clear: "Effacer la sélection",
+    },
+    create: {
+      title: "Créer une partie",
+      description:
+        "Ajoutez une personne ou une institution une seule fois et réutilisez-la pour les acquisitions, les prêts et les désaccessions.",
+      submit: "Créer la partie",
+      creating: "Création…",
+      created: "Partie créée",
+      duplicateRecorded:
+        "Partie créée. Un doublon possible a été enregistré pour vérification.",
+      similarTitle: "Des parties similaires existent déjà",
+      similarDescription:
+        "Réutilisez une fiche existante au lieu de créer un doublon.",
+      useExisting: "Utiliser cette partie",
+    },
+    links: {
+      title: "Parties",
+      description:
+        "Personnes et institutions liées à cette fiche. Les noms et coordonnées sont conservés tels qu'ils étaient au moment du lien.",
+      empty: "Aucune partie n'est encore liée.",
+      partyUnavailable: "Fiche de la partie indisponible",
+      archived: "Archivée",
+      recordedAs: "Enregistrée sous le nom {name}",
+      namedOnRecord: "Nommée dans la fiche : {name}",
+      contactAtLink: "Coordonnées lors du lien : {contact}",
+      from: "À partir du {date}",
+      linkedBy: "Liée par {name}",
+      backfilled: "Liée à partir d'une référence de compte existante",
+      earlier: "Parties précédentes ({count})",
+      replacedOn: "Remplacée ou terminée le {date}",
+      reason: "Motif : {reason}",
+      role: "Rôle",
+      party: "Partie",
+      changeReason: "Motif du changement",
+      changeReasonPlaceholder:
+        "Par exemple : l'acte de donation nomme la fondation",
+      link: "Lier une partie",
+      linking: "Liaison…",
+      linked: "Partie liée",
+      end: "Terminer le lien",
+      endTitle: "Terminer ce lien avec la partie ?",
+      endDescription:
+        "Le lien reste dans l'historique de la fiche avec votre motif.",
+      endReason: "Motif",
+      endConfirm: "Terminer le lien",
+      ended: "Lien avec la partie terminé",
+      cancel: "Annuler",
+    },
+    history: {
+      tab: "Rôles",
+      title: "Historique des rôles",
+      description:
+        "Procédures auxquelles cette partie a participé. Les noms affichent ce qui a été enregistré à l'époque.",
+      empty: "Aucun rôle n'est encore enregistré pour cette partie.",
+      restricted: "Fiche non accessible",
+      current: "Actuel",
+      superseded: "Remplacé",
+      loadMore: "Charger plus",
+      legacyTitle: "Anciennes relations de compte",
+    },
+    review: {
+      title: "Vérification des parties",
+      description:
+        "Vérifiez les doublons possibles et les fiches qui ne nomment une partie qu'en texte libre. Rien n'est fusionné ni lié automatiquement.",
+      duplicatesTab: "Doublons possibles",
+      legacyTab: "Fiches non liées",
+      status: "Statut",
+      statuses: {
+        pending: "À vérifier",
+        dismissed: "Écartée",
+        confirmed_distinct: "Pas la même partie",
+      },
+      scan: "Rechercher des doublons possibles",
+      scanning: "Comparaison…",
+      scanResult: "Nouvelles suggestions enregistrées : {count}.",
+      scanLimit:
+        "Seules les {count} parties les plus récentes ont été comparées.",
+      noDuplicates: "Aucune suggestion avec ce statut.",
+      notSame: "Pas la même partie",
+      dismiss: "Écarter",
+      note: "Note (facultative)",
+      resolved: "Vérification enregistrée",
+      reviewedBy: "Vérifiée par {name}",
+      unavailable: "Fiche plus disponible",
+      mergeHint:
+        "Pour regrouper un vrai doublon, liez les nouvelles fiches à la partie conservée et archivez l'autre. Les deux historiques restent intacts.",
+      legacyDescription:
+        "Fiches qui ne nomment une partie qu'en texte libre ou qui font référence à un compte sans lien typé. Confirmez chaque lien ; la formulation d'origine est conservée.",
+      recordType: "Type de fiche",
+      kinds: {
+        accession: "Acquisitions",
+        loan: "Prêts",
+        deaccession: "Désaccessions",
+      },
+      legacyEmpty: "Aucune fiche non liée sur cette page.",
+      checked: "Fiches vérifiées sur cette page : {count}.",
+      referencesParty: "Fait référence à {name} sans lien typé",
+      confirmLink: "Confirmer le lien",
+      link: "Lier",
+      previous: "Page précédente",
+      next: "Page suivante",
+    },
+    errors: {
+      partyNotFound:
+        "Cette partie n'est pas disponible dans cette organisation. Choisissez-en une autre.",
+      partyArchived:
+        "Cette partie est archivée. Restaurez-la ou choisissez-en une autre.",
+      roleNotAllowed: "Ce rôle ne s'applique pas à cette fiche.",
+      targetNotFound:
+        "Cette fiche n'est plus disponible. Actualisez puis réessayez.",
+      nameRequired: "Saisissez un nom pour la partie.",
+      datesInvalid: "Le rôle ne peut pas se terminer avant de commencer.",
+      linkNotFound: "Ce lien n'est plus disponible. Actualisez puis réessayez.",
+      linkAlreadySuperseded:
+        "Ce lien a déjà été terminé ou remplacé. Actualisez pour voir la dernière version.",
+      reviewNotFound:
+        "Cette suggestion n'est plus disponible. Actualisez puis réessayez.",
+      reviewAlreadyResolved:
+        "Quelqu'un a déjà vérifié cette suggestion. Actualisez pour voir la décision.",
+      fallback: "L'action n'a pas pu aboutir. Actualisez puis réessayez.",
+    },
+  },
   trackedImport: {
     validationTitle: "Rapport de validation",
     validationSummary: "{valid} lignes valides, {errors} en erreur",

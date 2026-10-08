@@ -16,6 +16,7 @@ import {
 } from "./utils/partyDuplicates";
 import { partyError } from "./utils/partyErrors";
 import {
+  type DuplicateReason,
   duplicateReasonValidator,
   type PartySummary,
   partySummaryValidator,
@@ -141,13 +142,17 @@ export const findSimilar = query({
       name: args.name,
       email: args.email,
     });
-    return candidates
-      .map((candidate) => ({
-        party: toPartySummary(candidate),
-        reasons: duplicateReasonsFor(args, candidate),
-      }))
-      .filter((entry) => entry.reasons.length > 0)
-      .slice(0, SIMILAR_PARTY_LIMIT);
+    const similar: Array<{
+      party: PartySummary;
+      reasons: DuplicateReason[];
+    }> = [];
+    for (const candidate of candidates) {
+      const reasons = duplicateReasonsFor(args, candidate);
+      if (reasons.length > 0)
+        similar.push({ party: toPartySummary(candidate), reasons });
+      if (similar.length >= SIMILAR_PARTY_LIMIT) break;
+    }
+    return similar;
   },
 });
 
@@ -227,17 +232,16 @@ export const create = mutation({
       name,
       email: args.email,
     });
-    const pairs = candidates
-      .filter((candidate) => candidate._id !== accountId)
-      .flatMap((candidate) => {
-        const reasons = duplicateReasonsFor(
-          { name, email: args.email, phone: args.phone },
-          candidate,
-        );
-        return reasons.length > 0
-          ? [{ ...orderedPair(accountId, candidate._id), reasons }]
-          : [];
-      });
+    const pairs = candidates.flatMap((candidate) => {
+      if (candidate._id === accountId) return [];
+      const reasons = duplicateReasonsFor(
+        { name, email: args.email, phone: args.phone },
+        candidate,
+      );
+      return reasons.length > 0
+        ? [{ ...orderedPair(accountId, candidate._id), reasons }]
+        : [];
+    });
     const duplicateSuggestions = await recordDuplicateSuggestions(
       ctx,
       args.organizationId,

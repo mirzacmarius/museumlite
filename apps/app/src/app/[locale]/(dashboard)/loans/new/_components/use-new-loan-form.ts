@@ -2,10 +2,12 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { partyErrorFromError } from "@v1/backend/convex/utils/partyErrors";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
+import { usePartyErrorMessage } from "@/hooks/use-party-error-message";
 import { useScopedI18n } from "@/locales/client";
 import { EMPTY_NEW_LOAN_FORM, type NewLoanFormData } from "./types";
 
@@ -14,6 +16,7 @@ export function useNewLoanForm() {
   const { push } = useRouter();
   const { currentOrganizationId } = useOrganization();
   const createLoan = useMutation(api.loans.create);
+  const partyErrorMessage = usePartyErrorMessage();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,9 +159,7 @@ export function useNewLoanForm() {
         organizationId: currentOrganizationId as Id<"organizations">,
         loanNumber: formData.loanNumber || undefined,
         type: formData.type,
-        accountId: formData.accountId
-          ? (formData.accountId as Id<"accounts">)
-          : undefined,
+        accountId: formData.accountId,
         lenderBorrowerName: formData.lenderBorrowerName,
         lenderBorrowerContact: formData.lenderBorrowerContact || undefined,
         startDate: formData.startDate.getTime(),
@@ -181,7 +182,9 @@ export function useNewLoanForm() {
       console.error("Error creating loan:", err);
       let errorMessage = tActions("failedToCreateLoan");
 
-      if (err instanceof Error) {
+      if (partyErrorFromError(err)) {
+        errorMessage = partyErrorMessage(err);
+      } else if (err instanceof Error) {
         if (err.message.includes("already in an active loan")) {
           errorMessage = tActions("alreadyInActiveLoan");
         } else if (err.message.includes("does not belong to organization")) {

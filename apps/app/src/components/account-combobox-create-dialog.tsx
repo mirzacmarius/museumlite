@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@v1/ui/dialog";
-import type { Dispatch, SetStateAction } from "react";
-import { useI18n } from "@/locales/client";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { useScopedI18n } from "@/locales/client";
 import { AccountComboboxAddressSection } from "./account-combobox-address-section";
 import { AccountComboboxContactSection } from "./account-combobox-contact-section";
 import { AccountComboboxHolderSection } from "./account-combobox-holder-section";
@@ -27,6 +27,8 @@ interface AccountComboboxCreateDialogProps {
   setFormData: Dispatch<SetStateAction<NewAccountForm>>;
   isSubmitting: boolean;
   onCreate: () => void;
+  /** Shown above the form, for example similar existing parties. */
+  notice?: ReactNode;
 }
 
 export function AccountComboboxCreateDialog({
@@ -36,23 +38,20 @@ export function AccountComboboxCreateDialog({
   setFormData,
   isSubmitting,
   onCreate,
+  notice,
 }: AccountComboboxCreateDialogProps) {
-  const translate = useI18n();
+  const t = useScopedI18n("parties.create");
+  const tLinks = useScopedI18n("parties.links");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {translate("untranslatedComponents.labels.createNewAccount")}
-          </DialogTitle>
-          <DialogDescription>
-            {translate(
-              "untranslatedComponents.labels.addANewLenderBorrowerAccountToYourOrganization",
-            )}
-          </DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          {notice}
           <AccountComboboxHolderSection
             formData={formData}
             setFormData={setFormData}
@@ -80,16 +79,14 @@ export function AccountComboboxCreateDialog({
               setFormData(initialAccountFormState);
             }}
           >
-            {translate("untranslatedComponents.labels.cancel")}
+            {tLinks("cancel")}
           </Button>
           <Button
             type="button"
             onClick={onCreate}
             disabled={isSubmitting || !formData.businessName.trim()}
           >
-            {isSubmitting
-              ? translate("untranslatedComponents.labels.creating")
-              : translate("untranslatedComponents.labels.createAccount")}
+            {isSubmitting ? t("creating") : t("submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

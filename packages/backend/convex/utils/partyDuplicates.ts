@@ -38,34 +38,43 @@ export function orderedPair(a: Id<"accounts">, b: Id<"accounts">) {
 export function findDuplicatePairs(
   accounts: ReadonlyArray<Doc<"accounts">>,
 ): DuplicatePair[] {
-  const groups = new Map<string, Array<Id<"accounts">>>();
+  const groups = new Map<
+    string,
+    { reason: DuplicateReason; members: Set<Id<"accounts">> }
+  >();
   for (const account of accounts) {
     for (const { reason, key } of partyIdentityKeys(account)) {
       const groupKey = `${reason}\u0000${key}`;
-      const members = groups.get(groupKey) ?? [];
-      if (members.length < SAME_KEY_PAIR_LIMIT && !members.includes(account._id))
-        members.push(account._id);
-      groups.set(groupKey, members);
+      const group = groups.get(groupKey) ?? { reason, members: new Set() };
+      if (group.members.size < SAME_KEY_PAIR_LIMIT)
+        group.members.add(account._id);
+      groups.set(groupKey, group);
     }
   }
-  const pairs = new Map<string, DuplicatePair>();
-  for (const [groupKey, members] of groups) {
-    const reason = groupKey.split("\u0000")[0] as DuplicateReason;
-    for (let i = 0; i < members.length; i++) {
-      for (let j = i + 1; j < members.length; j++) {
-        const left = members[i];
-        const right = members[j];
+  const pairs = new Map<
+    string,
+    Omit<DuplicatePair, "reasons"> & { reasons: Set<DuplicateReason> }
+  >();
+  for (const { reason, members } of groups.values()) {
+    const ids = Array.from(members);
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const left = ids[i];
+        const right = ids[j];
         if (!left || !right) continue;
         const ordered = orderedPair(left, right);
-        const pair = pairs.get(ordered.pairKey) ?? { ...ordered, reasons: [] };
-        if (!pair.reasons.includes(reason)) pair.reasons.push(reason);
+        const pair = pairs.get(ordered.pairKey) ?? {
+          ...ordered,
+          reasons: new Set<DuplicateReason>(),
+        };
+        pair.reasons.add(reason);
         pairs.set(ordered.pairKey, pair);
       }
     }
   }
-  return Array.from(pairs.values()).map((pair) => ({
+  return Array.from(pairs.values(), (pair) => ({
     ...pair,
-    reasons: REASON_ORDER.filter((reason) => pair.reasons.includes(reason)),
+    reasons: REASON_ORDER.filter((reason) => pair.reasons.has(reason)),
   }));
 }
 

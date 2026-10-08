@@ -136,6 +136,29 @@ export const listForTarget = query({
   },
 });
 
+async function toRoleHistoryItem(
+  ctx: QueryCtx,
+  link: Doc<"partyLinks">,
+): Promise<Infer<typeof roleHistoryItemValidator>> {
+  return {
+    _id: link._id,
+    role: link.role,
+    targetType: link.targetType,
+    targetId: link.targetId,
+    targetLabel: await readablePartyTargetLabel(ctx, link),
+    nameSnapshot: link.nameSnapshot,
+    assertedName: link.assertedName,
+    contactSnapshot: link.contactSnapshot,
+    effectiveFrom: link.effectiveFrom,
+    effectiveTo: link.effectiveTo,
+    origin: link.origin,
+    createdAt: link.createdAt,
+    supersededAt: link.supersededAt,
+    supersessionReason: link.supersessionReason,
+    isCurrent: link.supersededAt === undefined,
+  };
+}
+
 /** Role history of one Party across procedures, newest first. */
 export const listForAccount = query({
   args: {
@@ -155,25 +178,11 @@ export const listForAccount = query({
       .order("desc")
       .paginate(args.paginationOpts);
     const page = await Promise.all(
-      result.page
-        .filter((link) => link.organizationId === account.organizationId)
-        .map(async (link) => ({
-          _id: link._id,
-          role: link.role,
-          targetType: link.targetType,
-          targetId: link.targetId,
-          targetLabel: await readablePartyTargetLabel(ctx, link),
-          nameSnapshot: link.nameSnapshot,
-          assertedName: link.assertedName,
-          contactSnapshot: link.contactSnapshot,
-          effectiveFrom: link.effectiveFrom,
-          effectiveTo: link.effectiveTo,
-          origin: link.origin,
-          createdAt: link.createdAt,
-          supersededAt: link.supersededAt,
-          supersessionReason: link.supersessionReason,
-          isCurrent: link.supersededAt === undefined,
-        })),
+      result.page.flatMap((link) =>
+        link.organizationId === account.organizationId
+          ? [toRoleHistoryItem(ctx, link)]
+          : [],
+      ),
     );
     return { ...result, page };
   },
@@ -216,7 +225,10 @@ export const link = mutation({
       effectiveFrom:
         args.effectiveFrom ?? resolved.defaultEffectiveFrom ?? Date.now(),
       effectiveTo: args.effectiveTo,
-      assertedName: args.assertedName,
+      assertedName:
+        args.target.type === "accession" && args.assertedName !== undefined
+          ? accessionSourceAssertion(args.assertedName)
+          : args.assertedName,
       supersessionReason: args.reason,
       userId,
       origin: "staff",
@@ -293,8 +305,7 @@ const legacyKindValidator = v.union(
 );
 
 const legacyLinkItemValidator = v.object({
-  targetType: legacyKindValidator,
-  targetId: partyTargetIdValidator,
+  target: partyTargetValidator,
   label: v.string(),
   /** The name as written on the record. */
   assertedName: v.optional(v.string()),
@@ -341,8 +352,7 @@ async function legacyLinkItem(
     }
   }
   return {
-    targetType: candidate.target.type as "accession" | "loan" | "deaccession",
-    targetId: candidate.target.id,
+    target: candidate.target,
     label: candidate.label,
     assertedName: candidate.assertedName,
     contact: candidate.contact,
@@ -476,7 +486,9 @@ async function backfillLink(
 ) {
   const account = await ctx.db.get(input.accountId);
   if (!account || account.organizationId !== organizationId) return false;
-  if (await hasCurrentPartyLink(ctx, organizationId, input.target, [input.role]))
+  if (
+    await hasCurrentPartyLink(ctx, organizationId, input.target, [input.role])
+  )
     return false;
   await recordPartyLink(ctx, {
     organizationId,
