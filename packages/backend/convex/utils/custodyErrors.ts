@@ -53,7 +53,8 @@ export function custodyConflict(
   return new ConvexError(data);
 }
 
-function errorData(error: unknown): unknown {
+/** Payload of a ConvexError, whether thrown in-process or received by a client. */
+export function errorData(error: unknown): unknown {
   if (
     typeof error !== "object" ||
     error === null ||

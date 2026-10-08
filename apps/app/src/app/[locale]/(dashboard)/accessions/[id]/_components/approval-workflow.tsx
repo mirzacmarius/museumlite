@@ -2,25 +2,15 @@
 
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@v1/ui/alert-dialog";
 import { Button } from "@v1/ui/button";
 import { Label } from "@v1/ui/label";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useOrganization } from "@/components/organization-provider";
 import { useI18n, useScopedI18n } from "@/locales/client";
+import { RejectIntakeDialog } from "./reject-intake-dialog";
 
 interface ApprovalWorkflowProps {
   accessionId: string;
@@ -106,7 +96,6 @@ export function ApprovalWorkflow({
   const tRoot = useI18n();
   const { currentOrganizationId } = useOrganization();
   const t = useScopedI18n("accessions");
-  const tCommon = useScopedI18n("common");
   const [comment, setComment] = useState("");
   const [exceptionReason, setExceptionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,7 +111,6 @@ export function ApprovalWorkflow({
   );
 
   const approveAccession = useMutation(api.accessions.approve);
-  const rejectAccession = useMutation(api.accessions.reject);
 
   if (
     !accession ||
@@ -155,22 +143,6 @@ export function ApprovalWorkflow({
       });
       setComment("");
       setExceptionReason("");
-    } catch (err) {
-      setError(getApprovalErrorMessage(err, t));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReject = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await rejectAccession({
-        accessionId: accessionId as Id<"accessions">,
-        comment: comment || undefined,
-      });
-      setComment("");
     } catch (err) {
       setError(getApprovalErrorMessage(err, t));
     } finally {
@@ -258,34 +230,10 @@ export function ApprovalWorkflow({
                 ? t("approval.approveStep", { step: accession.workflowStep })
                 : t("approval.approve")}
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                disabled={isSubmitting}
-                variant="destructive"
-                className="transition-transform duration-200 active:translate-y-px"
-              >
-                <XCircle className="mr-2 size-4" />
-                {t("approval.reject")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t("approval.rejectDialogTitle")}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("approval.rejectDialogDescription")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReject}>
-                  {t("approval.rejectAccession")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <RejectIntakeDialog
+            accessionId={accessionId as Id<"accessions">}
+            disabled={isSubmitting}
+          />
         </div>
       </div>
     </div>

@@ -127,7 +127,9 @@ export function AccessionDetailPageClient() {
         ? "Approved"
         : accession.status === "rejected"
           ? "Rejected"
-          : tRoot("untranslatedRecords.accessions.detail.unknown");
+          : accession.status === "withdrawn"
+            ? tRoot("accessionReview.status.withdrawn")
+            : tRoot("untranslatedRecords.accessions.detail.unknown");
   const heroSourceVerificationState = requiresSourceVerification
     ? accession.sourceVerificationException && !accession.sourceVerified
       ? tRoot("accessions.approval.sourceExceptionRecorded")
@@ -153,6 +155,8 @@ export function AccessionDetailPageClient() {
         return <CheckCircle className="size-5 text-green-500" />;
       case "rejected":
         return <XCircle className="size-5 text-red-500" />;
+      case "withdrawn":
+        return <Archive className="size-5 text-zinc-400" />;
       default:
         return null;
     }
@@ -168,6 +172,8 @@ export function AccessionDetailPageClient() {
         return "bg-green-500/10 text-green-600 dark:text-green-400";
       case "rejected":
         return "bg-red-500/10 text-red-600 dark:text-red-400";
+      case "withdrawn":
+        return "bg-zinc-500/10 text-zinc-300";
       default:
         return "bg-muted text-muted-foreground";
     }

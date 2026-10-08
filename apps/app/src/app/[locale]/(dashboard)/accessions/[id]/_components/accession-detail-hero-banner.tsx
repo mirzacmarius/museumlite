@@ -112,7 +112,9 @@ export function AccessionDetailHeroBanner({
                       ? tRoot("accessions.status.approved")
                       : displayStatus === "rejected"
                         ? tRoot("accessions.status.rejected")
-                        : displayStatus}
+                        : displayStatus === "withdrawn"
+                          ? tRoot("accessionReview.status.withdrawn")
+                          : displayStatus}
               </span>
               <div className="rounded bg-secondary/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">
                 {accession.accessionNumber}

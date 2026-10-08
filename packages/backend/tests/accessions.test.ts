@@ -155,65 +155,6 @@ test("getWorkflowSteps does not include a rejected accession column", async () =
   expect(workflow.steps.map((step) => step.stepNumber)).not.toContain(-2);
 });
 
-test("rejecting an accession moves the object to rejected deaccessions", async () => {
-  const t = createConvexTest();
-  const { organizationId, userId, roleId } = await createOrgUserWithPermissions(
-    t,
-    [
-      "collections.create",
-      "collections.read",
-      "collections.update",
-      "collections.approve_accession",
-    ],
-  );
-
-  await t.run(async (ctx) => {
-    await ctx.db.insert("workflowConfigs", {
-      organizationId,
-      workflowType: "accession",
-      steps: [{ stepNumber: 1, roleId, name: "Registrar Review" }],
-      canInitiateRoles: [roleId],
-    });
-  });
-
-  const authed = authedForUser(t, userId);
-  const accessionId = await authed.mutation(api.accessions.upsertObjectDraft, {
-    organizationId,
-    saveMode: "submit",
-    objectData: {
-      accessionNumber: "REJECT-001",
-      title: "Rejected Object",
-    },
-  });
-
-  await authed.mutation(api.accessions.reject, {
-    accessionId,
-    comment: "Duplicate request",
-  });
-
-  const result = await t.run(async (ctx) => {
-    const accession = await ctx.db.get(accessionId);
-    const collectionId = accession?.collectionId;
-    const collection = collectionId ? await ctx.db.get(collectionId) : null;
-    const deaccession = collectionId
-      ? await ctx.db
-          .query("deaccessions")
-          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
-          .first()
-      : null;
-
-    return { accession, collection, deaccession };
-  });
-
-  expect(result.accession?.status).toBe("rejected");
-  expect(result.accession?.workflowStep).toBe(-2);
-  expect(result.collection?.status).toBe("deaccessioned");
-  expect(result.collection?.displayStatus).toBe("REJECTED");
-  expect(result.deaccession?.status).toBe("rejected");
-  expect(result.deaccession?.workflowStep).toBe(-2);
-  expect(result.deaccession?.reason).toBe("Accession rejected");
-});
-
 test("getWorkflowSteps does not surface document requirements for accession approvals", async () => {
   const t = createConvexTest();
   const { organizationId, userId, roleId } = await createOrgUserWithPermissions(

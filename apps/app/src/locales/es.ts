@@ -4723,6 +4723,61 @@ export default {
     helpText:
       "Si aún no tienes una cuenta, usa el correo de la invitación para crear una primero. Después de iniciar sesión, podrás aceptar esta invitación de organización.",
   },
+  accessionReview: {
+    status: {
+      withdrawn: "Retirada",
+    },
+    reject: {
+      title: "Rechazar esta solicitud de objeto",
+      description:
+        "Elija qué ocurre a continuación. No se añade nada a la colección ni se registra ninguna baja.",
+      returnToDraft: "Devolver a borrador",
+      returnToDraftDescription:
+        "Quien la envió puede editar la solicitud y volver a enviarla a revisión.",
+      withdraw: "Retirar",
+      withdrawDescription:
+        "Saca la solicitud de la revisión activa. El registro, sus datos de borrador y sus archivos se conservan y pueden restaurarse.",
+      reasonLabel: "Motivo",
+      reasonPlaceholder: "Explique qué debe cambiar o por qué se retira",
+      reasonHint:
+        "Obligatorio. Se notifica a quien la envió y el motivo queda en el historial del caso.",
+      confirmReturnToDraft: "Devolver a borrador",
+      confirmWithdraw: "Retirar solicitud",
+      saving: "Guardando...",
+    },
+    restore: {
+      action: "Restaurar a borrador",
+      title: "Restaurar esta solicitud de objeto",
+      description:
+        "La solicitud vuelve a la columna Borrador para editarla y enviarla de nuevo a revisión.",
+      reasonLabel: "Motivo",
+      reasonHint: "Obligatorio. Queda en el historial del caso.",
+      confirm: "Restaurar a borrador",
+    },
+    decision: {
+      returnedTitle: "Devuelta a borrador para cambios",
+      withdrawnTitle: "Retirada de la revisión",
+      restoredTitle: "Restaurada tras la retirada",
+      decidedBy: "Por {name}",
+      withdrawnDescription:
+        "Esta solicitud se conserva como registro y no está en ninguna cola activa. No se añadió nada a la colección.",
+    },
+    board: {
+      withdrawn: "Retiradas",
+      showActive: "Volver al tablero activo",
+    },
+    errors: {
+      notInReview:
+        "Esta solicitud ya no está pendiente de revisión. Actualice para ver su estado actual.",
+      notWithdrawn:
+        "Esta solicitud ya no está retirada. Actualice para ver su estado actual.",
+      reasonRequired: "Indique un motivo.",
+      notPermitted:
+        "No puede tomar esta decisión en el paso de revisión actual.",
+      fallback:
+        "No se pudo guardar la decisión. Actualice e inténtelo de nuevo.",
+    },
+  },
   accessions: {
     title: "Adquisiciones",
     description:

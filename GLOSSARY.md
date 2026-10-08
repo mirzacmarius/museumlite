@@ -55,7 +55,7 @@ Authorized removal of an Object from the permanent collection under institutiona
 _Avoid_: Delete, remove
 
 **Withdrawal**:
-Removal of an Object from routine views while its record is retained and restorable. It asserts neither a change of title nor disposal.
+Removal of an Object, or of an intake request a reviewer declined, from routine views while its record is retained and restorable. It asserts neither a change of title nor disposal; a withdrawn intake was never accessioned, so it never produces a Deaccession.
 _Avoid_: Delete, archive (when title or disposal is meant)
 
 ### Publication

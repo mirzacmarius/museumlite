@@ -2,6 +2,10 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  accessionReviewDecisionValidator,
+  accessionStatusValidator,
+} from "./utils/accessionReview";
+import {
   exportFormat,
   exportSource,
   exportStatus,
@@ -1399,11 +1403,7 @@ export default defineSchema({
     cost: v.optional(v.number()),
     approvedBy: v.optional(v.id("users")),
     approvedAt: v.optional(v.number()),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("approved"),
-      v.literal("rejected"),
-    ),
+    status: accessionStatusValidator,
     notes: v.optional(v.string()),
     draftObjectData: v.optional(objectDraftDataValidator),
     draftMedia: v.optional(v.array(accessionDraftMediaValidator)),
@@ -1419,6 +1419,9 @@ export default defineSchema({
         }),
       ),
     ),
+    // Latest reviewer decision on an intake (MUS-673): returned to draft,
+    // withdrawn, or restored from withdrawal. Full trail is in case history.
+    reviewDecision: v.optional(accessionReviewDecisionValidator),
     // Source verification fields
     sourceVerified: v.optional(v.boolean()),
     sourceVerifiedBy: v.optional(v.id("users")),
@@ -1496,11 +1499,7 @@ export default defineSchema({
   accessionSearchDocuments: defineTable({
     organizationId: v.id("organizations"),
     accessionId: v.id("accessions"),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("approved"),
-      v.literal("rejected"),
-    ),
+    status: accessionStatusValidator,
     searchText: v.string(),
     dateReceived: v.number(),
   })
