@@ -3,11 +3,13 @@
 export default {
   conditionAssessments: {
     title: "Evaluaciones del estado",
-    description: "Se conservan las observaciones fechadas y las fotos. Un responsable acepta el borrador para actualizar el estado actual.",
+    description:
+      "Se conservan las observaciones fechadas y las fotos. Un responsable acepta el borrador para actualizar el estado actual.",
     current: "Estado actual",
     unknown: "Desconocido",
     acceptedSource: "Procede de una evaluación aceptada",
-    legacyUncertain: "Estado anterior; la fuente y la fecha pueden ser inciertas",
+    legacyUncertain:
+      "Estado anterior; la fuente y la fecha pueden ser inciertas",
     legacyHistory: "Historial del estado anterior",
     newAssessment: "Nueva evaluación",
     date: "Fecha de evaluación",
@@ -3868,6 +3870,7 @@ export default {
       "Por favor selecciona una organización para ver las exposiciones.",
     exhibitionNotFound: "Exposición no encontrada",
     filters: {
+      object: "Objeto",
       title: "Filtros",
       clear: "Limpiar",
       allStatuses: "Todos los estados",
@@ -3993,15 +3996,19 @@ export default {
       moveDown: "Bajar objeto",
       participantRole: "Participante",
       featuredRole: "Destacado",
-      invalidParticipants: "Selecciona al menos un objeto, sin duplicados ni más de un objeto destacado.",
-      legacyReviewDescription: "Esta exposición tiene un vínculo histórico que debe revisarse antes de editar sus objetos.",
+      invalidParticipants:
+        "Selecciona al menos un objeto, sin duplicados ni más de un objeto destacado.",
+      legacyReviewDescription:
+        "Esta exposición tiene un vínculo histórico que debe revisarse antes de editar sus objetos.",
       legacyReviewReason: "Estado histórico",
       anchor_only: "Solo existe el vínculo histórico",
       anchor_and_members: "El objeto histórico ya está en la lista",
-      anchor_missing_from_members: "El objeto histórico falta en la lista de participantes",
+      anchor_missing_from_members:
+        "El objeto histórico falta en la lista de participantes",
       includeHistoricalAnchor: "Incluir objeto histórico",
       keepListedObjects: "Conservar objetos listados",
-      reconcileError: "No se pudo conciliar la participación. Actualiza y revisa los objetos de nuevo.",
+      reconcileError:
+        "No se pudo conciliar la participación. Actualiza y revisa los objetos de nuevo.",
       displayStatusHint:
         "Solo actualiza la etiqueta de programación de la exposición. No instala objetos ni registra una entrega física.",
       selectOrganization:
@@ -5527,7 +5534,8 @@ export default {
           provenance: "Historial de propiedad",
           location: "Ubicación actual",
           collectionGroup: "Nombre de la colección o del grupo",
-          collectionGroups: "Lista JSON de nombres de grupos, incluido el principal",
+          collectionGroups:
+            "Lista JSON de nombres de grupos, incluido el principal",
         },
         templates: {
           pastperfect: "PastPerfect",
@@ -5947,6 +5955,16 @@ export default {
         pageOf: "Página {page} de {total}",
       },
       transfer: {
+        custodyEvidence: "Evidencia de custodia",
+        observedSource: "Ubicación de origen observada",
+        noRecordedLocation: "Sin ubicación registrada",
+        receivingLocation: "Ubicación de recepción",
+        priorGroupLinks: "Vínculos previos a grupos de la colección",
+        priorGroupLinksCount:
+          "vínculo(s) de grupo registrados antes de la transferencia",
+        receivingLocationPlaceholder: "Seleccione la ubicación de recepción",
+        targetLocationRequired:
+          "Elija una ubicación de recepción antes de aceptar la transferencia.",
         awaitingAcceptance: "Pendiente de aceptación de la transferencia",
         pendingApproval: "Pendiente de aprobación de la transferencia",
         awaitingAcceptanceShort: "pendiente de aceptación",

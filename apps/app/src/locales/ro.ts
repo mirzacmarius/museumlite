@@ -1,7 +1,8 @@
 export default {
   conditionAssessments: {
     title: "Evaluări ale stării",
-    description: "Observațiile datate și fotografiile sunt păstrate. Un responsabil acceptă ciorna pentru a actualiza starea curentă.",
+    description:
+      "Observațiile datate și fotografiile sunt păstrate. Un responsabil acceptă ciorna pentru a actualiza starea curentă.",
     current: "Stare curentă",
     unknown: "Necunoscută",
     acceptedSource: "Dintr-o evaluare acceptată",
@@ -3140,6 +3141,7 @@ export default {
     selectOrganization: "Selectează o organizație pentru a vedea expozițiile.",
     exhibitionNotFound: "Expoziția nu a fost găsită",
     filters: {
+      object: "Obiect",
       title: "Filtre",
       clear: "Șterge selecția",
       allStatuses: "Toate stările",
@@ -3300,6 +3302,43 @@ export default {
     },
   },
   conservation: {
+    evidence: {
+      loading: "Se încarcă dovezile tratamentului…",
+      title: "Dovezi din evaluări",
+      description:
+        "Evaluările inițiale și finale rămân legate de acest tratament. Starea curentă a obiectului se actualizează doar când este acceptată o evaluare finală.",
+      baseline: "Evaluare inițială",
+      outcome: "Evaluare finală",
+      notLinked: "Nelegată încă",
+      comparison: "Înainte și după",
+      before: "Înainte",
+      after: "După",
+      attachmentCount: "{count} document(e) de tratament păstrate",
+      linkAssessments: "Leagă evaluări",
+      selectAssessment: "Selectați evaluarea",
+      linkBaseline: "Setează evaluarea inițială",
+      linkOutcome: "Setează evaluarea finală",
+      captureOnObject:
+        "Înregistrați sau acceptați evaluări în fila Fizic a obiectului",
+      workflow: "Flux de lucru al tratamentului",
+      approve: "Aprobă",
+      start: "Începe lucrul",
+      complete: "Finalizează cu dovezi",
+      followUpTitle: "Lucrări ulterioare",
+      followUpStatus: "Stare",
+      followUpDue: "Termen",
+      followUpNotesPlaceholder:
+        "Descrieți monitorizarea sau tratamentul ulterior necesar",
+      scheduleFollowUp: "Programează lucrări ulterioare",
+      markFollowUpDone: "Marchează lucrările ulterioare ca finalizate",
+      actionSuccess: "Tratament actualizat",
+      actionError: "Tratamentul nu a putut fi actualizat",
+      followUp: {
+        none: "Niciuna",
+        pending: "În așteptare",
+        completed: "Finalizată",
+      },
+    },
     title: "Conservare",
     description: "Gestionează tratamentele de conservare",
     newTreatment: "Tratament Nou",
@@ -5220,6 +5259,7 @@ export default {
     headerTitle: "Activitate",
     headerDescription: "Vezi toate modificările din organizația ta",
     filters: {
+      object: "Obiect",
       title: "Filtre",
       dateRange: "Tot intervalul",
       type: "Tip",
@@ -6621,6 +6661,16 @@ export default {
         pageOf: "Pagina {page} din {total}",
       },
       transfer: {
+        custodyEvidence: "Dovezi de custodie",
+        observedSource: "Locație sursă observată",
+        noRecordedLocation: "Nicio locație înregistrată",
+        receivingLocation: "Locație de primire",
+        priorGroupLinks: "Legături anterioare cu grupuri din colecție",
+        priorGroupLinksCount:
+          "legătură(i) de grup înregistrate înainte de transfer",
+        receivingLocationPlaceholder: "Selectați locația de primire",
+        targetLocationRequired:
+          "Alegeți o locație de primire înainte de a accepta transferul.",
         awaitingAcceptance: "În așteptarea acceptării transferului",
         pendingApproval: "În așteptarea aprobării transferului",
         awaitingAcceptanceShort: "în așteptarea acceptării",

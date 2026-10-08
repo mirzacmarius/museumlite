@@ -1,15 +1,12 @@
-import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { markCollectionActive } from "./collectionLifecycle";
 import {
   dispatchLoanItemsWithEvidence,
-  receiveLoanItemsWithEvidence,
   type ReceiveLoanItemInput,
+  receiveLoanItemsWithEvidence,
 } from "./loanCustody";
 import { allLoanItemsReturned } from "./loanItemState";
-
-type LoanItem = Doc<"loanItems">;
 
 async function getLoanItems(ctx: MutationCtx, loanId: Id<"loans">) {
   return await ctx.db

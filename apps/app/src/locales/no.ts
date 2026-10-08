@@ -1,7 +1,8 @@
 export default {
   conditionAssessments: {
     title: "Tilstandsvurderinger",
-    description: "Daterte observasjoner og bilder beholdes. En kontrollør godkjenner utkastet for å oppdatere gjeldende tilstand.",
+    description:
+      "Daterte observasjoner og bilder beholdes. En kontrollør godkjenner utkastet for å oppdatere gjeldende tilstand.",
     current: "Gjeldende tilstand",
     unknown: "Ukjent",
     acceptedSource: "Fra en godkjent vurdering",
@@ -1229,6 +1230,7 @@ export default {
     headerTitle: "Aktivitet",
     headerDescription: "Se alle endringer i organisasjonen din",
     filters: {
+      object: "Objekt",
       title: "Filtre",
       dateRange: "Alle tider",
       type: "Type",
@@ -3806,6 +3808,7 @@ export default {
     selectOrganization: "Vennligst velg en organisasjon for å se utstillinger.",
     exhibitionNotFound: "Utstilling ikke funnet",
     filters: {
+      object: "Objekt",
       title: "Filtre",
       clear: "Fjern",
       allStatuses: "Alle statuser",
@@ -3846,8 +3849,7 @@ export default {
       deinstall: "Registrer demontering",
       confirmReturn: "Bekreft fysisk retur",
       exceptionReason: "Dokumentert unntak",
-      exceptionPlaceholder:
-        "Hvorfor retur ikke registreres (minst 10 tegn)",
+      exceptionPlaceholder: "Hvorfor retur ikke registreres (minst 10 tegn)",
       authorizeException: "Autoriser unntak",
       viewObject: "Vis objekt",
       exceptionRecorded: "Returunntak registrert",
@@ -3939,8 +3941,7 @@ export default {
       legacyReviewReason: "Historisk tilstand",
       anchor_only: "Kun den historiske objektlenken finnes",
       anchor_and_members: "Historisk objekt er allerede listet",
-      anchor_missing_from_members:
-        "Historisk objekt mangler i deltakerlisten",
+      anchor_missing_from_members: "Historisk objekt mangler i deltakerlisten",
       includeHistoricalAnchor: "Inkluder historisk objekt",
       keepListedObjects: "Behold listede objekter",
       reconcileError:
@@ -5451,8 +5452,7 @@ export default {
           provenance: "Eierskapshistorikk",
           location: "Nåværende plassering",
           collectionGroup: "Navn på samling eller gruppe",
-          collectionGroups:
-            "JSON-liste med gruppenavn; inkluder hovedgruppen",
+          collectionGroups: "JSON-liste med gruppenavn; inkluder hovedgruppen",
         },
         templates: {
           pastperfect: "PastPerfect",
@@ -5860,6 +5860,15 @@ export default {
         pageOf: "Side {page} av {total}",
       },
       transfer: {
+        custodyEvidence: "Dokumentasjon av forvaring",
+        observedSource: "Observert opprinnelsessted",
+        noRecordedLocation: "Ingen registrert plassering",
+        receivingLocation: "Mottakende plassering",
+        priorGroupLinks: "Tidligere koblinger til samlingsgrupper",
+        priorGroupLinksCount: "gruppekobling(er) registrert før overføringen",
+        receivingLocationPlaceholder: "Velg mottakende plassering",
+        targetLocationRequired:
+          "Velg en mottakende plassering før du godtar overføringen.",
         awaitingAcceptance: "Venter på at overføringen godtas",
         pendingApproval: "Venter på godkjenning av overføringen",
         awaitingAcceptanceShort: "venter på godkjenning",

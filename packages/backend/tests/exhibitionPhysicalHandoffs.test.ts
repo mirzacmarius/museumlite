@@ -23,11 +23,7 @@ async function createHandoffFixture(
 ): Promise<HandoffFixture> {
   const { organizationId, userId } = await createOrgUserWithPermissions(
     t,
-    [
-      "collections.read",
-      "collections.update",
-      "collections.accept_condition",
-    ],
+    ["collections.read", "collections.update", "collections.accept_condition"],
     {
       subscriptionTier: "pro",
       slugPrefix: "exh-handoff",
@@ -105,7 +101,7 @@ async function createHandoffFixture(
 }
 
 async function acceptAssessment(
-  t: ReturnType<typeof createConvexTest>,
+  _t: ReturnType<typeof createConvexTest>,
   authed: ReturnType<typeof authedForUser>,
   collectionId: Id<"collections">,
 ) {
@@ -156,14 +152,14 @@ test("install records guarded movement and optional accepted assessment", async 
     assessmentId,
   );
   expect(result.collection?.currentLocationId).toBe(galleryLocationId);
-  expect(result.history.some((row) => row.movementKind === "exhibition_install")).toBe(
-    true,
-  );
+  expect(
+    result.history.some((row) => row.movementKind === "exhibition_install"),
+  ).toBe(true);
 });
 
 test("install rejects stale observed source", async () => {
   const t = createConvexTest();
-  const { authed, exhibitionObjectId, storageLocationId, galleryLocationId } =
+  const { authed, exhibitionObjectId, galleryLocationId } =
     await createHandoffFixture(t);
 
   await t.run(async (ctx) => {
@@ -183,7 +179,9 @@ test("install rejects stale observed source", async () => {
     }),
   ).rejects.toThrow("not the source observed");
 
-  const stillPending = await t.run(async (ctx) => ctx.db.get(exhibitionObjectId));
+  const stillPending = await t.run(async (ctx) =>
+    ctx.db.get(exhibitionObjectId),
+  );
   expect(stillPending?.status).toBe("pending");
   expect(stillPending?.installedAt).toBeUndefined();
 });
@@ -290,11 +288,14 @@ test("authorizeReturnException documents outcome without moving the object", asy
   });
   await authed.mutation(api.exhibitions.activate, { exhibitionId });
   await authed.mutation(api.exhibitions.startDeinstallation, { exhibitionId });
-  await authed.mutation(api.exhibitions.deinstallObject, { exhibitionObjectId });
+  await authed.mutation(api.exhibitions.deinstallObject, {
+    exhibitionObjectId,
+  });
 
   await authed.mutation(api.exhibitions.authorizeReturnException, {
     exhibitionObjectId,
-    reason: "Object remains on extended loan display; return deferred with approval",
+    reason:
+      "Object remains on extended loan display; return deferred with approval",
   });
 
   await authed.mutation(api.exhibitions.close, { exhibitionId });
@@ -309,7 +310,9 @@ test("authorizeReturnException documents outcome without moving the object", asy
   });
 
   expect(result.exhibition?.status).toBe("closed");
-  expect(result.exhibitionObject?.returnException?.reason).toContain("extended loan");
+  expect(result.exhibitionObject?.returnException?.reason).toContain(
+    "extended loan",
+  );
   expect(result.exhibitionObject?.returnedAt).toBeUndefined();
   expect(result.collection?.currentLocationId).toBe(galleryLocationId);
 });
@@ -446,7 +449,9 @@ test("exhibition return to another location does not claim the original location
   });
   await authed.mutation(api.exhibitions.activate, { exhibitionId });
   await authed.mutation(api.exhibitions.startDeinstallation, { exhibitionId });
-  await authed.mutation(api.exhibitions.deinstallObject, { exhibitionObjectId });
+  await authed.mutation(api.exhibitions.deinstallObject, {
+    exhibitionObjectId,
+  });
   await authed.mutation(api.exhibitions.returnObjectToOriginalLocation, {
     exhibitionObjectId,
     observedFromLocationId: galleryLocationId,

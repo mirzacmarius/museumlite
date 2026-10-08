@@ -1,6 +1,5 @@
 import { expect, test } from "vitest";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
 import {
   authedForUser,
   createConvexTest,
@@ -67,16 +66,19 @@ async function setupReturnTransitFixture(
   await authed.mutation(api.loans.approve, { loanId });
   await authed.mutation(api.loans.dispatch, { loanId });
 
-  const transitRecordId = await authed.mutation(api.transit.createTransitRecord, {
-    organizationId,
-    transitType: "return",
-    originName: "Partner",
-    destinationName: "Museum",
-    destinationLocationId: galleryId,
-    carrier: "Art Handler",
-    loanId,
-    collectionIds: [collectionId],
-  });
+  const transitRecordId = await authed.mutation(
+    api.transit.createTransitRecord,
+    {
+      organizationId,
+      transitType: "return",
+      originName: "Partner",
+      destinationName: "Museum",
+      destinationLocationId: galleryId,
+      carrier: "Art Handler",
+      loanId,
+      collectionIds: [collectionId],
+    },
+  );
 
   await authed.mutation(api.transit.updateTransitStatus, {
     transitRecordId,
@@ -481,16 +483,19 @@ test("incoming return receipt stores the departure it wrote", async () => {
   await authed.mutation(api.loans.approve, { loanId });
   await authed.mutation(api.loans.dispatch, { loanId });
 
-  const transitRecordId = await authed.mutation(api.transit.createTransitRecord, {
-    organizationId,
-    transitType: "return",
-    originName: "Museum",
-    destinationName: "Lender",
-    destinationLocationId: galleryId,
-    carrier: "Art Handler",
-    loanId,
-    collectionIds: [collectionId],
-  });
+  const transitRecordId = await authed.mutation(
+    api.transit.createTransitRecord,
+    {
+      organizationId,
+      transitType: "return",
+      originName: "Museum",
+      destinationName: "Lender",
+      destinationLocationId: galleryId,
+      carrier: "Art Handler",
+      loanId,
+      collectionIds: [collectionId],
+    },
+  );
   await authed.mutation(api.transit.updateTransitStatus, {
     transitRecordId,
     status: "in_transit",
@@ -504,12 +509,15 @@ test("incoming return receipt stores the departure it wrote", async () => {
     transitItemId,
   });
 
-  const movementId = await authed.mutation(api.transit.recordTransitItemReceipt, {
-    transitItemId,
-    observedFromLocationId: null,
-    destinationLocationId: galleryId,
-    conditionIn: "Left in lender crate",
-  });
+  const movementId = await authed.mutation(
+    api.transit.recordTransitItemReceipt,
+    {
+      transitItemId,
+      observedFromLocationId: null,
+      destinationLocationId: galleryId,
+      conditionIn: "Left in lender crate",
+    },
+  );
 
   const result = await t.run(async (ctx) => {
     const [movement, collection, item, transitItem] = await Promise.all([

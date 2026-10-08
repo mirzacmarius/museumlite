@@ -1,7 +1,8 @@
 export default {
   conditionAssessments: {
     title: "Condition assessments",
-    description: "Dated observations and photos are retained. A reviewer accepts a draft to update current condition.",
+    description:
+      "Dated observations and photos are retained. A reviewer accepts a draft to update current condition.",
     current: "Current condition",
     unknown: "Unknown",
     acceptedSource: "From an accepted assessment",
@@ -29,7 +30,8 @@ export default {
     draftStatus: "Draft awaiting review",
     accept: "Accept assessment",
     loading: "Loading condition assessments…",
-    validation: "Enter a date, condition, summary, and complete each observation.",
+    validation:
+      "Enter a date, condition, summary, and complete each observation.",
     draftSaved: "Draft saved. A reviewer can accept it.",
     saveFailed: "Could not save the draft. Try again.",
     accepted: "Assessment accepted. Current condition updated.",
@@ -3076,7 +3078,8 @@ export default {
       selectAssessment: "Select assessment",
       linkBaseline: "Set baseline",
       linkOutcome: "Set outcome",
-      captureOnObject: "Capture or accept assessments on the object Physical tab",
+      captureOnObject:
+        "Capture or accept assessments on the object Physical tab",
       workflow: "Treatment workflow",
       approve: "Approve",
       start: "Start work",
@@ -3084,7 +3087,8 @@ export default {
       followUpTitle: "Follow-up work",
       followUpStatus: "Status",
       followUpDue: "Due",
-      followUpNotesPlaceholder: "Describe monitoring or follow-up treatment needed",
+      followUpNotesPlaceholder:
+        "Describe monitoring or follow-up treatment needed",
       scheduleFollowUp: "Schedule follow-up",
       markFollowUpDone: "Mark follow-up complete",
       actionSuccess: "Treatment updated",
@@ -3109,6 +3113,7 @@ export default {
     selectOrganization: "Please select an organization to view exhibitions.",
     exhibitionNotFound: "Exhibition not found",
     filters: {
+      object: "Object",
       title: "Filters",
       clear: "Clear",
       allStatuses: "All statuses",
@@ -3233,15 +3238,19 @@ export default {
       moveDown: "Move object down",
       participantRole: "Participant",
       featuredRole: "Featured",
-      invalidParticipants: "Select at least one object, without duplicates or more than one featured object.",
-      legacyReviewDescription: "This exhibition has a historical object link that needs review before editing its objects.",
+      invalidParticipants:
+        "Select at least one object, without duplicates or more than one featured object.",
+      legacyReviewDescription:
+        "This exhibition has a historical object link that needs review before editing its objects.",
       legacyReviewReason: "Historical state",
       anchor_only: "Only the historical object link is present",
       anchor_and_members: "Historical object is already listed",
-      anchor_missing_from_members: "Historical object is missing from the participant list",
+      anchor_missing_from_members:
+        "Historical object is missing from the participant list",
       includeHistoricalAnchor: "Include historical object",
       keepListedObjects: "Keep listed objects",
-      reconcileError: "Could not reconcile participation. Refresh and review the objects again.",
+      reconcileError:
+        "Could not reconcile participation. Refresh and review the objects again.",
       displayStatusHint:
         "Updates the exhibition schedule label only. It does not install objects or record a physical handoff.",
       selectOrganization: "Please select an organization to continue.",
@@ -5281,7 +5290,8 @@ export default {
           provenance: "Ownership history",
           location: "Current location",
           collectionGroup: "Collection or group name",
-          collectionGroups: "JSON array of group names; include the primary group",
+          collectionGroups:
+            "JSON array of group names; include the primary group",
         },
         templates: {
           pastperfect: "PastPerfect",
@@ -5686,6 +5696,15 @@ export default {
         pageOf: "Page {page} of {total}",
       },
       transfer: {
+        custodyEvidence: "Custody evidence",
+        observedSource: "Observed source location",
+        noRecordedLocation: "No recorded location",
+        receivingLocation: "Receiving location",
+        priorGroupLinks: "Prior collection group links",
+        priorGroupLinksCount: "group link(s) recorded before transfer",
+        receivingLocationPlaceholder: "Select receiving location",
+        targetLocationRequired:
+          "Choose a receiving location before accepting the transfer.",
         awaitingAcceptance: "Awaiting transfer acceptance",
         pendingApproval: "Pending transfer approval",
         awaitingAcceptanceShort: "awaiting acceptance",

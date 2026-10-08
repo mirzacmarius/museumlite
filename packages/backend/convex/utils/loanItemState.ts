@@ -16,7 +16,10 @@ export function isLoanItemDispatched(
   item: Doc<"loanItems">,
   loanStatus: Doc<"loans">["status"],
 ): boolean {
-  if (item.custodyStatus === "dispatched" || item.custodyStatus === "returned") {
+  if (
+    item.custodyStatus === "dispatched" ||
+    item.custodyStatus === "returned"
+  ) {
     return true;
   }
   if (loanStatus === "dispatched" && !isLoanItemReturned(item)) {
@@ -27,7 +30,6 @@ export function isLoanItemDispatched(
 
 export function outstandingLoanItems(
   items: Doc<"loanItems">[],
-  loanStatus: Doc<"loans">["status"],
 ): Doc<"loanItems">[] {
   return items.filter((item) => !isLoanItemReturned(item));
 }
@@ -40,7 +42,7 @@ export function allOutstandingItemsDispatched(
   items: Doc<"loanItems">[],
   loanStatus: Doc<"loans">["status"],
 ): boolean {
-  const outstanding = outstandingLoanItems(items, loanStatus);
+  const outstanding = outstandingLoanItems(items);
   if (outstanding.length === 0) {
     return false;
   }
