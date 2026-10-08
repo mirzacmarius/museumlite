@@ -24,6 +24,7 @@ import {
   recordExportUsage,
   requireFeatureAccess,
 } from "./utils/featureGates";
+import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { hasPermission, requirePermission } from "./utils/permissions";
 
@@ -507,48 +508,16 @@ export const sourcePage = internalQuery({
         q.eq("organizationId", job.organizationId),
       )
       .paginate(opts);
-    const openDeaccessionCollectionIds = new Set<Id<"collections">>();
-    const inventoryLoanAssociations = {
-      incoming: new Set<Id<"collections">>(),
-      outgoing: new Set<Id<"collections">>(),
-    };
-    if (job.source.filters.inventoryMetricScope) {
-      for (const row of page.page) {
-        const links = await ctx.db
-          .query("loanItems")
-          .withIndex("by_collection", (q) => q.eq("collectionId", row._id))
-          .take(33);
-        if (links.length > 32)
-          throw new ConvexError(
-            "Inventory-scope exports support at most 32 loan associations per object. Export explicit selected objects instead.",
-          );
-        for (const link of links) {
-          const loan = await ctx.db.get(link.loanId);
-          if (loan?.organizationId === job.organizationId)
-            inventoryLoanAssociations[loan.type].add(row._id);
-        }
-        for (const status of ["pending", "approved"] as const) {
-          const item = await ctx.db
-            .query("deaccessions")
-            .withIndex("by_organization_and_collection_and_status", (q) =>
-              q
-                .eq("organizationId", job.organizationId)
-                .eq("collectionId", row._id)
-                .eq("status", status),
-            )
-            .first();
-          if (item) openDeaccessionCollectionIds.add(row._id);
-        }
-      }
-    }
+    const inventoryEvidence = job.source.filters.inventoryMetricScope
+      ? await getPageInventoryEvidence(ctx, job.organizationId, page.page)
+      : {};
     const filtered = await filterCollectionListPage(
       ctx,
       page.page.filter((row) => row._creationTime <= job.asOf),
       {
         organizationId: job.organizationId,
         ...job.source.filters,
-        openDeaccessionCollectionIds,
-        inventoryLoanAssociations,
+        ...inventoryEvidence,
       },
     );
     const rows = filtered.map((row) => ({ ...row, capturedAt }));
