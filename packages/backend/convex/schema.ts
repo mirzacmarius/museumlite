@@ -110,12 +110,6 @@ export const shippingLogEntry = v.object({
 
 export default defineSchema({
   ...authTables,
-  authVerificationCodes: defineTable({
-    ...authTables.authVerificationCodes.validator.fields,
-    pendingPasswordHash: v.optional(v.string()),
-  })
-    .index("accountId", ["accountId"])
-    .index("code", ["code"]),
   users: defineTable({
     // Convex Auth fields
     name: v.optional(v.string()),

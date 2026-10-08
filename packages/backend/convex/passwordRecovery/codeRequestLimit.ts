@@ -50,23 +50,24 @@ export async function enforceCodeRequestLimit(
   const key = `${flow}:${email.trim().toLowerCase()}`;
   const status = await limiter.limit(ctx, "authCodeRequests", { key });
   if (!status.ok) throw authRecoveryError("TooManyCodeRequests");
-  const requestedAt = Date.now();
-  const refillTime =
-    (CODE_REQUEST_BURST / CODE_REQUESTS_PER_WINDOW) * CODE_REQUEST_WINDOW_MS;
   await ctx.scheduler.runAfter(
-    refillTime,
+    BUCKET_REFILL_MS,
     internal.passwordRecovery.codeRequestLimit.expireBucket,
-    { key, requestedAt },
+    { key },
   );
 }
 
+const BUCKET_REFILL_MS =
+  (CODE_REQUEST_BURST / CODE_REQUESTS_PER_WINDOW) * CODE_REQUEST_WINDOW_MS;
+
 /** Delete an idle bucket only after it would have fully refilled anyway. */
 export const expireBucket = internalMutation({
-  args: { key: v.string(), requestedAt: v.number() },
+  args: { key: v.string() },
   returns: v.null(),
-  handler: async (ctx, { key, requestedAt }) => {
+  handler: async (ctx, { key }) => {
+    // Compare against the limiter's own timestamp; the caller's clock can differ.
     const state = await limiter.getValue(ctx, "authCodeRequests", { key });
-    if (state.ts <= requestedAt)
+    if (Date.now() - state.ts >= BUCKET_REFILL_MS)
       await limiter.reset(ctx, "authCodeRequests", { key });
     return null;
   },

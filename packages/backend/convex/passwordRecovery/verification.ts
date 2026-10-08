@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
 
-// The code and its pending password must change in the same transaction.
+// Runs inside a mutation so the quota charge and the code replacement commit together.
 export const createCode = internalMutation({
   args: {
     accountId: v.id("authAccounts"),
@@ -10,19 +10,10 @@ export const createCode = internalMutation({
     email: v.string(),
     code: v.string(),
     expirationTime: v.number(),
-    passwordHash: v.optional(v.string()),
     isReserved: v.boolean(),
-    preservePassword: v.boolean(),
   },
   returns: v.null(),
-  handler: async (
-    ctx,
-    { passwordHash, isReserved, preservePassword, ...args },
-  ) => {
-    const previous = await ctx.db
-      .query("authVerificationCodes")
-      .withIndex("accountId", (q) => q.eq("accountId", args.accountId))
-      .unique();
+  handler: async (ctx, { isReserved, ...args }) => {
     await ctx.runMutation(internal.auth.store, {
       args: {
         type: "createVerificationCode",
@@ -31,16 +22,23 @@ export const createCode = internalMutation({
         codeRequestReserved: isReserved,
       },
     });
-    const code = await ctx.db
-      .query("authVerificationCodes")
-      .withIndex("accountId", (q) => q.eq("accountId", args.accountId))
-      .unique();
-    if (!code) throw new Error("Verification code was not created");
-    await ctx.db.patch(code._id, {
-      pendingPasswordHash:
-        passwordHash ??
-        (preservePassword ? previous?.pendingPasswordHash : undefined),
-    });
+    return null;
+  },
+});
+
+/**
+ * A sign-up for an unverified account by someone who does not know its
+ * password leaves two unproven claims on one email. Neither may survive
+ * verification, so the mailbox owner sets a password through reset.
+ */
+export const releaseUnverifiedSecret = internalMutation({
+  args: { accountId: v.id("authAccounts") },
+  returns: v.null(),
+  handler: async (ctx, { accountId }) => {
+    const account = await ctx.db.get(accountId);
+    if (account && !account.emailVerified && account.secret !== undefined) {
+      await ctx.db.patch(accountId, { secret: undefined });
+    }
     return null;
   },
 });

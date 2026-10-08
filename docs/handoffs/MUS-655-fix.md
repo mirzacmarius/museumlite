@@ -112,3 +112,20 @@ A reset/resend acknowledgement confirms queueing, not delivery. Known-account ma
 The schema change is additive: optional `pendingPasswordHash` on `authVerificationCodes`, preserving the existing fields and indexes. Existing records require no backfill. Generated API module declarations were updated locally by hand; no cloud codegen ran.
 
 The adapters use the installed Convex Auth/Convex registered-function `_handler` shape, check its availability, and preserve the library's command payloads. Auth upgrades must run the upgrade and recovery suites. No real OAuth browser flow, Resend delivery, or production deployment was exercised in this stage.
+
+## Re-review follow-up (N1, N2, N4)
+
+`MUS-655-rereview.md` N1 showed a stored sign-up password still followed the latest requester, so takeover remained possible. The stored-password design was removed rather than patched:
+
+- Sign-up for an existing account never sets a password. It emails the owner a verification code, and the response is unchanged.
+- If the account is unverified and the requester does not know its current password, `releaseUnverifiedSecret` clears the password. Neither claimant can sign in, and the mailbox owner sets a password through reset. This is the same outcome as on `origin/main`, where sign-up reported "already exists" and the owner reset.
+- Repeating a sign-up with the account's current password keeps that password.
+- Verified accounts keep the owner's password. M1 (adopting a new password through sign-up) is withdrawn; owners use reset.
+- `pendingPasswordHash` and the `authVerificationCodes` schema override are gone, so there is no schema change. The `auth:store` wrapper no longer looks up codes, which removes N2, and now only charges the quota. The reset-code credential guard went with it; `a code-only reset cannot activate a pre-registered password` still passes.
+- N4: bucket expiry compares only the limiter's own timestamp (`Date.now() - state.ts >= refill time`).
+
+New and rewritten tests, all red before and green after: pre-registered attacker (with and without a linked OTP user), attacker sign-up on the owner's unverified account, expired attacker claim then owner sign-in and resend, resend after a competing sign-up, same-password repeat sign-up, verified owner keeps their password, and the code-only password-link callback.
+
+Not addressed: N3 (a sustained per-flow throttle; fixing it means the UI moves to code entry on `TooManyCodeRequests`) and N5 (direct `provider: "resend"` requests). Both are follow-ups.
+
+Checks: backend 117 files and 1,282 tests passed, app 141 tests passed, `typecheck`, `typecheck:i18n`, `lint` and `git diff --check` all passed.

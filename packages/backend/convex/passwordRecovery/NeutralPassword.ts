@@ -110,8 +110,8 @@ async function verifyCode<T>(check: () => Promise<T | null>): Promise<T> {
  * - reset and verification-code requests always answer "code requested" and
  *   only email an address that has a matching account;
  * - sign-up for a registered email answers like a new sign-up and emails the
- *   owner a verification code instead of reporting a conflict. The submitted
- *   password is bound to that code and applied only after verification.
+ *   owner a verification code instead of reporting a conflict. It never sets
+ *   a password; see `releaseUnverifiedSecret` for unverified accounts.
  *
  * Providers without email verification cannot make sign-up neutral, so they
  * refuse sign-up for every email and only keep legacy sign-in.
@@ -124,8 +124,6 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     account: Doc<"authAccounts">,
     params: Params,
     verify: EmailConfig,
-    passwordHash?: string,
-    preservePassword = true,
   ) {
     const code = verify.generateVerificationToken
       ? await verify.generateVerificationToken()
@@ -148,8 +146,6 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       code,
       expirationTime: expires.getTime(),
       isReserved: hasCodeRequestReservation(ctx),
-      preservePassword,
-      ...(passwordHash === undefined ? {} : { passwordHash }),
     });
     await verify.sendVerificationRequest({
       identifier: String(params.email),
@@ -167,26 +163,39 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     ctx: Ctx,
     account: Doc<"authAccounts">,
     params: Params,
-    passwordHash?: string,
   ) {
     if (!verify) return { userId: account.userId };
-    return await sendEmailCode(ctx, account, params, verify, passwordHash);
+    return await sendEmailCode(ctx, account, params, verify);
+  }
+
+  /** Sign-up for an existing account: email its owner, change no password. */
+  async function signUpExisting(
+    ctx: Ctx,
+    account: Doc<"authAccounts">,
+    params: Params,
+    email: string,
+    secret: string,
+  ) {
+    const knowsSecret =
+      account.secret !== undefined &&
+      (await new Scrypt().verify(account.secret, secret));
+    if (account.secret === undefined) await padUnknownPassword(secret);
+    if (!knowsSecret) {
+      await ctx.runMutation(
+        internal.passwordRecovery.verification.releaseUnverifiedSecret,
+        { accountId: account._id },
+      );
+    }
+    await sendVerification(ctx, account, emailRequestParams(params, email));
+    return null;
   }
 
   async function signUp(ctx: Ctx, params: Params, email: string) {
     if (!verify) throw authRecoveryError("SignUpUnavailable");
     const secret = requirePasswordParam(params, "password");
     const existing = await findPasswordAccount(ctx, provider, email);
-    if (existing) {
-      const passwordHash = await new Scrypt().hash(secret);
-      await sendVerification(
-        ctx,
-        existing,
-        emailRequestParams(params, email),
-        passwordHash,
-      );
-      return null;
-    }
+    if (existing)
+      return await signUpExisting(ctx, existing, params, email, secret);
     let created: Doc<"authAccounts">;
     try {
       ({ account: created } = await createAccount<DataModel>(ctx, {
@@ -199,19 +208,12 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     } catch (error) {
       const raced = await findPasswordAccount(ctx, provider, email);
       if (!raced) throw error;
-      await sendVerification(
-        ctx,
-        raced,
-        emailRequestParams(params, email),
-        await new Scrypt().hash(secret),
-      );
-      return null;
+      return await signUpExisting(ctx, raced, params, email, secret);
     }
     return await sendVerification(
       ctx,
       created,
       emailRequestParams(params, email),
-      created.secret,
     );
   }
 
@@ -262,8 +264,6 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       account,
       emailRequestParams(params, email),
       reset,
-      undefined,
-      false,
     );
   }
 

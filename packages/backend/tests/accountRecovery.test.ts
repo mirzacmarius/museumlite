@@ -413,10 +413,51 @@ describe("account recovery without existence disclosure", () => {
     expect(ownerSignIn.tokens?.token).toEqual(expect.any(String));
   });
 
+  async function signInResult(
+    t: ConvexTest,
+    password: string,
+    signInProvider = provider,
+  ) {
+    try {
+      const result = await authRequest(t, {
+        provider: signInProvider,
+        params: { email: ownerEmail, password, flow: "signIn" },
+      });
+      return result.tokens ? "signed-in" : "verification-required";
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConvexError);
+      return "rejected";
+    }
+  }
+
+  async function signUp(
+    t: ConvexTest,
+    password: string,
+    signUpProvider = provider,
+  ) {
+    return await authRequest(t, {
+      provider: signUpProvider,
+      params: { email: ownerEmail, password, flow: "signUp" },
+    });
+  }
+
+  async function verifyLatestCode(t: ConvexTest) {
+    return await authRequest(t, {
+      provider,
+      params: {
+        email: ownerEmail,
+        code: latestCode(ownerEmail),
+        flow: "email-verification",
+      },
+    });
+  }
+
+  const attackerPassword = "attacker-password-123";
+
   test.each([
     false,
     true,
-  ])("victim verification replaces a pre-registered attacker's password (linked user: %s)", async (hasVerifiedUser) => {
+  ])("a pre-registered attacker loses their password when the owner signs up (linked user: %s)", async (hasVerifiedUser) => {
     const t = createConvexTestWithRateLimiter();
     if (hasVerifiedUser) {
       await authRequest(t, {
@@ -428,111 +469,84 @@ describe("account recovery without existence disclosure", () => {
         params: { email: ownerEmail, code: latestCode(ownerEmail) },
       });
     }
-    await authRequest(t, {
-      provider,
-      params: {
-        email: ownerEmail,
-        password: "attacker-password-123",
-        flow: "signUp",
-      },
-    });
-    await authRequest(t, {
-      provider,
-      params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
-    });
-    const verified = await authRequest(t, {
-      provider,
-      params: {
-        email: ownerEmail,
-        code: latestCode(ownerEmail),
-        flow: "email-verification",
-      },
-    });
-    expect(verified.tokens?.token).toEqual(expect.any(String));
-    expect(
-      await publicErrorCode(
-        authRequest(t, {
-          provider,
-          params: {
-            email: ownerEmail,
-            password: "attacker-password-123",
-            flow: "signIn",
-          },
-        }),
-      ),
-    ).toEqual({ code: "InvalidCredentials" });
-    const signedIn = await authRequest(t, {
-      provider,
-      params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
-    });
-    expect(signedIn.tokens?.token).toEqual(expect.any(String));
+    await signUp(t, attackerPassword);
+    await signUp(t, ownerPassword);
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
+      expect.any(String),
+    );
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+    // Neither claim was proven, so the mailbox owner sets a password by reset.
+    expect(await signInResult(t, ownerPassword)).toBe("rejected");
   });
 
-  test("a verified owner can adopt their new sign-up password only by verifying", async () => {
+  test("an attacker sign-up on an owner's unverified account cannot install the attacker's password", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await signUp(t, ownerPassword);
+    await signUp(t, attackerPassword);
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
+      expect.any(String),
+    );
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+  });
+
+  test("an expired attacker sign-up cannot ride along on the owner's later verification", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const t = createConvexTestWithRateLimiter();
+    await signUp(t, ownerPassword);
+    await signUp(t, attackerPassword);
+    vi.advanceTimersByTime(2 * 24 * 60 * 60 * 1000);
+    expect(await signInResult(t, ownerPassword)).toBe("rejected");
+    await authRequest(t, {
+      provider,
+      params: { email: ownerEmail, flow: "email-verification" },
+    });
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
+      expect.any(String),
+    );
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+  });
+
+  test("resending verification after a competing sign-up cannot install the attacker's password", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await signUp(t, ownerPassword);
+    await signUp(t, attackerPassword);
+    await authRequest(t, {
+      provider,
+      params: { email: ownerEmail, flow: "email-verification" },
+    });
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
+      expect.any(String),
+    );
+    expect(await signInResult(t, attackerPassword)).toBe("rejected");
+  });
+
+  test("repeating a sign-up with the same password keeps that password", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await signUp(t, ownerPassword);
+    await signUp(t, ownerPassword);
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
+      expect.any(String),
+    );
+    expect(await signInResult(t, ownerPassword)).toBe("signed-in");
+  });
+
+  test("sign-up for a verified account keeps the owner's password after verification", async () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
     const replacement = "owner-replacement-password-123";
-    await authRequest(t, {
-      provider,
-      params: { email: ownerEmail, password: replacement, flow: "signUp" },
-    });
-    expect(
-      (
-        await authRequest(t, {
-          provider,
-          params: {
-            email: ownerEmail,
-            password: ownerPassword,
-            flow: "signIn",
-          },
-        })
-      ).tokens?.token,
-    ).toEqual(expect.any(String));
-    await authRequest(t, {
-      provider,
-      params: {
-        email: ownerEmail,
-        code: latestCode(ownerEmail),
-        flow: "email-verification",
-      },
-    });
-    expect(
-      await publicErrorCode(
-        authRequest(t, {
-          provider,
-          params: {
-            email: ownerEmail,
-            password: ownerPassword,
-            flow: "signIn",
-          },
-        }),
-      ),
-    ).toEqual({ code: "InvalidCredentials" });
-    expect(
-      (
-        await authRequest(t, {
-          provider,
-          params: { email: ownerEmail, password: replacement, flow: "signIn" },
-        })
-      ).tokens?.token,
-    ).toEqual(expect.any(String));
+    await signUp(t, replacement);
+    expect((await verifyLatestCode(t)).tokens?.token).toEqual(
+      expect.any(String),
+    );
+    expect(await signInResult(t, ownerPassword)).toBe("signed-in");
+    expect(await signInResult(t, replacement)).toBe("rejected");
   });
 
-  test("a code-only password-link callback activates the password bound to that link", async () => {
+  test("a code-only password-link callback signs in without activating either sign-up password", async () => {
     const t = createConvexTestWithRateLimiter();
     const linkProvider = "password-link";
-    await authRequest(t, {
-      provider: linkProvider,
-      params: {
-        email: ownerEmail,
-        password: "attacker-password-123",
-        flow: "signUp",
-      },
-    });
-    await authRequest(t, {
-      provider: linkProvider,
-      params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
-    });
+    await signUp(t, attackerPassword, linkProvider);
+    await signUp(t, ownerPassword, linkProvider);
     const code = emailsTo(ownerEmail)
       .at(-1)
       ?.html.match(/code=([^"&\s]+)/)?.[1];
@@ -540,30 +554,10 @@ describe("account recovery without existence disclosure", () => {
     expect((await authRequest(t, { params: { code } })).tokens?.token).toEqual(
       expect.any(String),
     );
-    expect(
-      await publicErrorCode(
-        authRequest(t, {
-          provider: linkProvider,
-          params: {
-            email: ownerEmail,
-            password: "attacker-password-123",
-            flow: "signIn",
-          },
-        }),
-      ),
-    ).toEqual({ code: "InvalidCredentials" });
-    expect(
-      (
-        await authRequest(t, {
-          provider: linkProvider,
-          params: {
-            email: ownerEmail,
-            password: ownerPassword,
-            flow: "signIn",
-          },
-        })
-      ).tokens?.token,
-    ).toEqual(expect.any(String));
+    expect(await signInResult(t, attackerPassword, linkProvider)).toBe(
+      "rejected",
+    );
+    expect(await signInResult(t, ownerPassword, linkProvider)).toBe("rejected");
   });
 
   test("a code-only reset cannot activate a pre-registered password", async () => {
