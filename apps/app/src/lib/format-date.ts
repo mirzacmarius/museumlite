@@ -58,6 +58,10 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const intlLocale = locale === "no" ? "nb-NO" : locale;
+  // toLocaleDateString rejects timeStyle; date-and-time styles need toLocaleString.
+  if (options?.timeStyle) {
+    return date.toLocaleString(intlLocale, options);
+  }
   return date.toLocaleDateString(intlLocale, options);
 }
 
