@@ -150,7 +150,7 @@ async function presentEntries(
   const names = resolveCurrentActor
     ? await currentProfileNames(
         ctx,
-        entries.filter((e) => !e.actorSnapshot).map((e) => e.userId),
+        entries.flatMap((e) => (e.actorSnapshot ? [] : [e.userId])),
       )
     : new Map<Id<"users">, string | undefined>();
   return entries.map((entry) => presentEntry(entry, names.get(entry.userId)));
@@ -848,14 +848,15 @@ export async function readCaseHistory(
     row.evidenceStatus === "legacy" && !row.entry.approverName;
   const names = await currentProfileNames(
     ctx,
-    page.filter(unnamed).map((row) => row.entry.approvedBy),
+    page.flatMap((row) => (unnamed(row) ? [row.entry.approvedBy] : [])),
   );
   return {
-    entries: page.map((row) =>
-      unnamed(row)
-        ? { ...row, currentApproverName: names.get(row.entry.approvedBy) }
-        : row,
-    ),
+    entries: page.map((row) => ({
+      ...row,
+      currentApproverName: unnamed(row)
+        ? names.get(row.entry.approvedBy)
+        : undefined,
+    })),
     nextCursor: isDone ? undefined : entries[limit - 1]!.ordinal + 1,
     isDone,
   };
