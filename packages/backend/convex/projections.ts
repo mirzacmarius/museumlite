@@ -465,6 +465,34 @@ export const startReconcileForOrganization = internalMutation({
   },
 });
 
+/**
+ * Operator entry point: resumes the organization's current failed rebuild or
+ * reconcile from its last committed checkpoint, with the same guards as the
+ * admin Retry action. Returns the resumed job, or null when none is failed.
+ */
+export const retryFailedForOrganization = internalMutation({
+  args: { organizationId: v.id("organizations") },
+  returns: v.union(v.id("projectionGenerations"), v.null()),
+  handler: async (ctx, args) => {
+    const state = await getProjectionState(ctx, args.organizationId);
+    for (const generationId of [
+      state?.buildingGenerationId,
+      state?.reconcilingGenerationId,
+    ]) {
+      if (!generationId) continue;
+      const generation = await ctx.db.get(generationId);
+      if (
+        generation?.status === "failed" &&
+        generation.revision === state?.revision
+      ) {
+        await retryGeneration(ctx, generation);
+        return generation._id;
+      }
+    }
+    return null;
+  },
+});
+
 const ROLLOUT_PAGE_SIZE = 20;
 
 /**
