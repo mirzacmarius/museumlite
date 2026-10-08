@@ -529,6 +529,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Export to CSV",
+      objectsCapNote:
+        "Import-ready CSV includes up to 1,000 objects with location and group names. For the complete catalog, use the export job below.",
+      objectsCapExceeded:
+        "This catalog has more than 1,000 objects. Use the complete catalog export below.",
     },
   },
   account: {
@@ -7787,6 +7791,21 @@ export default {
     signIn: "Sign in to download",
     checksumMismatch: "Artifact checksum mismatch; retry the download",
     failed: "Export failed",
+    errorAccess:
+      "You no longer have access to this export. Check your role and plan.",
+    errorQuota: "Your plan's monthly export allowance is used up.",
+    errorExpired: "This export has expired. Create a new export.",
+    errorNotResumable: "This export cannot be resumed right now.",
+    errorSelection:
+      "The selection could not be exported. Retry the upload or create a new selection.",
+    errorTooLarge: "This export is too large. Narrow the filters or selection.",
+    errorInventoryLinks:
+      "An object has too many loan links for this inventory filter. Export selected objects instead.",
+    errorInvalidRequest:
+      "The export request is invalid. Check the filters and try again.",
+    errorInterrupted: "The export was interrupted. Retry from the checkpoint.",
+    errorUnavailable:
+      "The export file is not available. Retry or create a new export.",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
   },
@@ -7812,6 +7831,7 @@ export default {
     },
     availability: {
       ready: "Ready",
+      updating: "Ready, updating",
       unavailable: "Unavailable",
     },
     status: {

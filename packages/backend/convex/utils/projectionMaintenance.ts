@@ -14,6 +14,7 @@ import {
   sourceOrganization,
 } from "./projectionSources";
 import {
+  claimMetricSlot,
   datedEntries,
   getContribution,
   metricNamespace,
@@ -33,6 +34,8 @@ export const PROJECTION_FANOUT_LIMIT = 100;
 /** Discrepancy rows persisted per reconciliation; the count is kept beyond it. */
 export const PROJECTION_DISCREPANCY_ROW_LIMIT = 200;
 const MAX_DEPENDENCY_DEPTH = 4;
+/** Delay before a reconcile re-checks for pending wide refreshes. */
+const FAN_OUT_WAIT_MS = 1_000;
 
 export const COMPARE_STEPS = [
   "compare_source_vectors",
@@ -125,13 +128,16 @@ export async function initializeEmptyProjection(
   const state = await ensureProjectionState(ctx, organizationId);
   if (state.activeGenerationId || state.buildingGenerationId) return;
   const now = Date.now();
+  const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
   const generationId = await ctx.db.insert("projectionGenerations", {
     ...emptyGeneration(organizationId, "rebuild", state.revision, now),
     status: "completed",
     phaseIndex: PROJECTION_PHASES.length,
     finishedAt: now,
+    metricSlot: slot,
   });
   await ctx.db.patch(state._id, {
+    metricSlotsInUse: slotsInUse,
     activeGenerationId: generationId,
     availability: "ready",
     reason: undefined,
@@ -147,8 +153,11 @@ export async function startGeneration(
 ) {
   const state = await ensureProjectionState(ctx, organizationId);
   const now = Date.now();
+  const { slot, slotsInUse } = claimMetricSlot(state.metricSlotsInUse);
+  await ctx.db.patch(state._id, { metricSlotsInUse: slotsInUse });
   const generationId = await ctx.db.insert("projectionGenerations", {
     ...emptyGeneration(organizationId, mode, state.revision, now),
+    metricSlot: slot,
     ...(requestedBy ? { requestedBy } : {}),
     ...(mode === "reconcile" && state.activeGenerationId
       ? { baselineGenerationId: state.activeGenerationId }
@@ -188,8 +197,9 @@ async function stopGeneration(
 }
 
 /**
- * A change whose relations exceed the fan-out limit makes current totals
- * untrustworthy: readers become unavailable and a fresh rebuild starts.
+ * Last resort when a single row's own dependency chain exceeds the limit:
+ * readers become unavailable and a fresh rebuild starts, unless a rebuild for
+ * an earlier invalidation is still running.
  */
 export async function invalidateProjection(
   ctx: Ctx,
@@ -197,6 +207,10 @@ export async function invalidateProjection(
 ) {
   const state = await getProjectionState(ctx, organizationId);
   if (!state) return;
+  if (state.reason === "invalidated" && state.buildingGenerationId) {
+    const running = await ctx.db.get(state.buildingGenerationId);
+    if (running?.status === "building") return;
+  }
   for (const generationId of [
     state.buildingGenerationId,
     state.reconcilingGenerationId,
@@ -261,6 +275,7 @@ async function refreshSource(
   sourceId: string,
   budget: Budget,
   depth: number,
+  force = false,
 ): Promise<{ facts: ProjectionFact[]; writes: number }> {
   if (!maintainsTable(generation, table)) return { facts: [], writes: 0 };
   if (depth > MAX_DEPENDENCY_DEPTH) throw new ProjectionFanOutExceeded();
@@ -279,7 +294,7 @@ async function refreshSource(
     facts,
   );
   let writes = result.writes;
-  if (!result.changed) return { facts, writes };
+  if (!result.changed && !force) return { facts, writes };
 
   const seen = new Set<string>();
   for (const dependent of dependentsFromFacts([
@@ -308,18 +323,19 @@ async function refreshSource(
         dependent.id,
         budget,
         depth + 1,
+        force,
       )
     ).writes;
   }
   return { facts, writes };
 }
 
-async function takeLimited<T>(query: AsyncIterable<T>, limit: number) {
-  const rows: T[] = [];
-  for await (const row of query) {
-    rows.push(row);
-    if (rows.length > limit) throw new ProjectionFanOutExceeded();
-  }
+async function takeLimited<T>(
+  query: { take(count: number): Promise<T[]> },
+  limit: number,
+) {
+  const rows = await query.take(Math.max(limit, 0) + 1);
+  if (rows.length > limit) throw new ProjectionFanOutExceeded();
   return rows;
 }
 
@@ -500,21 +516,229 @@ export async function handleSourceChange(
     organizations.add(contribution.organizationId);
   }
 
+  const fanOuts = relationFanOut(table, oldDoc, newDoc);
   for (const organizationId of organizations) {
-    const generations = await maintainedGenerations(ctx, organizationId);
-    try {
-      for (const generation of generations) {
-        const budget = { remaining: PROJECTION_FANOUT_LIMIT };
+    for (const generation of await maintainedGenerations(ctx, organizationId)) {
+      const budget = { remaining: PROJECTION_FANOUT_LIMIT };
+      try {
         await refreshSource(ctx, generation, table, sourceId, budget, 0);
-        for (const fanOut of relationFanOut(table, oldDoc, newDoc)) {
+        for (const fanOut of fanOuts) {
           await applyFanOut(ctx, generation, fanOut, budget);
         }
+      } catch (error) {
+        if (!(error instanceof ProjectionFanOutExceeded)) throw error;
+        // Too wide to finish inside this write: refresh the rest in bounded
+        // pages while readers keep serving the current generation as updating.
+        await enqueueFanOut(ctx, generation, {
+          kind: "source",
+          sourceTable: table,
+          targetId: sourceId,
+        });
+        for (const fanOut of fanOuts) {
+          if (
+            fanOut.kind === "objectsByLocation" &&
+            fanOut.organizationId !== generation.organizationId
+          )
+            continue;
+          await enqueueFanOut(ctx, generation, {
+            kind: fanOut.kind,
+            targetId: fanOut.id,
+          });
+        }
       }
-    } catch (error) {
-      if (!(error instanceof ProjectionFanOutExceeded)) throw error;
-      await invalidateProjection(ctx, organizationId);
     }
   }
+}
+
+type FanOutKind = Doc<"projectionFanOuts">["kind"];
+
+/** Pending wide refreshes mean current values are served while still updating. */
+export async function isProjectionUpdating(
+  ctx: ReadCtx,
+  organizationId: Id<"organizations">,
+) {
+  return (
+    (await ctx.db
+      .query("projectionFanOuts")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .first()) !== null
+  );
+}
+
+/**
+ * Queues one wide refresh for a generation. Re-queuing the same refresh
+ * restarts it from the beginning, because rows already visited may have been
+ * computed from an older source state; the running continuation picks it up.
+ */
+async function enqueueFanOut(
+  ctx: Ctx,
+  generation: ProjectionGeneration,
+  work: { kind: FanOutKind; targetId: string; sourceTable?: string },
+) {
+  const existing = await ctx.db
+    .query("projectionFanOuts")
+    .withIndex("by_generationId_and_kind_and_targetId", (q) =>
+      q
+        .eq("generationId", generation._id)
+        .eq("kind", work.kind)
+        .eq("targetId", work.targetId),
+    )
+    .unique();
+  if (existing) {
+    await ctx.db.patch(existing._id, { step: 0, cursor: null });
+    return;
+  }
+  const fanOutId = await ctx.db.insert("projectionFanOuts", {
+    organizationId: generation.organizationId,
+    generationId: generation._id,
+    ...work,
+    step: 0,
+    cursor: null,
+    enqueuedAt: Date.now(),
+  });
+  await ctx.scheduler.runAfter(0, internal.projections.continueFanOut, {
+    fanOutId,
+  });
+}
+
+const OBJECT_RELATION_TABLES = [
+  "loanItems",
+  "collectionGroupItems",
+  "accessions",
+  "deaccessions",
+] as const;
+
+/**
+ * Refreshes one bounded page of a queued wide refresh. Every row is
+ * recomputed from its current source with its own budget, so replaying a page
+ * is harmless. Returns whether another page remains.
+ */
+export async function continueFanOutPage(
+  ctx: Ctx,
+  fanOutId: Id<"projectionFanOuts">,
+) {
+  const job = await ctx.db.get(fanOutId);
+  if (!job) return "done" as const;
+  const generation = await ctx.db.get(job.generationId);
+  const maintained =
+    generation !== null &&
+    (await maintainedGenerations(ctx, job.organizationId)).some(
+      (candidate) => candidate._id === generation._id,
+    );
+  if (!generation || !maintained) {
+    await ctx.db.delete(job._id);
+    return "done" as const;
+  }
+  const pageOptions = { numItems: PROJECTION_PAGE_SIZE, cursor: job.cursor };
+  const refreshRow = async (table: ProjectionSource, id: string) =>
+    await refreshSource(
+      ctx,
+      generation,
+      table,
+      id,
+      { remaining: PROJECTION_FANOUT_LIMIT },
+      1,
+      true,
+    );
+  let next: { step: number; cursor: string | null } | null = null;
+  try {
+    switch (job.kind) {
+      case "source": {
+        if (phaseIndexOf(job.sourceTable ?? "") >= 0)
+          await refreshSource(
+            ctx,
+            generation,
+            job.sourceTable as ProjectionSource,
+            job.targetId,
+            { remaining: PROJECTION_FANOUT_LIMIT },
+            0,
+            true,
+          );
+        break;
+      }
+      case "loanItemsByLoan": {
+        const loanId = ctx.db.normalizeId("loans", job.targetId);
+        if (!loanId) break;
+        const page = await ctx.db
+          .query("loanItems")
+          .withIndex("by_loan", (q) => q.eq("loanId", loanId))
+          .paginate(pageOptions);
+        for (const row of page.page) await refreshRow("loanItems", row._id);
+        if (!page.isDone) next = { step: 0, cursor: page.continueCursor };
+        break;
+      }
+      case "groupItemsByGroup": {
+        const groupId = ctx.db.normalizeId("collectionGroups", job.targetId);
+        if (!groupId) break;
+        const page = await ctx.db
+          .query("collectionGroupItems")
+          .withIndex("by_collectionGroup", (q) =>
+            q.eq("collectionGroupId", groupId),
+          )
+          .paginate(pageOptions);
+        for (const row of page.page)
+          await refreshRow("collectionGroupItems", row._id);
+        if (!page.isDone) next = { step: 0, cursor: page.continueCursor };
+        break;
+      }
+      case "objectsByLocation": {
+        const locationId = ctx.db.normalizeId("locations", job.targetId);
+        if (!locationId) break;
+        const page = await ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_location", (q) =>
+            q
+              .eq("organizationId", job.organizationId)
+              .eq("currentLocationId", locationId),
+          )
+          .paginate(pageOptions);
+        for (const row of page.page) {
+          await refreshRow("collections", row._id);
+          try {
+            await refreshObjectRelations(ctx, generation, row._id, {
+              remaining: PROJECTION_FANOUT_LIMIT,
+            });
+          } catch (error) {
+            if (!(error instanceof ProjectionFanOutExceeded)) throw error;
+            await enqueueFanOut(ctx, generation, {
+              kind: "objectRelations",
+              targetId: row._id,
+            });
+          }
+        }
+        if (!page.isDone) next = { step: 0, cursor: page.continueCursor };
+        break;
+      }
+      case "objectRelations": {
+        const collectionId = ctx.db.normalizeId("collections", job.targetId);
+        const table = OBJECT_RELATION_TABLES[job.step];
+        if (!collectionId || !table) break;
+        const page = await ctx.db
+          .query(table)
+          .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+          .paginate(pageOptions);
+        for (const row of page.page) await refreshRow(table, row._id);
+        if (!page.isDone)
+          next = { step: job.step, cursor: page.continueCursor };
+        else if (job.step + 1 < OBJECT_RELATION_TABLES.length)
+          next = { step: job.step + 1, cursor: null };
+        break;
+      }
+    }
+  } catch (error) {
+    if (!(error instanceof ProjectionFanOutExceeded)) throw error;
+    await ctx.db.delete(job._id);
+    await invalidateProjection(ctx, job.organizationId);
+    return "done" as const;
+  }
+  if (!next) {
+    await ctx.db.delete(job._id);
+    return "done" as const;
+  }
+  await ctx.db.patch(job._id, next);
+  return "continue" as const;
 }
 
 type TopLevelSource = Exclude<
@@ -884,9 +1108,16 @@ async function compareStep(
           const expected = row.counts[key] ?? 0;
           let actual = projected?.counts[key] ?? 0;
           if (key.startsWith("@") && expected === actual) {
-            actual = await metricTree.sum(ctx, {
-              namespace: metricNamespace(baselineId, row.scope, key.slice(1)),
-            });
+            const baselineGeneration = await ctx.db.get(baselineId);
+            actual = baselineGeneration
+              ? await metricTree.sum(ctx, {
+                  namespace: metricNamespace(
+                    baselineGeneration,
+                    row.scope,
+                    key.slice(1),
+                  ),
+                })
+              : 0;
           }
           if (expected === actual) continue;
           await recordDiscrepancy(ctx, generation, stats, {
@@ -1066,6 +1297,19 @@ export async function applyGenerationPage(
     return "done" as const;
   }
 
+  if (
+    generation.phaseIndex >= PROJECTION_PHASES.length &&
+    (await isProjectionUpdating(ctx, generation.organizationId))
+  ) {
+    // Comparing while wide refreshes are pending would report their
+    // in-flight rows as discrepancies; retry the same checkpoint later.
+    await ctx.scheduler.runAfter(
+      FAN_OUT_WAIT_MS,
+      internal.projections.advanceGeneration,
+      { generationId, expectedCheckpoint },
+    );
+    return "continue" as const;
+  }
   const stats: PageStats = {
     rows: 0,
     writes: 0,
@@ -1202,7 +1446,7 @@ export async function collectGenerationPage(
     .take(PROJECTION_PAGE_SIZE);
   for (const contribution of contributions) {
     for (const entry of datedEntries(
-      generationId,
+      generation,
       contribution.sourceTable,
       contribution.sourceId,
       contribution.facts,
@@ -1224,5 +1468,11 @@ export async function collectGenerationPage(
   for (const row of totals) await ctx.db.delete(row._id);
   if (totals.length > 0) return "continue" as const;
   await ctx.db.patch(generationId, { collectedAt: Date.now() });
+  if (state && generation.metricSlot !== undefined)
+    await ctx.db.patch(state._id, {
+      metricSlotsInUse: (state.metricSlotsInUse ?? []).filter(
+        (slot) => slot !== generation.metricSlot,
+      ),
+    });
   return "done" as const;
 }

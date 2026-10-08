@@ -41,6 +41,7 @@ function createEmptyValuationSummary(available: boolean): ValuationSummary {
 
 export interface OperationalKpisData {
   availability: "ready";
+  updating: boolean;
   definitionId: typeof EXHIBITION_METRIC_DEFINITION;
   scope: { organizationId: Id<"organizations">; excludeExhibitionLoans: true };
   inventory: {
@@ -287,6 +288,7 @@ export async function loadOperationalKpis(
 
   return {
     availability: "ready",
+    updating: opened.reader.updating,
     definitionId: EXHIBITION_METRIC_DEFINITION,
     scope: { organizationId, excludeExhibitionLoans: true },
     inventory: {

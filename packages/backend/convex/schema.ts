@@ -22,6 +22,7 @@ import {
   projectionAvailability,
   projectionDiscrepancyFields,
   projectionFact,
+  projectionFanOutKind,
   projectionGenerationFields,
   projectionUnavailableReason,
 } from "./utils/projectionValidators";
@@ -134,7 +135,25 @@ export default defineSchema({
     lastBuiltAt: v.optional(v.number()),
     lastVerifiedAt: v.optional(v.number()),
     invalidatedAt: v.optional(v.number()),
+    metricSlotsInUse: v.optional(v.array(v.number())),
   }).index("by_organizationId", ["organizationId"]),
+  // Wide relation refreshes deferred from a source write, processed in bounded pages.
+  projectionFanOuts: defineTable({
+    organizationId: v.id("organizations"),
+    generationId: v.id("projectionGenerations"),
+    kind: projectionFanOutKind,
+    sourceTable: v.optional(v.string()),
+    targetId: v.string(),
+    step: v.number(),
+    cursor: v.union(v.string(), v.null()),
+    enqueuedAt: v.number(),
+  })
+    .index("by_organizationId", ["organizationId"])
+    .index("by_generationId_and_kind_and_targetId", [
+      "generationId",
+      "kind",
+      "targetId",
+    ]),
   projectionGenerations: defineTable(projectionGenerationFields).index(
     "by_organizationId_and_startedAt",
     ["organizationId", "startedAt"],
@@ -2806,7 +2825,8 @@ export default defineSchema({
     caseType: v.string(),
     entityId: v.string(),
     sourceLength: v.number(),
-    migratedThrough: v.number(),
+    // Retired legacy-copy progress; kept optional so existing rows validate.
+    migratedThrough: v.optional(v.number()),
     nextOrdinal: v.number(),
     cutoverAt: v.number(),
   })

@@ -50,7 +50,6 @@ export const listOrganizationActivity = query({
         toDate: args.endDate,
       },
       { numItems: args.limit ?? 50, cursor: args.cursor ?? null },
-      "organization.view_analytics",
     );
     return {
       activities: result.entries,
@@ -320,7 +319,6 @@ export const activityPage = query({
         toDate: args.endDate,
       },
       args.paginationOpts,
-      "organization.view_analytics",
     );
     return {
       page: result.entries,

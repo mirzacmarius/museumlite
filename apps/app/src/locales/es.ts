@@ -544,6 +544,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exportar a CSV",
+      objectsCapNote:
+        "El CSV listo para importar incluye hasta 1.000 objetos con nombres de ubicación y grupo. Para el catálogo completo, use la exportación de abajo.",
+      objectsCapExceeded:
+        "Este catálogo tiene más de 1.000 objetos. Use la exportación del catálogo completo de abajo.",
     },
   },
   account: {
@@ -8123,6 +8127,23 @@ export default {
     checksumMismatch:
       "La suma de verificación del archivo no coincide; vuelva a descargarlo",
     failed: "La exportación falló",
+    errorAccess:
+      "Ya no tiene acceso a esta exportación. Revise su rol y su plan.",
+    errorQuota: "Se ha agotado la cuota mensual de exportaciones de su plan.",
+    errorExpired: "Esta exportación ha caducado. Cree una nueva exportación.",
+    errorNotResumable: "Esta exportación no se puede reanudar en este momento.",
+    errorSelection:
+      "No se pudo exportar la selección. Reintente la carga o cree una nueva selección.",
+    errorTooLarge:
+      "Esta exportación es demasiado grande. Acote los filtros o la selección.",
+    errorInventoryLinks:
+      "Un objeto tiene demasiados vínculos de préstamo para este filtro de inventario. Exporte los objetos seleccionados en su lugar.",
+    errorInvalidRequest:
+      "La solicitud de exportación no es válida. Revise los filtros e inténtelo de nuevo.",
+    errorInterrupted:
+      "La exportación se interrumpió. Reintente desde el punto de control.",
+    errorUnavailable:
+      "El archivo de exportación no está disponible. Reintente o cree una nueva exportación.",
     reportsNote:
       "Los resúmenes de informes siguientes contienen respuestas actuales de KPI y listas limitadas de elementos recientes o próximos. Use las exportaciones completas de catálogo y auditoría anteriores para obtener conjuntos de datos de origen conciliados.",
   },
@@ -8149,6 +8170,7 @@ export default {
     },
     availability: {
       ready: "Lista",
+      updating: "Lista, actualizándose",
       unavailable: "No disponible",
     },
     status: {

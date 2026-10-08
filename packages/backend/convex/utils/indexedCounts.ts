@@ -1,29 +1,50 @@
+import { ConvexError } from "convex/values";
 import type { Id, TableNames } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { classifyInventoryRecord } from "./collectionMetrics";
 
 type CountCtx = Pick<QueryCtx, "db">;
 
-export async function getInventoryLoanAssociations(
+const MAX_INVENTORY_LOAN_LINKS = 32;
+
+/** Inventory classification evidence for one bounded page of catalog rows. */
+export async function getPageInventoryEvidence(
   ctx: CountCtx,
   organizationId: Id<"organizations">,
+  rows: Array<{ _id: Id<"collections"> }>,
 ) {
-  const incoming = new Set<Id<"collections">>();
-  const outgoing = new Set<Id<"collections">>();
-  const loans = ctx.db
-    .query("loans")
-    .withIndex("by_organization", (q) =>
-      q.eq("organizationId", organizationId),
-    );
-  for await (const loan of loans) {
-    const items = ctx.db
+  const openDeaccessionCollectionIds = new Set<Id<"collections">>();
+  const inventoryLoanAssociations = {
+    incoming: new Set<Id<"collections">>(),
+    outgoing: new Set<Id<"collections">>(),
+  };
+  for (const row of rows) {
+    const links = await ctx.db
       .query("loanItems")
-      .withIndex("by_loan", (q) => q.eq("loanId", loan._id));
-    for await (const item of items) {
-      (loan.type === "incoming" ? incoming : outgoing).add(item.collectionId);
+      .withIndex("by_collection", (q) => q.eq("collectionId", row._id))
+      .take(MAX_INVENTORY_LOAN_LINKS + 1);
+    if (links.length > MAX_INVENTORY_LOAN_LINKS)
+      throw new ConvexError(
+        `Inventory-scope views support at most ${MAX_INVENTORY_LOAN_LINKS} loan associations per object. Export explicit selected objects instead.`,
+      );
+    for (const link of links) {
+      const loan = await ctx.db.get(link.loanId);
+      if (loan?.organizationId === organizationId)
+        inventoryLoanAssociations[loan.type].add(row._id);
+    }
+    for (const status of ["pending", "approved"] as const) {
+      const deaccession = await ctx.db
+        .query("deaccessions")
+        .withIndex("by_organization_and_collection_and_status", (q) =>
+          q
+            .eq("organizationId", organizationId)
+            .eq("collectionId", row._id)
+            .eq("status", status),
+        )
+        .first();
+      if (deaccession) openDeaccessionCollectionIds.add(row._id);
     }
   }
-  return { incoming, outgoing };
+  return { openDeaccessionCollectionIds, inventoryLoanAssociations };
 }
 
 /**
@@ -125,55 +146,4 @@ export async function countOpenDeaccessionCollectionIds(
     }
   }
   return collectionIds;
-}
-
-export async function countCatalogObjects(
-  ctx: CountCtx,
-  organizationId: Id<"organizations">,
-  openDeaccessionCollectionIds: Set<Id<"collections">>,
-  loanAssociations: Awaited<ReturnType<typeof getInventoryLoanAssociations>>,
-) {
-  let total = 0;
-  let active = 0;
-  let loaned = 0;
-  let onDisplay = 0;
-  let incomingLoanExcluded = 0;
-  let ownershipUnclassified = 0;
-
-  for (const status of ["active", "loaned", "archived"] as const) {
-    const rows = ctx.db
-      .query("collections")
-      .withIndex("by_organization_and_status", (q) =>
-        q.eq("organizationId", organizationId).eq("status", status),
-      );
-    for await (const collection of rows) {
-      const ownership = classifyInventoryRecord({
-        status: collection.status,
-        hasOpenDeaccession: openDeaccessionCollectionIds.has(collection._id),
-        linkedToIncomingLoan: loanAssociations.incoming.has(collection._id),
-        linkedToOutgoingLoan: loanAssociations.outgoing.has(collection._id),
-      });
-      if (ownership === "incoming") incomingLoanExcluded += 1;
-      if (ownership === "unclassified") ownershipUnclassified += 1;
-      if (ownership !== "owned") continue;
-      total += 1;
-      if (collection.status === "active") {
-        active += 1;
-        if (collection.displayStatus === "on_display") {
-          onDisplay += 1;
-        }
-      } else if (collection.status === "loaned") {
-        loaned += 1;
-      }
-    }
-  }
-
-  return {
-    total,
-    active,
-    loaned,
-    onDisplay,
-    incomingLoanExcluded,
-    ownershipUnclassified,
-  };
 }

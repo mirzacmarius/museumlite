@@ -542,6 +542,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exporter au format CSV",
+      objectsCapNote:
+        "Le CSV prêt à importer contient jusqu'à 1 000 objets avec les noms d'emplacement et de groupe. Pour le catalogue complet, utilisez l'export ci-dessous.",
+      objectsCapExceeded:
+        "Ce catalogue compte plus de 1 000 objets. Utilisez l'export du catalogue complet ci-dessous.",
     },
   },
   account: {
@@ -8077,6 +8081,23 @@ export default {
     checksumMismatch:
       "La somme de contrôle du fichier ne correspond pas ; relancez le téléchargement",
     failed: "Échec de l'export",
+    errorAccess:
+      "Vous n'avez plus accès à cet export. Vérifiez votre rôle et votre offre.",
+    errorQuota: "Le quota mensuel d'exports de votre offre est épuisé.",
+    errorExpired: "Cet export a expiré. Créez un nouvel export.",
+    errorNotResumable: "Cet export ne peut pas être repris pour le moment.",
+    errorSelection:
+      "La sélection n'a pas pu être exportée. Relancez l'envoi ou créez une nouvelle sélection.",
+    errorTooLarge:
+      "Cet export est trop volumineux. Restreignez les filtres ou la sélection.",
+    errorInventoryLinks:
+      "Un objet a trop de liens de prêt pour ce filtre d'inventaire. Exportez plutôt les objets sélectionnés.",
+    errorInvalidRequest:
+      "La demande d'export n'est pas valide. Vérifiez les filtres et réessayez.",
+    errorInterrupted:
+      "L'export a été interrompu. Reprenez depuis le point de contrôle.",
+    errorUnavailable:
+      "Le fichier d'export n'est pas disponible. Réessayez ou créez un nouvel export.",
     reportsNote:
       "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
   },
@@ -8105,6 +8126,7 @@ export default {
     },
     availability: {
       ready: "Prêt",
+      updating: "Prêt, mise à jour en cours",
       unavailable: "Indisponible",
     },
     status: {

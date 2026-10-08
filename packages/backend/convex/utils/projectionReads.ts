@@ -1,7 +1,10 @@
 import { ConvexError, type Infer } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import { getProjectionState } from "./projectionMaintenance";
+import {
+  getProjectionState,
+  isProjectionUpdating,
+} from "./projectionMaintenance";
 import {
   type MetricKey,
   type MetricRange,
@@ -28,6 +31,8 @@ export interface RankedScope {
 
 export interface ProjectionReader {
   generationId: Id<"projectionGenerations">;
+  /** Wide relation refreshes are still being applied to the served values. */
+  updating: boolean;
   totals: (scope?: string) => Promise<Record<string, number>>;
   sums: (
     metric: string,
@@ -85,20 +90,23 @@ export async function openProjection(
     return unavailable(state.reason ?? "not_built");
   }
   const generationId = state.activeGenerationId;
+  const generation = await ctx.db.get(generationId);
+  if (!generation) return unavailable("not_built");
   return {
     ok: true,
     reader: {
       generationId,
+      updating: await isProjectionUpdating(ctx, organizationId),
       totals: (scope = "all") => readTotals(ctx, generationId, scope),
       sums: (metric, ranges, scope = "all") =>
-        sumMetricRanges(ctx, generationId, scope, metric, ranges),
+        sumMetricRanges(ctx, generation, scope, metric, ranges),
       sumsAcross: async (metric, scopes, range) =>
         scopes.length === 0
           ? []
           : await metricTree.sumBatch(
               ctx,
               scopes.map((scope) => ({
-                namespace: metricNamespace(generationId, scope, metric),
+                namespace: metricNamespace(generation, scope, metric),
                 bounds: range,
               })),
             ),

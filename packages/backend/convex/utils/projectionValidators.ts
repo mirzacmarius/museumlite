@@ -21,6 +21,14 @@ export const projectionGenerationStatus = v.union(
   v.literal("superseded"),
 );
 
+export const projectionFanOutKind = v.union(
+  v.literal("source"),
+  v.literal("loanItemsByLoan"),
+  v.literal("objectRelations"),
+  v.literal("objectsByLocation"),
+  v.literal("groupItemsByGroup"),
+);
+
 export const projectionMode = v.union(
   v.literal("rebuild"),
   v.literal("reconcile"),
@@ -58,6 +66,7 @@ export const projectionGenerationFields = {
   discrepancyCount: v.number(),
   mismatchCount: v.number(),
   collectedAt: v.optional(v.number()),
+  metricSlot: v.optional(v.number()),
 };
 
 export const projectionDiscrepancyCategory = v.union(

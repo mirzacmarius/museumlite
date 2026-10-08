@@ -599,3 +599,28 @@ test("CSV export and import preserve primary and secondary group roles", async (
     { _id: secondary, role: "secondary" },
   ]);
 });
+
+test("the import-ready object CSV refuses catalogs beyond its cap instead of reading the whole organization", async () => {
+  const f = await setup();
+  await f.t.run(async (ctx) => {
+    for (let i = 0; i < 1001; i++)
+      await ctx.db.insert("collections", {
+        organizationId: f.owner.organizationId,
+        accessionNumber: `CAP-${i}`,
+        title: `Capped ${i}`,
+        status: "active",
+        catalogedBy: f.owner.userId,
+        catalogedAt: 1,
+      });
+  });
+  await expect(
+    f.user.mutation(api.imports.exportObjects, {
+      organizationId: f.owner.organizationId,
+    }),
+  ).rejects.toThrow("more than 1,000 objects");
+  const loaned = await f.user.mutation(api.imports.exportObjects, {
+    organizationId: f.owner.organizationId,
+    status: "loaned",
+  });
+  expect(loaned).toEqual([]);
+});

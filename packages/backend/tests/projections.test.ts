@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import { metricTree } from "../convex/utils/projectionStore";
 import {
   authedForUser,
   type ConvexTest,
@@ -528,8 +529,8 @@ describe("failed writes", () => {
   });
 });
 
-describe("fan-out invalidation", () => {
-  test("a loan status change wider than the fan-out limit invalidates readers and schedules a fresh rebuild", async () => {
+describe("wide fan-out", () => {
+  test("loan status changes wider than the fan-out limit keep readers serving, flagged as updating, and converge without a rebuild", async () => {
     const { staff, settle, organizationId, userId, t } = await fixture();
     const objectIds = await insertObjects(t, organizationId, userId, 101);
     const loanId = await t.run(async (ctx) => {
@@ -550,34 +551,153 @@ describe("fan-out invalidation", () => {
     const before = await staff.query(api.projections.getHealth, {
       organizationId,
     });
-    expect(before.availability).toBe("ready");
+    expect(before).toMatchObject({ availability: "ready", updating: false });
 
     await staff.mutation(api.loans.approve, { loanId });
-
-    const invalidated = await staff.query(api.projections.getHealth, {
+    const updating = await staff.query(api.projections.getHealth, {
       organizationId,
     });
-    expect(invalidated).toMatchObject({
-      availability: "unavailable",
-      reason: "invalidated",
-      revision: before.revision + 1,
+    expect(updating).toMatchObject({
+      availability: "ready",
+      updating: true,
+      revision: before.revision,
       active: { _id: before.active?._id },
-      building: { status: "building", checkpoint: 0 },
+      building: null,
     });
-    expect(
+    const served = expectReady(
       await staff.query(api.dashboard.getAnalytics, { organizationId }),
-    ).toEqual({
-      availability: "unavailable",
-      reason: "invalidated",
-      definitionVersion: 1,
-    });
+    );
+    expect(served.updating).toBe(true);
+    expect(served.loans).toMatchObject({ total: 1, pending: 0, active: 1 });
 
     await settle();
+    const settled = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(settled).toMatchObject({
+      availability: "ready",
+      updating: false,
+      active: { _id: before.active?._id },
+    });
     expect(
       expectReady(
         await staff.query(api.dashboard.getAnalytics, { organizationId }),
-      ).loans,
-    ).toMatchObject({ total: 1, pending: 0, active: 1, outgoing: 1 });
+      ).updating,
+    ).toBe(false);
+    expect(settled.recentGenerations).toHaveLength(
+      before.recentGenerations.length,
+    );
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({
+      status: "completed",
+      mismatchCount: 0,
+    });
+  });
+
+  test("moving a location with more than the fan-out limit of objects to another site converges without blanking metrics", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture([
+      ...ADMIN_PERMISSIONS,
+      "locations.update",
+    ]);
+    const { locationId, mainSiteId, otherSiteId } = await t.run(async (ctx) => {
+      const siteId = await ctx.db.insert("sites", {
+        organizationId,
+        name: "Main",
+        isActive: true,
+        isPrimary: true,
+      });
+      const otherSiteId = await ctx.db.insert("sites", {
+        organizationId,
+        name: "Annex",
+        isActive: true,
+        isPrimary: false,
+      });
+      const locationId = await ctx.db.insert("locations", {
+        organizationId,
+        siteId,
+        name: "Store",
+        type: "room",
+        sortOrder: 0,
+        isActive: true,
+      });
+      return { locationId, mainSiteId: siteId, otherSiteId };
+    });
+    const objectIds = await insertObjects(t, organizationId, userId, 101);
+    await t.run(async (ctx) => {
+      for (const id of objectIds)
+        await ctx.db.patch(id, { currentLocationId: locationId });
+    });
+    await rebuildProjection(t, organizationId);
+    const before = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    await staff.mutation(api.locations.update, {
+      locationId,
+      siteId: otherSiteId,
+    });
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({ availability: "ready", updating: true, building: null });
+    await staff.mutation(api.locations.update, {
+      locationId,
+      siteId: mainSiteId,
+    });
+    await staff.mutation(api.locations.update, {
+      locationId,
+      siteId: otherSiteId,
+    });
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({
+      availability: "ready",
+      updating: true,
+      revision: before.revision,
+      building: null,
+    });
+    await settle();
+    expect(
+      await staff.query(api.projections.getHealth, { organizationId }),
+    ).toMatchObject({ availability: "ready", updating: false });
+    const { health } = await reconcile(staff, settle, organizationId);
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
+  });
+});
+
+describe("metric aggregate storage", () => {
+  test("repeated rebuilds reuse metric aggregate namespaces instead of accumulating them", async () => {
+    const { settle, organizationId, userId, t } = await fixture();
+    await insertObjects(t, organizationId, userId, 3);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("loans", {
+        organizationId,
+        loanNumber: "NS-1",
+        type: "outgoing",
+        status: "active",
+        lenderBorrowerName: "Partner",
+        startDate: 1_000,
+      });
+    });
+    const namespaceCount = () =>
+      t.run(async (ctx) => {
+        let count = 0;
+        for await (const _ of metricTree.iterNamespaces(ctx)) count += 1;
+        return count;
+      });
+    await rebuildProjection(t, organizationId);
+    const afterFirst = await namespaceCount();
+    expect(afterFirst).toBeGreaterThan(0);
+    for (let rebuild = 0; rebuild < 3; rebuild++) {
+      await t.mutation(internal.projections.startRebuildForOrganization, {
+        organizationId,
+      });
+      await settle();
+    }
+    expect(await namespaceCount()).toBeLessThanOrEqual(afterFirst * 2);
+    await t.mutation(internal.projections.startRebuildForOrganization, {
+      organizationId,
+    });
+    await settle();
+    expect(await namespaceCount()).toBeLessThanOrEqual(afterFirst * 2);
   });
 });
 

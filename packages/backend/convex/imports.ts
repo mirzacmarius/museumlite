@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type QueryCtx, query } from "./_generated/server";
@@ -759,6 +759,9 @@ export const exportAccounts = mutation({
   },
 });
 
+/** Inline, import-ready CSV export; larger catalogs use the durable export job. */
+const MAX_IMPORT_READY_OBJECT_EXPORT = 1000;
+
 export const exportObjects = mutation({
   args: {
     organizationId: v.id("organizations"),
@@ -814,36 +817,44 @@ export const exportObjects = mutation({
     if (!userId) {
       throw new Error("Not authenticated");
     }
-    const objects = await ctx.db
-      .query("collections")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
+    const status = args.status;
+    if (status === "in_conservation") return [];
+    const filtered = await (status
+      ? ctx.db
+          .query("collections")
+          .withIndex("by_organization_and_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", status),
+          )
+      : ctx.db
+          .query("collections")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", args.organizationId),
+          )
+    ).take(MAX_IMPORT_READY_OBJECT_EXPORT + 1);
+    if (filtered.length > MAX_IMPORT_READY_OBJECT_EXPORT)
+      throw new ConvexError(
+        `This catalog has more than ${MAX_IMPORT_READY_OBJECT_EXPORT.toLocaleString("en-US")} objects. Use the complete catalog export job instead.`,
+      );
 
-    const filtered = args.status
-      ? objects.filter((o) => o.status === args.status)
-      : objects;
-
-    const locations = await ctx.db
-      .query("locations")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
+    const locationMap = new Map<Id<"locations">, string | undefined>();
+    const groupMap = new Map<Id<"collectionGroups">, string | undefined>();
+    for (const object of filtered) {
+      if (
+        object.currentLocationId &&
+        !locationMap.has(object.currentLocationId)
       )
-      .collect();
-    const locationMap = new Map(locations.map((l) => [l._id, l.name]));
-
-    const groups = await ctx.db
-      .query("collectionGroups")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", args.organizationId),
-      )
-      .collect();
-    const groupMap = new Map(groups.map((g) => [g._id, g.name]));
+        locationMap.set(
+          object.currentLocationId,
+          (await ctx.db.get(object.currentLocationId))?.name,
+        );
+    }
 
     const exportRows = await Promise.all(
       filtered.map(async (o) => {
         const membership = await getCollectionGroupMembershipIds(ctx, o);
+        for (const groupId of membership.groupIds)
+          if (!groupMap.has(groupId))
+            groupMap.set(groupId, (await ctx.db.get(groupId))?.name);
         return {
           accessionNumber: o.accessionNumber,
           title: o.title,

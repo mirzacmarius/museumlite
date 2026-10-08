@@ -36,10 +36,7 @@ import {
   ensureIdentifierAvailable,
   generateConfiguredIdentifier,
 } from "./utils/identifiers";
-import {
-  countOpenDeaccessionCollectionIds,
-  getInventoryLoanAssociations,
-} from "./utils/indexedCounts";
+import { getPageInventoryEvidence } from "./utils/indexedCounts";
 import { collectionHasOccupyingLoan } from "./utils/loanOccupancy";
 import {
   moveCollectionToLocation,
@@ -1427,13 +1424,6 @@ export const list = query({
 
     // Filters may yield short or empty pages. The native cursor still advances,
     // and split metadata keeps reactive pages contiguous as records change.
-    const [openDeaccessionCollectionIds, inventoryLoanAssociations] =
-      args.inventoryMetricScope
-        ? await Promise.all([
-            countOpenDeaccessionCollectionIds(ctx, args.organizationId),
-            getInventoryLoanAssociations(ctx, args.organizationId),
-          ])
-        : [undefined, undefined];
     const result = await source.order("desc").paginate({
       ...args.paginationOpts,
       maximumRowsRead: Math.min(
@@ -1450,8 +1440,13 @@ export const list = query({
       page: await filterCollectionListPage(ctx, result.page, {
         ...args,
         locationIds,
-        openDeaccessionCollectionIds,
-        inventoryLoanAssociations,
+        ...(args.inventoryMetricScope
+          ? await getPageInventoryEvidence(
+              ctx,
+              args.organizationId,
+              result.page,
+            )
+          : {}),
       }),
     });
   },

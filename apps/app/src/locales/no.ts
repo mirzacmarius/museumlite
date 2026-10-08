@@ -534,6 +534,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Eksporter til CSV",
+      objectsCapNote:
+        "Importklar CSV inneholder opptil 1 000 objekter med plasserings- og gruppenavn. Bruk eksporten nedenfor for hele katalogen.",
+      objectsCapExceeded:
+        "Denne katalogen har mer enn 1 000 objekter. Bruk eksporten av hele katalogen nedenfor.",
     },
   },
   account: {
@@ -7974,6 +7978,22 @@ export default {
     checksumMismatch:
       "Kontrollsummen for filen stemmer ikke; prøv nedlastingen på nytt",
     failed: "Eksporten mislyktes",
+    errorAccess:
+      "Du har ikke lenger tilgang til denne eksporten. Kontroller rollen og abonnementet ditt.",
+    errorQuota: "Abonnementets månedlige eksportkvote er brukt opp.",
+    errorExpired: "Denne eksporten er utløpt. Opprett en ny eksport.",
+    errorNotResumable: "Denne eksporten kan ikke gjenopptas akkurat nå.",
+    errorSelection:
+      "Utvalget kunne ikke eksporteres. Prøv opplastingen på nytt eller opprett et nytt utvalg.",
+    errorTooLarge:
+      "Denne eksporten er for stor. Begrens filtrene eller utvalget.",
+    errorInventoryLinks:
+      "Et objekt har for mange lånekoblinger for dette beholdningsfilteret. Eksporter valgte objekter i stedet.",
+    errorInvalidRequest:
+      "Eksportforespørselen er ugyldig. Kontroller filtrene og prøv igjen.",
+    errorInterrupted: "Eksporten ble avbrutt. Prøv igjen fra sjekkpunktet.",
+    errorUnavailable:
+      "Eksportfilen er ikke tilgjengelig. Prøv igjen eller opprett en ny eksport.",
     reportsNote:
       "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
   },
@@ -7999,6 +8019,7 @@ export default {
     },
     availability: {
       ready: "Klar",
+      updating: "Klar, oppdateres",
       unavailable: "Utilgjengelig",
     },
     status: {

@@ -1,3 +1,5 @@
+import { MAX_EXPORT_BYTES } from "./exportContract";
+
 export interface ExportColumn {
   name: string;
   type: "text" | "number" | "utcEpochMs" | "json" | "boolean";
@@ -129,6 +131,6 @@ export function manifest(job: {
         : objectColumns,
     countPolicy:
       "rows is emitted/captured records; failedAttempts counts failed worker attempts, not omitted records; selected is sealed explicit manifest rows. scanned counts catalog source rows examined; for audit it counts returned matching entries, not the underlying filtered scan. Completion requires exhausted cursor and equal chunk/emitted counts; failed jobs expose no artifact.",
-    maxArtifactBytes: 16 * 1024 * 1024,
+    maxArtifactBytes: MAX_EXPORT_BYTES,
   };
 }

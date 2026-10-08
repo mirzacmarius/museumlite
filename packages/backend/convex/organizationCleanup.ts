@@ -19,6 +19,7 @@ import {
   getUsageCounter,
 } from "./utils/organizationUsageCounters";
 import { requirePermission } from "./utils/permissions";
+import { datedEntries, metricTree } from "./utils/projectionStore";
 
 const organizationTypeValidator = v.union(
   v.literal("museum"),
@@ -380,8 +381,175 @@ type ChildDocumentGroups = {
   userSites: Array<Doc<"userSites">>;
 };
 
+interface DerivedDocuments {
+  organizationProjectionStates: Array<Doc<"organizationProjectionStates">>;
+  projectionFanOuts: Array<Doc<"projectionFanOuts">>;
+  projectionGenerations: Array<Doc<"projectionGenerations">>;
+  projectionContributions: Array<Doc<"projectionContributions">>;
+  projectionTotals: Array<Doc<"projectionTotals">>;
+  projectionDiscrepancies: Array<Doc<"projectionDiscrepancies">>;
+  exportJobs: Array<Doc<"exportJobs">>;
+  exportSelections: Array<Doc<"exportSelections">>;
+  exportChunks: Array<Doc<"exportChunks">>;
+  exportParts: Array<Doc<"exportParts">>;
+  caseHistoryState: Array<Doc<"caseHistoryState">>;
+  caseHistoryEntries: Array<Doc<"caseHistoryEntries">>;
+}
+
+/** Export, projection and case-history rows, read through organization or parent indexes. */
+async function collectDerivedDocuments(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations">,
+): Promise<DerivedDocuments> {
+  const [
+    organizationProjectionStates,
+    projectionFanOuts,
+    projectionGenerations,
+    exportJobs,
+    caseHistoryState,
+    caseHistoryEntries,
+  ] = await Promise.all([
+    ctx.db
+      .query("organizationProjectionStates")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("projectionFanOuts")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("projectionGenerations")
+      .withIndex("by_organizationId_and_startedAt", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("exportJobs")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("caseHistoryState")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("caseHistoryEntries")
+      .withIndex("by_organization", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+  ]);
+  const perGeneration = await Promise.all(
+    projectionGenerations.map(async (generation) => {
+      const [contributions, totals, discrepancies] = await Promise.all([
+        ctx.db
+          .query("projectionContributions")
+          .withIndex("by_generationId", (q) =>
+            q.eq("generationId", generation._id),
+          )
+          .collect(),
+        ctx.db
+          .query("projectionTotals")
+          .withIndex("by_generationId", (q) =>
+            q.eq("generationId", generation._id),
+          )
+          .collect(),
+        ctx.db
+          .query("projectionDiscrepancies")
+          .withIndex("by_generationId", (q) =>
+            q.eq("generationId", generation._id),
+          )
+          .collect(),
+      ]);
+      return { contributions, totals, discrepancies };
+    }),
+  );
+  const perJob = await Promise.all(
+    exportJobs.map(async (job) => {
+      const [selections, chunks, parts] = await Promise.all([
+        ctx.db
+          .query("exportSelections")
+          .withIndex("by_jobId", (q) => q.eq("jobId", job._id))
+          .collect(),
+        ctx.db
+          .query("exportChunks")
+          .withIndex("by_jobId_and_sequence", (q) => q.eq("jobId", job._id))
+          .collect(),
+        ctx.db
+          .query("exportParts")
+          .withIndex("by_jobId_and_level_and_sequence", (q) =>
+            q.eq("jobId", job._id),
+          )
+          .collect(),
+      ]);
+      return { selections, chunks, parts };
+    }),
+  );
+  return {
+    organizationProjectionStates,
+    projectionFanOuts,
+    projectionGenerations,
+    projectionContributions: perGeneration.flatMap(
+      (entry) => entry.contributions,
+    ),
+    projectionTotals: perGeneration.flatMap((entry) => entry.totals),
+    projectionDiscrepancies: perGeneration.flatMap(
+      (entry) => entry.discrepancies,
+    ),
+    exportJobs,
+    exportSelections: perJob.flatMap((entry) => entry.selections),
+    exportChunks: perJob.flatMap((entry) => entry.chunks),
+    exportParts: perJob.flatMap((entry) => entry.parts),
+    caseHistoryState,
+    caseHistoryEntries,
+  };
+}
+
+/**
+ * Projection state goes first so source deletions in the same purge no longer
+ * maintain a generation; contribution removal also removes its metric entries.
+ */
+async function deleteDerivedDocuments(
+  ctx: MutationCtx,
+  derived: DerivedDocuments,
+) {
+  await deleteDocuments(ctx, derived.organizationProjectionStates);
+  const generations = new Map(
+    derived.projectionGenerations.map((generation) => [
+      generation._id,
+      generation,
+    ]),
+  );
+  for (const contribution of derived.projectionContributions) {
+    const generation = generations.get(contribution.generationId);
+    if (!generation) continue;
+    for (const entry of datedEntries(
+      generation,
+      contribution.sourceTable,
+      contribution.sourceId,
+      contribution.facts,
+    ).values()) {
+      await metricTree.deleteIfExists(ctx, {
+        namespace: entry.namespace,
+        key: entry.key,
+        id: entry.id,
+      });
+    }
+  }
+  const { organizationProjectionStates: _states, ...rest } = derived;
+  for (const docs of Object.values(rest)) await deleteDocuments(ctx, docs);
+}
+
 type OrganizationPurgeSnapshot = {
   childDocuments: ChildDocumentGroups;
+  derivedDocuments: DerivedDocuments;
   organization: Doc<"organizations">;
   organizationDocuments: Array<{
     docs: Array<Record<string, unknown> & { _id: Id<TableNames> }>;
@@ -604,12 +772,14 @@ async function collectPurgeSnapshot(
     userSites,
   };
 
-  const childDocumentEntries = Object.entries(childDocuments).map(
-    ([table, docs]) => ({
-      table,
-      docs,
-    }),
-  );
+  const derivedDocuments = await collectDerivedDocuments(ctx, organizationId);
+  const childDocumentEntries = Object.entries({
+    ...childDocuments,
+    ...derivedDocuments,
+  }).map(([table, docs]) => ({
+    table,
+    docs,
+  }));
 
   const storageIds = uniqueStorageIds([
     ...collectStorageIdsFromDocs([
@@ -644,6 +814,7 @@ async function collectPurgeSnapshot(
 
   return {
     childDocuments,
+    derivedDocuments,
     organization,
     organizationDocuments,
     storageIds,
@@ -802,6 +973,7 @@ export const purgeOrganizationsInternal = internalMutation({
           }
 
           if (!args.dryRun) {
+            await deleteDerivedDocuments(ctx, snapshot.derivedDocuments);
             await Promise.all([
               Promise.all(
                 Array.from(snapshot.storageIds).map(async (storageId) => {

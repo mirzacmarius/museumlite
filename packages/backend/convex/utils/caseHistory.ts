@@ -40,7 +40,6 @@ export async function appendCaseHistory(
       caseType,
       entityId: entity._id,
       sourceLength,
-      migratedThrough: 0,
       nextOrdinal: sourceLength,
       cutoverAt: Date.now(),
     });

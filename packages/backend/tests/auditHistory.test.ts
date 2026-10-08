@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
@@ -192,7 +192,7 @@ test("recorded actor and subject evidence survives renames and corrections appen
   expect(deletedSubjects?.subjectSnapshot?.label).toBe("Stable condition");
 });
 
-test("case history preserves legacy order during bounded normalization and cursor retries", async () => {
+test("case history pages legacy approvals in order with stable cursor retries", async () => {
   const { t, staff, organizationId, userId } = await setup();
   const entityId = await t.run(async (ctx) =>
     ctx.db.insert("accessions", {
@@ -216,12 +216,6 @@ test("case history preserves legacy order during bounded normalization and curso
     entityId,
     limit: 100,
   });
-  const migration = await staff.mutation(api.auditLog.normalizeCaseHistory, {
-    organizationId,
-    caseType: "accession",
-    entityId,
-  });
-  expect(migration.migratedThrough).toBe(100);
   expect(
     await staff.query(api.auditLog.listCaseHistory, {
       organizationId,
@@ -248,29 +242,6 @@ test("case history preserves legacy order during bounded normalization and curso
   expect(last.entries.map((row) => row.entry.step)).toEqual([
     200, 201, 202, 203, 204,
   ]);
-  await staff.mutation(api.auditLog.normalizeCaseHistory, {
-    organizationId,
-    caseType: "accession",
-    entityId,
-  });
-  expect(
-    (
-      await staff.mutation(api.auditLog.normalizeCaseHistory, {
-        organizationId,
-        caseType: "accession",
-        entityId,
-      })
-    ).isDone,
-  ).toBe(true);
-  expect(
-    (
-      await staff.mutation(api.auditLog.normalizeCaseHistory, {
-        organizationId,
-        caseType: "accession",
-        entityId,
-      })
-    ).migratedThrough,
-  ).toBe(205);
 });
 
 test("new case approvals append child evidence and remain in the public case timeline", async () => {
@@ -300,15 +271,6 @@ test("new case approvals append child evidence and remain in the public case tim
     "Created",
     "Rejected: Not ready",
   ]);
-  expect(
-    (
-      await staff.mutation(api.auditLog.normalizeCaseHistory, {
-        organizationId,
-        caseType: "exhibition",
-        entityId: exhibitionId,
-      })
-    ).sourceLength,
-  ).toBe(1);
   await t.run(async (ctx) => {
     await ctx.db.patch(userId, { name: "Changed" });
   });
@@ -361,8 +323,9 @@ test("history export freezes creation membership, retains legacy evidence and tr
     const events: string[] = [];
     let cursor: string | null = null;
     do {
-      const result = await staff.query(api.auditLog.exportPage, {
+      const result = await t.query(internal.auditLog.exportPageForJob, {
         organizationId,
+        creatorId: userId,
         asOf,
         action: "rare",
         paginationOpts: { numItems: 50, cursor },
@@ -485,7 +448,7 @@ test("native audit cursors preserve tied timestamp order without repeating event
   expect(new Set(seen).size).toBe(155);
 });
 
-test("public workflow history retrieves every approval across partial migration and cutover without duplicated legacy entries", async () => {
+test("public workflow history retrieves every legacy and post-cutover approval without duplicates", async () => {
   const { t, staff, organizationId, userId } = await setup();
   const exhibitionId = await t.run(async (ctx) =>
     ctx.db.insert("exhibitions", {
@@ -525,23 +488,126 @@ test("public workflow history retrieves every approval across partial migration 
     "Rejected: Recorded after cutover",
   ];
   expect(await readAll()).toEqual(expected);
-  await staff.mutation(api.auditLog.normalizeCaseHistory, {
-    organizationId,
-    caseType: "exhibition",
-    entityId: exhibitionId,
-  });
-  expect(await readAll()).toEqual(expected);
-  let isDone = false;
-  while (!isDone) {
-    const result = await staff.mutation(api.auditLog.normalizeCaseHistory, {
-      organizationId,
-      caseType: "exhibition",
-      entityId: exhibitionId,
-    });
-    isDone = result.isDone;
-  }
-  expect(await readAll()).toEqual(expected);
   await expect(
     t.query(api.exhibitions.getWorkflowHistory, { exhibitionId }),
   ).rejects.toThrow();
+});
+
+async function addMember(
+  t: Awaited<ReturnType<typeof setup>>["t"],
+  organizationId: Awaited<ReturnType<typeof setup>>["organizationId"],
+  permissionNames: string[],
+) {
+  const userId = await t.run(async (ctx) => {
+    const memberId = await ctx.db.insert("users", {
+      name: "Member",
+      email: `member-${permissionNames.join("-")}@example.test`,
+    });
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: `Role ${permissionNames.join(" ")}`,
+      isSystemRole: false,
+    });
+    await ctx.db.insert("userOrganizations", {
+      organizationId,
+      userId: memberId,
+      roleId,
+      joinedAt: 1,
+    });
+    for (const name of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name,
+        category: "collections",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+    }
+    return memberId;
+  });
+  return t.withIdentity({
+    subject: `${userId}|session-member`,
+    issuer: "https://example.test",
+  });
+}
+
+test("collection readers without analytics access cannot page the organization audit history", async () => {
+  const { t, organizationId } = await setup();
+  const reader = await addMember(t, organizationId, ["collections.read"]);
+  await expect(
+    reader.query(api.auditLog.list, { organizationId }),
+  ).rejects.toThrow("Permission denied");
+});
+
+test("case history filters enforce the case's own permission and plan feature", async () => {
+  const { t, staff, organizationId, foreignOrganizationId, userId } =
+    await setup();
+  const analyst = await addMember(t, organizationId, [
+    "collections.read",
+    "organization.view_analytics",
+  ]);
+  const foreignLoanCase = await t.run(async (ctx) => {
+    await ctx.db.insert("auditLog", {
+      organizationId: foreignOrganizationId,
+      userId,
+      action: "loan_created",
+      entityType: "loan",
+      entityId: "foreign-loan",
+      caseId: "loan:foreign-loan",
+      timestamp: 1,
+    });
+    await ctx.db.insert("auditLog", {
+      organizationId,
+      userId,
+      action: "loan_created",
+      entityType: "loan",
+      entityId: "own-loan",
+      caseId: "loan:own-loan",
+      timestamp: 1,
+    });
+    return "loan:foreign-loan";
+  });
+  await expect(
+    analyst.query(api.auditLog.list, {
+      organizationId,
+      caseId: "loan:own-loan",
+    }),
+  ).rejects.toThrow("Permission denied: loans.read");
+  await expect(
+    staff.query(api.auditLog.list, { organizationId, caseId: "unknown:1" }),
+  ).rejects.toThrow("Invalid case filter");
+  const loanReader = await addMember(t, organizationId, [
+    "collections.read",
+    "organization.view_analytics",
+    "loans.read",
+  ]);
+  expect(
+    (
+      await loanReader.query(api.auditLog.list, {
+        organizationId,
+        caseId: foreignLoanCase,
+      })
+    ).entries,
+  ).toEqual([]);
+  expect(
+    (
+      await loanReader.query(api.auditLog.list, {
+        organizationId,
+        caseId: "loan:own-loan",
+      })
+    ).entries.map((entry) => entry.entityId),
+  ).toEqual(["own-loan"]);
+  await t.run(async (ctx) => {
+    await ctx.db.patch(organizationId, { subscriptionTier: "free" });
+  });
+  await expect(
+    loanReader.query(api.auditLog.list, {
+      organizationId,
+      caseId: "loan:own-loan",
+    }),
+  ).rejects.toThrow("Feature requires pro tier");
+  await expect(
+    staff.query(api.auditLog.list, {
+      organizationId,
+      caseId: "exhibition:any",
+    }),
+  ).rejects.toThrow("Feature requires pro tier");
 });

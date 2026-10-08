@@ -947,6 +947,7 @@ export const getCollectionTrends = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       current: v.array(
         v.object({
           date: v.string(),
@@ -1027,6 +1028,7 @@ export const getCollectionTrends = query({
 
     return {
       availability: "ready" as const,
+      updating: opened.reader.updating,
       current: currentData,
       comparison: comparisonData,
       summary: {
@@ -1059,6 +1061,7 @@ export const getLoanTrends = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       buckets: v.array(
         v.object({
           date: v.string(),
@@ -1085,6 +1088,7 @@ export const getLoanTrends = query({
     if (!opened.ok) return opened.unavailable;
     return {
       availability: "ready" as const,
+      updating: opened.reader.updating,
       buckets: await buildLoanTrendSeries(
         opened.reader,
         generateDateBuckets(args.startDate, args.endDate, args.period),
@@ -1111,6 +1115,7 @@ export const getConservationTrends = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       buckets: v.array(
         v.object({
           date: v.string(),
@@ -1137,6 +1142,7 @@ export const getConservationTrends = query({
     if (!opened.ok) return opened.unavailable;
     return {
       availability: "ready" as const,
+      updating: opened.reader.updating,
       buckets: await buildConservationTrendSeries(
         opened.reader,
         generateDateBuckets(args.startDate, args.endDate, args.period),
@@ -1161,6 +1167,7 @@ export const getCollectionHealthDashboard = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       conservation: v.object({
         totalObjects: v.number(),
         goodCondition: v.number(),

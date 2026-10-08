@@ -6,9 +6,13 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { env } from "@/env.mjs";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import {
+  ExportDownloadError,
+  exportJobErrorKey,
+} from "@/lib/export-job-error-copy";
 import { formatIsoTimestamp } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 
@@ -55,6 +59,9 @@ export function ExportJobControl({
   const token = useAuthToken();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const pendingRequest = useRef<{ scope: string; requestKey: string }>(
+    undefined,
+  );
   const [format, setFormat] = useState<"csv" | "jsonl">("csv");
   const [selectionRequest, setSelectionRequest] = useState<{
     jobId: Id<"exportJobs">;
@@ -66,7 +73,7 @@ export function ExportJobControl({
     try {
       await task();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("failed"));
+      setError(t(exportJobErrorKey(e)));
     } finally {
       setBusy(false);
     }
@@ -84,16 +91,26 @@ export function ExportJobControl({
     setSelectionRequest(undefined);
   }
   async function request() {
+    const selectedCount =
+      source.kind === "objects" && source.mode === "selected"
+        ? selectedIds?.length
+        : undefined;
+    const scope = JSON.stringify({ source, format, selectedCount });
+    // A lost response must retry with the same key so the server returns the
+    // existing job instead of charging a second export.
+    const requestKey =
+      pendingRequest.current?.scope === scope
+        ? pendingRequest.current.requestKey
+        : crypto.randomUUID();
+    pendingRequest.current = { scope, requestKey };
     const jobId = await create({
       organizationId,
       source,
       format,
-      selectedCount:
-        source.kind === "objects" && source.mode === "selected"
-          ? selectedIds?.length
-          : undefined,
-      requestKey: crypto.randomUUID(),
+      selectedCount,
+      requestKey,
     });
+    pendingRequest.current = undefined;
     if (source.kind === "objects" && source.mode === "selected") {
       const pending = { jobId, ids: [...(selectedIds ?? [])] };
       setSelectionRequest(pending);
@@ -105,7 +122,10 @@ export function ExportJobControl({
     extension: string,
     manifest = false,
   ) {
-    if (!token) throw new Error(t("signIn"));
+    if (!token) {
+      setError(t("signIn"));
+      return;
+    }
     const siteUrl =
       env.NEXT_PUBLIC_CONVEX_SITE_URL ??
       env.NEXT_PUBLIC_CONVEX_URL.replace(/\.cloud$/, ".site");
@@ -113,7 +133,7 @@ export function ExportJobControl({
       `${siteUrl}/exports/${manifest ? "manifest" : "download"}?jobId=${jobId}`,
       { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
     );
-    if (!response.ok) throw new Error(await response.text());
+    if (!response.ok) throw new ExportDownloadError(response.status);
     const blob = await response.blob();
     if (!manifest) {
       const expected = response.headers.get("X-Content-SHA256");
@@ -124,8 +144,10 @@ export function ExportJobControl({
       const actual = Array.from(new Uint8Array(digest), (b) =>
         b.toString(16).padStart(2, "0"),
       ).join("");
-      if (!expected || actual !== expected)
-        throw new Error(t("checksumMismatch"));
+      if (!expected || actual !== expected) {
+        setError(t("checksumMismatch"));
+        return;
+      }
     }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -226,7 +248,9 @@ export function ExportJobControl({
                   expiresAt: formatIsoTimestamp(job.expiresAt),
                 })}
               </p>
-              {job.error && <p role="alert">{job.error}</p>}
+              {job.error && (
+                <p role="alert">{t(exportJobErrorKey(job.error))}</p>
+              )}
               <div className="flex gap-2 mt-2">
                 {CANCELLABLE_STATUSES.has(job.status) && (
                   <Button
@@ -235,7 +259,7 @@ export function ExportJobControl({
                     disabled={busy}
                     onClick={() => void run(() => cancel({ jobId: job.jobId }))}
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                 )}
                 {RESUMABLE_STATUSES.has(job.status) && (
