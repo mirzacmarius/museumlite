@@ -135,13 +135,72 @@ interface HistoryFilters {
   asOf?: number;
 }
 
+export const AUDIT_READ_PERMISSION = "organization.view_analytics";
+
+const CASE_ACCESS: Record<
+  string,
+  {
+    permission: "loans.read" | "collections.read";
+    feature?: "loans" | "exhibitions" | "conservation";
+    module?: "library";
+  }
+> = {
+  loan: { permission: "loans.read", feature: "loans" },
+  transitRecord: { permission: "loans.read", feature: "loans" },
+  exhibition: { permission: "collections.read", feature: "exhibitions" },
+  conservationTreatment: {
+    permission: "collections.read",
+    feature: "conservation",
+  },
+  accession: { permission: "collections.read" },
+  deaccession: { permission: "collections.read" },
+  organizationMoveRequest: { permission: "collections.read" },
+  libraryAcquisitionRequest: {
+    permission: "collections.read",
+    module: "library",
+  },
+};
+
+async function requireCaseAccess(
+  ctx: QueryCtx,
+  organizationId: Id<"organizations">,
+  caseKind: string,
+  requireMemberPermission: (permission: string) => Promise<unknown>,
+) {
+  const access = Object.hasOwn(CASE_ACCESS, caseKind)
+    ? CASE_ACCESS[caseKind]
+    : undefined;
+  if (!access) throw new Error("Invalid case filter");
+  await requireMemberPermission(access.permission);
+  if (access.feature)
+    await requireFeatureAccess(ctx, organizationId, access.feature);
+  if (access.module)
+    await requireModuleEnabled(ctx, organizationId, access.module);
+}
+
+async function requireHistoryAccess(
+  ctx: QueryCtx,
+  args: HistoryFilters,
+  requireMemberPermission: (permission: string) => Promise<unknown>,
+) {
+  await requireMemberPermission(AUDIT_READ_PERMISSION);
+  if (args.caseId !== undefined)
+    await requireCaseAccess(
+      ctx,
+      args.organizationId,
+      args.caseId.split(":", 1)[0] ?? "",
+      requireMemberPermission,
+    );
+}
+
 export async function readHistoryPage(
   ctx: QueryCtx,
   args: HistoryFilters,
   paginationOpts: PaginationOptions,
-  permission = "collections.read",
 ) {
-  await requirePermission(ctx, args.organizationId, permission);
+  await requireHistoryAccess(ctx, args, (permission) =>
+    requirePermission(ctx, args.organizationId, permission),
+  );
   return readAuthorizedHistoryPage(ctx, args, paginationOpts);
 }
 
@@ -319,16 +378,6 @@ export const list = query({
     ),
 });
 
-export const exportPage = query({
-  args: {
-    ...historyFilterArgs,
-    asOf: v.number(),
-    paginationOpts: paginationOptsValidator,
-  },
-  returns: historyPageValidator,
-  handler: async (ctx, args) => readHistoryPage(ctx, args, args.paginationOpts),
-});
-
 export const exportPageForJob = internalQuery({
   args: {
     ...historyFilterArgs,
@@ -339,16 +388,18 @@ export const exportPageForJob = internalQuery({
   returns: historyPageValidator,
   handler: async (ctx, args) => {
     const creator = await ctx.db.get(args.creatorId);
-    const permitted: boolean = await ctx.runQuery(
-      internal.utils.permissions.checkOrgPermission,
-      {
-        userId: args.creatorId,
-        organizationId: args.organizationId,
-        permissionName: "collections.read",
-      },
-    );
-    if (!creator || !permitted)
-      throw new Error("Permission denied: collections.read");
+    if (!creator) throw new Error("Export creator unavailable");
+    await requireHistoryAccess(ctx, args, async (permission) => {
+      const permitted: boolean = await ctx.runQuery(
+        internal.utils.permissions.checkOrgPermission,
+        {
+          userId: args.creatorId,
+          organizationId: args.organizationId,
+          permissionName: permission,
+        },
+      );
+      if (!permitted) throw new Error(`Permission denied: ${permission}`);
+    });
     return readAuthorizedHistoryPage(ctx, args, args.paginationOpts);
   },
 });
@@ -656,29 +707,20 @@ async function resolveCase(
     entityId: string;
   },
 ) {
-  await requirePermission(
+  const caseKind = {
+    accession: "accession",
+    deaccession: "deaccession",
+    loan: "loan",
+    exhibition: "exhibition",
+    conservation: "conservationTreatment",
+    acquisition: "libraryAcquisitionRequest",
+  } as const;
+  await requireCaseAccess(
     ctx,
     args.organizationId,
-    args.caseType === "loan" ? "loans.read" : "collections.read",
+    caseKind[args.caseType],
+    (permission) => requirePermission(ctx, args.organizationId, permission),
   );
-  if (
-    args.caseType === "loan" ||
-    args.caseType === "exhibition" ||
-    args.caseType === "conservation"
-  ) {
-    const feature = {
-      loan: "loans",
-      exhibition: "exhibitions",
-      conservation: "conservation",
-    } as const;
-    await requireFeatureAccess(
-      ctx,
-      args.organizationId,
-      feature[args.caseType],
-    );
-  }
-  if (args.caseType === "acquisition")
-    await requireModuleEnabled(ctx, args.organizationId, "library");
   const table = {
     accession: "accessions",
     deaccession: "deaccessions",

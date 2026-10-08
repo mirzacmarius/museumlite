@@ -21,7 +21,7 @@ test("closing a staff account revokes access while historical actor identity sta
   const { organizationId, collectionId, userId, roleId } =
     await createOrgUserCollectionWithPermissions(
       t,
-      ["collections.read", "collections.delete"],
+      ["collections.read", "collections.delete", "organization.view_analytics"],
       { userName: "Historic Registrar" },
     );
   const readerId = await t.run(async (ctx) => {

@@ -53,6 +53,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -123,6 +133,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, userId };
@@ -205,6 +225,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -274,6 +304,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, userId };
@@ -407,6 +447,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -525,6 +575,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -600,6 +660,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -667,6 +737,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, userId };
@@ -737,6 +817,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, userId };
@@ -814,6 +904,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, userId };
@@ -898,6 +998,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -963,6 +1073,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, userId };
@@ -1045,6 +1165,13 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+            category: "organization",
+          }),
         });
         return { orgId, userId };
       });
@@ -1214,6 +1341,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -1289,6 +1426,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -1361,6 +1508,16 @@ describe("auditLog detailed logging", () => {
           permissionId,
         });
 
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
+        });
+
         return { orgId, userId };
       });
 
@@ -1429,6 +1586,16 @@ describe("auditLog detailed logging", () => {
         await ctx.db.insert("rolePermissions", {
           roleId,
           permissionId,
+        });
+
+        await ctx.db.insert("rolePermissions", {
+          roleId,
+
+          permissionId: await ctx.db.insert("permissions", {
+            name: "organization.view_analytics",
+
+            category: "organization",
+          }),
         });
 
         return { orgId, user1Id, user2Id };

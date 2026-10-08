@@ -8,6 +8,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { AUDIT_READ_PERMISSION } from "./auditLog";
 import schema from "./schema";
 import { filterCollectionListPage } from "./utils/collectionListHelpers";
 import {
@@ -24,7 +25,7 @@ import {
   requireFeatureAccess,
 } from "./utils/featureGates";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
-import { requirePermission } from "./utils/permissions";
+import { hasPermission, requirePermission } from "./utils/permissions";
 
 const exportJobDoc = v.object({
   ...schema.tables.exportJobs.validator.fields,
@@ -45,8 +46,10 @@ async function owned(ctx: QueryCtx | MutationCtx, jobId: Id<"exportJobs">) {
   )
     throw new ConvexError("Export unavailable");
   await requirePermission(ctx, job.organizationId, "collections.read");
-  if (job.source.kind === "audit")
+  if (job.source.kind === "audit") {
+    await requirePermission(ctx, job.organizationId, AUDIT_READ_PERMISSION);
     await requireFeatureAccess(ctx, job.organizationId, "compliance");
+  }
   return job;
 }
 async function enqueue(ctx: MutationCtx, job: Doc<"exportJobs">) {
@@ -73,8 +76,10 @@ export const create = mutation({
   returns: v.id("exportJobs"),
   handler: async (ctx, args) => {
     await requirePermission(ctx, args.organizationId, "collections.read");
-    if (args.source.kind === "audit")
+    if (args.source.kind === "audit") {
+      await requirePermission(ctx, args.organizationId, AUDIT_READ_PERMISSION);
       await requireFeatureAccess(ctx, args.organizationId, "compliance");
+    }
     const creatorId = await getAuthUserId(ctx);
     if (!creatorId) throw new ConvexError("Authentication required");
     if (!args.requestKey || args.requestKey.length > 100)
@@ -343,11 +348,9 @@ export const list = query({
     await requirePermission(ctx, args.organizationId, "collections.read");
     const creatorId = await getAuthUserId(ctx);
     if (!creatorId) return [];
-    const auditAllowed = await hasFeatureAccess(
-      ctx,
-      args.organizationId,
-      "compliance",
-    );
+    const auditAllowed =
+      (await hasFeatureAccess(ctx, args.organizationId, "compliance")) &&
+      (await hasPermission(ctx, args.organizationId, AUDIT_READ_PERMISSION));
     const jobs = await ctx.db
       .query("exportJobs")
       .withIndex("by_organizationId_and_creatorId", (q) =>
@@ -413,14 +416,19 @@ async function permittedCreator(
 ) {
   const user = await ctx.db.get(job.creatorId);
   const organization = await ctx.db.get(job.organizationId);
-  const allowed: boolean =
-    !!user &&
-    !!organization &&
-    (await ctx.runQuery(internal.utils.permissions.checkOrgPermission, {
-      userId: job.creatorId,
-      organizationId: job.organizationId,
-      permissionName: "collections.read",
-    }));
+  const required =
+    job.source.kind === "audit"
+      ? ["collections.read", AUDIT_READ_PERMISSION]
+      : ["collections.read"];
+  let allowed = !!user && !!organization;
+  for (const permissionName of required)
+    allowed =
+      allowed &&
+      (await ctx.runQuery(internal.utils.permissions.checkOrgPermission, {
+        userId: job.creatorId,
+        organizationId: job.organizationId,
+        permissionName,
+      }));
   if (!allowed) throw new ConvexError("Export permission revoked");
   if (job.source.kind === "audit")
     await requireFeatureAccess(ctx, job.organizationId, "compliance");

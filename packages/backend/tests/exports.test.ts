@@ -4,7 +4,10 @@ import { api } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
-async function fixture(tier: "free" | "pro" | "enterprise" = "free") {
+async function fixture(
+  tier: "free" | "pro" | "enterprise" = "free",
+  extraPermissions: string[] = [],
+) {
   const t = convexTest(schema, modules);
   const f = await t.run(async (ctx) => {
     const organizationId = await ctx.db.insert("organizations", {
@@ -42,6 +45,16 @@ async function fixture(tier: "free" | "pro" | "enterprise" = "free") {
       roleId,
       permissionId: deletePermissionId,
     });
+    for (const name of extraPermissions) {
+      const extraPermissionId = await ctx.db.insert("permissions", {
+        name,
+        category: "collections",
+      });
+      await ctx.db.insert("rolePermissions", {
+        roleId,
+        permissionId: extraPermissionId,
+      });
+    }
     const membershipId = await ctx.db.insert("userOrganizations", {
       userId,
       organizationId,
@@ -83,7 +96,7 @@ describe("authorized durable exports", () => {
   });
   test("complete filtered JSONL preserves typed rows and reauthorizes HTTP downloads", async () => {
     vi.useFakeTimers();
-    const f = await fixture();
+    const f = await fixture("free", ["organization.view_analytics"]);
     await f.t.run(async (ctx) => {
       for (let i = 0; i < 125; i++)
         await ctx.db.insert("collections", {
@@ -292,7 +305,7 @@ describe("authorized durable exports", () => {
 
   test("exports more than 5,000 filtered objects and more than 1,000 immutable audit entries completely", async () => {
     vi.useFakeTimers();
-    const f = await fixture("enterprise");
+    const f = await fixture("enterprise", ["organization.view_analytics"]);
     await f.t.run(async (ctx) => {
       for (let i = 0; i < 5003; i++)
         await ctx.db.insert("collections", {
@@ -592,7 +605,7 @@ describe("authorized durable exports", () => {
   }, 10000);
   test("Pro readers cannot create compliance audit exports or access an Enterprise artifact after downgrade", async () => {
     vi.useFakeTimers();
-    const f = await fixture("pro");
+    const f = await fixture("pro", ["organization.view_analytics"]);
     const args = {
       organizationId: f.organizationId,
       requestKey: "compliance",
@@ -627,6 +640,41 @@ describe("authorized durable exports", () => {
         organizationId: f.organizationId,
       }),
     ).toEqual([]);
+    vi.useRealTimers();
+  });
+  test("audit exports require audit-read access and the case filter's own permission", async () => {
+    vi.useFakeTimers();
+    const f = await fixture("enterprise");
+    const audit = (requestKey: string, caseId?: string) => ({
+      organizationId: f.organizationId,
+      requestKey,
+      format: "jsonl" as const,
+      source: { kind: "audit" as const, filters: { caseId } },
+    });
+    await expect(
+      f.user.mutation(api.exports.create, audit("no-analytics")),
+    ).rejects.toThrow("Permission denied: organization.view_analytics");
+    await f.t.run(async (ctx) => {
+      const membership = await ctx.db.get(f.membershipId);
+      const permissionId = await ctx.db.insert("permissions", {
+        name: "organization.view_analytics",
+        category: "organization",
+      });
+      await ctx.db.insert("rolePermissions", {
+        roleId: membership!.roleId,
+        permissionId,
+      });
+    });
+    const loanCaseJob = await f.user.mutation(
+      api.exports.create,
+      audit("loan-case", "loan:any"),
+    );
+    await f.t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(1));
+    const loanCase = await f.user.query(api.exports.status, {
+      jobId: loanCaseJob,
+    });
+    expect(loanCase.status).toBe("failed");
+    expect(loanCase.error).toContain("loans.read");
     vi.useRealTimers();
   });
   test("inventory drilldown exports freeze and apply the same incoming-loan classification filter", async () => {

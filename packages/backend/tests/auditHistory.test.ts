@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 import { modules } from "./testSetup";
 
@@ -361,8 +361,9 @@ test("history export freezes creation membership, retains legacy evidence and tr
     const events: string[] = [];
     let cursor: string | null = null;
     do {
-      const result = await staff.query(api.auditLog.exportPage, {
+      const result = await t.query(internal.auditLog.exportPageForJob, {
         organizationId,
+        creatorId: userId,
         asOf,
         action: "rare",
         paginationOpts: { numItems: 50, cursor },
@@ -544,4 +545,123 @@ test("public workflow history retrieves every approval across partial migration 
   await expect(
     t.query(api.exhibitions.getWorkflowHistory, { exhibitionId }),
   ).rejects.toThrow();
+});
+
+async function addMember(
+  t: Awaited<ReturnType<typeof setup>>["t"],
+  organizationId: Awaited<ReturnType<typeof setup>>["organizationId"],
+  permissionNames: string[],
+) {
+  const userId = await t.run(async (ctx) => {
+    const memberId = await ctx.db.insert("users", {
+      name: "Member",
+      email: `member-${permissionNames.join("-")}@example.test`,
+    });
+    const roleId = await ctx.db.insert("roles", {
+      organizationId,
+      name: `Role ${permissionNames.join(" ")}`,
+      isSystemRole: false,
+    });
+    await ctx.db.insert("userOrganizations", {
+      organizationId,
+      userId: memberId,
+      roleId,
+      joinedAt: 1,
+    });
+    for (const name of permissionNames) {
+      const permissionId = await ctx.db.insert("permissions", {
+        name,
+        category: "collections",
+      });
+      await ctx.db.insert("rolePermissions", { roleId, permissionId });
+    }
+    return memberId;
+  });
+  return t.withIdentity({
+    subject: `${userId}|session-member`,
+    issuer: "https://example.test",
+  });
+}
+
+test("collection readers without analytics access cannot page the organization audit history", async () => {
+  const { t, organizationId } = await setup();
+  const reader = await addMember(t, organizationId, ["collections.read"]);
+  await expect(
+    reader.query(api.auditLog.list, { organizationId }),
+  ).rejects.toThrow("Permission denied");
+});
+
+test("case history filters enforce the case's own permission and plan feature", async () => {
+  const { t, staff, organizationId, foreignOrganizationId, userId } =
+    await setup();
+  const analyst = await addMember(t, organizationId, [
+    "collections.read",
+    "organization.view_analytics",
+  ]);
+  const foreignLoanCase = await t.run(async (ctx) => {
+    await ctx.db.insert("auditLog", {
+      organizationId: foreignOrganizationId,
+      userId,
+      action: "loan_created",
+      entityType: "loan",
+      entityId: "foreign-loan",
+      caseId: "loan:foreign-loan",
+      timestamp: 1,
+    });
+    await ctx.db.insert("auditLog", {
+      organizationId,
+      userId,
+      action: "loan_created",
+      entityType: "loan",
+      entityId: "own-loan",
+      caseId: "loan:own-loan",
+      timestamp: 1,
+    });
+    return "loan:foreign-loan";
+  });
+  await expect(
+    analyst.query(api.auditLog.list, {
+      organizationId,
+      caseId: "loan:own-loan",
+    }),
+  ).rejects.toThrow("Permission denied: loans.read");
+  await expect(
+    staff.query(api.auditLog.list, { organizationId, caseId: "unknown:1" }),
+  ).rejects.toThrow("Invalid case filter");
+  const loanReader = await addMember(t, organizationId, [
+    "collections.read",
+    "organization.view_analytics",
+    "loans.read",
+  ]);
+  expect(
+    (
+      await loanReader.query(api.auditLog.list, {
+        organizationId,
+        caseId: foreignLoanCase,
+      })
+    ).entries,
+  ).toEqual([]);
+  expect(
+    (
+      await loanReader.query(api.auditLog.list, {
+        organizationId,
+        caseId: "loan:own-loan",
+      })
+    ).entries.map((entry) => entry.entityId),
+  ).toEqual(["own-loan"]);
+  await t.run(async (ctx) => {
+    await ctx.db.patch(organizationId, { subscriptionTier: "free" });
+  });
+  await expect(
+    loanReader.query(api.auditLog.list, {
+      organizationId,
+      caseId: "loan:own-loan",
+    }),
+  ).rejects.toThrow("Feature requires pro tier");
+  await expect(
+    staff.query(api.auditLog.list, {
+      organizationId,
+      caseId: "exhibition:any",
+    }),
+  ).rejects.toThrow("Feature requires pro tier");
 });
