@@ -26,6 +26,7 @@ export function useLoanApprovalWorkflow(loanId: string) {
 
   const returnFlow = useLoanReturnFlow({
     loanId,
+    organizationId: loan?.organizationId,
     loanType: loan?.type ?? "outgoing",
     loanItems,
     returnLoan,

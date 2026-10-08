@@ -1,5 +1,18 @@
 export default {
   conditionAssessments: {
+    actorProfileUnavailable: "Acteur enregistré ; profil actuel indisponible",
+    actorCurrentName: "Nom du profil actuel : {name}",
+    unknownLegacyActor: "Identité historique de l’acteur inconnue",
+
+    receiptRequirement: "Saisissez des notes d’état ou sélectionnez une évaluation acceptée pour chaque objet sélectionné, puis confirmez chaque destination de retour requise.",
+    handoffTimeline: "Chronologie des remises",
+    installationTask: "Terminer la tâche d’installation liée (facultatif)",
+
+    selectAccepted: "Sélectionner une évaluation de l’état acceptée",
+    returnDestination: "Destination du retour",
+    conditionEvidence: "Preuve de l’état",
+    confirmOrigin: "Confirmer le retour à l’origine enregistrée",
+
     title: "Évaluations de l'état",
     description:
       "Les observations datées et les photos sont conservées. Un responsable valide le brouillon pour actualiser l'état courant.",

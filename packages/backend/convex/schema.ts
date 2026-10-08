@@ -4313,6 +4313,7 @@ export default defineSchema({
     installationMovementId: v.optional(v.id("locationHistory")),
     installedAt: v.optional(v.number()),
     installedBy: v.optional(v.id("users")),
+    installationTaskId: v.optional(v.id("installationTasks")),
     linkedExhibitionObjectId: v.optional(v.id("exhibitionObjects")),
 
     notes: v.optional(v.string()),

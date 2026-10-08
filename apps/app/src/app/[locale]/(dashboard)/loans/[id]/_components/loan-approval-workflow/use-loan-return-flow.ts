@@ -1,13 +1,14 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
 import { isLoanItemReturned } from "./loan-item-utils";
 
 interface UseLoanReturnFlowOptions {
   loanId: string;
+  organizationId?: Id<"organizations">;
   loanType: "incoming" | "outgoing";
   loanItems: LoanItem[];
   returnLoan: (args: {
@@ -18,6 +19,7 @@ interface UseLoanReturnFlowOptions {
       confirmReturnToOrigin?: boolean;
       destinationLocationId?: Id<"locations">;
       conditionIn?: string;
+      incomingConditionAssessmentId?: Id<"conditionAssessments">;
     }>;
   }) => Promise<unknown>;
   isSubmitting: boolean;
@@ -90,14 +92,6 @@ function returnFlowReducer(
         };
       }
 
-      if (!state.isReturnDialogOpen && state.isConfirmDialogOpen) {
-        if (state.selectedItemIds.size === 0) {
-          return state;
-        }
-
-        return { ...state, selectedItemIds: new Set() };
-      }
-
       return state;
     }
     case "pruneReturnedItems": {
@@ -119,37 +113,20 @@ function returnFlowReducer(
     case "resetAfterReturn":
       return initialReturnFlowState;
     case "closeConfirmOnError":
-      return { ...state, isConfirmDialogOpen: false };
+      return { ...state, isConfirmDialogOpen: false, isReturnDialogOpen: true };
   }
 }
 
-function buildReceiptsForItems(
-  loanType: "incoming" | "outgoing",
-  loanItems: LoanItem[],
-  itemIdsToReturn: string[],
-) {
-  return itemIdsToReturn.flatMap((itemId) => {
-    const item = loanItems.find((entry) => entry._id === itemId);
-    if (!item) {
-      return [];
-    }
-    if (loanType === "incoming") {
-      return [{ loanItemId: item._id as Id<"loanItems"> }];
-    }
-    if (item.dispatchOriginLocationId && !item.dispatchOriginUnknown) {
-      return [
-        {
-          loanItemId: item._id as Id<"loanItems">,
-          confirmReturnToOrigin: true,
-        },
-      ];
-    }
-    return [{ loanItemId: item._id as Id<"loanItems"> }];
-  });
+export interface LoanReceiptEvidence {
+  destinationLocationId?: string;
+  confirmReturnToOrigin?: boolean;
+  conditionIn?: string;
+  incomingConditionAssessmentId?: string;
 }
 
 export function useLoanReturnFlow({
   loanId,
+  organizationId,
   loanType,
   loanItems,
   returnLoan,
@@ -162,6 +139,10 @@ export function useLoanReturnFlow({
     returnFlowReducer,
     initialReturnFlowState,
   );
+
+  const [evidenceByItem, setEvidenceByItem] = useState<
+    Record<string, LoanReceiptEvidence>
+  >({});
 
   const hasMultipleItems = loanItems.length > 1;
 
@@ -180,12 +161,23 @@ export function useLoanReturnFlow({
       const targetIds =
         itemIdsToReturn.length > 0
           ? itemIdsToReturn
-          : loanItems.map((item) => item._id);
-      const receipts = buildReceiptsForItems(
-        loanType,
-        loanItems,
-        targetIds,
-      );
+          : loanItems
+              .filter((item) => !isLoanItemReturned(item))
+              .map((item) => item._id);
+      const receipts = targetIds.map((loanItemId) => {
+        const evidence = evidenceByItem[loanItemId] ?? {};
+        return {
+          loanItemId: loanItemId as Id<"loanItems">,
+          confirmReturnToOrigin: evidence.confirmReturnToOrigin,
+          destinationLocationId: evidence.destinationLocationId
+            ? (evidence.destinationLocationId as Id<"locations">)
+            : undefined,
+          conditionIn: evidence.conditionIn?.trim() || undefined,
+          incomingConditionAssessmentId: evidence.incomingConditionAssessmentId
+            ? (evidence.incomingConditionAssessmentId as Id<"conditionAssessments">)
+            : undefined,
+        };
+      });
       await returnLoan({
         loanId: loanId as Id<"loans">,
         loanItemIds:
@@ -204,11 +196,7 @@ export function useLoanReturnFlow({
   };
 
   const handleReturnClick = () => {
-    if (hasMultipleItems && loanItems.length > 0) {
-      dispatch({ type: "openReturnDialog" });
-    } else {
-      handleReturn([]);
-    }
+    dispatch({ type: "openReturnDialog" });
   };
 
   const handleProceedToConfirm = () => {
@@ -223,10 +211,34 @@ export function useLoanReturnFlow({
     });
   };
 
-  const isFullReturn = state.pendingReturnItemIds.length === loanItems.length;
+  const canProceed =
+    state.selectedItemIds.size > 0 &&
+    Array.from(state.selectedItemIds).every((itemId) => {
+      const evidence = evidenceByItem[itemId];
+      return (
+        !!evidence &&
+        !!(
+          evidence.conditionIn?.trim() || evidence.incomingConditionAssessmentId
+        ) &&
+        (loanType === "incoming" ||
+          evidence.confirmReturnToOrigin === true ||
+          !!evidence.destinationLocationId)
+      );
+    });
+
+  const outstandingItemCount = loanItems.filter(
+    (item) => !isLoanItemReturned(item),
+  ).length;
+  const isFullReturn =
+    state.pendingReturnItemIds.length === outstandingItemCount;
 
   return {
     t,
+    loanType,
+    organizationId,
+    evidenceByItem,
+    setEvidence: (itemId: string, evidence: LoanReceiptEvidence) =>
+      setEvidenceByItem((previous) => ({ ...previous, [itemId]: evidence })),
     hasMultipleItems,
     isSubmitting,
     isReturnDialogOpen: state.isReturnDialogOpen,
@@ -239,6 +251,8 @@ export function useLoanReturnFlow({
     setSelectedItemIds: (value: Set<string>) =>
       dispatch({ type: "setSelectedItemIds", value }),
     pendingReturnItemIds: state.pendingReturnItemIds,
+    canProceed,
+    outstandingItemCount,
     isFullReturn,
     handleReturn,
     handleReturnClick,

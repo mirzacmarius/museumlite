@@ -1,5 +1,18 @@
 export default {
   conditionAssessments: {
+    actorProfileUnavailable: "Responsabil înregistrat; profilul actual este indisponibil",
+    actorCurrentName: "Numele actual al profilului: {name}",
+    unknownLegacyActor: "Identitatea istorică a responsabilului este necunoscută",
+
+    receiptRequirement: "Introduceți note de stare sau selectați o evaluare acceptată pentru fiecare obiect selectat și confirmați fiecare destinație de retur necesară.",
+    handoffTimeline: "Cronologia predărilor",
+    installationTask: "Finalizați sarcina de instalare asociată (opțional)",
+
+    selectAccepted: "Selectați evaluarea de stare acceptată",
+    returnDestination: "Destinația returului",
+    conditionEvidence: "Dovada stării",
+    confirmOrigin: "Confirmați returul la originea înregistrată",
+
     title: "Evaluări ale stării",
     description:
       "Observațiile datate și fotografiile sunt păstrate. Un responsabil acceptă ciorna pentru a actualiza starea curentă.",

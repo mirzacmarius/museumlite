@@ -9,6 +9,7 @@ export type LoanStatus =
 
 export interface LoanItem {
   _id: Id<"loanItems">;
+  collectionId: Id<"collections">;
   accessionNumber: string;
   title: string;
   conditionOut?: string;

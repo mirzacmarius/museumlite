@@ -1,5 +1,18 @@
 export default {
   conditionAssessments: {
+    actorProfileUnavailable: "Recorded actor; current profile unavailable",
+    actorCurrentName: "Current profile name: {name}",
+    unknownLegacyActor: "Legacy actor identity unknown",
+
+    receiptRequirement: "Enter condition notes or select an accepted assessment for every selected item, and confirm each required return destination.",
+    handoffTimeline: "Handoff timeline",
+    installationTask: "Complete linked installation task (optional)",
+
+    selectAccepted: "Select accepted condition assessment",
+    returnDestination: "Return destination",
+    conditionEvidence: "Condition evidence",
+    confirmOrigin: "Confirm return to recorded origin",
+
     title: "Condition assessments",
     description:
       "Dated observations and photos are retained. A reviewer accepts a draft to update current condition.",
