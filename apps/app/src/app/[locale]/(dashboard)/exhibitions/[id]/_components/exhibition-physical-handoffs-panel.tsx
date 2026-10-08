@@ -72,6 +72,8 @@ export function ExhibitionPhysicalHandoffsPanel({
   const [observedFromByObject, setObservedFromByObject] = useState<
     Record<string, string>
   >({});
+  const [installationDestinationByObject, setInstallationDestinationByObject] =
+    useState<Record<string, string>>({});
   const [exceptionReasonByObject, setExceptionReasonByObject] = useState<
     Record<string, string>
   >({});
@@ -145,6 +147,8 @@ export function ExhibitionPhysicalHandoffsPanel({
         {summary.participants.map((participant) => {
           const objectKey = participant.exhibitionObjectId;
           const observedFrom = observedFromByObject[objectKey] ?? "__none__";
+          const installationDestination =
+            installationDestinationByObject[objectKey] ?? "";
           const assessmentId = assessmentByObject[objectKey] ?? "";
           const returnDestination =
             returnDestinationByObject[objectKey] ??
@@ -216,6 +220,24 @@ export function ExhibitionPhysicalHandoffsPanel({
                       />
                     </div>
                   ) : null}
+                  {participant.status === "pending" ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        {t("installationDestination")}
+                      </Label>
+                      <LocationSelector
+                        organizationId={organizationId}
+                        value={installationDestination}
+                        onValueChange={(value) =>
+                          setInstallationDestinationByObject((previous) => ({
+                            ...previous,
+                            [objectKey]: value,
+                          }))
+                        }
+                        allowNone={false}
+                      />
+                    </div>
+                  ) : null}
                   {(participant.status === "pending" ||
                     participant.status === "deinstalled") && (
                     <div className="space-y-2">
@@ -238,13 +260,17 @@ export function ExhibitionPhysicalHandoffsPanel({
                   {participant.status === "pending" ? (
                     <Button
                       size="sm"
-                      disabled={busy || !assessmentId}
+                      disabled={
+                        busy || !assessmentId || !installationDestination
+                      }
                       onClick={() =>
                         runHandoff(participant.exhibitionObjectId, () =>
                           installObject({
                             exhibitionObjectId: participant.exhibitionObjectId,
                             installationConditionAssessmentId:
                               assessmentId as Id<"conditionAssessments">,
+                            exhibitionLocationId:
+                              installationDestination as Id<"locations">,
                             observedFromLocationId:
                               toObservedLocationId(observedFrom),
                           }),

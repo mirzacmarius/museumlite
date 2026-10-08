@@ -3920,6 +3920,7 @@ export default {
       outstanding: "{count} sur {total} résultats en attente",
       readyToClose: "Tous les résultats sont résolus",
       observedFrom: "Emplacement source observé",
+      installationDestination: "Emplacement d’installation",
       install: "Enregistrer l'installation",
       deinstall: "Enregistrer la désinstallation",
       confirmReturn: "Confirmer le retour physique",
