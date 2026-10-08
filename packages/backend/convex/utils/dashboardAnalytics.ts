@@ -467,6 +467,7 @@ export async function buildOrganizationAnalytics(
 
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     ...analyticsFromTotals(totals, organizationTotals),
     recentCollectionGroups,
     recentObjects,

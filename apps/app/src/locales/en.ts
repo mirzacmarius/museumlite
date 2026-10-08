@@ -7831,6 +7831,7 @@ export default {
     },
     availability: {
       ready: "Ready",
+      updating: "Ready, updating",
       unavailable: "Unavailable",
     },
     status: {

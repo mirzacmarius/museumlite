@@ -8019,6 +8019,7 @@ export default {
     },
     availability: {
       ready: "Klar",
+      updating: "Klar, oppdateres",
       unavailable: "Utilgjengelig",
     },
     status: {

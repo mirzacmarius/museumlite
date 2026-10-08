@@ -169,6 +169,7 @@ export async function buildComplianceReport(
 
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     accessions: {
       total: metric(totals, "accessions.total"),
       pending: metric(totals, "accessions.pending"),
@@ -330,6 +331,7 @@ export async function buildLocationUtilization(
   const totalOccupied = metric(totals, "locations.occupied");
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     summary: {
       totalLocations: metric(totals, "locations.active"),
       locationsWithCapacity: metric(totals, "locations.withCapacity"),
@@ -390,6 +392,7 @@ export async function buildCollectionGrowth(
   );
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     months: months.map((month, index) => ({
       month: month.month,
       count: counts[index] ?? 0,
@@ -418,6 +421,7 @@ export async function buildKpiTrends(
     );
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     totalObjects: totalObjects ?? [],
     objectsOnLoan: objectsOnLoan ?? [],
     activeLoans: activeLoans ?? [],
@@ -667,6 +671,7 @@ export async function buildCollectionHealth(
 
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     conservation: {
       totalObjects,
       goodCondition: condition.good,
@@ -749,6 +754,7 @@ export async function buildStorageStats(
   ]);
   return {
     availability: "ready" as const,
+    updating: opened.reader.updating,
     totalFiles: metric(totals, "usage.mediaFileCount"),
     totalSize: metric(totals, "usage.storageBytes"),
     byType: types.rows.map((row) => ({
@@ -765,7 +771,12 @@ export async function loadProjectedUsage(
   ctx: ReadCtx,
   organizationId: Id<"organizations">,
 ): Promise<
-  | { availability: "ready"; storageBytes: number; objectCount: number }
+  | {
+      availability: "ready";
+      updating: boolean;
+      storageBytes: number;
+      objectCount: number;
+    }
   | ProjectionUnavailable
 > {
   const opened = await openProjection(ctx, organizationId);
@@ -773,6 +784,7 @@ export async function loadProjectedUsage(
   const totals = await opened.reader.totals();
   return {
     availability: "ready",
+    updating: opened.reader.updating,
     storageBytes: metric(totals, "usage.storageBytes"),
     objectCount: metric(totals, "usage.objectCount"),
   };

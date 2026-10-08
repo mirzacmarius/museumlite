@@ -13,7 +13,9 @@ import {
   applyGenerationPage as applyPage,
   cancelGeneration,
   collectGenerationPage,
+  continueFanOutPage,
   getProjectionState,
+  isProjectionUpdating,
   markGenerationFailed,
   PROJECTION_DISCREPANCY_ROW_LIMIT,
   PROJECTION_FANOUT_LIMIT,
@@ -64,6 +66,7 @@ const healthValidator = v.object({
   stateDefinitionVersion: v.union(v.number(), v.null()),
   availability: projectionAvailability,
   reason: v.optional(projectionUnavailableReason),
+  updating: v.boolean(),
   revision: v.number(),
   lastBuiltAt: v.optional(v.number()),
   lastVerifiedAt: v.optional(v.number()),
@@ -137,20 +140,27 @@ export const getHealth = query({
     const state = await getProjectionState(ctx, args.organizationId);
     const load = (id?: Id<"projectionGenerations">) =>
       id ? ctx.db.get(id) : Promise.resolve(null);
-    const [active, building, reconciling, lastReconciliation, recent] =
-      await Promise.all([
-        load(state?.activeGenerationId),
-        load(state?.buildingGenerationId),
-        load(state?.reconcilingGenerationId),
-        load(state?.lastReconciliationId),
-        ctx.db
-          .query("projectionGenerations")
-          .withIndex("by_organizationId_and_startedAt", (q) =>
-            q.eq("organizationId", args.organizationId),
-          )
-          .order("desc")
-          .take(10),
-      ]);
+    const [
+      active,
+      building,
+      reconciling,
+      lastReconciliation,
+      recent,
+      updating,
+    ] = await Promise.all([
+      load(state?.activeGenerationId),
+      load(state?.buildingGenerationId),
+      load(state?.reconcilingGenerationId),
+      load(state?.lastReconciliationId),
+      ctx.db
+        .query("projectionGenerations")
+        .withIndex("by_organizationId_and_startedAt", (q) =>
+          q.eq("organizationId", args.organizationId),
+        )
+        .order("desc")
+        .take(10),
+      isProjectionUpdating(ctx, args.organizationId),
+    ]);
     const quality =
       active && state?.availability === "ready"
         ? await readTotals(ctx, active._id, "all")
@@ -169,6 +179,7 @@ export const getHealth = query({
         : state
           ? state.reason
           : ("not_built" as const),
+      updating,
       revision: state?.revision ?? 0,
       lastBuiltAt: state?.lastBuiltAt,
       lastVerifiedAt: state?.lastVerifiedAt,
@@ -370,6 +381,20 @@ export const advanceGeneration = internalAction({
       await ctx.runMutation(internal.projections.markGenerationPageFailed, {
         ...args,
         failure: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return null;
+  },
+});
+
+export const continueFanOut = internalMutation({
+  args: { fanOutId: v.id("projectionFanOuts") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const result = await continueFanOutPage(ctx, args.fanOutId);
+    if (result === "continue") {
+      await ctx.scheduler.runAfter(0, internal.projections.continueFanOut, {
+        fanOutId: args.fanOutId,
       });
     }
     return null;

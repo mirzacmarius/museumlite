@@ -95,7 +95,11 @@ function StatusCard({ health, action }: { health: Health; action: JobAction }) {
         <div className="flex items-center gap-2">
           <h3 className="text-base font-medium">{t("page.statusTitle")}</h3>
           <Badge variant={ready ? "default" : "destructive"}>
-            {ready ? t("availability.ready") : t("availability.unavailable")}
+            {ready
+              ? health.updating
+                ? t("availability.updating")
+                : t("availability.ready")
+              : t("availability.unavailable")}
           </Badge>
         </div>
         <div className="flex flex-wrap gap-2">

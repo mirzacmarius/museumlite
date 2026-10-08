@@ -8170,6 +8170,7 @@ export default {
     },
     availability: {
       ready: "Lista",
+      updating: "Lista, actualizándose",
       unavailable: "No disponible",
     },
     status: {

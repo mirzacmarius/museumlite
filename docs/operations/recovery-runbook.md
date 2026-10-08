@@ -38,6 +38,7 @@ Run these against the target (`bunx convex run --env-file <target.env> ...`).
 | Check | Command | Healthy result |
 | --- | --- | --- |
 | Projection state | `--inline-query 'return await ctx.db.query("organizationProjectionStates").collect()'` | Every organization `availability: "ready"`, current `definitionVersion`, no `buildingGenerationId` |
+| Pending wide refreshes | `--inline-query 'return await ctx.db.query("projectionFanOuts").take(20)'` | Empty once writes settle. While rows exist, metrics stay readable and are flagged `updating`; reconciliation waits for them |
 | Projection jobs | `--inline-query 'return await ctx.db.query("projectionGenerations").collect()'` | No `status: "failed"`; the latest reconcile has `discrepancyCount: 0`, `mismatchCount: 0` |
 | Discrepancy rows | `--inline-query 'return await ctx.db.query("projectionDiscrepancies").collect()'` | Empty for the latest reconcile, or only `legacy_counter_mismatch` (evidence only) |
 | Health through the public API | `projections:getHealth '{"organizationId":"<org>"}' --identity '<admin identity>'` | `availability: "ready"`, `lastReconciliation.status: "completed"` |
@@ -143,5 +144,5 @@ Outcomes:
   - sign-in on the restored target was not tested.
 - Previously distributed file URLs point at the old deployment. Restored storage IDs are preserved, but URLs are not.
 - The rehearsal also ran a per-case legacy-history copy (`normalizeCaseHistory`). That mutation was removed afterwards because readers never used the copied rows. Copies made during a rehearsal are inert; leave them in place.
-- The `metrics` aggregate keeps B-tree nodes of superseded generations. Nodes grew from 10 to 20 after a second rebuild, and to 33 on the source after three generations. This does not affect correctness, but storage grows with every rebuild until a cleanup is built.
+- The rehearsal saw `metrics` aggregate B-tree nodes grow with every rebuild (10, then 20, then 33). Since then, generations reuse a small per-organization set of aggregate namespaces once the previous generation is collected, so an empty namespace no longer stays behind per rebuild. Generations created before this change keep their ID-based namespaces; their empty trees remain until a reviewed cleanup.
 - The rehearsal checked behavior through the CLI and the public Convex API, not through the browser.

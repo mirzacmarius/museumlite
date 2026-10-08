@@ -383,6 +383,7 @@ type ChildDocumentGroups = {
 
 interface DerivedDocuments {
   organizationProjectionStates: Array<Doc<"organizationProjectionStates">>;
+  projectionFanOuts: Array<Doc<"projectionFanOuts">>;
   projectionGenerations: Array<Doc<"projectionGenerations">>;
   projectionContributions: Array<Doc<"projectionContributions">>;
   projectionTotals: Array<Doc<"projectionTotals">>;
@@ -402,6 +403,7 @@ async function collectDerivedDocuments(
 ): Promise<DerivedDocuments> {
   const [
     organizationProjectionStates,
+    projectionFanOuts,
     projectionGenerations,
     exportJobs,
     caseHistoryState,
@@ -409,6 +411,12 @@ async function collectDerivedDocuments(
   ] = await Promise.all([
     ctx.db
       .query("organizationProjectionStates")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", organizationId),
+      )
+      .collect(),
+    ctx.db
+      .query("projectionFanOuts")
       .withIndex("by_organizationId", (q) =>
         q.eq("organizationId", organizationId),
       )
@@ -486,6 +494,7 @@ async function collectDerivedDocuments(
   );
   return {
     organizationProjectionStates,
+    projectionFanOuts,
     projectionGenerations,
     projectionContributions: perGeneration.flatMap(
       (entry) => entry.contributions,

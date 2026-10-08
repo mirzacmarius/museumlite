@@ -23,6 +23,7 @@ export const getAnalytics = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       asOf: v.number(),
       definitionId: v.literal(INVENTORY_METRIC_DEFINITION),
       scope: v.object({
@@ -146,6 +147,7 @@ export const getComplianceReport = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       accessions: v.object({
         total: v.number(),
         pending: v.number(),
@@ -257,6 +259,7 @@ export const getLocationUtilization = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       summary: v.object({
         totalLocations: v.number(),
         locationsWithCapacity: v.number(),
@@ -327,6 +330,7 @@ export const getCollectionGrowth = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       months: v.array(
         v.object({
           month: v.string(),
@@ -354,6 +358,7 @@ export const getKpiTrends = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       totalObjects: v.array(v.number()),
       objectsOnLoan: v.array(v.number()),
       activeLoans: v.array(v.number()),
@@ -380,6 +385,7 @@ export const getOperationalKpis = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       definitionId: v.literal(EXHIBITION_METRIC_DEFINITION),
       scope: v.object({
         organizationId: v.id("organizations"),

@@ -8126,6 +8126,7 @@ export default {
     },
     availability: {
       ready: "Prêt",
+      updating: "Prêt, mise à jour en cours",
       unavailable: "Indisponible",
     },
     status: {

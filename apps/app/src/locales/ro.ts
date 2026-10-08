@@ -8865,6 +8865,7 @@ export default {
     },
     availability: {
       ready: "Pregătit",
+      updating: "Pregătit, se actualizează",
       unavailable: "Indisponibil",
     },
     status: {

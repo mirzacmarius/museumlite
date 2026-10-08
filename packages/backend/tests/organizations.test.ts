@@ -247,7 +247,7 @@ describe("getUsageStats", () => {
       organizationId,
     });
 
-    expect(stats.metrics).toEqual({ availability: "ready" });
+    expect(stats.metrics).toEqual({ availability: "ready", updating: false });
     expect(stats.objects.used).toBe(2);
     expect(stats.storage.used).toBe(0);
     expect(stats.exports.used).toBe(3);

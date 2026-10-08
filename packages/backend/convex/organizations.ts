@@ -807,7 +807,10 @@ export const getUsageStats = query({
   returns: v.object({
     tier: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     metrics: v.union(
-      v.object({ availability: v.literal("ready") }),
+      v.object({
+        availability: v.literal("ready"),
+        updating: v.optional(v.boolean()),
+      }),
       projectionUnavailableResult,
     ),
     storage: v.object({
@@ -865,7 +868,9 @@ export const getUsageStats = query({
 
     return {
       tier,
-      metrics: ready ? { availability: "ready" as const } : usage,
+      metrics: ready
+        ? { availability: "ready" as const, updating: ready.updating }
+        : usage,
       storage: {
         used: ready?.storageBytes ?? null,
         limit: limits.mediaBytes,

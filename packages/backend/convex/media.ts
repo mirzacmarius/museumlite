@@ -823,6 +823,7 @@ export const getStorageStats = query({
     projectionUnavailableResult,
     v.object({
       availability: v.literal("ready"),
+      updating: v.optional(v.boolean()),
       totalFiles: v.number(),
       totalSize: v.number(),
       byType: v.array(
