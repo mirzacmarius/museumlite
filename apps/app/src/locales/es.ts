@@ -7265,7 +7265,7 @@ export default {
       enterCode: "Introduce el código",
       orContinueWithGoogle: "O continúa con Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
-        "Introduce tu correo electrónico. Si aún no tienes una cuenta, te ayudaremos a crearla.",
+        "Introduce tu correo electrónico para continuar.",
       clearEmail: "Borrar correo electrónico",
       enterAValidEmailAddress:
         "Introduce una dirección de correo electrónico válida.",
@@ -7344,11 +7344,10 @@ export default {
       createOne: "Crear una",
       signIn: "Iniciar sesión",
       passwordLoginRequiredFirst:
-        "Aún no existe un acceso con contraseña para este correo electrónico. Crea uno primero.",
+        "No se pudo iniciar sesión con esa contraseña.",
       verificationCodeSent:
         "Introduce el código de verificación que te enviamos por correo electrónico.",
-      accountCreationFailed:
-        "No se pudo crear una cuenta con este correo electrónico.",
+      accountCreationFailed: "No se pudo crear la cuenta. Inténtalo de nuevo.",
       passwordSignInFailed: "No se pudo iniciar sesión con esa contraseña.",
       setPassword: "Establecer contraseña",
       password: "Contraseña",
@@ -7362,7 +7361,7 @@ export default {
       setPasswordToFinishSetup:
         "Establece una contraseña para terminar de configurar la cuenta. Si este no es tu correo electrónico, bórralo e introduce otro.",
       alreadyRegisteredEnterEmail:
-        "¿Ya te registraste? Introduce tu correo electrónico y te ayudaremos a volver a iniciar sesión.",
+        "Introduce tu correo electrónico y elige una contraseña.",
       enterPasswordOrCode:
         "Introduce tu contraseña o usa un código único para continuar.",
       useEmailOrGoogle:
@@ -7379,29 +7378,30 @@ export default {
       resend: "Reenviar",
       resetPassword: "Restablecer contraseña",
       passwordAccountMissingSetup:
-        "Aún no existe ninguna cuenta para {email}. Crea una contraseña para configurar tu cuenta y continuar.",
+        "Crea una contraseña para {email} para terminar de configurar tu cuenta.",
       createPasswordForAccount:
         "Crea una contraseña para {email} para terminar de configurar tu cuenta.",
       existingAccountPassword:
-        "Hemos encontrado una cuenta para {email}. Introduce tu contraseña para continuar.",
+        "Introduce tu contraseña para {email} para continuar.",
       enterPasswordForEmail:
         "Introduce tu contraseña para {email} para continuar.",
       emailVerificationFailed:
-        "No podemos verificar este correo electrónico ahora mismo. Inténtalo de nuevo.",
+        "No podemos continuar ahora mismo. Inténtalo de nuevo.",
       accountStatusFailed:
-        "No se pudo verificar el estado de la cuenta. Inténtalo de nuevo.",
+        "No podemos continuar ahora mismo. Inténtalo de nuevo.",
       uniqueCodeSendFailed: "No se pudo enviar un código único.",
       verificationCodeSendFailed:
         "No se pudo enviar un código de verificación.",
       passwordLoginRequiredForReset:
-        "Aún no existe un acceso con contraseña para este correo electrónico. Crea uno primero y después podrás restablecer la contraseña.",
+        "No se pudo enviar un código para restablecer la contraseña.",
       passwordLoginRequired:
-        "Aún no existe un acceso con contraseña para este correo electrónico.",
+        "No se pudo enviar un código para restablecer la contraseña.",
       passwordResetCodeSendFailed:
         "No se pudo enviar un código para restablecer la contraseña.",
       googleSignInFailed:
         "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
       checking: "Comprobando…",
+      tooManyAttempts: "Demasiados intentos. Inténtalo más tarde.",
     },
     validation: {
       invalidValue: "Valor no válido",

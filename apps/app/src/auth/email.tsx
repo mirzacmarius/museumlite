@@ -94,7 +94,7 @@ export function AuthEmailForm({ defaultEmail, onSubmit }: AuthEmailFormProps) {
 
       <Button className="h-10 w-full" disabled={isButtonDisabled} type="submit">
         {isSubmitting
-          ? translate("untranslatedComponents.auth.checking")
+          ? translate("untranslatedComponents.auth.continuing")
           : translate("untranslatedComponents.auth.continue")}
       </Button>
     </form>

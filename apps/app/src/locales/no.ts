@@ -7153,7 +7153,7 @@ export default {
       enterCode: "Angi kode",
       orContinueWithGoogle: "Eller fortsett med Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
-        "Oppgi e-postadressen din. Hvis du ikke har en konto ennå, hjelper vi deg med å opprette en.",
+        "Oppgi e-postadressen din for å fortsette.",
       clearEmail: "Fjern e-postadresse",
       enterAValidEmailAddress: "Oppgi en gyldig e-postadresse.",
       continueWithGoogle: "Fortsett med Google",
@@ -7229,12 +7229,10 @@ export default {
       alreadyHaveAccount: "Har du allerede en konto?",
       createOne: "Opprett en",
       signIn: "Logg inn",
-      passwordLoginRequiredFirst:
-        "Det finnes ingen passordinnlogging for denne e-postadressen ennå. Opprett en først.",
+      passwordLoginRequiredFirst: "Kunne ikke logge inn med det passordet.",
       verificationCodeSent:
         "Angi bekreftelseskoden som ble sendt til e-postadressen din.",
-      accountCreationFailed:
-        "Kunne ikke opprette en konto med denne e-postadressen.",
+      accountCreationFailed: "Kunne ikke opprette kontoen. Prøv igjen.",
       passwordSignInFailed: "Kunne ikke logge inn med det passordet.",
       setPassword: "Opprett passord",
       password: "Passord",
@@ -7248,7 +7246,7 @@ export default {
       setPasswordToFinishSetup:
         "Opprett et passord for å fullføre konfigureringen av kontoen. Hvis dette ikke er e-postadressen din, fjerner du den og oppgir en annen.",
       alreadyRegisteredEnterEmail:
-        "Allerede registrert? Oppgi e-postadressen din, så hjelper vi deg med å logge inn igjen.",
+        "Oppgi e-postadressen din, og velg deretter et passord.",
       enterPasswordOrCode:
         "Angi passordet ditt eller bruk en engangskode for å fortsette.",
       useEmailOrGoogle:
@@ -7265,25 +7263,24 @@ export default {
       resend: "Send på nytt",
       resetPassword: "Tilbakestill passord",
       passwordAccountMissingSetup:
-        "Det finnes ingen konto for {email} ennå. Opprett et passord for å konfigurere kontoen, og fortsett.",
+        "Opprett et passord for {email} for å fullføre konfigureringen av kontoen.",
       createPasswordForAccount:
         "Opprett et passord for {email} for å fullføre konfigureringen av kontoen.",
-      existingAccountPassword:
-        "Vi fant en eksisterende konto for {email}. Angi passordet ditt for å fortsette.",
+      existingAccountPassword: "Angi passordet for {email} for å fortsette.",
       enterPasswordForEmail: "Angi passordet for {email} for å fortsette.",
-      emailVerificationFailed:
-        "Vi kan ikke bekrefte denne e-postadressen akkurat nå. Prøv igjen.",
-      accountStatusFailed: "Kunne ikke bekrefte kontostatusen. Prøv igjen.",
+      emailVerificationFailed: "Vi kan ikke fortsette akkurat nå. Prøv igjen.",
+      accountStatusFailed: "Vi kan ikke fortsette akkurat nå. Prøv igjen.",
       uniqueCodeSendFailed: "Kunne ikke sende en engangskode.",
       verificationCodeSendFailed: "Kunne ikke sende en bekreftelseskode.",
       passwordLoginRequiredForReset:
-        "Det finnes ingen passordinnlogging for denne e-postadressen ennå. Opprett en først, så kan du tilbakestille passordet.",
+        "Kunne ikke sende en kode for tilbakestilling av passord.",
       passwordLoginRequired:
-        "Det finnes ingen passordinnlogging for denne e-postadressen ennå.",
+        "Kunne ikke sende en kode for tilbakestilling av passord.",
       passwordResetCodeSendFailed:
         "Kunne ikke sende en kode for tilbakestilling av passord.",
       googleSignInFailed: "Kunne ikke starte Google-innloggingen. Prøv igjen.",
       checking: "Kontrollerer…",
+      tooManyAttempts: "For mange forsøk. Prøv igjen senere.",
     },
     validation: {
       invalidValue: "Ugyldig verdi",

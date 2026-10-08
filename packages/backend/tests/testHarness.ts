@@ -1,4 +1,5 @@
 import { convexTest } from "convex-test";
+import rateLimiterSchema from "../../../node_modules/@convex-dev/rate-limiter/src/component/schema";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import type { ModuleId } from "../convex/utils/moduleCatalog";
@@ -22,6 +23,21 @@ export interface TestOrgUserOptions {
 
 export function createConvexTest() {
   return convexTest(schema, modules);
+}
+
+const rateLimiterModules = Object.fromEntries(
+  Object.entries(
+    import.meta.glob(
+      "../../../node_modules/@convex-dev/rate-limiter/src/component/**/*.{ts,js}",
+    ),
+  ).filter(([path]) => !path.endsWith(".d.ts")),
+);
+
+/** Test deployment with the rate-limiter component used by auth code requests. */
+export function createConvexTestWithRateLimiter() {
+  const t = createConvexTest();
+  t.registerComponent("rateLimiter", rateLimiterSchema, rateLimiterModules);
+  return t;
 }
 
 export function authedForUser(

@@ -6976,7 +6976,7 @@ export default {
       enterCode: "Enter code",
       orContinueWithGoogle: "Or continue with Google",
       enterYourEmailOnceIfYouDoNotHaveAnAccountYetWeWillHelpYouCreateOne:
-        "Enter your email once. If you do not have an account yet, we will help you create one.",
+        "Enter your email to continue.",
       clearEmail: "Clear email",
       enterAValidEmailAddress: "Enter a valid email address.",
       continueWithGoogle: "Continue with Google",
@@ -7049,10 +7049,9 @@ export default {
       alreadyHaveAccount: "Already have an account?",
       createOne: "Create one",
       signIn: "Sign in",
-      passwordLoginRequiredFirst:
-        "No password login exists for this email yet. Create one first.",
+      passwordLoginRequiredFirst: "Could not sign in with that password.",
       verificationCodeSent: "Enter the verification code sent to your email.",
-      accountCreationFailed: "Could not create account with this email.",
+      accountCreationFailed: "Could not create the account. Please try again.",
       passwordSignInFailed: "Could not sign in with that password.",
       setPassword: "Set password",
       password: "Password",
@@ -7064,8 +7063,7 @@ export default {
       checkEmailForCode: "Check your email for the code to continue.",
       setPasswordToFinishSetup:
         "Set a password to finish account setup. If this is not your email, clear it and enter another.",
-      alreadyRegisteredEnterEmail:
-        "Already registered? Enter your email and we will guide you back to sign in.",
+      alreadyRegisteredEnterEmail: "Enter your email, then choose a password.",
       enterPasswordOrCode:
         "Enter your password or use a unique code to continue.",
       useEmailOrGoogle:
@@ -7081,23 +7079,22 @@ export default {
       resend: "Resend",
       resetPassword: "Reset password",
       passwordAccountMissingSetup:
-        "No account exists for {email} yet. Create a password to set up your account, then continue.",
+        "Create a password for {email} to finish setting up your account.",
       createPasswordForAccount:
         "Create a password for {email} to finish setting up your account.",
-      existingAccountPassword:
-        "We found an existing account for {email}. Enter your password to continue.",
+      existingAccountPassword: "Enter your password for {email} to continue.",
       enterPasswordForEmail: "Enter your password for {email} to continue.",
       emailVerificationFailed:
-        "We couldn't verify this email right now. Please try again.",
-      accountStatusFailed: "Could not verify account status. Please try again.",
+        "We couldn't continue right now. Please try again.",
+      accountStatusFailed: "We couldn't continue right now. Please try again.",
       uniqueCodeSendFailed: "Could not send a unique code.",
       verificationCodeSendFailed: "Could not send a verification code.",
-      passwordLoginRequiredForReset:
-        "No password login exists for this email yet. Create one first, then you can reset it.",
-      passwordLoginRequired: "No password login exists for this email yet.",
+      passwordLoginRequiredForReset: "Could not send a password reset code.",
+      passwordLoginRequired: "Could not send a password reset code.",
       passwordResetCodeSendFailed: "Could not send a password reset code.",
       googleSignInFailed: "Could not start Google sign-in. Please try again.",
       checking: "Checking…",
+      tooManyAttempts: "Too many attempts. Try again later.",
     },
     validation: {
       invalidValue: "Invalid value",

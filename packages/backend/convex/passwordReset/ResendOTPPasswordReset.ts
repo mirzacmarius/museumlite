@@ -14,7 +14,12 @@ export const ResendOTPPasswordReset = Email({
   async generateVerificationToken() {
     return generateVerificationCode();
   },
-  async sendVerificationRequest({ identifier: email, provider, token, url }) {
+  sendVerificationRequest: async ({
+    identifier: email,
+    provider,
+    token,
+    url,
+  }) => {
     const locale = getEmailLocaleFromAuthUrl(url);
     const messages = getEmailTranslations(locale).auth;
     const emailCopy = buildAuthCodeEmail({
