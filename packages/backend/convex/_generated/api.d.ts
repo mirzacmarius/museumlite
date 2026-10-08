@@ -139,6 +139,7 @@ import type * as utils_collectionListHelpers from "../utils/collectionListHelper
 import type * as utils_collectionMetrics from "../utils/collectionMetrics.js";
 import type * as utils_collectionOptionUsages from "../utils/collectionOptionUsages.js";
 import type * as utils_convexAuth from "../utils/convexAuth.js";
+import type * as utils_custodyErrors from "../utils/custodyErrors.js";
 import type * as utils_customerNumber from "../utils/customerNumber.js";
 import type * as utils_dashboardAnalytics from "../utils/dashboardAnalytics.js";
 import type * as utils_disposalPolicy from "../utils/disposalPolicy.js";
@@ -364,6 +365,7 @@ declare const fullApi: ApiFromModules<{
   "utils/collectionMetrics": typeof utils_collectionMetrics;
   "utils/collectionOptionUsages": typeof utils_collectionOptionUsages;
   "utils/convexAuth": typeof utils_convexAuth;
+  "utils/custodyErrors": typeof utils_custodyErrors;
   "utils/customerNumber": typeof utils_customerNumber;
   "utils/dashboardAnalytics": typeof utils_dashboardAnalytics;
   "utils/disposalPolicy": typeof utils_disposalPolicy;
