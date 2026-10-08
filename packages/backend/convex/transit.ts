@@ -1729,11 +1729,8 @@ export const recordTransitItemReceipt = mutation({
     }
     await requirePermission(ctx, transitRecord.organizationId, "loans.update");
 
-    if (
-      args.conditionIn === undefined &&
-      args.conditionAssessmentId === undefined &&
-      !(transitRecord.loanId && transitRecord.transitType === "return")
-    ) {
+    const conditionText = args.conditionIn?.trim() ?? "";
+    if (conditionText.length === 0 && args.conditionAssessmentId === undefined) {
       throw new Error("Condition evidence is required for transit receipt");
     }
 

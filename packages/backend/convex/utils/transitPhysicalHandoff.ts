@@ -109,11 +109,12 @@ export async function recordTransitItemReceiptInternal(
     if (!loanItem) {
       throw new Error("Loan item not found for transit collection");
     }
-    await receiveLoanItemsWithEvidence(ctx, {
+    const received = await receiveLoanItemsWithEvidence(ctx, {
       loanId: transitRecord.loanId,
       organizationId: transitRecord.organizationId,
       loan,
       changedBy: userId,
+      conditionIn: args.conditionIn,
       receipts: [
         {
           loanItemId: loanItem._id,
@@ -121,21 +122,17 @@ export async function recordTransitItemReceiptInternal(
           incomingConditionAssessmentId: receiptConditionAssessmentId,
           conditionIn: args.conditionIn,
           notes: args.notes,
+          observedFromLocationId,
+          transitItemId: transitItem._id,
+          movementKind: "transit_receipt",
         },
       ],
     });
-    const history = await ctx.db
-      .query("locationHistory")
-      .withIndex("by_collection", (q) =>
-        q.eq("collectionId", transitItem.collectionId),
-      )
-      .collect();
-    history.sort((a, b) => b.movedAt - a.movedAt);
-    const latest = history[0];
-    if (!latest) {
+    const recordedMovementId = received.movementIds[0];
+    if (!recordedMovementId) {
       throw new Error("Loan return did not record movement history");
     }
-    movementId = latest._id;
+    movementId = recordedMovementId;
   } else {
     const recorded = await moveCollectionToLocation(
       ctx,
