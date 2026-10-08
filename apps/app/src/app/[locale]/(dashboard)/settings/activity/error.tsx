@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useScopedI18n } from "@/locales/client";
 
 export default function HistoryError({
@@ -11,8 +11,7 @@ export default function HistoryError({
   unstable_retry: () => void;
 }) {
   const t = useScopedI18n("activityLog");
-  const router = useRouter();
-  const pathname = usePathname();
+  const { replace } = useRouter();
   return (
     <div role="alert" className="space-y-4 rounded-lg border border-border p-6">
       <p>{t("unavailable")}</p>
@@ -21,7 +20,7 @@ export default function HistoryError({
         <Button
           variant="outline"
           onClick={() => {
-            router.replace(pathname);
+            replace(window.location.pathname);
             unstable_retry();
           }}
         >

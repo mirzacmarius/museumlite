@@ -9,6 +9,7 @@ import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useState } from "react";
 import { env } from "@/env.mjs";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
+import { formatIsoTimestamp } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 
 type ExportStatus = FunctionReturnType<typeof api.exports.status>["status"];
@@ -221,8 +222,8 @@ export function ExportJobControl({
               </p>
               <p className="text-xs text-muted-foreground">
                 {t("cutoff", {
-                  asOf: new Date(job.asOf).toISOString(),
-                  expiresAt: new Date(job.expiresAt).toISOString(),
+                  asOf: formatIsoTimestamp(job.asOf),
+                  expiresAt: formatIsoTimestamp(job.expiresAt),
                 })}
               </p>
               {job.error && <p role="alert">{job.error}</p>}
