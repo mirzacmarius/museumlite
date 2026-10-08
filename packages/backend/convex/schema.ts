@@ -2156,7 +2156,12 @@ export default defineSchema({
     acceptedAt: v.optional(v.number()),
   })
     .index("by_collection", ["collectionId"])
-    .index("by_organization", ["organizationId"]),
+    .index("by_organization", ["organizationId"])
+    .index("by_collection_and_status_and_acceptedAt", [
+      "collectionId",
+      "status",
+      "acceptedAt",
+    ]),
 
   // Documents attached to loans
   loanDocuments: defineTable({

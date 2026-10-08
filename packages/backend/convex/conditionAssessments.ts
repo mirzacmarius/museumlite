@@ -10,7 +10,11 @@ import { hasPermission, requirePermission } from "./utils/permissions";
 const observation = v.object({
   area: v.string(),
   description: v.string(),
-  severity: v.union(v.literal("minor"), v.literal("moderate"), v.literal("severe")),
+  severity: v.union(
+    v.literal("minor"),
+    v.literal("moderate"),
+    v.literal("severe"),
+  ),
 });
 
 function requiredText(value: string, field: string) {
@@ -36,9 +40,15 @@ export const create = mutation({
     ] as const);
     if (!userId) throw new Error("Not authenticated");
     if (!collection) throw new Error("Object not found");
-    await requirePermission(ctx, collection.organizationId, "collections.update");
+    await requirePermission(
+      ctx,
+      collection.organizationId,
+      "collections.update",
+    );
     if (!Number.isFinite(args.assessedAt) || args.assessedAt > Date.now()) {
-      throw new Error("Assessment date must be valid and cannot be in the future");
+      throw new Error(
+        "Assessment date must be valid and cannot be in the future",
+      );
     }
     if (args.observations.length > 100 || args.photos.length > 20) {
       throw new Error("Assessment has too many observations or photos");
@@ -51,10 +61,20 @@ export const create = mutation({
     const photos: Doc<"conditionAssessments">["photos"] = [];
     for (const photoId of new Set(args.photos)) {
       const photo = await ctx.db.get(photoId);
-      if (!photo || photo.collectionId !== args.collectionId || photo.fileType !== "image" || photo.uploadStatus !== "completed" || !(await ctx.db.system.get(photo.storageId))) {
+      if (
+        !photo ||
+        photo.collectionId !== args.collectionId ||
+        photo.fileType !== "image" ||
+        photo.uploadStatus !== "completed" ||
+        !(await ctx.db.system.get(photo.storageId))
+      ) {
         throw new Error("Assessment photo must belong to this object");
       }
-      photos.push({ mediaId: photoId, storageId: photo.storageId, fileName: photo.fileName });
+      photos.push({
+        mediaId: photoId,
+        storageId: photo.storageId,
+        fileName: photo.fileName,
+      });
     }
     const assessmentId = await ctx.db.insert("conditionAssessments", {
       organizationId: collection.organizationId,
@@ -89,20 +109,37 @@ export const accept = mutation({
     ] as const);
     if (!userId) throw new Error("Not authenticated");
     if (!assessment) throw new Error("Assessment not found");
-    await requirePermission(ctx, assessment.organizationId, "collections.accept_condition");
+    await requirePermission(
+      ctx,
+      assessment.organizationId,
+      "collections.accept_condition",
+    );
     if (assessment.status === "accepted") return null;
     const collection = await ctx.db.get(assessment.collectionId);
-    if (!collection || collection.organizationId !== assessment.organizationId) {
+    if (
+      !collection ||
+      collection.organizationId !== assessment.organizationId
+    ) {
       throw new Error("Object is unavailable; assessment remains a draft");
     }
     for (const snapshot of assessment.photos) {
       const photo = await ctx.db.get(snapshot.mediaId);
-      if (!photo || photo.collectionId !== collection._id || !(await ctx.db.system.get(snapshot.storageId))) {
-        throw new Error("Assessment photo is unavailable; assessment remains a draft");
+      if (
+        !photo ||
+        photo.collectionId !== collection._id ||
+        !(await ctx.db.system.get(snapshot.storageId))
+      ) {
+        throw new Error(
+          "Assessment photo is unavailable; assessment remains a draft",
+        );
       }
     }
     const acceptedAt = Date.now();
-    await ctx.db.patch(args.assessmentId, { status: "accepted", acceptedBy: userId, acceptedAt });
+    await ctx.db.patch(args.assessmentId, {
+      status: "accepted",
+      acceptedBy: userId,
+      acceptedAt,
+    });
     await ctx.db.patch(collection._id, {
       condition: assessment.condition,
       currentConditionAssessmentId: assessment._id,
@@ -171,28 +208,54 @@ export const getForObject = query({
       ? await ctx.db.get(collection.currentConditionAssessmentId)
       : null;
     const legacy = {
-      condition: collection.legacyConditionSnapshot ?? collection.conditionHistory?.at(-1)?.condition ?? (currentAssessment ? undefined : collection.condition),
+      condition:
+        collection.legacyConditionSnapshot ??
+        collection.conditionHistory?.at(-1)?.condition ??
+        (currentAssessment ? undefined : collection.condition),
       history: collection.conditionHistory ?? [],
       provenance: "uncertain" as const,
     };
-    const current = currentAssessment?.status === "accepted"
-      ? { source: "assessment" as const, condition: currentAssessment.condition, assessmentId: currentAssessment._id }
-      : collection.currentConditionAssessmentId
-        ? { source: "unknown" as const, condition: null, assessmentId: null }
-      : collection.condition
-        ? { source: "legacy" as const, condition: collection.condition, assessmentId: null }
-        : { source: "unknown" as const, condition: null, assessmentId: null };
-    const recentAssessments = await ctx.db
+    const current =
+      currentAssessment?.status === "accepted"
+        ? {
+            source: "assessment" as const,
+            condition: currentAssessment.condition,
+            assessmentId: currentAssessment._id,
+          }
+        : collection.currentConditionAssessmentId
+          ? { source: "unknown" as const, condition: null, assessmentId: null }
+          : collection.condition
+            ? {
+                source: "legacy" as const,
+                condition: collection.condition,
+                assessmentId: null,
+              }
+            : {
+                source: "unknown" as const,
+                condition: null,
+                assessmentId: null,
+              };
+    const acceptedByRecency = await ctx.db
       .query("conditionAssessments")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
+      .withIndex("by_collection_and_status_and_acceptedAt", (q) =>
+        q.eq("collectionId", args.collectionId).eq("status", "accepted"),
+      )
       .order("desc")
-      .take(25);
-    const acceptedOrdered = recentAssessments.filter((item) => item.status === "accepted");
-    const previousAccepted = acceptedOrdered[1]
+      .take(2);
+    const previousAcceptedDoc = acceptedByRecency.find((item) => {
+      if (currentAssessment && item._id === currentAssessment._id) {
+        return false;
+      }
+      if (currentAssessment?.acceptedAt === undefined) {
+        return true;
+      }
+      return (item.acceptedAt ?? -1) <= currentAssessment.acceptedAt;
+    });
+    const previousAccepted = previousAcceptedDoc
       ? {
-          assessmentId: acceptedOrdered[1]._id,
-          condition: acceptedOrdered[1].condition,
-          assessedAt: acceptedOrdered[1].assessedAt,
+          assessmentId: previousAcceptedDoc._id,
+          condition: previousAcceptedDoc.condition,
+          assessedAt: previousAcceptedDoc.assessedAt,
         }
       : null;
     const comparison = {
@@ -200,7 +263,12 @@ export const getForObject = query({
       previousAccepted,
       currentCondition: current.condition,
     };
-    return { organizationId: collection.organizationId, current, legacy, comparison };
+    return {
+      organizationId: collection.organizationId,
+      current,
+      legacy,
+      comparison,
+    };
   },
 });
 
@@ -213,22 +281,38 @@ export const listForObject = query({
     const collection = await ctx.db.get(args.collectionId);
     if (!collection) throw new Error("Object not found");
     await requirePermission(ctx, collection.organizationId, "collections.read");
-    const canReadMedia = await hasPermission(ctx, collection.organizationId, "media.read");
-    const result = await ctx.db.query("conditionAssessments")
-      .withIndex("by_collection", (q) => q.eq("collectionId", args.collectionId))
-      .order("desc").paginate(args.paginationOpts);
-    const page = await Promise.all(result.page.map(async (assessment) => ({
-      ...assessment,
-      assessorName: (await ctx.db.get(assessment.assessedBy))?.name ?? "Unknown assessor",
-      acceptedByName: assessment.acceptedBy
-        ? (await ctx.db.get(assessment.acceptedBy))?.name ?? "Unknown reviewer"
-        : null,
-      photos: await Promise.all(assessment.photos.map(async (photo) => ({
-        id: photo.mediaId,
-        name: canReadMedia ? photo.fileName : "",
-        url: canReadMedia ? await ctx.storage.getUrl(photo.storageId) : null,
-      }))),
-    })));
+    const canReadMedia = await hasPermission(
+      ctx,
+      collection.organizationId,
+      "media.read",
+    );
+    const result = await ctx.db
+      .query("conditionAssessments")
+      .withIndex("by_collection", (q) =>
+        q.eq("collectionId", args.collectionId),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (assessment) => ({
+        ...assessment,
+        assessorName:
+          (await ctx.db.get(assessment.assessedBy))?.name ?? "Unknown assessor",
+        acceptedByName: assessment.acceptedBy
+          ? ((await ctx.db.get(assessment.acceptedBy))?.name ??
+            "Unknown reviewer")
+          : null,
+        photos: await Promise.all(
+          assessment.photos.map(async (photo) => ({
+            id: photo.mediaId,
+            name: canReadMedia ? photo.fileName : "",
+            url: canReadMedia
+              ? await ctx.storage.getUrl(photo.storageId)
+              : null,
+          })),
+        ),
+      })),
+    );
     return { ...result, page };
   },
 });
