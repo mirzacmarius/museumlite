@@ -258,50 +258,53 @@ function MediaGalleryImageCard({
             </div>
           )}
 
-          {editable && (
-            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <PermissionGate permission="media.upload">
-                {!file.isPrimary && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleSetPrimary(file._id);
-                    }}
-                    title={common("setAsPrimary")}
-                    className="size-7 p-0"
-                  >
-                    <Star className="size-3.5" />
-                  </Button>
-                )}
+          <PermissionGate permission="media.upload">
+            <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
+              {!file.isPrimary && file.fileType === "image" && (
                 <Button
                   type="button"
                   size="sm"
                   variant="secondary"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setEditingImageId(file._id as Id<"mediaFiles">);
+                    handleSetPrimary(file._id);
                   }}
-                  title={common("edit")}
+                  title={common("setAsPrimary")}
+                  aria-label={common("setAsPrimary")}
                   className="size-7 p-0"
                 >
-                  <Edit className="size-3.5" />
+                  <Star className="size-3.5" />
                 </Button>
-                <MediaEditDialog
-                  media={file}
-                  onUpdate={(updates) =>
-                    handleUpdateMedia(file._id as Id<"mediaFiles">, updates)
-                  }
-                  open={editingMedia === file._id}
-                  onOpenChange={(open) =>
-                    setEditingMedia(open ? file._id : null)
-                  }
-                />
-              </PermissionGate>
+              )}
+              {editable && (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setEditingImageId(file._id as Id<"mediaFiles">);
+                    }}
+                    title={common("edit")}
+                    className="size-7 p-0"
+                  >
+                    <Edit className="size-3.5" />
+                  </Button>
+                  <MediaEditDialog
+                    media={file}
+                    onUpdate={(updates) =>
+                      handleUpdateMedia(file._id as Id<"mediaFiles">, updates)
+                    }
+                    open={editingMedia === file._id}
+                    onOpenChange={(open) =>
+                      setEditingMedia(open ? file._id : null)
+                    }
+                  />
+                </>
+              )}
             </div>
-          )}
+          </PermissionGate>
 
           <div className="absolute left-2 top-2 flex flex-col gap-1">
             {file.isPrimary && (

@@ -9,6 +9,7 @@ import {
   applyUsageCounterDelta,
   ensureUsageCounter,
 } from "./organizationUsageCounters";
+import { normalizeDraftMediaPrimary } from "./primaryMedia";
 import { transferStorageOwnership } from "./uploadOwnership";
 
 function serializeStringList(values?: string[]) {
@@ -125,6 +126,7 @@ export async function publishAccessionObjectDraft(
   ] as const);
 
   await syncCollectionOptionUsages(ctx, collectionId);
+  const draftMedia = normalizeDraftMediaPrimary(accession.draftMedia ?? []);
 
   await Promise.all([
     ...uniqueCollectionGroupIds.flatMap((collectionGroupId, index) => {
@@ -152,7 +154,7 @@ export async function publishAccessionObjectDraft(
         }),
       ];
     }),
-    ...(accession.draftMedia ?? []).map(async (draftMediaItem) => {
+    ...draftMedia.map(async (draftMediaItem) => {
       const { mediaId } = await insertCompletedMediaAsset(ctx, {
         collectionId,
         organizationId: accession.organizationId,

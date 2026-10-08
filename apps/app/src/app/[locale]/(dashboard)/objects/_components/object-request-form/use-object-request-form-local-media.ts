@@ -9,10 +9,12 @@ import type { DraftMediaItem } from "../collection-form-shared/types";
 
 export function useObjectRequestFormLocalMedia({
   currentOrganizationId,
+  hasSavedPrimaryImage,
   setError,
   t,
 }: {
   currentOrganizationId: Id<"organizations"> | null | undefined;
+  hasSavedPrimaryImage: boolean;
   setError: (error: string | null) => void;
   t: (key: string) => string;
 }) {
@@ -63,13 +65,14 @@ export function useObjectRequestFormLocalMedia({
         }
 
         const files = Array.from(filesList);
-        const isFirstBatch = selectedFiles.length === 0;
+        const hasPrimaryImage =
+          hasSavedPrimaryImage || selectedFiles.some((item) => item.isPrimary);
 
         const newFiles = files.map((file, index) => ({
           id: `${Date.now()}-${index}`,
           file,
           previewUrl: URL.createObjectURL(file),
-          isPrimary: isFirstBatch && index === 0,
+          isPrimary: !hasPrimaryImage && index === 0,
         }));
 
         setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -88,10 +91,10 @@ export function useObjectRequestFormLocalMedia({
         );
       }
     },
-    [selectedFiles.length, setError, t],
+    [hasSavedPrimaryImage, selectedFiles, setError, t],
   );
 
-  const handleSetPrimary = useCallback((fileId: string) => {
+  const setPrimaryFile = useCallback((fileId: string | null) => {
     setSelectedFiles((prev) =>
       prev.map((item) => ({
         ...item,
@@ -108,11 +111,9 @@ export function useObjectRequestFormLocalMedia({
       }
 
       const remaining = prev.filter((item) => item.id !== fileId);
-      if (remaining.length > 0 && !remaining.some((item) => item.isPrimary)) {
-        const first = remaining[0];
-        if (first) {
-          return [{ ...first, isPrimary: true }, ...remaining.slice(1)];
-        }
+      const [first, ...rest] = remaining;
+      if (fileToDelete?.isPrimary && first) {
+        return [{ ...first, isPrimary: true }, ...rest];
       }
 
       return remaining;
@@ -261,7 +262,7 @@ export function useObjectRequestFormLocalMedia({
     heroImage,
     hasLocalMediaSelections,
     handleFileSelect,
-    handleSetPrimary,
+    setPrimaryFile,
     handleDeleteImage,
     handleDocumentSelect,
     handleDeleteDocument,

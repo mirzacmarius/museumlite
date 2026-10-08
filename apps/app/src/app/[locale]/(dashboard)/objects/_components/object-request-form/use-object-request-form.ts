@@ -26,7 +26,10 @@ import {
   createFormDataFromDraftObject,
   getFormSignature,
 } from "../collection-form-shared/utils";
-import { objectRequestDraftReducer } from "./object-request-form-draft-reducer";
+import {
+  draftPrimaryStorageId,
+  objectRequestDraftReducer,
+} from "./object-request-form-draft-reducer";
 import { useObjectRequestFormDraft } from "./use-object-request-form-draft";
 import { useObjectRequestFormLocalMedia } from "./use-object-request-form-local-media";
 import { useObjectRequestFormSubmit } from "./use-object-request-form-submit";
@@ -73,6 +76,7 @@ export function useObjectRequestForm({
       formData,
       draftAccessionId: currentDraftAccessionId,
       persistedDraftMedia,
+      savedPrimaryStorageId,
       draftSavedAt,
       initialized: hasDraftInitialized,
     },
@@ -81,6 +85,7 @@ export function useObjectRequestForm({
     formData: initialForm,
     draftAccessionId: accessionId ?? null,
     persistedDraftMedia: initialDraftMedia ?? [],
+    savedPrimaryStorageId: draftPrimaryStorageId(initialDraftMedia ?? []),
     draftSavedAt: initialDraftSavedAt,
     initialized: false,
   });
@@ -104,14 +109,32 @@ export function useObjectRequestForm({
     isLocationTrackingEnabled,
   );
 
+  const persistedPrimaryStorageId = draftPrimaryStorageId(persistedDraftMedia);
   const localMedia = useObjectRequestFormLocalMedia({
     currentOrganizationId,
+    hasSavedPrimaryImage: persistedPrimaryStorageId !== null,
     setError,
     t,
   });
+  const { setPrimaryFile } = localMedia;
+
+  const handleSetPrimary = useCallback(
+    (imageId: string) => {
+      const savedImage = persistedDraftMedia.find(
+        (item) => item.mediaCategory === "image" && item.storageId === imageId,
+      );
+      dispatchDraft({
+        type: "set_persisted_primary",
+        storageId: savedImage?.storageId ?? null,
+      });
+      setPrimaryFile(savedImage ? null : imageId);
+    },
+    [persistedDraftMedia, setPrimaryFile],
+  );
 
   const isFormDirty =
-    getFormSignature(formData) !== initialFormSignatureRef.current;
+    getFormSignature(formData) !== initialFormSignatureRef.current ||
+    persistedPrimaryStorageId !== savedPrimaryStorageId;
   const hasUnsavedChanges = isFormDirty || localMedia.hasLocalMediaSelections;
   const hasSavedFieldDraft = draftSavedAt !== null;
   const isDraftCurrent = hasSavedFieldDraft && !isFormDirty;
@@ -247,7 +270,7 @@ export function useObjectRequestForm({
     documentInputRef: localMedia.documentInputRef,
     handleFileSelect: localMedia.handleFileSelect,
     handleDocumentSelect: localMedia.handleDocumentSelect,
-    handleSetPrimary: localMedia.handleSetPrimary,
+    handleSetPrimary,
     handleDeleteImage: localMedia.handleDeleteImage,
     handleDeleteDocument: localMedia.handleDeleteDocument,
     isLocationTrackingEnabled,

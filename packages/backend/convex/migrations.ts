@@ -9,6 +9,7 @@ import {
 } from "./utils/customerNumber";
 import { internalMutation } from "./utils/mutationBuilders";
 import { patchOrganizationTransferFieldsIfMissing } from "./utils/organizationTransferRegistry";
+import { keepOldestPrimaryImage } from "./utils/primaryMedia";
 import { SUPER_ADMIN_ROLE_NAME } from "./utils/superAdmins";
 import {
   COLLECTION_MANAGER_ROLE_DESCRIPTION,
@@ -1583,6 +1584,37 @@ export const recoverStrandedMediaUploads = internalMutation({
     }
     console.log(`Recovered ${recovered} stranded media uploads`);
     return { recovered, isDone: page.isDone };
+  },
+});
+
+/**
+ * Migration: Leave one primary image on objects that uploads flagged with
+ * several (MUS-672). Keeps each object's oldest primary image, which its
+ * object page already shows, and clears the flag from the others. Bounded and
+ * rerunnable; continues itself page by page.
+ *
+ * bun run convex:local -- run migrations:repairDuplicatePrimaryImages
+ */
+export const repairDuplicatePrimaryImages = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  returns: v.object({ cleared: v.number(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("collections")
+      .paginate({ numItems: 50, cursor: args.cursor ?? null });
+    let cleared = 0;
+    for (const collection of page.page) {
+      cleared += await keepOldestPrimaryImage(ctx, collection._id);
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.repairDuplicatePrimaryImages,
+        { cursor: page.continueCursor },
+      );
+    }
+    console.log(`Cleared ${cleared} extra primary media flags`);
+    return { cleared, isDone: page.isDone };
   },
 });
 

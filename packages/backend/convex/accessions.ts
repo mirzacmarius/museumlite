@@ -41,6 +41,10 @@ import {
   requirePermission,
 } from "./utils/permissions";
 import {
+  changesDraftPrimaryImage,
+  normalizeDraftMediaPrimary,
+} from "./utils/primaryMedia";
+import {
   claimStorageOwnership,
   createAuthorizedUploadUrl,
   validateOwnedUploadSize,
@@ -363,6 +367,8 @@ export const upsertObjectDraft = mutation({
       ...args.objectData,
       title: args.objectData.title.trim(),
     };
+    const draftMedia =
+      args.draftMedia && normalizeDraftMediaPrimary(args.draftMedia);
 
     if (normalizedObjectData.title.length === 0) {
       throw new Error("Title is required");
@@ -418,6 +424,12 @@ export const upsertObjectDraft = mutation({
       }
 
       await requirePermission(ctx, args.organizationId, "collections.update");
+      if (
+        draftMedia &&
+        changesDraftPrimaryImage(existing.draftMedia, draftMedia)
+      ) {
+        await requirePermission(ctx, args.organizationId, "media.upload");
+      }
 
       const updatedWorkflowStep = shouldAutoApproveSubmit
         ? undefined
@@ -441,7 +453,7 @@ export const upsertObjectDraft = mutation({
         existing._id,
       );
 
-      for (const media of args.draftMedia ?? [])
+      for (const media of draftMedia ?? [])
         await claimStorageOwnership(ctx, {
           storageId: media.storageId,
           organizationId: args.organizationId,
@@ -468,7 +480,7 @@ export const upsertObjectDraft = mutation({
             ...normalizedObjectData,
             accessionNumber,
           },
-          draftMedia: args.draftMedia ?? existing.draftMedia,
+          draftMedia: draftMedia ?? existing.draftMedia,
         }),
         syncAccessionSearchDocument(ctx, existing._id),
         ctx.runMutation(internal.audit.logAction, {
@@ -535,6 +547,9 @@ export const upsertObjectDraft = mutation({
     }
 
     await requirePermission(ctx, args.organizationId, "collections.create");
+    if (draftMedia && changesDraftPrimaryImage(undefined, draftMedia)) {
+      await requirePermission(ctx, args.organizationId, "media.upload");
+    }
 
     let accessionNumber = normalizedObjectData.accessionNumber?.trim()
       ? normalizedObjectData.accessionNumber
@@ -581,9 +596,9 @@ export const upsertObjectDraft = mutation({
         ...normalizedObjectData,
         accessionNumber,
       },
-      draftMedia: args.draftMedia,
+      draftMedia,
     });
-    for (const media of args.draftMedia ?? [])
+    for (const media of draftMedia ?? [])
       await claimStorageOwnership(ctx, {
         storageId: media.storageId,
         organizationId: args.organizationId,
