@@ -60,12 +60,39 @@ const email = `qa-${randomBytes(4).toString("hex")}@example.test`;
 const password = randomBytes(18).toString("base64url");
 const client = new ConvexHttpClient(state.url);
 
+// Public password sign-up now requires email verification, which the local
+// backend cannot deliver. Create the account through Convex Auth's internal
+// store (it hashes the secret), then sign in through the public flow.
+const accountStatus = run(
+  "node",
+  [
+    join(root, "scripts/local-qa/convex-local.mjs"),
+    "run",
+    "auth:store",
+    JSON.stringify({
+      args: {
+        type: "createAccountFromCredentials",
+        provider: "password",
+        account: { id: email, secret: password },
+        profile: { email },
+        shouldLinkViaEmail: false,
+        shouldLinkViaPhone: false,
+      },
+    }),
+  ],
+  { stdio: "ignore", env: localOnlyEnv() },
+);
+if (accountStatus !== 0) {
+  console.error("✗ Failed to create the QA account on the local backend");
+  process.exit(accountStatus);
+}
+
 const signedIn = await client.action(api.auth.signIn, {
   provider: "password",
-  params: { email, password, flow: "signUp" },
+  params: { email, password, flow: "signIn" },
 });
 if (!signedIn.tokens?.token) {
-  console.error("✗ Sign-up did not return a session token");
+  console.error("✗ Sign-in did not return a session token");
   process.exit(1);
 }
 client.setAuth(signedIn.tokens.token);
