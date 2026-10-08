@@ -174,18 +174,6 @@ export async function installObjectHandler(
     );
   }
 
-  const collection = await requireCollectionInOrganization(
-    ctx,
-    exhibitionObject.collectionId,
-    exhibition.organizationId,
-  );
-  if (await isCollectionOnLoan(ctx, exhibitionObject.collectionId)) {
-    throw custodyConflict(
-      "EXTERNAL_CUSTODY",
-      "Cannot install an object that is currently on loan",
-    );
-  }
-
   const destinationId =
     args.exhibitionLocationId ??
     exhibitionObject.exhibitionLocationId ??
@@ -196,6 +184,19 @@ export async function installObjectHandler(
       "Exhibition installation requires a destination location",
     );
   }
+
+  if (await isCollectionOnLoan(ctx, exhibitionObject.collectionId)) {
+    throw custodyConflict(
+      "EXTERNAL_CUSTODY",
+      "Cannot install an object that is currently on loan",
+    );
+  }
+  const collection = await requireCollectionInOrganization(
+    ctx,
+    exhibitionObject.collectionId,
+    exhibition.organizationId,
+  );
+
   await requireUsableLocation(ctx, exhibition.organizationId, destinationId);
 
   const installationConditionAssessmentId =
