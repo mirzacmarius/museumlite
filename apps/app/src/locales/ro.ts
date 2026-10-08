@@ -7190,6 +7190,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Destinația instalării",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
