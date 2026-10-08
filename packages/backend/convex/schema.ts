@@ -19,6 +19,10 @@ import {
   objectDraftDataValidator,
 } from "./utils/objectDraftData";
 import {
+  partyDuplicateReviewDocumentValidator,
+  partyLinkDocumentValidator,
+} from "./utils/partyValidators";
+import {
   projectionAvailability,
   projectionDiscrepancyFields,
   projectionFact,
@@ -4691,6 +4695,23 @@ export default defineSchema({
       "accountId",
       "relationshipType",
     ]),
+
+  // Typed Party roles in procedures (MUS-642). The account is the Party;
+  // links are superseded, never deleted (ADR 0002).
+  partyLinks: defineTable(partyLinkDocumentValidator)
+    .index("by_organization_and_target_and_role_and_supersededAt", [
+      "organizationId",
+      "targetType",
+      "targetId",
+      "role",
+      "supersededAt",
+    ])
+    .index("by_account", ["accountId"]),
+
+  // Suggested duplicate Parties awaiting staff review. Never merged.
+  partyDuplicateReviews: defineTable(partyDuplicateReviewDocumentValidator)
+    .index("by_organization_and_pairKey", ["organizationId", "pairKey"])
+    .index("by_organization_and_status", ["organizationId", "status"]),
 
   accountDocuments: defineTable({
     organizationId: v.id("organizations"),

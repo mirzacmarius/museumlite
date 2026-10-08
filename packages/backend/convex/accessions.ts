@@ -29,6 +29,11 @@ import { validateObjectReferences } from "./utils/locationIntegrity";
 import { isSupportedMediaMimeType } from "./utils/mediaAssets";
 import { internalMutation, mutation } from "./utils/mutationBuilders";
 import { getWorkflowCreatorRecipient } from "./utils/notificationRecipients";
+import { requireLinkableParty } from "./utils/parties";
+import {
+  accessionSourceAssertion,
+  recordPartyLink,
+} from "./utils/partyLinks";
 import {
   accessionDraftMediaValidator,
   objectDraftDataValidator,
@@ -165,11 +170,13 @@ export const create = mutation({
       await requirePermission(ctx, args.organizationId, "collections.create");
     }
 
-    if (args.donorAccountId) {
-      const donor = await ctx.db.get(args.donorAccountId);
-      if (!donor || donor.organizationId !== args.organizationId)
-        throw new Error("Donor account not found in this organization");
-    }
+    const donor = args.donorAccountId
+      ? await requireLinkableParty(
+          ctx,
+          args.organizationId,
+          args.donorAccountId,
+        )
+      : null;
     // Generate or use provided accession number
     let accessionNumber: string;
     if (args.accessionNumber) {
@@ -244,6 +251,18 @@ export const create = mutation({
         uploadedBy: userId,
         ownerType: "accessionDocument",
         ownerId: accessionId,
+      });
+    if (donor)
+      await recordPartyLink(ctx, {
+        organizationId: args.organizationId,
+        target: { type: "accession", id: accessionId },
+        account: donor,
+        role: "donor",
+        allowedRoles: ["donor"],
+        effectiveFrom: args.dateReceived,
+        assertedName: accessionSourceAssertion(args.source),
+        userId,
+        origin: "staff",
       });
     await Promise.all([
       syncAccessionSearchDocument(ctx, accessionId),
@@ -1142,12 +1161,15 @@ export const update = mutation({
     } = {};
 
     if (args.source !== undefined) updates.source = args.source;
-    if (args.donorAccountId !== undefined) {
-      const donor = await ctx.db.get(args.donorAccountId);
-      if (!donor || donor.organizationId !== accession.organizationId)
-        throw new Error("Donor account not found in this organization");
-      updates.donorAccountId = args.donorAccountId;
-    }
+    const donor =
+      args.donorAccountId !== undefined
+        ? await requireLinkableParty(
+            ctx,
+            accession.organizationId,
+            args.donorAccountId,
+          )
+        : null;
+    if (donor) updates.donorAccountId = donor._id;
     if (args.documents !== undefined) {
       const existingDocuments = new Set(accession.documents);
       for (const storageId of args.documents) {
@@ -1167,6 +1189,20 @@ export const update = mutation({
     if (args.notes !== undefined) updates.notes = args.notes;
 
     await ctx.db.patch(args.accessionId, updates);
+    if (donor)
+      await recordPartyLink(ctx, {
+        organizationId: accession.organizationId,
+        target: { type: "accession", id: accession._id },
+        account: donor,
+        role: "donor",
+        allowedRoles: ["donor"],
+        effectiveFrom: accession.dateReceived,
+        assertedName: accessionSourceAssertion(
+          updates.source ?? accession.source,
+        ),
+        userId,
+        origin: "staff",
+      });
     await syncAccessionSearchDocument(ctx, args.accessionId);
 
     return null;
