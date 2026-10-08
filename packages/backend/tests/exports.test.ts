@@ -552,10 +552,11 @@ describe("authorized durable exports", () => {
       format: "jsonl",
       source: { kind: "objects", mode: "filtered", filters: {} },
     });
-    for (let i = 0; i < 20; i++) {
+    let sourceDone = false;
+    for (let i = 0; i < 20 && !sourceDone; i++) {
       vi.advanceTimersByTime(1);
       await f.t.finishInProgressScheduledFunctions();
-      if ((await f.user.query(api.exports.status, { jobId })).sourceDone) break;
+      ({ sourceDone } = await f.user.query(api.exports.status, { jobId }));
     }
     expect((await f.user.query(api.exports.status, { jobId })).status).toBe(
       "finalizing",

@@ -348,19 +348,20 @@ export const list = query({
       args.organizationId,
       "compliance",
     );
-    return (
-      await ctx.db
-        .query("exportJobs")
-        .withIndex("by_organizationId_and_creatorId", (q) =>
-          q
-            .eq("organizationId", args.organizationId)
-            .eq("creatorId", creatorId),
-        )
-        .order("desc")
-        .take(20)
-    )
-      .filter((job) => job.source.kind !== "audit" || auditAllowed)
-      .map(present);
+    const jobs = await ctx.db
+      .query("exportJobs")
+      .withIndex("by_organizationId_and_creatorId", (q) =>
+        q.eq("organizationId", args.organizationId).eq("creatorId", creatorId),
+      )
+      .order("desc")
+      .take(20);
+    const visibleJobs = [];
+    for (const job of jobs) {
+      if (job.source.kind !== "audit" || auditAllowed) {
+        visibleJobs.push(present(job));
+      }
+    }
+    return visibleJobs;
   },
 });
 export const expire = internalMutation({

@@ -45,33 +45,35 @@ export function AccessionKanban({
     );
   }
 
+  const visibleSteps: WorkflowStep[] = [];
+  for (const step of workflowSteps.steps) {
+    if (statusFilter !== "pending" || step.stepNumber !== -1) {
+      visibleSteps.push(step);
+    }
+  }
+
   return (
     <div className="flex-1 overflow-x-auto custom-scrollbar">
       <div className="flex h-full min-w-max gap-6 pb-4">
-        {workflowSteps.steps
-          .filter(
-            (step: WorkflowStep) =>
-              statusFilter !== "pending" || step.stepNumber !== -1,
-          )
-          .map((step: WorkflowStep) => (
-            <Suspense
-              key={`${step.stepNumber}-${step.name}`}
-              fallback={<KanbanColumnSkeleton />}
-            >
-              <KanbanColumn
-                organizationId={organizationId}
-                stepNumber={step.stepNumber}
-                stepName={step.name}
-                roleName={step.roleName}
-                searchQuery={searchQuery}
-                total={
-                  columnCounts?.find(
-                    (column) => column.stepNumber === step.stepNumber,
-                  )?.count
-                }
-              />
-            </Suspense>
-          ))}
+        {visibleSteps.map((step) => (
+          <Suspense
+            key={`${step.stepNumber}-${step.name}`}
+            fallback={<KanbanColumnSkeleton />}
+          >
+            <KanbanColumn
+              organizationId={organizationId}
+              stepNumber={step.stepNumber}
+              stepName={step.name}
+              roleName={step.roleName}
+              searchQuery={searchQuery}
+              total={
+                columnCounts?.find(
+                  (column) => column.stepNumber === step.stepNumber,
+                )?.count
+              }
+            />
+          </Suspense>
+        ))}
       </div>
     </div>
   );
