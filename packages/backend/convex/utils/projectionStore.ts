@@ -43,8 +43,9 @@ export function metricNamespace(
 }
 
 export function claimMetricSlot(slotsInUse: number[] = []) {
+  const taken = new Set(slotsInUse);
   let slot = 0;
-  while (slotsInUse.includes(slot)) slot += 1;
+  while (taken.has(slot)) slot += 1;
   return { slot, slotsInUse: [...slotsInUse, slot] };
 }
 

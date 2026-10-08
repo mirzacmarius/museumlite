@@ -6,7 +6,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { env } from "@/env.mjs";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
 import {
@@ -59,10 +59,9 @@ export function ExportJobControl({
   const token = useAuthToken();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const [pendingRequest, setPendingRequest] = useState<{
-    scope: string;
-    requestKey: string;
-  }>();
+  const pendingRequest = useRef<{ scope: string; requestKey: string }>(
+    undefined,
+  );
   const [format, setFormat] = useState<"csv" | "jsonl">("csv");
   const [selectionRequest, setSelectionRequest] = useState<{
     jobId: Id<"exportJobs">;
@@ -100,10 +99,10 @@ export function ExportJobControl({
     // A lost response must retry with the same key so the server returns the
     // existing job instead of charging a second export.
     const requestKey =
-      pendingRequest?.scope === scope
-        ? pendingRequest.requestKey
+      pendingRequest.current?.scope === scope
+        ? pendingRequest.current.requestKey
         : crypto.randomUUID();
-    setPendingRequest({ scope, requestKey });
+    pendingRequest.current = { scope, requestKey };
     const jobId = await create({
       organizationId,
       source,
@@ -111,7 +110,7 @@ export function ExportJobControl({
       selectedCount,
       requestKey,
     });
-    setPendingRequest(undefined);
+    pendingRequest.current = undefined;
     if (source.kind === "objects" && source.mode === "selected") {
       const pending = { jobId, ids: [...(selectedIds ?? [])] };
       setSelectionRequest(pending);
