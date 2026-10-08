@@ -72,29 +72,37 @@ function AuditCaseHistoryContent({
         <p>{t("loading")}</p>
       ) : (
         <>
-          {result.entries.map(({ ordinal, entry, evidenceStatus }) => (
-            <div
-              key={ordinal}
-              className="flex flex-wrap justify-between gap-2 border-t border-border py-2 text-sm"
-            >
-              <span>
-                {ordinal + 1}. {entry.approverName ?? t("unknownUser")} ·{" "}
-                {entry.comment ?? `#${entry.step}`}{" "}
-                {evidenceStatus === "legacy" && (
-                  <span className="text-muted-foreground">({t("legacy")})</span>
-                )}
-              </span>
-              <time
-                dateTime={formatIsoTimestamp(entry.approvedAt)}
-                className="text-xs text-muted-foreground"
+          {result.entries.map(
+            ({ ordinal, entry, evidenceStatus, currentApproverName }) => (
+              <div
+                key={ordinal}
+                className="flex flex-wrap justify-between gap-2 border-t border-border py-2 text-sm"
               >
-                <ClientTime
-                  timestamp={entry.approvedAt}
-                  options={LOCAL_DATE_TIME_OPTIONS}
-                />
-              </time>
-            </div>
-          ))}
+                <span>
+                  {ordinal + 1}.{" "}
+                  {entry.approverName ??
+                    (currentApproverName
+                      ? t("currentProfileActor", { name: currentApproverName })
+                      : t("unknownUser"))}{" "}
+                  · {entry.comment ?? `#${entry.step}`}{" "}
+                  {evidenceStatus === "legacy" && (
+                    <span className="text-muted-foreground">
+                      ({t("legacy")})
+                    </span>
+                  )}
+                </span>
+                <time
+                  dateTime={formatIsoTimestamp(entry.approvedAt)}
+                  className="text-xs text-muted-foreground"
+                >
+                  <ClientTime
+                    timestamp={entry.approvedAt}
+                    options={LOCAL_DATE_TIME_OPTIONS}
+                  />
+                </time>
+              </div>
+            ),
+          )}
           <div className="flex gap-2">
             {cursor !== null && (
               <Button
