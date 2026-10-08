@@ -68,6 +68,8 @@ export function TransitPhysicalHandoffsPanel({
   const [destinationByItem, setDestinationByItem] = useState<
     Record<string, string>
   >({});
+  const [installationDestinationByItem, setInstallationDestinationByItem] =
+    useState<Record<string, string>>({});
   const [conditionByItem, setConditionByItem] = useState<
     Record<string, string>
   >({});
@@ -134,6 +136,8 @@ export function TransitPhysicalHandoffsPanel({
           const observedFrom = observedFromByItem[itemKey] ?? "__none__";
           const destination =
             destinationByItem[itemKey] ?? defaultDestinationLocationId ?? "";
+          const installationDestination =
+            installationDestinationByItem[itemKey] ?? "";
           const assessmentId = assessmentByItem[itemKey] ?? "";
           const taskId = taskByItem[itemKey] ?? "";
           const condition = conditionByItem[itemKey] ?? "";
@@ -289,6 +293,22 @@ export function TransitPhysicalHandoffsPanel({
                   item.status === "received" &&
                   !item.installedAt ? (
                     <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">
+                          {t("installationDestination")}
+                        </Label>
+                        <LocationSelector
+                          organizationId={organizationId}
+                          value={installationDestination}
+                          onValueChange={(value) =>
+                            setInstallationDestinationByItem((previous) => ({
+                              ...previous,
+                              [itemKey]: value,
+                            }))
+                          }
+                          allowNone={false}
+                        />
+                      </div>
                       <Label>{t("observedFrom")}</Label>
                       <LocationSelector
                         organizationId={organizationId}
@@ -340,10 +360,17 @@ export function TransitPhysicalHandoffsPanel({
                       <Button
                         size="sm"
                         className="mt-2"
-                        disabled={busy || !assessmentId}
+                        disabled={
+                          busy ||
+                          !assessmentId ||
+                          !installationDestination ||
+                          installationDestination === "__none__"
+                        }
                         onClick={() =>
                           runAction(item.transitItemId, () =>
                             recordInstallation({
+                              exhibitionLocationId:
+                                installationDestination as Id<"locations">,
                               installationConditionAssessmentId:
                                 assessmentId as Id<"conditionAssessments">,
                               installationTaskId: taskId

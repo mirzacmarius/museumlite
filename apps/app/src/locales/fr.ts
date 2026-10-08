@@ -6473,6 +6473,7 @@ export default {
         outstandingInstallation: "{count} awaiting installation",
         markCarrierArrived: "Mark carrier arrival",
         observedFrom: "Observed source location",
+        installationDestination: "Emplacement d’installation",
         receiptDestination: "Receipt destination",
         conditionNotes: "Condition at receipt",
         conditionPlaceholder: "Condition summary or notes",
