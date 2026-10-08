@@ -187,6 +187,7 @@ export async function installObjectHandler(
       ctx,
       args.installationConditionAssessmentId,
       exhibitionObject.collectionId,
+      true,
     );
 
   const movementId = await executeExhibitionMovement(
@@ -250,6 +251,7 @@ export async function deinstallObjectHandler(
       ctx,
       args.deinstallationConditionAssessmentId,
       exhibitionObject.collectionId,
+      true,
     );
 
   await Promise.all([
@@ -309,6 +311,7 @@ export async function returnObjectToOriginalLocationHandler(
     ctx,
     args.returnConditionAssessmentId,
     exhibitionObject.collectionId,
+    true,
   );
 
   const movementId = await executeExhibitionMovement(

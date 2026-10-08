@@ -18,6 +18,8 @@ export function ExhibitionDetailBody(props: ExhibitionDetailViewProps) {
             <ExhibitionPhysicalHandoffsPanel
               exhibitionId={props.exhibitionId}
               organizationId={props.exhibition.organizationId}
+              startDate={props.exhibition.startDate}
+              endDate={props.exhibition.endDate}
             />
             <ExhibitionDetailDocumentsPanel {...props} />
           </div>

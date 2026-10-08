@@ -834,6 +834,16 @@ describe("objectMoves", () => {
     );
     expect(request?.acceptedTargetLocationId).toBe(fixture.targetLocationId);
     expect(request?.approvedSourceLocationId).toBe(fixture.locationId);
+    const movementHistory = await fixture.targetAdmin.query(
+      api.locations.getCollectionLocationHistory,
+      { collectionId: fixture.collectionId },
+    );
+    const arrival = movementHistory.find(
+      (movement) => movement._id === request?.targetArrivalMovementId,
+    );
+    expect(arrival?.movementKind).toBe("institution_transfer");
+    expect(arrival?.authorizedBy).toBe(fixture.targetAdminId);
+    expect(arrival?.toLocationId).toBe(fixture.targetLocationId);
 
     const custodyEvents = await t.run(async (ctx) => {
       return await ctx.db
@@ -1028,6 +1038,49 @@ describe("objectMoves", () => {
         .collect(),
     );
     expect(custodyEvents).toHaveLength(2);
+  });
+
+  test("transfer acceptance rejects a full destination and retains source custody", async () => {
+    const t = convexTest(schema, modules);
+    const fixture = await createMoveFixture(t);
+    const requestId = await fixture.requester.mutation(
+      api.objectMoves.createRequest,
+      {
+        collectionId: fixture.collectionId,
+        targetOrganizationId: fixture.targetOrganizationId,
+        accessionMode: "keep",
+        reason: "Transfer to capacity-limited storage",
+      },
+    );
+    await fixture.admin.mutation(api.objectMoves.approve, { requestId });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(fixture.targetLocationId, { capacity: 1 });
+      await ctx.db.insert("collections", {
+        organizationId: fixture.targetOrganizationId,
+        accessionNumber: "TARGET-OCCUPIED",
+        title: "Destination occupant",
+        status: "active",
+        currentLocationId: fixture.targetLocationId,
+        catalogedBy: fixture.adminId,
+        catalogedAt: Date.now(),
+      });
+    });
+    await expect(
+      fixture.targetAdmin.mutation(api.objectMoves.accept, {
+        requestId,
+        targetLocationId: fixture.targetLocationId,
+      }),
+    ).rejects.toThrow(/capacity/i);
+    const request = await fixture.admin.query(api.objectMoves.get, {
+      requestId,
+    });
+    expect(request?.status).toBe("awaiting_acceptance");
+    expect(request?.targetArrivalMovementId).toBeUndefined();
+    const collection = await fixture.admin.query(api.collections.get, {
+      collectionId: fixture.collectionId,
+    });
+    expect(collection?.organizationId).toBe(fixture.sourceOrganizationId);
+    expect(collection?.currentLocationId).toBe(fixture.locationId);
   });
 
   test("acceptance retains condition assessments on the transferred object", async () => {
