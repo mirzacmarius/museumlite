@@ -48,6 +48,11 @@ export interface CollectionMovementOptions extends MovementGuardOptions {
   batchJobId?: Id<"batchJobs">;
   exhibitionObjectId?: Id<"exhibitionObjects">;
   transitItemId?: Id<"transitItems">;
+  /**
+   * This movement is the return that ends external custody, so the
+   * outgoing-loan guard must not block it.
+   */
+  releasingExternalCustody?: boolean;
 }
 
 /**
@@ -69,6 +74,8 @@ export async function isCollectionInExternalCustody(
     const loan = await ctx.db.get(item.loanId);
     if (
       loan?.type === "outgoing" &&
+      loan.status !== "cancelled" &&
+      loan.status !== "returned" &&
       isLoanItemDispatched(item, loan.status)
     ) {
       return true;
@@ -216,7 +223,10 @@ export async function moveCollectionToLocation(
       ctx,
       collection,
       toLocationId,
-      { ...options, requireInstitutionalCustody: true },
+      {
+        ...options,
+        requireInstitutionalCustody: options.releasingExternalCustody !== true,
+      },
     );
     const [blocking] = issues;
     if (blocking) throw new Error(blocking.message);
@@ -242,6 +252,44 @@ export async function moveCollectionToLocation(
   });
   await ctx.db.patch(collection._id, {
     currentLocationId: toLocationId,
+    lastModifiedBy: userId,
+    lastModifiedAt: movedAt,
+  });
+  return movementId;
+}
+
+/**
+ * Records an object leaving institutional custody. The history row cites the
+ * last on-site place and has no destination, and the location projection is
+ * cleared in the same write.
+ */
+export async function recordCustodyDeparture(
+  ctx: MutationCtx,
+  collection: Doc<"collections">,
+  userId: Id<"users">,
+  reason: string,
+  options: {
+    kind: MovementKind;
+    fromLocationId?: Id<"locations">;
+    transitItemId?: Id<"transitItems">;
+    notes?: string;
+  },
+): Promise<Id<"locationHistory"> | null> {
+  const fromLocationId = options.fromLocationId ?? collection.currentLocationId;
+  if (!fromLocationId) return null;
+  const movedAt = Date.now();
+  const movementId = await ctx.db.insert("locationHistory", {
+    collectionId: collection._id,
+    fromLocationId,
+    movedBy: userId,
+    movedAt,
+    reason,
+    notes: options.notes,
+    movementKind: options.kind,
+    transitItemId: options.transitItemId,
+  });
+  await ctx.db.patch(collection._id, {
+    currentLocationId: undefined,
     lastModifiedBy: userId,
     lastModifiedAt: movedAt,
   });

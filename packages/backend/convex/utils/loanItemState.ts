@@ -6,6 +6,9 @@ export function isLoanItemReturned(item: Doc<"loanItems">): boolean {
   if (item.custodyStatus === "returned") {
     return true;
   }
+  if (item.custodyStatus !== undefined) {
+    return false;
+  }
   return item.conditionIn != null && String(item.conditionIn).trim().length > 0;
 }
 

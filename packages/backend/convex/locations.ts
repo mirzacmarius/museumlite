@@ -2397,7 +2397,7 @@ export const getCollectionLocationHistory = query({
       _creationTime: v.number(),
       collectionId: v.id("collections"),
       fromLocationId: v.optional(v.id("locations")),
-      toLocationId: v.id("locations"),
+      toLocationId: v.optional(v.id("locations")),
       movedBy: v.id("users"),
       movedAt: v.number(),
       reason: v.optional(v.string()),
@@ -2435,7 +2435,7 @@ export const getCollectionLocationHistory = query({
           ? await ctx.db.get(entry.fromLocationId)
           : null;
         const [toLocation, movedBy, authorizedBy] = await Promise.all([
-          ctx.db.get(entry.toLocationId),
+          entry.toLocationId ? ctx.db.get(entry.toLocationId) : null,
           ctx.db.get(entry.movedBy),
           entry.authorizedBy ? ctx.db.get(entry.authorizedBy) : null,
         ] as const);

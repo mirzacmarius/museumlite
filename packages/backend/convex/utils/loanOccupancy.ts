@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { isLoanItemReturned } from "./loanItemState";
 
 export const OCCUPYING_LOAN_STATUSES: ReadonlySet<Doc<"loans">["status"]> =
   new Set(["pending", "active", "dispatched"]);
@@ -14,6 +15,9 @@ export async function collectionHasOccupyingLoan(
     .collect();
 
   for (const loanItem of loanItems) {
+    if (isLoanItemReturned(loanItem)) {
+      continue;
+    }
     const loan = await ctx.db.get(loanItem.loanId);
     if (loan && OCCUPYING_LOAN_STATUSES.has(loan.status)) {
       return true;

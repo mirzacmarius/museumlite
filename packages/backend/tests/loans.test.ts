@@ -264,9 +264,11 @@ test("should return active loan directly (without dispatch)", async () => {
             })) as import("../convex/_generated/dataModel").Id<"loanItems">,
             destinationLocationId:
               returnLocationId as import("../convex/_generated/dataModel").Id<"locations">,
+            conditionIn: "Stable without dispatch",
           },
         ]
       : undefined,
+    conditionIn: "Stable without dispatch",
   });
 
   const result = await t.run(async (ctx) => {
@@ -283,7 +285,7 @@ test("should return active loan directly (without dispatch)", async () => {
 
   expect(result.loan?.status).toBe("returned");
   expect(result.collection?.status).toBe("active");
-  expect(result.loanItem?.conditionIn).toBe("Returned");
+  expect(result.loanItem?.conditionIn).toBe("Stable without dispatch");
 });
 
 test("should prevent invalid status transitions", async () => {

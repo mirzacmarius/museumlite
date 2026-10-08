@@ -1675,7 +1675,7 @@ export default defineSchema({
   locationHistory: defineTable({
     collectionId: v.id("collections"),
     fromLocationId: v.optional(v.id("locations")),
-    toLocationId: v.id("locations"),
+    toLocationId: v.optional(v.id("locations")),
     movedBy: v.id("users"),
     movedAt: v.number(),
     reason: v.optional(v.string()),
@@ -2106,6 +2106,7 @@ export default defineSchema({
     accountId: v.optional(v.id("accounts")),
     recordedBy: v.id("users"),
     recordedAt: v.number(),
+    fromLocationId: v.optional(v.id("locations")),
     notes: v.optional(v.string()),
     legacySyntheticDeaccessionId: v.optional(v.id("deaccessions")),
   })

@@ -3,6 +3,10 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { requireLoansAccess } from "./loanAccess";
 import {
+  isLoanItemDispatched,
+  isLoanItemReturned,
+} from "./loanItemState";
+import {
   dispatchLoanItems,
   restoreLoanCollections,
   returnLoanItems,
@@ -203,6 +207,20 @@ export async function cancelLoanHandler(
     requireLoansAccess(ctx, loan.organizationId),
     requirePermission(ctx, loan.organizationId, "loans.update"),
   ]);
+
+  const loanItems = await ctx.db
+    .query("loanItems")
+    .withIndex("by_loan", (q) => q.eq("loanId", args.loanId))
+    .collect();
+  const dispatchedItems = loanItems.filter(
+    (item) =>
+      !isLoanItemReturned(item) && isLoanItemDispatched(item, loan.status),
+  );
+  if (dispatchedItems.length > 0) {
+    throw new Error(
+      "Cannot cancel a loan after an item has been dispatched; record its return first",
+    );
+  }
 
   const [, recipients] = await Promise.all([
     Promise.all([

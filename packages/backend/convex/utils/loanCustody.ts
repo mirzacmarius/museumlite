@@ -10,7 +10,11 @@ import {
   isLoanItemReturned,
   reconcileLoanStatusFromItems,
 } from "./loanItemState";
-import { moveCollectionToLocation } from "./locationIntegrity";
+import {
+  moveCollectionToLocation,
+  recordCustodyDeparture,
+} from "./locationIntegrity";
+import type { MovementKind } from "./movementValidators";
 
 type LoanItem = Doc<"loanItems">;
 
@@ -101,8 +105,19 @@ export async function dispatchLoanItemsWithEvidence(
       await markCollectionLoaned(ctx, {
         collectionId: item.collectionId,
         changedBy,
-        clearLocation: true,
       });
+      if (originLocationId) {
+        await recordCustodyDeparture(
+          ctx,
+          collection,
+          changedBy,
+          `Loan ${loan.loanNumber} dispatch`,
+          {
+            kind: "loan_dispatch",
+            fromLocationId: originLocationId,
+          },
+        );
+      }
 
       await ctx.db.patch(item._id, {
         custodyStatus: "dispatched",
@@ -134,6 +149,9 @@ export interface ReceiveLoanItemInput {
   incomingConditionAssessmentId?: Id<"conditionAssessments">;
   conditionIn?: string;
   notes?: string;
+  observedFromLocationId?: Id<"locations"> | null;
+  transitItemId?: Id<"transitItems">;
+  movementKind?: Extract<MovementKind, "loan_return" | "transit_receipt">;
 }
 
 async function resolveReturnDestination(
@@ -167,6 +185,35 @@ async function resolveReturnDestination(
   throw new Error("Return destination is required");
 }
 
+async function assertLenderExitNotBlockedByExhibition(
+  ctx: MutationCtx,
+  collectionId: Id<"collections">,
+) {
+  const participants = await ctx.db
+    .query("exhibitionObjects")
+    .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
+    .collect();
+  const blocking = participants.find(
+    (participant) =>
+      (participant.status === "installed" ||
+        participant.status === "deinstalled") &&
+      participant.returnException === undefined,
+  );
+  if (blocking) {
+    throw new Error(
+      "Cannot return an object to the lender while its exhibition outcome is unresolved",
+    );
+  }
+}
+
+function observedSourceMatches(
+  observedFromLocationId: Id<"locations"> | null | undefined,
+  currentLocationId: Id<"locations"> | undefined,
+) {
+  if (observedFromLocationId === undefined) return true;
+  return observedFromLocationId === (currentLocationId ?? null);
+}
+
 async function recordIncomingLenderExit(
   ctx: MutationCtx,
   {
@@ -174,15 +221,55 @@ async function recordIncomingLenderExit(
     collectionId,
     item,
     loan,
+    movementKind,
     notes,
+    observedFromLocationId,
+    transitItemId,
   }: {
     loan: Doc<"loans">;
     item: LoanItem;
     collectionId: Id<"collections">;
     changedBy: Id<"users">;
     notes?: string;
+    observedFromLocationId?: Id<"locations"> | null;
+    transitItemId?: Id<"transitItems">;
+    movementKind?: Extract<MovementKind, "loan_return" | "transit_receipt">;
   },
 ) {
+  await assertLenderExitNotBlockedByExhibition(ctx, collectionId);
+  const collection = await ctx.db.get(collectionId);
+  if (
+    !observedSourceMatches(
+      observedFromLocationId,
+      collection?.currentLocationId,
+    )
+  ) {
+    throw new Error(
+      "Object is not at the source observed for this lender exit",
+    );
+  }
+
+  const fromLocationId =
+    collection?.currentLocationId ?? item.dispatchOriginLocationId;
+  const movementId =
+    collection && fromLocationId
+      ? await recordCustodyDeparture(
+          ctx,
+          collection,
+          changedBy,
+          `Loan ${loan.loanNumber} return to lender`,
+          {
+            kind: movementKind ?? "loan_return",
+            fromLocationId,
+            transitItemId,
+            notes,
+          },
+        )
+      : null;
+  if (transitItemId && !movementId) {
+    throw new Error("Loan return did not record movement history");
+  }
+
   const exitId = await ctx.db.insert("loanCustodyExits", {
     organizationId: loan.organizationId,
     loanId: loan._id,
@@ -193,13 +280,14 @@ async function recordIncomingLenderExit(
     accountId: loan.accountId,
     recordedBy: changedBy,
     recordedAt: Date.now(),
+    fromLocationId,
     notes,
   });
 
-  const collection = await ctx.db.get(collectionId);
   if (collection && collection.status !== "archived") {
     await ctx.db.patch(collectionId, {
       status: "archived",
+      currentLocationId: undefined,
       archivedAt: Date.now(),
       archivedBy: changedBy,
       archivedReason: `Returned to lender: ${loan.lenderBorrowerName}`,
@@ -208,7 +296,7 @@ async function recordIncomingLenderExit(
     });
   }
 
-  return exitId;
+  return { exitId, movementId };
 }
 
 export async function receiveLoanItemsWithEvidence(
@@ -251,6 +339,7 @@ export async function receiveLoanItemsWithEvidence(
 
   const returnedAt = Date.now();
   const returnedItemIds: Id<"loanItems">[] = [];
+  const movementIds: Id<"locationHistory">[] = [];
 
   for (const item of itemsToReturn) {
     let receipt = receiptByItemId.get(item._id);
@@ -272,21 +361,17 @@ export async function receiveLoanItemsWithEvidence(
       );
     }
 
-    let conditionInValue =
-      receipt?.conditionIn ?? conditionIn ?? item.conditionIn;
-    if (
-      conditionInValue === undefined &&
-      incomingAssessmentId === undefined
-    ) {
-      conditionInValue = "Returned";
-    }
+    const suppliedCondition = (receipt?.conditionIn ?? conditionIn)?.trim();
     if (
       incomingAssessmentId === undefined &&
-      (conditionInValue === undefined ||
-        String(conditionInValue).trim().length === 0)
+      (suppliedCondition === undefined || suppliedCondition.length === 0)
     ) {
       throw new Error("Return condition evidence is required");
     }
+    const conditionInValue =
+      suppliedCondition && suppliedCondition.length > 0
+        ? suppliedCondition
+        : undefined;
 
     if (loan.type === "outgoing") {
       const destinationLocationId = await resolveReturnDestination(
@@ -305,14 +390,26 @@ export async function receiveLoanItemsWithEvidence(
         changedBy,
       });
 
-      await moveCollectionToLocation(
+      const movementId = await moveCollectionToLocation(
         ctx,
         { ...collection, status: "active" },
         destinationLocationId,
         changedBy,
         `Loan ${loan.loanNumber} return`,
-        { notes: receipt?.notes },
+        {
+          kind: receipt?.movementKind ?? "loan_return",
+          notes: receipt?.notes,
+          expectedFromLocationId: receipt?.observedFromLocationId,
+          transitItemId: receipt?.transitItemId,
+          releasingExternalCustody: true,
+        },
       );
+      if (receipt?.transitItemId && !movementId) {
+        throw new Error("Loan return did not record movement history");
+      }
+      if (movementId) {
+        movementIds.push(movementId);
+      }
 
       await ctx.db.patch(item._id, {
         custodyStatus: "returned",
@@ -328,13 +425,19 @@ export async function receiveLoanItemsWithEvidence(
           : item.notes,
       });
     } else {
-      const exitId = await recordIncomingLenderExit(ctx, {
+      const exit = await recordIncomingLenderExit(ctx, {
         loan,
         item,
         collectionId: item.collectionId,
         changedBy,
         notes: receipt?.notes,
+        observedFromLocationId: receipt?.observedFromLocationId,
+        transitItemId: receipt?.transitItemId,
+        movementKind: receipt?.movementKind,
       });
+      if (exit.movementId) {
+        movementIds.push(exit.movementId);
+      }
 
       await ctx.db.patch(item._id, {
         custodyStatus: "returned",
@@ -342,7 +445,7 @@ export async function receiveLoanItemsWithEvidence(
         returnedBy: changedBy,
         incomingConditionAssessmentId: incomingAssessmentId,
         conditionIn: conditionInValue,
-        lenderExitId: exitId,
+        lenderExitId: exit.exitId,
         notes: receipt?.notes
           ? item.notes
             ? `${item.notes}\n${receipt.notes}`
@@ -373,6 +476,7 @@ export async function receiveLoanItemsWithEvidence(
   return {
     allItemsNowReturned: allReturned,
     returnedItemIds,
+    movementIds,
     returnedItemCount: returnedItemIds.length,
     totalItemCount: allLoanItems.length,
     nextLoanStatus: allReturned
