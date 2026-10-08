@@ -455,8 +455,9 @@ describe("auditLog", () => {
         organizationId: orgId,
       });
 
-      expect(result.entries[0]?.userName).toBe("John Doe");
-      expect(result.entries[0]?.userEmail).toBe("john@example.com");
+      expect(result.entries[0]?.userName).toBeUndefined();
+      expect(result.entries[0]?.evidenceStatus).toBe("legacy");
+      expect(result.entries[0]?.userEmail).toBeUndefined();
     });
   });
 

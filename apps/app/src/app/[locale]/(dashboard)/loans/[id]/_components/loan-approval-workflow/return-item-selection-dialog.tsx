@@ -13,6 +13,7 @@ import {
 import { Label } from "@v1/ui/label";
 import { cn } from "@v1/ui/utils";
 import { Info } from "lucide-react";
+import type { ReactNode } from "react";
 import { useScopedI18n } from "@/locales/client";
 import type { LoanItem } from "../types";
 import { getNonReturnedItemIds, isLoanItemReturned } from "./loan-item-utils";
@@ -24,6 +25,9 @@ interface ReturnItemSelectionDialogProps {
   selectedItemIds: Set<string>;
   setSelectedItemIds: (ids: Set<string>) => void;
   onProceed: () => void;
+  canProceed: boolean;
+  validationMessage: string;
+  renderEvidence: (item: LoanItem) => ReactNode;
 }
 
 export function ReturnItemSelectionDialog({
@@ -33,6 +37,9 @@ export function ReturnItemSelectionDialog({
   selectedItemIds,
   setSelectedItemIds,
   onProceed,
+  canProceed,
+  validationMessage,
+  renderEvidence,
 }: ReturnItemSelectionDialogProps) {
   const t = useScopedI18n("loans.actions");
   const hasSomeReturned = loanItems.some((item) => isLoanItemReturned(item));
@@ -78,7 +85,7 @@ export function ReturnItemSelectionDialog({
                   <div
                     key={item._id}
                     className={cn(
-                      "flex items-center space-x-3 p-3",
+                      "flex flex-wrap items-center gap-3 p-3",
                       isReturned
                         ? "opacity-50 bg-muted/40 border-l-4 border-l-blue-500"
                         : "hover:bg-muted/50",
@@ -130,10 +137,18 @@ export function ReturnItemSelectionDialog({
                         </div>
                       )}
                     </Label>
+                    {selectedItemIds.has(item._id) && !isReturned
+                      ? renderEvidence(item)
+                      : null}
                   </div>
                 );
               })}
             </div>
+            {selectedItemIds.size > 0 && !canProceed ? (
+              <p className="text-sm text-muted-foreground">
+                {validationMessage}
+              </p>
+            ) : null}
             {selectedItemIds.size === 0 && (
               <p className="text-sm text-destructive">
                 {t("selectAtLeastOne")}
@@ -153,7 +168,7 @@ export function ReturnItemSelectionDialog({
           </Button>
           <Button
             onClick={onProceed}
-            disabled={selectedItemIds.size === 0}
+            disabled={!canProceed}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {t("continueAction")}

@@ -1,5 +1,21 @@
 export default {
   conditionAssessments: {
+    actorProfileUnavailable:
+      "Responsabil înregistrat; profilul actual este indisponibil",
+    actorCurrentName: "Numele actual al profilului: {name}",
+    unknownLegacyActor:
+      "Identitatea istorică a responsabilului este necunoscută",
+
+    receiptRequirement:
+      "Introduceți note de stare sau selectați o evaluare acceptată pentru fiecare obiect selectat și confirmați fiecare destinație de retur necesară.",
+    handoffTimeline: "Cronologia predărilor",
+    installationTask: "Finalizați sarcina de instalare asociată (opțional)",
+
+    selectAccepted: "Selectați evaluarea de stare acceptată",
+    returnDestination: "Destinația returului",
+    conditionEvidence: "Dovada stării",
+    confirmOrigin: "Confirmați returul la originea înregistrată",
+
     title: "Evaluări ale stării",
     description:
       "Observațiile datate și fotografiile sunt păstrate. Un responsabil acceptă ciorna pentru a actualiza starea curentă.",
@@ -5087,6 +5103,40 @@ export default {
     resumeImport: "Reia importul",
   },
   activityLog: {
+    historyPreview:
+      "Doar aprobările recente. Deschideți cronologia dosarului pentru istoricul complet.",
+    nextPage: "Pagina următoare",
+    pageEntries: "înregistrări pe această pagină",
+    filterOptionsRecent:
+      "Opțiunile de autor și acțiune provin din ultimele 1.000 de evenimente. Căutările după dată și subiect acoperă întregul istoric.",
+    invalidDateRange:
+      "Data de început trebuie să fie înaintea datei de sfârșit.",
+    details: "Detalii eveniment",
+    legacyEvidence:
+      "Eveniment vechi: identitatea autorului sau a subiectului nu a fost păstrată la momentul înregistrării.",
+    recordedEvidence:
+      "Identitatea autorului și a subiectului a fost păstrată la înregistrarea evenimentului.",
+    correctionOf: "Corectarea evenimentului",
+    subjectTimeline: "Istoricul subiectului",
+    objectTimeline: "Istoricul obiectului",
+    caseTimeline: "Istoricul cazului",
+    field: "Câmp",
+    before: "Înainte",
+    after: "După",
+    correctionReason: "Motivul corectării",
+    correctionStatement: "Textul corectării",
+    appendCorrection: "Adaugă corectare",
+    correctionFailed:
+      "Corectarea nu a putut fi salvată. Textul este păstrat; reîncercați.",
+    correctionSaved:
+      "Corectarea a fost adăugată. Evenimentul original este păstrat.",
+    approvalHistory: "Istoricul aprobărilor cazului",
+    legacy: "dovezi vechi",
+    firstPage: "Prima pagină",
+    unavailable:
+      "Istoricul nu este disponibil sau rolul dvs. nu permite accesul. Reîncercați, ștergeți filtrele sau selectați o organizație autorizată.",
+    retry: "Reîncearcă",
+
     featureName: "Conformitate și jurnal de audit",
     title: "Jurnal de activitate",
     description: "Vezi și filtrează activitatea din organizația ta",

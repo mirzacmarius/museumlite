@@ -3,8 +3,9 @@
 import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
-import { useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { usePaginatedQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { useMemo } from "react";
 import { formatDate } from "@/lib/format-date";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 import { ActivityItem } from "./activity-item";
@@ -16,18 +17,9 @@ interface ActivityListProps {
   endDate?: number;
 }
 
-type Activity = {
-  _id: Id<"auditLog">;
-  userId: Id<"users">;
-  userName?: string;
-  userEmail?: string;
-  userImage?: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  changes?: Record<string, unknown>;
-  timestamp: number;
-};
+type Activity = FunctionReturnType<
+  typeof api.audit.activityPage
+>["page"][number];
 
 function groupByMonth(activities: Activity[], locale: string) {
   const groups: Record<string, Activity[]> = {};
@@ -57,103 +49,30 @@ export function ActivityList({
   const locale = useCurrentLocale();
   const t = useScopedI18n("activity");
   const common = useScopedI18n("common");
-  const [cursor, setCursor] = useState<string | undefined>();
-  const [allActivities, setAllActivities] = useState<Activity[]>([]);
-  const lastProcessedCursor = useRef<string | undefined>(undefined);
-  const lastProcessedActivityIds = useRef<Set<string>>(new Set());
-
-  const { activities, isDone, continueCursor } = useQuery(
-    api.audit.listOrganizationActivity,
+  const {
+    results: allActivities,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.audit.activityPage,
     {
       organizationId,
       entityType,
       startDate,
       endDate,
-      limit: 50,
-      cursor,
     },
-  ) ?? { activities: [], isDone: true, continueCursor: undefined };
-
-  // Reset activities when filters or organization changes
-  useEffect(() => {
-    setAllActivities([]);
-    setCursor(undefined);
-    lastProcessedCursor.current = undefined;
-    lastProcessedActivityIds.current = new Set();
-  }, [organizationId, entityType, startDate, endDate]);
-
-  // Update activities when query results change
-  useEffect(() => {
-    if (!activities) return;
-
-    const currentActivityIds = new Set(activities.map((a) => a._id));
-
-    if (cursor) {
-      // Appending new page - prevent processing the same cursor twice
-      if (cursor === lastProcessedCursor.current) {
-        return;
-      }
-      lastProcessedCursor.current = cursor;
-      setAllActivities((prev) => {
-        const existingIds = new Set(prev.map((a) => a._id));
-        const newActivities = activities.filter((a) => !existingIds.has(a._id));
-        // Only update if there are actually new activities
-        if (newActivities.length === 0) return prev;
-        // Update ref with new IDs
-        for (const a of newActivities) {
-          lastProcessedActivityIds.current.add(a._id);
-        }
-        return [...prev, ...newActivities];
-      });
-    } else {
-      // New query or filter change - replace all
-      // Check if these are the same activities we already processed
-      const prevIds = lastProcessedActivityIds.current;
-      if (
-        prevIds.size === currentActivityIds.size &&
-        [...prevIds].every((id) =>
-          currentActivityIds.has(id as Id<"auditLog">),
-        ) &&
-        [...currentActivityIds].every((id) => prevIds.has(id as Id<"auditLog">))
-      ) {
-        // Same activities, don't update to prevent infinite loop
-        return;
-      }
-
-      lastProcessedCursor.current = undefined;
-      lastProcessedActivityIds.current = new Set(currentActivityIds);
-      setAllActivities(activities);
-    }
-  }, [activities, cursor]);
+    { initialNumItems: 50 },
+  );
 
   const groupedActivities = useMemo(
     () => groupByMonth(allActivities, locale),
     [allActivities, locale],
   );
 
-  const sortedMonths = useMemo(
-    () =>
-      Object.keys(groupedActivities).sort((a, b) => {
-        const dateA = new Date(a);
-        const dateB = new Date(b);
-        return dateB.getTime() - dateA.getTime();
-      }),
-    [groupedActivities],
-  );
+  const sortedMonths = Object.keys(groupedActivities);
 
-  const handleLoadMore = () => {
-    if (continueCursor && !isDone) {
-      setCursor(continueCursor);
-    }
-  };
-
-  if (activities === undefined) {
-    return (
-      <div className="flex size-full items-center justify-center">
-        <p className="text-muted-foreground">{common("loading")}</p>
-      </div>
-    );
-  }
+  if (status === "LoadingFirstPage")
+    return <p className="text-muted-foreground">{common("loading")}</p>;
 
   return (
     <div className="flex flex-col">
@@ -174,18 +93,25 @@ export function ActivityList({
                     entityType={activity.entityType}
                     entityId={activity.entityId}
                     userName={activity.userName}
-                    userImage={activity.userImage}
                     timestamp={activity.timestamp}
                     changes={activity.changes}
+                    subjectLabel={
+                      activity.subjectSnapshot?.label ??
+                      activity.subjectSnapshot?.identifier
+                    }
                   />
                 ))}
               </div>
             </div>
           ))}
 
-          {!isDone && continueCursor && (
+          {status !== "Exhausted" && (
             <div className="mt-8 flex justify-center">
-              <Button variant="outline" onClick={handleLoadMore}>
+              <Button
+                variant="outline"
+                disabled={status !== "CanLoadMore"}
+                onClick={() => loadMore(50)}
+              >
                 {t("loadMore")}
               </Button>
             </div>

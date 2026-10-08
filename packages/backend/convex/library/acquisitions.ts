@@ -3,7 +3,11 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
-import { requireLibraryPermission } from "./utils/permissions";
+import {
+  readWorkflowHistoryPage,
+  workflowHistoryPageValidator,
+} from "../auditLog";
+import { appendCaseHistory } from "../utils/caseHistory";
 import {
   canApproveAtStep,
   canInitiateWorkflow,
@@ -11,6 +15,7 @@ import {
 } from "../utils/permissions";
 import { getWorkflowConfig } from "../utils/workflowConfigs";
 import { resolveWorkflowStepState } from "../utils/workflowSteps";
+import { requireLibraryPermission } from "./utils/permissions";
 
 // Priority validator
 const priorityValidator = v.union(
@@ -240,7 +245,11 @@ export const updateStatus = mutation({
     }
 
     await Promise.all([
-      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(
+        ctx,
+        request.organizationId,
+        "collections.update",
+      ),
     ]);
 
     const validTransitions: Record<string, string[]> = {
@@ -313,7 +322,11 @@ export const updateOrderInfo = mutation({
     }
 
     await Promise.all([
-      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(
+        ctx,
+        request.organizationId,
+        "collections.update",
+      ),
     ]);
 
     const updates: Record<string, unknown> = {};
@@ -371,7 +384,11 @@ export const linkToItem = mutation({
     }
 
     await Promise.all([
-      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(
+        ctx,
+        request.organizationId,
+        "collections.update",
+      ),
     ]);
 
     await Promise.all([
@@ -430,7 +447,11 @@ export const update = mutation({
     }
 
     await Promise.all([
-      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(
+        ctx,
+        request.organizationId,
+        "collections.update",
+      ),
     ]);
 
     const updates: Record<string, unknown> = {};
@@ -490,7 +511,11 @@ export const cancel = mutation({
     }
 
     await Promise.all([
-      requireLibraryPermission(ctx, request.organizationId, "collections.update"),
+      requireLibraryPermission(
+        ctx,
+        request.organizationId,
+        "collections.update",
+      ),
     ]);
 
     await Promise.all([
@@ -531,7 +556,11 @@ export const remove = mutation({
     }
 
     await Promise.all([
-      requireLibraryPermission(ctx, request.organizationId, "collections.delete"),
+      requireLibraryPermission(
+        ctx,
+        request.organizationId,
+        "collections.delete",
+      ),
     ]);
 
     await Promise.all([
@@ -704,7 +733,7 @@ export const approve = mutation({
         throw new Error("Permission denied: cannot approve at this step");
       }
 
-      const history = request.workflowHistory ?? [];
+      const history = [...(request.workflowHistory ?? [])];
       if (!workflowState.isPastLastStep) {
         history.push({
           step: currentStep,
@@ -724,7 +753,7 @@ export const approve = mutation({
             reviewedBy: userId,
             reviewedAt: now,
             reviewNotes: args.comment,
-            workflowHistory: history,
+            ...(await appendCaseHistory(ctx, request, "acquisition", history)),
           }),
           ctx.runMutation(internal.audit.logAction, {
             organizationId: request.organizationId,
@@ -759,7 +788,12 @@ export const approve = mutation({
             ctx.db.patch(args.requestId, {
               status: "under_review",
               workflowStep: nextStep,
-              workflowHistory: history,
+              ...(await appendCaseHistory(
+                ctx,
+                request,
+                "acquisition",
+                history,
+              )),
             }),
             ctx.runMutation(internal.audit.logAction, {
               organizationId: request.organizationId,
@@ -867,7 +901,7 @@ export const reject = mutation({
     }
 
     const now = Date.now();
-    const history = request.workflowHistory ?? [];
+    const history = [...(request.workflowHistory ?? [])];
     history.push({
       step: currentStep,
       approvedBy: userId,
@@ -881,7 +915,7 @@ export const reject = mutation({
         reviewedBy: userId,
         reviewedAt: now,
         reviewNotes: args.comment,
-        workflowHistory: history,
+        ...(await appendCaseHistory(ctx, request, "acquisition", history)),
       }),
       ctx.runMutation(internal.audit.logAction, {
         organizationId: request.organizationId,
@@ -914,16 +948,10 @@ export const reject = mutation({
 export const getWorkflowHistory = query({
   args: {
     requestId: v.id("libraryAcquisitionRequests"),
+    cursor: v.optional(v.number()),
+    limit: v.optional(v.number()),
   },
-  returns: v.array(
-    v.object({
-      step: v.number(),
-      approvedBy: v.id("users"),
-      approvedAt: v.number(),
-      comment: v.optional(v.string()),
-      approverName: v.optional(v.string()),
-    }),
-  ),
+  returns: workflowHistoryPageValidator,
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.requestId);
     if (!request) {
@@ -936,18 +964,12 @@ export const getWorkflowHistory = query({
       "collections.read",
     );
 
-    const history = request.workflowHistory ?? [];
-
-    const enrichedHistory = await Promise.all(
-      history.map(async (item) => {
-        const approver = await ctx.db.get(item.approvedBy);
-        return {
-          ...item,
-          approverName: approver?.name || approver?.email || undefined,
-        };
-      }),
-    );
-
-    return enrichedHistory;
+    return await readWorkflowHistoryPage(ctx, {
+      organizationId: request.organizationId,
+      caseType: "acquisition",
+      entityId: args.requestId,
+      cursor: args.cursor,
+      limit: args.limit,
+    });
   },
 });

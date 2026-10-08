@@ -86,10 +86,7 @@ async function setupLoanScenario(
 
 test("dispatch retains origin location on loan item", async () => {
   const t = createConvexTest();
-  const { authed, loanId, locationId } = await setupLoanScenario(
-    t,
-    "outgoing",
-  );
+  const { authed, loanId, locationId } = await setupLoanScenario(t, "outgoing");
 
   await authed.mutation(api.loans.dispatch, { loanId });
 
@@ -399,9 +396,24 @@ test("a partially returned item is not still on loan", async () => {
     });
   });
 
+  const installationAssessmentId = await authed.mutation(
+    api.conditionAssessments.create,
+    {
+      collectionId,
+      assessedAt: Date.now(),
+      condition: "Good",
+      summary: "Post-return installation check",
+      observations: [],
+      photos: [],
+    },
+  );
+  await authed.mutation(api.conditionAssessments.accept, {
+    assessmentId: installationAssessmentId,
+  });
   await authed.mutation(api.exhibitions.installObject, {
     exhibitionObjectId,
     observedFromLocationId: returnLocationId,
+    installationConditionAssessmentId: installationAssessmentId,
   });
 
   const nextLoanId = await authed.mutation(api.loans.create, {

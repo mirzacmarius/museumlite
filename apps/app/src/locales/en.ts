@@ -1,5 +1,19 @@
 export default {
   conditionAssessments: {
+    actorProfileUnavailable: "Recorded actor; current profile unavailable",
+    actorCurrentName: "Current profile name: {name}",
+    unknownLegacyActor: "Legacy actor identity unknown",
+
+    receiptRequirement:
+      "Enter condition notes or select an accepted assessment for every selected item, and confirm each required return destination.",
+    handoffTimeline: "Handoff timeline",
+    installationTask: "Complete linked installation task (optional)",
+
+    selectAccepted: "Select accepted condition assessment",
+    returnDestination: "Return destination",
+    conditionEvidence: "Condition evidence",
+    confirmOrigin: "Confirm return to recorded origin",
+
     title: "Condition assessments",
     description:
       "Dated observations and photos are retained. A reviewer accepts a draft to update current condition.",
@@ -1018,6 +1032,38 @@ export default {
     cancel: "Cancel",
   },
   activityLog: {
+    historyPreview:
+      "Recent approval entries only. Open the case timeline for the complete history.",
+    nextPage: "Next page",
+    pageEntries: "entries on this page",
+    filterOptionsRecent:
+      "Actor and action options show the latest 1,000 events. Date and subject searches cover all history.",
+    invalidDateRange: "The start date must be before the end date.",
+    details: "Event details",
+    legacyEvidence:
+      "Legacy event: contemporaneous actor or subject snapshots were not recorded.",
+    recordedEvidence:
+      "Actor and subject evidence was recorded when this event was written.",
+    correctionOf: "Correction of",
+    subjectTimeline: "Subject timeline",
+    objectTimeline: "Object timeline",
+    caseTimeline: "Case timeline",
+    field: "Field",
+    before: "Before",
+    after: "After",
+    correctionReason: "Reason for correction",
+    correctionStatement: "Correction statement",
+    appendCorrection: "Append correction",
+    correctionFailed:
+      "The correction could not be saved. Your text is retained; retry to continue.",
+    correctionSaved: "Correction appended. The original event is retained.",
+    approvalHistory: "Case approval history",
+    legacy: "legacy evidence",
+    firstPage: "First page",
+    unavailable:
+      "History is unavailable or your role cannot view it. Retry, clear filters, or select an authorized organization.",
+    retry: "Retry",
+
     featureName: "Compliance & Audit Log",
     title: "Activity Log",
     description: "View and filter activity across your organization",

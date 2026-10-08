@@ -55,12 +55,14 @@ function DeaccessionDetailPageInner({
     deaccession ? { collectionId: deaccession.collectionId } : "skip",
   );
 
-  const workflowHistory = useQuery(
+  const workflowHistoryPage = useQuery(
     api.deaccessions.getWorkflowHistory,
     deaccessionId
       ? { deaccessionId: deaccessionId as Id<"deaccessions"> }
       : "skip",
   );
+
+  const workflowHistory = workflowHistoryPage?.entries;
 
   // Both inputs are sent with the approval or rejection decision.
   const [decisionInput, setDecisionInput] = useState({

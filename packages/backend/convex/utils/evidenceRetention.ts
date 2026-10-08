@@ -57,6 +57,8 @@ export async function isOrganizationEvidenceProtected(
         "accountDocuments",
         "objectComments",
         "workflowHistory",
+        "caseHistoryState",
+        "caseHistoryEntries",
         "workflowStepApprovals",
       ] as const
     ).map((table) =>

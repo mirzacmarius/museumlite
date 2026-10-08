@@ -9,6 +9,7 @@ export type LoanStatus =
 
 export interface LoanItem {
   _id: Id<"loanItems">;
+  collectionId: Id<"collections">;
   accessionNumber: string;
   title: string;
   conditionOut?: string;
@@ -29,6 +30,7 @@ export interface WorkflowHistoryEntry {
 
 export interface Loan {
   _id: Id<"loans">;
+  organizationId: Id<"organizations">;
   loanNumber: string;
   type: "incoming" | "outgoing";
   lenderBorrowerName: string;
