@@ -5,6 +5,7 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { KpiCard } from "@v1/ui/kpi-card";
 import { useQuery } from "convex/react";
 import { AlertCircle } from "lucide-react";
+import { UnavailableKpiCard } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
 import { PermissionGate } from "@/components/permission-gate";
 import { useClientNow } from "@/hooks/use-client-date-format";
@@ -45,6 +46,10 @@ function KpiOverdueContent({
 
   if (operationalKpis === undefined) {
     return <KpiCard title={t("overdueLoans")} value="—" loading />;
+  }
+
+  if (operationalKpis.availability === "unavailable") {
+    return <UnavailableKpiCard title={t("overdueLoans")} />;
   }
 
   return (

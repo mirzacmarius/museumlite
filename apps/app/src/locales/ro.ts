@@ -478,6 +478,7 @@ export default {
       activity: "Activitate",
       developer: "Dezvoltator",
       data: "Import/Export Date",
+      metrics: "Starea indicatorilor",
     },
     roles: {
       title: "Gestionare Roluri",
@@ -8817,5 +8818,117 @@ export default {
     failed: "Exportul a eșuat",
     reportsNote:
       "Rezumatele de rapoarte de mai jos conțin răspunsurile KPI curente și liste limitate de elemente recente sau viitoare. Folosiți exporturile complete ale catalogului și auditului de mai sus pentru seturi de date sursă reconciliate.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Indicatori indisponibili",
+      short: "Indisponibil",
+      openHealth: "Deschideți starea indicatorilor",
+      askAdministrator:
+        "Cereți unui administrator să reconstruiască indicatorii.",
+      storage: "Utilizarea stocării este indisponibilă",
+      usage:
+        "Contoarele de utilizare sunt indisponibile până la reconstruirea indicatorilor.",
+    },
+    reasons: {
+      not_built:
+        "Indicatorii nu au fost încă generați pentru această organizație.",
+      building:
+        "Indicatorii sunt în curs de reconstruire. Valorile apar la finalizare.",
+      invalidated:
+        "O modificare recentă a afectat mai multe înregistrări decât pot fi actualizate deodată. Este necesară o nouă reconstruire.",
+      definition_changed:
+        "Definițiile indicatorilor s-au schimbat. Este necesară o reconstruire înainte de afișarea valorilor.",
+      rebuild_failed:
+        "Ultima reconstruire a eșuat. Reîncercați sau porniți o nouă reconstruire.",
+    },
+    availability: {
+      ready: "Pregătit",
+      unavailable: "Indisponibil",
+    },
+    status: {
+      building: "În desfășurare",
+      failed: "Eșuat",
+      cancelled: "Anulat",
+      completed: "Finalizat",
+      superseded: "Înlocuit",
+    },
+    mode: {
+      rebuild: "Reconstruire",
+      reconcile: "Reconciliere",
+    },
+    actions: {
+      rebuild: "Reconstruiți indicatorii",
+      reconcile: "Rulați reconcilierea",
+      starting: "Se pornește...",
+      retry: "Reîncercați",
+      retrying: "Se reîncearcă...",
+      cancel: "Anulați",
+      cancelling: "Se anulează...",
+      failed: "Acțiunea nu a putut fi finalizată. Încercați din nou.",
+    },
+    page: {
+      title: "Starea indicatorilor",
+      description:
+        "Disponibilitatea indicatorilor din panou, rapoarte și utilizare, progresul reconstruirii și rezultatele reconcilierii.",
+      selectOrganization:
+        "Selectați o organizație pentru a vedea starea indicatorilor.",
+      noPermission:
+        "Aveți nevoie de permisiunea de a gestiona setările organizației pentru a vedea starea indicatorilor.",
+      statusTitle: "Stare",
+      reconcileNeedsReady:
+        "Reconcilierea este disponibilă după ce indicatorii sunt pregătiți.",
+      definitionVersion: "Versiunea definiției",
+      definitionOutdated: "Stocată {stored}, curentă {current}",
+      lastBuilt: "Ultima generare",
+      lastVerified: "Ultima reconciliere",
+      invalidated: "Invalidat",
+      limits: "Limite de reconstruire",
+      limitsValue:
+        "{pageSize} rânduri pe pagină, {fanOut} înregistrări asociate per modificare",
+    },
+    job: {
+      step: "Pas",
+      stepValue: "{index} din {count}",
+      processedRows: "Rânduri procesate",
+      checkpoint: "Punct de control",
+      attempts: "Încercări",
+      started: "Pornit",
+      requestedBy: "Solicitat de",
+      failure: "Eroare: {message}",
+    },
+    reconciliation: {
+      title: "Ultima reconciliere",
+      clean: "Nu există diferențe între indicatori și înregistrările sursă.",
+      summary:
+        "{discrepancies} diferențe înregistrate ({mismatches} nepotriviri de indicatori).",
+      incomplete: "Reconcilierea nu s-a finalizat: {status}.",
+      noRepair:
+        "Reconcilierea doar raportează diferențele. Nu modifică niciodată înregistrările sursă sau indicatorii publicați; reconstruiți pentru a publica valori derivate din sursă.",
+    },
+    categories: {
+      contribution_mismatch: "Contribuția înregistrării diferă",
+      missing_from_projection: "Înregistrare lipsă din indicatori",
+      stale_projection_entry: "Indicatorii conțin o înregistrare eliminată",
+      counter_mismatch: "Totalul diferă de sursă",
+      legacy_counter_mismatch: "Contorul vechi de utilizare diferă",
+      source_quality: "Datele sursă necesită verificare",
+    },
+    discrepancies: {
+      counts: "Așteptat {expected}, găsit {actual}",
+      none: "niciunul",
+      review: "Verificați {source}",
+      loadMore: "Încărcați mai multe",
+    },
+    quality: {
+      title: "Calitatea datelor sursă",
+      description:
+        "Înregistrări ale căror date sursă nu pot fi clasificate. Sunt numărate aici în loc să fie ghicite.",
+    },
+    recent: {
+      title: "Lucrări recente",
+      rows: "{rows} rânduri",
+      discrepancies: "{count} diferențe",
+    },
   },
 };

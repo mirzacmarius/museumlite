@@ -153,6 +153,7 @@ export default {
       activity: "Activity",
       developer: "Developer",
       data: "Data Import/Export",
+      metrics: "Metrics health",
     },
     roles: {
       title: "Role Management",
@@ -7788,5 +7789,113 @@ export default {
     failed: "Export failed",
     reportsNote:
       "The report summaries below contain current KPI responses and limited recent or upcoming lists. Use the complete catalog and audit exports above for reconciled source datasets.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Metrics unavailable",
+      short: "Unavailable",
+      openHealth: "Open metrics health",
+      askAdministrator: "Ask an administrator to rebuild the metrics.",
+      storage: "Storage usage unavailable",
+      usage: "Usage counts are unavailable until metrics are rebuilt.",
+    },
+    reasons: {
+      not_built: "Metrics have not been built for this organization yet.",
+      building:
+        "Metrics are being rebuilt. Values appear when the rebuild completes.",
+      invalidated:
+        "A recent change affected more records than can be updated at once. A fresh rebuild is required.",
+      definition_changed:
+        "Metric definitions changed. A rebuild is required before values are shown.",
+      rebuild_failed:
+        "The last metrics rebuild failed. Retry or start a new rebuild.",
+    },
+    availability: {
+      ready: "Ready",
+      unavailable: "Unavailable",
+    },
+    status: {
+      building: "Running",
+      failed: "Failed",
+      cancelled: "Cancelled",
+      completed: "Completed",
+      superseded: "Superseded",
+    },
+    mode: {
+      rebuild: "Rebuild",
+      reconcile: "Reconciliation",
+    },
+    actions: {
+      rebuild: "Rebuild metrics",
+      reconcile: "Run reconciliation",
+      starting: "Starting...",
+      retry: "Retry",
+      retrying: "Retrying...",
+      cancel: "Cancel",
+      cancelling: "Cancelling...",
+      failed: "The action could not be completed. Try again.",
+    },
+    page: {
+      title: "Metrics health",
+      description:
+        "Readiness of dashboard, report and usage metrics, rebuild progress and reconciliation results.",
+      selectOrganization: "Select an organization to view metrics health.",
+      noPermission:
+        "You need permission to manage organization settings to view metrics health.",
+      statusTitle: "Status",
+      reconcileNeedsReady:
+        "Reconciliation is available once metrics are ready.",
+      definitionVersion: "Definition version",
+      definitionOutdated: "Stored {stored}, current {current}",
+      lastBuilt: "Last built",
+      lastVerified: "Last reconciled",
+      invalidated: "Invalidated",
+      limits: "Rebuild limits",
+      limitsValue:
+        "{pageSize} rows per page, {fanOut} related records per change",
+    },
+    job: {
+      step: "Step",
+      stepValue: "{index} of {count}",
+      processedRows: "Rows processed",
+      checkpoint: "Checkpoint",
+      attempts: "Attempts",
+      started: "Started",
+      requestedBy: "Requested by",
+      failure: "Failure: {message}",
+    },
+    reconciliation: {
+      title: "Last reconciliation",
+      clean: "No differences between the metrics and the source records.",
+      summary:
+        "{discrepancies} differences recorded ({mismatches} metric mismatches).",
+      incomplete: "Reconciliation did not complete: {status}.",
+      noRepair:
+        "Reconciliation only reports differences. It never changes source records or published metrics; rebuild to publish source-derived values.",
+    },
+    categories: {
+      contribution_mismatch: "Record contribution differs",
+      missing_from_projection: "Record missing from metrics",
+      stale_projection_entry: "Metrics contain a removed record",
+      counter_mismatch: "Total differs from source",
+      legacy_counter_mismatch: "Legacy usage counter differs",
+      source_quality: "Source data needs review",
+    },
+    discrepancies: {
+      counts: "Expected {expected}, found {actual}",
+      none: "none",
+      review: "Review {source}",
+      loadMore: "Load more",
+    },
+    quality: {
+      title: "Source data quality",
+      description:
+        "Records whose source data cannot be classified. They are counted here instead of being guessed.",
+    },
+    recent: {
+      title: "Recent jobs",
+      rows: "{rows} rows",
+      discrepancies: "{count} differences",
+    },
   },
 } as const;

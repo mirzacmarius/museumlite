@@ -10,6 +10,7 @@ import {
 import { Skeleton } from "@v1/ui/skeleton";
 import { useQuery } from "convex/react";
 import dynamic from "next/dynamic";
+import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
 import { useI18n } from "@/locales/client";
 
@@ -77,7 +78,15 @@ export function CollectionGrowthChart() {
     return <Skeleton className="h-[300px] w-full" />;
   }
 
-  if (data.length === 0) {
+  if (data.availability === "unavailable") {
+    return (
+      <div className="flex h-[300px] items-center justify-center">
+        <MetricsUnavailableNotice reason={data.reason} />
+      </div>
+    );
+  }
+
+  if (data.months.length === 0) {
     return (
       <div className="flex h-[300px] items-center justify-center text-muted-foreground">
         {t("untranslatedDashboard.analytics.noData")}
@@ -87,7 +96,7 @@ export function CollectionGrowthChart() {
 
   return (
     <ChartContainer height={300}>
-      <LazyLineChart data={data} objectsAddedLabel={t("untranslatedDashboard.analytics.objectsAdded")} />
+      <LazyLineChart data={data.months} objectsAddedLabel={t("untranslatedDashboard.analytics.objectsAdded")} />
     </ChartContainer>
   );
 }

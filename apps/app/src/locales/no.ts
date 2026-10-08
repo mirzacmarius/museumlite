@@ -152,6 +152,7 @@ export default {
       activity: "Aktivitet",
       developer: "Utvikler",
       data: "Dataimport/-eksport",
+      metrics: "Målingsstatus",
     },
     roles: {
       title: "Rollehåndtering",
@@ -7975,5 +7976,112 @@ export default {
     failed: "Eksporten mislyktes",
     reportsNote:
       "Rapportsammendragene nedenfor inneholder gjeldende KPI-svar og begrensede lister over nylige eller kommende elementer. Bruk de fullstendige katalog- og revisjonseksportene ovenfor for avstemte kildedatasett.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Målinger utilgjengelige",
+      short: "Utilgjengelig",
+      openHealth: "Åpne målingsstatus",
+      askAdministrator: "Be en administrator om å bygge målingene på nytt.",
+      storage: "Lagringsbruk utilgjengelig",
+      usage: "Brukstall er utilgjengelige til målingene er bygget på nytt.",
+    },
+    reasons: {
+      not_built: "Målingene er ikke bygget for denne organisasjonen ennå.",
+      building:
+        "Målingene bygges på nytt. Verdiene vises når gjenoppbyggingen er ferdig.",
+      invalidated:
+        "En nylig endring påvirket flere poster enn som kan oppdateres samtidig. En ny gjenoppbygging kreves.",
+      definition_changed:
+        "Målingsdefinisjonene er endret. En gjenoppbygging kreves før verdier vises.",
+      rebuild_failed:
+        "Siste gjenoppbygging mislyktes. Prøv igjen eller start en ny gjenoppbygging.",
+    },
+    availability: {
+      ready: "Klar",
+      unavailable: "Utilgjengelig",
+    },
+    status: {
+      building: "Kjører",
+      failed: "Mislyktes",
+      cancelled: "Avbrutt",
+      completed: "Fullført",
+      superseded: "Erstattet",
+    },
+    mode: {
+      rebuild: "Gjenoppbygging",
+      reconcile: "Avstemming",
+    },
+    actions: {
+      rebuild: "Bygg målinger på nytt",
+      reconcile: "Kjør avstemming",
+      starting: "Starter...",
+      retry: "Prøv igjen",
+      retrying: "Prøver igjen...",
+      cancel: "Avbryt",
+      cancelling: "Avbryter...",
+      failed: "Handlingen kunne ikke fullføres. Prøv igjen.",
+    },
+    page: {
+      title: "Målingsstatus",
+      description:
+        "Tilgjengelighet for målinger i oversikt, rapporter og bruk, fremdrift for gjenoppbygging og resultater fra avstemming.",
+      selectOrganization: "Velg en organisasjon for å se målingsstatus.",
+      noPermission:
+        "Du trenger tillatelse til å administrere organisasjonsinnstillinger for å se målingsstatus.",
+      statusTitle: "Status",
+      reconcileNeedsReady: "Avstemming er tilgjengelig når målingene er klare.",
+      definitionVersion: "Definisjonsversjon",
+      definitionOutdated: "Lagret {stored}, gjeldende {current}",
+      lastBuilt: "Sist bygget",
+      lastVerified: "Sist avstemt",
+      invalidated: "Ugyldiggjort",
+      limits: "Grenser for gjenoppbygging",
+      limitsValue:
+        "{pageSize} rader per side, {fanOut} relaterte poster per endring",
+    },
+    job: {
+      step: "Trinn",
+      stepValue: "{index} av {count}",
+      processedRows: "Behandlede rader",
+      checkpoint: "Kontrollpunkt",
+      attempts: "Forsøk",
+      started: "Startet",
+      requestedBy: "Bestilt av",
+      failure: "Feil: {message}",
+    },
+    reconciliation: {
+      title: "Siste avstemming",
+      clean: "Ingen forskjeller mellom målingene og kildepostene.",
+      summary:
+        "{discrepancies} forskjeller registrert ({mismatches} målingsavvik).",
+      incomplete: "Avstemmingen ble ikke fullført: {status}.",
+      noRepair:
+        "Avstemming rapporterer bare forskjeller. Den endrer aldri kildeposter eller publiserte målinger; bygg på nytt for å publisere kildebaserte verdier.",
+    },
+    categories: {
+      contribution_mismatch: "Postens bidrag avviker",
+      missing_from_projection: "Post mangler i målingene",
+      stale_projection_entry: "Målingene inneholder en fjernet post",
+      counter_mismatch: "Totalen avviker fra kilden",
+      legacy_counter_mismatch: "Eldre bruksteller avviker",
+      source_quality: "Kildedata må gjennomgås",
+    },
+    discrepancies: {
+      counts: "Forventet {expected}, funnet {actual}",
+      none: "ingen",
+      review: "Gjennomgå {source}",
+      loadMore: "Last inn flere",
+    },
+    quality: {
+      title: "Kvalitet på kildedata",
+      description:
+        "Poster der kildedata ikke kan klassifiseres. De telles her i stedet for å bli gjettet.",
+    },
+    recent: {
+      title: "Nylige jobber",
+      rows: "{rows} rader",
+      discrepancies: "{count} forskjeller",
+    },
   },
 } as const;

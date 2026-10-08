@@ -21,11 +21,13 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
+import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { useOrganization } from "@/components/organization-provider";
 import { usePermission } from "@/components/permission-gate";
 import { PlanUsageStats } from "@/components/plan-usage-stats";
 import { formatDate } from "@/lib/format-date";
 import { type FormatLocale, formatNumber } from "@/lib/format-number";
+import { readyResult, unavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useI18n, useScopedI18n } from "@/locales/client";
 import {
   CollectionGroupsGridSkeleton,
@@ -447,7 +449,10 @@ export default function DashboardPage() {
   }
 
   const canViewAnalytics = hasAnalyticsPermission === true;
-  const analyticsData = canViewAnalytics ? analytics : undefined;
+  const analyticsData = canViewAnalytics ? readyResult(analytics) : undefined;
+  const analyticsUnavailableReason = canViewAnalytics
+    ? unavailableReason(analytics)
+    : undefined;
   const subscriptionTier = currentOrganization?.subscriptionTier ?? "free";
 
   const liveMetrics: MetricLinkCardProps[] = [
@@ -555,6 +560,10 @@ export default function DashboardPage() {
             ) : null}
           </div>
         </header>
+
+        {analyticsUnavailableReason ? (
+          <MetricsUnavailableNotice reason={analyticsUnavailableReason} />
+        ) : null}
 
         <section
           aria-label={tRoot(

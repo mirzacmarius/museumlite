@@ -158,6 +158,7 @@ export default {
       activity: "Actividad",
       developer: "Desarrollador",
       data: "Importar/Exportar datos",
+      metrics: "Estado de métricas",
     },
     roles: {
       title: "Gestión de Roles",
@@ -8124,5 +8125,115 @@ export default {
     failed: "La exportación falló",
     reportsNote:
       "Los resúmenes de informes siguientes contienen respuestas actuales de KPI y listas limitadas de elementos recientes o próximos. Use las exportaciones completas de catálogo y auditoría anteriores para obtener conjuntos de datos de origen conciliados.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Métricas no disponibles",
+      short: "No disponible",
+      openHealth: "Abrir estado de métricas",
+      askAdministrator: "Pida a un administrador que reconstruya las métricas.",
+      storage: "Uso de almacenamiento no disponible",
+      usage:
+        "Los recuentos de uso no están disponibles hasta que se reconstruyan las métricas.",
+    },
+    reasons: {
+      not_built: "Las métricas aún no se han generado para esta organización.",
+      building:
+        "Las métricas se están reconstruyendo. Los valores aparecerán cuando termine.",
+      invalidated:
+        "Un cambio reciente afectó a más registros de los que se pueden actualizar a la vez. Se requiere una nueva reconstrucción.",
+      definition_changed:
+        "Las definiciones de métricas cambiaron. Se requiere una reconstrucción antes de mostrar valores.",
+      rebuild_failed:
+        "La última reconstrucción de métricas falló. Reinténtela o inicie una nueva.",
+    },
+    availability: {
+      ready: "Lista",
+      unavailable: "No disponible",
+    },
+    status: {
+      building: "En curso",
+      failed: "Fallida",
+      cancelled: "Cancelada",
+      completed: "Completada",
+      superseded: "Reemplazada",
+    },
+    mode: {
+      rebuild: "Reconstrucción",
+      reconcile: "Conciliación",
+    },
+    actions: {
+      rebuild: "Reconstruir métricas",
+      reconcile: "Ejecutar conciliación",
+      starting: "Iniciando...",
+      retry: "Reintentar",
+      retrying: "Reintentando...",
+      cancel: "Cancelar",
+      cancelling: "Cancelando...",
+      failed: "No se pudo completar la acción. Inténtelo de nuevo.",
+    },
+    page: {
+      title: "Estado de métricas",
+      description:
+        "Disponibilidad de las métricas del panel, informes y uso, progreso de reconstrucción y resultados de conciliación.",
+      selectOrganization:
+        "Seleccione una organización para ver el estado de las métricas.",
+      noPermission:
+        "Necesita permiso para gestionar la configuración de la organización para ver el estado de las métricas.",
+      statusTitle: "Estado",
+      reconcileNeedsReady:
+        "La conciliación está disponible cuando las métricas están listas.",
+      definitionVersion: "Versión de definición",
+      definitionOutdated: "Almacenada {stored}, actual {current}",
+      lastBuilt: "Última generación",
+      lastVerified: "Última conciliación",
+      invalidated: "Invalidada",
+      limits: "Límites de reconstrucción",
+      limitsValue:
+        "{pageSize} filas por página, {fanOut} registros relacionados por cambio",
+    },
+    job: {
+      step: "Paso",
+      stepValue: "{index} de {count}",
+      processedRows: "Filas procesadas",
+      checkpoint: "Punto de control",
+      attempts: "Intentos",
+      started: "Iniciada",
+      requestedBy: "Solicitada por",
+      failure: "Error: {message}",
+    },
+    reconciliation: {
+      title: "Última conciliación",
+      clean: "No hay diferencias entre las métricas y los registros de origen.",
+      summary:
+        "{discrepancies} diferencias registradas ({mismatches} discrepancias de métricas).",
+      incomplete: "La conciliación no se completó: {status}.",
+      noRepair:
+        "La conciliación solo informa diferencias. Nunca modifica los registros de origen ni las métricas publicadas; reconstruya para publicar valores derivados del origen.",
+    },
+    categories: {
+      contribution_mismatch: "La contribución del registro difiere",
+      missing_from_projection: "Registro ausente de las métricas",
+      stale_projection_entry: "Las métricas contienen un registro eliminado",
+      counter_mismatch: "El total difiere del origen",
+      legacy_counter_mismatch: "El contador de uso heredado difiere",
+      source_quality: "Los datos de origen requieren revisión",
+    },
+    discrepancies: {
+      counts: "Esperado {expected}, encontrado {actual}",
+      none: "ninguno",
+      review: "Revisar {source}",
+      loadMore: "Cargar más",
+    },
+    quality: {
+      title: "Calidad de los datos de origen",
+      description:
+        "Registros cuyos datos de origen no se pueden clasificar. Se cuentan aquí en lugar de suponerse.",
+    },
+    recent: {
+      title: "Trabajos recientes",
+      rows: "{rows} filas",
+      discrepancies: "{count} diferencias",
+    },
   },
 } as const;

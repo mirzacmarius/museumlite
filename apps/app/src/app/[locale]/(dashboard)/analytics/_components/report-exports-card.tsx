@@ -20,12 +20,13 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { ExportJobControl } from "@/components/export-job-control";
+import { MetricsUnavailableNotice } from "@/components/metrics-unavailable-notice";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
+import type { ProjectionUnavailableReason } from "@/lib/projection-availability";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
-interface ReportExportsCardProps {
-  organizationId: Id<"organizations">;
+interface ReportData {
   kpis: {
     inventory: {
       available: boolean;
@@ -148,6 +149,12 @@ interface ReportExportsCardProps {
   hasInventoryValuation: boolean;
 }
 
+interface ReportExportsCardProps {
+  organizationId: Id<"organizations">;
+  reports: ReportData | null;
+  unavailableReason?: ProjectionUnavailableReason;
+}
+
 function formatDate(timestamp: number, locale: string): string {
   return formatDateUtil(new Date(timestamp), locale, {
     year: "numeric",
@@ -210,7 +217,7 @@ function useReportExportActions({
   compliance,
   locationUtilization,
   hasInventoryValuation,
-}: ReportExportsCardProps): ReportExportActions {
+}: ReportData): ReportExportActions {
   const locale = useCurrentLocale();
   const csv = useScopedI18n("analytics.reportExports.csv");
   const [exporting, setExporting] = useState<ExportingReport | null>(null);
@@ -818,9 +825,8 @@ function IndividualReportsMenu({
   );
 }
 
-export function ReportExportsCard(props: ReportExportsCardProps) {
+function KpiReportMenus({ reports }: { reports: ReportData }) {
   const t = useScopedI18n("analytics.reportExports");
-  const tExport = useScopedI18n("exportJobs");
   const {
     exporting,
     exportInventoryValuation,
@@ -830,47 +836,63 @@ export function ReportExportsCard(props: ReportExportsCardProps) {
     exportAllReports,
     exportBoardReport,
     exportInsuranceReport,
-  } = useReportExportActions(props);
+  } = useReportExportActions(reports);
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <PrimaryReportMenu
+        report="board"
+        label={t("boardReport")}
+        exporting={exporting}
+        onExport={exportBoardReport}
+      />
+      <PrimaryReportMenu
+        report="insurance"
+        label={t("insuranceReport")}
+        exporting={exporting}
+        onExport={exportInsuranceReport}
+      />
+      <IndividualReportsMenu
+        hasInventoryValuation={reports.hasInventoryValuation}
+        onExportInventoryValuation={exportInventoryValuation}
+        onExportLoanReport={exportLoanReport}
+        onExportComplianceReport={exportComplianceReport}
+        onExportLocationReport={exportLocationReport}
+        onExportAllReports={exportAllReports}
+      />
+    </div>
+  );
+}
+
+export function ReportExportsCard({
+  organizationId,
+  reports,
+  unavailableReason,
+}: ReportExportsCardProps) {
+  const tExport = useScopedI18n("exportJobs");
 
   return (
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm">
       <ReportExportsHeader />
       <CardContent>
         <ExportJobControl
-          organizationId={props.organizationId}
+          organizationId={organizationId}
           source={{ kind: "objects", mode: "filtered", filters: {} }}
           label={tExport("catalogComplete")}
         />
         <ExportJobControl
-          organizationId={props.organizationId}
+          organizationId={organizationId}
           source={{ kind: "audit", filters: {} }}
           label={tExport("auditComplete")}
         />
         <p className="text-xs text-muted-foreground py-2">
           {tExport("reportsNote")}
         </p>
-        <div className="flex flex-wrap gap-2">
-          <PrimaryReportMenu
-            report="board"
-            label={t("boardReport")}
-            exporting={exporting}
-            onExport={exportBoardReport}
-          />
-          <PrimaryReportMenu
-            report="insurance"
-            label={t("insuranceReport")}
-            exporting={exporting}
-            onExport={exportInsuranceReport}
-          />
-          <IndividualReportsMenu
-            hasInventoryValuation={props.hasInventoryValuation}
-            onExportInventoryValuation={exportInventoryValuation}
-            onExportLoanReport={exportLoanReport}
-            onExportComplianceReport={exportComplianceReport}
-            onExportLocationReport={exportLocationReport}
-            onExportAllReports={exportAllReports}
-          />
-        </div>
+        {reports ? (
+          <KpiReportMenus reports={reports} />
+        ) : unavailableReason ? (
+          <MetricsUnavailableNotice reason={unavailableReason} />
+        ) : null}
       </CardContent>
     </Card>
   );

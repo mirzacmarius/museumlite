@@ -154,6 +154,7 @@ export default {
       activity: "Activité",
       developer: "Développeur",
       data: "Import/Export de données",
+      metrics: "État des indicateurs",
     },
     roles: {
       title: "Gestion des Rôles",
@@ -8078,5 +8079,119 @@ export default {
     failed: "Échec de l'export",
     reportsNote:
       "Les synthèses de rapports ci-dessous contiennent les réponses KPI actuelles et des listes limitées d'éléments récents ou à venir. Utilisez les exports complets du catalogue et de l'audit ci-dessus pour obtenir des jeux de données source rapprochés.",
+  },
+  projectionHealth: {
+    unavailable: {
+      title: "Indicateurs indisponibles",
+      short: "Indisponible",
+      openHealth: "Ouvrir l'état des indicateurs",
+      askAdministrator:
+        "Demandez à un administrateur de reconstruire les indicateurs.",
+      storage: "Utilisation du stockage indisponible",
+      usage:
+        "Les compteurs d'utilisation sont indisponibles jusqu'à la reconstruction des indicateurs.",
+    },
+    reasons: {
+      not_built:
+        "Les indicateurs n'ont pas encore été générés pour cette organisation.",
+      building:
+        "Les indicateurs sont en cours de reconstruction. Les valeurs apparaîtront à la fin.",
+      invalidated:
+        "Une modification récente a touché plus d'enregistrements que ce qui peut être mis à jour en une fois. Une nouvelle reconstruction est nécessaire.",
+      definition_changed:
+        "Les définitions des indicateurs ont changé. Une reconstruction est nécessaire avant d'afficher les valeurs.",
+      rebuild_failed:
+        "La dernière reconstruction a échoué. Réessayez ou lancez une nouvelle reconstruction.",
+    },
+    availability: {
+      ready: "Prêt",
+      unavailable: "Indisponible",
+    },
+    status: {
+      building: "En cours",
+      failed: "Échec",
+      cancelled: "Annulée",
+      completed: "Terminée",
+      superseded: "Remplacée",
+    },
+    mode: {
+      rebuild: "Reconstruction",
+      reconcile: "Rapprochement",
+    },
+    actions: {
+      rebuild: "Reconstruire les indicateurs",
+      reconcile: "Lancer le rapprochement",
+      starting: "Démarrage...",
+      retry: "Réessayer",
+      retrying: "Nouvelle tentative...",
+      cancel: "Annuler",
+      cancelling: "Annulation...",
+      failed: "L'action n'a pas pu aboutir. Réessayez.",
+    },
+    page: {
+      title: "État des indicateurs",
+      description:
+        "Disponibilité des indicateurs du tableau de bord, des rapports et de l'utilisation, progression des reconstructions et résultats des rapprochements.",
+      selectOrganization:
+        "Sélectionnez une organisation pour voir l'état des indicateurs.",
+      noPermission:
+        "Vous devez pouvoir gérer les paramètres de l'organisation pour voir l'état des indicateurs.",
+      statusTitle: "Statut",
+      reconcileNeedsReady:
+        "Le rapprochement est disponible une fois les indicateurs prêts.",
+      definitionVersion: "Version de définition",
+      definitionOutdated: "Enregistrée {stored}, actuelle {current}",
+      lastBuilt: "Dernière génération",
+      lastVerified: "Dernier rapprochement",
+      invalidated: "Invalidé",
+      limits: "Limites de reconstruction",
+      limitsValue:
+        "{pageSize} lignes par page, {fanOut} enregistrements liés par modification",
+    },
+    job: {
+      step: "Étape",
+      stepValue: "{index} sur {count}",
+      processedRows: "Lignes traitées",
+      checkpoint: "Point de reprise",
+      attempts: "Tentatives",
+      started: "Démarrée",
+      requestedBy: "Demandée par",
+      failure: "Échec : {message}",
+    },
+    reconciliation: {
+      title: "Dernier rapprochement",
+      clean:
+        "Aucune différence entre les indicateurs et les enregistrements source.",
+      summary:
+        "{discrepancies} différences enregistrées ({mismatches} écarts d'indicateurs).",
+      incomplete: "Le rapprochement n'a pas abouti : {status}.",
+      noRepair:
+        "Le rapprochement signale uniquement les différences. Il ne modifie jamais les enregistrements source ni les indicateurs publiés ; reconstruisez pour publier des valeurs issues des sources.",
+    },
+    categories: {
+      contribution_mismatch: "La contribution de l'enregistrement diffère",
+      missing_from_projection: "Enregistrement absent des indicateurs",
+      stale_projection_entry:
+        "Les indicateurs contiennent un enregistrement supprimé",
+      counter_mismatch: "Le total diffère de la source",
+      legacy_counter_mismatch: "L'ancien compteur d'utilisation diffère",
+      source_quality: "Les données source doivent être vérifiées",
+    },
+    discrepancies: {
+      counts: "Attendu {expected}, trouvé {actual}",
+      none: "aucun",
+      review: "Vérifier {source}",
+      loadMore: "Charger plus",
+    },
+    quality: {
+      title: "Qualité des données source",
+      description:
+        "Enregistrements dont les données source ne peuvent pas être classées. Ils sont comptés ici au lieu d'être devinés.",
+    },
+    recent: {
+      title: "Tâches récentes",
+      rows: "{rows} lignes",
+      discrepancies: "{count} différences",
+    },
   },
 } as const;
