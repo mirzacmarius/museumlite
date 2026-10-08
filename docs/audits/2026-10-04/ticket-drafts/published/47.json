@@ -1,9 +1,0 @@
-{
-  "number": 47,
-  "batch": 7,
-  "id": "MUS-657",
-  "url": "https://linear.app/museumlite/issue/MUS-657/inspect-and-retry-durable-outgoing-webhooks",
-  "title": "Inspect and retry durable outgoing webhooks",
-  "blockedBy": [],
-  "implementationApproved": false
-}

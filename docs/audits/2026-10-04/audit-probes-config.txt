@@ -1,1 +1,0 @@
-export default {test:{environment:"node",include:["/tmp/museumlite-audit/probes.test.ts"],setupFiles:["/Users/marius/Developer/museumlite/packages/backend/tests/vitest.setup.ts"],server:{deps:{inline:["convex-test","@convex-dev/polar"]}}}};

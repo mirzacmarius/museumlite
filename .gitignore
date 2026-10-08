@@ -73,3 +73,6 @@ tailwind.css
 .worktrees/
 .security-key
 logs/security/
+
+# Agent audit dumps; tickets live in Linear
+docs/audits/
