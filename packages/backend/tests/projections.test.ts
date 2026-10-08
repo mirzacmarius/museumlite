@@ -257,6 +257,37 @@ describe("checkpointed rebuild", () => {
     ).rejects.toThrow("Only the current failed projection job");
   });
 
+  test("a page retried with fewer rows commits only those rows and the rebuild still converges", async () => {
+    const { t, staff, settle, organizationId, userId } = await fixture();
+    await insertObjects(t, organizationId, userId, 30);
+    const generationId = await staff.mutation(api.projections.startRebuild, {
+      organizationId,
+    });
+
+    // Drive the whole scan with three-row pages, as a retried page would.
+    let checkpoint = 0;
+    while (
+      (await t.mutation(internal.projections.applyGenerationPage, {
+        generationId,
+        expectedCheckpoint: checkpoint,
+        pageSize: 3,
+      })) === "continue"
+    ) {
+      checkpoint += 1;
+    }
+    const health = await staff.query(api.projections.getHealth, {
+      organizationId,
+    });
+    expect(health.active).toMatchObject({ _id: generationId, maxPageRows: 3 });
+
+    await settle();
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).objects,
+    ).toMatchObject({ total: 30, active: 30 });
+  });
+
   test("public writes before and after the scan cursor converge to the source-derived totals", async () => {
     const { t, staff, settle, organizationId, userId } = await fixture();
     const ids = await insertObjects(t, organizationId, userId, 30);
