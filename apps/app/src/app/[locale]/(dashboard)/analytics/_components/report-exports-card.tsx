@@ -1,5 +1,7 @@
 "use client";
 
+import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { protectSpreadsheetText } from "@v1/backend/convex/utils/exportEncoding";
 import { Button } from "@v1/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@v1/ui/card";
 import {
@@ -17,11 +19,13 @@ import {
   Package,
 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { ExportJobControl } from "@/components/export-job-control";
 import { formatDate as formatDateUtil } from "@/lib/format-date";
 import { formatCurrency as formatCurrencyUtil } from "@/lib/format-number";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface ReportExportsCardProps {
+  organizationId: Id<"organizations">;
   kpis: {
     inventory: {
       available: boolean;
@@ -172,15 +176,14 @@ function downloadCSV(filename: string, csvContent: string) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function escapeCSV(value: string | number | null | undefined): string {
   if (value === undefined || value === null) return "";
   const str = String(value);
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+  const safe = typeof value === "string" ? protectSpreadsheetText(str) : str;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 type ExportingReport =
@@ -817,6 +820,7 @@ function IndividualReportsMenu({
 
 export function ReportExportsCard(props: ReportExportsCardProps) {
   const t = useScopedI18n("analytics.reportExports");
+  const tExport = useScopedI18n("exportJobs");
   const {
     exporting,
     exportInventoryValuation,
@@ -832,6 +836,19 @@ export function ReportExportsCard(props: ReportExportsCardProps) {
     <Card className="bg-muted/30 border-white/10 backdrop-blur-sm">
       <ReportExportsHeader />
       <CardContent>
+        <ExportJobControl
+          organizationId={props.organizationId}
+          source={{ kind: "objects", mode: "filtered", filters: {} }}
+          label={tExport("catalogComplete")}
+        />
+        <ExportJobControl
+          organizationId={props.organizationId}
+          source={{ kind: "audit", filters: {} }}
+          label={tExport("auditComplete")}
+        />
+        <p className="text-xs text-muted-foreground py-2">
+          {tExport("reportsNote")}
+        </p>
         <div className="flex flex-wrap gap-2">
           <PrimaryReportMenu
             report="board"

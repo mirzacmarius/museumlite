@@ -11,11 +11,13 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_CONVEX_URL: z.string(),
+    NEXT_PUBLIC_CONVEX_SITE_URL: z.string().url().optional(),
     NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.optional(z.string()),
     NEXT_PUBLIC_SENTRY_DSN: z.optional(z.string()),
   },
   runtimeEnv: {
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
+    NEXT_PUBLIC_CONVEX_SITE_URL: process.env.NEXT_PUBLIC_CONVEX_SITE_URL,
     NEXT_PUBLIC_OPENPANEL_CLIENT_ID:
       process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,

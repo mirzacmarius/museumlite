@@ -5,8 +5,6 @@ import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { useObjectFilters } from "@/hooks/use-url-filters";
-import { useI18n } from "@/locales/client";
-import { exportCollectionsToCsv } from "./collection-bulk-export";
 import {
   INITIAL_OBJECTS_PAGE_SIZE,
   NEXT_OBJECTS_PAGE_SIZE,
@@ -91,8 +89,9 @@ function catalogPreferencesReducer(
   }
 }
 
+const INVENTORY_METRIC_SCOPES = ["owned", "incoming", "unclassified"] as const;
+
 export function useCollectionCatalogList(organizationId: Id<"organizations">) {
-  const tRoot = useI18n();
   const { filters, setFilters, resetFilters } = useObjectFilters();
   const [searchInput, setSearchInput] = useState(filters.search);
 
@@ -108,10 +107,6 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
   const [showBulkPrintLabelsDialog, setShowBulkPrintLabelsDialog] =
     useState(false);
 
-  const bulkExport = useQuery(
-    api.collections.bulkExport,
-    selectedIds.size > 0 ? { collectionIds: Array.from(selectedIds) } : "skip",
-  );
   const savedViewMode = useQuery(api.userPreferences.get, {
     key: "objects.viewMode",
     organizationId,
@@ -185,41 +180,39 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
       ? filters.status
       : undefined;
 
+  const exportFilters = {
+    inventoryMetricScope: INVENTORY_METRIC_SCOPES.find(
+      (scope) => scope === filters.inventoryScope,
+    ),
+    search: filters.search || undefined,
+    status: statusFilter,
+    objectType: filters.objectType || undefined,
+    displayStatus: filters.displayStatus || undefined,
+    culture: filters.culture || undefined,
+    period: filters.period || undefined,
+    materials: filters.materials || undefined,
+    collectionGroupId: filters.collectionGroupId
+      ? (filters.collectionGroupId as Id<"collectionGroups">)
+      : undefined,
+    locationIds:
+      filters.locationIds.length > 0
+        ? (filters.locationIds as Id<"locations">[])
+        : undefined,
+    catalogedFrom: filters.catalogedFrom
+      ? new Date(filters.catalogedFrom).getTime()
+      : undefined,
+    catalogedTo: filters.catalogedTo
+      ? new Date(filters.catalogedTo).setHours(23, 59, 59, 999)
+      : undefined,
+  };
+
   const {
     results: collections,
     status: collectionsStatus,
     loadMore,
   } = usePaginatedQuery(
     api.collections.list,
-    {
-      organizationId,
-      inventoryMetricScope:
-        filters.inventoryScope === "owned" ||
-        filters.inventoryScope === "incoming" ||
-        filters.inventoryScope === "unclassified"
-          ? filters.inventoryScope
-          : undefined,
-      search: filters.search || undefined,
-      status: statusFilter,
-      objectType: filters.objectType || undefined,
-      displayStatus: filters.displayStatus || undefined,
-      culture: filters.culture || undefined,
-      period: filters.period || undefined,
-      materials: filters.materials || undefined,
-      collectionGroupId: filters.collectionGroupId
-        ? (filters.collectionGroupId as Id<"collectionGroups">)
-        : undefined,
-      locationIds:
-        filters.locationIds.length > 0
-          ? (filters.locationIds as Id<"locations">[])
-          : undefined,
-      catalogedFrom: filters.catalogedFrom
-        ? new Date(filters.catalogedFrom).getTime()
-        : undefined,
-      catalogedTo: filters.catalogedTo
-        ? new Date(filters.catalogedTo).setHours(23, 59, 59, 999)
-        : undefined,
-    },
+    { organizationId, ...exportFilters },
     { initialNumItems: INITIAL_OBJECTS_PAGE_SIZE },
   );
 
@@ -295,45 +288,12 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     setSelectedIds(new Set());
   };
 
-  const handleBulkExport = () => {
-    if (!bulkExport || bulkExport.length === 0) {
-      return;
-    }
-    exportCollectionsToCsv(
-      bulkExport,
-      [
-        tRoot("objects.form.accessionNumber"),
-        tRoot("objects.form.title"),
-        tRoot("objects.detail.alternativeTitle"),
-        tRoot("objects.form.creator"),
-        tRoot("objects.filters.objectType"),
-        tRoot("objects.form.objectName"),
-        tRoot("objects.form.culture"),
-        tRoot("objects.form.period"),
-        tRoot("objects.form.dateCreated"),
-        tRoot("objects.form.materials"),
-        tRoot("objects.printView.technique"),
-        tRoot("objects.form.dimensions"),
-        tRoot("objects.form.description"),
-        tRoot("objects.form.condition"),
-        tRoot("objects.form.provenance"),
-        tRoot("common.status"),
-        tRoot("objects.form.currentLocation"),
-        tRoot("objects.form.collectionGroup"),
-        tRoot("untranslatedRecords.collections.import.fields.collectionGroups"),
-        tRoot("untranslatedRecords.objects.export.catalogedDate"),
-      ],
-      tRoot("untranslatedRecords.objects.bulk.exported", {
-        count: bulkExport.length,
-      }),
-    );
-  };
-
   const handleBulkSuccess = () => {
     setSelectedIds(new Set());
   };
 
   return {
+    exportFilters,
     filters,
     setFilters,
     resetFilters,
@@ -365,7 +325,6 @@ export function useCollectionCatalogList(organizationId: Id<"organizations">) {
     handleSelectItem,
     handleSelectAll,
     handleClearSelection,
-    handleBulkExport,
     handleBulkSuccess,
   };
 }

@@ -1,6 +1,9 @@
 "use client";
 
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
+import { ExportJobControl } from "@/components/export-job-control";
+import { PermissionGate } from "@/components/permission-gate";
+import { useScopedI18n } from "@/locales/client";
 import { AddObjectsToCollectionDialog } from "./add-objects-to-collection-dialog";
 import { BulkActionsBar } from "./bulk-actions-bar";
 import { BulkAddToGroupDialog } from "./bulk-add-to-group-dialog";
@@ -17,10 +20,33 @@ export function CollectionFiltersAndList({
   organizationId: Id<"organizations">;
 }) {
   const catalog = useCollectionCatalogList(organizationId);
+  const tExport = useScopedI18n("exportJobs");
 
   return (
     <div className="flex flex-col h-full">
       <CollectionCatalogToolbar catalog={catalog} />
+
+      <PermissionGate permission="collections.read">
+        <div className="flex flex-col gap-2 px-4 py-2">
+          <ExportJobControl
+            organizationId={organizationId}
+            source={{
+              kind: "objects",
+              mode: "filtered",
+              filters: catalog.exportFilters,
+            }}
+            label={tExport("catalogFiltered")}
+          />
+          {catalog.selectedIds.size > 0 && (
+            <ExportJobControl
+              organizationId={organizationId}
+              source={{ kind: "objects", mode: "selected", filters: {} }}
+              selectedIds={Array.from(catalog.selectedIds)}
+              label={tExport("selected", { count: catalog.selectedIds.size })}
+            />
+          )}
+        </div>
+      </PermissionGate>
 
       <div className="relative flex-1 overflow-hidden bg-background">
         <CollectionList
@@ -43,7 +69,6 @@ export function CollectionFiltersAndList({
         onClearSelection={catalog.handleClearSelection}
         onAddToGroup={() => catalog.setShowAddToGroupDialog(true)}
         onMoveLocation={() => catalog.setShowMoveLocationDialog(true)}
-        onExport={catalog.handleBulkExport}
         onPrintLabels={() => catalog.setShowBulkPrintLabelsDialog(true)}
         onDeaccession={() => catalog.setShowBulkDeaccessionDialog(true)}
       />

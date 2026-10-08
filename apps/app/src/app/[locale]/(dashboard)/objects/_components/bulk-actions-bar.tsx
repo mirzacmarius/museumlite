@@ -1,14 +1,7 @@
 "use client";
 
 import { Button } from "@v1/ui/button";
-import {
-  Archive,
-  Download,
-  FolderPlus,
-  MapPin,
-  Printer,
-  X,
-} from "lucide-react";
+import { Archive, FolderPlus, MapPin, Printer, X } from "lucide-react";
 import { PermissionGate } from "@/components/permission-gate";
 
 import { useI18n } from "@/locales/client";
@@ -18,7 +11,6 @@ interface BulkActionsBarProps {
   onClearSelection: () => void;
   onMoveLocation: () => void;
   onAddToGroup: () => void;
-  onExport: () => void;
   onPrintLabels: () => void;
   onDeaccession: () => void;
 }
@@ -28,7 +20,6 @@ export function BulkActionsBar({
   onClearSelection,
   onMoveLocation,
   onAddToGroup,
-  onExport,
   onPrintLabels,
   onDeaccession,
 }: BulkActionsBarProps) {
@@ -66,13 +57,6 @@ export function BulkActionsBar({
             <Button variant="outline" size="sm" onClick={onMoveLocation}>
               <MapPin className="mr-2 size-4" />
               {tRoot("objects.bulkActions.moveLocation")}
-            </Button>
-          </PermissionGate>
-
-          <PermissionGate permission="collections.read">
-            <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="mr-2 size-4" />
-              {tRoot("objects.bulkActions.export")}
             </Button>
           </PermissionGate>
 

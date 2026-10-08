@@ -21,6 +21,7 @@ import { parseAsString, useQueryStates } from "nuqs";
 import { Suspense } from "react";
 import { AuditCaseHistory } from "@/components/audit-case-history";
 import { AuditEventDetails } from "@/components/audit-event-details";
+import { ExportJobControl } from "@/components/export-job-control";
 import { useOrganization } from "@/components/organization-provider";
 import { useClientRelativeTime } from "@/hooks/use-client-date-format";
 import { useFeatureAccess } from "@/hooks/use-feature-access";
@@ -406,6 +407,7 @@ function ActivityPageContent() {
   const { currentOrganizationId, isLoading } = useOrganization();
   const { hasFeature } = useFeatureAccess();
   const t = useScopedI18n("activityLog");
+  const tExport = useScopedI18n("exportJobs");
 
   const [state, setState] = useQueryStates(
     {
@@ -577,6 +579,26 @@ function ActivityPageContent() {
     >
       <div className="flex h-full min-h-0 w-full flex-col gap-6">
         <ActivityPageHeader title={t("title")} description={t("description")} />
+
+        {queryArgs !== "skip" && (
+          <ExportJobControl
+            organizationId={currentOrganizationId}
+            source={{
+              kind: "audit",
+              filters: {
+                userId: queryArgs.userId,
+                entityType: queryArgs.entityType,
+                entityId: queryArgs.entityId,
+                action: queryArgs.action,
+                fromDate: queryArgs.fromDate,
+                toDate: queryArgs.toDate,
+                objectId: queryArgs.objectId,
+                caseId: queryArgs.caseId,
+              },
+            }}
+            label={tExport("auditFiltered")}
+          />
+        )}
 
         <ActivityFilters
           actionFilter={state.actionFilter}
