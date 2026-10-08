@@ -6,7 +6,15 @@ import { Button } from "@v1/ui/button";
 import { useQuery } from "convex/react";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { Suspense } from "react";
+import { ClientTime } from "@/components/client-date";
+import { formatIsoTimestamp } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
+
+const LOCAL_DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+};
 
 function parseCase(value: string): {
   caseType:
@@ -77,10 +85,13 @@ function AuditCaseHistoryContent({
                 )}
               </span>
               <time
-                dateTime={new Date(entry.approvedAt).toISOString()}
+                dateTime={formatIsoTimestamp(entry.approvedAt)}
                 className="text-xs text-muted-foreground"
               >
-                {new Date(entry.approvedAt).toLocaleString()}
+                <ClientTime
+                  timestamp={entry.approvedAt}
+                  options={LOCAL_DATE_TIME_OPTIONS}
+                />
               </time>
             </div>
           ))}

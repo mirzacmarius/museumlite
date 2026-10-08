@@ -4,6 +4,7 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { usePaginatedQuery } from "convex/react";
+import { useClientDate } from "@/hooks/use-client-date-format";
 import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 interface AcceptedConditionAssessmentSelectorProps {
@@ -26,6 +27,12 @@ export function AcceptedConditionAssessmentSelector({
     { collectionId },
     { initialNumItems: 25 },
   );
+  const acceptedAssessments: typeof results = [];
+  for (const assessment of results) {
+    if (assessment.status === "accepted") {
+      acceptedAssessments.push(assessment);
+    }
+  }
   return (
     <div className="space-y-2">
       <select
@@ -36,14 +43,13 @@ export function AcceptedConditionAssessmentSelector({
         className="w-full rounded-md border border-border bg-background p-2 text-sm"
       >
         <option value="">{t("selectAccepted")}</option>
-        {results
-          .filter((assessment) => assessment.status === "accepted")
-          .map((assessment) => (
-            <option key={assessment._id} value={assessment._id}>
-              {new Date(assessment.assessedAt).toLocaleDateString(locale)} ·{" "}
-              {assessment.condition} · {assessment.summary}
-            </option>
-          ))}
+        {acceptedAssessments.map((assessment) => (
+          <AcceptedAssessmentOption
+            key={assessment._id}
+            assessment={assessment}
+            locale={locale}
+          />
+        ))}
       </select>
       {status === "CanLoadMore" ? (
         <Button
@@ -57,5 +63,25 @@ export function AcceptedConditionAssessmentSelector({
         </Button>
       ) : null}
     </div>
+  );
+}
+
+function AcceptedAssessmentOption({
+  assessment,
+  locale,
+}: {
+  assessment: {
+    _id: string;
+    assessedAt: number;
+    condition: string;
+    summary: string;
+  };
+  locale: string;
+}) {
+  const assessedOn = useClientDate(assessment.assessedAt, locale);
+  return (
+    <option value={assessment._id}>
+      {assessedOn} · {assessment.condition} · {assessment.summary}
+    </option>
   );
 }

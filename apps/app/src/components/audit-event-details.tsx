@@ -7,7 +7,8 @@ import { Input } from "@v1/ui/input";
 import { Textarea } from "@v1/ui/textarea";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { formatIsoTimestamp } from "@/lib/format-date";
 import { useScopedI18n } from "@/locales/client";
 
 type AuditEvent = FunctionReturnType<
@@ -45,7 +46,7 @@ export function AuditEventDetails({
   const correct = useMutation(api.auditLog.correct);
   const [reason, setReason] = useState("");
   const [statement, setStatement] = useState("");
-  const [requestId, setRequestId] = useState<string>();
+  const requestIdRef = useRef<string | undefined>(undefined);
   const [status, setStatus] = useState<"idle" | "saving" | "failed" | "saved">(
     "idle",
   );
@@ -56,8 +57,8 @@ export function AuditEventDetails({
     new Set([...Object.keys(before), ...Object.keys(after)]),
   );
   async function save() {
-    const retryId = requestId ?? crypto.randomUUID();
-    setRequestId(retryId);
+    const retryId = requestIdRef.current ?? crypto.randomUUID();
+    requestIdRef.current = retryId;
     setStatus("saving");
     try {
       await correct({
@@ -77,7 +78,7 @@ export function AuditEventDetails({
       <summary className="cursor-pointer text-sm">{t("details")}</summary>
       <div className="mt-3 space-y-3 text-sm">
         <p className="font-mono text-xs break-all">
-          {entry._id} · {new Date(entry.timestamp).toISOString()}
+          {entry._id} · {formatIsoTimestamp(entry.timestamp)}
         </p>
         <p>
           {entry.evidenceStatus === "legacy"
@@ -156,8 +157,7 @@ export function AuditEventDetails({
         {canCorrect && (
           <form
             className="space-y-2"
-            onSubmit={(event) => {
-              event.preventDefault();
+            action={() => {
               void save();
             }}
           >
@@ -169,7 +169,7 @@ export function AuditEventDetails({
               value={reason}
               onChange={(event) => {
                 setReason(event.target.value);
-                setRequestId(undefined);
+                requestIdRef.current = undefined;
                 setStatus("idle");
               }}
             />
@@ -181,7 +181,7 @@ export function AuditEventDetails({
               value={statement}
               onChange={(event) => {
                 setStatement(event.target.value);
-                setRequestId(undefined);
+                requestIdRef.current = undefined;
                 setStatus("idle");
               }}
             />

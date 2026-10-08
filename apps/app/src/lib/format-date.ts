@@ -75,6 +75,10 @@ export function formatDateTimeUtc(timestamp: number, locale: string): string {
   return UTC_DATE_TIME_FORMATTERS[supportedLocale].format(timestamp);
 }
 
+export function formatIsoTimestamp(timestamp: number): string {
+  return new Date(timestamp).toISOString();
+}
+
 export function formatDateFns(
   date: Date,
   formatStr: string,
