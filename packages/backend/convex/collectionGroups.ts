@@ -569,10 +569,11 @@ export const addItems = mutation({
       ];
       const solePrimary =
         explicitPrimaries.length === 1 ? explicitPrimaries[0] : undefined;
+      const nextGroupIdSet = new Set(nextGroupIds);
       const primaryGroupId = solePrimary
         ? solePrimary.collectionGroupId
         : collection.collectionGroupId &&
-            nextGroupIds.includes(collection.collectionGroupId)
+            nextGroupIdSet.has(collection.collectionGroupId)
           ? collection.collectionGroupId
           : undefined;
       await syncCollectionGroupMemberships(
@@ -643,9 +644,13 @@ export const removeItems = mutation({
         throw new Error("Object not found in this organization");
       }
       const memberships = await listCollectionMemberships(ctx, collectionId);
-      const item = memberships.find(
-        (membership) => membership.collectionGroupId === args.groupId,
+      const membershipByGroupId = new Map(
+        memberships.map((membership) => [
+          membership.collectionGroupId,
+          membership,
+        ]),
       );
+      const item = membershipByGroupId.get(args.groupId);
       const isPrimary =
         item?.role === "primary" ||
         collection.collectionGroupId === args.groupId;
@@ -688,8 +693,9 @@ export const removeItems = mutation({
       const remainingIds = remaining.map(
         (membership) => membership.collectionGroupId,
       );
+      const remainingIdSet = new Set(remainingIds);
       const nextGroupIds =
-        primaryGroupId && !remainingIds.includes(primaryGroupId)
+        primaryGroupId && !remainingIdSet.has(primaryGroupId)
           ? [primaryGroupId, ...remainingIds]
           : remainingIds;
       await syncCollectionGroupMemberships(

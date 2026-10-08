@@ -10,13 +10,16 @@ export function useExhibitionParticipantScheduleConflicts(
   endDate: Date | undefined,
   excludeExhibitionId?: Id<"exhibitions">,
 ) {
-  const collectionIds = [
-    ...new Set(
-      participants
-        .map((participant) => participant.collectionId)
-        .filter((collectionId): collectionId is string => Boolean(collectionId)),
-    ),
-  ] as Id<"collections">[];
+  const collectionIds: Id<"collections">[] = [];
+  const seen = new Set<string>();
+  for (const participant of participants) {
+    const collectionId = participant.collectionId;
+    if (!collectionId || seen.has(collectionId)) {
+      continue;
+    }
+    seen.add(collectionId);
+    collectionIds.push(collectionId as Id<"collections">);
+  }
 
   return useQuery(
     api.exhibitions.checkScheduleConflictsForParticipants,

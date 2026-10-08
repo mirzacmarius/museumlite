@@ -37,15 +37,20 @@ export async function getExhibitionsForObject(
       .withIndex("by_collection", (q) => q.eq("collectionId", collectionId))
       .collect(),
   ]);
-  const exhibitions = await Promise.all(members.map((member) => ctx.db.get(member.exhibitionId)));
+  const exhibitions = await Promise.all(
+    members.map((member) => ctx.db.get(member.exhibitionId)),
+  );
   const byId = new Map<Id<"exhibitions">, Doc<"exhibitions">>();
   for (const exhibition of exhibitions) {
     if (exhibition) byId.set(exhibition._id, exhibition);
   }
   for (const exhibition of legacyAnchors) {
-    if (exhibition.participationVersion !== "members") byId.set(exhibition._id, exhibition);
+    if (exhibition.participationVersion !== "members")
+      byId.set(exhibition._id, exhibition);
   }
-  return [...byId.values()].sort((a, b) => b._creationTime - a._creationTime);
+  return [...byId.values()].toSorted(
+    (a, b) => b._creationTime - a._creationTime,
+  );
 }
 
 export async function validateExhibitionParticipants(
@@ -53,8 +58,12 @@ export async function validateExhibitionParticipants(
   organizationId: Id<"organizations">,
   participants: ExhibitionParticipantInput[],
 ) {
-  if (participants.length === 0) throw new Error("Select at least one exhibition object");
-  if (new Set(participants.map((member) => member.collectionId)).size !== participants.length) {
+  if (participants.length === 0)
+    throw new Error("Select at least one exhibition object");
+  if (
+    new Set(participants.map((member) => member.collectionId)).size !==
+    participants.length
+  ) {
     throw new Error("An object can appear only once in an exhibition");
   }
   if (participants.filter((member) => member.role === "featured").length > 1) {
@@ -72,13 +81,20 @@ export async function getLegacyParticipationReview(
   ctx: DatabaseContext,
   exhibition: Doc<"exhibitions">,
 ) {
-  if (exhibition.participationVersion === "members" || !exhibition.collectionId) return null;
+  if (exhibition.participationVersion === "members" || !exhibition.collectionId)
+    return null;
   const members = await getExhibitionParticipants(ctx, exhibition._id);
-  const anchorIsMember = members.some((member) => member.collectionId === exhibition.collectionId);
+  const anchorIsMember = members.some(
+    (member) => member.collectionId === exhibition.collectionId,
+  );
   return {
     anchorCollectionId: exhibition.collectionId,
-    reason: members.length === 0 ? "anchor_only" as const :
-      anchorIsMember ? "anchor_and_members" as const : "anchor_missing_from_members" as const,
+    reason:
+      members.length === 0
+        ? ("anchor_only" as const)
+        : anchorIsMember
+          ? ("anchor_and_members" as const)
+          : ("anchor_missing_from_members" as const),
     memberCount: members.length,
   };
 }

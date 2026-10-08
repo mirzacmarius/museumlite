@@ -73,7 +73,9 @@ export function TreatmentEvidencePanel({
   }
 
   const isClosed =
-    status === "completed" || status === "rejected" || evidence.status === "completed";
+    status === "completed" ||
+    status === "rejected" ||
+    evidence.status === "completed";
 
   const runAction = async (key: string, action: () => Promise<unknown>) => {
     try {
@@ -159,7 +161,7 @@ export function TreatmentEvidencePanel({
                   <SelectContent>
                     {assessmentOptions.map((item) => (
                       <SelectItem key={item._id} value={item._id}>
-                        {item.condition} — {item.summary} ({item.status})
+                        {item.condition}: {item.summary} ({item.status})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -173,7 +175,8 @@ export function TreatmentEvidencePanel({
                     runAction("baseline", () =>
                       linkBaseline({
                         treatmentId,
-                        assessmentId: selectedBaseline as Id<"conditionAssessments">,
+                        assessmentId:
+                          selectedBaseline as Id<"conditionAssessments">,
                       }),
                     )
                   }
@@ -193,7 +196,7 @@ export function TreatmentEvidencePanel({
                   <SelectContent>
                     {assessmentOptions.map((item) => (
                       <SelectItem key={item._id} value={item._id}>
-                        {item.condition} — {item.summary} ({item.status})
+                        {item.condition}: {item.summary} ({item.status})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -207,7 +210,8 @@ export function TreatmentEvidencePanel({
                     runAction("outcome", () =>
                       linkOutcome({
                         treatmentId,
-                        assessmentId: selectedOutcome as Id<"conditionAssessments">,
+                        assessmentId:
+                          selectedOutcome as Id<"conditionAssessments">,
                       }),
                     )
                   }
@@ -297,7 +301,10 @@ export function TreatmentEvidencePanel({
             {evidence.followUp.dueAt && (
               <p className="text-xs text-white/60">
                 {t("evidence.followUpDue")}{" "}
-                <ClientDate timestamp={evidence.followUp.dueAt} locale={locale} />
+                <ClientDate
+                  timestamp={evidence.followUp.dueAt}
+                  locale={locale}
+                />
               </p>
             )}
             <Textarea

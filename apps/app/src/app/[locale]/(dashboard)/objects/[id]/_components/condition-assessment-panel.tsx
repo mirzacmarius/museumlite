@@ -4,10 +4,12 @@ import { api } from "@v1/backend/convex/_generated/api";
 import type { Id } from "@v1/backend/convex/_generated/dataModel";
 import { Button } from "@v1/ui/button";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
+import { ClientDate } from "@/components/client-date";
 import { usePermissions } from "@/components/permission-gate";
-import { useScopedI18n } from "@/locales/client";
+import { useClientNow } from "@/hooks/use-client-date-format";
+import { useCurrentLocale, useScopedI18n } from "@/locales/client";
 
 const assessmentSchema = z.object({
   assessedAt: z.number().finite().positive(),
@@ -55,7 +57,10 @@ export function ConditionAssessmentPanel({
   const accept = useMutation(api.conditionAssessments.accept);
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const createMedia = useMutation(api.media.create);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const locale = useCurrentLocale();
+  const now = useClientNow();
+  const nextObservationId = useRef(0);
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [condition, setCondition] = useState("");
   const [summary, setSummary] = useState("");
   const [observations, setObservations] = useState<ObservationDraft[]>([]);
@@ -67,6 +72,16 @@ export function ConditionAssessmentPanel({
   const canAccept = hasPermission("collections.accept_condition");
   const canUpload =
     hasPermission("media.upload") && hasPermission("media.read");
+  const maxAssessmentDate =
+    now === undefined ? undefined : new Date(now).toISOString().slice(0, 10);
+  const completedImageMedia = [];
+  if (media) {
+    for (const item of media) {
+      if (item.fileType === "image" && item.uploadStatus === "completed") {
+        completedImageMedia.push(item);
+      }
+    }
+  }
 
   async function saveDraft(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -161,7 +176,7 @@ export function ConditionAssessmentPanel({
   return (
     <section
       aria-label={t("title")}
-      className="space-y-5 rounded-xl border border-white/10 bg-black p-5 text-white"
+      className="space-y-5 rounded-xl border border-white/10 bg-gray-950 p-5 text-white"
     >
       <div>
         <h2 className="text-base font-semibold">{t("title")}</h2>
@@ -197,9 +212,10 @@ export function ConditionAssessmentPanel({
               </p>
               {detail.comparison.previousAccepted ? (
                 <p className="mt-1 text-xs text-white/60">
-                  {new Date(
-                    detail.comparison.previousAccepted.assessedAt,
-                  ).toLocaleDateString()}
+                  <ClientDate
+                    timestamp={detail.comparison.previousAccepted.assessedAt}
+                    locale={locale}
+                  />
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-white/60">
@@ -235,7 +251,7 @@ export function ConditionAssessmentPanel({
               className="mt-2 text-sm"
               key={`${entry.changedAt}-${entry.condition}`}
             >
-              {new Date(entry.changedAt).toLocaleDateString()}:{" "}
+              <ClientDate timestamp={entry.changedAt} locale={locale} />:{" "}
               {entry.condition}
               {entry.note ? ` — ${entry.note}` : ""}
             </p>
@@ -254,10 +270,10 @@ export function ConditionAssessmentPanel({
             <input
               type="date"
               required
-              max={new Date().toISOString().slice(0, 10)}
+              max={maxAssessmentDate}
               value={date}
               onChange={(event) => setDate(event.target.value)}
-              className="mt-1 block w-full rounded border border-white/20 bg-black p-2"
+              className="mt-1 block w-full rounded border border-white/20 bg-gray-950 p-2"
             />
           </label>
           <label className="block text-sm">
@@ -266,7 +282,7 @@ export function ConditionAssessmentPanel({
               required
               value={condition}
               onChange={(event) => setCondition(event.target.value)}
-              className="mt-1 block w-full rounded border border-white/20 bg-black p-2"
+              className="mt-1 block w-full rounded border border-white/20 bg-gray-950 p-2"
             />
           </label>
           <label className="block text-sm">
@@ -275,7 +291,7 @@ export function ConditionAssessmentPanel({
               required
               value={summary}
               onChange={(event) => setSummary(event.target.value)}
-              className="mt-1 block w-full rounded border border-white/20 bg-black p-2"
+              className="mt-1 block w-full rounded border border-white/20 bg-gray-950 p-2"
             />
           </label>
           <div className="space-y-3">
@@ -285,15 +301,18 @@ export function ConditionAssessmentPanel({
                 type="button"
                 variant="outline"
                 onClick={() =>
-                  setObservations([
-                    ...observations,
-                    {
-                      id: crypto.randomUUID(),
-                      area: "",
-                      description: "",
-                      severity: "minor",
-                    },
-                  ])
+                  setObservations((prev) => {
+                    nextObservationId.current += 1;
+                    return [
+                      ...prev,
+                      {
+                        id: `observation-${nextObservationId.current}`,
+                        area: "",
+                        description: "",
+                        severity: "minor",
+                      },
+                    ];
+                  })
                 }
               >
                 {t("addObservation")}
@@ -308,49 +327,47 @@ export function ConditionAssessmentPanel({
                   aria-label={t("area")}
                   placeholder={t("area")}
                   value={item.area}
-                  onChange={(event) =>
-                    setObservations(
-                      observations.map((entry, position) =>
-                        position === index
-                          ? { ...entry, area: event.target.value }
-                          : entry,
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setObservations((prev) =>
+                      prev.map((entry, position) =>
+                        position === index ? { ...entry, area: value } : entry,
                       ),
-                    )
-                  }
-                  className="rounded border border-white/20 bg-black p-2"
+                    );
+                  }}
+                  className="rounded border border-white/20 bg-gray-950 p-2"
                 />
                 <input
                   aria-label={t("descriptionField")}
                   placeholder={t("descriptionField")}
                   value={item.description}
-                  onChange={(event) =>
-                    setObservations(
-                      observations.map((entry, position) =>
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setObservations((prev) =>
+                      prev.map((entry, position) =>
                         position === index
-                          ? { ...entry, description: event.target.value }
+                          ? { ...entry, description: value }
                           : entry,
                       ),
-                    )
-                  }
-                  className="rounded border border-white/20 bg-black p-2"
+                    );
+                  }}
+                  className="rounded border border-white/20 bg-gray-950 p-2"
                 />
                 <select
                   aria-label={t("severity")}
                   value={item.severity}
-                  onChange={(event) =>
-                    setObservations(
-                      observations.map((entry, position) =>
+                  onChange={(event) => {
+                    const value = event.target
+                      .value as ObservationInput["severity"];
+                    setObservations((prev) =>
+                      prev.map((entry, position) =>
                         position === index
-                          ? {
-                              ...entry,
-                              severity: event.target
-                                .value as ObservationInput["severity"],
-                            }
+                          ? { ...entry, severity: value }
                           : entry,
                       ),
-                    )
-                  }
-                  className="rounded border border-white/20 bg-black p-2"
+                    );
+                  }}
+                  className="rounded border border-white/20 bg-gray-950 p-2"
                 >
                   <option value="minor">{t("minor")}</option>
                   <option value="moderate">{t("moderate")}</option>
@@ -360,8 +377,8 @@ export function ConditionAssessmentPanel({
                   type="button"
                   variant="ghost"
                   onClick={() =>
-                    setObservations(
-                      observations.filter((_, position) => position !== index),
+                    setObservations((prev) =>
+                      prev.filter((_, position) => position !== index),
                     )
                   }
                 >
@@ -370,34 +387,29 @@ export function ConditionAssessmentPanel({
               </div>
             ))}
           </div>
-          {media ? (
+          {completedImageMedia.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm">{t("photos")}</p>
-              {media
-                .filter(
-                  (item) =>
-                    item.fileType === "image" &&
-                    item.uploadStatus === "completed",
-                )
-                .map((item) => (
-                  <label
-                    key={item._id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={photoIds.includes(item._id)}
-                      onChange={(event) =>
-                        setPhotoIds(
-                          event.target.checked
-                            ? [...photoIds, item._id]
-                            : photoIds.filter((id) => id !== item._id),
-                        )
-                      }
-                    />
-                    {item.fileName}
-                  </label>
-                ))}
+              {completedImageMedia.map((item) => (
+                <label
+                  key={item._id}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    checked={photoIds.includes(item._id)}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setPhotoIds((prev) =>
+                        checked
+                          ? [...prev, item._id]
+                          : prev.filter((id) => id !== item._id),
+                      );
+                    }}
+                  />
+                  {item.fileName}
+                </label>
+              ))}
             </div>
           ) : null}
           {canUpload ? (
@@ -444,7 +456,7 @@ export function ConditionAssessmentPanel({
             <div className="flex flex-wrap justify-between gap-2">
               <strong>{assessment.condition}</strong>
               <span className="text-sm text-white/60">
-                {new Date(assessment.assessedAt).toLocaleDateString()}
+                <ClientDate timestamp={assessment.assessedAt} locale={locale} />
               </span>
             </div>
             <p className="mt-1 text-sm text-white/60">

@@ -5,10 +5,10 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { rejectPermanentEvidenceDeletion } from "./evidenceRetention";
 import { requireExhibitionAccess } from "./exhibitionAccess";
 import {
+  type ExhibitionParticipantInput,
   getExhibitionParticipants,
   getExhibitionsForObject,
   getLegacyParticipationReview,
-  type ExhibitionParticipantInput,
   validateExhibitionParticipants,
 } from "./exhibitionParticipation";
 import { hasFeatureAccess } from "./featureGates";
@@ -24,7 +24,10 @@ import { resolveWorkflowStepState } from "./workflowSteps";
 
 export async function listExhibitionsByOrganizationHandler(
   ctx: QueryCtx,
-  args: { organizationId: Id<"organizations">; collectionId?: Id<"collections"> },
+  args: {
+    organizationId: Id<"organizations">;
+    collectionId?: Id<"collections">;
+  },
 ) {
   await Promise.all([
     requireExhibitionAccess(ctx, args.organizationId),
@@ -39,10 +42,20 @@ export async function listExhibitionsByOrganizationHandler(
     .collect();
 
   const matchingIds = args.collectionId
-    ? new Set((await getExhibitionsForObject(ctx, args.collectionId)).map((exhibition) => exhibition._id))
+    ? new Set(
+        (await getExhibitionsForObject(ctx, args.collectionId)).map(
+          (exhibition) => exhibition._id,
+        ),
+      )
     : null;
+  const filteredExhibitions = [];
+  for (const exhibition of exhibitions) {
+    if (!matchingIds || matchingIds.has(exhibition._id)) {
+      filteredExhibitions.push(exhibition);
+    }
+  }
   const results = await Promise.all(
-    exhibitions.filter((exhibition) => !matchingIds || matchingIds.has(exhibition._id)).map(async (exhibition) => {
+    filteredExhibitions.map(async (exhibition) => {
       const members = await getExhibitionParticipants(ctx, exhibition._id);
       const review = await getLegacyParticipationReview(ctx, exhibition);
       const firstId = members[0]?.collectionId ?? review?.anchorCollectionId;
@@ -59,7 +72,9 @@ export async function listExhibitionsByOrganizationHandler(
         loanVenue: exhibition.loanVenue,
         notes: exhibition.notes,
         collectionId: firstId,
-        participantCount: members.length + (review && review.reason !== "anchor_and_members" ? 1 : 0),
+        participantCount:
+          members.length +
+          (review && review.reason !== "anchor_and_members" ? 1 : 0),
         collectionTitle:
           collection?.organizationId === exhibition.organizationId
             ? collection.title
@@ -85,7 +100,13 @@ export async function getExhibitionHandler(
     requirePermission(ctx, exhibition.organizationId, "collections.read"),
   ]);
 
-  const [members, legacyParticipationReview, workflowConfig, approver, creator] = await Promise.all([
+  const [
+    members,
+    legacyParticipationReview,
+    workflowConfig,
+    approver,
+    creator,
+  ] = await Promise.all([
     getExhibitionParticipants(ctx, exhibition._id),
     getLegacyParticipationReview(ctx, exhibition),
     getWorkflowConfig(ctx, exhibition.organizationId, "exhibition"),
@@ -96,7 +117,8 @@ export async function getExhibitionHandler(
       ? ctx.db.get(exhibition.createdBy)
       : Promise.resolve(null),
   ] as const);
-  const firstId = members[0]?.collectionId ?? legacyParticipationReview?.anchorCollectionId;
+  const firstId =
+    members[0]?.collectionId ?? legacyParticipationReview?.anchorCollectionId;
   const collection = firstId ? await ctx.db.get(firstId) : null;
 
   return {
@@ -111,7 +133,12 @@ export async function getExhibitionHandler(
     loanVenue: exhibition.loanVenue,
     notes: exhibition.notes,
     collectionId: firstId,
-    participantCount: members.length + (legacyParticipationReview && legacyParticipationReview.reason !== "anchor_and_members" ? 1 : 0),
+    participantCount:
+      members.length +
+      (legacyParticipationReview &&
+      legacyParticipationReview.reason !== "anchor_and_members"
+        ? 1
+        : 0),
     legacyParticipationReview: legacyParticipationReview ?? undefined,
     organizationId: exhibition.organizationId,
     collectionTitle:
@@ -174,26 +201,52 @@ export async function updateExhibitionHandler(
 
   if (participants) {
     if (exhibition.participationVersion !== "members") {
-      throw new Error("Review legacy exhibition participation before editing objects");
+      throw new Error(
+        "Review legacy exhibition participation before editing objects",
+      );
     }
-    await validateExhibitionParticipants(ctx, exhibition.organizationId, participants);
+    await validateExhibitionParticipants(
+      ctx,
+      exhibition.organizationId,
+      participants,
+    );
     const members = await getExhibitionParticipants(ctx, exhibition._id);
     for (const participant of participants) {
-      if (!members.some((member) => member.collectionId === participant.collectionId)) {
-        await assertCollectionNotOnLoan(ctx, participant.collectionId, "Cannot add an object that is currently on loan");
+      if (
+        !members.some(
+          (member) => member.collectionId === participant.collectionId,
+        )
+      ) {
+        await assertCollectionNotOnLoan(
+          ctx,
+          participant.collectionId,
+          "Cannot add an object that is currently on loan",
+        );
       }
     }
-    const selected = new Set(participants.map((participant) => participant.collectionId));
+    const selected = new Set(
+      participants.map((participant) => participant.collectionId),
+    );
     for (const member of members) {
       if (!selected.has(member.collectionId)) {
-        if (member.status !== "pending" || member.installedAt !== undefined || member.deinstalledAt !== undefined || member.returnedAt !== undefined) {
-          throw new Error("Cannot remove an object with installation or return evidence");
+        if (
+          member.status !== "pending" ||
+          member.installedAt !== undefined ||
+          member.deinstalledAt !== undefined ||
+          member.returnedAt !== undefined
+        ) {
+          throw new Error(
+            "Cannot remove an object with installation or return evidence",
+          );
         }
         await ctx.db.delete(member._id);
       }
     }
+    const membersByCollectionId = new Map(
+      members.map((member) => [member.collectionId, member]),
+    );
     for (const [order, participant] of participants.entries()) {
-      const existing = members.find((member) => member.collectionId === participant.collectionId);
+      const existing = membersByCollectionId.get(participant.collectionId);
       if (existing) {
         await ctx.db.patch(existing._id, { role: participant.role, order });
       } else {
@@ -313,16 +366,31 @@ export async function createExhibitionHandler(
   if (!userId) {
     throw new Error("Not authenticated");
   }
-  const participants = args.participants ?? (args.collectionId ? [{ collectionId: args.collectionId, role: "participant" as const }] : []);
-  const firstCollection = participants[0] ? await ctx.db.get(participants[0].collectionId) : null;
+  const participants =
+    args.participants ??
+    (args.collectionId
+      ? [{ collectionId: args.collectionId, role: "participant" as const }]
+      : []);
+  const firstCollection = participants[0]
+    ? await ctx.db.get(participants[0].collectionId)
+    : null;
   const organizationId = args.organizationId ?? firstCollection?.organizationId;
-  if (!organizationId) throw new Error("Organization and exhibition objects are required");
-  if (args.collectionId && args.participants && !participants.some((member) => member.collectionId === args.collectionId)) {
+  if (!organizationId)
+    throw new Error("Organization and exhibition objects are required");
+  if (
+    args.collectionId &&
+    args.participants &&
+    !participants.some((member) => member.collectionId === args.collectionId)
+  ) {
     throw new Error("Legacy object must be included in participants");
   }
   await validateExhibitionParticipants(ctx, organizationId, participants);
   for (const participant of participants) {
-    await assertCollectionNotOnLoan(ctx, participant.collectionId, "Cannot add an object that is currently on loan");
+    await assertCollectionNotOnLoan(
+      ctx,
+      participant.collectionId,
+      "Cannot add an object that is currently on loan",
+    );
   }
   await requireExhibitionAccess(ctx, organizationId);
 
@@ -333,11 +401,7 @@ export async function createExhibitionHandler(
   );
 
   if (!canInitiate) {
-    await requirePermission(
-      ctx,
-      organizationId,
-      "collections.update",
-    );
+    await requirePermission(ctx, organizationId, "collections.update");
   }
 
   const workflowConfig = await getWorkflowConfig(

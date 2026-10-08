@@ -31,7 +31,12 @@
           "packages/backend/convex/deaccessions.ts",
           "packages/backend/convex/mediaImports.ts",
           "packages/backend/convex/reporting.ts",
-          "packages/backend/convex/utils/collectionDisposition.ts"
+          "packages/backend/convex/utils/collectionDisposition.ts",
+          "packages/backend/convex/conditionAssessments.ts",
+          "packages/backend/convex/conservationTreatments.ts",
+          "packages/backend/convex/objectMoves.ts",
+          "packages/backend/convex/utils/exhibitionWorkflow.ts",
+          "packages/backend/convex/utils/transitPhysicalHandoff.ts"
         ],
         "rules": ["react-doctor/async-defer-await"]
       },
@@ -56,6 +61,27 @@
       {
         "files": ["packages/backend/convex/utils/reportSchedule.ts"],
         "rules": ["react-doctor/js-hoist-intl"]
+      },
+      {
+        "files": [
+          "apps/app/src/app/**/objects/[id]/_components/condition-assessment-panel.tsx",
+          "src/app/**/objects/[id]/_components/condition-assessment-panel.tsx",
+          "apps/app/src/app/**/conservation/[id]/_components/treatment-evidence-panel.tsx",
+          "src/app/**/conservation/[id]/_components/treatment-evidence-panel.tsx"
+        ],
+        "rules": [
+          "react-doctor/no-giant-component",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "apps/app/src/app/**/exhibitions/page.tsx",
+          "src/app/**/exhibitions/page.tsx",
+          "apps/app/src/app/**/transit/[id]/_components/transit-physical-handoffs-panel.tsx",
+          "src/app/**/transit/[id]/_components/transit-physical-handoffs-panel.tsx"
+        ],
+        "rules": ["react-doctor/prefer-useReducer"]
       }
     ]
   }
