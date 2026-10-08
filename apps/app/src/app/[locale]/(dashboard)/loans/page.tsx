@@ -28,7 +28,13 @@ export default function LoansPage() {
 
   const handleExport = useCallback(async () => {
     if (!currentOrganizationId) return [];
-    return exportLoans({ organizationId: currentOrganizationId });
+    const loans = await exportLoans({ organizationId: currentOrganizationId });
+    return loans.map((loan) => ({
+      ...loan,
+      startDate: new Date(loan.startDate),
+      endDate: loan.endDate === undefined ? undefined : new Date(loan.endDate),
+      createdAt: new Date(loan.createdAt),
+    }));
   }, [currentOrganizationId, exportLoans]);
 
   if (isLoading) {

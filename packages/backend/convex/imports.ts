@@ -25,6 +25,7 @@ import {
   recordExportUsage,
   requireModuleEnabled,
 } from "./utils/featureGates";
+import { protectSpreadsheetText } from "./utils/exportEncoding";
 import { toJSON, toXML } from "./utils/formatConverters";
 import {
   ensureIdentifierAvailable,
@@ -190,6 +191,10 @@ function getExportLocationCode(location: {
   locationCode?: string;
 }) {
   return location.locationCode ?? getFallbackLocationCode(location._id);
+}
+
+function csvTextCell(value: string) {
+  return `"${protectSpreadsheetText(value).replace(/"/g, '""')}"`;
 }
 
 export const createImportJob = mutation({
@@ -1802,7 +1807,7 @@ export const exportObjectsWithFormat = mutation({
         row.status || "",
         new Date(row.createdAt).toISOString(),
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(values.map(csvTextCell).join(","));
     }
     return csvRows.join("\n");
   },
@@ -1885,7 +1890,7 @@ export const exportLocationsWithFormat = mutation({
         row.notes || "",
       ];
       csvRows.push(
-        values.map((value = "") => `"${value.replace(/"/g, '""')}"`).join(","),
+        values.map((value = "") => csvTextCell(value)).join(","),
       );
     }
     return csvRows.join("\n");
@@ -1998,7 +2003,7 @@ export const exportAccountsWithFormat = mutation({
         row.notes || "",
         new Date(row.createdAt).toISOString(),
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(values.map(csvTextCell).join(","));
     }
     return csvRows.join("\n");
   },
@@ -2115,7 +2120,7 @@ export const exportLoansWithFormat = mutation({
         row.notes || "",
         new Date(row.createdAt).toISOString(),
       ];
-      csvRows.push(values.map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
+      csvRows.push(values.map(csvTextCell).join(","));
     }
     return csvRows.join("\n");
   },

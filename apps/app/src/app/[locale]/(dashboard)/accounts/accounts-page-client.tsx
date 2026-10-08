@@ -115,7 +115,13 @@ function AccountsPageContent() {
 
   const handleExport = useCallback(async () => {
     if (!currentOrganizationId) return [];
-    return exportAccounts({ organizationId: currentOrganizationId });
+    const accounts = await exportAccounts({
+      organizationId: currentOrganizationId,
+    });
+    return accounts.map((account) => ({
+      ...account,
+      createdAt: new Date(account.createdAt),
+    }));
   }, [currentOrganizationId, exportAccounts]);
 
   if (!permissionsLoading && !canAccessAdministration && !isPatronView)
@@ -656,7 +662,8 @@ function AccountRow({
                     ? t("untranslatedDashboard.accounts.blockedStatus")
                     : account.status === "pending"
                       ? t("untranslatedDashboard.accounts.pendingStatus")
-                      : account.status ?? t("untranslatedDashboard.accounts.unknownStatus")}
+                      : (account.status ??
+                        t("untranslatedDashboard.accounts.unknownStatus"))}
         </ToneBadge>
       ) : (
         <ToneBadge

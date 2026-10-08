@@ -47,6 +47,28 @@ describe("CSV conversion", () => {
 
     expect(csv).toContain("Test,,");
   });
+
+  test("keeps numbers numeric regardless of the column name", () => {
+    const csv = convertToCSV([{ status: 5, createdAt: 1700000000000 }]);
+
+    expect(csv).toBe("status,createdAt\n5,1700000000000");
+  });
+
+  test("serializes Date values as UTC ISO timestamps", () => {
+    const csv = convertToCSV([{ due: new Date(Date.UTC(2024, 0, 2)) }]);
+
+    expect(csv).toBe("due\n2024-01-02T00:00:00.000Z");
+  });
+
+  test("neutralizes spreadsheet formulas in text cells", () => {
+    const csv = convertToCSV([
+      { title: "=SUM(A1)", note: "@cmd", code: "-12", plain: "Vase" },
+    ]);
+
+    expect(csv).toBe(
+      'title,note,code,plain\n"\'=SUM(A1)","\'@cmd","\'-12",Vase',
+    );
+  });
 });
 
 describe("JSON conversion", () => {
