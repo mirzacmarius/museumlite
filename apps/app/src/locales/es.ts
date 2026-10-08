@@ -1349,6 +1349,115 @@ export default {
 
     testError: "La prueba ha fallado",
   },
+  webhookDeliveries: {
+    noPermission:
+      "Necesitas permiso para gestionar la configuración de la organización para administrar webhooks.",
+    log: {
+      title: "Registro de entregas",
+      description:
+        "Cada evento enviado a tus endpoints, con cada intento y respuesta. Las entradas se conservan 30 días.",
+      endpointFilter: "Endpoint",
+      statusFilter: "Estado",
+      allEndpoints: "Todos los endpoints",
+      allStatuses: "Todos los estados",
+      empty: "Ninguna entrega coincide con estos filtros.",
+      loadMore: "Cargar más",
+      details: "Detalles",
+      deletedEndpoint: "Endpoint eliminado",
+      testEvent: "Evento de prueba",
+      attempts: "Intentos: {count}",
+      nextAttempt: "Próximo intento {time}",
+      sending: "Enviando ahora",
+    },
+    status: {
+      pending: "Pendiente",
+      retrying: "Reintentando",
+      succeeded: "Entregado",
+      failed_transient: "Fallido",
+      failed_permanent: "Fallido definitivamente",
+      cancelled: "Cancelado",
+    },
+    outcome: {
+      succeeded: "Entregado",
+      failed_transient: "Fallo reintentable",
+      failed_permanent: "Fallo definitivo",
+    },
+    reasons: {
+      http_error: "El receptor respondió HTTP {status}",
+      timeout: "Sin respuesta en 10 segundos",
+      network_error: "No se pudo conectar con el endpoint",
+      attempt_lost: "El intento no informó su resultado",
+      endpoint_deleted: "El endpoint se eliminó",
+      endpoint_disabled: "El endpoint se desactivó",
+      endpoint_insecure: "La URL del endpoint no usa HTTPS",
+      endpoint_unsubscribed: "El endpoint ya no está suscrito a este evento",
+    },
+    detail: {
+      title: "Detalles de la entrega",
+      deliveryId: "ID de entrega",
+      eventId: "ID de evento",
+      event: "Evento",
+      endpoint: "Endpoint",
+      created: "Creado",
+      payload: "Contenido (versión {version})",
+      attemptsTitle: "Intentos",
+      noAttempts: "No se ha enviado ninguna solicitud para esta entrega.",
+      attempt: "Intento {number}",
+      duration: "{ms} ms",
+      retry: "Reintentar entrega",
+      retrying: "Reintentando...",
+      retryHelp:
+        "Un reintento reenvía el mismo contenido con el mismo ID de entrega, para que tu receptor pueda ignorar duplicados.",
+      notFound: "Esta entrega ya no está disponible.",
+      close: "Cerrar",
+    },
+    endpoint: {
+      lastDelivery: "Última entrega {time}",
+      neverDelivered: "Aún no entregado",
+      viewDeliveries: "Entregas",
+      sendTest: "Enviar prueba",
+      testQueued:
+        "Evento de prueba en cola. Su resultado aparece en el registro de entregas.",
+      rotateSecret: "Rotar secreto",
+    },
+    rotate: {
+      title: "¿Rotar el secreto de firma?",
+      description:
+        "El secreto actual deja de funcionar de inmediato. Cada intento posterior, incluidos los reintentos, se firma con el nuevo secreto, así que actualiza tu receptor.",
+      confirm: "Rotar secreto",
+      cancel: "Cancelar",
+      rotatedTitle: "Nuevo secreto de firma",
+      rotatedDescription: "Copia este secreto ahora. No podrás volver a verlo.",
+      done: "Listo",
+    },
+    signing: {
+      title: "Verificar entregas",
+      signature:
+        "X-ML-Signature es sha256= seguido del HMAC-SHA256 en hexadecimal del cuerpo sin procesar de la solicitud, con tu secreto de firma como clave.",
+      signatureV2:
+        "X-ML-Signature-V2 es v2= seguido del HMAC-SHA256 del valor de X-ML-Delivery, un punto, el valor de X-ML-Timestamp, un punto y el cuerpo. Rechaza marcas de tiempo fuera de tu margen de tolerancia.",
+      duplicates:
+        "Los reintentos reutilizan X-ML-Delivery y el mismo cuerpo. Trata un ID de entrega repetido como ya procesado.",
+      retries:
+        "Cualquier respuesta 2xx cuenta como entregada. Los tiempos de espera agotados, los errores de red y las respuestas 408, 429 y 5xx se reintentan hasta 6 veces durante unas 3 horas; las demás respuestas no se reintentan.",
+    },
+    errors: {
+      WEBHOOK_NAME_REQUIRED: "Introduce un nombre para el endpoint.",
+      WEBHOOK_URL_INVALID: "Introduce una URL HTTPS válida.",
+      WEBHOOK_EVENT_UNSUPPORTED:
+        "Uno de los eventos seleccionados no está disponible.",
+      WEBHOOK_LIMIT_REACHED:
+        "Esta organización ya tiene el número máximo de endpoints de webhook.",
+      WEBHOOK_NOT_FOUND: "Este endpoint ya no existe.",
+      WEBHOOK_DISABLED: "Activa el endpoint antes de enviarle eventos.",
+      WEBHOOK_NOT_SUBSCRIBED:
+        "El endpoint ya no está suscrito a este evento. Vuelve a suscribirlo antes de reintentar.",
+      DELIVERY_NOT_FOUND: "Esta entrega ya no existe.",
+      DELIVERY_NOT_RETRYABLE:
+        "Solo se pueden reintentar las entregas fallidas o canceladas.",
+      fallback: "No se pudo completar la acción. Inténtalo de nuevo.",
+    },
+  },
   activity: {
     title: "Actividad",
     headerTitle: "Actividad",

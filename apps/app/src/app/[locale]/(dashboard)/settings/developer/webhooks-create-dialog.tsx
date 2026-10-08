@@ -25,6 +25,7 @@ interface WebhooksCreateDialogProps {
   open: boolean;
   onClose: () => void;
   createdSecret: string | null;
+  createError: string | null;
   copied: boolean;
   onCopy: () => void;
   newWebhook: NewWebhookState;
@@ -39,6 +40,7 @@ export function WebhooksCreateDialog({
   open,
   onClose,
   createdSecret,
+  createError,
   copied,
   onCopy,
   newWebhook,
@@ -138,6 +140,11 @@ export function WebhooksCreateDialog({
                 </div>
               </div>
             </div>
+            {createError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {createError}
+              </p>
+            ) : null}
           </div>
         )}
 
