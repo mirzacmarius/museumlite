@@ -534,6 +534,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Eksporter til CSV",
+      objectsCapNote:
+        "Importklar CSV inneholder opptil 1 000 objekter med plasserings- og gruppenavn. Bruk eksporten nedenfor for hele katalogen.",
+      objectsCapExceeded:
+        "Denne katalogen har mer enn 1 000 objekter. Bruk eksporten av hele katalogen nedenfor.",
     },
   },
   account: {

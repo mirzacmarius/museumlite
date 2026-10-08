@@ -544,6 +544,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exportar a CSV",
+      objectsCapNote:
+        "El CSV listo para importar incluye hasta 1.000 objetos con nombres de ubicación y grupo. Para el catálogo completo, use la exportación de abajo.",
+      objectsCapExceeded:
+        "Este catálogo tiene más de 1.000 objetos. Use la exportación del catálogo completo de abajo.",
     },
   },
   account: {

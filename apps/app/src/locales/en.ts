@@ -529,6 +529,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Export to CSV",
+      objectsCapNote:
+        "Import-ready CSV includes up to 1,000 objects with location and group names. For the complete catalog, use the export job below.",
+      objectsCapExceeded:
+        "This catalog has more than 1,000 objects. Use the complete catalog export below.",
     },
   },
   account: {

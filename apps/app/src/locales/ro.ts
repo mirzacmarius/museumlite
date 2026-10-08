@@ -1034,6 +1034,10 @@ export default {
       csv: "CSV",
       json: "JSON",
       exportToCsv: "Exportă în CSV",
+      objectsCapNote:
+        "CSV-ul pregătit pentru import include până la 1.000 de obiecte cu nume de locații și grupuri. Pentru catalogul complet, folosiți exportul de mai jos.",
+      objectsCapExceeded:
+        "Acest catalog are peste 1.000 de obiecte. Folosiți exportul catalogului complet de mai jos.",
     },
 
     errors: {
