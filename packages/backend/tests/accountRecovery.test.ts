@@ -499,13 +499,42 @@ describe("account recovery without existence disclosure", () => {
     expect(emailsTo(strangerEmail)).toHaveLength(0);
   });
 
+  test("the owner's last emailed reset code survives throttled requests", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await createVerifiedPasswordOwner(t);
+    let wasThrottled = false;
+    for (let request = 0; request < 20; request += 1) {
+      try {
+        await t.action(api.auth.signIn, {
+          provider,
+          params: { email: ownerEmail, flow: "reset" },
+        });
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConvexError);
+        wasThrottled = true;
+        break;
+      }
+    }
+    expect(wasThrottled).toBe(true);
+    const reset = await t.action(api.auth.signIn, {
+      provider,
+      params: {
+        email: ownerEmail,
+        code: latestCode(ownerEmail),
+        newPassword: "replacement-password-123",
+        flow: "reset-verification",
+      },
+    });
+    expect(reset.tokens?.token).toEqual(expect.any(String));
+  });
+
   test("code requests are throttled per email regardless of account existence", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
     vi.setSystemTime(Date.now() + 16 * 60 * 1000);
     for (const email of [ownerEmail, strangerEmail]) {
-      for (let request = 0; request < 5; request += 1) {
+      for (let request = 0; request < 10; request += 1) {
         await t.action(api.auth.signIn, {
           provider,
           params: { email, flow: "reset" },
@@ -521,13 +550,17 @@ describe("account recovery without existence disclosure", () => {
       ).toEqual({ code: "TooManyCodeRequests" });
     }
     expect(
-      await publicErrorCode(
-        t.action(api.auth.signIn, {
-          provider: "resend-otp",
-          params: { email: ownerEmail },
-        }),
-      ),
-    ).toEqual({ code: "TooManyCodeRequests" });
+      await t.action(api.auth.signIn, {
+        provider: "resend-otp",
+        params: { email: ownerEmail },
+      }),
+    ).toEqual({ started: true });
+    expect(
+      await t.action(api.auth.signIn, {
+        provider,
+        params: { email: ownerEmail, flow: "email-verification" },
+      }),
+    ).toEqual({ tokens: null });
     expect(
       await t.action(api.auth.signIn, {
         provider: "resend-otp",
@@ -542,6 +575,63 @@ describe("account recovery without existence disclosure", () => {
         params: { email: ownerEmail, flow: "reset" },
       }),
     ).toEqual({ tokens: null });
+  });
+
+  test.each([
+    "resend-otp",
+    "magic-link",
+    "password-link",
+  ])("%s counts every request and preserves the final code on throttle", async (codeProvider) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const t = createConvexTestWithRateLimiter();
+    for (let request = 0; request < 10; request += 1) {
+      await t.action(api.auth.signIn, {
+        provider: codeProvider,
+        params: {
+          email: ownerEmail,
+          ...(codeProvider === "password-link"
+            ? { password: ownerPassword, flow: "signUp" }
+            : {}),
+        },
+      });
+    }
+    expect(emailsTo(ownerEmail)).toHaveLength(10);
+    const code =
+      codeProvider === "resend-otp"
+        ? latestCode(ownerEmail)
+        : emailsTo(ownerEmail)
+            .at(-1)
+            ?.html.match(/code=([^"&\s]+)/)?.[1];
+    if (!code) throw new Error("No sign-in code sent");
+    expect(
+      await publicErrorCode(
+        t.action(api.auth.signIn, {
+          provider: codeProvider,
+          params: {
+            email: ownerEmail,
+            ...(codeProvider === "password-link"
+              ? { password: ownerPassword, flow: "signUp" }
+              : {}),
+          },
+        }),
+      ),
+    ).toEqual({ code: "TooManyCodeRequests" });
+    expect(emailsTo(ownerEmail)).toHaveLength(10);
+    expect(
+      (await t.action(api.auth.signIn, { params: { email: ownerEmail, code } }))
+        .tokens?.token,
+    ).toEqual(expect.any(String));
+    vi.setSystemTime(Date.now() + 3 * 60 * 1000);
+    await t.action(api.auth.signIn, {
+      provider: codeProvider,
+      params: {
+        email: ownerEmail,
+        ...(codeProvider === "password-link"
+          ? { password: ownerPassword, flow: "signUp" }
+          : {}),
+      },
+    });
+    expect(emailsTo(ownerEmail)).toHaveLength(11);
   });
 
   test("password providers without email verification refuse sign-up uniformly", async () => {

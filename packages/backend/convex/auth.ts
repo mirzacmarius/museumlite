@@ -3,12 +3,17 @@ import Resend from "@auth/core/providers/resend";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { convexAuth } from "@convex-dev/auth/server";
 import { sha256 } from "@oslojs/crypto/sha2";
-import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { type Infer, v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { action, internalMutation } from "./_generated/server";
 import { sendLocalizedMagicLinkEmail } from "./email/authCopy";
 import { env } from "./env";
 import { ResendOTP } from "./otp/ResendOTP";
-import { withCodeRequestLimit } from "./passwordRecovery/codeRequestLimit";
+import { normalizeAuthRecoveryError } from "./passwordRecovery/authRecoveryErrors";
+import {
+  codeRequestFlow,
+  enforceCodeRequestLimit,
+} from "./passwordRecovery/codeRequestLimit";
 import { NeutralPassword } from "./passwordRecovery/NeutralPassword";
 import { ResendOTPPasswordReset } from "./passwordReset/ResendOTPPasswordReset";
 
@@ -25,7 +30,7 @@ const normalizedEmailProfile = (params: Record<string, unknown>) => {
 const verifyProvider = Resend({
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
-  sendVerificationRequest: withCodeRequestLimit(sendLocalizedMagicLinkEmail),
+  sendVerificationRequest: sendLocalizedMagicLinkEmail,
 });
 
 const magicLinkEmail = Email({
@@ -33,7 +38,7 @@ const magicLinkEmail = Email({
   apiKey: env.RESEND_API_KEY,
   from: env.RESEND_SENDER_EMAIL_AUTH,
   authorize: undefined,
-  sendVerificationRequest: withCodeRequestLimit(sendLocalizedMagicLinkEmail),
+  sendVerificationRequest: sendLocalizedMagicLinkEmail,
 });
 
 const passwordBasic = NeutralPassword({
@@ -89,7 +94,44 @@ const configuredAuth = convexAuth({
   ],
 });
 
-export const { auth, signIn, signOut, isAuthenticated } = configuredAuth;
+export const { auth, signOut, isAuthenticated } = configuredAuth;
+
+const signInArgs = {
+  provider: v.optional(v.string()),
+  params: v.optional(v.any()),
+  verifier: v.optional(v.string()),
+  refreshToken: v.optional(v.string()),
+  calledBy: v.optional(v.string()),
+};
+const signInReturns = v.union(
+  v.object({
+    tokens: v.union(
+      v.null(),
+      v.object({ token: v.string(), refreshToken: v.string() }),
+    ),
+  }),
+  v.object({ redirect: v.string(), verifier: v.string() }),
+  v.object({ started: v.boolean() }),
+);
+
+export const signIn = action({
+  args: signInArgs,
+  returns: signInReturns,
+  handler: async (ctx, args) => {
+    if (
+      !("_handler" in configuredAuth.signIn) ||
+      typeof configuredAuth.signIn._handler !== "function"
+    )
+      throw new Error("Unsupported Convex Auth sign-in handler");
+    try {
+      const result: Infer<typeof signInReturns> =
+        await configuredAuth.signIn._handler(ctx, args);
+      return result;
+    } catch (error) {
+      throw normalizeAuthRecoveryError(error);
+    }
+  },
+});
 
 // Keep credential activation inside the same transaction as code redemption,
 // including code-only magic-link callbacks handled directly by Convex Auth.
@@ -97,6 +139,21 @@ export const store = internalMutation({
   args: { args: v.any() },
   returns: v.any(),
   handler: async (ctx, args) => {
+    if (args.args.type === "createVerificationCode") {
+      const accountId: Id<"authAccounts"> | undefined = args.args.accountId;
+      const account = accountId ? await ctx.db.get(accountId) : null;
+      const email = args.args.email;
+      if (typeof email !== "string")
+        throw new Error("Email is required for auth code requests");
+      await enforceCodeRequestLimit(
+        ctx,
+        email,
+        codeRequestFlow(
+          args.args.provider,
+          account?.provider.startsWith("password") ?? false,
+        ),
+      );
+    }
     const code =
       args.args.type === "verifyCodeAndSignIn" &&
       typeof args.args.params?.code === "string"

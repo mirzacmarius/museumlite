@@ -1,57 +1,46 @@
-import type { EmailConfig } from "@convex-dev/auth/server";
 import type { RunMutationCtx } from "@convex-dev/rate-limiter";
 import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import { authRecoveryError } from "./authRecoveryErrors";
 
 export const CODE_REQUESTS_PER_WINDOW = 5;
+export const CODE_REQUEST_BURST = 10;
 export const CODE_REQUEST_WINDOW_MS = 15 * MINUTE;
 
 const limiter = new RateLimiter(components.rateLimiter, {
   authCodeRequests: {
-    kind: "fixed window",
+    kind: "token bucket",
     rate: CODE_REQUESTS_PER_WINDOW,
+    capacity: CODE_REQUEST_BURST,
     period: CODE_REQUEST_WINDOW_MS,
   },
 });
 
-/**
- * Counts one emailed auth code (sign-in code, verification or password reset)
- * against the email address. The limit is keyed only by the normalized email,
- * so it applies identically whether or not an account exists.
- */
-export async function enforceCodeRequestLimit(
-  ctx: RunMutationCtx | undefined,
-  email: string,
-): Promise<void> {
-  if (ctx === undefined) {
-    throw new Error("Auth code requests require a Convex action context");
-  }
-  const status = await limiter.limit(ctx, "authCodeRequests", {
-    key: email.trim().toLowerCase(),
-  });
-  if (!status.ok) {
-    throw authRecoveryError("TooManyCodeRequests");
-  }
+export type CodeRequestFlow =
+  | "password-verification"
+  | "reset"
+  | "otp"
+  | "magic-link"
+  | "password-link";
+
+export function codeRequestFlow(
+  provider: string,
+  hasPasswordAccount: boolean,
+): CodeRequestFlow {
+  if (provider === "resend-otp-password-reset") return "reset";
+  if (provider === "resend-otp")
+    return hasPasswordAccount ? "password-verification" : "otp";
+  return provider === "magic-link" ? "magic-link" : "password-link";
 }
 
-type VerificationRequest = Parameters<
-  EmailConfig["sendVerificationRequest"]
->[0];
-
-/**
- * Wraps an email provider sender so every send is counted against the limit.
- * Convex Auth passes the action context as the second argument.
- */
-export function withCodeRequestLimit(
-  send: (params: VerificationRequest) => Promise<void>,
-) {
-  return async (params: VerificationRequest, ctx?: RunMutationCtx) => {
-    // Convex Auth passes the action context. Direct sender tests call this
-    // with the email payload only, and those calls do not count.
-    if (ctx !== undefined) {
-      await enforceCodeRequestLimit(ctx, params.identifier);
-    }
-    await send(params);
-  };
+/** Count before code creation, using the same bucket for known and unknown emails. */
+export async function enforceCodeRequestLimit(
+  ctx: RunMutationCtx,
+  email: string,
+  flow: CodeRequestFlow,
+): Promise<void> {
+  const status = await limiter.limit(ctx, "authCodeRequests", {
+    key: `${flow}:${email.trim().toLowerCase()}`,
+  });
+  if (!status.ok) throw authRecoveryError("TooManyCodeRequests");
 }

@@ -14,7 +14,7 @@ import { internal } from "../_generated/api";
 import type { DataModel, Doc } from "../_generated/dataModel";
 import { env } from "../env";
 import { authRecoveryError } from "./authRecoveryErrors";
-import { enforceCodeRequestLimit } from "./codeRequestLimit";
+import { codeRequestFlow, enforceCodeRequestLimit } from "./codeRequestLimit";
 
 type Params = Partial<Record<string, Value | undefined>>;
 type Ctx = GenericActionCtxWithAuthConfig<DataModel>;
@@ -135,25 +135,15 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       expirationTime: expires.getTime(),
       ...(passwordHash === undefined ? {} : { passwordHash }),
     });
-    // Convex Auth also passes its action context to email senders.
-    const send =
-      verify.sendVerificationRequest as EmailConfig["sendVerificationRequest"] &
-        ((
-          params: Parameters<EmailConfig["sendVerificationRequest"]>[0],
-          ctx: Ctx,
-        ) => Promise<void>);
-    await send(
-      {
-        identifier: String(params.email),
-        url: destination.toString(),
-        token: code,
-        expires,
-        provider: verify,
-        request: new Request("http://localhost"),
-        theme: ctx.auth.config.theme,
-      },
-      ctx,
-    );
+    await verify.sendVerificationRequest({
+      identifier: String(params.email),
+      url: destination.toString(),
+      token: code,
+      expires,
+      provider: verify,
+      request: new Request("http://localhost"),
+      theme: ctx.auth.config.theme,
+    });
     return null;
   }
 
@@ -224,7 +214,7 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
       throw new Error(`Password reset is not enabled for ${provider}`);
     const account = await findPasswordAccount(ctx, provider, email);
     if (!account) {
-      await enforceCodeRequestLimit(ctx, email);
+      await enforceCodeRequestLimit(ctx, email, "reset");
       return null;
     }
     return await signInViaProvider(ctx, reset, {
@@ -261,7 +251,11 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     const account = await findPasswordAccount(ctx, provider, email);
     if (typeof code !== "string") {
       if (!account) {
-        await enforceCodeRequestLimit(ctx, email);
+        await enforceCodeRequestLimit(
+          ctx,
+          email,
+          codeRequestFlow(verify.id, true),
+        );
         return null;
       }
       return await sendVerification(ctx, account, { email });
