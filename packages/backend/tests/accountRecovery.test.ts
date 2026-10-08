@@ -251,7 +251,7 @@ describe("account recovery without existence disclosure", () => {
     expect(reset.tokens?.token).toEqual(expect.any(String));
   });
 
-  test("sign-up for a registered email looks like a new sign-up and cannot replace the password", async () => {
+  test("sign-up for a registered email looks like a new sign-up and cannot replace the password before verification", async () => {
     const t = createConvexTestWithRateLimiter();
     await createVerifiedPasswordOwner(t);
     const existing = await t.action(api.auth.signIn, {
@@ -284,7 +284,41 @@ describe("account recovery without existence disclosure", () => {
         },
       }),
     );
-    const ownerVerified = await t.action(api.auth.signIn, {
+    const ownerSignIn = await t.action(api.auth.signIn, {
+      provider,
+      params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
+    });
+    expect(ownerSignIn.tokens?.token).toEqual(expect.any(String));
+  });
+
+  test.each([
+    false,
+    true,
+  ])("victim verification replaces a pre-registered attacker's password (linked user: %s)", async (hasVerifiedUser) => {
+    const t = createConvexTestWithRateLimiter();
+    if (hasVerifiedUser) {
+      await t.action(api.auth.signIn, {
+        provider: "resend-otp",
+        params: { email: ownerEmail },
+      });
+      await t.action(api.auth.signIn, {
+        provider: "resend-otp",
+        params: { email: ownerEmail, code: latestCode(ownerEmail) },
+      });
+    }
+    await t.action(api.auth.signIn, {
+      provider,
+      params: {
+        email: ownerEmail,
+        password: "attacker-password-123",
+        flow: "signUp",
+      },
+    });
+    await t.action(api.auth.signIn, {
+      provider,
+      params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
+    });
+    const verified = await t.action(api.auth.signIn, {
       provider,
       params: {
         email: ownerEmail,
@@ -292,12 +326,155 @@ describe("account recovery without existence disclosure", () => {
         flow: "email-verification",
       },
     });
-    expect(ownerVerified.tokens?.token).toEqual(expect.any(String));
-    const ownerSignIn = await t.action(api.auth.signIn, {
+    expect(verified.tokens?.token).toEqual(expect.any(String));
+    expect(
+      await publicErrorCode(
+        t.action(api.auth.signIn, {
+          provider,
+          params: {
+            email: ownerEmail,
+            password: "attacker-password-123",
+            flow: "signIn",
+          },
+        }),
+      ),
+    ).toEqual({ code: "InvalidCredentials" });
+    const signedIn = await t.action(api.auth.signIn, {
       provider,
       params: { email: ownerEmail, password: ownerPassword, flow: "signIn" },
     });
-    expect(ownerSignIn.tokens?.token).toEqual(expect.any(String));
+    expect(signedIn.tokens?.token).toEqual(expect.any(String));
+  });
+
+  test("a verified owner can adopt their new sign-up password only by verifying", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await createVerifiedPasswordOwner(t);
+    const replacement = "owner-replacement-password-123";
+    await t.action(api.auth.signIn, {
+      provider,
+      params: { email: ownerEmail, password: replacement, flow: "signUp" },
+    });
+    expect(
+      (
+        await t.action(api.auth.signIn, {
+          provider,
+          params: {
+            email: ownerEmail,
+            password: ownerPassword,
+            flow: "signIn",
+          },
+        })
+      ).tokens?.token,
+    ).toEqual(expect.any(String));
+    await t.action(api.auth.signIn, {
+      provider,
+      params: {
+        email: ownerEmail,
+        code: latestCode(ownerEmail),
+        flow: "email-verification",
+      },
+    });
+    expect(
+      await publicErrorCode(
+        t.action(api.auth.signIn, {
+          provider,
+          params: {
+            email: ownerEmail,
+            password: ownerPassword,
+            flow: "signIn",
+          },
+        }),
+      ),
+    ).toEqual({ code: "InvalidCredentials" });
+    expect(
+      (
+        await t.action(api.auth.signIn, {
+          provider,
+          params: { email: ownerEmail, password: replacement, flow: "signIn" },
+        })
+      ).tokens?.token,
+    ).toEqual(expect.any(String));
+  });
+
+  test("a code-only password-link callback activates the password bound to that link", async () => {
+    const t = createConvexTestWithRateLimiter();
+    const linkProvider = "password-link";
+    await t.action(api.auth.signIn, {
+      provider: linkProvider,
+      params: {
+        email: ownerEmail,
+        password: "attacker-password-123",
+        flow: "signUp",
+      },
+    });
+    await t.action(api.auth.signIn, {
+      provider: linkProvider,
+      params: { email: ownerEmail, password: ownerPassword, flow: "signUp" },
+    });
+    const code = emailsTo(ownerEmail)
+      .at(-1)
+      ?.html.match(/code=([^"&\s]+)/)?.[1];
+    if (!code) throw new Error("No password link sent");
+    expect(
+      (await t.action(api.auth.signIn, { params: { code } })).tokens?.token,
+    ).toEqual(expect.any(String));
+    expect(
+      await publicErrorCode(
+        t.action(api.auth.signIn, {
+          provider: linkProvider,
+          params: {
+            email: ownerEmail,
+            password: "attacker-password-123",
+            flow: "signIn",
+          },
+        }),
+      ),
+    ).toEqual({ code: "InvalidCredentials" });
+    expect(
+      (
+        await t.action(api.auth.signIn, {
+          provider: linkProvider,
+          params: {
+            email: ownerEmail,
+            password: ownerPassword,
+            flow: "signIn",
+          },
+        })
+      ).tokens?.token,
+    ).toEqual(expect.any(String));
+  });
+
+  test("a code-only reset cannot activate a pre-registered password", async () => {
+    const t = createConvexTestWithRateLimiter();
+    await t.action(api.auth.signIn, {
+      provider,
+      params: {
+        email: ownerEmail,
+        password: "attacker-password-123",
+        flow: "signUp",
+      },
+    });
+    await t.action(api.auth.signIn, {
+      provider,
+      params: { email: ownerEmail, flow: "reset" },
+    });
+    expect(
+      await t.action(api.auth.signIn, {
+        params: { email: ownerEmail, code: latestCode(ownerEmail) },
+      }),
+    ).toEqual({ tokens: null });
+    expect(
+      (
+        await t.action(api.auth.signIn, {
+          provider,
+          params: {
+            email: ownerEmail,
+            password: "attacker-password-123",
+            flow: "signIn",
+          },
+        })
+      ).tokens,
+    ).toBeNull();
   });
 
   test("verification resends and bad codes answer the same for unknown emails", async () => {

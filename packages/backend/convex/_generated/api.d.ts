@@ -91,6 +91,7 @@ import type * as organizationOwnershipTransfer from "../organizationOwnershipTra
 import type * as organizationUsage from "../organizationUsage.js";
 import type * as organizations from "../organizations.js";
 import type * as otp_ResendOTP from "../otp/ResendOTP.js";
+import type * as passwordRecovery_verification from "../passwordRecovery/verification.js";
 import type * as passwordRecovery_NeutralPassword from "../passwordRecovery/NeutralPassword.js";
 import type * as passwordRecovery_authRecoveryErrors from "../passwordRecovery/authRecoveryErrors.js";
 import type * as passwordRecovery_codeRequestLimit from "../passwordRecovery/codeRequestLimit.js";
@@ -292,6 +293,7 @@ declare const fullApi: ApiFromModules<{
   organizationUsage: typeof organizationUsage;
   organizations: typeof organizations;
   "otp/ResendOTP": typeof otp_ResendOTP;
+  "passwordRecovery/verification": typeof passwordRecovery_verification;
   "passwordRecovery/NeutralPassword": typeof passwordRecovery_NeutralPassword;
   "passwordRecovery/authRecoveryErrors": typeof passwordRecovery_authRecoveryErrors;
   "passwordRecovery/codeRequestLimit": typeof passwordRecovery_codeRequestLimit;

@@ -10,7 +10,9 @@ import {
 } from "@convex-dev/auth/server";
 import type { Value } from "convex/values";
 import { Scrypt } from "lucia";
+import { internal } from "../_generated/api";
 import type { DataModel, Doc } from "../_generated/dataModel";
+import { env } from "../env";
 import { authRecoveryError } from "./authRecoveryErrors";
 import { enforceCodeRequestLimit } from "./codeRequestLimit";
 
@@ -96,7 +98,7 @@ async function verifyCode<T>(check: () => Promise<T | null>): Promise<T> {
  *   only email an address that has a matching account;
  * - sign-up for a registered email answers like a new sign-up and emails the
  *   owner a verification code instead of reporting a conflict. The submitted
- *   password is discarded, so it cannot replace the owner's password.
+ *   password is bound to that code and applied only after verification.
  *
  * Providers without email verification cannot make sign-up neutral, so they
  * refuse sign-up for every email and only keep legacy sign-in.
@@ -108,12 +110,51 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     ctx: Ctx,
     account: Doc<"authAccounts">,
     params: Params,
+    passwordHash?: string,
   ) {
     if (!verify) return { userId: account.userId };
-    return await signInViaProvider(ctx, verify, {
+    const code = verify.generateVerificationToken
+      ? await verify.generateVerificationToken()
+      : Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) =>
+          byte.toString(16).padStart(2, "0"),
+        ).join("");
+    const baseUrl = env.SITE_URL.replace(/\/$/, "");
+    const destination =
+      typeof params.redirectTo === "string"
+        ? new URL(params.redirectTo, `${baseUrl}/`)
+        : new URL(baseUrl);
+    if (destination.origin !== new URL(baseUrl).origin)
+      throw new Error("Invalid redirectTo");
+    destination.searchParams.set("code", code);
+    const expires = new Date(Date.now() + (verify.maxAge ?? 86400) * 1000);
+    await ctx.runMutation(internal.passwordRecovery.verification.createCode, {
       accountId: account._id,
-      params,
+      provider: verify.id,
+      email: String(params.email),
+      code,
+      expirationTime: expires.getTime(),
+      ...(passwordHash === undefined ? {} : { passwordHash }),
     });
+    // Convex Auth also passes its action context to email senders.
+    const send =
+      verify.sendVerificationRequest as EmailConfig["sendVerificationRequest"] &
+        ((
+          params: Parameters<EmailConfig["sendVerificationRequest"]>[0],
+          ctx: Ctx,
+        ) => Promise<void>);
+    await send(
+      {
+        identifier: String(params.email),
+        url: destination.toString(),
+        token: code,
+        expires,
+        provider: verify,
+        request: new Request("http://localhost"),
+        theme: ctx.auth.config.theme,
+      },
+      ctx,
+    );
+    return null;
   }
 
   async function signUp(ctx: Ctx, params: Params, email: string) {
@@ -121,9 +162,8 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     const secret = requirePasswordParam(params, "password");
     const existing = await findPasswordAccount(ctx, provider, email);
     if (existing) {
-      // Hash and discard so this path does the same password work as creation.
-      await new Scrypt().hash(secret);
-      await sendVerification(ctx, existing, { email });
+      const passwordHash = await new Scrypt().hash(secret);
+      await sendVerification(ctx, existing, { email }, passwordHash);
       return null;
     }
     let created: Doc<"authAccounts">;
@@ -138,10 +178,20 @@ export function NeutralPassword(config: NeutralPasswordConfig) {
     } catch (error) {
       const raced = await findPasswordAccount(ctx, provider, email);
       if (!raced) throw error;
-      await sendVerification(ctx, raced, { email });
+      await sendVerification(
+        ctx,
+        raced,
+        { email },
+        await new Scrypt().hash(secret),
+      );
       return null;
     }
-    return await sendVerification(ctx, created, { ...params, email });
+    return await sendVerification(
+      ctx,
+      created,
+      { ...params, email },
+      created.secret,
+    );
   }
 
   async function signIn(ctx: Ctx, params: Params, email: string) {
