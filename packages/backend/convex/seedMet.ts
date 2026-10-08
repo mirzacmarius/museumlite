@@ -11,6 +11,7 @@ import {
   createEmptyUsageCounter,
   getStorageBytes,
 } from "./utils/organizationUsageCounters";
+import { initializeEmptyProjection } from "./utils/projectionMaintenance";
 
 export const clearTableBatch = internalMutation({
   args: {
@@ -77,6 +78,7 @@ export const createOrganization = internalMutation({
         accessionNumberFormat: `${args.slug.toUpperCase().substring(0, 3)}-YYYY-###`,
       },
     });
+    await initializeEmptyProjection(ctx, orgId);
 
     await Promise.all([
       ctx.db.insert(

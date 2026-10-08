@@ -4,6 +4,7 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import type { ModuleId } from "../convex/utils/moduleCatalog";
+import { expectReady, rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup";
 
 type TestSetup = {
@@ -126,9 +127,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.collections.total).toBe(0);
@@ -223,9 +227,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.objects.total).toBe(2);
@@ -273,9 +280,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.loans.total).toBe(3);
@@ -316,9 +326,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.accessions.pending).toBe(1);
@@ -453,9 +466,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     expect(analytics.transfers.pending).toBe(2);
     const board = await authed.query(api.objectMoves.listForOrganization, {
@@ -518,9 +534,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.objects.total).toBe(1);
@@ -537,9 +556,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.objects).toHaveProperty("onDisplay");
@@ -557,9 +579,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.objects.onDisplay).toBe(0);
@@ -601,9 +626,12 @@ describe("Dashboard: getAnalytics", () => {
       issuer: "https://example.test",
     });
 
-    const analytics = await authed.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await authed.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
 
     // #then
     expect(analytics.recentCollectionGroups.length).toBeGreaterThan(0);
@@ -650,10 +678,13 @@ describe("Dashboard: getOperationalKpis", () => {
       subject: `${userId}|session-operational-kpis-disabled`,
       issuer: "https://example.test",
     });
-    const kpis = await authed.query(api.dashboard.getOperationalKpis, {
-      organizationId,
-      now: fixedNow,
-    });
+    await rebuildProjection(t, organizationId);
+    const kpis = expectReady(
+      await authed.query(api.dashboard.getOperationalKpis, {
+        organizationId,
+        now: fixedNow,
+      }),
+    );
 
     // #then
     expect(kpis.inventory).toMatchObject({
@@ -697,10 +728,13 @@ describe("Dashboard: getOperationalKpis", () => {
       subject: `${userId}|session-operational-kpis-enabled`,
       issuer: "https://example.test",
     });
-    const kpis = await authed.query(api.dashboard.getOperationalKpis, {
-      organizationId,
-      now: fixedNow,
-    });
+    await rebuildProjection(t, organizationId);
+    const kpis = expectReady(
+      await authed.query(api.dashboard.getOperationalKpis, {
+        organizationId,
+        now: fixedNow,
+      }),
+    );
 
     // #then
     expect(kpis.inventory).toMatchObject({
@@ -769,12 +803,15 @@ describe("Dashboard: getComplianceReport", () => {
       subject: `${userId}|session-compliance-report`,
       issuer: "https://example.test",
     });
-    const report = await authed.query(api.dashboard.getComplianceReport, {
-      organizationId,
-      now: rangeEnd,
-      dateRangeStart: rangeStart,
-      dateRangeEnd: rangeEnd,
-    });
+    await rebuildProjection(t, organizationId);
+    const report = expectReady(
+      await authed.query(api.dashboard.getComplianceReport, {
+        organizationId,
+        now: rangeEnd,
+        dateRangeStart: rangeStart,
+        dateRangeEnd: rangeEnd,
+      }),
+    );
 
     expect(report.auditTrail.totalEvents).toBe(2);
     expect(report.auditTrail.recentEvents).toHaveLength(2);
@@ -921,9 +958,12 @@ describe("Dashboard metric drilldowns", () => {
       });
     });
     const reader = t.withIdentity({ subject: `${userId}|metrics` });
-    const analytics = await reader.query(api.dashboard.getAnalytics, {
-      organizationId,
-    });
+    await rebuildProjection(t, organizationId);
+    const analytics = expectReady(
+      await reader.query(api.dashboard.getAnalytics, {
+        organizationId,
+      }),
+    );
     const names: string[] = [];
     let cursor: string | null = null;
     for (;;) {

@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { internal } from "../convex/_generated/api";
 import schema from "../convex/schema";
 
+import { rebuildProjection } from "./testHarness";
 import { modules } from "./testSetup";
 
 /**
@@ -2201,6 +2202,7 @@ describe("report generation and cron processing", () => {
       });
     });
 
+    await rebuildProjection(t, orgId);
     await t.mutation(internal.reporting.generateReport, {
       runId,
       reportId,
@@ -2278,6 +2280,7 @@ describe("report generation and cron processing", () => {
         .collect();
     });
 
+    await rebuildProjection(t, orgId);
     vi.useFakeTimers();
     try {
       await t.mutation(internal.reporting.processDueReports, {});

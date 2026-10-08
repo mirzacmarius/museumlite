@@ -1451,6 +1451,7 @@ export default defineSchema({
       "status",
       "dateReceived",
     ])
+    .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_donor_account", ["donorAccountId"])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_accessions", {
@@ -1623,6 +1624,12 @@ export default defineSchema({
       "organizationId",
       "dateDeaccessioned",
     ])
+    .index("by_organization_and_status_and_dateDeaccessioned", [
+      "organizationId",
+      "status",
+      "dateDeaccessioned",
+    ])
+    .index("by_organization_and_approvedAt", ["organizationId", "approvedAt"])
     .index("by_organization_and_status_and_dateDeaccessioned", [
       "organizationId",
       "status",
@@ -2126,6 +2133,11 @@ export default defineSchema({
     .index("by_organization_and_type", ["organizationId", "type"])
     .index("by_account", ["accountId"])
     .index("by_organization_and_endDate", ["organizationId", "endDate"])
+    .index("by_organization_and_status_and_endDate", [
+      "organizationId",
+      "status",
+      "endDate",
+    ])
     .index("by_assigned_to", ["assignedTo"])
     .searchIndex("search_loans", {
       searchField: "lenderBorrowerName",

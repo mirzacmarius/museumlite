@@ -6,6 +6,7 @@ import {
   authedForUser,
   createConvexTest,
   createOrgUserWithPermissions,
+  rebuildProjection,
 } from "./testHarness";
 import { modules } from "./testSetup";
 
@@ -183,7 +184,7 @@ describe("organization hierarchy", () => {
 });
 
 describe("getUsageStats", () => {
-  test("should read object and storage usage from organization counters", async () => {
+  test("reports object and storage usage as unavailable until the projection is built, then from source rows rather than a stale counter", async () => {
     const t = createConvexTest();
     const { organizationId, userId } = await createOrgUserWithPermissions(
       t,
@@ -217,14 +218,38 @@ describe("getUsageStats", () => {
         ),
         count: 3,
       });
+      for (const accessionNumber of ["U-1", "U-2"]) {
+        await ctx.db.insert("collections", {
+          organizationId,
+          accessionNumber,
+          title: accessionNumber,
+          status: "active",
+          catalogedBy: userId,
+          catalogedAt: 1,
+        });
+      }
     });
 
+    const before = await authed.query(api.organizations.getUsageStats, {
+      organizationId,
+    });
+    expect(before.metrics).toEqual({
+      availability: "unavailable",
+      reason: "not_built",
+      definitionVersion: 1,
+    });
+    expect(before.objects.used).toBeNull();
+    expect(before.storage.used).toBeNull();
+    expect(before.exports.used).toBe(3);
+
+    await rebuildProjection(t, organizationId);
     const stats = await authed.query(api.organizations.getUsageStats, {
       organizationId,
     });
 
-    expect(stats.objects.used).toBe(17);
-    expect(stats.storage.used).toBe(8192);
+    expect(stats.metrics).toEqual({ availability: "ready" });
+    expect(stats.objects.used).toBe(2);
+    expect(stats.storage.used).toBe(0);
     expect(stats.exports.used).toBe(3);
   });
 
@@ -260,6 +285,7 @@ describe("getUsageStats", () => {
     );
     const authed = authedForUser(t, userId);
 
+    await rebuildProjection(t, organizationId);
     const stats = await authed.query(api.organizations.getUsageStats, {
       organizationId,
     });
@@ -276,6 +302,7 @@ describe("getUsageStats", () => {
     );
     const authed = authedForUser(t, userId);
 
+    await rebuildProjection(t, organizationId);
     const stats = await authed.query(api.organizations.getUsageStats, {
       organizationId,
     });

@@ -47,9 +47,14 @@ function scopeRank(category: string, counts: Record<string, number>) {
     const capacity = counts.capacity ?? 0;
     return capacity > 0 ? (counts.occupied ?? 0) / capacity : -1;
   }
-  if (category === "auditType" || category === "auditUser") {
+  if (
+    category === "auditType" ||
+    category === "auditUser" ||
+    category === "locationType"
+  ) {
     return counts.total ?? 0;
   }
+  if (category === "mediaType") return counts.count ?? 0;
   return 0;
 }
 
