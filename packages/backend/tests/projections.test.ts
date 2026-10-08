@@ -485,6 +485,49 @@ describe("writer parity", () => {
   });
 });
 
+describe("failed writes", () => {
+  test("a write that fails after inserting its source row rolls back the source and its projection contribution together", async () => {
+    const { staff, settle, organizationId, userId, t } = await fixture();
+    const [objectId] = await insertObjects(t, organizationId, userId, 1);
+    if (!objectId) throw new Error("fixture missing");
+    await rebuildProjection(t, organizationId);
+
+    await expect(
+      staff.mutation(api.loans.create, {
+        organizationId,
+        loanNumber: "L-FAIL-1",
+        type: "outgoing",
+        lenderBorrowerName: "Borrower",
+        startDate: 1_000,
+        collectionIds: [objectId, objectId],
+      }),
+    ).rejects.toThrow("Duplicate collection in loan items");
+
+    const loans = await t.run(
+      async (ctx) =>
+        await ctx.db
+          .query("loans")
+          .withIndex("by_organization", (q) =>
+            q.eq("organizationId", organizationId),
+          )
+          .collect(),
+    );
+    expect(loans).toEqual([]);
+    expect(
+      expectReady(
+        await staff.query(api.dashboard.getAnalytics, { organizationId }),
+      ).loans,
+    ).toMatchObject({ total: 0 });
+    const { health, discrepancies } = await reconcile(
+      staff,
+      settle,
+      organizationId,
+    );
+    expect(health.lastReconciliation).toMatchObject({ mismatchCount: 0 });
+    expect(discrepancies).toEqual([]);
+  });
+});
+
 describe("fan-out invalidation", () => {
   test("a loan status change wider than the fan-out limit invalidates readers and schedules a fresh rebuild", async () => {
     const { staff, settle, organizationId, userId, t } = await fixture();
