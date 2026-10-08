@@ -48,12 +48,9 @@ export async function listExhibitionsByOrganizationHandler(
         ),
       )
     : null;
-  const filteredExhibitions = [];
-  for (const exhibition of exhibitions) {
-    if (!matchingIds || matchingIds.has(exhibition._id)) {
-      filteredExhibitions.push(exhibition);
-    }
-  }
+  const filteredExhibitions = matchingIds
+    ? exhibitions.filter((exhibition) => matchingIds.has(exhibition._id))
+    : exhibitions;
   const results = await Promise.all(
     filteredExhibitions.map(async (exhibition) => {
       const members = await getExhibitionParticipants(ctx, exhibition._id);
