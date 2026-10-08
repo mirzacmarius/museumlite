@@ -370,4 +370,28 @@ describe("Export Formats E2E Verification (manual)", () => {
     expect(xmlExport).toContain("&quot;");
     console.log("✓ XML special character escaping verified");
   });
+  test("legacy CSV exports neutralize spreadsheet formulas in text cells", async () => {
+    const t = convexTest(schema, modules);
+    const { orgId, userId } = await createOrgWithUser(t, ["collections.read"]);
+    const asUser = authedForUser(t, userId);
+    await asUser.run(async (ctx) => {
+      await ctx.db.insert("collections", {
+        organizationId: orgId,
+        accessionNumber: "-2024.003",
+        title: '=HYPERLINK("http://evil.test","x")',
+        creator: "@SUM(A1)",
+        status: "active",
+        catalogedBy: userId,
+        catalogedAt: Date.now(),
+      });
+    });
+    const csvExport = await asUser.mutation(
+      api.imports.exportObjectsWithFormat,
+      { organizationId: orgId, format: "csv" },
+    );
+    expect(csvExport).toContain(
+      `"'-2024.003","'=HYPERLINK(""http://evil.test"",""x"")"`,
+    );
+    expect(csvExport).toContain(`"'@SUM(A1)"`);
+  });
 });

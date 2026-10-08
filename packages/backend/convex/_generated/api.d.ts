@@ -47,6 +47,8 @@ import type * as email_translations from "../email/translations.js";
 import type * as env from "../env.js";
 import type * as environmentalDevices from "../environmentalDevices.js";
 import type * as exhibitions from "../exhibitions.js";
+import type * as exportActions from "../exportActions.js";
+import type * as exports from "../exports.js";
 import type * as fineArtDetails from "../fineArtDetails.js";
 import type * as http from "../http.js";
 import type * as identifiers from "../identifiers.js";
@@ -145,6 +147,8 @@ import type * as utils_exhibitionDocuments from "../utils/exhibitionDocuments.js
 import type * as utils_exhibitionInstallation from "../utils/exhibitionInstallation.js";
 import type * as utils_exhibitionObjectLocation from "../utils/exhibitionObjectLocation.js";
 import type * as utils_exhibitionWorkflow from "../utils/exhibitionWorkflow.js";
+import type * as utils_exportContract from "../utils/exportContract.js";
+import type * as utils_exportEncoding from "../utils/exportEncoding.js";
 import type * as utils_featureGates from "../utils/featureGates.js";
 import type * as utils_featurePolicy from "../utils/featurePolicy.js";
 import type * as utils_formatConverters from "../utils/formatConverters.js";
@@ -251,6 +255,8 @@ declare const fullApi: ApiFromModules<{
   env: typeof env;
   environmentalDevices: typeof environmentalDevices;
   exhibitions: typeof exhibitions;
+  exportActions: typeof exportActions;
+  exports: typeof exports;
   fineArtDetails: typeof fineArtDetails;
   http: typeof http;
   identifiers: typeof identifiers;
@@ -349,6 +355,8 @@ declare const fullApi: ApiFromModules<{
   "utils/exhibitionInstallation": typeof utils_exhibitionInstallation;
   "utils/exhibitionObjectLocation": typeof utils_exhibitionObjectLocation;
   "utils/exhibitionWorkflow": typeof utils_exhibitionWorkflow;
+  "utils/exportContract": typeof utils_exportContract;
+  "utils/exportEncoding": typeof utils_exportEncoding;
   "utils/featureGates": typeof utils_featureGates;
   "utils/featurePolicy": typeof utils_featurePolicy;
   "utils/formatConverters": typeof utils_formatConverters;

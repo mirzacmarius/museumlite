@@ -226,6 +226,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ScheduledReportsCard organizationId={currentOrganizationId} />
           <ReportExportsCard
+            organizationId={currentOrganizationId}
             kpis={kpis}
             compliance={complianceData}
             locationUtilization={locationUtilization}

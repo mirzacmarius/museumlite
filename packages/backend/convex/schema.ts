@@ -2,6 +2,11 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  exportFormat,
+  exportSource,
+  exportStatus,
+} from "./utils/exportContract";
+import {
   collectionTypeValidator,
   enabledModuleValidator,
 } from "./utils/moduleValidators";
@@ -4781,6 +4786,71 @@ export default defineSchema({
   // ============================================
   // Batch Operations
   // ============================================
+
+  exportJobs: defineTable({
+    organizationId: v.id("organizations"),
+    creatorId: v.id("users"),
+    requestKey: v.string(),
+    source: exportSource,
+    format: exportFormat,
+    schemaVersion: v.literal(1),
+    asOf: v.number(),
+    captureStartedAt: v.number(),
+    captureCompletedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    status: exportStatus,
+    cursor: v.union(v.string(), v.null()),
+    checkpoint: v.number(),
+    chunksCommitted: v.number(),
+    finalizeLevel: v.number(),
+    finalizeAfter: v.number(),
+    finalizeInputCount: v.number(),
+    finalizeProduced: v.number(),
+    cleanupPartsCursor: v.optional(v.string()),
+    cleanupSequence: v.optional(v.number()),
+    rows: v.number(),
+    scanned: v.number(),
+    selected: v.number(),
+    selectedCount: v.optional(v.number()),
+    bytes: v.number(),
+    attempts: v.number(),
+    failedAttempts: v.number(),
+    generation: v.number(),
+    leaseUntil: v.optional(v.number()),
+    sourceDone: v.boolean(),
+    error: v.optional(v.string()),
+    expiresAt: v.number(),
+    storageId: v.optional(v.id("_storage")),
+    sha256: v.optional(v.string()),
+  })
+    .index("by_creatorId_and_requestKey", ["creatorId", "requestKey"])
+    .index("by_organizationId_and_creatorId", ["organizationId", "creatorId"]),
+  exportSelections: defineTable({
+    jobId: v.id("exportJobs"),
+    objectId: v.id("collections"),
+  })
+    .index("by_jobId", ["jobId"])
+    .index("by_jobId_and_objectId", ["jobId", "objectId"]),
+  exportChunks: defineTable({
+    jobId: v.id("exportJobs"),
+    sequence: v.number(),
+    storageId: v.optional(v.id("_storage")),
+    rows: v.number(),
+    bytes: v.number(),
+    sha256: v.string(),
+    capturedAt: v.number(),
+  }).index("by_jobId_and_sequence", ["jobId", "sequence"]),
+
+  exportParts: defineTable({
+    jobId: v.id("exportJobs"),
+    level: v.number(),
+    sequence: v.number(),
+    storageId: v.optional(v.id("_storage")),
+    rows: v.number(),
+    bytes: v.number(),
+    sha256: v.string(),
+    leafChunks: v.number(),
+  }).index("by_jobId_and_level_and_sequence", ["jobId", "level", "sequence"]),
 
   // Batch job tracking for bulk operations
   batchJobs: defineTable({
