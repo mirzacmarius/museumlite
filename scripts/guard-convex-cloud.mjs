@@ -20,7 +20,8 @@ const agent = AGENT_MARKERS.find((name) => process.env[name]);
 if (agent && process.env.ALLOW_CONVEX_CLOUD !== "1") {
   console.error(`✗ Blocked: "${label}" syncs to the linked Convex cloud deployment.
   Detected a coding agent (${agent}). Agents need explicit user authorization for cloud pushes.
-  Use \`bun run test\` (convex-test, no cloud) instead.
+  Use \`bun run test\` (convex-test, no cloud), or \`bun run convex:local -- <args>\`
+  against the local QA backend (see scripts/local-qa/README.md).
   If the user has authorized it, re-run with ALLOW_CONVEX_CLOUD=1.`);
   process.exit(1);
 }

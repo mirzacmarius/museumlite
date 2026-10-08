@@ -76,3 +76,6 @@ logs/security/
 
 # Agent audit dumps; tickets live in Linear
 docs/audits/
+
+# local QA backend state
+.local-qa/

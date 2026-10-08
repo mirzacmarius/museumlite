@@ -252,8 +252,7 @@ export const archive = mutation({
       requirePermission(ctx, site.organizationId, "sites.delete"),
     ]);
 
-    // TODO: Add validation for active locations once siteId is added to locations table
-    // This will be implemented in a later subtask (subtask-3-1)
+    // Locations carry no siteId, so active locations cannot block deactivation.
 
     await ctx.db.patch(args.siteId, { isActive: false });
 

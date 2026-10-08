@@ -46,7 +46,7 @@ packages/email/            # React Email templates
 | Marketing site (Next.js) | 3001 | `bun dev:web` | Static marketing pages |
 | Convex backend | N/A (cloud) | `cd packages/backend && bun dev` | Requires Convex auth |
 
-Running `bun dev` at root starts `convex dev --tail-logs` against the cloud deployment. Without Convex auth, Next.js starts but cannot fetch data.
+Running `bun dev` at root starts `convex dev --tail-logs` against the cloud deployment. Without Convex auth, Next.js starts but cannot fetch data. Agents do not run it: they use `scripts/local-qa/README.md` for an isolated loopback backend and `bun run convex:local -- <args>` for Convex CLI commands. A bare `convex` command reads `packages/backend/.env.local`, which points at the cloud.
 
 ## Environment files
 
@@ -59,6 +59,8 @@ Running `bun dev` at root starts `convex dev --tail-logs` against the cloud depl
 - `bun run lint`
 - `bun run typecheck`
 - `bun run test` (uses `convex-test`; no cloud)
+
+`bun run check` runs everything CI runs except `build`: lint (Biome, sherif, no bare `TODO`/`FIXME`), react-doctor, typecheck including i18n (`typecheck:all`), and tests. CI is the source of truth; if it gains a step, add it to the `check` script. Mark intentional follow-up work as `TODO(MUS-123)` instead of a bare `TODO`.
 
 ## Worktrees and agent runs
 
