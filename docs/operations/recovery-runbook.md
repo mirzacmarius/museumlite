@@ -52,6 +52,9 @@ The schema change is additive. Existing documents are not rewritten. Pre-Batch 4
 
 1. **Take and verify a backup first** (section 5, steps 1–2). Keep it read-only.
 2. **Deploy** the release: `bunx convex deploy`, through the normal pipeline in production. The push fails closed if the schema is invalid. In the rehearsal, a duplicate index name (`IndexNamesNotUnique`) rejected the whole push and changed nothing. Right after deploy, metrics show "Metrics unavailable" (`not_built`), not zeros.
+   - **Index backfill on `auditLog`.** This release adds seven `auditLog` indexes (`by_organization_and_requestId` and six `..._and_timestamp` history indexes). Convex backfills new indexes during the push, and the push does not finish until every backfill does. On a large `auditLog` table that holds the deploy open for minutes, and the old release keeps serving meanwhile.
+   - The indexes are not staged. Convex 1.38 supports `staged: true`, but a staged index cannot be queried and is removed from the generated types, and this release's history pages, case filters, export jobs and correction retries query all seven. Staging them would mean shipping those readers disabled.
+   - Before deploying, read the `auditLog` document count in the Convex dashboard. If it is large enough that a blocking backfill is unacceptable, split the release: first deploy a preparatory commit that adds only the seven indexes with `staged: true` (no reader changes), wait until the dashboard shows the backfill complete, then deploy this release, which removes the flag. The second push then has nothing to backfill.
 3. **Rebuild projections:** `bunx convex run projections:startRebuildForAllOrganizations '{}'`.
    - It walks organizations 20 at a time, in pages of 25 rows, and skips organizations that are already ready or building.
    - Rerunning it is safe. The second run returned `0`.
