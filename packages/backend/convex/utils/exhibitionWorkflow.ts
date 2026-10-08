@@ -324,7 +324,7 @@ export async function activateExhibitionHandler(
   const notInstalled = exhibitionObjects.filter(
     (obj) => obj.status !== "installed",
   );
-  if (!args.skipInstallationCheck && notInstalled.length > 0) {
+  if (notInstalled.length > 0) {
     throw new Error(
       `Cannot activate exhibition: ${notInstalled.length} object(s) are not installed`,
     );
@@ -410,7 +410,7 @@ export async function closeExhibitionHandler(
     );
   }
 
-  if (outstandingObjects.length > 0 && !args.skipDeinstallationCheck) {
+  if (outstandingObjects.length > 0) {
     throw new Error(
       `Cannot close: ${outstandingObjects.length} object(s) have outstanding returns or exceptions`,
     );

@@ -313,3 +313,157 @@ test("authorizeReturnException documents outcome without moving the object", asy
   expect(result.exhibitionObject?.returnedAt).toBeUndefined();
   expect(result.collection?.currentLocationId).toBe(galleryLocationId);
 });
+
+test("activate ignores skipInstallationCheck for participants", async () => {
+  const t = createConvexTest();
+  const { authed, exhibitionId } = await createHandoffFixture(t);
+
+  await t.run(async (ctx) => {
+    await ctx.db.patch(exhibitionId, {
+      installationChecklist: [
+        {
+          taskId: "lights",
+          task: "Check lights",
+          required: true,
+          completed: false,
+        },
+      ],
+    });
+  });
+
+  await expect(
+    authed.mutation(api.exhibitions.activate, {
+      exhibitionId,
+      skipInstallationCheck: true,
+    }),
+  ).rejects.toThrow(/not installed/i);
+
+  const exhibition = await t.run(async (ctx) => ctx.db.get(exhibitionId));
+  expect(exhibition?.status).toBe("approved");
+});
+
+test("skipInstallationCheck still skips the checklist once participants are installed", async () => {
+  const t = createConvexTest();
+  const { authed, exhibitionId, exhibitionObjectId, storageLocationId } =
+    await createHandoffFixture(t);
+
+  await t.run(async (ctx) => {
+    await ctx.db.patch(exhibitionId, {
+      installationChecklist: [
+        {
+          taskId: "lights",
+          task: "Check lights",
+          required: true,
+          completed: false,
+        },
+      ],
+    });
+  });
+
+  await authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId,
+    observedFromLocationId: storageLocationId,
+  });
+
+  await authed.mutation(api.exhibitions.activate, {
+    exhibitionId,
+    skipInstallationCheck: true,
+  });
+
+  const exhibition = await t.run(async (ctx) => ctx.db.get(exhibitionId));
+  expect(exhibition?.status).toBe("active");
+});
+
+test("close ignores skipDeinstallationCheck while a participant is installed", async () => {
+  const t = createConvexTest();
+  const { authed, exhibitionId, exhibitionObjectId, storageLocationId } =
+    await createHandoffFixture(t);
+
+  await authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId,
+    observedFromLocationId: storageLocationId,
+  });
+  await authed.mutation(api.exhibitions.activate, { exhibitionId });
+
+  await t.run(async (ctx) => {
+    await ctx.db.patch(exhibitionId, {
+      deinstallationChecklist: [
+        {
+          taskId: "crates",
+          task: "Pack crates",
+          required: true,
+          completed: false,
+        },
+      ],
+    });
+  });
+
+  await expect(
+    authed.mutation(api.exhibitions.close, {
+      exhibitionId,
+      skipDeinstallationCheck: true,
+    }),
+  ).rejects.toThrow(/outstanding/i);
+
+  const result = await t.run(async (ctx) => {
+    const [exhibition, exhibitionObject] = await Promise.all([
+      ctx.db.get(exhibitionId),
+      ctx.db.get(exhibitionObjectId),
+    ]);
+    return { exhibition, exhibitionObject };
+  });
+  expect(result.exhibition?.status).toBe("active");
+  expect(result.exhibitionObject?.status).toBe("installed");
+  expect(result.exhibitionObject?.returnException).toBeUndefined();
+  expect(result.exhibitionObject?.returnMovementId).toBeUndefined();
+});
+
+test("exhibition return to another location does not claim the original location", async () => {
+  const t = createConvexTest();
+  const {
+    authed,
+    organizationId,
+    exhibitionId,
+    exhibitionObjectId,
+    collectionId,
+    storageLocationId,
+    galleryLocationId,
+  } = await createHandoffFixture(t);
+
+  const labLocationId = await t.run(async (ctx) => {
+    return await ctx.db.insert("locations", {
+      organizationId,
+      name: "Conservation lab",
+      type: "storage",
+      sortOrder: 2,
+      isActive: true,
+    });
+  });
+
+  await authed.mutation(api.exhibitions.installObject, {
+    exhibitionObjectId,
+    observedFromLocationId: storageLocationId,
+  });
+  await authed.mutation(api.exhibitions.activate, { exhibitionId });
+  await authed.mutation(api.exhibitions.startDeinstallation, { exhibitionId });
+  await authed.mutation(api.exhibitions.deinstallObject, { exhibitionObjectId });
+  await authed.mutation(api.exhibitions.returnObjectToOriginalLocation, {
+    exhibitionObjectId,
+    observedFromLocationId: galleryLocationId,
+    overrideLocationId: labLocationId,
+  });
+
+  const result = await t.run(async (ctx) => {
+    const [exhibitionObject, collection] = await Promise.all([
+      ctx.db.get(exhibitionObjectId),
+      ctx.db.get(collectionId),
+    ]);
+    return { collection, exhibitionObject };
+  });
+
+  expect(result.exhibitionObject?.status).toBe("returned");
+  expect(result.exhibitionObject?.returnedToOriginalLocation).toBe(false);
+  expect(result.collection?.currentLocationId).toBe(labLocationId);
+  expect(result.collection?.currentLocationId).not.toBe(storageLocationId);
+  expect(result.exhibitionObject?.returnMovementId).toBeDefined();
+});

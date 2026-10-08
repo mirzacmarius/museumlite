@@ -328,7 +328,9 @@ export async function returnObjectToOriginalLocationHandler(
   await Promise.all([
     ctx.db.patch(args.exhibitionObjectId, {
       status: "returned",
-      returnedToOriginalLocation: true,
+      returnedToOriginalLocation:
+        exhibitionObject.originalLocationId !== undefined &&
+        returnLocation === exhibitionObject.originalLocationId,
       returnedAt,
       returnMovementId: movementId,
       returnConditionAssessmentId,
