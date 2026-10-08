@@ -81,9 +81,7 @@
       {
         "files": [
           "apps/app/src/app/**/exhibitions/page.tsx",
-          "src/app/**/exhibitions/page.tsx",
-          "apps/app/src/app/**/transit/[id]/_components/transit-physical-handoffs-panel.tsx",
-          "src/app/**/transit/[id]/_components/transit-physical-handoffs-panel.tsx"
+          "src/app/**/exhibitions/page.tsx"
         ],
         "rules": ["react-doctor/prefer-useReducer"]
       }
