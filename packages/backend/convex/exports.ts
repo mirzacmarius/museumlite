@@ -355,7 +355,7 @@ export const list = query({
       )
       .order("desc")
       .take(20);
-    const visibleJobs = [];
+    const visibleJobs: ReturnType<typeof present>[] = [];
     for (const job of jobs) {
       if (job.source.kind !== "audit" || auditAllowed) {
         visibleJobs.push(present(job));
